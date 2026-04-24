@@ -1,56 +1,20 @@
-# Web Application Template
+# Gubernator
 
-Opinionated React + TypeScript starter for product apps that want strong structure, clear boundaries, and good behavior from both humans and coding agents.
+A turn-based world simulation and management application. Players create and govern worlds across time, advancing turns to simulate the growth of settlements, citizens, resources, and civilizations through a structured calendar system.
 
-## Stack
+**Stack:** Vite · React 19 · TypeScript · TanStack Router · TanStack Query · Tailwind CSS v4 · shadcn/ui · Vitest · Supabase
 
-- Vite
-- React 19
-- TypeScript
-- TanStack Router with file-based routes
-- TanStack Query
-- Tailwind CSS v4
-- shadcn/ui
-- Vitest
-- Supabase
-
-## What This Template Optimizes For
-
-- Thin route files and feature-first organization
-- Strict TypeScript and linting
-- Clear query and infrastructure boundaries
-- Supabase-ready structure with migrations and Edge Functions
-- Repository automation that nudges clean PR and commit hygiene
-
-## Using This Template
-
-After creating a new repo from this template on GitHub:
+## Local Setup
 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/YOUR_ORG/YOUR_REPO.git
-cd YOUR_REPO
+git clone https://github.com/DylanLogan2581/gubernator.git
+cd gubernator
 npm install
 ```
 
-### 2. Bootstrap the repo
-
-Requires the [GitHub CLI](https://cli.github.com/) (`gh`) authenticated with your account.
-
-```bash
-npm run bootstrap:repo
-```
-
-This applies branch protection, syncs labels, rewrites template references (CODEOWNERS, config files), and copies repository settings from the source template. Run it once, right after cloning.
-
-If your repo lives under a different org or you forked the template, pass explicit flags:
-
-```bash
-npm run bootstrap:repo -- --repo YOUR_ORG/YOUR_REPO
-```
-
-### 3. Configure environment variables
+### 2. Configure environment variables
 
 ```bash
 cp .env.example .env
@@ -58,12 +22,23 @@ cp .env.example .env
 
 Then fill in your Supabase project values:
 
-```bash
+```env
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-### 4. Start developing
+### 3. Apply database migrations
+
+Requires the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and a local Supabase instance running:
+
+```bash
+supabase start
+supabase db reset
+```
+
+This applies all migrations in `supabase/migrations` in order and seeds the database using `supabase/seed.sql`.
+
+### 4. Start the dev server
 
 ```bash
 npm run dev
@@ -75,15 +50,14 @@ The app runs at `http://localhost:5173`.
 
 ## Scripts
 
-- `npm run dev` starts the Vite dev server
-- `npm run build` type-checks and builds the app
-- `npm run lint` runs ESLint, Markdown linting, and SQL formatting checks
-- `npm run preview` serves the production build locally
-- `npm run test` runs Vitest and intentionally passes when the starter has no tests yet
-- `npm run bootstrap:repo` applies repo settings, branch protection, and labels after creating from the template
-- `npm run release:dry` previews the next release version and changelog changes
-- `npm run release` creates the release commit and tag, pushes to `main`, and triggers a GitHub Release
-- `npm run prepare` installs Husky hooks
+- `npm run dev` — starts the Vite dev server
+- `npm run build` — type-checks and builds the app
+- `npm run lint` — runs ESLint, Markdown linting, and SQL formatting checks
+- `npm run preview` — serves the production build locally
+- `npm run test` — runs Vitest
+- `npm run release:dry` — previews the next release version and changelog changes
+- `npm run release` — creates the release commit and tag, pushes to `main`, and triggers a GitHub Release
+- `npm run prepare` — installs Husky hooks
 
 ## Documentation Map
 
@@ -104,7 +78,25 @@ src/
     ui/                  # low-level primitives
     app/                 # app-specific shared components
     shared/              # small reusable cross-feature components
-  features/              # feature-owned components, queries, hooks, schemas, utils
+  features/
+    auth/                # authentication and session management
+    worlds/              # world creation and overview
+    calendar/            # in-world calendar and date tracking
+    turns/               # turn advancement and simulation engine
+    permissions/         # role and permission management
+    nations/             # nation-level governance
+    settlements/         # settlement founding, growth, and governance
+    citizens/            # citizen simulation and population tracking
+    resources/           # resource production, consumption, and trade
+    jobs/                # job assignments and labor
+    buildings/           # building construction and management
+    deposits/            # resource deposits and extraction
+    managed-populations/ # NPC and automated population groups
+    trade/               # trade routes and exchanges
+    events/              # in-world event simulation
+    notifications/       # player notifications
+    reports/             # analytics and turn summaries
+    templates/           # reusable world and entity templates
   hooks/                 # app-wide reusable hooks
   lib/                   # infrastructure and generic utilities
   routes/                # route files only
@@ -116,41 +108,29 @@ src/
 supabase/
   config.toml            # local Supabase config
   functions/             # Edge Functions
-  migrations/            # schema history
-  seed.sql               # optional deterministic seed data
+  migrations/            # schema history (source of truth for the database)
+  seed.sql               # deterministic seed data
 ```
 
-## Template Conventions
+## Conventions
 
-- Keep route files small and move growing logic into `src/features`.
+- Keep route files small; move growing logic into `src/features`.
 - Import from `src` through the `@/` alias.
 - Import features through public entrypoints such as `@/features/<feature-name>`.
 - Keep data access in feature query modules instead of routes and components.
 - Do not edit generated files such as `src/routeTree.gen.ts` by hand.
 - Treat `supabase/migrations` as the source of truth for schema changes.
-- Enable Row Level Security on application tables.
+- Enable Row Level Security on all application tables.
 
-## Repository Automation
+## Validation
 
-This template ships automation that downstream projects can keep:
-
-- Husky + lint-staged for pre-commit formatting and linting
-- commitlint for conventional commit messages
-- on-demand release flow via `npm run release` (version bump, changelog update, release commit, and tag)
-- tag-triggered GitHub Release workflow (`.github/workflows/tag-release.yml`)
-- GitHub Actions for lint, build, test, dependency review, workflow linting, and CodeQL
-- CODEOWNERS and PR governance helpers
-
-## Before Shipping Changes
-
-Run the checks that fit your change:
+Run these before opening a pull request:
 
 ```bash
 npm run lint
+npm run test
 npm run build
 ```
-
-If you changed behavior covered by tests, also run `npm run test`.
 
 If you changed schema, also confirm:
 
