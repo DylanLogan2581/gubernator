@@ -1,0 +1,52 @@
+name: Feature
+description: Plan a user-facing improvement or new capability.
+title: "[feat] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for work that will most likely ship with a `feat(<scope>): ...` commit.
+  - type: input
+    id: scope
+    attributes:
+      label: Scope
+      description: The feature area or module name you expect to use in the semantic commit scope.
+      placeholder: auth
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Opportunity
+      description: What user need, workflow gap, or product problem is this addressing?
+      placeholder: Users cannot recover access when they forget their password.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Change
+      description: Describe the intended feature or capability at a high level.
+      placeholder: Add a password reset request flow and confirmation screen.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the conditions that must be true for this card to be done.
+      placeholder: |
+        - User can request a reset email
+        - Invalid emails show a clear error
+        - Success state matches the current auth UI
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional implementation notes, links, risks, or follow-up ideas.
+    validations:
+      required: false

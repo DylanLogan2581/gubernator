@@ -1,0 +1,59 @@
+name: Maintenance
+description: Internal, tooling, test, CI, style, perf, or housekeeping work.
+title: "[chore] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for work that will most likely ship with one of these commit types:
+        `chore`, `build`, `ci`, `perf`, `style`, `test`, or `revert`.
+  - type: dropdown
+    id: commit-type
+    attributes:
+      label: Planned Commit Type
+      description: Pick the semantic commit type that best fits the work.
+      options:
+        - chore
+        - build
+        - ci
+        - perf
+        - style
+        - test
+        - revert
+    validations:
+      required: true
+  - type: input
+    id: scope
+    attributes:
+      label: Scope
+      description: The module, tool, or workflow name you expect to use in the semantic commit scope.
+      placeholder: deps
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What internal improvement, cleanup, or maintenance task is needed?
+      placeholder: Upgrade tooling and align the repo checks with the current workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected Impact
+      description: What should improve as a result of this work?
+      placeholder: Dependency updates stay current and CI becomes more reliable.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What needs to be true for this work to be complete?
+      placeholder: |
+        - The maintenance change is applied
+        - Lint, build, and tests still pass when relevant
+        - Any workflow docs are updated if the process changed
+    validations:
+      required: true

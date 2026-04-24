@@ -1,0 +1,51 @@
+name: Refactor
+description: Improve structure, reduce complexity, or pay down technical debt without changing intended behavior.
+title: "[refactor] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for work that will most likely ship with a `refactor(<scope>): ...` commit.
+  - type: input
+    id: scope
+    attributes:
+      label: Scope
+      description: The feature area or module name you expect to use in the semantic commit scope.
+      placeholder: projects
+    validations:
+      required: true
+  - type: textarea
+    id: pain
+    attributes:
+      label: Current Pain
+      description: What is hard to maintain, risky to change, or too complex today?
+      placeholder: Query logic is duplicated across routes and feature components.
+    validations:
+      required: true
+  - type: textarea
+    id: target
+    attributes:
+      label: Target State
+      description: Describe the intended structure after the refactor.
+      placeholder: Move query setup into a feature query module and keep routes thin.
+    validations:
+      required: true
+  - type: textarea
+    id: guardrails
+    attributes:
+      label: Guardrails
+      description: What behavior must remain unchanged, and what tests or checks should protect it?
+      placeholder: Existing loading, error, and success states should remain unchanged.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What outcomes define done for this refactor?
+      placeholder: |
+        - Logic is moved to the correct feature module
+        - Behavior remains the same
+        - Tests are added or updated where practical
+    validations:
+      required: true

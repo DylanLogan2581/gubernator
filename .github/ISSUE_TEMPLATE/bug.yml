@@ -1,0 +1,56 @@
+name: Bug
+description: Track a defect, regression, or broken workflow.
+title: "[fix] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for work that will most likely ship with a `fix(<scope>): ...` commit.
+  - type: input
+    id: scope
+    attributes:
+      label: Scope
+      description: The feature area or module name you expect to use in the semantic commit scope.
+      placeholder: router
+    validations:
+      required: true
+  - type: textarea
+    id: bug
+    attributes:
+      label: Current Behavior
+      description: What is happening now?
+      placeholder: Navigating directly to a nested route throws an error instead of rendering the fallback state.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+      placeholder: The route should render the expected screen or fallback state without crashing.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Include a short sequence that reliably reproduces the issue.
+      placeholder: |
+        1. Sign in
+        2. Open /projects/unknown directly
+        3. Observe the crash
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What needs to be true for the bug to be considered fixed?
+      placeholder: |
+        - The route no longer crashes
+        - An expected fallback or error state is shown
+        - A regression test is added when practical
+    validations:
+      required: true

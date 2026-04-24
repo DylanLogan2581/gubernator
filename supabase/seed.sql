@@ -1,0 +1,2 @@
+-- Add seed data for local development here.
+-- Example: INSERT INTO public.profiles (id, display_name) VALUES (gen_random_uuid(), 'Test User');

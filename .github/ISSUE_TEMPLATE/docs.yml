@@ -1,0 +1,45 @@
+name: Docs
+description: Update contributor, setup, or product documentation.
+title: "[docs] "
+labels:
+  - documentation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for work that will most likely ship with a `docs(<scope>): ...` commit.
+  - type: input
+    id: scope
+    attributes:
+      label: Scope
+      description: The document area or module name you expect to use in the semantic commit scope.
+      placeholder: readme
+    validations:
+      required: true
+  - type: textarea
+    id: gap
+    attributes:
+      label: Documentation Gap
+      description: What is missing, unclear, outdated, or easy to misuse today?
+      placeholder: The setup guide does not explain the local Supabase workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: update
+    attributes:
+      label: Needed Update
+      description: What docs should change, and what should they explain?
+      placeholder: Add a local development section with env setup and Supabase reset commands.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What will make this doc task complete?
+      placeholder: |
+        - The relevant docs are updated
+        - The instructions are accurate and tested when practical
+        - Related workflow notes are linked from the right place
+    validations:
+      required: true

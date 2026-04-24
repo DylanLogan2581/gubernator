@@ -1,0 +1,251 @@
+name: Pull Request Governance
+
+# pull_request_target runs with write permissions even from forks.
+# This is intentional: the jobs below only read PR metadata (title, number) and
+# do NOT check out untrusted code. Never add a checkout step here unless it is
+# scoped to the base ref (ref: ${{ github.base_ref }}), or you risk arbitrary
+# code execution with elevated permissions.
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  validate-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate semantic PR title
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = context.payload.pull_request?.title ?? ""
+            const allowedTypes = new Set([
+              "build",
+              "chore",
+              "ci",
+              "docs",
+              "feat",
+              "fix",
+              "perf",
+              "refactor",
+              "revert",
+              "style",
+              "test",
+            ])
+
+            const allowedScopes = new Set([
+              "ci",
+              "config",
+              "deps",
+              "docs",
+              "home",
+              "repo",
+              "supabase",
+              "testing",
+              "tooling",
+            ])
+
+            const failures = []
+
+            if (title.length > 72) {
+              failures.push("PR title must be 72 characters or fewer.")
+            }
+
+            const match = title.match(/^(?<type>[a-z]+)\((?<scope>[a-z0-9-]+)\): (?<subject>.+)$/)
+
+            if (!match?.groups) {
+              failures.push(
+                "PR title must match `type(scope): subject` using lowercase semantic commit format."
+              )
+            } else {
+              const { type, scope, subject } = match.groups
+
+              if (!allowedTypes.has(type)) {
+                failures.push(
+                  `PR title type must be one of: ${Array.from(allowedTypes).join(", ")}.`
+                )
+              }
+
+              if (!allowedScopes.has(scope)) {
+                failures.push(
+                  `PR title scope must be one of: ${Array.from(allowedScopes).join(", ")}.`
+                )
+              }
+
+              if (subject.trim().length === 0) {
+                failures.push("PR title subject may not be empty.")
+              }
+
+              if (subject.endsWith(".")) {
+                failures.push("PR title subject may not end with a period.")
+              }
+
+              if (subject !== subject.toLowerCase()) {
+                failures.push("PR title subject must be lowercase.")
+              }
+            }
+
+            if (failures.length > 0) {
+              core.setFailed(
+                [
+                  "PR title validation failed.",
+                  ...failures.map((failure) => `- ${failure}`),
+                  "",
+                  "Example valid title: `feat(auth): add password reset flow`",
+                ].join("\n")
+              )
+            }
+
+  sync-labels:
+    name: Sync PR Labels
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sync type and area labels
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const issue_number = context.payload.pull_request.number
+            const title = context.payload.pull_request?.title ?? ""
+
+            const labelDefinitions = {
+              "type: build": "1d76db",
+              "type: chore": "1d76db",
+              "type: ci": "1d76db",
+              "type: docs": "1d76db",
+              "type: feat": "0e8a16",
+              "type: fix": "d73a4a",
+              "type: perf": "5319e7",
+              "type: refactor": "fbca04",
+              "type: revert": "b60205",
+              "type: style": "c2e0c6",
+              "type: test": "bfd4f2",
+              "area: app": "0052cc",
+              "area: config": "0366d6",
+              "area: docs": "0075ca",
+              "area: github": "5319e7",
+              "area: supabase": "0e8a16",
+            }
+
+            for (const [name, color] of Object.entries(labelDefinitions)) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name })
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error
+                }
+
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name,
+                  color,
+                })
+              }
+            }
+
+            const currentLabels = context.payload.pull_request.labels.map((label) => label.name)
+            const managedLabels = Object.keys(labelDefinitions)
+            const desiredLabels = new Set()
+
+            const titleMatch = title.match(/^(?<type>[a-z]+)\((?<scope>[a-z0-9-]+)\): (?<subject>.+)$/)
+
+            if (titleMatch?.groups?.type && labelDefinitions[`type: ${titleMatch.groups.type}`]) {
+              desiredLabels.add(`type: ${titleMatch.groups.type}`)
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number: issue_number,
+              per_page: 100,
+            })
+
+            const hasFile = (matcher) => files.some(({ filename }) => matcher(filename))
+
+            if (hasFile((filename) => filename.startsWith(".github/"))) {
+              desiredLabels.add("area: github")
+            }
+
+            if (
+              hasFile(
+                (filename) =>
+                  filename.startsWith("src/") ||
+                  filename.startsWith("public/") ||
+                  filename === "index.html" ||
+                  filename === "components.json"
+              )
+            ) {
+              desiredLabels.add("area: app")
+            }
+
+            if (hasFile((filename) => filename.startsWith("supabase/"))) {
+              desiredLabels.add("area: supabase")
+            }
+
+            if (
+              hasFile(
+                (filename) =>
+                  filename.endsWith(".md") ||
+                  filename === ".markdownlint.json" ||
+                  filename === ".markdownlintignore"
+              )
+            ) {
+              desiredLabels.add("area: docs")
+            }
+
+            if (
+              hasFile(
+                (filename) =>
+                  filename === "package.json" ||
+                  filename === "package-lock.json" ||
+                  filename === "components.json" ||
+                  filename.startsWith("tsconfig") ||
+                  filename === "vite.config.ts" ||
+                  filename === "eslint.config.ts" ||
+                  filename === "postcss.config.js" ||
+                  filename === ".prettierrc.json" ||
+                  filename === ".prettierignore"
+              )
+            ) {
+              desiredLabels.add("area: config")
+            }
+
+            const labelsToRemove = currentLabels.filter(
+              (label) => managedLabels.includes(label) && !desiredLabels.has(label)
+            )
+
+            for (const name of labelsToRemove) {
+              await github.rest.issues.removeLabel({
+                owner,
+                repo,
+                issue_number,
+                name,
+              })
+            }
+
+            const labelsToAdd = Array.from(desiredLabels).filter(
+              (label) => !currentLabels.includes(label)
+            )
+
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels: labelsToAdd,
+              })
+            }
