@@ -1,2 +1,15 @@
--- Add seed data for local development here.
--- Example: INSERT INTO public.profiles (id, display_name) VALUES (gen_random_uuid(), 'Test User');
+-- Gubernator local development seed data.
+--
+-- This file is applied automatically by `supabase db reset`.
+-- Keep seed data minimal, deterministic, and safe to re-run.
+--
+-- Suggested seed order once migrations are in place:
+--   1. auth.users test accounts (use supabase.auth.admin_create_user or direct inserts)
+--   2. worlds
+--   3. nations and settlements within those worlds
+--   4. citizens, resources, and deposits as needed for feature development
+--
+-- Example:
+--   INSERT INTO public.worlds (id, name, owner_id)
+--   VALUES ('00000000-0000-0000-0000-000000000001', 'Test World', '<test-user-id>')
+--   ON CONFLICT (id) DO NOTHING;
