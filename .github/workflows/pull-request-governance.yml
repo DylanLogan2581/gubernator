@@ -45,6 +45,27 @@ jobs:
             ])
 
             const allowedScopes = new Set([
+              // Gubernator feature domains
+              "auth",
+              "worlds",
+              "turns",
+              "calendar",
+              "permissions",
+              "nations",
+              "settlements",
+              "citizens",
+              "resources",
+              "jobs",
+              "buildings",
+              "deposits",
+              "managed-populations",
+              "trade",
+              "events",
+              "notifications",
+              "reports",
+              "templates",
+              // General scopes
+              "app",
               "ci",
               "config",
               "deps",
@@ -133,11 +154,36 @@ jobs:
               "type: revert": "b60205",
               "type: style": "c2e0c6",
               "type: test": "bfd4f2",
+              // Gubernator feature domain area labels
+              "area: auth": "0052cc",
+              "area: worlds": "0052cc",
+              "area: turns": "0052cc",
+              "area: calendar": "0052cc",
+              "area: permissions": "0052cc",
+              "area: nations": "0052cc",
+              "area: settlements": "0052cc",
+              "area: citizens": "0052cc",
+              "area: resources": "0052cc",
+              "area: jobs": "0052cc",
+              "area: buildings": "0052cc",
+              "area: deposits": "0052cc",
+              "area: managed-populations": "0052cc",
+              "area: trade": "0052cc",
+              "area: events": "0052cc",
+              "area: notifications": "0052cc",
+              "area: reports": "0052cc",
+              "area: templates": "0052cc",
+              // General area labels
               "area: app": "0052cc",
+              "area: ci": "1d76db",
               "area: config": "0366d6",
+              "area: deps": "0366d6",
               "area: docs": "0075ca",
-              "area: github": "5319e7",
+              "area: home": "0052cc",
+              "area: repo": "5319e7",
               "area: supabase": "0e8a16",
+              "area: testing": "bfd4f2",
+              "area: tooling": "fbca04",
             }
 
             for (const [name, color] of Object.entries(labelDefinitions)) {
@@ -177,7 +223,20 @@ jobs:
             const hasFile = (matcher) => files.some(({ filename }) => matcher(filename))
 
             if (hasFile((filename) => filename.startsWith(".github/"))) {
-              desiredLabels.add("area: github")
+              desiredLabels.add("area: repo")
+            }
+
+            // Detect Gubernator feature domains
+            const featureDomains = [
+              "auth", "worlds", "turns", "calendar", "permissions", "nations",
+              "settlements", "citizens", "resources", "jobs", "buildings",
+              "deposits", "managed-populations", "trade", "events",
+              "notifications", "reports", "templates",
+            ]
+            for (const domain of featureDomains) {
+              if (hasFile((filename) => filename.startsWith(`src/features/${domain}/`))) {
+                desiredLabels.add(`area: ${domain}`)
+              }
             }
 
             if (
@@ -187,6 +246,9 @@ jobs:
                   filename.startsWith("public/") ||
                   filename === "index.html" ||
                   filename === "components.json"
+              ) &&
+              !featureDomains.some((domain) =>
+                files.some(({ filename }) => filename.startsWith(`src/features/${domain}/`))
               )
             ) {
               desiredLabels.add("area: app")
