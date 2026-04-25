@@ -8,12 +8,40 @@ body:
     attributes:
       value: |
         Use this for work that will most likely ship with a `docs(<scope>): ...` commit.
-  - type: input
+  - type: dropdown
     id: scope
     attributes:
       label: Scope
       description: The document area or module name you expect to use in the semantic commit scope.
-      placeholder: readme
+      options:
+        - auth
+        - worlds
+        - turns
+        - calendar
+        - permissions
+        - nations
+        - settlements
+        - citizens
+        - resources
+        - jobs
+        - buildings
+        - deposits
+        - managed-populations
+        - trade
+        - events
+        - notifications
+        - reports
+        - templates
+        - app
+        - ci
+        - config
+        - deps
+        - docs
+        - home
+        - repo
+        - supabase
+        - testing
+        - tooling
     validations:
       required: true
   - type: textarea

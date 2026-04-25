@@ -1,6 +1,6 @@
 # Contributing
 
-This guide is for human contributors.
+This guide is for human contributors to Gubernator.
 
 `AGENTS.md` is the machine-oriented working agreement. The two documents should stay aligned, but `CONTRIBUTING.md` is written for people and keeps the workflow easier to scan.
 
@@ -16,7 +16,7 @@ Requirements:
 
 - Node.js 22+
 - npm 10+
-- Optional: Supabase CLI for local schema, auth, and migration work
+- Supabase CLI for local schema, auth, and migration work
 
 Setup:
 
@@ -25,7 +25,7 @@ npm install
 npm run dev
 ```
 
-If you need Supabase in the browser app, copy `.env.example` to `.env` and set the project-specific values.
+Copy `.env.example` to `.env` and set the Supabase project values before starting the dev server.
 
 ## Core Commands
 
@@ -39,15 +39,13 @@ If you need Supabase in the browser app, copy `.env.example` to `.env` and set t
 
 ## Workflow
 
-This template is designed to set up downstream repos with:
+Gubernator uses:
 
 - Conventional Commit messages
 - Conventional PR titles
 - required `Lint` and `Build` checks
 - CODEOWNERS review
 - dependency review, workflow linting, and CodeQL
-
-When editing the template itself, follow the maintainer or task-specific instruction if it differs from those downstream defaults.
 
 ### Commit Messages
 
@@ -118,12 +116,9 @@ Usually:
 
 ```bash
 npm run lint
+npm run test
 npm run build
 ```
-
-Also run `npm run test` when tests exist for the area you changed.
-
-This template intentionally allows an empty Vitest suite at the start so a fresh app is not forced to add placeholder tests before any real behavior exists. Once a project has meaningful logic, add tests for the changed area instead of relying on the empty-suite fallback.
 
 ## Security Expectations
 

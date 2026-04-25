@@ -1,59 +1,77 @@
-import { useQuery } from "@tanstack/react-query";
-import { Check, Database, Router } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-
-import { sessionQueryOptions } from "../queries/homeQueries";
+import {
+  Building2,
+  Calendar,
+  Flag,
+  Globe2,
+  Package,
+  Users,
+} from "lucide-react";
 
 import type { JSX } from "react";
 
+const CAPABILITY_CARDS = [
+  {
+    icon: Globe2,
+    title: "Worlds",
+    description:
+      "Create and manage simulation worlds. Each world is the top-level container for nations, turns, and calendar state.",
+  },
+  {
+    icon: Flag,
+    title: "Nations",
+    description:
+      "Define the political units of each world. Nations own settlements, command armies, and drive diplomatic and trade relationships.",
+  },
+  {
+    icon: Building2,
+    title: "Settlements",
+    description:
+      "Manage cities, towns, and outposts within nations. Settlements house citizens, buildings, and production chains.",
+  },
+  {
+    icon: Users,
+    title: "Citizens",
+    description:
+      "Track population, roles, and jobs within settlements. Citizens are the labor force and social fabric of the simulation.",
+  },
+  {
+    icon: Package,
+    title: "Resources",
+    description:
+      "Monitor deposits, production, and trade goods. Resources flow through settlements and drive economic activity.",
+  },
+  {
+    icon: Calendar,
+    title: "Turns & Calendar",
+    description:
+      "Advance time through structured turns. The calendar tracks events, seasons, and historical progression across the simulation.",
+  },
+] as const;
+
 export function HomeCapabilitySection(): JSX.Element {
-  const sessionQuery = useQuery(sessionQueryOptions);
-
   return (
-    <section className="grid gap-4 md:grid-cols-3">
-      <article className="rounded-2xl border bg-card p-4 shadow-sm">
-        <div className="mb-3 flex items-center gap-2">
-          <Router className="size-4" />
-          <h2 className="font-medium">TanStack Router</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          The route file stays thin and preloads feature-owned query data before
-          rendering the page module.
-        </p>
-      </article>
-
-      <article className="rounded-2xl border bg-card p-4 shadow-sm">
-        <div className="mb-3 flex items-center gap-2">
-          <Database className="size-4" />
-          <h2 className="font-medium">Query + Supabase</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {sessionQuery.isPending
-            ? "Loading..."
-            : sessionQuery.isError
-              ? "Failed to load session."
-              : sessionQuery.data}
-        </p>
-      </article>
-
-      <article className="rounded-2xl border bg-card p-4 shadow-sm">
-        <div className="mb-3 flex items-center gap-2">
-          <Check className="size-4" />
-          <h2 className="font-medium">UI primitives</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button>
-            <Check />
-            Default button
-          </Button>
-          <Button asChild variant="outline">
-            <a href="https://ui.shadcn.com" target="_blank" rel="noreferrer">
-              View shadcn/ui
-            </a>
-          </Button>
-        </div>
-      </article>
+    <section
+      aria-label="Planned feature areas"
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+    >
+      {CAPABILITY_CARDS.map(({ icon: cardIcon, title, description }) => {
+        const CardIcon = cardIcon;
+        return (
+          <article
+            key={title}
+            className="rounded-2xl border bg-card p-4 shadow-sm"
+          >
+            <div className="mb-3 flex items-center gap-2">
+              <CardIcon
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <h2 className="font-medium">{title}</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </article>
+        );
+      })}
     </section>
   );
 }

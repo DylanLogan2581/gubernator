@@ -6,7 +6,7 @@ Do not spend tokens re-reading `README.md` or `CONTRIBUTING.md` unless the task 
 
 ## Purpose
 
-This repository is a web app template. Optimize for:
+This repository is the Gubernator application: a turn-based world simulation and management app. Optimize for:
 
 - predictable structure
 - strong boundaries
@@ -54,13 +54,25 @@ src/
     app/                 # shared app-specific components
     shared/              # small reusable cross-feature components
   features/
-    <feature-name>/
-      components/
-      hooks/
-      queries/
-      schemas/
-      types/
-      utils/
+    auth/
+    worlds/
+    calendar/
+    turns/
+    permissions/
+    nations/
+    settlements/
+    citizens/
+    resources/
+    jobs/
+    buildings/
+    deposits/
+    managed-populations/
+    trade/
+    events/
+    notifications/
+    reports/
+    templates/
+      # each feature contains: components/, hooks/, queries/, schemas/, types/, utils/
   hooks/
   lib/
   routes/
@@ -116,7 +128,7 @@ supabase/
 - Route files: kebab-case, except `index.tsx` and `__root.tsx`
 - React components: PascalCase
 - Functions, variables, hooks, query helpers: camelCase
-- Feature folders: product concepts such as `auth`, `projects`, `tasks`, `billing`
+- Feature folders: product concepts such as `auth`, `worlds`, `turns`, `settlements`, `citizens`, `resources`
 - `src/components/ui` filenames: kebab-case
 - app/shared/feature component filenames: PascalCase
 
@@ -155,15 +167,12 @@ supabase/
 ## Testing
 
 - Use Vitest for unit and integration tests.
-- This template intentionally keeps `npm run test` green when no tests exist yet. Do not add placeholder tests only to satisfy the starter.
 - Add tests for new behavior, bug fixes, and non-trivial refactors when practical.
 - Shared test helpers belong in `src/test`.
 - Prefer fast unit tests for schemas, query helpers, and pure transformations.
 - If a change is hard to test automatically, note that clearly in the handoff.
 
-## Downstream Workflow Defaults
-
-This template ships GitHub and commit conventions meant for downstream app repos:
+## Workflow Defaults
 
 - short descriptive branches
 - pull requests instead of direct pushes to `main`
@@ -171,15 +180,13 @@ This template ships GitHub and commit conventions meant for downstream app repos
 - required `Lint` and `Build` checks
 - CODEOWNERS review
 
-Release behavior in this template is on-demand:
+Release behavior is on-demand:
 
 - `npm run release:dry`: preview release output
 - `npm run release`: update version/changelog, create release commit + tag, and push
 - pushed `v*` tags trigger `.github/workflows/tag-release.yml` to publish a GitHub Release
 
 Do not implement per-commit version bumps or per-commit tagging automation unless explicitly requested.
-
-When editing the template itself, follow the active user instruction if it differs.
 
 ## Before Finishing
 

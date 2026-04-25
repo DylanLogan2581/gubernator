@@ -22,12 +22,40 @@ body:
         - revert
     validations:
       required: true
-  - type: input
+  - type: dropdown
     id: scope
     attributes:
       label: Scope
       description: The module, tool, or workflow name you expect to use in the semantic commit scope.
-      placeholder: deps
+      options:
+        - auth
+        - worlds
+        - turns
+        - calendar
+        - permissions
+        - nations
+        - settlements
+        - citizens
+        - resources
+        - jobs
+        - buildings
+        - deposits
+        - managed-populations
+        - trade
+        - events
+        - notifications
+        - reports
+        - templates
+        - app
+        - ci
+        - config
+        - deps
+        - docs
+        - home
+        - repo
+        - supabase
+        - testing
+        - tooling
     validations:
       required: true
   - type: textarea
