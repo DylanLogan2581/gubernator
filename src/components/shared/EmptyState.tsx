@@ -12,7 +12,7 @@ export function EmptyState({
   title,
   description,
   action,
-  icon: icon = Inbox,
+  icon = Inbox,
 }: EmptyStateProps): JSX.Element {
   const Icon = icon;
   return (
