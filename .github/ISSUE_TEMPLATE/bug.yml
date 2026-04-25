@@ -8,12 +8,40 @@ body:
     attributes:
       value: |
         Use this for work that will most likely ship with a `fix(<scope>): ...` commit.
-  - type: input
+  - type: dropdown
     id: scope
     attributes:
       label: Scope
       description: The feature area or module name you expect to use in the semantic commit scope.
-      placeholder: router
+      options:
+        - auth
+        - worlds
+        - turns
+        - calendar
+        - permissions
+        - nations
+        - settlements
+        - citizens
+        - resources
+        - jobs
+        - buildings
+        - deposits
+        - managed-populations
+        - trade
+        - events
+        - notifications
+        - reports
+        - templates
+        - app
+        - ci
+        - config
+        - deps
+        - docs
+        - home
+        - repo
+        - supabase
+        - testing
+        - tooling
     validations:
       required: true
   - type: textarea
@@ -21,7 +49,7 @@ body:
     attributes:
       label: Current Behavior
       description: What is happening now?
-      placeholder: Navigating directly to a nested route throws an error instead of rendering the fallback state.
+      placeholder: Advancing a turn leaves citizen counts in an inconsistent state.
     validations:
       required: true
   - type: textarea
@@ -29,7 +57,7 @@ body:
     attributes:
       label: Expected Behavior
       description: What should happen instead?
-      placeholder: The route should render the expected screen or fallback state without crashing.
+      placeholder: Citizen counts should update correctly after each turn advance.
     validations:
       required: true
   - type: textarea
@@ -38,9 +66,9 @@ body:
       label: Reproduction Steps
       description: Include a short sequence that reliably reproduces the issue.
       placeholder: |
-        1. Sign in
-        2. Open /projects/unknown directly
-        3. Observe the crash
+        1. Sign in and open a world
+        2. Advance the turn
+        3. Observe the incorrect citizen count
     validations:
       required: true
   - type: textarea

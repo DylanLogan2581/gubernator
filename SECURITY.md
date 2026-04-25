@@ -2,9 +2,7 @@
 
 ## Supported Versions
 
-Security fixes are applied to the current `main` branch of this repository.
-
-Because this project is a template, support is focused on the latest version of the template rather than older snapshots or forks.
+Security fixes are applied to the current `main` branch of Gubernator.
 
 ## Reporting a Vulnerability
 
@@ -44,7 +42,7 @@ No formal SLA is guaranteed, but responsible private disclosure is appreciated.
 
 ## Scope
 
-This policy covers vulnerabilities in the repository itself, including:
+This policy covers vulnerabilities in the Gubernator repository, including:
 
 - application code in `src`
 - Supabase migrations and Edge Functions
@@ -56,13 +54,13 @@ Issues that are only present in third-party dependencies may still be useful to 
 
 ## Security Expectations For Contributors
 
-Contributors should review changes for:
+Gubernator enforces Row Level Security on all application tables and uses Supabase Auth for session management. Privileged workflows run in Edge Functions, not in the browser. Review every change for:
 
-- authentication and authorization flaws
-- input validation issues
-- secret exposure
-- unsafe client-side data access
-- missing or incorrect Supabase Row Level Security policies
+- authentication and authorization flaws, including session and role checks
+- missing or incorrect RLS policies on Gubernator domain tables (worlds, turns, settlements, citizens, resources, and related tables)
+- input validation issues in Edge Functions and form submissions
+- secret exposure — never commit service-role keys, real credentials, or `VITE_`-prefixed secrets that should stay server-side
+- unsafe client-side data access or direct use of privileged Supabase APIs from the browser
 - insecure webhook, Edge Function, or privileged workflow behavior
 
 Do not commit secrets, service-role keys, or real credentials to the repository.

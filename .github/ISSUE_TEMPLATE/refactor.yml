@@ -11,7 +11,35 @@ body:
     attributes:
       label: Scope
       description: The feature area or module name you expect to use in the semantic commit scope.
-      placeholder: projects
+      options:
+        - auth
+        - worlds
+        - turns
+        - calendar
+        - permissions
+        - nations
+        - settlements
+        - citizens
+        - resources
+        - jobs
+        - buildings
+        - deposits
+        - managed-populations
+        - trade
+        - events
+        - notifications
+        - reports
+        - templates
+        - app
+        - ci
+        - config
+        - deps
+        - docs
+        - home
+        - repo
+        - supabase
+        - testing
+        - tooling
     validations:
       required: true
   - type: textarea
@@ -19,7 +47,7 @@ body:
     attributes:
       label: Current Pain
       description: What is hard to maintain, risky to change, or too complex today?
-      placeholder: Query logic is duplicated across routes and feature components.
+      placeholder: Settlement query logic is duplicated across routes and feature components.
     validations:
       required: true
   - type: textarea
@@ -27,7 +55,7 @@ body:
     attributes:
       label: Target State
       description: Describe the intended structure after the refactor.
-      placeholder: Move query setup into a feature query module and keep routes thin.
+      placeholder: Move settlement query setup into the settlements feature query module and keep routes thin.
     validations:
       required: true
   - type: textarea
