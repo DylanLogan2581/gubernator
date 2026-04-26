@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/DylanLogan2581/gubernator/compare/v0.1.1...v0.1.2) (2026-04-26)
+
+### Bug Fixes
+
+- **ci:** fix release note extraction for patch releases ([cf3ff94](https://github.com/DylanLogan2581/gubernator/commit/cf3ff9404af957c53f2cfe6cae8fb53b9301dce6))
+- **ci:** further tweak changelog formatting ([47bec3f](https://github.com/DylanLogan2581/gubernator/commit/47bec3f6f7bc06313582f235631a0d364f80289f))
+
 ## [0.1.1](https://github.com/DylanLogan2581/gubernator/compare/v0.1.0...v0.1.1) (2026-04-26)
 
 ### Bug Fixes
