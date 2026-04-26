@@ -411,6 +411,13 @@ select
         count(*)::int
       from
         public.users
+      where
+        id in (
+          'a0000000-0000-0000-0000-000000000001',
+          'b0000000-0000-0000-0000-000000000002',
+          'c0000000-0000-0000-0000-000000000003',
+          'd0000000-0000-0000-0000-000000000004'
+        )
     ),
     4,
     'super admin can read all user rows'
@@ -438,6 +445,11 @@ select
         count(*)::int
       from
         public.worlds
+      where
+        id in (
+          'e0000000-0000-0000-0000-000000000001',
+          'e0000000-0000-0000-0000-000000000002'
+        )
     ),
     2,
     'super admin can read all worlds'
