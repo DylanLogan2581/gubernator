@@ -1,2 +1,16 @@
-// Auth feature — sign-in, sign-up, session management, and access control.
-// Implemented in Epic 1.
+export {
+  signInMutationOptions,
+  signOutMutationOptions,
+} from "./mutations/authMutations";
+export { authQueryKeys } from "./queries/authQueryKeys";
+export {
+  currentAppUserQueryOptions,
+  currentSessionQueryOptions,
+} from "./queries/authQueries";
+export { AuthUiError, normalizeAuthError } from "./utils/authErrors";
+
+export type {
+  AppUser,
+  AuthErrorDetails,
+  SignInWithPasswordInput,
+} from "./types/authTypes";
