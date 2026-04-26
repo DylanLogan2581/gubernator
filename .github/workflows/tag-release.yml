@@ -19,7 +19,7 @@ jobs:
 
       - name: Extract release notes from CHANGELOG
         run: |
-          awk '/^# \[/{found++; next} found==1' CHANGELOG.md > release-notes.md
+          awk '/^#{1,2} \[/{found++; next} found==1' CHANGELOG.md > release-notes.md
 
       - name: Create GitHub Release
         env:
