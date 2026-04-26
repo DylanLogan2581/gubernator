@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/DylanLogan2581/gubernator/compare/v0.1.0...v0.1.1) (2026-04-26)
+
+### Bug Fixes
+
+- **ci:** fix release process to include the package-lock.json update ([346ff3f](https://github.com/DylanLogan2581/gubernator/commit/346ff3f53ec9f398679e3992807b7b54a25c1595))
+- **ci:** update changelog format to pass markdownlint ([9c7cb2d](https://github.com/DylanLogan2581/gubernator/commit/9c7cb2d8de85449df7065ba236bde150ba571638))
+- **ci:** update release process to automatically include changelog ([1302f89](https://github.com/DylanLogan2581/gubernator/commit/1302f89f6d32eb4588d9105585722abe5a8b2f78))
+
 ## [0.1.0](https://github.com/DylanLogan2581/gubernator/compare/v0.0.0...v0.1.0) (2026-04-25)
 
 ### Bug Fixes
