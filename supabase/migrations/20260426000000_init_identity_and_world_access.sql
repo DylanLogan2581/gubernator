@@ -90,21 +90,6 @@ create policy "worlds_select_public" on public.worlds for
 select
   to authenticated using (visibility = 'public');
 
--- World admins can see the worlds they administer.
-create policy "worlds_select_admin" on public.worlds for
-select
-  to authenticated using (
-    exists (
-      select
-        1
-      from
-        public.world_admins wa
-      where
-        wa.world_id = id
-        and wa.user_id = auth.uid ()
-    )
-  );
-
 -- Any authenticated user may create a world (they become the owner).
 create policy "worlds_insert_authenticated" on public.worlds for insert to authenticated
 with
@@ -180,3 +165,18 @@ create policy "world_admins_delete_owner" on public.world_admins for delete to a
       and w.owner_id = auth.uid ()
   )
 );
+
+-- Deferred: world_admins table must exist before this policy can reference it.
+create policy "worlds_select_admin" on public.worlds for
+select
+  to authenticated using (
+    exists (
+      select
+        1
+      from
+        public.world_admins wa
+      where
+        wa.world_id = id
+        and wa.user_id = auth.uid ()
+    )
+  );
