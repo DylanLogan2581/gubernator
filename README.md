@@ -59,6 +59,7 @@ The app runs at `http://localhost:5173`.
 ## Scripts
 
 - `npm run dev` — starts the Vite dev server
+- `npm run db:types` — regenerates `src/types/database.ts` from the local Supabase database
 - `npm run build` — type-checks and builds the app
 - `npm run lint` — runs ESLint, Markdown linting, and SQL formatting checks
 - `npm run preview` — serves the production build locally
