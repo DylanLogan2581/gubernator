@@ -9,8 +9,13 @@ import { lazy, Suspense, type JSX } from "react";
 
 import { AppLayout } from "@/components/app/AppLayout";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
 import { type AppRouterContext } from "@/lib/queryClient";
+import {
+  shouldBlockAppForSupabaseConfig,
+  supabaseConfig,
+} from "@/lib/supabaseConfig";
 
 const isDev = import.meta.env.DEV;
 
@@ -32,11 +37,12 @@ const ReactQueryDevtools = isDev
 
 function RootLayout(): JSX.Element {
   const { queryClient } = Route.useRouteContext();
+  const shouldBlockForConfig = shouldBlockAppForSupabaseConfig(supabaseConfig);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AppLayout>
-        <Outlet />
+        {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
       </AppLayout>
       {TanStackRouterDevtools !== null ? (
         <Suspense fallback={null}>
@@ -69,6 +75,17 @@ function NotFoundPage(): JSX.Element {
             <Link to="/">Go to home</Link>
           </Button>
         }
+      />
+    </div>
+  );
+}
+
+function SupabaseConfigErrorPage(): JSX.Element {
+  return (
+    <div className="mx-auto max-w-4xl py-6">
+      <ErrorState
+        title="Application configuration required"
+        description="Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY before running this production build."
       />
     </div>
   );
