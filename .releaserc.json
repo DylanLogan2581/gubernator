@@ -2,13 +2,21 @@
   "branches": ["main"],
   "plugins": [
     "@semantic-release/commit-analyzer",
-    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "writerOpts": {
+          "mainTemplate": "{{> header}}\n\n{{#each commitGroups}}\n\n{{#if title}}\n## {{title}}\n\n{{/if}}\n{{#each commits}}\n{{> commit root=@root}}\n{{/each}}\n\n{{/each}}\n{{> footer}}\n",
+          "footerPartial": "{{#if noteGroups}}\n{{#each noteGroups}}\n\n## {{title}}\n\n{{#each notes}}\n* {{#if commit.scope}}**{{commit.scope}}:** {{/if}}{{text}}\n{{/each}}\n{{/each}}\n\n{{/if}}\n"
+        }
+      }
+    ],
     ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
     ["@semantic-release/npm", { "npmPublish": false }],
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "package.json"],
+        "assets": ["CHANGELOG.md", "package.json", "package-lock.json"],
         "message": "chore(repo): release v${nextRelease.version}"
       }
     ]
