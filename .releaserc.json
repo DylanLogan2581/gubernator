@@ -6,12 +6,16 @@
       "@semantic-release/release-notes-generator",
       {
         "writerOpts": {
-          "mainTemplate": "{{> header}}\n\n{{#each commitGroups}}\n\n{{#if title}}\n## {{title}}\n\n{{/if}}\n{{#each commits}}\n{{> commit root=@root}}\n{{/each}}\n\n{{/each}}\n{{> footer}}\n",
-          "footerPartial": "{{#if noteGroups}}\n{{#each noteGroups}}\n\n## {{title}}\n\n{{#each notes}}\n* {{#if commit.scope}}**{{commit.scope}}:** {{/if}}{{text}}\n{{/each}}\n{{/each}}\n\n{{/if}}\n"
+          "headerPartial": "## {{#if @root.linkCompare~}}\n  [{{version}}](\n  {{~#if @root.repository~}}\n    {{~#if @root.host}}\n      {{~@root.host}}/\n    {{~/if}}\n    {{~#if @root.owner}}\n      {{~@root.owner}}/\n    {{~/if}}\n    {{~@root.repository}}\n  {{~else}}\n    {{~@root.repoUrl}}\n  {{~/if~}}\n  /compare/{{previousTag}}...{{currentTag}})\n{{~else}}\n  {{~version}}\n{{~/if}}\n{{~#if title}} \"{{title}}\"\n{{~/if}}\n{{~#if date}} ({{date}})\n{{/if}}\n",
+          "mainTemplate": "{{> header}}\n\n{{#each commitGroups}}\n\n{{#if title}}\n### {{title}}\n\n{{/if}}\n{{#each commits}}\n{{> commit root=@root}}\n{{/each}}\n\n{{/each}}\n{{> footer}}\n",
+          "footerPartial": "{{#if noteGroups}}\n{{#each noteGroups}}\n\n### {{title}}\n\n{{#each notes}}\n* {{#if commit.scope}}**{{commit.scope}}:** {{/if}}{{text}}\n{{/each}}\n{{/each}}\n\n{{/if}}\n"
         }
       }
     ],
-    ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }],
+    [
+      "@semantic-release/changelog",
+      { "changelogFile": "CHANGELOG.md", "changelogTitle": "# Changelog" }
+    ],
     ["@semantic-release/npm", { "npmPublish": false }],
     [
       "@semantic-release/git",
