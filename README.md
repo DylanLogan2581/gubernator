@@ -38,6 +38,14 @@ supabase db reset
 
 This applies all migrations in `supabase/migrations` in order and seeds the database using `supabase/seed.sql`.
 
+The local seed creates one confirmed development account and one test world:
+
+- Email: `superadmin@gubernator.local`
+- Password: `password123`
+- Access: super admin, owner of `Local Development World`, and explicit world admin for that world
+
+These credentials are deterministic local seed data only. Do not use them in hosted Supabase projects or production data.
+
 ### 4. Start the dev server
 
 ```bash
