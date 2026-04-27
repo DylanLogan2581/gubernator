@@ -8,7 +8,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { EmptyState } from "@/components/shared/EmptyState";
+import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
@@ -76,10 +76,9 @@ function WorldListContent({
   if (worldsQuery.data.length === 0) {
     return (
       <WorldListFrame>
-        <EmptyState
-          icon={Globe2}
+        <AccessDeniedState
           title="No accessible worlds"
-          description="Worlds you own, administer, or can otherwise access will appear here."
+          description="Your Gubernator account does not currently have access to any worlds."
         />
       </WorldListFrame>
     );
