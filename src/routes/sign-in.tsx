@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import { SignInPage, parseSignInSearch } from "@/features/auth";
@@ -6,12 +6,12 @@ import { SignInPage, parseSignInSearch } from "@/features/auth";
 import type { JSX } from "react";
 
 function SignInRoute(): JSX.Element {
-  const navigate = Route.useNavigate();
+  const router = useRouter();
   const { returnTo } = Route.useSearch();
-  const handleSignInSuccess = useCallback(
-    () => navigate({ to: returnTo }),
-    [navigate, returnTo],
-  );
+  const handleSignInSuccess = useCallback(() => {
+    router.history.push(returnTo);
+    return Promise.resolve();
+  }, [router, returnTo]);
 
   return <SignInPage onSignInSuccess={handleSignInSuccess} />;
 }

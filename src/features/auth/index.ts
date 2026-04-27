@@ -13,7 +13,9 @@ export {
   parseSignInSearch,
   SIGN_IN_DEFAULT_RETURN_PATH,
   signInCredentialsSchema,
+  normalizeSignInReturnPath,
 } from "./schemas/signInSchemas";
+export { requireAuthenticatedRoute } from "./utils/protectedRouteGuards";
 export { AuthUiError, normalizeAuthError } from "./utils/authErrors";
 
 export type {
