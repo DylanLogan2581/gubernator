@@ -1,5 +1,5 @@
 -- pgTAP tests for permission_helpers migration.
--- Run with: supabase test db
+-- Run with: npx supabase test db
 --
 -- Covers:
 --   current_app_user_id() — returns auth.uid() for authenticated sessions
@@ -7,11 +7,12 @@
 --   is_world_admin()      — false for outsiders, true for owners and admins
 --   has_world_access()    — covers all access paths (public, owner, admin,
 --                           super admin) and denies private worlds to others
+--                           including hidden/private worlds
 --   Super-admin elevation guard trigger
 begin;
 
 select
-  plan (17);
+  plan (19);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -88,6 +89,13 @@ values
     'Public World',
     'aa000000-0000-0000-0000-000000000001',
     'public',
+    'active'
+  ),
+  (
+    'f3000000-0000-0000-0000-000000000003',
+    'Hidden World',
+    'aa000000-0000-0000-0000-000000000001',
+    'private',
     'active'
   );
 
@@ -277,6 +285,22 @@ select
 
 reset role;
 
+-- Outsider cannot access a hidden/private world
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"cc000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  is (
+    public.has_world_access ('f3000000-0000-0000-0000-000000000003'),
+    false,
+    'has_world_access returns false for outsider on hidden world'
+  );
+
+reset role;
+
 -- Any authenticated user can access a public world
 set
   local role authenticated;
@@ -305,6 +329,22 @@ select
     public.has_world_access ('f1000000-0000-0000-0000-000000000001'),
     true,
     'has_world_access returns true for super admin on private world they do not own'
+  );
+
+reset role;
+
+-- Super admin can access hidden/private worlds
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  is (
+    public.has_world_access ('f3000000-0000-0000-0000-000000000003'),
+    true,
+    'has_world_access returns true for super admin on hidden world'
   );
 
 reset role;

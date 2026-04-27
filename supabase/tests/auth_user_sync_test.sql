@@ -1,5 +1,5 @@
 -- pgTAP tests for auth_user_sync migration.
--- Run with: supabase test db
+-- Run with: npx supabase test db
 --
 -- Tests verify that:
 --   1. Inserting into auth.users creates a matching public.users row.

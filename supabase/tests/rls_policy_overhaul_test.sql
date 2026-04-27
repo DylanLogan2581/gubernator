@@ -1,5 +1,5 @@
 -- pgTAP tests for rls_policy_overhaul migration.
--- Run with: supabase test db
+-- Run with: npx supabase test db
 --
 -- Covers all acceptance criteria:
 --   • Anonymous users cannot read user/world/world_admins rows
@@ -7,12 +7,13 @@
 --   • Super admin can read all user/world/world_admins rows
 --   • World admin can read worlds they administer
 --   • world_admins rows visible only to valid users
+--   • Hidden/private worlds remain invisible unless RLS grants access
 --   • Write paths are restricted correctly
 --   • Private worlds do not leak to unauthorised users
 begin;
 
 select
-  plan (27);
+  plan (30);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -88,6 +89,13 @@ values
     'Public World',
     'a0000000-0000-0000-0000-000000000001',
     'public',
+    'active'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000003',
+    'Hidden World',
+    'a0000000-0000-0000-0000-000000000001',
+    'private',
     'active'
   );
 
@@ -196,6 +204,20 @@ select
         id = 'e0000000-0000-0000-0000-000000000001'
     ),
     'outsider cannot see private world'
+  );
+
+-- Cannot see hidden/private world they have no access to
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = 'e0000000-0000-0000-0000-000000000003'
+    ),
+    'outsider cannot see hidden world'
   );
 
 -- Can see public world
@@ -346,6 +368,20 @@ select
     'world admin cannot see world_admins rows for a world they do not administer'
   );
 
+-- World admin cannot see a hidden/private world they are not assigned to.
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = 'e0000000-0000-0000-0000-000000000003'
+    ),
+    'world admin cannot see unassigned hidden world'
+  );
+
 -- World admin cannot update a world (RLS silently affects 0 rows, no exception).
 -- Run the update then read back to confirm name is unchanged.
 update public.worlds
@@ -448,11 +484,26 @@ select
       where
         id in (
           'e0000000-0000-0000-0000-000000000001',
-          'e0000000-0000-0000-0000-000000000002'
+          'e0000000-0000-0000-0000-000000000002',
+          'e0000000-0000-0000-0000-000000000003'
         )
     ),
-    2,
+    3,
     'super admin can read all worlds'
+  );
+
+-- Can read hidden/private worlds even when not owner or assigned admin
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = 'e0000000-0000-0000-0000-000000000003'
+    ),
+    'super admin can read hidden world'
   );
 
 -- Can read world_admins
