@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   createSupabaseBrowserClient,
@@ -49,5 +49,23 @@ describe("createSupabaseBrowserClient", () => {
         status: "missing",
       }),
     ).toThrow(SupabaseConfigurationError);
+  });
+
+  it("does not create a browser client for unconfigured local development", () => {
+    const clientFactory = vi.fn();
+
+    const client = createSupabaseBrowserClient(
+      {
+        isProduction: false,
+        message:
+          "Supabase configuration is missing: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.",
+        missingVariables: ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"],
+        status: "missing",
+      },
+      clientFactory,
+    );
+
+    expect(client).toBeNull();
+    expect(clientFactory).not.toHaveBeenCalled();
   });
 });

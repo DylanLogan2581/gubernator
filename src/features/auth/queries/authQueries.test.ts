@@ -87,6 +87,25 @@ describe("auth query options", () => {
     expect(eq).toHaveBeenCalledWith("id", "user-1");
   });
 
+  it("returns null when the active session has no app user row", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eq = vi.fn().mockReturnValue({ maybeSingle });
+    const select = vi.fn().mockReturnValue({ eq });
+    const client = createClient({
+      from: vi.fn().mockReturnValue({ select }),
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: createSession("missing-user") },
+        error: null,
+      }),
+    });
+    const queryClient = createQueryClient();
+
+    await expect(
+      queryClient.fetchQuery(currentAppUserQueryOptions(client)),
+    ).resolves.toBeNull();
+    expect(eq).toHaveBeenCalledWith("id", "missing-user");
+  });
+
   it("normalizes current app user query errors", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: null,

@@ -30,6 +30,22 @@ describe("sign-in schemas", () => {
     }
   });
 
+  it("rejects overlong passwords without exposing password content", () => {
+    const result = signInCredentialsSchema.safeParse({
+      email: "player@example.com",
+      password: "x".repeat(257),
+    });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.password).toEqual([
+        "Password must be 256 characters or fewer.",
+      ]);
+      expect(result.error.message).not.toContain("x".repeat(257));
+    }
+  });
+
   it("defaults sign-in search to the world list", () => {
     expect(parseSignInSearch({})).toEqual({ returnTo: "/worlds" });
   });
@@ -51,6 +67,13 @@ describe("sign-in schemas", () => {
       returnTo: "/worlds",
     });
     expect(parseSignInSearch({ returnTo: "//example.com" })).toEqual({
+      returnTo: "/worlds",
+    });
+  });
+
+  it("defaults malformed sign-in search values safely", () => {
+    expect(parseSignInSearch(null)).toEqual({ returnTo: "/worlds" });
+    expect(parseSignInSearch({ returnTo: 42 })).toEqual({
       returnTo: "/worlds",
     });
   });
