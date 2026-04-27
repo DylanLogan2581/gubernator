@@ -64,6 +64,7 @@ The app runs at `http://localhost:5173`.
 - `npm run lint` — runs ESLint, Markdown linting, and SQL formatting checks
 - `npm run preview` — serves the production build locally
 - `npm run test` — runs Vitest
+- `npm run test:db` — runs Supabase pgTAP database tests against the local Supabase database
 - `npm run release:dry` — previews the next release version and changelog changes
 - `npm run release` — creates the release commit and tag, pushes to `main`, and triggers a GitHub Release
 - `npm run prepare` — installs Husky hooks
@@ -145,4 +146,6 @@ If you changed schema, also confirm:
 
 - a migration was added in `supabase/migrations`
 - RLS and policies were updated when needed
+- local Supabase migrations and seed apply cleanly with `npx supabase db reset`
+- database tests pass with `npm run test:db`
 - generated database types were updated if the project uses them
