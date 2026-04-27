@@ -27,6 +27,22 @@ npm run dev
 
 Copy `.env.example` to `.env` and set the Supabase project values before starting the dev server.
 
+For local Supabase auth work, start Supabase and copy the local API URL and anon key from `supabase status`:
+
+```bash
+supabase start
+supabase status
+```
+
+Your local `.env` should use the local API URL and local anon key:
+
+```env
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=<local anon key from supabase status>
+```
+
+Never put service-role keys, third-party secrets, or production credentials in frontend environment files.
+
 ## Core Commands
 
 - `npm run dev` starts the Vite dev server
@@ -108,6 +124,27 @@ When schema changes:
 
 Never add an application table without RLS and appropriate policies.
 
+### Local Auth and Seeded Access
+
+`supabase db reset` applies migrations and then loads `supabase/seed.sql`. The seed creates local-only confirmed email users and private worlds for access testing:
+
+| User                          | Password      | Behavior                                                                                               |
+| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| `superadmin@gubernator.local` | `password123` | Active super admin user. Owns `Local Development World` and has an explicit `world_admins` row for it. |
+| `test@gubernator.local`       | `password123` | Active normal user. Owns `Test User World`.                                                            |
+| `other@gubernator.local`      | `password123` | Active normal user. Owns `Restricted Development World`.                                               |
+
+The seeded credentials are local fixtures only. Do not reuse them in hosted Supabase projects or production data.
+
+Expected local access behavior:
+
+- super admin can see and manage all seeded worlds
+- each normal user can see and manage their own private world
+- normal users cannot see another user's private world unless an explicit access rule grants it
+- anonymous users cannot read application user, world, or world admin rows through RLS
+
+Protected app areas such as `/worlds` and `/worlds/$worldSlug` require an authenticated Supabase session. Unauthenticated visitors are redirected to `/sign-in` with a return path. After sign-in, the app combines the current user row and world admin rows into an access context; world lists show only accessible worlds, and unavailable or unauthorized world routes show the shared access-denied state.
+
 ## Validation
 
 Before opening a PR, run the checks that fit your change.
@@ -119,6 +156,15 @@ npm run lint
 npm run test
 npm run build
 ```
+
+For auth, permission, RLS, or schema work, also run:
+
+```bash
+supabase db reset
+npm run test:db
+```
+
+`npm run test:db` runs Supabase pgTAP tests under `supabase/tests`. The current database tests cover auth user synchronization, permission helpers, RLS behavior for anonymous users, authenticated users, world owners, world admins, and super admins, denied access to private worlds, restricted write paths, and super-admin elevation guards.
 
 ## Security Expectations
 

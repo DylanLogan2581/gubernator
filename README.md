@@ -27,6 +27,15 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+For local Supabase auth, use the local API URL and anon key from `supabase status`:
+
+```env
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=<local anon key from supabase status>
+```
+
+Use only browser-safe values with the `VITE_` prefix. Do not put service-role keys, third-party secrets, or production credentials in frontend environment files.
+
 ### 3. Apply database migrations
 
 Requires the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and a local Supabase instance running:
@@ -38,13 +47,17 @@ supabase db reset
 
 This applies all migrations in `supabase/migrations` in order and seeds the database using `supabase/seed.sql`.
 
-The local seed creates one confirmed development account and one test world:
+The local seed creates deterministic auth users and private worlds for super-admin, owner, and denied-access checks:
 
-- Email: `superadmin@gubernator.local`
-- Password: `password123`
-- Access: super admin, owner of `Local Development World`, and explicit world admin for that world
+| User                          | Password      | Behavior                                                                                               |
+| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| `superadmin@gubernator.local` | `password123` | Active super admin user. Owns `Local Development World` and has an explicit `world_admins` row for it. |
+| `test@gubernator.local`       | `password123` | Active normal user. Owns `Test User World`.                                                            |
+| `other@gubernator.local`      | `password123` | Active normal user. Owns `Restricted Development World`.                                               |
 
 These credentials are deterministic local seed data only. Do not use them in hosted Supabase projects or production data.
+
+The seeded worlds are private. Super admin can see and manage all seeded worlds; each normal user can see and manage only their own private world unless an explicit access rule grants more access.
 
 ### 4. Start the dev server
 
@@ -149,3 +162,5 @@ If you changed schema, also confirm:
 - local Supabase migrations and seed apply cleanly with `npx supabase db reset`
 - database tests pass with `npm run test:db`
 - generated database types were updated if the project uses them
+
+`npm run test:db` runs Supabase pgTAP tests under `supabase/tests`. These tests cover auth user synchronization, permission helpers, RLS behavior for anonymous/authenticated/world-owner/world-admin/super-admin sessions, denied private world access, restricted write paths, and super-admin elevation guards.
