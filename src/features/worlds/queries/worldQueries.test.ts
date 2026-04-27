@@ -8,6 +8,7 @@ import {
   WorldNotFoundError,
   accessibleWorldsQueryOptions,
   isWorldNotFoundError,
+  shouldRetryWorldRouteAccessQuery,
   worldRouteAccessQueryOptions,
 } from "./worldQueries";
 
@@ -338,6 +339,21 @@ describe("worldRouteAccessQueryOptions", () => {
       true,
       "world-1",
     ]);
+  });
+
+  it("does not retry not-found world route access results", () => {
+    expect(
+      shouldRetryWorldRouteAccessQuery(
+        0,
+        new WorldNotFoundError("missing-world-ffffffff"),
+      ),
+    ).toBe(false);
+    expect(
+      shouldRetryWorldRouteAccessQuery(0, new Error("network failed")),
+    ).toBe(true);
+    expect(
+      shouldRetryWorldRouteAccessQuery(3, new Error("network failed")),
+    ).toBe(false);
   });
 });
 

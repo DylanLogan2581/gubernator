@@ -68,7 +68,15 @@ export function worldRouteAccessQueryOptions(
   return queryOptions({
     queryFn: () => getWorldRouteAccess(client, slug, accessContext),
     queryKey: worldQueryKeys.bySlug(slug, accessContext),
+    retry: shouldRetryWorldRouteAccessQuery,
   });
+}
+
+export function shouldRetryWorldRouteAccessQuery(
+  failureCount: number,
+  error: Error,
+): boolean {
+  return failureCount < 3 && !isWorldNotFoundError(error);
 }
 
 async function getAccessibleWorlds(
