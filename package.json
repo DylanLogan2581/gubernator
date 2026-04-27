@@ -19,6 +19,7 @@
     "release": "node --experimental-strip-types ./scripts/release.ts",
     "release:dry": "node --experimental-strip-types ./scripts/release.ts --dry-run",
     "test": "vitest run --passWithNoTests",
+    "test:db": "supabase test db",
     "test:coverage": "vitest run --coverage"
   },
   "lint-staged": {
