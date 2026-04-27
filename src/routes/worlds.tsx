@@ -1,13 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { requireAuthenticatedRoute } from "@/features/auth";
-import { WorldListPage } from "@/features/worlds";
 
 import type { JSX } from "react";
 
 function WorldsRoute(): JSX.Element {
-  return <WorldListPage />;
+  return <Outlet />;
 }
 
 export const Route = createFileRoute("/worlds")({

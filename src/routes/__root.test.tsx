@@ -165,5 +165,59 @@ function createClient(
           error: null,
         }),
     },
+    from: vi.fn((table: string) => {
+      if (table === "users") {
+        return createUsersQueryBuilder();
+      }
+
+      if (table === "world_admins") {
+        return createWorldAdminsQueryBuilder();
+      }
+
+      if (table === "worlds") {
+        return createWorldsQueryBuilder();
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    }),
+  };
+}
+
+function createUsersQueryBuilder(): unknown {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: {
+            created_at: "2026-01-01T00:00:00.000Z",
+            email: "user@example.com",
+            id: "user-1",
+            is_super_admin: false,
+            status: "active",
+            updated_at: "2026-01-01T00:00:00.000Z",
+            username: "user",
+          },
+          error: null,
+        }),
+      })),
+    })),
+  };
+}
+
+function createWorldAdminsQueryBuilder(): unknown {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        order: vi.fn().mockResolvedValue({ data: [], error: null }),
+      })),
+    })),
+  };
+}
+
+function createWorldsQueryBuilder(): unknown {
+  return {
+    select: vi.fn(() => ({
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    })),
   };
 }
