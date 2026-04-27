@@ -33,3 +33,20 @@ export type AccessibleWorld = {
   readonly updatedAt: string;
   readonly visibility: string;
 };
+
+export type WorldShellHeader = {
+  readonly archivedAt: string | null;
+  readonly currentTurnNumber: number;
+  readonly isArchived: boolean;
+  readonly name: string;
+  readonly slug: string;
+  readonly status: string;
+  readonly visibility: string;
+};
+
+export type WorldRouteAccess = {
+  readonly canAdmin: boolean;
+  readonly canManage: boolean;
+  readonly header: WorldShellHeader;
+  readonly world: AccessibleWorld;
+};
