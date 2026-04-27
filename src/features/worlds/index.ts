@@ -3,3 +3,11 @@
 export { WorldListPage } from "./components/WorldListPage";
 export { currentUserAdminWorldIdsQueryOptions } from "./queries/worldAccessQueries";
 export { worldAccessQueryKeys } from "./queries/worldAccessQueryKeys";
+export { accessibleWorldsQueryOptions } from "./queries/worldQueries";
+export { worldQueryKeys } from "./queries/worldQueryKeys";
+export { createWorldSlug, toAccessibleWorld } from "./utils/worldDisplay";
+
+export type {
+  AccessibleWorld,
+  WorldPermissionContext,
+} from "./types/worldTypes";
