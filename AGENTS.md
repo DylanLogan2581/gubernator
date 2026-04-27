@@ -164,6 +164,18 @@ supabase/
 - If generated database types are used, update them after schema changes.
 - Use Edge Functions for privileged workflows.
 
+### Local Auth And Access
+
+- Local Supabase auth uses the local API URL and anon key from `supabase status`; never document or commit service-role keys, third-party secrets, or production credentials.
+- Run `npx supabase db reset` to apply `supabase/migrations` and reload `supabase/seed.sql`.
+- Seeded local users:
+  - `superadmin@gubernator.local` / `password123`: active super admin, owner of `Local Development World`, explicit world admin for that world.
+  - `test@gubernator.local` / `password123`: active normal user, owner of `Test User World`.
+  - `other@gubernator.local` / `password123`: active normal user, owner of `Restricted Development World`.
+- Seeded worlds are private. Super admin should see/manage all seeded worlds; each normal user should see/manage only their own private world unless an explicit access rule grants more access; anonymous users should not read application user, world, or world admin rows through RLS.
+- Protected routes such as `/worlds` and `/worlds/$worldSlug` require an authenticated Supabase session at the route boundary and redirect unauthenticated visitors to `/sign-in` with a normalized return path.
+- World access is layered: route guards handle session presence, Supabase RLS restricts raw database visibility, and app access context maps visible worlds into access/manage/admin UI capabilities.
+
 ## Testing
 
 - Use Vitest for unit and integration tests.
@@ -196,6 +208,7 @@ Do not implement per-commit version bumps or per-commit tagging automation unles
 - If routes changed, make sure generated routing output is current.
 - If schema changed, confirm a migration exists and was updated appropriately.
 - If schema changed, confirm RLS and policies were added or updated.
+- If auth, permission helpers, RLS, seeded access, or schema changed, run `npm run test:db` when practical.
 - Confirm the change was reviewed for security implications.
 
 ## Quick Placement Reminder
