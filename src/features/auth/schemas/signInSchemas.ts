@@ -18,7 +18,7 @@ const signInSearchSchema = z.object({
 });
 
 export type SignInCredentials = z.infer<typeof signInCredentialsSchema>;
-export type SignInReturnPath = "/" | "/worlds";
+export type SignInReturnPath = `/${string}`;
 export type SignInSearch = z.infer<typeof signInSearchSchema>;
 
 export function parseSignInSearch(search: unknown): SignInSearch {
@@ -31,16 +31,16 @@ export function parseSignInSearch(search: unknown): SignInSearch {
   return result.data;
 }
 
-function normalizeSignInReturnPath(
+export function normalizeSignInReturnPath(
   value: string | undefined,
 ): SignInReturnPath {
-  switch (value) {
-    case "/":
-    case "/worlds":
-      return value;
-    case undefined:
-      return SIGN_IN_DEFAULT_RETURN_PATH;
-    default:
-      return SIGN_IN_DEFAULT_RETURN_PATH;
+  if (value === undefined) {
+    return SIGN_IN_DEFAULT_RETURN_PATH;
   }
+
+  if (value.startsWith("/") && !value.startsWith("//")) {
+    return value as SignInReturnPath;
+  }
+
+  return SIGN_IN_DEFAULT_RETURN_PATH;
 }

@@ -39,10 +39,18 @@ describe("sign-in schemas", () => {
     expect(parseSignInSearch({ returnTo: "/worlds" })).toEqual({
       returnTo: "/worlds",
     });
+    expect(parseSignInSearch({ returnTo: "/worlds/abc?tab=overview" })).toEqual(
+      {
+        returnTo: "/worlds/abc?tab=overview",
+      },
+    );
   });
 
   it("rejects external return paths", () => {
     expect(parseSignInSearch({ returnTo: "https://example.com" })).toEqual({
+      returnTo: "/worlds",
+    });
+    expect(parseSignInSearch({ returnTo: "//example.com" })).toEqual({
       returnTo: "/worlds",
     });
   });
