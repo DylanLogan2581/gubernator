@@ -4,6 +4,19 @@ import { describe, expect, it } from "vitest";
 import { AccessDeniedState } from "./AccessDeniedState";
 
 describe("AccessDeniedState", () => {
+  it("renders Gubernator-specific default copy", () => {
+    render(<AccessDeniedState />);
+
+    expect(
+      screen.getByRole("heading", { name: "Access denied" }),
+    ).toBeDefined();
+    expect(
+      screen.getByText(
+        "Your Gubernator account does not have access to this area.",
+      ),
+    ).toBeDefined();
+  });
+
   it("renders an accessible heading and body", () => {
     render(
       <AccessDeniedState
