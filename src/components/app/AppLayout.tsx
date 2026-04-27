@@ -5,10 +5,14 @@ import { AppHeader } from "./AppHeader";
 import { WorldContextBar } from "./WorldContextBar";
 
 type AppLayoutProps = {
+  readonly headerAction?: ReactNode;
   children: ReactNode;
 };
 
-export function AppLayout({ children }: AppLayoutProps): JSX.Element {
+export function AppLayout({
+  children,
+  headerAction,
+}: AppLayoutProps): JSX.Element {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <a
@@ -21,7 +25,7 @@ export function AppLayout({ children }: AppLayoutProps): JSX.Element {
       <div className="pointer-events-none absolute left-1/2 -top-32 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
 
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4">
-        <AppHeader />
+        <AppHeader action={headerAction} />
         <WorldContextBar />
         <main id="main-content" className="flex-1 py-4">
           {children}

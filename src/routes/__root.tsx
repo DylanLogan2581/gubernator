@@ -11,6 +11,7 @@ import { AppLayout } from "@/components/app/AppLayout";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
+import { SignOutControl } from "@/features/auth";
 import { type AppRouterContext } from "@/lib/queryClient";
 import {
   shouldBlockAppForSupabaseConfig,
@@ -41,7 +42,7 @@ function RootLayout(): JSX.Element {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppLayout>
+      <AppLayout headerAction={<SignOutControl />}>
         {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
       </AppLayout>
       {TanStackRouterDevtools !== null ? (

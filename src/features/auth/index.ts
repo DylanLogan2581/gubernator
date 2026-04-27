@@ -3,6 +3,7 @@ export {
   signOutMutationOptions,
 } from "./mutations/authMutations";
 export { SignInPage } from "./components/SignInPage";
+export { SignOutControl } from "./components/SignOutControl";
 export { authQueryKeys } from "./queries/authQueryKeys";
 export {
   currentAppUserQueryOptions,
