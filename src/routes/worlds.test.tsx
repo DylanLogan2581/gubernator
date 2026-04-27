@@ -43,6 +43,19 @@ describe("worlds route auth guard", () => {
     expect(screen.queryByText("Worlds")).toBeNull();
   });
 
+  it("redirects anonymous users from world routes to sign-in with a return path", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ session: null }));
+    const router = renderAt("/worlds/private-world-00000000");
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/sign-in");
+    });
+    expect(router.state.location.search).toEqual({
+      returnTo: "/worlds/private-world-00000000",
+    });
+    expect(screen.queryByText("World unavailable")).toBeNull();
+  });
+
   it("allows authenticated users to enter the protected route", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ session: { user: { id: "user-1" } } }),
@@ -68,6 +81,21 @@ describe("worlds route auth guard", () => {
       await screen.findByRole("status", { name: "Checking session…" }),
     ).toBeDefined();
     expect(screen.queryByText("Worlds")).toBeNull();
+  });
+
+  it("shows loading state on world routes while auth is resolving", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: new Promise(() => undefined),
+      }),
+    );
+
+    renderAt("/worlds/private-world-00000000");
+
+    expect(
+      await screen.findByRole("status", { name: "Checking session…" }),
+    ).toBeDefined();
+    expect(screen.queryByText("World unavailable")).toBeNull();
   });
 });
 
