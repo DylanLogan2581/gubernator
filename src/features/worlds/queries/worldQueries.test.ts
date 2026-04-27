@@ -4,7 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import { createAccessContext } from "@/features/permissions";
 import { type GubernatorSupabaseClient } from "@/lib/supabase";
 
-import { accessibleWorldsQueryOptions } from "./worldQueries";
+import {
+  WorldNotFoundError,
+  accessibleWorldsQueryOptions,
+  isWorldNotFoundError,
+  worldRouteAccessQueryOptions,
+} from "./worldQueries";
 
 describe("accessibleWorldsQueryOptions", () => {
   it("returns an empty list without querying worlds when unauthenticated", async () => {
@@ -153,6 +158,225 @@ describe("accessibleWorldsQueryOptions", () => {
     ]);
   });
 });
+
+describe("worldRouteAccessQueryOptions", () => {
+  it("loads a world by derived slug with shell header data", async () => {
+    const order = vi.fn().mockResolvedValue({
+      data: [
+        createWorldRow({
+          current_turn_number: 8,
+          id: "00000000-0000-0000-0000-000000000101",
+          name: "Local Development World",
+          owner_id: "user-1",
+          visibility: "private",
+        }),
+      ],
+      error: null,
+    });
+    const select = vi.fn(() => ({ order }));
+    const from = vi.fn(() => ({ select }));
+    const queryClient = createQueryClient();
+    const accessContext = createAccessContext({
+      isSuperAdmin: false,
+      userId: "user-1",
+      worldAdminWorldIds: [],
+    });
+
+    const routeAccess = await queryClient.fetchQuery(
+      worldRouteAccessQueryOptions(
+        "local-development-world-00000000",
+        accessContext,
+        {
+          from,
+        } as unknown as GubernatorSupabaseClient,
+      ),
+    );
+
+    expect(routeAccess.canAdmin).toBe(false);
+    expect(routeAccess.canManage).toBe(true);
+    expect(routeAccess.header).toEqual({
+      archivedAt: null,
+      currentTurnNumber: 8,
+      isArchived: false,
+      name: "Local Development World",
+      slug: "local-development-world-00000000",
+      status: "active",
+      visibility: "private",
+    });
+    expect(routeAccess.world.id).toBe("00000000-0000-0000-0000-000000000101");
+    expect(routeAccess.world.name).toBe("Local Development World");
+    expect(routeAccess.world.slug).toBe("local-development-world-00000000");
+    expect(from).toHaveBeenCalledWith("worlds");
+    expect(select).toHaveBeenCalledWith(
+      "archived_at,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility",
+    );
+    expect(order).toHaveBeenCalledWith("updated_at", { ascending: false });
+  });
+
+  it("returns not-found when the slug does not exist in RLS-visible rows", async () => {
+    const order = vi.fn().mockResolvedValue({
+      data: [
+        createWorldRow({
+          id: "00000000-0000-0000-0000-000000000101",
+          name: "Visible World",
+        }),
+      ],
+      error: null,
+    });
+    const select = vi.fn(() => ({ order }));
+    const queryClient = createQueryClient();
+    const accessContext = createAccessContext({
+      isSuperAdmin: false,
+      userId: "user-1",
+      worldAdminWorldIds: [],
+    });
+
+    await expect(
+      queryClient.fetchQuery(
+        worldRouteAccessQueryOptions("missing-world-ffffffff", accessContext, {
+          from: vi.fn(() => ({ select })),
+        } as unknown as GubernatorSupabaseClient),
+      ),
+    ).rejects.toBeInstanceOf(WorldNotFoundError);
+  });
+
+  it("returns not-found when RLS does not expose the requested world", async () => {
+    const order = vi.fn().mockResolvedValue({ data: [], error: null });
+    const select = vi.fn(() => ({ order }));
+    const queryClient = createQueryClient();
+    const accessContext = createAccessContext({
+      isSuperAdmin: false,
+      userId: "user-1",
+      worldAdminWorldIds: [],
+    });
+
+    await expect(
+      queryClient.fetchQuery(
+        worldRouteAccessQueryOptions("private-world-00000000", accessContext, {
+          from: vi.fn(() => ({ select })),
+        } as unknown as GubernatorSupabaseClient),
+      ),
+    ).rejects.toMatchObject({
+      message: "World not found.",
+      slug: "private-world-00000000",
+    });
+  });
+
+  it("returns not-found without querying worlds when unauthenticated", async () => {
+    const from = vi.fn();
+    const queryClient = createQueryClient();
+    const accessContext = createAccessContext({
+      isSuperAdmin: false,
+      userId: null,
+      worldAdminWorldIds: [],
+    });
+
+    await expect(
+      queryClient.fetchQuery(
+        worldRouteAccessQueryOptions("world-00000000", accessContext, {
+          from,
+        } as unknown as GubernatorSupabaseClient),
+      ),
+    ).rejects.toSatisfy(isWorldNotFoundError);
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("preserves archived world state for shell headers", async () => {
+    const order = vi.fn().mockResolvedValue({
+      data: [
+        createWorldRow({
+          archived_at: "2026-01-03T00:00:00.000Z",
+          id: "00000000-0000-0000-0000-000000000404",
+          name: "Archived World",
+          status: "archived",
+        }),
+      ],
+      error: null,
+    });
+    const select = vi.fn(() => ({ order }));
+    const queryClient = createQueryClient();
+    const accessContext = createAccessContext({
+      isSuperAdmin: false,
+      userId: "user-1",
+      worldAdminWorldIds: [],
+    });
+
+    const routeAccess = await queryClient.fetchQuery(
+      worldRouteAccessQueryOptions("archived-world-00000000", accessContext, {
+        from: vi.fn(() => ({ select })),
+      } as unknown as GubernatorSupabaseClient),
+    );
+
+    expect(routeAccess.header).toEqual(
+      expect.objectContaining({
+        archivedAt: "2026-01-03T00:00:00.000Z",
+        isArchived: true,
+        status: "archived",
+      }),
+    );
+    expect(routeAccess.world.isArchived).toBe(true);
+  });
+
+  it("uses slug and permission-context scoped query keys", () => {
+    const accessContext = createAccessContext({
+      isSuperAdmin: true,
+      userId: "user-1",
+      worldAdminWorldIds: ["world-1"],
+    });
+
+    const options = worldRouteAccessQueryOptions(
+      "local-development-world-00000000",
+      accessContext,
+      {} as GubernatorSupabaseClient,
+    );
+
+    expect(options.queryKey).toEqual([
+      "worlds",
+      "by-slug",
+      "local-development-world-00000000",
+      "user-1",
+      true,
+      "world-1",
+    ]);
+  });
+});
+
+function createWorldRow(
+  overrides: Partial<{
+    readonly archived_at: string | null;
+    readonly created_at: string;
+    readonly current_turn_number: number;
+    readonly id: string;
+    readonly name: string;
+    readonly owner_id: string;
+    readonly status: string;
+    readonly updated_at: string;
+    readonly visibility: string;
+  }> = {},
+): {
+  readonly archived_at: string | null;
+  readonly created_at: string;
+  readonly current_turn_number: number;
+  readonly id: string;
+  readonly name: string;
+  readonly owner_id: string;
+  readonly status: string;
+  readonly updated_at: string;
+  readonly visibility: string;
+} {
+  return {
+    archived_at: null,
+    created_at: "2026-01-01T00:00:00.000Z",
+    current_turn_number: 5,
+    id: "00000000-0000-0000-0000-000000000101",
+    name: "Local Development World",
+    owner_id: "user-1",
+    status: "active",
+    updated_at: "2026-01-02T00:00:00.000Z",
+    visibility: "public",
+    ...overrides,
+  };
+}
 
 function createQueryClient(): QueryClient {
   return new QueryClient({
