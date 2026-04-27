@@ -59,6 +59,15 @@ describe("normalizeAuthError", () => {
     });
   });
 
+  it("normalizes native errors", () => {
+    const error = normalizeAuthError(new Error("Session storage failed."));
+
+    expect(error).toMatchObject({
+      message: "Session storage failed.",
+      name: "AuthUiError",
+    });
+  });
+
   it("uses a generic message for unknown thrown values", () => {
     expect(normalizeAuthError(null).message).toBe("Authentication failed.");
   });
