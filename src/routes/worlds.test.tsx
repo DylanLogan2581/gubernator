@@ -182,7 +182,88 @@ describe("worlds route list", () => {
         "/worlds/public-world-00000000",
       );
     });
-    expect(await screen.findByText("World shell")).toBeDefined();
+    expect(
+      await screen.findByRole("heading", { name: "Public World" }),
+    ).toBeDefined();
+    expect(screen.getByText("Current turn")).toBeDefined();
+    expect(screen.getByText("1")).toBeDefined();
+  });
+});
+
+describe("world shell route", () => {
+  beforeEach(() => {
+    requireSupabaseClient.mockReset();
+  });
+
+  it("renders basic world context for authorized users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            current_turn_number: 12,
+            id: "00000000-0000-0000-0000-000000000404",
+            name: "Eastern Marches",
+            owner_id: "user-1",
+            visibility: "private",
+          }),
+        ],
+      }),
+    );
+
+    renderAt("/worlds/eastern-marches-00000000");
+
+    expect(
+      await screen.findByRole("heading", { name: "Eastern Marches" }),
+    ).toBeDefined();
+    expect(screen.getByText("Current turn")).toBeDefined();
+    expect(screen.getByText("12")).toBeDefined();
+    expect(screen.queryByText(/settlement/i)).toBeNull();
+    expect(screen.queryByText(/citizen/i)).toBeNull();
+  });
+
+  it("renders a safe not-found state for missing or inaccessible worlds", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+      }),
+    );
+
+    renderAt("/worlds/private-world-00000000");
+
+    expect(await screen.findByText("World not found")).toBeDefined();
+    expect(
+      screen.getByText(
+        "This world does not exist or your account does not have access.",
+      ),
+    ).toBeDefined();
+    expect(screen.queryByText("private-world-00000000")).toBeNull();
+  });
+
+  it("shows read-only status messaging for archived worlds", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            archived_at: "2026-01-03T00:00:00.000Z",
+            id: "00000000-0000-0000-0000-000000000505",
+            name: "Archived Realm",
+            owner_id: "user-1",
+            status: "archived",
+          }),
+        ],
+      }),
+    );
+
+    renderAt("/worlds/archived-realm-00000000");
+
+    expect(
+      await screen.findByRole("heading", { name: "Archived Realm" }),
+    ).toBeDefined();
+    expect(screen.getByText("Read-only archive")).toBeDefined();
+    expect(screen.getByText(/gameplay actions are read-only/i)).toBeDefined();
   });
 });
 
