@@ -232,10 +232,10 @@ describe("world shell route", () => {
 
     renderAt("/worlds/private-world-00000000");
 
-    expect(await screen.findByText("World not found")).toBeDefined();
+    expect(await screen.findByText("World unavailable")).toBeDefined();
     expect(
       screen.getByText(
-        "This world does not exist or your account does not have access.",
+        "This world does not exist or your Gubernator account does not have access.",
       ),
     ).toBeDefined();
     expect(screen.queryByText("private-world-00000000")).toBeNull();

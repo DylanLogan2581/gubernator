@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, Globe2 } from "lucide-react";
+import { Archive } from "lucide-react";
 
-import { EmptyState } from "@/components/shared/EmptyState";
+import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
@@ -75,10 +75,9 @@ function WorldShellContent({
     if (isWorldNotFoundError(worldQuery.error)) {
       return (
         <WorldShellFrame>
-          <EmptyState
-            icon={Globe2}
-            title="World not found"
-            description="This world does not exist or your account does not have access."
+          <AccessDeniedState
+            title="World unavailable"
+            description="This world does not exist or your Gubernator account does not have access."
           />
         </WorldShellFrame>
       );
