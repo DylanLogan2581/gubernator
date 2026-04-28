@@ -23,15 +23,7 @@ export function createAccessContext({
     : [];
   const worldAdminWorldIdSet = new Set(effectiveWorldAdminWorldIds);
 
-  function canAdminWorld(worldId: string): boolean {
-    if (!hasActiveAppUser) {
-      return false;
-    }
-
-    return effectiveIsSuperAdmin || worldAdminWorldIdSet.has(worldId);
-  }
-
-  function canManageWorld(world: WorldAccessTarget): boolean {
+  function canAdminWorld(world: WorldAccessTarget): boolean {
     if (!hasActiveAppUser) {
       return false;
     }
@@ -41,6 +33,10 @@ export function createAccessContext({
       worldAdminWorldIdSet.has(world.id) ||
       (userId !== null && world.ownerId === userId)
     );
+  }
+
+  function canManageWorld(world: WorldAccessTarget): boolean {
+    return canAdminWorld(world);
   }
 
   function canAccessWorld(world: WorldAccessTarget): boolean {

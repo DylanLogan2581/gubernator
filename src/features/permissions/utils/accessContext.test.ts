@@ -26,11 +26,11 @@ describe("createAccessContext", () => {
     });
 
     expect(context.canAccessWorld({ id: "world-1" })).toBe(true);
-    expect(context.canAdminWorld("world-1")).toBe(true);
+    expect(context.canAdminWorld({ id: "world-1" })).toBe(true);
     expect(context.canManageWorld({ id: "world-1" })).toBe(true);
   });
 
-  it("allows world admins to access and manage assigned worlds", () => {
+  it("allows explicit world admins to access and manage assigned worlds", () => {
     const context = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
@@ -38,12 +38,12 @@ describe("createAccessContext", () => {
     });
 
     expect(context.canAccessWorld({ id: "world-1" })).toBe(true);
-    expect(context.canAdminWorld("world-1")).toBe(true);
+    expect(context.canAdminWorld({ id: "world-1" })).toBe(true);
     expect(context.canManageWorld({ id: "world-1" })).toBe(true);
     expect(context.canAccessWorld({ id: "world-2" })).toBe(false);
   });
 
-  it("allows world owners to access and manage owned worlds", () => {
+  it("treats world owners as world admins for frontend capability checks", () => {
     const context = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
@@ -56,7 +56,30 @@ describe("createAccessContext", () => {
     expect(context.canManageWorld({ id: "world-1", ownerId: "user-1" })).toBe(
       true,
     );
-    expect(context.canAdminWorld("world-1")).toBe(false);
+    expect(context.canAdminWorld({ id: "world-1", ownerId: "user-1" })).toBe(
+      true,
+    );
+    expect(context.canAdminWorld({ id: "world-2", ownerId: "user-2" })).toBe(
+      false,
+    );
+  });
+
+  it("does not grant private world capabilities to outsiders", () => {
+    const context = createAccessContext({
+      isSuperAdmin: false,
+      userId: "user-1",
+      worldAdminWorldIds: [],
+    });
+
+    const outsiderWorld = {
+      id: "world-1",
+      ownerId: "user-2",
+      visibility: "private",
+    };
+
+    expect(context.canAccessWorld(outsiderWorld)).toBe(false);
+    expect(context.canAdminWorld(outsiderWorld)).toBe(false);
+    expect(context.canManageWorld(outsiderWorld)).toBe(false);
   });
 
   it("does not grant capabilities to inactive application users", () => {
@@ -78,6 +101,6 @@ describe("createAccessContext", () => {
     expect(context.canManageWorld({ id: "world-2", ownerId: "user-1" })).toBe(
       false,
     );
-    expect(context.canAdminWorld("world-1")).toBe(false);
+    expect(context.canAdminWorld({ id: "world-1" })).toBe(false);
   });
 });

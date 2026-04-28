@@ -5,8 +5,12 @@ export type WorldAccessTarget = {
 };
 
 export type AccessContextPredicates = {
+  /**
+   * Mirrors database admin authorization for world access operations:
+   * active world owners, explicit world_admins rows, and super admins.
+   */
+  readonly canAdminWorld: (world: WorldAccessTarget) => boolean;
   readonly canAccessWorld: (world: WorldAccessTarget) => boolean;
-  readonly canAdminWorld: (worldId: string) => boolean;
   readonly canManageWorld: (world: WorldAccessTarget) => boolean;
 };
 

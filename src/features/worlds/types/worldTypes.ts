@@ -4,7 +4,11 @@ export type WorldPermissionContext = {
     readonly ownerId?: string;
     readonly visibility?: string;
   }) => boolean;
-  readonly canAdminWorld: (worldId: string) => boolean;
+  readonly canAdminWorld: (world: {
+    readonly id: string;
+    readonly ownerId?: string;
+    readonly visibility?: string;
+  }) => boolean;
   readonly canManageWorld: (world: {
     readonly id: string;
     readonly ownerId?: string;
