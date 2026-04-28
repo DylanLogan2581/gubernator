@@ -31,7 +31,7 @@ export function toAccessibleWorld(
   return {
     archivedAt: world.archived_at,
     canAccess: accessContext.canAccessWorld(accessTarget),
-    canAdmin: accessContext.canAdminWorld(world.id),
+    canAdmin: accessContext.canAdminWorld(accessTarget),
     canManage: accessContext.canManageWorld(accessTarget),
     createdAt: world.created_at,
     currentTurnNumber: world.current_turn_number,
