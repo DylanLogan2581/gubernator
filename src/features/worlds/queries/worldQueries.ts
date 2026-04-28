@@ -83,7 +83,7 @@ async function getAccessibleWorlds(
   client: GubernatorSupabaseClient,
   accessContext: WorldPermissionContext,
 ): Promise<readonly AccessibleWorld[]> {
-  if (!accessContext.isAuthenticated) {
+  if (!accessContext.isAuthenticated || !accessContext.isActiveUser) {
     return [];
   }
 
@@ -106,7 +106,7 @@ async function getWorldRouteAccess(
   slug: string,
   accessContext: WorldPermissionContext,
 ): Promise<WorldRouteAccess> {
-  if (!accessContext.isAuthenticated) {
+  if (!accessContext.isAuthenticated || !accessContext.isActiveUser) {
     throw new WorldNotFoundError(slug);
   }
 

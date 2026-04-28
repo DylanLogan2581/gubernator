@@ -32,6 +32,26 @@ describe("accessibleWorldsQueryOptions", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
+  it("returns an empty list without querying worlds for inactive users", async () => {
+    const from = vi.fn();
+    const queryClient = createQueryClient();
+    const accessContext = createAccessContext({
+      isActiveUser: false,
+      isSuperAdmin: true,
+      userId: "user-1",
+      worldAdminWorldIds: ["world-1"],
+    });
+
+    const worlds = await queryClient.fetchQuery(
+      accessibleWorldsQueryOptions(accessContext, {
+        from,
+      } as unknown as GubernatorSupabaseClient),
+    );
+
+    expect(worlds).toEqual([]);
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("queries worlds through the browser client and maps display fields", async () => {
     const order = vi.fn().mockResolvedValue({
       data: [
@@ -154,6 +174,7 @@ describe("accessibleWorldsQueryOptions", () => {
       "worlds",
       "accessible",
       "user-1",
+      true,
       true,
       "world-1",
     ]);
@@ -282,6 +303,26 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
+  it("returns not-found without querying worlds for inactive users", async () => {
+    const from = vi.fn();
+    const queryClient = createQueryClient();
+    const accessContext = createAccessContext({
+      isActiveUser: false,
+      isSuperAdmin: true,
+      userId: "user-1",
+      worldAdminWorldIds: ["world-1"],
+    });
+
+    await expect(
+      queryClient.fetchQuery(
+        worldRouteAccessQueryOptions("world-00000000", accessContext, {
+          from,
+        } as unknown as GubernatorSupabaseClient),
+      ),
+    ).rejects.toSatisfy(isWorldNotFoundError);
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("preserves archived world state for shell headers", async () => {
     const order = vi.fn().mockResolvedValue({
       data: [
@@ -336,6 +377,7 @@ describe("worldRouteAccessQueryOptions", () => {
       "by-slug",
       "local-development-world-00000000",
       "user-1",
+      true,
       true,
       "world-1",
     ]);

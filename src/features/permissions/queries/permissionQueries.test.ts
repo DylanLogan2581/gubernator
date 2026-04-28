@@ -59,10 +59,56 @@ describe("currentAccessContextQueryOptions", () => {
     );
 
     expect(context.isAuthenticated).toBe(true);
+    expect(context.isActiveUser).toBe(true);
     expect(context.isSuperAdmin).toBe(true);
     expect(context.userId).toBe("user-1");
     expect(context.worldAdminWorldIds).toEqual(["world-1", "world-2"]);
     expect(context.canAccessWorld({ id: "world-3" })).toBe(true);
+  });
+
+  it("returns blocked access context for inactive application users", async () => {
+    const queryClient = createQueryClient();
+    const inactiveUser = {
+      created_at: "2026-01-01T00:00:00.000Z",
+      email: "player@example.com",
+      id: "user-1",
+      is_super_admin: true,
+      status: "suspended",
+      updated_at: "2026-01-01T00:00:00.000Z",
+      username: "player",
+    };
+    const from = vi.fn((table: string) => {
+      if (table === "users") {
+        return createUserQueryBuilder(inactiveUser);
+      }
+
+      if (table === "world_admins") {
+        return createWorldAdminsQueryBuilder([{ world_id: "world-1" }]);
+      }
+
+      throw new Error(`Unexpected table: ${table}`);
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        from,
+        session: { user: { id: "user-1" } },
+      }),
+    );
+
+    const context = await queryClient.fetchQuery(
+      currentAccessContextQueryOptions(queryClient),
+    );
+
+    expect(context.isAuthenticated).toBe(true);
+    expect(context.isActiveUser).toBe(false);
+    expect(context.isSuperAdmin).toBe(false);
+    expect(context.worldAdminWorldIds).toEqual([]);
+    expect(context.canAccessWorld({ id: "world-1" })).toBe(false);
+    expect(
+      context.canAccessWorld({ id: "public-world", visibility: "public" }),
+    ).toBe(false);
+    expect(from).toHaveBeenCalledTimes(1);
+    expect(from).toHaveBeenCalledWith("users");
   });
 });
 

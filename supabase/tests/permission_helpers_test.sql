@@ -3,6 +3,7 @@
 --
 -- Covers:
 --   current_app_user_id() — returns auth.uid() for authenticated sessions
+--   is_active_app_user()  — true only for active application users
 --   is_super_admin()      — false for normal users, true for flagged users
 --   is_world_admin()      — false for outsiders, true for owners and admins
 --   has_world_access()    — covers all access paths (public, owner, admin,
@@ -12,7 +13,7 @@
 begin;
 
 select
-  plan (19);
+  plan (26);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -127,6 +128,13 @@ select
     public.current_app_user_id (),
     'aa000000-0000-0000-0000-000000000001'::uuid,
     'current_app_user_id returns auth.uid for authenticated user'
+  );
+
+select
+  is (
+    public.is_active_app_user (),
+    true,
+    'is_active_app_user returns true for an active authenticated user'
   );
 
 -- Reset to postgres role for subsequent setup steps
@@ -348,6 +356,130 @@ select
   );
 
 reset role;
+
+-- Suspended/deleted users do not receive access through any world path.
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'aa000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"aa000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    public.is_active_app_user (),
+    false,
+    'is_active_app_user returns false for a suspended user'
+  );
+
+select
+  is (
+    public.is_world_admin ('f1000000-0000-0000-0000-000000000001'),
+    false,
+    'is_world_admin returns false for a suspended world owner'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'bb000000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"bb000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  is (
+    public.is_world_admin ('f1000000-0000-0000-0000-000000000001'),
+    false,
+    'is_world_admin returns false for a suspended explicit world admin'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'cc000000-0000-0000-0000-000000000003';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"cc000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  is (
+    public.has_world_access ('f2000000-0000-0000-0000-000000000002'),
+    false,
+    'has_world_access returns false for a suspended user on a public world'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'dd000000-0000-0000-0000-000000000004';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  is (
+    public.has_world_access ('f3000000-0000-0000-0000-000000000003'),
+    false,
+    'has_world_access returns false for a suspended super admin'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'deleted'
+where
+  id = 'aa000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"aa000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    public.has_world_access ('f1000000-0000-0000-0000-000000000001'),
+    false,
+    'has_world_access returns false for a deleted world owner'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'active'
+where
+  id in (
+    'aa000000-0000-0000-0000-000000000001',
+    'bb000000-0000-0000-0000-000000000002',
+    'cc000000-0000-0000-0000-000000000003',
+    'dd000000-0000-0000-0000-000000000004'
+  );
 
 -- ===========================================================================
 -- Super-admin elevation guard

@@ -11,6 +11,7 @@ export type AccessContextPredicates = {
 };
 
 export type AccessContext = AccessContextPredicates & {
+  readonly isActiveUser: boolean;
   readonly isAuthenticated: boolean;
   readonly isSuperAdmin: boolean;
   readonly userId: string | null;

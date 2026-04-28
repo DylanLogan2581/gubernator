@@ -128,6 +128,7 @@ export type Database = {
     Functions: {
       current_app_user_id: { Args: never; Returns: string };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
+      is_active_app_user: { Args: never; Returns: boolean };
       is_super_admin: { Args: never; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
     };

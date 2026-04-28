@@ -152,6 +152,40 @@ describe("worlds route list", () => {
     expect(await screen.findByText("No accessible worlds")).toBeDefined();
   });
 
+  it("blocks inactive users without leaking accessible world details", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        currentUser: createUser({
+          id: "user-1",
+          is_super_admin: true,
+          status: "suspended",
+        }),
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: "00000000-0000-0000-0000-000000000101",
+            name: "Suspended Owner World",
+            owner_id: "user-1",
+            visibility: "private",
+          }),
+          createWorldRow({
+            id: "00000000-0000-0000-0000-000000000202",
+            name: "Public World",
+            owner_id: "user-2",
+            visibility: "public",
+          }),
+        ],
+      }),
+    );
+
+    renderAt("/worlds");
+
+    expect(await screen.findByText("Account access unavailable")).toBeDefined();
+    expect(screen.getByText(/account is not active/i)).toBeDefined();
+    expect(screen.queryByText("Suspended Owner World")).toBeNull();
+    expect(screen.queryByText("Public World")).toBeNull();
+  });
+
   it("shows the shared loading state while worlds are loading", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -292,6 +326,32 @@ describe("world shell route", () => {
     ).toBeDefined();
     expect(screen.getByText("Read-only archive")).toBeDefined();
     expect(screen.getByText(/gameplay actions are read-only/i)).toBeDefined();
+  });
+
+  it("blocks inactive users on world routes without leaking world details", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        currentUser: createUser({
+          id: "user-1",
+          status: "deleted",
+        }),
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: "00000000-0000-0000-0000-000000000505",
+            name: "Deleted Owner World",
+            owner_id: "user-1",
+            visibility: "private",
+          }),
+        ],
+      }),
+    );
+
+    renderAt("/worlds/deleted-owner-world-00000000");
+
+    expect(await screen.findByText("Account access unavailable")).toBeDefined();
+    expect(screen.getByText(/account is not active/i)).toBeDefined();
+    expect(screen.queryByText("Deleted Owner World")).toBeNull();
   });
 });
 

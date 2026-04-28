@@ -4,31 +4,50 @@ import type {
 } from "../types/accessContextTypes";
 
 type CreateAccessContextInput = {
+  readonly isActiveUser?: boolean;
   readonly isSuperAdmin: boolean;
   readonly userId: string | null;
   readonly worldAdminWorldIds: readonly string[];
 };
 
 export function createAccessContext({
+  isActiveUser,
   isSuperAdmin,
   userId,
   worldAdminWorldIds,
 }: CreateAccessContextInput): AccessContext {
-  const worldAdminWorldIdSet = new Set(worldAdminWorldIds);
+  const hasActiveAppUser = isActiveUser ?? userId !== null;
+  const effectiveIsSuperAdmin = hasActiveAppUser && isSuperAdmin;
+  const effectiveWorldAdminWorldIds = hasActiveAppUser
+    ? worldAdminWorldIds
+    : [];
+  const worldAdminWorldIdSet = new Set(effectiveWorldAdminWorldIds);
 
   function canAdminWorld(worldId: string): boolean {
-    return isSuperAdmin || worldAdminWorldIdSet.has(worldId);
+    if (!hasActiveAppUser) {
+      return false;
+    }
+
+    return effectiveIsSuperAdmin || worldAdminWorldIdSet.has(worldId);
   }
 
   function canManageWorld(world: WorldAccessTarget): boolean {
+    if (!hasActiveAppUser) {
+      return false;
+    }
+
     return (
-      isSuperAdmin ||
+      effectiveIsSuperAdmin ||
       worldAdminWorldIdSet.has(world.id) ||
       (userId !== null && world.ownerId === userId)
     );
   }
 
   function canAccessWorld(world: WorldAccessTarget): boolean {
+    if (!hasActiveAppUser && userId !== null) {
+      return false;
+    }
+
     return canManageWorld(world) || world.visibility === "public";
   }
 
@@ -36,9 +55,10 @@ export function createAccessContext({
     canAccessWorld,
     canAdminWorld,
     canManageWorld,
+    isActiveUser: hasActiveAppUser,
     isAuthenticated: userId !== null,
-    isSuperAdmin,
+    isSuperAdmin: effectiveIsSuperAdmin,
     userId,
-    worldAdminWorldIds,
+    worldAdminWorldIds: effectiveWorldAdminWorldIds,
   };
 }

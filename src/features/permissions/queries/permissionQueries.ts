@@ -43,8 +43,18 @@ async function getCurrentAccessContext(
 
   if (currentUser === null) {
     return createAccessContext({
+      isActiveUser: false,
       isSuperAdmin: false,
       userId: null,
+      worldAdminWorldIds: [],
+    });
+  }
+
+  if (currentUser.status !== "active") {
+    return createAccessContext({
+      isActiveUser: false,
+      isSuperAdmin: false,
+      userId: currentUser.id,
       worldAdminWorldIds: [],
     });
   }
@@ -54,6 +64,7 @@ async function getCurrentAccessContext(
   );
 
   return createAccessContext({
+    isActiveUser: true,
     isSuperAdmin: currentUser.is_super_admin,
     userId: currentUser.id,
     worldAdminWorldIds,
