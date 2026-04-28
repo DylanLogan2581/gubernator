@@ -58,4 +58,26 @@ describe("createAccessContext", () => {
     );
     expect(context.canAdminWorld("world-1")).toBe(false);
   });
+
+  it("does not grant capabilities to inactive application users", () => {
+    const context = createAccessContext({
+      isActiveUser: false,
+      isSuperAdmin: true,
+      userId: "user-1",
+      worldAdminWorldIds: ["world-1"],
+    });
+
+    expect(context.isAuthenticated).toBe(true);
+    expect(context.isActiveUser).toBe(false);
+    expect(context.isSuperAdmin).toBe(false);
+    expect(context.worldAdminWorldIds).toEqual([]);
+    expect(context.canAccessWorld({ id: "world-1" })).toBe(false);
+    expect(
+      context.canAccessWorld({ id: "public-world", visibility: "public" }),
+    ).toBe(false);
+    expect(context.canManageWorld({ id: "world-2", ownerId: "user-1" })).toBe(
+      false,
+    );
+    expect(context.canAdminWorld("world-1")).toBe(false);
+  });
 });

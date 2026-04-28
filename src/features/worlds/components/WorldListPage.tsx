@@ -54,6 +54,17 @@ function WorldListContent({
 }): JSX.Element {
   const worldsQuery = useQuery(accessibleWorldsQueryOptions(accessContext));
 
+  if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
+    return (
+      <WorldListFrame>
+        <AccessDeniedState
+          title="Account access unavailable"
+          description="Your Gubernator account is not active. Contact an administrator to restore access."
+        />
+      </WorldListFrame>
+    );
+  }
+
   if (worldsQuery.isPending) {
     return (
       <WorldListFrame>

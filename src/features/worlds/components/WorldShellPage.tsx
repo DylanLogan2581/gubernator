@@ -63,6 +63,17 @@ function WorldShellContent({
     worldRouteAccessQueryOptions(worldSlug, accessContext),
   );
 
+  if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
+    return (
+      <WorldShellFrame>
+        <AccessDeniedState
+          title="Account access unavailable"
+          description="Your Gubernator account is not active. Contact an administrator to restore access."
+        />
+      </WorldShellFrame>
+    );
+  }
+
   if (worldQuery.isPending) {
     return (
       <WorldShellFrame>

@@ -13,7 +13,7 @@
 begin;
 
 select
-  plan (30);
+  plan (35);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -429,6 +429,176 @@ select
   );
 
 reset role;
+
+-- ===========================================================================
+-- INACTIVE USERS: suspended/deleted sessions receive no world access
+-- ===========================================================================
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'a0000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = 'e0000000-0000-0000-0000-000000000001'
+    ),
+    'suspended owner cannot see own private world'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'active'
+where
+  id = 'a0000000-0000-0000-0000-000000000001';
+
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'b0000000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b0000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.world_admins
+      where
+        world_id = 'e0000000-0000-0000-0000-000000000001'
+        and user_id = 'b0000000-0000-0000-0000-000000000002'
+    ),
+    0,
+    'suspended world admin cannot see their explicit world_admins row'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'active'
+where
+  id = 'b0000000-0000-0000-0000-000000000002';
+
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'c0000000-0000-0000-0000-000000000003';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c0000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = 'e0000000-0000-0000-0000-000000000002'
+    ),
+    'suspended user cannot see public world'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'active'
+where
+  id = 'c0000000-0000-0000-0000-000000000003';
+
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'd0000000-0000-0000-0000-000000000004';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"d0000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = 'e0000000-0000-0000-0000-000000000003'
+    ),
+    'suspended super admin cannot see hidden world'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'active'
+where
+  id = 'd0000000-0000-0000-0000-000000000004';
+
+update public.users
+set
+  status = 'deleted'
+where
+  id = 'a0000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"a0000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = 'e0000000-0000-0000-0000-000000000001'
+    ),
+    'deleted owner cannot see own private world'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'active'
+where
+  id = 'a0000000-0000-0000-0000-000000000001';
 
 -- ===========================================================================
 -- SUPER ADMIN: reads and writes everything
