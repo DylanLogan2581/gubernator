@@ -25,4 +25,18 @@ describe("AppHeader", () => {
       screen.getByRole("button", { name: /notifications/i }),
     ).toBeDefined();
   });
+
+  it("keeps notification control after header actions", () => {
+    render(<AppHeader action={<a href="/worlds">Worlds</a>} />);
+
+    const worldsLink = screen.getByRole("link", { name: "Worlds" });
+    const notificationsButton = screen.getByRole("button", {
+      name: /notifications/i,
+    });
+
+    expect(
+      worldsLink.compareDocumentPosition(notificationsButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });
