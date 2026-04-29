@@ -4,12 +4,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { WorldShellPage } from "./WorldShellPage";
 
+import type { ReactNode } from "react";
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    to,
+  }: {
+    readonly children: ReactNode;
+    readonly to: string;
+  }) => <a href={to}>{children}</a>,
 }));
 
 describe("WorldShellPage", () => {
@@ -41,6 +53,9 @@ describe("WorldShellPage", () => {
     expect(screen.getByText("Current turn")).toBeDefined();
     expect(screen.getByText("7")).toBeDefined();
     expect(screen.getByText("private")).toBeDefined();
+    expect(
+      screen.getByRole("link", { name: "Back to worlds" }),
+    ).toHaveAttribute("href", "/worlds");
   });
 
   it("renders archived worlds as read-only", async () => {
@@ -66,6 +81,22 @@ describe("WorldShellPage", () => {
     ).toBeDefined();
     expect(screen.getByText("Read-only archive")).toBeDefined();
     expect(screen.getByText(/gameplay actions are read-only/i)).toBeDefined();
+  });
+
+  it("renders back navigation for unavailable worlds", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000000404");
+
+    expect(await screen.findByText("World unavailable")).toBeDefined();
+    expect(
+      screen.getByRole("link", { name: "Back to worlds" }),
+    ).toHaveAttribute("href", "/worlds");
   });
 });
 
