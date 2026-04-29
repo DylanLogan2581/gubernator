@@ -1,9 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Archive, ArrowLeft } from "lucide-react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Button } from "@/components/ui/button";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 
 import {
@@ -157,7 +159,17 @@ function WorldShellFrame({
 }: {
   readonly children: JSX.Element;
 }): JSX.Element {
-  return <div className="mx-auto max-w-5xl py-6">{children}</div>;
+  return (
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
+      <Button asChild variant="outline" size="sm" className="w-fit">
+        <Link to="/worlds">
+          <ArrowLeft aria-hidden="true" />
+          Back to worlds
+        </Link>
+      </Button>
+      {children}
+    </div>
+  );
 }
 
 function getErrorDescription(error: unknown): string {
