@@ -7,12 +7,12 @@ import { WorldShellPage } from "@/features/worlds";
 import type { JSX } from "react";
 
 function WorldShellRoute(): JSX.Element {
-  const { worldSlug } = Route.useParams();
+  const { worldId } = Route.useParams();
 
-  return <WorldShellPage worldSlug={worldSlug} />;
+  return <WorldShellPage worldId={worldId} />;
 }
 
-export const Route = createFileRoute("/worlds/$worldSlug")({
+export const Route = createFileRoute("/worlds/$worldId")({
   beforeLoad: ({ context, location }) =>
     requireAuthenticatedRoute({
       queryClient: context.queryClient,

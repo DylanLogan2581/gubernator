@@ -13,7 +13,7 @@ import { Route as WorldsRouteImport } from './routes/worlds'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorldsIndexRouteImport } from './routes/worlds.index'
-import { Route as WorldsWorldSlugRouteImport } from './routes/worlds.$worldSlug'
+import { Route as WorldsWorldIdRouteImport } from './routes/worlds.$worldId'
 
 const WorldsRoute = WorldsRouteImport.update({
   id: '/worlds',
@@ -35,9 +35,9 @@ const WorldsIndexRoute = WorldsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => WorldsRoute,
 } as any)
-const WorldsWorldSlugRoute = WorldsWorldSlugRouteImport.update({
-  id: '/$worldSlug',
-  path: '/$worldSlug',
+const WorldsWorldIdRoute = WorldsWorldIdRouteImport.update({
+  id: '/$worldId',
+  path: '/$worldId',
   getParentRoute: () => WorldsRoute,
 } as any)
 
@@ -45,13 +45,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/worlds': typeof WorldsRouteWithChildren
-  '/worlds/$worldSlug': typeof WorldsWorldSlugRoute
+  '/worlds/$worldId': typeof WorldsWorldIdRoute
   '/worlds/': typeof WorldsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
-  '/worlds/$worldSlug': typeof WorldsWorldSlugRoute
+  '/worlds/$worldId': typeof WorldsWorldIdRoute
   '/worlds': typeof WorldsIndexRoute
 }
 export interface FileRoutesById {
@@ -59,20 +59,20 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/worlds': typeof WorldsRouteWithChildren
-  '/worlds/$worldSlug': typeof WorldsWorldSlugRoute
+  '/worlds/$worldId': typeof WorldsWorldIdRoute
   '/worlds/': typeof WorldsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sign-in' | '/worlds' | '/worlds/$worldSlug' | '/worlds/'
+  fullPaths: '/' | '/sign-in' | '/worlds' | '/worlds/$worldId' | '/worlds/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in' | '/worlds/$worldSlug' | '/worlds'
+  to: '/' | '/sign-in' | '/worlds/$worldId' | '/worlds'
   id:
     | '__root__'
     | '/'
     | '/sign-in'
     | '/worlds'
-    | '/worlds/$worldSlug'
+    | '/worlds/$worldId'
     | '/worlds/'
   fileRoutesById: FileRoutesById
 }
@@ -112,23 +112,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsIndexRouteImport
       parentRoute: typeof WorldsRoute
     }
-    '/worlds/$worldSlug': {
-      id: '/worlds/$worldSlug'
-      path: '/$worldSlug'
-      fullPath: '/worlds/$worldSlug'
-      preLoaderRoute: typeof WorldsWorldSlugRouteImport
+    '/worlds/$worldId': {
+      id: '/worlds/$worldId'
+      path: '/$worldId'
+      fullPath: '/worlds/$worldId'
+      preLoaderRoute: typeof WorldsWorldIdRouteImport
       parentRoute: typeof WorldsRoute
     }
   }
 }
 
 interface WorldsRouteChildren {
-  WorldsWorldSlugRoute: typeof WorldsWorldSlugRoute
+  WorldsWorldIdRoute: typeof WorldsWorldIdRoute
   WorldsIndexRoute: typeof WorldsIndexRoute
 }
 
 const WorldsRouteChildren: WorldsRouteChildren = {
-  WorldsWorldSlugRoute: WorldsWorldSlugRoute,
+  WorldsWorldIdRoute: WorldsWorldIdRoute,
   WorldsIndexRoute: WorldsIndexRoute,
 }
 

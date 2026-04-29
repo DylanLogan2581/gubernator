@@ -33,7 +33,7 @@ describe("WorldShellPage", () => {
       }),
     );
 
-    renderWorldShellPage("eastern-marches-00000000");
+    renderWorldShellPage("00000000-0000-0000-0000-000000000101");
 
     expect(
       await screen.findByRole("heading", { name: "Eastern Marches" }),
@@ -59,7 +59,7 @@ describe("WorldShellPage", () => {
       }),
     );
 
-    renderWorldShellPage("archived-realm-00000000");
+    renderWorldShellPage("00000000-0000-0000-0000-000000000202");
 
     expect(
       await screen.findByRole("heading", { name: "Archived Realm" }),
@@ -69,10 +69,10 @@ describe("WorldShellPage", () => {
   });
 });
 
-function renderWorldShellPage(worldSlug: string): void {
+function renderWorldShellPage(worldId: string): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <WorldShellPage worldSlug={worldSlug} />
+      <WorldShellPage worldId={worldId} />
     </QueryClientProvider>,
   );
 }
@@ -198,6 +198,16 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
   return {
     select: vi.fn(() => ({
       order: vi.fn().mockResolvedValue({ data: rows, error: null }),
+      eq: vi.fn((column: string, value: string) => {
+        const data =
+          column === "id"
+            ? (rows.find((row) => row.id === value) ?? null)
+            : null;
+
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({ data, error: null }),
+        };
+      }),
     })),
   };
 }

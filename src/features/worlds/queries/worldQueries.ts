@@ -19,7 +19,7 @@ import type {
 type AccessibleWorldsQueryKey = ReturnType<
   typeof worldQueryKeys.accessibleWorlds
 >;
-type WorldBySlugQueryKey = ReturnType<typeof worldQueryKeys.bySlug>;
+type WorldByIdQueryKey = ReturnType<typeof worldQueryKeys.byId>;
 type AccessibleWorldsQueryOptions = UseQueryOptions<
   readonly AccessibleWorld[],
   AuthUiError,
@@ -30,19 +30,19 @@ type WorldRouteAccessQueryOptions = UseQueryOptions<
   WorldRouteAccess,
   AuthUiError | WorldNotFoundError,
   WorldRouteAccess,
-  WorldBySlugQueryKey
+  WorldByIdQueryKey
 >;
 
 const WORLD_HEADER_SELECT =
   "archived_at,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility";
 
 export class WorldNotFoundError extends Error {
-  readonly slug: string;
+  readonly worldId: string;
 
-  constructor(slug: string) {
+  constructor(worldId: string) {
     super("World not found.");
     this.name = "WorldNotFoundError";
-    this.slug = slug;
+    this.worldId = worldId;
   }
 }
 
@@ -59,15 +59,15 @@ export function accessibleWorldsQueryOptions(
 }
 
 export function worldRouteAccessQueryOptions(
-  slug: string,
+  worldId: string,
   accessContext: WorldPermissionContext,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): WorldRouteAccessQueryOptions {
   // The client is the configured Supabase singleton in app code; tests inject a fake.
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
-    queryFn: () => getWorldRouteAccess(client, slug, accessContext),
-    queryKey: worldQueryKeys.bySlug(slug, accessContext),
+    queryFn: () => getWorldRouteAccess(client, worldId, accessContext),
+    queryKey: worldQueryKeys.byId(worldId, accessContext),
     retry: shouldRetryWorldRouteAccessQuery,
   });
 }
@@ -103,28 +103,28 @@ async function getAccessibleWorlds(
 
 async function getWorldRouteAccess(
   client: GubernatorSupabaseClient,
-  slug: string,
+  worldId: string,
   accessContext: WorldPermissionContext,
 ): Promise<WorldRouteAccess> {
   if (!accessContext.isAuthenticated || !accessContext.isActiveUser) {
-    throw new WorldNotFoundError(slug);
+    throw new WorldNotFoundError(worldId);
   }
 
   const { data, error } = await client
     .from("worlds")
     .select(WORLD_HEADER_SELECT)
-    .order("updated_at", { ascending: false });
+    .eq("id", worldId)
+    .maybeSingle();
 
   if (error !== null) {
     throw normalizeAuthError(error);
   }
 
-  const world = data
-    .map((row) => toAccessibleWorld(row, accessContext))
-    .find((candidate) => candidate.slug === slug);
+  const world =
+    data === null ? undefined : toAccessibleWorld(data, accessContext);
 
-  if (world === undefined) {
-    throw new WorldNotFoundError(slug);
+  if (world === undefined || !world.canAccess) {
+    throw new WorldNotFoundError(worldId);
   }
 
   return {

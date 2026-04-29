@@ -132,8 +132,8 @@ function WorldListItem({
   return (
     <li>
       <Link
-        to="/worlds/$worldSlug"
-        params={{ worldSlug: world.slug }}
+        to="/worlds/$worldId"
+        params={{ worldId: world.id }}
         className="group grid gap-4 rounded-md border border-border bg-card p-4 text-card-foreground transition-colors hover:border-foreground/30 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:grid-cols-[1fr_auto] sm:items-center"
       >
         <div className="min-w-0 space-y-3">

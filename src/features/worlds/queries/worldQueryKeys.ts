@@ -11,11 +11,11 @@ export const worldQueryKeys = {
       accessContext.isSuperAdmin,
       ...accessContext.worldAdminWorldIds,
     ] as const,
-  bySlug: (slug: string, accessContext: WorldPermissionContext) =>
+  byId: (worldId: string, accessContext: WorldPermissionContext) =>
     [
       ...worldQueryKeys.all,
-      "by-slug",
-      slug,
+      "by-id",
+      worldId,
       accessContext.userId,
       accessContext.isActiveUser,
       accessContext.isSuperAdmin,

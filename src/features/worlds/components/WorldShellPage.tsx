@@ -14,12 +14,10 @@ import {
 import type { JSX } from "react";
 
 type WorldShellPageProps = {
-  readonly worldSlug: string;
+  readonly worldId: string;
 };
 
-export function WorldShellPage({
-  worldSlug,
-}: WorldShellPageProps): JSX.Element {
+export function WorldShellPage({ worldId }: WorldShellPageProps): JSX.Element {
   const queryClient = useQueryClient();
   const accessContextQuery = useQuery(
     currentAccessContextQueryOptions(queryClient),
@@ -47,20 +45,20 @@ export function WorldShellPage({
   return (
     <WorldShellContent
       accessContext={accessContextQuery.data}
-      worldSlug={worldSlug}
+      worldId={worldId}
     />
   );
 }
 
 function WorldShellContent({
   accessContext,
-  worldSlug,
+  worldId,
 }: {
   readonly accessContext: Parameters<typeof worldRouteAccessQueryOptions>[1];
-  readonly worldSlug: string;
+  readonly worldId: string;
 }): JSX.Element {
   const worldQuery = useQuery(
-    worldRouteAccessQueryOptions(worldSlug, accessContext),
+    worldRouteAccessQueryOptions(worldId, accessContext),
   );
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
