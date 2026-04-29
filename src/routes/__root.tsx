@@ -5,14 +5,16 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { MapPinOff } from "lucide-react";
-import { lazy, Suspense, type JSX } from "react";
+import { lazy, Suspense, useEffect, type JSX } from "react";
 
 import { AppLayout } from "@/components/app/AppLayout";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
 import { SignOutControl } from "@/features/auth";
+import { scheduleAuthStateQueryCacheSync } from "@/lib/authStateQueryCache";
 import { type AppRouterContext } from "@/lib/queryClient";
+import { subscribeToSupabaseAuthStateChanges } from "@/lib/supabaseAuthState";
 import {
   shouldBlockAppForSupabaseConfig,
   supabaseConfig,
@@ -39,6 +41,16 @@ const ReactQueryDevtools = isDev
 function RootLayout(): JSX.Element {
   const { queryClient } = Route.useRouteContext();
   const shouldBlockForConfig = shouldBlockAppForSupabaseConfig(supabaseConfig);
+
+  useEffect(
+    () =>
+      subscribeToSupabaseAuthStateChanges({
+        onAuthStateChange: (_event, session) => {
+          scheduleAuthStateQueryCacheSync(queryClient, session);
+        },
+      }),
+    [queryClient],
+  );
 
   return (
     <QueryClientProvider client={queryClient}>

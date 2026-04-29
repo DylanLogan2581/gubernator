@@ -4,6 +4,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { getSupabaseAuthSession } from "@/lib/supabaseAuthState";
 
 import { normalizeAuthError } from "../utils/authErrors";
 
@@ -53,13 +54,11 @@ export function currentAppUserQueryOptions(
 async function getCurrentSession(
   client: GubernatorSupabaseClient,
 ): Promise<Session | null> {
-  const { data, error } = await client.auth.getSession();
-
-  if (error !== null) {
+  try {
+    return await getSupabaseAuthSession(client);
+  } catch (error) {
     throw normalizeAuthError(error);
   }
-
-  return data.session;
 }
 
 async function getCurrentAppUser(

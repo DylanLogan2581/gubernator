@@ -1,7 +1,9 @@
+import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
+
 import type { WorldPermissionContext } from "../types/worldTypes";
 
 export const worldQueryKeys = {
-  all: ["worlds"] as const,
+  all: authStateQueryCacheKeys.worldsAll,
   accessibleWorlds: (accessContext: WorldPermissionContext) =>
     [
       ...worldQueryKeys.all,

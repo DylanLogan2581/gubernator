@@ -4,18 +4,23 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
 import { routeTree } from "@/routeTree.gen";
 
-const { requireSupabaseClient } = vi.hoisted(() => ({
-  requireSupabaseClient: vi.fn<() => unknown>(),
+const requireSupabaseClient = vi.hoisted(() => vi.fn<() => unknown>());
+const supabaseState = vi.hoisted<{ current: unknown }>(() => ({
+  current: null,
 }));
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+  get supabase() {
+    return supabaseState.current;
+  },
 }));
 
 type RenderResult = {
@@ -47,6 +52,7 @@ describe("not-found route", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     requireSupabaseClient.mockReturnValue(createClient());
+    supabaseState.current = null;
   });
 
   it("renders a branded fallback for unknown routes", async () => {
@@ -134,6 +140,40 @@ describe("app shell auth controls", () => {
       screen.queryByText("Internal credential cleanup failed."),
     ).toBeNull();
   });
+
+  it("syncs cached auth-dependent queries from root auth events", async () => {
+    const authState: { handler: AuthStateHandler | null } = {
+      handler: null,
+    };
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(
+      authStateQueryCacheKeys.currentSession(),
+      createSession("user-1"),
+    );
+    queryClient.setQueryData(
+      [...authStateQueryCacheKeys.worldsAll, "accessible", "user-1"],
+      [{ id: "world-1" }],
+    );
+    supabaseState.current = createAuthStateClient((handler) => {
+      authState.handler = handler;
+    });
+
+    renderAt("/", queryClient);
+    await screen.findByRole("heading", { name: "Gubernator" });
+
+    if (authState.handler === null) {
+      throw new Error("Expected root layout to subscribe to auth state.");
+    }
+
+    authState.handler("SIGNED_OUT", null);
+
+    await waitFor(() => {
+      expect(
+        queryClient.getQueryData(authStateQueryCacheKeys.currentSession()),
+      ).toBeNull();
+    });
+    expect(queryClient.getQueriesData({ queryKey: ["worlds"] })).toEqual([]);
+  });
 });
 
 function createTestQueryClient(): QueryClient {
@@ -181,6 +221,36 @@ function createClient(
       throw new Error(`Unexpected table ${table}`);
     }),
   };
+}
+
+type AuthStateHandler = (event: "SIGNED_OUT", session: null) => void;
+
+function createAuthStateClient(
+  onSubscribe: (handler: AuthStateHandler) => void,
+): unknown {
+  return {
+    auth: {
+      onAuthStateChange: vi.fn((handler: AuthStateHandler) => {
+        onSubscribe(handler);
+
+        return {
+          data: {
+            subscription: {
+              unsubscribe: vi.fn(),
+            },
+          },
+        };
+      }),
+    },
+  };
+}
+
+function createSession(userId: string): {
+  readonly user: {
+    readonly id: string;
+  };
+} {
+  return { user: { id: userId } };
 }
 
 function createUsersQueryBuilder(): unknown {
