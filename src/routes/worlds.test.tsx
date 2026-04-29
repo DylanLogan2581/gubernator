@@ -45,13 +45,13 @@ describe("worlds route auth guard", () => {
 
   it("redirects anonymous users from world routes to sign-in with a return path", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ session: null }));
-    const router = renderAt("/worlds/private-world-00000000");
+    const router = renderAt("/worlds/00000000-0000-0000-0000-000000000101");
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/sign-in");
     });
     expect(router.state.location.search).toEqual({
-      returnTo: "/worlds/private-world-00000000",
+      returnTo: "/worlds/00000000-0000-0000-0000-000000000101",
     });
     expect(screen.queryByText("World unavailable")).toBeNull();
   });
@@ -90,7 +90,7 @@ describe("worlds route auth guard", () => {
       }),
     );
 
-    renderAt("/worlds/private-world-00000000");
+    renderAt("/worlds/00000000-0000-0000-0000-000000000101");
 
     expect(
       await screen.findByRole("status", { name: "Checking session…" }),
@@ -241,7 +241,7 @@ describe("worlds route list", () => {
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(
-        "/worlds/public-world-00000000",
+        "/worlds/00000000-0000-0000-0000-000000000101",
       );
     });
     expect(
@@ -273,7 +273,7 @@ describe("world shell route", () => {
       }),
     );
 
-    renderAt("/worlds/eastern-marches-00000000");
+    renderAt("/worlds/00000000-0000-0000-0000-000000000404");
 
     expect(
       await screen.findByRole("heading", { name: "Eastern Marches" }),
@@ -292,7 +292,7 @@ describe("world shell route", () => {
       }),
     );
 
-    renderAt("/worlds/private-world-00000000");
+    renderAt("/worlds/00000000-0000-0000-0000-000000000202");
 
     expect(await screen.findByText("World unavailable")).toBeDefined();
     expect(
@@ -300,7 +300,9 @@ describe("world shell route", () => {
         "This world does not exist or your Gubernator account does not have access.",
       ),
     ).toBeDefined();
-    expect(screen.queryByText("private-world-00000000")).toBeNull();
+    expect(
+      screen.queryByText("00000000-0000-0000-0000-000000000202"),
+    ).toBeNull();
   });
 
   it("shows read-only status messaging for archived worlds", async () => {
@@ -319,7 +321,7 @@ describe("world shell route", () => {
       }),
     );
 
-    renderAt("/worlds/archived-realm-00000000");
+    renderAt("/worlds/00000000-0000-0000-0000-000000000505");
 
     expect(
       await screen.findByRole("heading", { name: "Archived Realm" }),
@@ -347,7 +349,7 @@ describe("world shell route", () => {
       }),
     );
 
-    renderAt("/worlds/deleted-owner-world-00000000");
+    renderAt("/worlds/00000000-0000-0000-0000-000000000505");
 
     expect(await screen.findByText("Account access unavailable")).toBeDefined();
     expect(screen.getByText(/account is not active/i)).toBeDefined();
@@ -520,6 +522,19 @@ function createWorldsQueryBuilder(
   return {
     select: vi.fn(() => ({
       order: vi.fn().mockReturnValue(result),
+      eq: vi.fn((column: string, value: string) => {
+        const data =
+          rows instanceof Promise || column !== "id"
+            ? null
+            : (rows.find((row) => row.id === value) ?? null);
+
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data,
+            error,
+          }),
+        };
+      }),
     })),
   };
 }

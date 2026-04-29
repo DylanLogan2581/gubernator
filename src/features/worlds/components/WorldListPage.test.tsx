@@ -20,8 +20,8 @@ vi.mock("@tanstack/react-router", () => ({
     params,
   }: {
     readonly children: ReactNode;
-    readonly params: { readonly worldSlug: string };
-  }) => <a href={`/worlds/${params.worldSlug}`}>{children}</a>,
+    readonly params: { readonly worldId: string };
+  }) => <a href={`/worlds/${params.worldId}`}>{children}</a>,
 }));
 
 describe("WorldListPage", () => {
@@ -96,7 +96,7 @@ describe("WorldListPage", () => {
     expect(screen.queryByText("Inaccessible World")).toBeNull();
     expect(screen.getByRole("link", { name: /Public World/i })).toHaveAttribute(
       "href",
-      "/worlds/public-world-00000000",
+      "/worlds/00000000-0000-0000-0000-000000000101",
     );
   });
 });
