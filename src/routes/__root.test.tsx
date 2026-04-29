@@ -93,6 +93,36 @@ describe("app shell auth controls", () => {
     expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
 
+  it("shows anonymous users a sign-in link from the app shell", async () => {
+    const user = userEvent.setup();
+    const { router } = renderAt("/");
+
+    await user.click(await screen.findByRole("link", { name: "Sign in" }));
+
+    await expect.poll(() => router.state.location.pathname).toBe("/sign-in");
+  });
+
+  it("shows authenticated users worlds and sign-out actions without sign-in", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: "user-1" } } },
+          error: null,
+        }),
+      }),
+    );
+    const { router } = renderAt("/");
+
+    expect(await screen.findByRole("link", { name: "Worlds" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
+    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
+
+    await user.click(screen.getByRole("link", { name: "Worlds" }));
+
+    await expect.poll(() => router.state.location.pathname).toBe("/worlds");
+  });
+
   it("signs out authenticated users, clears cached data, and redirects", async () => {
     const user = userEvent.setup();
     const signOut = vi.fn().mockResolvedValue({ error: null });

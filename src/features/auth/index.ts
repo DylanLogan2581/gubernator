@@ -2,6 +2,7 @@ export {
   signInMutationOptions,
   signOutMutationOptions,
 } from "./mutations/authMutations";
+export { AuthNavigationControl } from "./components/AuthNavigationControl";
 export { SignInPage } from "./components/SignInPage";
 export { SignOutControl } from "./components/SignOutControl";
 export { authQueryKeys } from "./queries/authQueryKeys";

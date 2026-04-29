@@ -26,8 +26,8 @@ export function AppHeader({ action }: AppHeaderProps): JSX.Element {
           </div>
 
           <div className="flex items-center gap-2">
-            <NotificationBellPlaceholder />
             {action}
+            <NotificationBellPlaceholder />
           </div>
         </div>
       </div>

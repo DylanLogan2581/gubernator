@@ -11,7 +11,7 @@ import { AppLayout } from "@/components/app/AppLayout";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
-import { SignOutControl } from "@/features/auth";
+import { AuthNavigationControl } from "@/features/auth";
 import { scheduleAuthStateQueryCacheSync } from "@/lib/authStateQueryCache";
 import { type AppRouterContext } from "@/lib/queryClient";
 import { subscribeToSupabaseAuthStateChanges } from "@/lib/supabaseAuthState";
@@ -54,7 +54,7 @@ function RootLayout(): JSX.Element {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppLayout headerAction={<SignOutControl />}>
+      <AppLayout headerAction={<AuthNavigationControl />}>
         {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
       </AppLayout>
       {TanStackRouterDevtools !== null ? (
