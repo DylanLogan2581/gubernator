@@ -43,6 +43,8 @@ VITE_SUPABASE_ANON_KEY=<local anon key from supabase status>
 
 Never put service-role keys, third-party secrets, or production credentials in frontend environment files.
 
+The Vite dev server runs at `http://localhost:5173`. Local Supabase Auth redirects use that URL, and also allow `http://127.0.0.1:5173` for local browser testing.
+
 ## Core Commands
 
 - `npm run dev` starts the Vite dev server
