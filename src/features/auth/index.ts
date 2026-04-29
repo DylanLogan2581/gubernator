@@ -16,7 +16,10 @@ export {
   signInCredentialsSchema,
   normalizeSignInReturnPath,
 } from "./schemas/signInSchemas";
-export { requireAuthenticatedRoute } from "./utils/protectedRouteGuards";
+export {
+  redirectAuthenticatedRoute,
+  requireAuthenticatedRoute,
+} from "./utils/protectedRouteGuards";
 export { AuthUiError, normalizeAuthError } from "./utils/authErrors";
 
 export type {
