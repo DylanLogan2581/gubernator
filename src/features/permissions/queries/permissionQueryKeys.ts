@@ -1,5 +1,7 @@
+import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
+
 export const permissionQueryKeys = {
-  all: ["permissions"] as const,
+  all: authStateQueryCacheKeys.permissionsAll,
   currentAccessContext: () =>
     [...permissionQueryKeys.all, "current-access-context"] as const,
 } as const;

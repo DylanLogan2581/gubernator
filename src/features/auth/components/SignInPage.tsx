@@ -10,6 +10,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { syncAuthStateQueryCache } from "@/lib/authStateQueryCache";
 
 import { signInMutationOptions } from "../mutations/authMutations";
 import { authQueryKeys } from "../queries/authQueryKeys";
@@ -77,7 +78,8 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
     setFormError(null);
 
     try {
-      await signInMutation.mutateAsync(result.data);
+      const signInResult = await signInMutation.mutateAsync(result.data);
+      syncAuthStateQueryCache(queryClient, signInResult.session);
       await queryClient.invalidateQueries({ queryKey: authQueryKeys.all });
       await onSignInSuccess();
     } catch (error) {

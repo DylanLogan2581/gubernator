@@ -16,6 +16,7 @@ const { requireSupabaseClient } = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+  supabase: null,
 }));
 
 type TestRouter = {

@@ -4,6 +4,7 @@ import { LoaderCircle, LogOut } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
+import { syncAuthStateQueryCache } from "@/lib/authStateQueryCache";
 
 import { signOutMutationOptions } from "../mutations/authMutations";
 import { currentSessionQueryOptions } from "../queries/authQueries";
@@ -29,7 +30,7 @@ export function SignOutControl(): JSX.Element | null {
         setErrorMessage("Sign-out failed. Try again.");
       },
       onSuccess: () => {
-        queryClient.clear();
+        syncAuthStateQueryCache(queryClient, null);
         void navigate({ to: "/" });
       },
     });

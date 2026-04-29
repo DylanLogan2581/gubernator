@@ -1,5 +1,7 @@
+import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
+
 export const worldAccessQueryKeys = {
-  all: ["world-access"] as const,
+  all: authStateQueryCacheKeys.worldAccessAll,
   currentUserAdminWorldIds: (userId: string) =>
     [
       ...worldAccessQueryKeys.all,
