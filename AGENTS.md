@@ -173,7 +173,7 @@ supabase/
   - `test@gubernator.local` / `password123`: active normal user, owner of `Test User World`.
   - `other@gubernator.local` / `password123`: active normal user, owner of `Restricted Development World`.
 - Seeded worlds are private. Super admin should see/manage all seeded worlds; each normal user should see/manage only their own private world unless an explicit access rule grants more access; anonymous users should not read application user, world, or world admin rows through RLS.
-- Protected routes such as `/worlds` and `/worlds/$worldSlug` require an authenticated Supabase session at the route boundary and redirect unauthenticated visitors to `/sign-in` with a normalized return path.
+- Protected routes such as `/worlds` and `/worlds/$worldId` require an authenticated Supabase session at the route boundary and redirect unauthenticated visitors to `/sign-in` with a normalized return path.
 - World access is layered: route guards handle session presence, Supabase RLS restricts raw database visibility, and app access context maps visible worlds into access/manage/admin UI capabilities.
 
 ## Testing
