@@ -10,6 +10,11 @@ type RequireAuthenticatedRouteOptions = {
   readonly returnTo: string;
 };
 
+type RedirectAuthenticatedRouteOptions = {
+  readonly queryClient: QueryClient;
+  readonly returnTo: string;
+};
+
 export async function requireAuthenticatedRoute({
   queryClient,
   returnTo,
@@ -24,6 +29,23 @@ export async function requireAuthenticatedRoute({
     return redirect({
       search: { returnTo: normalizeSignInReturnPath(returnTo) },
       to: "/sign-in",
+    });
+  }
+}
+
+export async function redirectAuthenticatedRoute({
+  queryClient,
+  returnTo,
+}: RedirectAuthenticatedRouteOptions): Promise<ReturnType<
+  typeof redirect
+> | void> {
+  const session = await queryClient.ensureQueryData(
+    currentSessionQueryOptions(),
+  );
+
+  if (session !== null) {
+    return redirect({
+      href: normalizeSignInReturnPath(returnTo),
     });
   }
 }
