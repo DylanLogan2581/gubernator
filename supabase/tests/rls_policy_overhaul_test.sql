@@ -404,7 +404,7 @@ select
     'world admin update is silently blocked (name unchanged)'
   );
 
--- World admin can add another admin to their world
+-- World admin can add another admin to an assigned world.
 select
   lives_ok (
     $test$
@@ -417,7 +417,7 @@ select
     'world admin can add another world admin'
   );
 
--- Clean up for later tests
+-- World admin can remove another admin from an assigned world.
 select
   lives_ok (
     $test$

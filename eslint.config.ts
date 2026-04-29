@@ -210,21 +210,29 @@ const commonRestrictedSyntax = [
   },
 ];
 
-const appRestrictedSyntax = [
-  ...commonRestrictedSyntax,
+const supabaseClientRestrictedSyntax = [
   {
     selector: "CallExpression[callee.name='createClient']",
     message: "Create the Supabase client only in src/lib/supabase.ts.",
   },
+] as const;
+
+const queryClientRestrictedSyntax = [
   {
     selector: "NewExpression[callee.name='QueryClient']",
     message: "Create QueryClient only in the approved root/provider setup.",
   },
+] as const;
+
+const queryClientProviderRestrictedSyntax = [
   {
     selector: "JSXOpeningElement[name.name='QueryClientProvider']",
     message:
       "Render QueryClientProvider only in the approved root/provider setup.",
   },
+] as const;
+
+const appRuntimeRestrictedSyntax = [
   {
     selector:
       "AssignmentExpression[left.object.object.name='window'][left.object.property.name='location']",
@@ -269,10 +277,20 @@ const appRestrictedSyntax = [
     message:
       "Avoid Math.random() in app code. Prefer a dedicated random helper or deterministic input.",
   },
-];
+] as const;
 
-const routeAndComponentRestrictedSyntax = [
-  ...commonRestrictedSyntax,
+const routerProviderRestrictedSyntax = [
+  {
+    selector: "CallExpression[callee.name='createRouter']",
+    message: "Create the router only in src/main.tsx.",
+  },
+  {
+    selector: "JSXOpeningElement[name.name='RouterProvider']",
+    message: "Render RouterProvider only in src/main.tsx.",
+  },
+] as const;
+
+const uiLayerRestrictedSyntax = [
   {
     selector: "CallExpression[callee.name='fetch']",
     message:
@@ -300,37 +318,58 @@ const routeAndComponentRestrictedSyntax = [
     message:
       "Avoid raw setInterval in components and routes. Prefer a dedicated hook or cleanup-aware abstraction.",
   },
+] as const;
+
+const appRestrictedSyntax = [
+  ...commonRestrictedSyntax,
+  ...supabaseClientRestrictedSyntax,
+  ...queryClientRestrictedSyntax,
+  ...queryClientProviderRestrictedSyntax,
+  ...appRuntimeRestrictedSyntax,
+];
+
+const appSourceRestrictedSyntax = [
+  ...appRestrictedSyntax,
+  ...routerProviderRestrictedSyntax,
+];
+
+const mainModuleRestrictedSyntax = [...appRestrictedSyntax];
+
+const supabaseModuleRestrictedSyntax = [
+  ...commonRestrictedSyntax,
+  ...queryClientRestrictedSyntax,
+  ...queryClientProviderRestrictedSyntax,
+  ...appRuntimeRestrictedSyntax,
+  ...routerProviderRestrictedSyntax,
+];
+
+const queryClientModuleRestrictedSyntax = [
+  ...commonRestrictedSyntax,
+  ...supabaseClientRestrictedSyntax,
+  ...queryClientProviderRestrictedSyntax,
+  ...appRuntimeRestrictedSyntax,
+  ...routerProviderRestrictedSyntax,
+];
+
+const rootRouteRestrictedSyntax = [
+  ...commonRestrictedSyntax,
+  ...supabaseClientRestrictedSyntax,
+  ...queryClientRestrictedSyntax,
+  ...appRuntimeRestrictedSyntax,
+  ...uiLayerRestrictedSyntax,
+  ...routerProviderRestrictedSyntax,
+];
+
+const routeAndComponentRestrictedSyntax = [
+  ...appRestrictedSyntax,
+  ...uiLayerRestrictedSyntax,
+  ...routerProviderRestrictedSyntax,
 ];
 
 const featureComponentRestrictedSyntax = [
-  ...commonRestrictedSyntax,
-  {
-    selector: "CallExpression[callee.name='fetch']",
-    message:
-      "Do not call fetch directly in feature components. Use feature query modules instead.",
-  },
-  {
-    selector:
-      "CallExpression[callee.object.name='JSON'][callee.property.name='parse']",
-    message:
-      "Avoid JSON.parse in feature components. Keep serialization in helpers, queries, or infrastructure modules.",
-  },
-  {
-    selector:
-      "CallExpression[callee.object.name='JSON'][callee.property.name='stringify']",
-    message:
-      "Avoid JSON.stringify in feature components. Keep serialization in helpers, queries, or infrastructure modules.",
-  },
-  {
-    selector: "CallExpression[callee.name='setTimeout']",
-    message:
-      "Avoid raw setTimeout in feature components. Prefer a dedicated hook or cleanup-aware abstraction.",
-  },
-  {
-    selector: "CallExpression[callee.name='setInterval']",
-    message:
-      "Avoid raw setInterval in feature components. Prefer a dedicated hook or cleanup-aware abstraction.",
-  },
+  ...appRestrictedSyntax,
+  ...uiLayerRestrictedSyntax,
+  ...routerProviderRestrictedSyntax,
 ];
 
 export default defineConfig([
@@ -520,29 +559,39 @@ export default defineConfig([
   {
     files: ["src/**/*.{ts,tsx}"],
     ignores: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "src/main.tsx",
       "src/lib/supabase.ts",
-      "src/routes/__root.tsx",
       "src/lib/queryClient.ts",
+      "src/routes/__root.tsx",
     ],
     rules: {
-      "no-restricted-syntax": ["error", ...appRestrictedSyntax],
+      "no-restricted-syntax": ["error", ...appSourceRestrictedSyntax],
     },
   },
   {
-    files: ["src/**/*.{ts,tsx}"],
-    ignores: ["src/main.tsx"],
+    files: ["src/main.tsx"],
     rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector: "CallExpression[callee.name='createRouter']",
-          message: "Create the router only in src/main.tsx.",
-        },
-        {
-          selector: "JSXOpeningElement[name.name='RouterProvider']",
-          message: "Render RouterProvider only in src/main.tsx.",
-        },
-      ],
+      "no-restricted-syntax": ["error", ...mainModuleRestrictedSyntax],
+    },
+  },
+  {
+    files: ["src/lib/supabase.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", ...supabaseModuleRestrictedSyntax],
+    },
+  },
+  {
+    files: ["src/lib/queryClient.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", ...queryClientModuleRestrictedSyntax],
+    },
+  },
+  {
+    files: ["src/routes/__root.tsx"],
+    rules: {
+      "no-restricted-syntax": ["error", ...rootRouteRestrictedSyntax],
     },
   },
   {
@@ -617,6 +666,7 @@ export default defineConfig([
   },
   {
     files: ["src/routes/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.test.ts", "src/**/*.test.tsx", "src/routes/__root.tsx"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -640,6 +690,7 @@ export default defineConfig([
   },
   {
     files: ["src/features/*/components/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     rules: {
       "no-restricted-imports": [
         "error",

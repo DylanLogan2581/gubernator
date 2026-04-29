@@ -145,7 +145,7 @@ Expected local access behavior:
 - normal users cannot see another user's private world unless an explicit access rule grants it
 - anonymous users cannot read application user, world, or world admin rows through RLS
 
-Protected app areas such as `/worlds` and `/worlds/$worldSlug` require an authenticated Supabase session. Unauthenticated visitors are redirected to `/sign-in` with a return path. After sign-in, the app combines the current user row and world admin rows into an access context; world lists show only accessible worlds, and unavailable or unauthorized world routes show the shared access-denied state.
+Protected app areas such as `/worlds` and `/worlds/$worldId` require an authenticated Supabase session. Unauthenticated visitors are redirected to `/sign-in` with a return path. After sign-in, the app combines the current user row and world admin rows into an access context; world lists show only accessible worlds, and unavailable or unauthorized world routes show the shared access-denied state.
 
 ## Validation
 

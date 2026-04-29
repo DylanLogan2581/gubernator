@@ -79,7 +79,7 @@ select
 
 drop policy "world_admins_insert_owner" on public.world_admins;
 
--- The world owner or a super admin may grant admin access.
+-- World admins, world owners, and super admins may grant admin access.
 create policy "world_admins_insert" on public.world_admins for insert to authenticated
 with
   check (
@@ -89,7 +89,7 @@ with
 
 drop policy "world_admins_delete_owner" on public.world_admins;
 
--- The world owner or a super admin may revoke admin access.
+-- World admins, world owners, and super admins may revoke admin access.
 create policy "world_admins_delete" on public.world_admins for delete to authenticated using (
   public.is_world_admin (world_id)
   or public.is_super_admin ()

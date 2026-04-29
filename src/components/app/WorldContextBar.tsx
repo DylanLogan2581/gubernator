@@ -9,8 +9,8 @@ export function WorldContextBar(): JSX.Element {
     >
       <Globe2 className="size-3.5 shrink-0" aria-hidden="true" />
       <span>
-        No active world &mdash; world, turn, calendar, and character context
-        will appear here
+        No active world: world, turn, calendar, and character context will
+        appear here
       </span>
     </div>
   );
