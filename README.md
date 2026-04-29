@@ -36,6 +36,8 @@ VITE_SUPABASE_ANON_KEY=<local anon key from supabase status>
 
 Use only browser-safe values with the `VITE_` prefix. Do not put service-role keys, third-party secrets, or production credentials in frontend environment files.
 
+Local Supabase Auth is configured to send email, OAuth, and recovery redirects back to the Vite dev app at `http://localhost:5173`, with `http://127.0.0.1:5173` also allowed for local browser testing.
+
 ### 3. Apply database migrations
 
 Requires the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and a local Supabase instance running:
