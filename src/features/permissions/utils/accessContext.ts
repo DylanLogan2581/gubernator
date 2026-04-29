@@ -40,7 +40,7 @@ export function createAccessContext({
   }
 
   function canAccessWorld(world: WorldAccessTarget): boolean {
-    if (!hasActiveAppUser && userId !== null) {
+    if (!hasActiveAppUser) {
       return false;
     }
 
