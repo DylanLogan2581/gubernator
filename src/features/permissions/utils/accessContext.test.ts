@@ -15,7 +15,28 @@ describe("createAccessContext", () => {
     expect(context.canAccessWorld({ id: "private-world" })).toBe(false);
     expect(
       context.canAccessWorld({ id: "public-world", visibility: "public" }),
-    ).toBe(true);
+    ).toBe(false);
+  });
+
+  it("does not grant anonymous access to private or public worlds", () => {
+    const context = createAccessContext({
+      isSuperAdmin: false,
+      userId: null,
+      worldAdminWorldIds: [],
+    });
+
+    expect(
+      context.canAccessWorld({
+        id: "private-world",
+        visibility: "private",
+      }),
+    ).toBe(false);
+    expect(
+      context.canAccessWorld({
+        id: "public-world",
+        visibility: "public",
+      }),
+    ).toBe(false);
   });
 
   it("allows super admins to access and manage any world", () => {

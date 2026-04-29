@@ -33,6 +33,9 @@ describe("currentAccessContextQueryOptions", () => {
     expect(context.isAuthenticated).toBe(false);
     expect(context.isSuperAdmin).toBe(false);
     expect(context.worldAdminWorldIds).toEqual([]);
+    expect(
+      context.canAccessWorld({ id: "public-world", visibility: "public" }),
+    ).toBe(false);
     expect(from).not.toHaveBeenCalled();
   });
 
