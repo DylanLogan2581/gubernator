@@ -7,6 +7,7 @@
     "bootstrap:repo": "node --experimental-strip-types ./scripts/bootstrap-repo.ts",
     "commit": "cz",
     "commitlint": "commitlint --edit",
+    "db:types": "sh -c \"printf '/* eslint-disable @typescript-eslint/no-redundant-type-constituents */\\n\\n' > src/types/database.ts && supabase gen types typescript --local --schema public >> src/types/database.ts && prettier --write src/types/database.ts\"",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "npm run lint:eslint && npm run lint:docs && npm run lint:sql",
@@ -18,6 +19,7 @@
     "release": "node --experimental-strip-types ./scripts/release.ts",
     "release:dry": "node --experimental-strip-types ./scripts/release.ts --dry-run",
     "test": "vitest run --passWithNoTests",
+    "test:db": "supabase test db",
     "test:coverage": "vitest run --coverage"
   },
   "lint-staged": {

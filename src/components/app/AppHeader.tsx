@@ -1,10 +1,14 @@
-import { type JSX } from "react";
+import { type JSX, type ReactNode } from "react";
 
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/appMeta";
 
 import { NotificationBellPlaceholder } from "./NotificationBellPlaceholder";
 
-export function AppHeader(): JSX.Element {
+type AppHeaderProps = {
+  readonly action?: ReactNode;
+};
+
+export function AppHeader({ action }: AppHeaderProps): JSX.Element {
   return (
     <header className="sticky top-0 z-10 py-4">
       <div className="rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-sm backdrop-blur">
@@ -21,7 +25,10 @@ export function AppHeader(): JSX.Element {
             </div>
           </div>
 
-          <NotificationBellPlaceholder />
+          <div className="flex items-center gap-2">
+            {action}
+            <NotificationBellPlaceholder />
+          </div>
         </div>
       </div>
     </header>

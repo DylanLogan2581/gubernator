@@ -9,38 +9,95 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorldsRouteImport } from './routes/worlds'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WorldsIndexRouteImport } from './routes/worlds.index'
+import { Route as WorldsWorldIdRouteImport } from './routes/worlds.$worldId'
 
+const WorldsRoute = WorldsRouteImport.update({
+  id: '/worlds',
+  path: '/worlds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorldsIndexRoute = WorldsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WorldsRoute,
+} as any)
+const WorldsWorldIdRoute = WorldsWorldIdRouteImport.update({
+  id: '/$worldId',
+  path: '/$worldId',
+  getParentRoute: () => WorldsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/sign-in': typeof SignInRoute
+  '/worlds': typeof WorldsRouteWithChildren
+  '/worlds/$worldId': typeof WorldsWorldIdRoute
+  '/worlds/': typeof WorldsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/sign-in': typeof SignInRoute
+  '/worlds/$worldId': typeof WorldsWorldIdRoute
+  '/worlds': typeof WorldsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/sign-in': typeof SignInRoute
+  '/worlds': typeof WorldsRouteWithChildren
+  '/worlds/$worldId': typeof WorldsWorldIdRoute
+  '/worlds/': typeof WorldsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/sign-in' | '/worlds' | '/worlds/$worldId' | '/worlds/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/sign-in' | '/worlds/$worldId' | '/worlds'
+  id:
+    | '__root__'
+    | '/'
+    | '/sign-in'
+    | '/worlds'
+    | '/worlds/$worldId'
+    | '/worlds/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SignInRoute: typeof SignInRoute
+  WorldsRoute: typeof WorldsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/worlds': {
+      id: '/worlds'
+      path: '/worlds'
+      fullPath: '/worlds'
+      preLoaderRoute: typeof WorldsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +105,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/worlds/': {
+      id: '/worlds/'
+      path: '/'
+      fullPath: '/worlds/'
+      preLoaderRoute: typeof WorldsIndexRouteImport
+      parentRoute: typeof WorldsRoute
+    }
+    '/worlds/$worldId': {
+      id: '/worlds/$worldId'
+      path: '/$worldId'
+      fullPath: '/worlds/$worldId'
+      preLoaderRoute: typeof WorldsWorldIdRouteImport
+      parentRoute: typeof WorldsRoute
+    }
   }
 }
 
+interface WorldsRouteChildren {
+  WorldsWorldIdRoute: typeof WorldsWorldIdRoute
+  WorldsIndexRoute: typeof WorldsIndexRoute
+}
+
+const WorldsRouteChildren: WorldsRouteChildren = {
+  WorldsWorldIdRoute: WorldsWorldIdRoute,
+  WorldsIndexRoute: WorldsIndexRoute,
+}
+
+const WorldsRouteWithChildren =
+  WorldsRoute._addFileChildren(WorldsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SignInRoute: SignInRoute,
+  WorldsRoute: WorldsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
