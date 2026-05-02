@@ -179,7 +179,8 @@ insert into
     owner_id,
     current_turn_number,
     visibility,
-    status
+    status,
+    calendar_config_json
   )
 values
   (
@@ -188,7 +189,8 @@ values
     '00000000-0000-0000-0000-000000000001',
     0,
     'private',
-    'active'
+    'active',
+    public.default_calendar_config ()
   ),
   (
     '00000000-0000-0000-0000-000000000102',
@@ -196,7 +198,8 @@ values
     '00000000-0000-0000-0000-000000000002',
     1,
     'private',
-    'active'
+    'active',
+    public.default_calendar_config ()
   ),
   (
     '00000000-0000-0000-0000-000000000103',
@@ -204,7 +207,8 @@ values
     '00000000-0000-0000-0000-000000000003',
     3,
     'private',
-    'active'
+    'active',
+    public.default_calendar_config ()
   )
 on conflict (id) do update
 set
@@ -213,6 +217,7 @@ set
   current_turn_number = excluded.current_turn_number,
   visibility = excluded.visibility,
   status = excluded.status,
+  calendar_config_json = excluded.calendar_config_json,
   archived_at = null,
   updated_at = now();
 
