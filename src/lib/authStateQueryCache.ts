@@ -9,6 +9,7 @@ export const authStateQueryCacheKeys = {
   currentSession: () =>
     [...authStateQueryCacheKeys.authAll, "current-session"] as const,
   permissionsAll: ["permissions"] as const,
+  settlementsAll: ["settlements"] as const,
   worldAccessAll: ["world-access"] as const,
   worldsAll: ["worlds"] as const,
 } as const;
@@ -17,6 +18,7 @@ const authDependentQueryKeys = [
   authStateQueryCacheKeys.currentAppUser(),
   authStateQueryCacheKeys.calendarAll,
   authStateQueryCacheKeys.permissionsAll,
+  authStateQueryCacheKeys.settlementsAll,
   authStateQueryCacheKeys.worldAccessAll,
   authStateQueryCacheKeys.worldsAll,
 ] as const satisfies readonly QueryKey[];
