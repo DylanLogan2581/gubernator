@@ -11,6 +11,97 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      nations: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_hidden: boolean;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_hidden?: boolean;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_hidden?: boolean;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nations_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      settlements: {
+        Row: {
+          auto_ready_enabled: boolean;
+          coord_x: number | null;
+          coord_z: number | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_ready_current_turn: boolean;
+          name: string;
+          nation_id: string;
+          ready_set_at: string | null;
+          ready_set_by_citizen_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          auto_ready_enabled?: boolean;
+          coord_x?: number | null;
+          coord_z?: number | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_ready_current_turn?: boolean;
+          name: string;
+          nation_id: string;
+          ready_set_at?: string | null;
+          ready_set_by_citizen_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          auto_ready_enabled?: boolean;
+          coord_x?: number | null;
+          coord_z?: number | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_ready_current_turn?: boolean;
+          name?: string;
+          nation_id?: string;
+          ready_set_at?: string | null;
+          ready_set_by_citizen_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlements_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       users: {
         Row: {
           created_at: string;
