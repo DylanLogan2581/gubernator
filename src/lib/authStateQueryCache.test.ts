@@ -88,6 +88,14 @@ function seedAuthDependentQueries(queryClient: QueryClient): void {
     id: "user-1",
   });
   queryClient.setQueryData(
+    [
+      ...authStateQueryCacheKeys.calendarAll,
+      "world-calendar-config",
+      "world-1",
+    ],
+    { epoch: { day: 1 } },
+  );
+  queryClient.setQueryData(
     [...authStateQueryCacheKeys.permissionsAll, "current-access-context"],
     { userId: "user-1" },
   );
@@ -109,6 +117,7 @@ function expectAuthDependentQueriesToBeCleared(queryClient: QueryClient): void {
   expect(
     queryClient.getQueryData(authStateQueryCacheKeys.currentAppUser()),
   ).toBeUndefined();
+  expect(queryClient.getQueriesData({ queryKey: ["calendar"] })).toEqual([]);
   expect(queryClient.getQueriesData({ queryKey: ["permissions"] })).toEqual([]);
   expect(queryClient.getQueriesData({ queryKey: ["world-access"] })).toEqual(
     [],
