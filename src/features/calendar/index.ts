@@ -2,6 +2,12 @@
 // Implemented in Epic 2.
 export { calendarQueryKeys } from "./queries/calendarQueryKeys";
 export {
+  SaveWorldCalendarConfigError,
+  isSaveWorldCalendarConfigError,
+  saveWorldCalendarConfigMutationOptions,
+  type SaveWorldCalendarConfigInput,
+} from "./mutations/calendarMutations";
+export {
   WorldCalendarConfigError,
   isWorldCalendarConfigError,
   shouldRetryWorldCalendarConfigQuery,
