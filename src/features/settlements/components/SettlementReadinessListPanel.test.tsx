@@ -223,7 +223,7 @@ describe("SettlementReadinessListPanel", () => {
     });
 
     expect(switchControl).toBeDisabled();
-    expect(screen.getByText("Auto-ready")).toBeDefined();
+    expect(screen.getAllByText("Auto-ready").length).toBeGreaterThan(0);
     expect(
       screen.getByText(
         "Auto-ready is enabled, so this settlement does not need manual readiness.",
@@ -233,6 +233,181 @@ describe("SettlementReadinessListPanel", () => {
     await user.click(switchControl);
 
     expect(clientFixture.update).not.toHaveBeenCalled();
+  });
+
+  it("shows auto-ready controls for world admins", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClientFixture({
+        settlementRows: [
+          createSettlementRow({
+            id: "settlement-1",
+            name: "Amberhold",
+          }),
+        ],
+      }).client,
+    );
+
+    renderSettlementReadinessListPanel({
+      accessContext: createWorldAdminAccessContext(),
+    });
+
+    expect(
+      await screen.findByRole("switch", { name: "Auto-ready" }),
+    ).toBeDefined();
+  });
+
+  it("shows auto-ready controls for super admins", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClientFixture({
+        settlementRows: [
+          createSettlementRow({
+            id: "settlement-1",
+            name: "Amberhold",
+          }),
+        ],
+      }).client,
+    );
+
+    renderSettlementReadinessListPanel({
+      accessContext: createSuperAdminAccessContext(),
+    });
+
+    expect(
+      await screen.findByRole("switch", { name: "Auto-ready" }),
+    ).toBeDefined();
+  });
+
+  it("hides auto-ready controls from unauthorized users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClientFixture({
+        settlementRows: [
+          createSettlementRow({
+            id: "settlement-1",
+            name: "Amberhold",
+          }),
+        ],
+      }).client,
+    );
+
+    renderSettlementReadinessListPanel({
+      accessContext: createUnauthorizedAccessContext(),
+      canAdmin: false,
+    });
+
+    expect(await screen.findByText("Amberhold")).toBeDefined();
+    expect(screen.queryByRole("switch", { name: "Auto-ready" })).toBeNull();
+  });
+
+  it("disables auto-ready controls for archived worlds", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({
+          id: "settlement-1",
+          name: "Amberhold",
+        }),
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderSettlementReadinessListPanel({
+      accessContext: createWorldAdminAccessContext(),
+      isArchived: true,
+    });
+
+    const switchControl = await screen.findByRole("switch", {
+      name: "Auto-ready",
+    });
+
+    expect(switchControl).toBeDisabled();
+    expect(
+      screen.getByText(
+        "Auto-ready is disabled because this world is archived.",
+      ),
+    ).toBeDefined();
+
+    await user.click(switchControl);
+
+    expect(clientFixture.update).not.toHaveBeenCalled();
+  });
+
+  it("enables auto-ready through the auto-ready mutation", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({
+          id: "settlement-1",
+          name: "Amberhold",
+        }),
+      ],
+      updateResult: {
+        data: {
+          auto_ready_enabled: true,
+          id: "settlement-1",
+          is_ready_current_turn: false,
+          ready_set_at: null,
+        },
+        error: null,
+      },
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderSettlementReadinessListPanel({
+      accessContext: createWorldAdminAccessContext(),
+    });
+
+    await user.click(
+      await screen.findByRole("switch", {
+        name: "Auto-ready",
+      }),
+    );
+
+    expect(clientFixture.readEqId).toHaveBeenCalledWith("id", "settlement-1");
+    expect(clientFixture.readEqWorldId).toHaveBeenCalledWith(
+      "nations.world_id",
+      "world-1",
+    );
+    expect(clientFixture.update).toHaveBeenCalledWith({
+      auto_ready_enabled: true,
+    });
+    expect(clientFixture.updateEq).toHaveBeenCalledWith("id", "settlement-1");
+  });
+
+  it("disables auto-ready through the auto-ready mutation", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({
+          auto_ready_enabled: true,
+          id: "settlement-1",
+          name: "Amberhold",
+        }),
+      ],
+      updateResult: {
+        data: {
+          auto_ready_enabled: false,
+          id: "settlement-1",
+          is_ready_current_turn: true,
+          ready_set_at: "2026-05-02T12:00:00.000Z",
+        },
+        error: null,
+      },
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderSettlementReadinessListPanel({
+      accessContext: createSuperAdminAccessContext(),
+    });
+
+    await user.click(
+      await screen.findByRole("switch", {
+        name: "Auto-ready",
+      }),
+    );
+
+    expect(clientFixture.update).toHaveBeenCalledWith({
+      auto_ready_enabled: false,
+    });
   });
 
   it("renders mutation errors as accessible alert text", async () => {
@@ -270,15 +445,18 @@ describe("SettlementReadinessListPanel", () => {
 
 function renderSettlementReadinessListPanel({
   accessContext = createAdminAccessContext(),
+  canAdmin = true,
   isArchived = false,
 }: {
   readonly accessContext?: WorldPermissionContext;
+  readonly canAdmin?: boolean;
   readonly isArchived?: boolean;
 } = {}): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <SettlementReadinessListPanel
         accessContext={accessContext}
+        canAdmin={canAdmin}
         isArchived={isArchived}
         worldId="world-1"
       />
@@ -317,6 +495,12 @@ type TestSettlementReadinessAccessRow = {
   };
 };
 type TestSettlementReadinessUpdateRow = {
+  readonly id: string;
+  readonly is_ready_current_turn: boolean;
+  readonly ready_set_at: string | null;
+};
+type TestSettlementAutoReadyUpdateRow = {
+  readonly auto_ready_enabled: boolean;
   readonly id: string;
   readonly is_ready_current_turn: boolean;
   readonly ready_set_at: string | null;
@@ -368,7 +552,9 @@ function createClientFixture({
   readonly accessResult?: TestSupabaseResult<TestSettlementReadinessAccessRow>;
   readonly error?: Error | null;
   readonly settlementRows: readonly TestSettlementReadinessListRow[];
-  readonly updateResult?: TestSupabaseResult<TestSettlementReadinessUpdateRow>;
+  readonly updateResult?: TestSupabaseResult<
+    TestSettlementAutoReadyUpdateRow | TestSettlementReadinessUpdateRow
+  >;
 }): {
   readonly client: unknown;
   readonly readEqId: ReturnType<typeof vi.fn>;
@@ -438,7 +624,9 @@ function createSettlementsQueryBuilder({
   readonly rows:
     | readonly TestSettlementReadinessListRow[]
     | Promise<readonly TestSettlementReadinessListRow[]>;
-  readonly updateResult: TestSupabaseResult<TestSettlementReadinessUpdateRow>;
+  readonly updateResult: TestSupabaseResult<
+    TestSettlementAutoReadyUpdateRow | TestSettlementReadinessUpdateRow
+  >;
 }): {
   readonly builder: unknown;
   readonly readEqId: ReturnType<typeof vi.fn>;
@@ -520,6 +708,30 @@ function createAdminAccessContext(): WorldPermissionContext {
   return createAccessContext({
     isSuperAdmin: false,
     userId: "user-1",
+    worldAdminWorldIds: [],
+  });
+}
+
+function createWorldAdminAccessContext(): WorldPermissionContext {
+  return createAccessContext({
+    isSuperAdmin: false,
+    userId: "user-2",
+    worldAdminWorldIds: ["world-1"],
+  });
+}
+
+function createSuperAdminAccessContext(): WorldPermissionContext {
+  return createAccessContext({
+    isSuperAdmin: true,
+    userId: "user-2",
+    worldAdminWorldIds: [],
+  });
+}
+
+function createUnauthorizedAccessContext(): WorldPermissionContext {
+  return createAccessContext({
+    isSuperAdmin: false,
+    userId: "user-2",
     worldAdminWorldIds: [],
   });
 }
