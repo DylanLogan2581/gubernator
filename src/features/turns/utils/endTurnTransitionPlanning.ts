@@ -84,8 +84,8 @@ export function planBasicEndTurnTransition(
     },
     nextDate,
     notificationPayload: {
-      messageText: `Turn ${toTurnNumber} is ready.`,
-      notificationType: "turn_advanced",
+      messageText: `World advanced to turn ${toTurnNumber}.`,
+      notificationType: "turn.completed",
     },
     previousDate,
     readinessSummary,

@@ -398,6 +398,10 @@ describe("persistSupabaseRunningTransition", () => {
             },
             toTurnNumber: 4,
           },
+          p_notification_payload_jsonb: {
+            messageText: "World advanced to turn 4.",
+            notificationType: "turn.completed",
+          },
           p_world_id: "00000000-0000-0000-0000-000000000001",
         }),
         headers: {
@@ -471,6 +475,10 @@ describe("persistSupabaseRunningTransition", () => {
               totalSettlementCount: 0,
             },
             toTurnNumber: 4,
+          },
+          p_notification_payload_jsonb: {
+            messageText: "World advanced to turn 4.",
+            notificationType: "turn.completed",
           },
           p_world_id: "world-1",
         }),
@@ -894,8 +902,8 @@ function createPlannedTransition({
     },
     nextDate,
     notificationPayload: {
-      messageText: `Turn ${toTurnNumber} is ready.`,
-      notificationType: "turn_advanced",
+      messageText: `World advanced to turn ${toTurnNumber}.`,
+      notificationType: "turn.completed",
     },
     previousDate,
     readinessSummary,

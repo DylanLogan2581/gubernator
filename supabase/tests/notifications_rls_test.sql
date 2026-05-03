@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (10);
+  plan (15);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -45,7 +45,22 @@ values
     '{"username":"notifications_outsider"}'::jsonb,
     now(),
     now()
+  ),
+  (
+    'a1000000-0000-0000-0000-000000000004',
+    'notifications-superadmin@example.com',
+    'x',
+    now(),
+    '{"username":"notifications_superadmin"}'::jsonb,
+    now(),
+    now()
   );
+
+update public.users
+set
+  is_super_admin = true
+where
+  id = 'a1000000-0000-0000-0000-000000000004';
 
 insert into
   public.worlds (
@@ -222,6 +237,42 @@ select
     'recipient can read the inserted notification with defaults and transition reference'
   );
 
+select
+  lives_ok (
+    $test$
+    select
+      *
+    from
+      public.advance_world_turn_if_current (
+        'a2000000-0000-0000-0000-000000000001',
+        4,
+        null,
+        '{
+          "notificationType": "turn.completed",
+          "messageText": "World advanced to turn 5."
+        }'::jsonb
+      )
+  $test$,
+    'world owner can generate turn-completed notifications through the narrow RPC'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.notifications
+      where
+        recipient_user_id = 'a1000000-0000-0000-0000-000000000001'
+        and world_id = 'a2000000-0000-0000-0000-000000000001'
+        and notification_type = 'turn.completed'
+        and message_text = 'World advanced to turn 5.'
+        and generated_in_transition_id is not null
+    ),
+    'owner can read their own generated turn-completed notification'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -235,15 +286,35 @@ set
 
 select
   ok (
+    exists (
+      select
+        1
+      from
+        public.notifications
+      where
+        recipient_user_id = 'a1000000-0000-0000-0000-000000000002'
+        and world_id = 'a2000000-0000-0000-0000-000000000001'
+        and notification_type = 'turn.completed'
+        and message_text = 'World advanced to turn 5.'
+        and generated_in_transition_id is not null
+    ),
+    'world admin can read their own generated notification'
+  );
+
+select
+  ok (
     not exists (
       select
         1
       from
         public.notifications
       where
-        id = 'a6000000-0000-0000-0000-000000000001'
+        recipient_user_id = 'a1000000-0000-0000-0000-000000000001'
+        and world_id = 'a2000000-0000-0000-0000-000000000001'
+        and notification_type = 'turn.completed'
+        and message_text = 'World advanced to turn 5.'
     ),
-    'world admin cannot read another user notification in an administered world'
+    'world admin cannot read another user generated notification in an administered world'
   );
 
 select
@@ -265,6 +336,50 @@ select
     '42501',
     null,
     'authenticated users cannot insert notifications for another recipient'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- SUPER ADMIN: notifications remain recipient-scoped even for super admins.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"a1000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.notifications
+      where
+        recipient_user_id = 'a1000000-0000-0000-0000-000000000004'
+        and world_id = 'a2000000-0000-0000-0000-000000000001'
+        and notification_type = 'turn.completed'
+        and message_text = 'World advanced to turn 5.'
+        and generated_in_transition_id is not null
+    ),
+    'super admin can read their own generated notification'
+  );
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.notifications
+      where
+        recipient_user_id = 'a1000000-0000-0000-0000-000000000001'
+        and world_id = 'a2000000-0000-0000-0000-000000000001'
+        and notification_type = 'turn.completed'
+        and message_text = 'World advanced to turn 5.'
+    ),
+    'super admin cannot read another recipient notification row'
   );
 
 reset role;
