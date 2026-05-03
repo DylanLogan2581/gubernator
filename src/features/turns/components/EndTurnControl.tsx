@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { StepForward, TriangleAlert, X } from "lucide-react";
+import { CircleCheck, StepForward, TriangleAlert, X } from "lucide-react";
 import { useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -25,6 +25,12 @@ type EndTurnControlProps = {
   readonly nextDateLabel: string;
   readonly nextTurnNumber: number;
   readonly worldId: string;
+};
+type SuccessfulEndTurnTransition = {
+  readonly nextDateLabel: string;
+  readonly nextTurnNumber: number;
+  readonly previousDateLabel: string;
+  readonly previousTurnNumber: number;
 };
 
 export function EndTurnControl({
@@ -68,6 +74,8 @@ function EndTurnControlContent({
   readonly worldId: string;
 }): JSX.Element {
   const [isConfirming, setIsConfirming] = useState(false);
+  const [successfulTransition, setSuccessfulTransition] =
+    useState<SuccessfulEndTurnTransition | null>(null);
   const queryClient = useQueryClient();
   const readinessSummaryQuery = useQuery(
     settlementReadinessSummaryQueryOptions(worldId),
@@ -84,6 +92,7 @@ function EndTurnControlContent({
       return;
     }
 
+    endTurnMutation.reset();
     setIsConfirming(true);
   }
 
@@ -92,10 +101,24 @@ function EndTurnControlContent({
       return;
     }
 
-    endTurnMutation.mutate({
-      expectedTurnNumber: currentTurnNumber,
-      worldId,
-    });
+    setSuccessfulTransition(null);
+    endTurnMutation.mutate(
+      {
+        expectedTurnNumber: currentTurnNumber,
+        worldId,
+      },
+      {
+        onSuccess: (result) => {
+          setIsConfirming(false);
+          setSuccessfulTransition({
+            nextDateLabel,
+            nextTurnNumber: result.transition.nextTurnNumber,
+            previousDateLabel: currentDateLabel,
+            previousTurnNumber: result.transition.previousTurnNumber,
+          });
+        },
+      },
+    );
   }
 
   return (
@@ -173,6 +196,10 @@ function EndTurnControlContent({
         </p>
       ) : null}
 
+      {successfulTransition !== null ? (
+        <EndTurnSuccessMessage transition={successfulTransition} />
+      ) : null}
+
       {isConfirming && readinessSummaryQuery.isSuccess ? (
         <EndTurnConfirmationDialog
           currentDateLabel={currentDateLabel}
@@ -188,6 +215,54 @@ function EndTurnControlContent({
         />
       ) : null}
     </section>
+  );
+}
+
+function EndTurnSuccessMessage({
+  transition,
+}: {
+  readonly transition: SuccessfulEndTurnTransition;
+}): JSX.Element {
+  return (
+    <div
+      className="grid gap-3 rounded-md border border-emerald-600/30 bg-emerald-50 px-3 py-3 text-sm text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100"
+      role="status"
+    >
+      <p className="flex items-start gap-2 font-medium">
+        <CircleCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        End-turn transition completed.
+      </p>
+      <dl className="grid gap-2 sm:grid-cols-2">
+        <EndTurnDetail
+          label="Previous turn"
+          value={`Turn ${transition.previousTurnNumber}`}
+        />
+        <EndTurnDetail
+          label="New turn"
+          value={`Turn ${transition.nextTurnNumber}`}
+        />
+        <EndTurnDetail
+          label="Previous date"
+          value={transition.previousDateLabel}
+        />
+        <EndTurnDetail label="New date" value={transition.nextDateLabel} />
+      </dl>
+    </div>
+  );
+}
+
+function EndTurnDetail({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}): JSX.Element {
+  return (
+    <div>
+      <dt className="font-medium">{label}</dt>
+      <dd>{value}</dd>
+    </div>
   );
 }
 
@@ -340,8 +415,17 @@ function getReadinessSummaryDescription(
 }
 
 function getErrorDescription(error: unknown): string {
-  if (isEndTurnBasicError(error) || error instanceof Error) {
-    return error.message;
+  if (isEndTurnBasicError(error)) {
+    switch (error.code) {
+      case "end_turn_archived_world":
+        return "This world is archived. End turn is unavailable.";
+      case "end_turn_running_transition":
+        return "Another end-turn transition is already running. Refresh the page before trying again.";
+      case "end_turn_stale_turn":
+        return "This turn has already changed. Refresh the page to review the latest world state.";
+      case "end_turn_unauthorized":
+        return "End turn is unavailable for this world.";
+    }
   }
 
   return "Try refreshing the page. If the problem continues, contact an administrator.";
