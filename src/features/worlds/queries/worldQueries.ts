@@ -35,6 +35,8 @@ type WorldRouteAccessQueryOptions = UseQueryOptions<
 
 const WORLD_HEADER_SELECT =
   "archived_at,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility";
+const ACCESSIBLE_WORLDS_SELECT =
+  "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility";
 
 export class WorldNotFoundError extends Error {
   readonly worldId: string;
@@ -89,7 +91,7 @@ async function getAccessibleWorlds(
 
   const { data, error } = await client
     .from("worlds")
-    .select(WORLD_HEADER_SELECT)
+    .select(ACCESSIBLE_WORLDS_SELECT)
     .order("updated_at", { ascending: false });
 
   if (error !== null) {

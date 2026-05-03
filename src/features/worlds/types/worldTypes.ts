@@ -29,10 +29,12 @@ export type AccessibleWorld = {
   readonly createdAt: string;
   readonly currentTurnNumber: number;
   readonly id: string;
+  readonly inWorldDateLabel: string;
   readonly isArchived: boolean;
   readonly isHidden: boolean;
   readonly name: string;
   readonly ownerId: string;
+  readonly planningTurnNumber: number;
   readonly slug: string;
   readonly status: string;
   readonly updatedAt: string;

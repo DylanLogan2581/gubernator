@@ -98,7 +98,7 @@ describe("accessibleWorldsQueryOptions", () => {
     ]);
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility",
     );
     expect(order).toHaveBeenCalledWith("updated_at", { ascending: false });
   });
