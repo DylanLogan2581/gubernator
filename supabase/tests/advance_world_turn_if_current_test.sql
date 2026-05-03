@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (10);
+  plan (14);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -74,6 +74,50 @@ values
     '89000000-0000-0000-0000-000000000002'
   );
 
+insert into
+  public.nations (id, world_id, name)
+values
+  (
+    '8b000000-0000-0000-0000-000000000001',
+    '8a000000-0000-0000-0000-000000000001',
+    'Advance Turn Nation'
+  );
+
+insert into
+  public.settlements (
+    id,
+    nation_id,
+    name,
+    auto_ready_enabled,
+    is_ready_current_turn,
+    ready_set_at
+  )
+values
+  (
+    '8c000000-0000-0000-0000-000000000001',
+    '8b000000-0000-0000-0000-000000000001',
+    'Manual Ready Settlement',
+    false,
+    true,
+    '2026-05-02 12:00:00+00'
+  ),
+  (
+    '8c000000-0000-0000-0000-000000000002',
+    '8b000000-0000-0000-0000-000000000001',
+    'Auto Ready Settlement',
+    true,
+    false,
+    '2026-05-02 12:05:00+00'
+  ),
+  (
+    '8c000000-0000-0000-0000-000000000003',
+    '8b000000-0000-0000-0000-000000000001',
+    'Manual Not Ready Settlement',
+    false,
+    false,
+    null
+  );
+
 -- ---------------------------------------------------------------------------
 -- OWNER: matching expected turn advances exactly one turn.
 -- ---------------------------------------------------------------------------
@@ -125,6 +169,70 @@ select
     ),
     1,
     'matching expected turn records the running transition'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '8b000000-0000-0000-0000-000000000001'
+        and auto_ready_enabled = false
+        and is_ready_current_turn = false
+    ),
+    2,
+    'non-auto-ready settlements reset to not ready after turn advance'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '8b000000-0000-0000-0000-000000000001'
+        and auto_ready_enabled = false
+        and ready_set_at is null
+    ),
+    2,
+    'non-auto-ready settlements clear ready_set_at after turn advance'
+  );
+
+select
+  is (
+    (
+      select
+        is_ready_current_turn
+      from
+        public.settlements
+      where
+        id = '8c000000-0000-0000-0000-000000000002'
+    ),
+    true,
+    'auto-ready settlements remain ready after turn advance'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '8b000000-0000-0000-0000-000000000001'
+        and (
+          auto_ready_enabled
+          or is_ready_current_turn
+        )
+    ),
+    1,
+    'mixed settlements keep only auto-ready rows counted ready for the new turn'
   );
 
 -- ---------------------------------------------------------------------------
