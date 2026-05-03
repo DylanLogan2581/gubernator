@@ -8,6 +8,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
+import { SettlementReadinessSummaryPanel } from "@/features/settlements";
 
 import {
   isWorldNotFoundError,
@@ -161,6 +162,7 @@ function WorldShellContent({
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
       />
+      <SettlementReadinessSummaryPanel worldId={worldId} />
     </WorldShellFrame>
   );
 }

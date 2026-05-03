@@ -45,6 +45,16 @@ describe("WorldShellPage", () => {
             visibility: "private",
           }),
         ],
+        settlementRows: [
+          {
+            auto_ready_enabled: true,
+            is_ready_current_turn: false,
+          },
+          {
+            auto_ready_enabled: false,
+            is_ready_current_turn: false,
+          },
+        ],
       }),
     );
 
@@ -58,6 +68,9 @@ describe("WorldShellPage", () => {
     expect(screen.getByText("In-world date")).toBeDefined();
     expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
     expect(screen.getByText("private")).toBeDefined();
+    expect(await screen.findByText("Settlement readiness")).toBeDefined();
+    expect(screen.getByText("Total settlements")).toBeDefined();
+    expect(screen.getByText("Not ready")).toBeDefined();
     expect(
       screen.getByRole("link", { name: "Back to worlds" }),
     ).toHaveAttribute("href", "/worlds");
@@ -155,6 +168,7 @@ function createQueryClient(): QueryClient {
 function createClient({
   adminRows = [],
   session,
+  settlementRows = [],
   worldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
@@ -163,6 +177,7 @@ function createClient({
       readonly id: string;
     };
   };
+  readonly settlementRows?: readonly TestSettlementReadinessSummaryRow[];
   readonly worldRows?: readonly TestWorldRow[];
 }): unknown {
   return {
@@ -183,6 +198,10 @@ function createClient({
 
       if (table === "worlds") {
         return createWorldsQueryBuilder(worldRows);
+      }
+
+      if (table === "settlements") {
+        return createSettlementsQueryBuilder(settlementRows);
       }
 
       throw new Error(`Unexpected table ${table}`);
@@ -216,6 +235,10 @@ type TestCalendarConfigJson =
   | WorldCalendarConfig
   | { readonly months: [] }
   | null;
+type TestSettlementReadinessSummaryRow = {
+  readonly auto_ready_enabled: boolean;
+  readonly is_ready_current_turn: boolean;
+};
 
 function createUser(id: string): TestUser {
   return {
@@ -299,6 +322,18 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
           maybeSingle: vi.fn().mockResolvedValue({ data, error: null }),
         };
       }),
+    })),
+  };
+}
+
+function createSettlementsQueryBuilder(
+  rows: readonly TestSettlementReadinessSummaryRow[],
+): unknown {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+      })),
     })),
   };
 }
