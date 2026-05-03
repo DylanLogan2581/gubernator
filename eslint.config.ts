@@ -393,7 +393,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        project: ["./tsconfig.app.json", "./tsconfig.node.json"],
+        project: [
+          "./tsconfig.app.json",
+          "./tsconfig.node.json",
+          "./tsconfig.edge-functions.json",
+        ],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -401,7 +405,11 @@ export default defineConfig([
       "import-x/resolver": {
         typescript: {
           noWarnOnMultipleProjects: true,
-          project: ["./tsconfig.app.json", "./tsconfig.node.json"],
+          project: [
+            "./tsconfig.app.json",
+            "./tsconfig.node.json",
+            "./tsconfig.edge-functions.json",
+          ],
         },
       },
     },
