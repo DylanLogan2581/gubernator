@@ -49,6 +49,90 @@ export type Database = {
           },
         ];
       };
+      notifications: {
+        Row: {
+          citizen_id: string | null;
+          event_id: string | null;
+          generated_at: string;
+          generated_in_transition_id: string | null;
+          id: string;
+          is_read: boolean;
+          message_text: string;
+          nation_id: string | null;
+          notification_type: string;
+          recipient_user_id: string;
+          settlement_id: string | null;
+          trade_route_id: string | null;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id?: string | null;
+          event_id?: string | null;
+          generated_at?: string;
+          generated_in_transition_id?: string | null;
+          id?: string;
+          is_read?: boolean;
+          message_text: string;
+          nation_id?: string | null;
+          notification_type: string;
+          recipient_user_id: string;
+          settlement_id?: string | null;
+          trade_route_id?: string | null;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string | null;
+          event_id?: string | null;
+          generated_at?: string;
+          generated_in_transition_id?: string | null;
+          id?: string;
+          is_read?: boolean;
+          message_text?: string;
+          nation_id?: string | null;
+          notification_type?: string;
+          recipient_user_id?: string;
+          settlement_id?: string | null;
+          trade_route_id?: string | null;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_user_id_fkey";
+            columns: ["recipient_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_transition_world_fkey";
+            columns: ["generated_in_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "notifications_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlements: {
         Row: {
           auto_ready_enabled: boolean;
