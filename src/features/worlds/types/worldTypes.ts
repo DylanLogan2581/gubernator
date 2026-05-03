@@ -34,6 +34,9 @@ export type AccessibleWorld = {
   readonly isArchived: boolean;
   readonly isHidden: boolean;
   readonly name: string;
+  readonly nextFullInWorldDateLabel: string;
+  readonly nextInWorldDateLabel: string;
+  readonly nextTurnNumber: number;
   readonly ownerId: string;
   readonly planningTurnNumber: number;
   readonly slug: string;
@@ -49,6 +52,9 @@ export type WorldShellHeader = {
   readonly inWorldDateLabel: string;
   readonly isArchived: boolean;
   readonly name: string;
+  readonly nextFullInWorldDateLabel: string;
+  readonly nextInWorldDateLabel: string;
+  readonly nextTurnNumber: number;
   readonly planningTurnNumber: number;
   readonly slug: string;
   readonly status: string;

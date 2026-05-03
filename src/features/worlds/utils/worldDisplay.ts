@@ -39,6 +39,7 @@ export function toAccessibleWorld(
   const planningTurnNumber = resolvePlanningTurnNumber(
     world.current_turn_number,
   );
+  const nextTurnNumber = resolveNextTurnNumber(world.current_turn_number);
 
   return {
     archivedAt: world.archived_at,
@@ -61,6 +62,17 @@ export function toAccessibleWorld(
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
     name: world.name,
+    nextFullInWorldDateLabel: resolveInWorldDateLabel(
+      world.calendar_config_json,
+      nextTurnNumber,
+      "full",
+    ),
+    nextInWorldDateLabel: resolveInWorldDateLabel(
+      world.calendar_config_json,
+      nextTurnNumber,
+      "compact",
+    ),
+    nextTurnNumber,
     ownerId: world.owner_id,
     planningTurnNumber,
     slug: createWorldSlug(world.name, world.id),
@@ -87,6 +99,14 @@ function resolvePlanningTurnNumber(currentTurnNumber: number): number {
   }
 
   return Math.max(1, currentTurnNumber);
+}
+
+function resolveNextTurnNumber(currentTurnNumber: number): number {
+  if (!Number.isInteger(currentTurnNumber) || currentTurnNumber < 0) {
+    return 2;
+  }
+
+  return currentTurnNumber + 1;
 }
 
 function resolveInWorldDateLabel(
