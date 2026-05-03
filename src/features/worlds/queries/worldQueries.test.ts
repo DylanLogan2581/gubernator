@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
+import type { WorldCalendarConfig } from "@/features/calendar";
 import { createAccessContext } from "@/features/permissions";
 import { type GubernatorSupabaseClient } from "@/lib/supabase";
 
@@ -218,8 +219,11 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(routeAccess.header).toEqual({
       archivedAt: null,
       currentTurnNumber: 8,
+      fullInWorldDateLabel: "Secondday, Ember 1, 101 AG",
+      inWorldDateLabel: "Ember 1, 101 AG",
       isArchived: false,
       name: "Local Development World",
+      planningTurnNumber: 8,
       slug: "local-development-world-00000000",
       status: "active",
       visibility: "private",
@@ -229,7 +233,7 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(routeAccess.world.slug).toBe("local-development-world-00000000");
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility",
     );
     expect(eq).toHaveBeenCalledWith(
       "id",
@@ -447,6 +451,7 @@ describe("worldRouteAccessQueryOptions", () => {
 function createWorldRow(
   overrides: Partial<{
     readonly archived_at: string | null;
+    readonly calendar_config_json: WorldCalendarConfig;
     readonly created_at: string;
     readonly current_turn_number: number;
     readonly id: string;
@@ -458,6 +463,7 @@ function createWorldRow(
   }> = {},
 ): {
   readonly archived_at: string | null;
+  readonly calendar_config_json: WorldCalendarConfig;
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
@@ -469,6 +475,7 @@ function createWorldRow(
 } {
   return {
     archived_at: null,
+    calendar_config_json: createCalendarConfig(),
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 5,
     id: "00000000-0000-0000-0000-000000000101",
@@ -478,6 +485,24 @@ function createWorldRow(
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",
     ...overrides,
+  };
+}
+
+function createCalendarConfig(): WorldCalendarConfig {
+  return {
+    months: [
+      { dayCount: 2, index: 0, name: "Dawn" },
+      { dayCount: 3, index: 1, name: "Ember" },
+    ],
+    startingDayOfMonth: 1,
+    startingMonthIndex: 0,
+    startingWeekdayOffset: 0,
+    startingYear: 100,
+    weekdays: [
+      { index: 0, name: "Firstday" },
+      { index: 1, name: "Secondday" },
+    ],
+    yearFormatTemplate: "{n} AG",
   };
 }
 

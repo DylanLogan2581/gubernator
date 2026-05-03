@@ -34,7 +34,7 @@ type WorldRouteAccessQueryOptions = UseQueryOptions<
 >;
 
 const WORLD_HEADER_SELECT =
-  "archived_at,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility";
+  "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility";
 const ACCESSIBLE_WORLDS_SELECT =
   "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility";
 
@@ -135,8 +135,11 @@ async function getWorldRouteAccess(
     header: {
       archivedAt: world.archivedAt,
       currentTurnNumber: world.currentTurnNumber,
+      fullInWorldDateLabel: world.fullInWorldDateLabel,
+      inWorldDateLabel: world.inWorldDateLabel,
       isArchived: world.isArchived,
       name: world.name,
+      planningTurnNumber: world.planningTurnNumber,
       slug: world.slug,
       status: world.status,
       visibility: world.visibility,
