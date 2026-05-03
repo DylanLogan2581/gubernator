@@ -6,7 +6,10 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import type { WorldPermissionContext } from "@/features/worlds";
 import { cn } from "@/lib/utils";
 
-import { setSettlementReadinessMutationOptions } from "../mutations/settlementReadinessMutations";
+import {
+  setSettlementAutoReadyMutationOptions,
+  setSettlementReadinessMutationOptions,
+} from "../mutations/settlementReadinessMutations";
 import { settlementReadinessListQueryOptions } from "../queries/settlementReadinessQueries";
 
 import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";
@@ -14,12 +17,14 @@ import type { JSX, ReactNode } from "react";
 
 type SettlementReadinessListPanelProps = {
   readonly accessContext: WorldPermissionContext;
+  readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly worldId: string;
 };
 
 export function SettlementReadinessListPanel({
   accessContext,
+  canAdmin,
   isArchived,
   worldId,
 }: SettlementReadinessListPanelProps): JSX.Element {
@@ -60,6 +65,7 @@ export function SettlementReadinessListPanel({
   return (
     <SettlementReadinessListPanelContent
       accessContext={accessContext}
+      canAdmin={canAdmin}
       isArchived={isArchived}
       items={readinessListQuery.data}
       worldId={worldId}
@@ -69,11 +75,13 @@ export function SettlementReadinessListPanel({
 
 export function SettlementReadinessListPanelContent({
   accessContext,
+  canAdmin,
   isArchived,
   items,
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
+  readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly items: readonly SettlementReadinessListItem[];
   readonly worldId: string;
@@ -81,6 +89,12 @@ export function SettlementReadinessListPanelContent({
   const queryClient = useQueryClient();
   const setReadinessMutation = useMutation(
     setSettlementReadinessMutationOptions({
+      accessContext,
+      queryClient,
+    }),
+  );
+  const setAutoReadyMutation = useMutation(
+    setSettlementAutoReadyMutationOptions({
       accessContext,
       queryClient,
     }),
@@ -116,11 +130,22 @@ export function SettlementReadinessListPanelContent({
               <th scope="col" className="py-2 pl-4 font-medium">
                 Manual readiness
               </th>
+              {canAdmin ? (
+                <th scope="col" className="py-2 pl-4 font-medium">
+                  Auto-ready
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {items.map((item) => (
               <SettlementReadinessRow
+                autoReadyMutationError={
+                  setAutoReadyMutation.variables?.settlementId === item.id
+                    ? setAutoReadyMutation.error
+                    : null
+                }
+                canSetAutoReady={canAdmin}
                 isArchived={isArchived}
                 item={item}
                 key={item.id}
@@ -129,11 +154,23 @@ export function SettlementReadinessListPanelContent({
                     ? setReadinessMutation.error
                     : null
                 }
+                pendingAutoReadySettlementId={
+                  setAutoReadyMutation.isPending
+                    ? setAutoReadyMutation.variables.settlementId
+                    : null
+                }
                 pendingSettlementId={
                   setReadinessMutation.isPending
                     ? setReadinessMutation.variables.settlementId
                     : null
                 }
+                setAutoReady={(autoReadyEnabled) => {
+                  setAutoReadyMutation.mutate({
+                    autoReadyEnabled,
+                    settlementId: item.id,
+                    worldId,
+                  });
+                }}
                 setReadiness={(isReady) => {
                   setReadinessMutation.mutate({
                     isReady,
@@ -166,16 +203,24 @@ function SettlementReadinessListFrame({
 }
 
 function SettlementReadinessRow({
+  autoReadyMutationError,
+  canSetAutoReady,
   isArchived,
   item,
   mutationError,
+  pendingAutoReadySettlementId,
   pendingSettlementId,
+  setAutoReady,
   setReadiness,
 }: {
+  readonly autoReadyMutationError: Error | null;
+  readonly canSetAutoReady: boolean;
   readonly isArchived: boolean;
   readonly item: SettlementReadinessListItem;
   readonly mutationError: Error | null;
+  readonly pendingAutoReadySettlementId: string | null;
   readonly pendingSettlementId: string | null;
+  readonly setAutoReady: (autoReadyEnabled: boolean) => void;
   readonly setReadiness: (isReady: boolean) => void;
 }): JSX.Element {
   return (
@@ -202,6 +247,17 @@ function SettlementReadinessRow({
           setReadiness={setReadiness}
         />
       </td>
+      {canSetAutoReady ? (
+        <td className="py-3 pl-4">
+          <AutoReadyControl
+            isArchived={isArchived}
+            isPending={pendingAutoReadySettlementId === item.id}
+            item={item}
+            mutationError={autoReadyMutationError}
+            setAutoReady={setAutoReady}
+          />
+        </td>
+      ) : null}
     </tr>
   );
 }
@@ -295,6 +351,64 @@ function ManualReadinessControl({
   );
 }
 
+function AutoReadyControl({
+  isArchived,
+  isPending,
+  item,
+  mutationError,
+  setAutoReady,
+}: {
+  readonly isArchived: boolean;
+  readonly isPending: boolean;
+  readonly item: SettlementReadinessListItem;
+  readonly mutationError: Error | null;
+  readonly setAutoReady: (autoReadyEnabled: boolean) => void;
+}): JSX.Element {
+  const descriptionId = `settlement-auto-ready-${item.id}-description`;
+  const errorId = `settlement-auto-ready-${item.id}-error`;
+  const isDisabled = isArchived || isPending;
+  const description = getAutoReadyDescription({ isArchived, isPending });
+
+  return (
+    <div className="grid gap-2">
+      <label className="inline-flex w-fit items-center gap-2 text-sm font-medium text-foreground">
+        <input
+          aria-describedby={
+            mutationError === null
+              ? descriptionId
+              : `${descriptionId} ${errorId}`
+          }
+          aria-invalid={mutationError === null ? undefined : true}
+          checked={item.autoReadyEnabled}
+          className="peer sr-only"
+          disabled={isDisabled}
+          onChange={(event) => {
+            setAutoReady(event.currentTarget.checked);
+          }}
+          role="switch"
+          type="checkbox"
+        />
+        <span
+          aria-hidden="true"
+          className={cn(
+            "relative h-5 w-9 rounded-full border border-border bg-muted transition-colors peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50 peer-disabled:opacity-50",
+            "after:absolute after:top-0.5 after:left-0.5 after:size-3.5 after:rounded-full after:bg-background after:shadow-sm after:transition-transform peer-checked:after:translate-x-4",
+          )}
+        />
+        <span>Auto-ready</span>
+      </label>
+      <p id={descriptionId} className="max-w-64 text-xs text-muted-foreground">
+        {description}
+      </p>
+      {mutationError === null ? null : (
+        <p id={errorId} role="alert" className="text-xs text-destructive">
+          {getErrorDescription(mutationError)}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function getManualReadinessDescription({
   isArchived,
   isAutoReady,
@@ -317,6 +431,24 @@ function getManualReadinessDescription({
   }
 
   return "Toggle whether this settlement is ready for the current turn.";
+}
+
+function getAutoReadyDescription({
+  isArchived,
+  isPending,
+}: {
+  readonly isArchived: boolean;
+  readonly isPending: boolean;
+}): string {
+  if (isArchived) {
+    return "Auto-ready is disabled because this world is archived.";
+  }
+
+  if (isPending) {
+    return "Saving auto-ready.";
+  }
+
+  return "Automatically count this settlement as ready for each turn.";
 }
 
 function getErrorDescription(error: unknown): string {

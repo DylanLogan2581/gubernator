@@ -168,6 +168,7 @@ function WorldShellContent({
       <SettlementReadinessSummaryPanel worldId={worldId} />
       <SettlementReadinessListPanel
         accessContext={accessContext}
+        canAdmin={worldQuery.data.canAdmin}
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
       />
