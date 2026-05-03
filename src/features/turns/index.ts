@@ -1,6 +1,13 @@
 // Turns feature — advance and track turns within a world.
 // Implemented in Epic 2.
 export {
+  EndTurnBasicError,
+  endTurnBasicMutationOptions,
+  isEndTurnBasicError,
+  type EndTurnBasicInput,
+  type EndTurnBasicMutationResult,
+} from "./mutations/endTurnBasicMutations";
+export {
   CurrentTurnStateError,
   currentTurnStateQueryOptions,
   isCurrentTurnStateError,
