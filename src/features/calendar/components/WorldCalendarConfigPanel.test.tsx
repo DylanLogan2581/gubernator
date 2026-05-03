@@ -27,12 +27,11 @@ describe("WorldCalendarConfigPanel", () => {
 
   it("renders editable calendar controls for world admins", async () => {
     const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
 
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        worldRows: [createWorldRow()],
-      }),
-    );
+    requireSupabaseClient.mockReturnValue(client);
 
     renderWorldCalendarConfigPanel({
       accessContext: createAccessContext({
@@ -76,6 +75,157 @@ describe("WorldCalendarConfigPanel", () => {
     expect(screen.getByRole("button", { name: "Add weekday" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Add month" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Save calendar" })).toBeDefined();
+  });
+
+  it("blocks save and exposes an accessible error when weekdays are empty", async () => {
+    const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+    await user.click(screen.getByRole("button", { name: "Remove weekdays 1" }));
+    await user.click(screen.getByRole("button", { name: "Remove weekdays 1" }));
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    expect(screen.getByText("Add at least one weekday.")).toBeDefined();
+    expect(client.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks save and exposes an accessible error when months are empty", async () => {
+    const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+    await user.click(screen.getByRole("button", { name: "Remove months 1" }));
+    await user.click(screen.getByRole("button", { name: "Remove months 1" }));
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    expect(screen.getByText("Add at least one month.")).toBeDefined();
+    expect(client.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks save and exposes an accessible error for an invalid start day", async () => {
+    const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    const startDayField = await screen.findByRole("spinbutton", {
+      name: "Day",
+    });
+
+    await user.clear(startDayField);
+    await user.type(startDayField, "3");
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    expect(
+      screen.getByText("Starting day must fit within the starting month."),
+    ).toBeDefined();
+    expect(startDayField).toHaveAttribute("aria-invalid", "true");
+    expect(client.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks save and exposes an accessible error for an invalid weekday offset", async () => {
+    const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+    await user.click(screen.getByRole("button", { name: "Remove weekdays 1" }));
+    await user.click(screen.getByRole("button", { name: "Remove weekdays 1" }));
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    expect(
+      screen.getByText(
+        "Starting weekday offset must match an existing weekday.",
+      ),
+    ).toBeDefined();
+    expect(client.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks save and exposes an accessible error for an invalid year format template", async () => {
+    const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    const yearFormatField = await screen.findByRole("textbox", {
+      name: "Year format template",
+    });
+
+    await user.clear(yearFormatField);
+    await user.type(yearFormatField, "Year");
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    expect(
+      screen.getByText("Year format template must include {n}."),
+    ).toBeDefined();
+    expect(yearFormatField).toHaveAttribute("aria-invalid", "true");
+    expect(client.from).toHaveBeenCalledTimes(1);
   });
 
   it("renders calendar configuration without edit controls for non-admin users", async () => {
@@ -144,7 +294,9 @@ function createClient({
   worldRows,
 }: {
   readonly worldRows: readonly TestWorldRow[];
-}): unknown {
+}): {
+  readonly from: ReturnType<typeof vi.fn>;
+} {
   return {
     from: vi.fn((table: string) => {
       if (table === "worlds") {
