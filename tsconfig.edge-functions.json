@@ -10,6 +10,12 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+
+    "paths": {
+      "@/*": ["./src/*"]
+    },
 
     "strict": true,
     "noUnusedLocals": true,
