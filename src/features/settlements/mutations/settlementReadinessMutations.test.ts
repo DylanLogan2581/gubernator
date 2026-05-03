@@ -7,7 +7,9 @@ import type { WorldPermissionContext } from "@/features/worlds";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import {
+  isSetSettlementAutoReadyError,
   isSetSettlementReadinessError,
+  setSettlementAutoReadyMutationOptions,
   setSettlementReadinessMutationOptions,
 } from "./settlementReadinessMutations";
 
@@ -229,8 +231,173 @@ describe("setSettlementReadinessMutationOptions", () => {
   });
 });
 
+describe("setSettlementAutoReadyMutationOptions", () => {
+  it("enables auto-ready for a world admin and preserves manual readiness fields", async () => {
+    const clientFixture = createClient({
+      updateResult: {
+        data: {
+          auto_ready_enabled: true,
+          id: "settlement-1",
+          is_ready_current_turn: false,
+          ready_set_at: null,
+        },
+        error: null,
+      },
+    });
+    const queryClient = createQueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue();
+    const options = setSettlementAutoReadyMutationOptions({
+      accessContext: createWorldAdminAccessContext(),
+      client: clientFixture.client,
+      queryClient,
+    });
+
+    const result = await executeAutoReadyMutation(queryClient, options, {
+      autoReadyEnabled: true,
+      settlementId: "settlement-1",
+      worldId: "world-1",
+    });
+
+    expect(result).toEqual({
+      autoReadyEnabled: true,
+      id: "settlement-1",
+      isReadyCurrentTurn: false,
+      isReadyForCurrentTurn: true,
+      readySetAt: null,
+    });
+    expect(options.mutationKey).toEqual(["settlements", "set-auto-ready"]);
+    expect(clientFixture.update).toHaveBeenCalledWith({
+      auto_ready_enabled: true,
+    });
+    expect(clientFixture.updateEq).toHaveBeenCalledWith("id", "settlement-1");
+    expect(clientFixture.updateSelect).toHaveBeenCalledWith(
+      "id,auto_ready_enabled,is_ready_current_turn,ready_set_at",
+    );
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["settlements", "readiness", "list", "world-1"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["settlements", "readiness", "summary", "world-1"],
+    });
+  });
+
+  it("disables auto-ready for a super admin without clearing manual readiness", async () => {
+    const clientFixture = createClient({
+      updateResult: {
+        data: {
+          auto_ready_enabled: false,
+          id: "settlement-1",
+          is_ready_current_turn: true,
+          ready_set_at: "2026-05-02T12:00:00.000Z",
+        },
+        error: null,
+      },
+    });
+    const queryClient = createQueryClient();
+    const options = setSettlementAutoReadyMutationOptions({
+      accessContext: createSuperAdminAccessContext(),
+      client: clientFixture.client,
+      queryClient,
+    });
+
+    await expect(
+      executeAutoReadyMutation(queryClient, options, {
+        autoReadyEnabled: false,
+        settlementId: "settlement-1",
+        worldId: "world-1",
+      }),
+    ).resolves.toEqual({
+      autoReadyEnabled: false,
+      id: "settlement-1",
+      isReadyCurrentTurn: true,
+      isReadyForCurrentTurn: true,
+      readySetAt: "2026-05-02T12:00:00.000Z",
+    });
+    expect(clientFixture.update).toHaveBeenCalledWith({
+      auto_ready_enabled: false,
+    });
+  });
+
+  it("returns an unauthorized error when a non-admin user toggles auto-ready", async () => {
+    const clientFixture = createClient({
+      readResult: {
+        data: createAccessRow({
+          owner_id: "user-2",
+          visibility: "public",
+        }),
+        error: null,
+      },
+    });
+    const queryClient = createQueryClient();
+    const options = setSettlementAutoReadyMutationOptions({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      client: clientFixture.client,
+      queryClient,
+    });
+
+    const mutationPromise = executeAutoReadyMutation(queryClient, options, {
+      autoReadyEnabled: true,
+      settlementId: "settlement-1",
+      worldId: "world-1",
+    });
+
+    await expect(mutationPromise).rejects.toSatisfy(
+      isSetSettlementAutoReadyError,
+    );
+    await expect(mutationPromise).rejects.toMatchObject({
+      code: "settlement_auto_ready_unauthorized",
+      message: "You do not have permission to update auto-ready.",
+      settlementId: "settlement-1",
+      worldId: "world-1",
+    });
+    expect(clientFixture.update).not.toHaveBeenCalled();
+  });
+
+  it("returns an archived-world error before toggling auto-ready", async () => {
+    const clientFixture = createClient({
+      readResult: {
+        data: createAccessRow({
+          archived_at: "2026-01-03T00:00:00.000Z",
+          status: "archived",
+        }),
+        error: null,
+      },
+    });
+    const queryClient = createQueryClient();
+    const options = setSettlementAutoReadyMutationOptions({
+      accessContext: createWorldAdminAccessContext(),
+      client: clientFixture.client,
+      queryClient,
+    });
+
+    await expect(
+      executeAutoReadyMutation(queryClient, options, {
+        autoReadyEnabled: true,
+        settlementId: "settlement-1",
+        worldId: "world-1",
+      }),
+    ).rejects.toMatchObject({
+      code: "settlement_auto_ready_archived",
+      message: "Archived worlds are read-only.",
+      name: "SetSettlementAutoReadyError",
+      settlementId: "settlement-1",
+      worldId: "world-1",
+    });
+    expect(clientFixture.update).not.toHaveBeenCalled();
+  });
+});
+
 type SetSettlementReadinessOptions = ReturnType<
   typeof setSettlementReadinessMutationOptions
+>;
+type SetSettlementAutoReadyOptions = ReturnType<
+  typeof setSettlementAutoReadyMutationOptions
 >;
 type SupabaseError = {
   readonly code?: string;
@@ -264,6 +431,15 @@ type SettlementReadinessUpdateRow = {
   readonly is_ready_current_turn: boolean;
   readonly ready_set_at: string | null;
 };
+type SettlementAutoReadyUpdateRow = {
+  readonly auto_ready_enabled: boolean;
+  readonly id: string;
+  readonly is_ready_current_turn: boolean;
+  readonly ready_set_at: string | null;
+};
+type SettlementUpdateRow =
+  | SettlementAutoReadyUpdateRow
+  | SettlementReadinessUpdateRow;
 
 function createClient({
   readResult = {
@@ -280,7 +456,7 @@ function createClient({
   },
 }: {
   readonly readResult?: SupabaseResult<SettlementReadinessAccessRow>;
-  readonly updateResult?: SupabaseResult<SettlementReadinessUpdateRow>;
+  readonly updateResult?: SupabaseResult<SettlementUpdateRow>;
 } = {}): {
   readonly client: GubernatorSupabaseClient;
   readonly from: ReturnType<typeof vi.fn>;
@@ -340,6 +516,22 @@ function createAdminAccessContext(): WorldPermissionContext {
   });
 }
 
+function createWorldAdminAccessContext(): WorldPermissionContext {
+  return createAccessContext({
+    isSuperAdmin: false,
+    userId: "user-2",
+    worldAdminWorldIds: ["world-1"],
+  });
+}
+
+function createSuperAdminAccessContext(): WorldPermissionContext {
+  return createAccessContext({
+    isSuperAdmin: true,
+    userId: "user-3",
+    worldAdminWorldIds: [],
+  });
+}
+
 function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
@@ -354,6 +546,19 @@ function executeMutation(
   options: SetSettlementReadinessOptions,
   variables: Parameters<
     NonNullable<SetSettlementReadinessOptions["mutationFn"]>
+  >[0],
+): Promise<unknown> {
+  return queryClient
+    .getMutationCache()
+    .build(queryClient, options)
+    .execute(variables);
+}
+
+function executeAutoReadyMutation(
+  queryClient: QueryClient,
+  options: SetSettlementAutoReadyOptions,
+  variables: Parameters<
+    NonNullable<SetSettlementAutoReadyOptions["mutationFn"]>
   >[0],
 ): Promise<unknown> {
   return queryClient
