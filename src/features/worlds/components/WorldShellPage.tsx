@@ -166,7 +166,11 @@ function WorldShellContent({
         worldId={worldId}
       />
       <SettlementReadinessSummaryPanel worldId={worldId} />
-      <SettlementReadinessListPanel worldId={worldId} />
+      <SettlementReadinessListPanel
+        accessContext={accessContext}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
     </WorldShellFrame>
   );
 }
