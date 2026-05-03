@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
-import { settlementReadinessListQueryOptions } from "./settlementReadinessQueries";
+import {
+  settlementReadinessListQueryOptions,
+  settlementReadinessSummaryQueryOptions,
+} from "./settlementReadinessQueries";
 
 describe("settlementReadinessListQueryOptions", () => {
   it("loads settlement readiness rows for one RLS-visible world", async () => {
@@ -40,6 +43,7 @@ describe("settlementReadinessListQueryOptions", () => {
         autoReadyEnabled: true,
         id: "settlement-1",
         isReadyCurrentTurn: false,
+        isReadyForCurrentTurn: true,
         name: "Amberhold",
         nationId: "nation-1",
         readySetAt: null,
@@ -48,6 +52,7 @@ describe("settlementReadinessListQueryOptions", () => {
         autoReadyEnabled: false,
         id: "settlement-2",
         isReadyCurrentTurn: true,
+        isReadyForCurrentTurn: true,
         name: "Briarwatch",
         nationId: "nation-2",
         readySetAt: "2026-05-02T12:00:00.000Z",
@@ -68,6 +73,59 @@ describe("settlementReadinessListQueryOptions", () => {
       "list",
       "world-1",
     ]);
+  });
+
+  it("summarizes auto-ready settlements as ready even when manually unready", async () => {
+    const queryClient = createQueryClient();
+
+    const summary = await queryClient.fetchQuery(
+      settlementReadinessSummaryQueryOptions(
+        "world-1",
+        createClient({
+          rows: [
+            createRow({
+              auto_ready_enabled: true,
+              id: "settlement-1",
+              is_ready_current_turn: false,
+            }),
+            createRow({
+              auto_ready_enabled: false,
+              id: "settlement-2",
+              is_ready_current_turn: true,
+            }),
+            createRow({
+              auto_ready_enabled: false,
+              id: "settlement-3",
+              is_ready_current_turn: false,
+            }),
+          ],
+        }),
+      ),
+    );
+
+    expect(summary).toEqual({
+      pendingSettlementCount: 1,
+      readySettlementCount: 2,
+      totalSettlementCount: 3,
+    });
+  });
+
+  it("selects only summary readiness fields and scopes through nations", async () => {
+    const builder = createSettlementReadinessQueryBuilder([]);
+    const from = vi.fn(() => builder);
+    const queryClient = createQueryClient();
+
+    await queryClient.fetchQuery(
+      settlementReadinessSummaryQueryOptions("world-1", {
+        from,
+      } as unknown as GubernatorSupabaseClient),
+    );
+
+    expect(builder.select).toHaveBeenCalledWith(
+      "auto_ready_enabled,is_ready_current_turn,nations!inner()",
+    );
+    expect(builder.eq).toHaveBeenCalledWith("nations.world_id", "world-1");
+    expect(builder.order).not.toHaveBeenCalled();
   });
 
   it("selects only list and summary readiness fields and scopes through nations", async () => {
@@ -181,6 +239,20 @@ function createSettlementReadinessQueryBuilder(
   builder.returns.mockResolvedValue({ data: rows, error });
 
   return builder;
+}
+
+function createRow(
+  overrides: Partial<TestSettlementReadinessRow> = {},
+): TestSettlementReadinessRow {
+  return {
+    auto_ready_enabled: false,
+    id: "settlement-1",
+    is_ready_current_turn: false,
+    name: "Amberhold",
+    nation_id: "nation-1",
+    ready_set_at: null,
+    ...overrides,
+  };
 }
 
 function createQueryClient(): QueryClient {
