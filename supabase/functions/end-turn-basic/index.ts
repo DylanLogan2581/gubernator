@@ -69,12 +69,12 @@ export type EndTurnBasicAuthContext = {
   readonly userId: string;
 };
 
-export type EndTurnBasicRunningTransition = {
+export type EndTurnBasicPersistedTransition = {
   readonly fromTurnNumber: number;
   readonly id: string;
   readonly initiatedByUserId: string;
   readonly startedAt: string;
-  readonly status: "running";
+  readonly status: "completed" | "failed";
   readonly toTurnNumber: number;
   readonly worldId: string;
 };
@@ -114,7 +114,7 @@ export type EndTurnBasicTransitionInputResult =
 export type EndTurnBasicPersistRunningTransitionResult =
   | {
       readonly ok: true;
-      readonly transition: EndTurnBasicRunningTransition;
+      readonly transition: EndTurnBasicPersistedTransition;
     }
   | {
       readonly error: EndTurnBasicErrorResponse;
@@ -850,19 +850,23 @@ type SupabaseEndTurnReadinessRowsResult =
       readonly ok: false;
     };
 
-type SupabaseRunningTransitionRow = {
+type SupabasePersistedTransitionRow = {
   readonly from_turn_number: number;
   readonly id: string;
   readonly initiated_by_user_id: string;
   readonly started_at: string;
-  readonly status: "running";
+  readonly status: "completed" | "failed";
   readonly to_turn_number: number;
   readonly world_id: string;
 };
 
 type SupabaseRunningTransitionFetchError =
   | {
-      readonly reason: "fetch_failed" | "invalid_payload" | "stale_world_turn";
+      readonly reason:
+        | "fetch_failed"
+        | "invalid_payload"
+        | "stale_world_turn"
+        | "transition_failed";
     }
   | {
       readonly reason: "http_error";
@@ -875,7 +879,7 @@ type SupabaseRunningTransitionFetchError =
 type SupabaseRunningTransitionResult =
   | {
       readonly ok: true;
-      readonly transition: EndTurnBasicRunningTransition;
+      readonly transition: EndTurnBasicPersistedTransition;
     }
   | {
       readonly error: SupabaseRunningTransitionFetchError;
@@ -1242,7 +1246,7 @@ async function runningTransitionResultFromResponse(
     };
   }
 
-  if (!isSupabaseRunningTransitionRow(row)) {
+  if (!isSupabasePersistedTransitionRow(row)) {
     return {
       error: {
         reason: "invalid_payload",
@@ -1253,7 +1257,7 @@ async function runningTransitionResultFromResponse(
 
   return {
     ok: true,
-    transition: toEndTurnBasicRunningTransition(row),
+    transition: toEndTurnBasicPersistedTransition(row),
   };
 }
 
@@ -1266,6 +1270,15 @@ async function advanceWorldTurnResultFromResponse(
     return {
       error: {
         reason: "stale_world_turn",
+      },
+      ok: false,
+    };
+  }
+
+  if (result.ok && result.transition.status === "failed") {
+    return {
+      error: {
+        reason: "transition_failed",
       },
       ok: false,
     };
@@ -1297,6 +1310,10 @@ function transitionPersistenceResultFromFetchError(
       ok: false,
       status: 403,
     };
+  }
+
+  if (error.reason === "transition_failed") {
+    return createTransitionPersistenceUnavailableResult();
   }
 
   return createTransitionPersistenceUnavailableResult();
@@ -1495,9 +1512,9 @@ function isSupabaseReadinessRow(value: unknown): value is {
   );
 }
 
-function isSupabaseRunningTransitionRow(
+function isSupabasePersistedTransitionRow(
   value: unknown,
-): value is SupabaseRunningTransitionRow {
+): value is SupabasePersistedTransitionRow {
   return (
     isRecord(value) &&
     typeof value.id === "string" &&
@@ -1514,7 +1531,7 @@ function isSupabaseRunningTransitionRow(
     value.initiated_by_user_id.length > 0 &&
     typeof value.started_at === "string" &&
     value.started_at.length > 0 &&
-    value.status === "running"
+    (value.status === "completed" || value.status === "failed")
   );
 }
 
@@ -1530,9 +1547,9 @@ function toBasicEndTurnReadinessRow(row: {
   };
 }
 
-function toEndTurnBasicRunningTransition(
-  row: SupabaseRunningTransitionRow,
-): EndTurnBasicRunningTransition {
+function toEndTurnBasicPersistedTransition(
+  row: SupabasePersistedTransitionRow,
+): EndTurnBasicPersistedTransition {
   return {
     fromTurnNumber: row.from_turn_number,
     id: row.id,
