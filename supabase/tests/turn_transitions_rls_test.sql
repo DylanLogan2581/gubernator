@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (23);
+  plan (25);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -568,6 +568,54 @@ select
     '23514',
     null,
     'turn transitions reject unsupported statuses'
+  );
+
+select
+  lives_ok (
+    $test$
+    insert into public.turn_transitions (
+      id,
+      world_id,
+      from_turn_number,
+      to_turn_number,
+      initiated_by_user_id,
+      status
+    )
+    values (
+      '83000000-0000-0000-0000-000000000007',
+      '82000000-0000-0000-0000-000000000001',
+      4,
+      5,
+      '81000000-0000-0000-0000-000000000001',
+      'running'
+    )
+  $test$,
+    'one running transition can be recorded for a world and source turn'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.turn_transitions (
+      id,
+      world_id,
+      from_turn_number,
+      to_turn_number,
+      initiated_by_user_id,
+      status
+    )
+    values (
+      '83000000-0000-0000-0000-000000000008',
+      '82000000-0000-0000-0000-000000000001',
+      4,
+      5,
+      '81000000-0000-0000-0000-000000000001',
+      'running'
+    )
+  $test$,
+    '23505',
+    null,
+    'duplicate running transitions for the same world and source turn are rejected'
   );
 
 select

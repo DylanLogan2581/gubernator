@@ -26,6 +26,7 @@ export type EndTurnBasicErrorCode =
   | "end_turn_calendar_config_invalid"
   | "end_turn_stale_expected_turn"
   | "end_turn_state_unavailable"
+  | "end_turn_transition_unavailable"
   | "end_turn_world_archived"
   | "end_turn_world_not_found"
   | "invalid_request"
@@ -68,6 +69,16 @@ export type EndTurnBasicAuthContext = {
   readonly userId: string;
 };
 
+export type EndTurnBasicRunningTransition = {
+  readonly fromTurnNumber: number;
+  readonly id: string;
+  readonly initiatedByUserId: string;
+  readonly startedAt: string;
+  readonly status: "running";
+  readonly toTurnNumber: number;
+  readonly worldId: string;
+};
+
 export type EndTurnBasicAuthContextResult =
   | {
       readonly context: EndTurnBasicAuthContext;
@@ -100,6 +111,17 @@ export type EndTurnBasicTransitionInputResult =
       readonly status: number;
     };
 
+export type EndTurnBasicPersistRunningTransitionResult =
+  | {
+      readonly ok: true;
+      readonly transition: EndTurnBasicRunningTransition;
+    }
+  | {
+      readonly error: EndTurnBasicErrorResponse;
+      readonly ok: false;
+      readonly status: number;
+    };
+
 export type EndTurnBasicHandlerOptions = {
   readonly resolveTransitionInput?: (
     requestBody: EndTurnBasicRequestBody,
@@ -112,6 +134,11 @@ export type EndTurnBasicHandlerOptions = {
   readonly resolveAuthContext?: (
     request: Request,
   ) => Promise<EndTurnBasicAuthContextResult>;
+  readonly persistRunningTransition?: (
+    input: BasicEndTurnTransitionInput,
+    transition: BasicEndTurnTransitionResult,
+    authContext: EndTurnBasicAuthContext,
+  ) => Promise<EndTurnBasicPersistRunningTransitionResult>;
 };
 
 const jsonHeaders = {
@@ -201,6 +228,21 @@ export async function handleEndTurnBasicRequest(
     );
   }
 
+  const persistRunningTransition =
+    options.persistRunningTransition ?? persistSupabaseRunningTransition;
+  const persistedTransitionResult = await persistRunningTransition(
+    transitionInputResult.input,
+    plannedTransitionResult.transition,
+    authContextResult.context,
+  );
+
+  if (!persistedTransitionResult.ok) {
+    return createJsonResponse(
+      persistedTransitionResult.error,
+      persistedTransitionResult.status,
+    );
+  }
+
   return createJsonResponse(
     {
       data: {
@@ -281,6 +323,65 @@ export async function resolveSupabaseEndTurnTransitionInput(
       worldId: worldResult.row.id,
     },
     ok: true,
+  };
+}
+
+export async function persistSupabaseRunningTransition(
+  input: BasicEndTurnTransitionInput,
+  transition: BasicEndTurnTransitionResult,
+  authContext: EndTurnBasicAuthContext,
+): Promise<EndTurnBasicPersistRunningTransitionResult> {
+  const authorizationHeader = authContext.authorizationHeader;
+
+  if (authorizationHeader === undefined) {
+    return createTransitionPersistenceUnavailableResult();
+  }
+
+  const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
+  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+
+  if (supabaseUrl === undefined || supabaseAnonKey === undefined) {
+    return createTransitionPersistenceUnavailableResult();
+  }
+
+  const insertResult = await insertSupabaseRunningTransition({
+    authorizationHeader,
+    fromTurnNumber: transition.fromTurnNumber,
+    initiatedByUserId: input.actorId,
+    supabaseAnonKey,
+    supabaseUrl,
+    toTurnNumber: transition.toTurnNumber,
+    worldId: input.worldId,
+  });
+
+  if (insertResult.ok) {
+    return {
+      ok: true,
+      transition: insertResult.transition,
+    };
+  }
+
+  if (insertResult.error.reason !== "duplicate_running_transition") {
+    return transitionPersistenceResultFromFetchError(insertResult.error);
+  }
+
+  const existingTransitionResult = await fetchSupabaseRunningTransition({
+    authorizationHeader,
+    fromTurnNumber: transition.fromTurnNumber,
+    supabaseAnonKey,
+    supabaseUrl,
+    worldId: input.worldId,
+  });
+
+  if (!existingTransitionResult.ok) {
+    return transitionPersistenceResultFromFetchError(
+      existingTransitionResult.error,
+    );
+  }
+
+  return {
+    ok: true,
+    transition: existingTransitionResult.transition,
   };
 }
 
@@ -567,6 +668,17 @@ function createTransitionStateUnavailableResult(): EndTurnBasicTransitionInputRe
   };
 }
 
+function createTransitionPersistenceUnavailableResult(): EndTurnBasicPersistRunningTransitionResult {
+  return {
+    error: createErrorResponse({
+      code: "end_turn_transition_unavailable",
+      message: "End turn transition could not be started.",
+    }),
+    ok: false,
+    status: 500,
+  };
+}
+
 function planDryWriteEndTurnTransition(input: BasicEndTurnTransitionInput):
   | {
       readonly ok: true;
@@ -752,6 +864,41 @@ type SupabaseEndTurnReadinessRowsResult =
       readonly ok: false;
     };
 
+type SupabaseRunningTransitionRow = {
+  readonly from_turn_number: number;
+  readonly id: string;
+  readonly initiated_by_user_id: string;
+  readonly started_at: string;
+  readonly status: "running";
+  readonly to_turn_number: number;
+  readonly world_id: string;
+};
+
+type SupabaseRunningTransitionFetchError =
+  | {
+      readonly reason:
+        | "duplicate_running_transition"
+        | "fetch_failed"
+        | "invalid_payload";
+    }
+  | {
+      readonly reason: "http_error";
+      readonly safeDeny: boolean;
+    }
+  | {
+      readonly reason: "missing_transition";
+    };
+
+type SupabaseRunningTransitionResult =
+  | {
+      readonly ok: true;
+      readonly transition: EndTurnBasicRunningTransition;
+    }
+  | {
+      readonly error: SupabaseRunningTransitionFetchError;
+      readonly ok: false;
+    };
+
 async function fetchSupabaseRpcBoolean({
   authorizationHeader,
   body,
@@ -898,6 +1045,130 @@ async function fetchSupabaseEndTurnWorldState({
   };
 }
 
+async function insertSupabaseRunningTransition({
+  authorizationHeader,
+  fromTurnNumber,
+  initiatedByUserId,
+  supabaseAnonKey,
+  supabaseUrl,
+  toTurnNumber,
+  worldId,
+}: {
+  readonly authorizationHeader: string;
+  readonly fromTurnNumber: number;
+  readonly initiatedByUserId: string;
+  readonly supabaseAnonKey: string;
+  readonly supabaseUrl: string;
+  readonly toTurnNumber: number;
+  readonly worldId: string;
+}): Promise<SupabaseRunningTransitionResult> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${supabaseUrl}/rest/v1/turn_transitions`, {
+      body: JSON.stringify({
+        from_turn_number: fromTurnNumber,
+        initiated_by_user_id: initiatedByUserId,
+        status: "running",
+        to_turn_number: toTurnNumber,
+        world_id: worldId,
+      }),
+      headers: {
+        apikey: supabaseAnonKey,
+        authorization: authorizationHeader,
+        "content-type": "application/json",
+        prefer: "return=representation",
+      },
+      method: "POST",
+    });
+  } catch {
+    return {
+      error: {
+        reason: "fetch_failed",
+      },
+      ok: false,
+    };
+  }
+
+  if (response.status === 409) {
+    return {
+      error: {
+        reason: "duplicate_running_transition",
+      },
+      ok: false,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      error: {
+        reason: "http_error",
+        safeDeny: response.status >= 400 && response.status < 500,
+      },
+      ok: false,
+    };
+  }
+
+  return runningTransitionResultFromResponse(response);
+}
+
+async function fetchSupabaseRunningTransition({
+  authorizationHeader,
+  fromTurnNumber,
+  supabaseAnonKey,
+  supabaseUrl,
+  worldId,
+}: {
+  readonly authorizationHeader: string;
+  readonly fromTurnNumber: number;
+  readonly supabaseAnonKey: string;
+  readonly supabaseUrl: string;
+  readonly worldId: string;
+}): Promise<SupabaseRunningTransitionResult> {
+  const searchParameters = new URLSearchParams({
+    from_turn_number: `eq.${fromTurnNumber}`,
+    limit: "1",
+    order: "started_at.desc",
+    select:
+      "id,world_id,from_turn_number,to_turn_number,initiated_by_user_id,started_at,status",
+    status: "eq.running",
+    world_id: `eq.${worldId}`,
+  });
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${supabaseUrl}/rest/v1/turn_transitions?${searchParameters}`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          authorization: authorizationHeader,
+        },
+        method: "GET",
+      },
+    );
+  } catch {
+    return {
+      error: {
+        reason: "fetch_failed",
+      },
+      ok: false,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      error: {
+        reason: "http_error",
+        safeDeny: response.status >= 400 && response.status < 500,
+      },
+      ok: false,
+    };
+  }
+
+  return runningTransitionResultFromResponse(response);
+}
+
 async function fetchSupabaseEndTurnReadinessRows({
   authorizationHeader,
   supabaseAnonKey,
@@ -1025,6 +1296,64 @@ async function fetchSupabaseWorldExists({
     ok: true,
     value: payload.length > 0,
   };
+}
+
+async function runningTransitionResultFromResponse(
+  response: Response,
+): Promise<SupabaseRunningTransitionResult> {
+  const payload: unknown = await response.json();
+
+  if (!Array.isArray(payload)) {
+    return {
+      error: {
+        reason: "invalid_payload",
+      },
+      ok: false,
+    };
+  }
+
+  const rows: readonly unknown[] = payload;
+  const row = rows[0];
+
+  if (row === undefined) {
+    return {
+      error: {
+        reason: "missing_transition",
+      },
+      ok: false,
+    };
+  }
+
+  if (!isSupabaseRunningTransitionRow(row)) {
+    return {
+      error: {
+        reason: "invalid_payload",
+      },
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    transition: toEndTurnBasicRunningTransition(row),
+  };
+}
+
+function transitionPersistenceResultFromFetchError(
+  error: SupabaseRunningTransitionFetchError,
+): EndTurnBasicPersistRunningTransitionResult {
+  if (error.reason === "http_error" && error.safeDeny) {
+    return {
+      error: createErrorResponse({
+        code: "unauthorized",
+        message: "End turn is unavailable for this world.",
+      }),
+      ok: false,
+      status: 403,
+    };
+  }
+
+  return createTransitionPersistenceUnavailableResult();
 }
 
 function transitionInputResultFromStateFetchError(
@@ -1220,6 +1549,29 @@ function isSupabaseReadinessRow(value: unknown): value is {
   );
 }
 
+function isSupabaseRunningTransitionRow(
+  value: unknown,
+): value is SupabaseRunningTransitionRow {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    value.id.length > 0 &&
+    typeof value.world_id === "string" &&
+    value.world_id.length > 0 &&
+    typeof value.from_turn_number === "number" &&
+    Number.isInteger(value.from_turn_number) &&
+    value.from_turn_number >= 0 &&
+    typeof value.to_turn_number === "number" &&
+    Number.isInteger(value.to_turn_number) &&
+    value.to_turn_number === value.from_turn_number + 1 &&
+    typeof value.initiated_by_user_id === "string" &&
+    value.initiated_by_user_id.length > 0 &&
+    typeof value.started_at === "string" &&
+    value.started_at.length > 0 &&
+    value.status === "running"
+  );
+}
+
 function toBasicEndTurnReadinessRow(row: {
   readonly auto_ready_enabled: boolean;
   readonly id: string;
@@ -1229,6 +1581,20 @@ function toBasicEndTurnReadinessRow(row: {
     autoReadyEnabled: row.auto_ready_enabled,
     id: row.id,
     isReadyCurrentTurn: row.is_ready_current_turn,
+  };
+}
+
+function toEndTurnBasicRunningTransition(
+  row: SupabaseRunningTransitionRow,
+): EndTurnBasicRunningTransition {
+  return {
+    fromTurnNumber: row.from_turn_number,
+    id: row.id,
+    initiatedByUserId: row.initiated_by_user_id,
+    startedAt: row.started_at,
+    status: row.status,
+    toTurnNumber: row.to_turn_number,
+    worldId: row.world_id,
   };
 }
 

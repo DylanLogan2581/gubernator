@@ -2,10 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   handleEndTurnBasicRequest,
+  persistSupabaseRunningTransition,
   resolveSupabaseEndTurnAuthorization,
   resolveSupabaseEndTurnTransitionInput,
   type EndTurnBasicAuthContextResult,
   type EndTurnBasicAuthorizationResult,
+  type EndTurnBasicPersistRunningTransitionResult,
   type EndTurnBasicTransitionInputResult,
 } from "./index";
 
@@ -123,6 +125,22 @@ describe("handleEndTurnBasicRequest", () => {
         }),
       ),
     );
+    const persistRunningTransition = vi.fn<
+      () => Promise<EndTurnBasicPersistRunningTransitionResult>
+    >(() =>
+      Promise.resolve({
+        ok: true,
+        transition: {
+          fromTurnNumber: 3,
+          id: "transition-1",
+          initiatedByUserId: "user-1",
+          startedAt: "2026-05-03T10:00:00.000Z",
+          status: "running",
+          toTurnNumber: 4,
+          worldId: "world-1",
+        },
+      }),
+    );
 
     const response = await handleEndTurnBasicRequest(
       createJsonRequest({
@@ -133,6 +151,7 @@ describe("handleEndTurnBasicRequest", () => {
         resolveAuthContext: createResolveAuthContext("user-1"),
         resolveAuthorization,
         resolveTransitionInput,
+        persistRunningTransition,
       },
     );
 
@@ -188,6 +207,21 @@ describe("handleEndTurnBasicRequest", () => {
         expectedTurnNumber: 3,
         worldId: "world-1",
       },
+      {
+        userId: "user-1",
+      },
+    );
+    expect(persistRunningTransition).toHaveBeenCalledOnce();
+    expect(persistRunningTransition).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: "user-1",
+        currentTurnNumber: 3,
+        worldId: "world-1",
+      }),
+      expect.objectContaining({
+        fromTurnNumber: 3,
+        toTurnNumber: 4,
+      }),
       {
         userId: "user-1",
       },
@@ -287,6 +321,119 @@ describe("handleEndTurnBasicRequest", () => {
       },
       ok: false,
     });
+  });
+});
+
+describe("persistSupabaseRunningTransition", () => {
+  it("inserts one running transition row for the planned turn", async () => {
+    const fetchMock = stubSupabaseRuntimeFetch([
+      {
+        body: [
+          createRunningTransitionRow({
+            from_turn_number: 3,
+            initiated_by_user_id: "user-1",
+            to_turn_number: 4,
+            world_id: "00000000-0000-0000-0000-000000000001",
+          }),
+        ],
+        status: 201,
+      },
+    ]);
+
+    const result = await persistSupabaseRunningTransition(
+      createTransitionInput({
+        actorId: "user-1",
+        worldId: "00000000-0000-0000-0000-000000000001",
+      }),
+      createPlannedTransition({ fromTurnNumber: 3, toTurnNumber: 4 }),
+      {
+        authorizationHeader: "Bearer token",
+        userId: "user-1",
+      },
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      transition: {
+        fromTurnNumber: 3,
+        id: "00000000-0000-0000-0000-000000000201",
+        initiatedByUserId: "user-1",
+        startedAt: "2026-05-03T10:00:00.000Z",
+        status: "running",
+        toTurnNumber: 4,
+        worldId: "00000000-0000-0000-0000-000000000001",
+      },
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:54321/rest/v1/turn_transitions",
+      expect.objectContaining({
+        body: JSON.stringify({
+          from_turn_number: 3,
+          initiated_by_user_id: "user-1",
+          status: "running",
+          to_turn_number: 4,
+          world_id: "00000000-0000-0000-0000-000000000001",
+        }),
+        headers: {
+          apikey: "anon-key",
+          authorization: "Bearer token",
+          "content-type": "application/json",
+          prefer: "return=representation",
+        },
+        method: "POST",
+      }),
+    );
+  });
+
+  it("reuses an existing running transition when the insert conflicts", async () => {
+    const fetchMock = stubSupabaseRuntimeFetch([
+      {
+        body: {
+          code: "23505",
+          message: "duplicate key value violates unique constraint",
+        },
+        status: 409,
+      },
+      {
+        body: [
+          createRunningTransitionRow({
+            id: "00000000-0000-0000-0000-000000000202",
+          }),
+        ],
+        status: 200,
+      },
+    ]);
+
+    const result = await persistSupabaseRunningTransition(
+      createTransitionInput(),
+      createPlannedTransition({ fromTurnNumber: 3, toTurnNumber: 4 }),
+      {
+        authorizationHeader: "Bearer token",
+        userId: "user-1",
+      },
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      transition: {
+        fromTurnNumber: 3,
+        id: "00000000-0000-0000-0000-000000000202",
+        initiatedByUserId: "user-1",
+        startedAt: "2026-05-03T10:00:00.000Z",
+        status: "running",
+        toTurnNumber: 4,
+        worldId: "world-1",
+      },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "http://localhost:54321/rest/v1/turn_transitions?from_turn_number=eq.3&limit=1&order=started_at.desc&select=id%2Cworld_id%2Cfrom_turn_number%2Cto_turn_number%2Cinitiated_by_user_id%2Cstarted_at%2Cstatus&status=eq.running&world_id=eq.world-1",
+      expect.objectContaining({
+        method: "GET",
+      }),
+    );
   });
 });
 
@@ -609,17 +756,23 @@ function createTransitionInputResult(
   overrides: Partial<EndTurnBasicTransitionInput> = {},
 ): EndTurnBasicTransitionInputResult {
   return {
-    input: {
-      actorId: "user-1",
-      calendarConfig: createCalendarConfig(),
-      currentTurnNumber: 3,
-      expectedCurrentTurnNumber: 3,
-      isWorldArchived: false,
-      readinessRows: [],
-      worldId: "world-1",
-      ...overrides,
-    },
+    input: createTransitionInput(overrides),
     ok: true,
+  };
+}
+
+function createTransitionInput(
+  overrides: Partial<EndTurnBasicTransitionInput> = {},
+): EndTurnBasicTransitionInput {
+  return {
+    actorId: "user-1",
+    calendarConfig: createCalendarConfig(),
+    currentTurnNumber: 3,
+    expectedCurrentTurnNumber: 3,
+    isWorldArchived: false,
+    readinessRows: [],
+    worldId: "world-1",
+    ...overrides,
   };
 }
 
@@ -652,6 +805,90 @@ function createCalendarConfig(): EndTurnBasicTransitionInput["calendarConfig"] {
       },
     ],
     yearFormatTemplate: "Year {n}",
+  };
+}
+
+function createPlannedTransition({
+  fromTurnNumber,
+  toTurnNumber,
+}: {
+  readonly fromTurnNumber: number;
+  readonly toTurnNumber: number;
+}): Parameters<typeof persistSupabaseRunningTransition>[1] {
+  const previousDate = {
+    dayOfMonth: 1,
+    monthIndex: 1,
+    monthName: "Rainmonth",
+    turnNumber: fromTurnNumber,
+    weekdayIndex: 0,
+    weekdayName: "Moonday",
+    year: 12,
+  } as const;
+  const nextDate = {
+    dayOfMonth: 2,
+    monthIndex: 1,
+    monthName: "Rainmonth",
+    turnNumber: toTurnNumber,
+    weekdayIndex: 1,
+    weekdayName: "Toilsday",
+    year: 12,
+  } as const;
+  const readinessSummary = {
+    notReadySettlementCount: 0,
+    readyPercentage: 0,
+    readySettlementCount: 0,
+    totalSettlementCount: 0,
+  } as const;
+
+  return {
+    fromTurnNumber,
+    logPayload: {
+      category: "turn_transition",
+      fromTurnNumber,
+      nextDate,
+      previousDate,
+      readinessSummary,
+      toTurnNumber,
+    },
+    nextDate,
+    notificationPayload: {
+      messageText: `Turn ${toTurnNumber} is ready.`,
+      notificationType: "turn_advanced",
+    },
+    previousDate,
+    readinessSummary,
+    toTurnNumber,
+  };
+}
+
+function createRunningTransitionRow(
+  overrides: Partial<{
+    readonly from_turn_number: number;
+    readonly id: string;
+    readonly initiated_by_user_id: string;
+    readonly started_at: string;
+    readonly status: "running";
+    readonly to_turn_number: number;
+    readonly world_id: string;
+  }> = {},
+): {
+  readonly from_turn_number: number;
+  readonly id: string;
+  readonly initiated_by_user_id: string;
+  readonly started_at: string;
+  readonly status: "running";
+  readonly to_turn_number: number;
+  readonly world_id: string;
+} {
+  return {
+    from_turn_number: 3,
+    id: "00000000-0000-0000-0000-000000000201",
+    initiated_by_user_id: "user-1",
+    started_at: "2026-05-03T10:00:00.000Z",
+    status: "running",
+    to_turn_number: 4,
+    world_id: "world-1",
+    ...overrides,
   };
 }
 
