@@ -44,6 +44,21 @@ begin
     return;
   end if;
 
+  update public.settlements s
+  set
+    is_ready_current_turn = s.auto_ready_enabled,
+    ready_set_at = null
+  where
+    exists (
+      select
+        1
+      from
+        public.nations n
+      where
+        n.id = s.nation_id
+        and n.world_id = p_world_id
+    );
+
   begin
     return query
     insert into
