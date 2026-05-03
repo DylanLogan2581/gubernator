@@ -8,7 +8,10 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
-import { SettlementReadinessSummaryPanel } from "@/features/settlements";
+import {
+  SettlementReadinessListPanel,
+  SettlementReadinessSummaryPanel,
+} from "@/features/settlements";
 
 import {
   isWorldNotFoundError,
@@ -163,6 +166,7 @@ function WorldShellContent({
         worldId={worldId}
       />
       <SettlementReadinessSummaryPanel worldId={worldId} />
+      <SettlementReadinessListPanel worldId={worldId} />
     </WorldShellFrame>
   );
 }

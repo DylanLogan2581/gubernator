@@ -46,14 +46,18 @@ describe("WorldShellPage", () => {
           }),
         ],
         settlementRows: [
-          {
+          createSettlementRow({
             auto_ready_enabled: true,
+            id: "settlement-1",
             is_ready_current_turn: false,
-          },
-          {
+            name: "Amberhold",
+          }),
+          createSettlementRow({
             auto_ready_enabled: false,
+            id: "settlement-2",
             is_ready_current_turn: false,
-          },
+            name: "Briarwatch",
+          }),
         ],
       }),
     );
@@ -69,8 +73,10 @@ describe("WorldShellPage", () => {
     expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
     expect(screen.getByText("private")).toBeDefined();
     expect(await screen.findByText("Settlement readiness")).toBeDefined();
+    expect(screen.getByText("Settlement readiness list")).toBeDefined();
+    expect(screen.getByText("Amberhold")).toBeDefined();
     expect(screen.getByText("Total settlements")).toBeDefined();
-    expect(screen.getByText("Not ready")).toBeDefined();
+    expect(screen.getAllByText("Not ready").length).toBeGreaterThan(0);
     expect(
       screen.getByRole("link", { name: "Back to worlds" }),
     ).toHaveAttribute("href", "/worlds");
@@ -177,7 +183,7 @@ function createClient({
       readonly id: string;
     };
   };
-  readonly settlementRows?: readonly TestSettlementReadinessSummaryRow[];
+  readonly settlementRows?: readonly TestSettlementReadinessRow[];
   readonly worldRows?: readonly TestWorldRow[];
 }): unknown {
   return {
@@ -235,9 +241,13 @@ type TestCalendarConfigJson =
   | WorldCalendarConfig
   | { readonly months: [] }
   | null;
-type TestSettlementReadinessSummaryRow = {
+type TestSettlementReadinessRow = {
   readonly auto_ready_enabled: boolean;
+  readonly id: string;
   readonly is_ready_current_turn: boolean;
+  readonly name: string;
+  readonly nation_id: string;
+  readonly ready_set_at: string | null;
 };
 
 function createUser(id: string): TestUser {
@@ -286,6 +296,20 @@ function createCalendarConfig(): WorldCalendarConfig {
   };
 }
 
+function createSettlementRow(
+  overrides: Partial<TestSettlementReadinessRow> = {},
+): TestSettlementReadinessRow {
+  return {
+    auto_ready_enabled: false,
+    id: "settlement-1",
+    is_ready_current_turn: false,
+    name: "Settlement",
+    nation_id: "nation-1",
+    ready_set_at: null,
+    ...overrides,
+  };
+}
+
 function createUsersQueryBuilder(user: TestUser): unknown {
   return {
     select: vi.fn(() => ({
@@ -327,13 +351,14 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
 }
 
 function createSettlementsQueryBuilder(
-  rows: readonly TestSettlementReadinessSummaryRow[],
+  rows: readonly TestSettlementReadinessRow[],
 ): unknown {
-  return {
-    select: vi.fn(() => ({
-      eq: vi.fn(() => ({
-        returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-      })),
-    })),
+  const builder = {
+    eq: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    select: vi.fn(() => builder),
   };
+
+  return builder;
 }
