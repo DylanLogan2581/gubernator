@@ -248,7 +248,7 @@ describe("worlds route list", () => {
     expect(
       await screen.findByRole("heading", { name: "Public World" }),
     ).toBeDefined();
-    expect(screen.getByText("Current turn")).toBeDefined();
+    expect(screen.getByText("Planning turn")).toBeDefined();
     expect(screen.getByText("1")).toBeDefined();
   });
 });
@@ -279,7 +279,7 @@ describe("world shell route", () => {
     expect(
       await screen.findByRole("heading", { name: "Eastern Marches" }),
     ).toBeDefined();
-    expect(screen.getByText("Current turn")).toBeDefined();
+    expect(screen.getByText("Planning turn")).toBeDefined();
     expect(screen.getByText("12")).toBeDefined();
     expect(screen.queryByText(/settlement/i)).toBeNull();
     expect(screen.queryByText(/citizen/i)).toBeNull();
