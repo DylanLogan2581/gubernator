@@ -109,6 +109,7 @@ describe("BasicEndTurnTransitionInput", () => {
     const input = {
       actorId: "user-1",
       calendarConfig,
+      currentTurnNumber: 7,
       expectedCurrentTurnNumber: 7,
       isWorldArchived: false,
       readinessRows: [
@@ -123,6 +124,7 @@ describe("BasicEndTurnTransitionInput", () => {
 
     expect(input).toMatchObject({
       actorId: "user-1",
+      currentTurnNumber: 7,
       expectedCurrentTurnNumber: 7,
       isWorldArchived: false,
       worldId: "world-1",

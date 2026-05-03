@@ -12,6 +12,7 @@ export type BasicEndTurnReadinessRow = {
 export type BasicEndTurnTransitionInput = {
   readonly actorId: string;
   readonly calendarConfig: WorldCalendarConfig;
+  readonly currentTurnNumber: number;
   readonly expectedCurrentTurnNumber: number;
   readonly isWorldArchived: boolean;
   readonly readinessRows: readonly BasicEndTurnReadinessRow[];

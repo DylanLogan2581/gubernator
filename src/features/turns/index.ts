@@ -12,3 +12,9 @@ export type {
   BasicEndTurnTransitionInput,
   BasicEndTurnTransitionResult,
 } from "./types/endTurnTransitionTypes";
+export {
+  BasicEndTurnTransitionPlanningError,
+  isBasicEndTurnTransitionPlanningError,
+  planBasicEndTurnTransition,
+  type BasicEndTurnTransitionPlanningErrorCode,
+} from "./utils/endTurnTransitionPlanning";
