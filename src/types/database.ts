@@ -423,6 +423,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      advance_world_turn_if_current: {
+        Args: { p_expected_turn_number: number; p_world_id: string };
+        Returns: {
+          from_turn_number: number;
+          id: string;
+          initiated_by_user_id: string;
+          started_at: string;
+          status: string;
+          to_turn_number: number;
+          world_id: string;
+        }[];
+      };
       current_app_user_id: { Args: never; Returns: string };
       default_calendar_config: { Args: never; Returns: Json };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
