@@ -104,7 +104,8 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(summary).toEqual({
-      pendingSettlementCount: 1,
+      notReadySettlementCount: 1,
+      readyPercentage: 66.66666666666666,
       readySettlementCount: 2,
       totalSettlementCount: 3,
     });
