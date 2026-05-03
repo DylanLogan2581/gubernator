@@ -355,6 +355,7 @@ export async function persistSupabaseRunningTransition(
     authorizationHeader,
     expectedTurnNumber: input.expectedCurrentTurnNumber,
     logPayload: transition.logPayload,
+    notificationPayload: transition.notificationPayload,
     supabaseAnonKey,
     supabaseUrl,
     worldId: input.worldId,
@@ -1031,6 +1032,7 @@ async function advanceSupabaseWorldTurn({
   authorizationHeader,
   expectedTurnNumber,
   logPayload,
+  notificationPayload,
   supabaseAnonKey,
   supabaseUrl,
   worldId,
@@ -1038,6 +1040,7 @@ async function advanceSupabaseWorldTurn({
   readonly authorizationHeader: string;
   readonly expectedTurnNumber: number;
   readonly logPayload: BasicEndTurnTransitionResult["logPayload"];
+  readonly notificationPayload: BasicEndTurnTransitionResult["notificationPayload"];
   readonly supabaseAnonKey: string;
   readonly supabaseUrl: string;
   readonly worldId: string;
@@ -1051,6 +1054,7 @@ async function advanceSupabaseWorldTurn({
         body: JSON.stringify({
           p_expected_turn_number: expectedTurnNumber,
           p_log_payload_jsonb: logPayload,
+          p_notification_payload_jsonb: notificationPayload,
           p_world_id: worldId,
         }),
         headers: {

@@ -151,8 +151,8 @@ describe("BasicEndTurnTransitionResult", () => {
       toTurnNumber: 8,
     } satisfies BasicEndTurnLogPayload;
     const notificationPayload = {
-      messageText: "Turn 8 is ready.",
-      notificationType: "turn_advanced",
+      messageText: "World advanced to turn 8.",
+      notificationType: "turn.completed",
     } satisfies BasicEndTurnNotificationPayload;
     const result = {
       fromTurnNumber: 7,
@@ -175,8 +175,8 @@ describe("BasicEndTurnTransitionResult", () => {
       },
       nextDate,
       notificationPayload: {
-        messageText: "Turn 8 is ready.",
-        notificationType: "turn_advanced",
+        messageText: "World advanced to turn 8.",
+        notificationType: "turn.completed",
       },
       previousDate,
       readinessSummary,

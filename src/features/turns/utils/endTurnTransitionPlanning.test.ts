@@ -96,8 +96,8 @@ describe("planBasicEndTurnTransition", () => {
         year: 12,
       },
       notificationPayload: {
-        messageText: "Turn 3 is ready.",
-        notificationType: "turn_advanced",
+        messageText: "World advanced to turn 3.",
+        notificationType: "turn.completed",
       },
       previousDate: {
         dayOfMonth: 2,

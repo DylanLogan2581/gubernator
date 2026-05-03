@@ -36,7 +36,7 @@ export type BasicEndTurnLogPayload = {
 
 export type BasicEndTurnNotificationPayload = {
   readonly messageText: string;
-  readonly notificationType: "turn_advanced";
+  readonly notificationType: "turn.completed";
 };
 
 export type BasicEndTurnTransitionResult = {

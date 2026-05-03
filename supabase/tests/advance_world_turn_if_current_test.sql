@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (16);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -45,7 +45,37 @@ values
     '{"username":"advance_turn_outsider"}'::jsonb,
     now(),
     now()
+  ),
+  (
+    '89000000-0000-0000-0000-000000000004',
+    'advance-turn-superadmin@example.com',
+    'x',
+    now(),
+    '{"username":"advance_turn_superadmin"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '89000000-0000-0000-0000-000000000005',
+    'advance-turn-suspended-admin@example.com',
+    'x',
+    now(),
+    '{"username":"advance_turn_suspended_admin"}'::jsonb,
+    now(),
+    now()
   );
+
+update public.users
+set
+  is_super_admin = true
+where
+  id = '89000000-0000-0000-0000-000000000004';
+
+update public.users
+set
+  status = 'suspended'
+where
+  id = '89000000-0000-0000-0000-000000000005';
 
 insert into
   public.worlds (
@@ -72,6 +102,10 @@ values
   (
     '8a000000-0000-0000-0000-000000000001',
     '89000000-0000-0000-0000-000000000002'
+  ),
+  (
+    '8a000000-0000-0000-0000-000000000001',
+    '89000000-0000-0000-0000-000000000005'
   );
 
 insert into
@@ -163,6 +197,10 @@ select
               "notReadySettlementCount": 1,
               "readyPercentage": 66.66666666666666
             }
+          }'::jsonb,
+          '{
+            "notificationType": "turn.completed",
+            "messageText": "World advanced to turn 5."
           }'::jsonb
         )
     ),
@@ -247,6 +285,85 @@ select
     ),
     1,
     'matching expected turn records one basic advancement log payload'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(distinct n.recipient_user_id)::integer
+      from
+        public.notifications n
+        inner join public.turn_transitions tt on tt.id = n.generated_in_transition_id
+        and tt.world_id = n.world_id
+      where
+        n.world_id = '8a000000-0000-0000-0000-000000000001'
+        and tt.from_turn_number = 4
+        and tt.to_turn_number = 5
+        and n.notification_type = 'turn.completed'
+        and n.message_text = 'World advanced to turn 5.'
+    ),
+    (
+      select
+        count(*)::integer
+      from
+        (
+          select
+            '89000000-0000-0000-0000-000000000001'::uuid as recipient_user_id
+          union
+          select
+            '89000000-0000-0000-0000-000000000002'::uuid
+          union
+          select
+            u.id
+          from
+            public.users u
+          where
+            u.is_super_admin = true
+            and u.status = 'active'
+        ) expected_recipients
+    ),
+    'matching expected turn writes one turn-completed notification for each active owner-admin and super-admin recipient'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.notifications n
+        inner join public.turn_transitions tt on tt.id = n.generated_in_transition_id
+        and tt.world_id = n.world_id
+      where
+        n.world_id = '8a000000-0000-0000-0000-000000000001'
+        and tt.from_turn_number = 4
+        and tt.to_turn_number = 5
+        and n.recipient_user_id in (
+          '89000000-0000-0000-0000-000000000001',
+          '89000000-0000-0000-0000-000000000002',
+          '89000000-0000-0000-0000-000000000004'
+        )
+    )
+    and not exists (
+      select
+        1
+      from
+        public.notifications n
+        inner join public.turn_transitions tt on tt.id = n.generated_in_transition_id
+        and tt.world_id = n.world_id
+      where
+        n.world_id = '8a000000-0000-0000-0000-000000000001'
+        and tt.from_turn_number = 4
+        and tt.to_turn_number = 5
+        and n.recipient_user_id in (
+          '89000000-0000-0000-0000-000000000003',
+          '89000000-0000-0000-0000-000000000005'
+        )
+    ),
+    'turn-completed notifications exclude unrelated and inactive users'
   );
 
 select
@@ -371,8 +488,6 @@ select
     1,
     'stale expected turn does not create another transition'
   );
-
-reset role;
 
 -- ---------------------------------------------------------------------------
 -- WORLD ADMIN: explicit admins may advance through the narrow RPC.

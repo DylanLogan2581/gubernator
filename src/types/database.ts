@@ -427,6 +427,7 @@ export type Database = {
         Args: {
           p_expected_turn_number: number;
           p_log_payload_jsonb?: Json;
+          p_notification_payload_jsonb?: Json;
           p_world_id: string;
         };
         Returns: {
