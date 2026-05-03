@@ -7,6 +7,7 @@ export {
   type EndTurnBasicInput,
   type EndTurnBasicMutationResult,
 } from "./mutations/endTurnBasicMutations";
+export { EndTurnControl } from "./components/EndTurnControl";
 export {
   CurrentTurnStateError,
   currentTurnStateQueryOptions,

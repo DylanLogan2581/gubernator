@@ -12,6 +12,7 @@ import {
   SettlementReadinessListPanel,
   SettlementReadinessSummaryPanel,
 } from "@/features/settlements";
+import { EndTurnControl } from "@/features/turns";
 
 import {
   isWorldNotFoundError,
@@ -162,6 +163,12 @@ function WorldShellContent({
       <WorldCalendarConfigPanel
         accessContext={accessContext}
         canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+      <EndTurnControl
+        canAdmin={worldQuery.data.canAdmin}
+        currentTurnNumber={worldQuery.data.header.currentTurnNumber}
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
       />
