@@ -102,6 +102,60 @@ export type Database = {
           },
         ];
       };
+      turn_transitions: {
+        Row: {
+          finished_at: string | null;
+          forecast_snapshot_jsonb: Json | null;
+          from_turn_number: number;
+          id: string;
+          initiated_by_user_id: string;
+          readiness_summary_jsonb: Json | null;
+          started_at: string;
+          status: string;
+          to_turn_number: number;
+          world_id: string;
+        };
+        Insert: {
+          finished_at?: string | null;
+          forecast_snapshot_jsonb?: Json | null;
+          from_turn_number: number;
+          id?: string;
+          initiated_by_user_id: string;
+          readiness_summary_jsonb?: Json | null;
+          started_at?: string;
+          status?: string;
+          to_turn_number: number;
+          world_id: string;
+        };
+        Update: {
+          finished_at?: string | null;
+          forecast_snapshot_jsonb?: Json | null;
+          from_turn_number?: number;
+          id?: string;
+          initiated_by_user_id?: string;
+          readiness_summary_jsonb?: Json | null;
+          started_at?: string;
+          status?: string;
+          to_turn_number?: number;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "turn_transitions_initiated_by_user_id_fkey";
+            columns: ["initiated_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "turn_transitions_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       users: {
         Row: {
           created_at: string;
