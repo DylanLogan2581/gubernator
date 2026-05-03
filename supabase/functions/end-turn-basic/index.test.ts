@@ -99,13 +99,30 @@ describe("handleEndTurnBasicRequest", () => {
     });
   });
 
-  it("returns a success response when authorization allows ending the turn", async () => {
+  it("returns the dry-write transition result when authorization allows ending the turn", async () => {
     const resolveAuthorization = vi.fn<
       () => Promise<EndTurnBasicAuthorizationResult>
     >(() => Promise.resolve({ ok: true }));
     const resolveTransitionInput = vi.fn<
       () => Promise<EndTurnBasicTransitionInputResult>
-    >(() => Promise.resolve(createTransitionInputResult()));
+    >(() =>
+      Promise.resolve(
+        createTransitionInputResult({
+          readinessRows: [
+            {
+              autoReadyEnabled: false,
+              id: "settlement-1",
+              isReadyCurrentTurn: true,
+            },
+            {
+              autoReadyEnabled: false,
+              id: "settlement-2",
+              isReadyCurrentTurn: false,
+            },
+          ],
+        }),
+      ),
+    );
 
     const response = await handleEndTurnBasicRequest(
       createJsonRequest({
@@ -125,7 +142,34 @@ describe("handleEndTurnBasicRequest", () => {
     expect(responseBody).toEqual({
       data: {
         actorId: "user-1",
-        expectedTurnNumber: 3,
+        transition: {
+          nextDate: {
+            dayOfMonth: 2,
+            monthIndex: 1,
+            monthName: "Rainmonth",
+            turnNumber: 4,
+            weekdayIndex: 1,
+            weekdayName: "Toilsday",
+            year: 12,
+          },
+          nextTurnNumber: 4,
+          previousDate: {
+            dayOfMonth: 1,
+            monthIndex: 1,
+            monthName: "Rainmonth",
+            turnNumber: 3,
+            weekdayIndex: 0,
+            weekdayName: "Moonday",
+            year: 12,
+          },
+          previousTurnNumber: 3,
+          readinessSummary: {
+            notReadySettlementCount: 1,
+            readyPercentage: 50,
+            readySettlementCount: 1,
+            totalSettlementCount: 2,
+          },
+        },
         worldId: "world-1",
       },
       ok: true,
