@@ -59,7 +59,6 @@ describe("planBasicEndTurnTransition", () => {
     expect(result).toEqual({
       fromTurnNumber: 2,
       logPayload: {
-        category: "turn_transition",
         fromTurnNumber: 2,
         nextDate: {
           dayOfMonth: 1,

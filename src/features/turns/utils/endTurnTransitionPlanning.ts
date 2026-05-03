@@ -76,7 +76,6 @@ export function planBasicEndTurnTransition(
   return {
     fromTurnNumber,
     logPayload: {
-      category: "turn_transition",
       fromTurnNumber,
       nextDate,
       previousDate,

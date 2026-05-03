@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (14);
+  plan (16);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -133,7 +133,38 @@ select
       select
         count(*)::integer
       from
-        public.advance_world_turn_if_current ('8a000000-0000-0000-0000-000000000001', 4)
+        public.advance_world_turn_if_current (
+          '8a000000-0000-0000-0000-000000000001',
+          4,
+          '{
+            "fromTurnNumber": 4,
+            "toTurnNumber": 5,
+            "previousDate": {
+              "turnNumber": 4,
+              "weekdayIndex": 0,
+              "weekdayName": "Moonday",
+              "dayOfMonth": 4,
+              "monthIndex": 0,
+              "monthName": "Frostmonth",
+              "year": 12
+            },
+            "nextDate": {
+              "turnNumber": 5,
+              "weekdayIndex": 1,
+              "weekdayName": "Toilsday",
+              "dayOfMonth": 5,
+              "monthIndex": 0,
+              "monthName": "Frostmonth",
+              "year": 12
+            },
+            "readinessSummary": {
+              "totalSettlementCount": 3,
+              "readySettlementCount": 2,
+              "notReadySettlementCount": 1,
+              "readyPercentage": 66.66666666666666
+            }
+          }'::jsonb
+        )
     ),
     1,
     'matching expected turn returns one running transition'
@@ -169,6 +200,68 @@ select
     ),
     1,
     'matching expected turn records the running transition'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.turn_log_entries tle
+        inner join public.turn_transitions tt on tt.id = tle.turn_transition_id
+        and tt.world_id = tle.world_id
+      where
+        tle.world_id = '8a000000-0000-0000-0000-000000000001'
+        and tt.from_turn_number = 4
+        and tt.to_turn_number = 5
+        and tle.log_category = 'basic_turn_advancement'
+        and tle.payload_jsonb = '{
+          "fromTurnNumber": 4,
+          "toTurnNumber": 5,
+          "previousDate": {
+            "turnNumber": 4,
+            "weekdayIndex": 0,
+            "weekdayName": "Moonday",
+            "dayOfMonth": 4,
+            "monthIndex": 0,
+            "monthName": "Frostmonth",
+            "year": 12
+          },
+          "nextDate": {
+            "turnNumber": 5,
+            "weekdayIndex": 1,
+            "weekdayName": "Toilsday",
+            "dayOfMonth": 5,
+            "monthIndex": 0,
+            "monthName": "Frostmonth",
+            "year": 12
+          },
+          "readinessSummary": {
+            "totalSettlementCount": 3,
+            "readySettlementCount": 2,
+            "notReadySettlementCount": 1,
+            "readyPercentage": 66.66666666666666
+          }
+        }'::jsonb
+    ),
+    1,
+    'matching expected turn records one basic advancement log payload'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.turn_log_entries
+      where
+        world_id = '8a000000-0000-0000-0000-000000000001'
+        and log_category <> 'basic_turn_advancement'
+    ),
+    0,
+    'basic advancement does not add audit or simulation outcome logs'
   );
 
 select
