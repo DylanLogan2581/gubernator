@@ -6,6 +6,7 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 
 import {
@@ -13,7 +14,7 @@ import {
   worldRouteAccessQueryOptions,
 } from "../queries/worldQueries";
 
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 type WorldShellPageProps = {
   readonly worldId: string;
@@ -154,6 +155,12 @@ function WorldShellContent({
           </p>
         ) : null}
       </section>
+      <WorldCalendarConfigPanel
+        accessContext={accessContext}
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
     </WorldShellFrame>
   );
 }
@@ -161,7 +168,7 @@ function WorldShellContent({
 function WorldShellFrame({
   children,
 }: {
-  readonly children: JSX.Element;
+  readonly children: ReactNode;
 }): JSX.Element {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
