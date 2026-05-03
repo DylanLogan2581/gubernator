@@ -1,3 +1,9 @@
+import type { WorldCalendarConfig } from "@/features/calendar";
+import type {
+  BasicEndTurnReadinessRow,
+  BasicEndTurnTransitionInput,
+} from "@/features/turns";
+
 type EdgeRuntime = {
   readonly env: {
     get(name: string): string | undefined;
@@ -14,6 +20,11 @@ export type EndTurnBasicRequestBody = {
 
 export type EndTurnBasicErrorCode =
   | "auth_context_unavailable"
+  | "end_turn_calendar_config_invalid"
+  | "end_turn_stale_expected_turn"
+  | "end_turn_state_unavailable"
+  | "end_turn_world_archived"
+  | "end_turn_world_not_found"
   | "invalid_request"
   | "method_not_allowed"
   | "unauthorized"
@@ -67,7 +78,22 @@ export type EndTurnBasicAuthorizationResult =
       readonly status: number;
     };
 
+export type EndTurnBasicTransitionInputResult =
+  | {
+      readonly input: BasicEndTurnTransitionInput;
+      readonly ok: true;
+    }
+  | {
+      readonly error: EndTurnBasicErrorResponse;
+      readonly ok: false;
+      readonly status: number;
+    };
+
 export type EndTurnBasicHandlerOptions = {
+  readonly resolveTransitionInput?: (
+    requestBody: EndTurnBasicRequestBody,
+    authContext: EndTurnBasicAuthContext,
+  ) => Promise<EndTurnBasicTransitionInputResult>;
   readonly resolveAuthorization?: (
     requestBody: EndTurnBasicRequestBody,
     authContext: EndTurnBasicAuthContext,
@@ -82,6 +108,17 @@ const jsonHeaders = {
 } as const;
 
 const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
+const expectedCalendarConfigFields = [
+  "months",
+  "startingDayOfMonth",
+  "startingMonthIndex",
+  "startingWeekdayOffset",
+  "startingYear",
+  "weekdays",
+  "yearFormatTemplate",
+] as const;
+const expectedCalendarMonthFields = ["dayCount", "index", "name"] as const;
+const expectedCalendarWeekdayFields = ["index", "name"] as const;
 
 export async function handleEndTurnBasicRequest(
   request: Request,
@@ -128,6 +165,31 @@ export async function handleEndTurnBasicRequest(
     );
   }
 
+  const resolveTransitionInput =
+    options.resolveTransitionInput ?? resolveSupabaseEndTurnTransitionInput;
+  const transitionInputResult = await resolveTransitionInput(
+    requestBodyResult.body,
+    authContextResult.context,
+  );
+
+  if (!transitionInputResult.ok) {
+    return createJsonResponse(
+      transitionInputResult.error,
+      transitionInputResult.status,
+    );
+  }
+
+  const preWriteValidationResult = validateTransitionInputBeforeWrites(
+    transitionInputResult.input,
+  );
+
+  if (!preWriteValidationResult.ok) {
+    return createJsonResponse(
+      preWriteValidationResult.error,
+      preWriteValidationResult.status,
+    );
+  }
+
   return createJsonResponse(
     {
       data: {
@@ -139,6 +201,74 @@ export async function handleEndTurnBasicRequest(
     },
     200,
   );
+}
+
+export async function resolveSupabaseEndTurnTransitionInput(
+  requestBody: EndTurnBasicRequestBody,
+  authContext: EndTurnBasicAuthContext,
+): Promise<EndTurnBasicTransitionInputResult> {
+  const authorizationHeader = authContext.authorizationHeader;
+
+  if (authorizationHeader === undefined) {
+    return createTransitionStateUnavailableResult();
+  }
+
+  const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
+  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+
+  if (supabaseUrl === undefined || supabaseAnonKey === undefined) {
+    return createTransitionStateUnavailableResult();
+  }
+
+  const worldResult = await fetchSupabaseEndTurnWorldState({
+    authorizationHeader,
+    supabaseAnonKey,
+    supabaseUrl,
+    worldId: requestBody.worldId,
+  });
+
+  if (!worldResult.ok) {
+    return transitionInputResultFromStateFetchError(worldResult.error);
+  }
+
+  const calendarConfig = parseWorldCalendarConfig(
+    worldResult.row.calendar_config_json,
+  );
+
+  if (calendarConfig === null) {
+    return {
+      error: createErrorResponse({
+        code: "end_turn_calendar_config_invalid",
+        message: "Calendar configuration is invalid.",
+      }),
+      ok: false,
+      status: 500,
+    };
+  }
+
+  const readinessRowsResult = await fetchSupabaseEndTurnReadinessRows({
+    authorizationHeader,
+    supabaseAnonKey,
+    supabaseUrl,
+    worldId: requestBody.worldId,
+  });
+
+  if (!readinessRowsResult.ok) {
+    return transitionInputResultFromStateFetchError(readinessRowsResult.error);
+  }
+
+  return {
+    input: {
+      actorId: authContext.userId,
+      calendarConfig,
+      currentTurnNumber: worldResult.row.current_turn_number,
+      expectedCurrentTurnNumber: requestBody.expectedTurnNumber,
+      isWorldArchived: worldResult.row.status === "archived",
+      readinessRows: readinessRowsResult.rows,
+      worldId: worldResult.row.id,
+    },
+    ok: true,
+  };
 }
 
 export async function resolveSupabaseAuthContext(
@@ -338,7 +468,7 @@ function validateEndTurnBasicRequestBody(body: unknown): readonly string[] {
 
   const validationErrors: string[] = [];
 
-  if (!hasOnlyExpectedFields(body)) {
+  if (!hasOnlyExpectedFields(body, expectedRequestFields)) {
     validationErrors.push("body");
   }
 
@@ -362,7 +492,7 @@ function isEndTurnBasicRequestBody(
 ): body is EndTurnBasicRequestBody {
   return (
     isRecord(body) &&
-    hasOnlyExpectedFields(body) &&
+    hasOnlyExpectedFields(body, expectedRequestFields) &&
     typeof body.worldId === "string" &&
     body.worldId.trim().length > 0 &&
     typeof body.expectedTurnNumber === "number" &&
@@ -371,9 +501,12 @@ function isEndTurnBasicRequestBody(
   );
 }
 
-function hasOnlyExpectedFields(body: Record<string, unknown>): boolean {
+function hasOnlyExpectedFields(
+  body: Record<string, unknown>,
+  expectedFields: readonly string[],
+): boolean {
   return Object.keys(body).every((fieldName) =>
-    expectedRequestFields.some((expectedField) => expectedField === fieldName),
+    expectedFields.some((expectedField) => expectedField === fieldName),
   );
 }
 
@@ -407,6 +540,48 @@ function createAuthContextUnavailableResult(): EndTurnBasicAuthorizationResult {
     }),
     ok: false,
     status: 500,
+  };
+}
+
+function createTransitionStateUnavailableResult(): EndTurnBasicTransitionInputResult {
+  return {
+    error: createErrorResponse({
+      code: "end_turn_state_unavailable",
+      message: "End turn state is unavailable.",
+    }),
+    ok: false,
+    status: 500,
+  };
+}
+
+function validateTransitionInputBeforeWrites(
+  input: BasicEndTurnTransitionInput,
+): EndTurnBasicTransitionInputResult {
+  if (input.isWorldArchived) {
+    return {
+      error: createErrorResponse({
+        code: "end_turn_world_archived",
+        message: "Archived worlds cannot advance turns.",
+      }),
+      ok: false,
+      status: 409,
+    };
+  }
+
+  if (input.currentTurnNumber !== input.expectedCurrentTurnNumber) {
+    return {
+      error: createErrorResponse({
+        code: "end_turn_stale_expected_turn",
+        message: "Expected current turn no longer matches the world state.",
+      }),
+      ok: false,
+      status: 409,
+    };
+  }
+
+  return {
+    input,
+    ok: true,
   };
 }
 
@@ -503,6 +678,18 @@ type SupabaseAuthorizationFetchError = {
   readonly safeDeny: boolean;
 };
 
+type SupabaseStateFetchError =
+  | {
+      readonly reason: "fetch_failed" | "invalid_payload";
+    }
+  | {
+      readonly reason: "http_error";
+      readonly safeDeny: boolean;
+    }
+  | {
+      readonly reason: "missing_world";
+    };
+
 type SupabaseBooleanFetchResult =
   | {
       readonly ok: true;
@@ -510,6 +697,33 @@ type SupabaseBooleanFetchResult =
     }
   | {
       readonly error: SupabaseAuthorizationFetchError;
+      readonly ok: false;
+    };
+
+type SupabaseEndTurnWorldStateRow = {
+  readonly calendar_config_json: unknown;
+  readonly current_turn_number: number;
+  readonly id: string;
+  readonly status: "active" | "archived";
+};
+
+type SupabaseEndTurnWorldStateResult =
+  | {
+      readonly ok: true;
+      readonly row: SupabaseEndTurnWorldStateRow;
+    }
+  | {
+      readonly error: SupabaseStateFetchError;
+      readonly ok: false;
+    };
+
+type SupabaseEndTurnReadinessRowsResult =
+  | {
+      readonly ok: true;
+      readonly rows: readonly BasicEndTurnReadinessRow[];
+    }
+  | {
+      readonly error: SupabaseStateFetchError;
       readonly ok: false;
     };
 
@@ -570,6 +784,157 @@ async function fetchSupabaseRpcBoolean({
   return {
     ok: true,
     value: payload,
+  };
+}
+
+async function fetchSupabaseEndTurnWorldState({
+  authorizationHeader,
+  supabaseAnonKey,
+  supabaseUrl,
+  worldId,
+}: {
+  readonly authorizationHeader: string;
+  readonly supabaseAnonKey: string;
+  readonly supabaseUrl: string;
+  readonly worldId: string;
+}): Promise<SupabaseEndTurnWorldStateResult> {
+  const searchParameters = new URLSearchParams({
+    id: `eq.${worldId}`,
+    limit: "1",
+    select: "id,current_turn_number,status,calendar_config_json",
+  });
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${supabaseUrl}/rest/v1/worlds?${searchParameters}`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          authorization: authorizationHeader,
+        },
+        method: "GET",
+      },
+    );
+  } catch {
+    return {
+      error: {
+        reason: "fetch_failed",
+      },
+      ok: false,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      error: {
+        reason: "http_error",
+        safeDeny: response.status >= 400 && response.status < 500,
+      },
+      ok: false,
+    };
+  }
+
+  const payload: unknown = await response.json();
+
+  if (!Array.isArray(payload)) {
+    return {
+      error: {
+        reason: "invalid_payload",
+      },
+      ok: false,
+    };
+  }
+
+  const rows: readonly unknown[] = payload;
+  const row = rows[0];
+
+  if (row === undefined) {
+    return {
+      error: {
+        reason: "missing_world",
+      },
+      ok: false,
+    };
+  }
+
+  if (!isSupabaseEndTurnWorldStateRow(row)) {
+    return {
+      error: {
+        reason: "invalid_payload",
+      },
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    row,
+  };
+}
+
+async function fetchSupabaseEndTurnReadinessRows({
+  authorizationHeader,
+  supabaseAnonKey,
+  supabaseUrl,
+  worldId,
+}: {
+  readonly authorizationHeader: string;
+  readonly supabaseAnonKey: string;
+  readonly supabaseUrl: string;
+  readonly worldId: string;
+}): Promise<SupabaseEndTurnReadinessRowsResult> {
+  const searchParameters = new URLSearchParams({
+    "nations.world_id": `eq.${worldId}`,
+    order: "id.asc",
+    select: "id,auto_ready_enabled,is_ready_current_turn,nations!inner()",
+  });
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${supabaseUrl}/rest/v1/settlements?${searchParameters}`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          authorization: authorizationHeader,
+        },
+        method: "GET",
+      },
+    );
+  } catch {
+    return {
+      error: {
+        reason: "fetch_failed",
+      },
+      ok: false,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      error: {
+        reason: "http_error",
+        safeDeny: response.status >= 400 && response.status < 500,
+      },
+      ok: false,
+    };
+  }
+
+  const payload: unknown = await response.json();
+
+  if (!Array.isArray(payload) || !payload.every(isSupabaseReadinessRow)) {
+    return {
+      error: {
+        reason: "invalid_payload",
+      },
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    rows: payload.map(toBasicEndTurnReadinessRow),
   };
 }
 
@@ -637,6 +1002,34 @@ async function fetchSupabaseWorldExists({
   };
 }
 
+function transitionInputResultFromStateFetchError(
+  error: SupabaseStateFetchError,
+): EndTurnBasicTransitionInputResult {
+  if (error.reason === "missing_world") {
+    return {
+      error: createErrorResponse({
+        code: "end_turn_world_not_found",
+        message: "World is unavailable.",
+      }),
+      ok: false,
+      status: 404,
+    };
+  }
+
+  if (error.reason === "http_error" && error.safeDeny) {
+    return {
+      error: createErrorResponse({
+        code: "unauthorized",
+        message: "End turn is unavailable for this world.",
+      }),
+      ok: false,
+      status: 403,
+    };
+  }
+
+  return createTransitionStateUnavailableResult();
+}
+
 function resultFromSupabaseAuthorizationFetchError(
   error: SupabaseAuthorizationFetchError,
 ): EndTurnBasicAuthorizationResult {
@@ -645,6 +1038,173 @@ function resultFromSupabaseAuthorizationFetchError(
   }
 
   return createAuthContextUnavailableResult();
+}
+
+function parseWorldCalendarConfig(value: unknown): WorldCalendarConfig | null {
+  if (
+    !isRecord(value) ||
+    !hasOnlyExpectedFields(value, expectedCalendarConfigFields)
+  ) {
+    return null;
+  }
+
+  const weekdays = parseCalendarWeekdays(value.weekdays);
+  const months = parseCalendarMonths(value.months);
+
+  if (weekdays === null || months === null) {
+    return null;
+  }
+
+  const startingDayOfMonth = value.startingDayOfMonth;
+  const startingMonthIndex = value.startingMonthIndex;
+  const startingWeekdayOffset = value.startingWeekdayOffset;
+  const startingYear = value.startingYear;
+  const yearFormatTemplate = value.yearFormatTemplate;
+
+  if (
+    !isNonnegativeInteger(startingMonthIndex) ||
+    startingMonthIndex >= months.length ||
+    !isPositiveInteger(startingDayOfMonth) ||
+    !isInteger(startingYear) ||
+    !isNonnegativeInteger(startingWeekdayOffset) ||
+    startingWeekdayOffset >= weekdays.length ||
+    typeof yearFormatTemplate !== "string" ||
+    yearFormatTemplate.trim().length === 0 ||
+    !yearFormatTemplate.includes("{n}")
+  ) {
+    return null;
+  }
+
+  const startingMonth = months[startingMonthIndex];
+
+  if (
+    startingMonth === undefined ||
+    startingDayOfMonth > startingMonth.dayCount
+  ) {
+    return null;
+  }
+
+  return {
+    months,
+    startingDayOfMonth,
+    startingMonthIndex,
+    startingWeekdayOffset,
+    startingYear,
+    weekdays,
+    yearFormatTemplate,
+  };
+}
+
+function parseCalendarWeekdays(
+  value: unknown,
+): WorldCalendarConfig["weekdays"] | null {
+  if (!Array.isArray(value) || value.length === 0) {
+    return null;
+  }
+
+  const weekdays: WorldCalendarConfig["weekdays"] = [];
+
+  for (const [weekdayIndex, weekday] of value.entries()) {
+    if (
+      !isRecord(weekday) ||
+      !hasOnlyExpectedFields(weekday, expectedCalendarWeekdayFields) ||
+      weekday.index !== weekdayIndex ||
+      typeof weekday.name !== "string" ||
+      weekday.name.trim().length === 0
+    ) {
+      return null;
+    }
+
+    weekdays.push({
+      index: weekday.index,
+      name: weekday.name,
+    });
+  }
+
+  return weekdays;
+}
+
+function parseCalendarMonths(
+  value: unknown,
+): WorldCalendarConfig["months"] | null {
+  if (!Array.isArray(value) || value.length === 0) {
+    return null;
+  }
+
+  const months: WorldCalendarConfig["months"] = [];
+
+  for (const [monthIndex, month] of value.entries()) {
+    if (
+      !isRecord(month) ||
+      !hasOnlyExpectedFields(month, expectedCalendarMonthFields) ||
+      month.index !== monthIndex ||
+      typeof month.name !== "string" ||
+      month.name.trim().length === 0 ||
+      !isPositiveInteger(month.dayCount)
+    ) {
+      return null;
+    }
+
+    months.push({
+      dayCount: month.dayCount,
+      index: month.index,
+      name: month.name,
+    });
+  }
+
+  return months;
+}
+
+function isSupabaseEndTurnWorldStateRow(
+  value: unknown,
+): value is SupabaseEndTurnWorldStateRow {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    value.id.length > 0 &&
+    typeof value.current_turn_number === "number" &&
+    Number.isInteger(value.current_turn_number) &&
+    value.current_turn_number >= 0 &&
+    (value.status === "active" || value.status === "archived")
+  );
+}
+
+function isNonnegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function isInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value);
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+function isSupabaseReadinessRow(value: unknown): value is {
+  readonly auto_ready_enabled: boolean;
+  readonly id: string;
+  readonly is_ready_current_turn: boolean;
+} {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    value.id.length > 0 &&
+    typeof value.auto_ready_enabled === "boolean" &&
+    typeof value.is_ready_current_turn === "boolean"
+  );
+}
+
+function toBasicEndTurnReadinessRow(row: {
+  readonly auto_ready_enabled: boolean;
+  readonly id: string;
+  readonly is_ready_current_turn: boolean;
+}): BasicEndTurnReadinessRow {
+  return {
+    autoReadyEnabled: row.auto_ready_enabled,
+    id: row.id,
+    isReadyCurrentTurn: row.is_ready_current_turn,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
