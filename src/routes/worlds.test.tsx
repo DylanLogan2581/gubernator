@@ -271,6 +271,12 @@ describe("world shell route", () => {
             visibility: "private",
           }),
         ],
+        settlementRows: [
+          createSettlementRow({
+            id: "settlement-1",
+            name: "Amberhold",
+          }),
+        ],
       }),
     );
 
@@ -281,7 +287,8 @@ describe("world shell route", () => {
     ).toBeDefined();
     expect(screen.getByText("Planning turn")).toBeDefined();
     expect(screen.getByText("12")).toBeDefined();
-    expect(screen.queryByText(/settlement/i)).toBeNull();
+    expect(await screen.findByText("Settlement readiness list")).toBeDefined();
+    expect(screen.getByText("Amberhold")).toBeDefined();
     expect(screen.queryByText(/citizen/i)).toBeNull();
   });
 
@@ -381,6 +388,7 @@ function createClient({
   adminRows = [],
   currentUser,
   session,
+  settlementRows = [],
   worldError = null,
   worldRows = [],
 }: {
@@ -394,6 +402,7 @@ function createClient({
         };
       }
     | null;
+  readonly settlementRows?: readonly TestSettlementReadinessRow[];
   readonly worldError?: { readonly message: string } | null;
   readonly worldRows?: Promise<unknown> | readonly TestWorldRow[];
 }): unknown {
@@ -431,6 +440,10 @@ function createClient({
         return createWorldsQueryBuilder(worldRows, worldError);
       }
 
+      if (table === "settlements") {
+        return createSettlementsQueryBuilder(settlementRows);
+      }
+
       throw new Error(`Unexpected table ${table}`);
     }),
   };
@@ -457,6 +470,14 @@ type TestWorldRow = {
   readonly updated_at: string;
   readonly visibility: string;
 };
+type TestSettlementReadinessRow = {
+  readonly auto_ready_enabled: boolean;
+  readonly id: string;
+  readonly is_ready_current_turn: boolean;
+  readonly name: string;
+  readonly nation_id: string;
+  readonly ready_set_at: string | null;
+};
 
 function createUser(overrides: Partial<TestUser> = {}): TestUser {
   return {
@@ -482,6 +503,20 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",
+    ...overrides,
+  };
+}
+
+function createSettlementRow(
+  overrides: Partial<TestSettlementReadinessRow> = {},
+): TestSettlementReadinessRow {
+  return {
+    auto_ready_enabled: false,
+    id: "settlement-1",
+    is_ready_current_turn: false,
+    name: "Settlement",
+    nation_id: "nation-1",
+    ready_set_at: null,
     ...overrides,
   };
 }
@@ -538,4 +573,17 @@ function createWorldsQueryBuilder(
       }),
     })),
   };
+}
+
+function createSettlementsQueryBuilder(
+  rows: readonly TestSettlementReadinessRow[],
+): unknown {
+  const builder = {
+    eq: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
 }
