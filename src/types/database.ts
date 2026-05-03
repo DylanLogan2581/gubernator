@@ -102,6 +102,71 @@ export type Database = {
           },
         ];
       };
+      turn_log_entries: {
+        Row: {
+          citizen_id: string | null;
+          id: string;
+          log_category: string;
+          nation_id: string | null;
+          payload_jsonb: Json;
+          resource_id: string | null;
+          settlement_id: string | null;
+          turn_transition_id: string;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id?: string | null;
+          id?: string;
+          log_category: string;
+          nation_id?: string | null;
+          payload_jsonb?: Json;
+          resource_id?: string | null;
+          settlement_id?: string | null;
+          turn_transition_id: string;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string | null;
+          id?: string;
+          log_category?: string;
+          nation_id?: string | null;
+          payload_jsonb?: Json;
+          resource_id?: string | null;
+          settlement_id?: string | null;
+          turn_transition_id?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "turn_log_entries_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "turn_log_entries_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "turn_log_entries_transition_world_fkey";
+            columns: ["turn_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "turn_log_entries_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       turn_transitions: {
         Row: {
           finished_at: string | null;
