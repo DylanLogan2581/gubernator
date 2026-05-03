@@ -11,6 +11,7 @@ export const authStateQueryCacheKeys = {
   notificationsAll: ["notifications"] as const,
   permissionsAll: ["permissions"] as const,
   settlementsAll: ["settlements"] as const,
+  turnsAll: ["turns"] as const,
   worldAccessAll: ["world-access"] as const,
   worldsAll: ["worlds"] as const,
 } as const;
@@ -21,6 +22,7 @@ const authDependentQueryKeys = [
   authStateQueryCacheKeys.notificationsAll,
   authStateQueryCacheKeys.permissionsAll,
   authStateQueryCacheKeys.settlementsAll,
+  authStateQueryCacheKeys.turnsAll,
   authStateQueryCacheKeys.worldAccessAll,
   authStateQueryCacheKeys.worldsAll,
 ] as const satisfies readonly QueryKey[];

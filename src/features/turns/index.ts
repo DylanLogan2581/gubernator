@@ -1,5 +1,6 @@
 // Turns feature — advance and track turns within a world.
 // Implemented in Epic 2.
+export { turnQueryKeys } from "./queries/turnQueryKeys";
 export type {
   CurrentTurnDateDisplay,
   CurrentTurnDateDisplayLabels,
