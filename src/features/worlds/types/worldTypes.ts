@@ -28,6 +28,7 @@ export type AccessibleWorld = {
   readonly canManage: boolean;
   readonly createdAt: string;
   readonly currentTurnNumber: number;
+  readonly fullInWorldDateLabel: string;
   readonly id: string;
   readonly inWorldDateLabel: string;
   readonly isArchived: boolean;
@@ -44,8 +45,11 @@ export type AccessibleWorld = {
 export type WorldShellHeader = {
   readonly archivedAt: string | null;
   readonly currentTurnNumber: number;
+  readonly fullInWorldDateLabel: string;
+  readonly inWorldDateLabel: string;
   readonly isArchived: boolean;
   readonly name: string;
+  readonly planningTurnNumber: number;
   readonly slug: string;
   readonly status: string;
   readonly visibility: string;

@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { WorldCalendarConfig } from "@/features/calendar";
+
 import { WorldShellPage } from "./WorldShellPage";
 
 import type { ReactNode } from "react";
@@ -29,12 +31,13 @@ describe("WorldShellPage", () => {
     requireSupabaseClient.mockReset();
   });
 
-  it("renders authorized world context", async () => {
+  it("renders planning turn and full fantasy date for authorized world context", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
+            calendar_config_json: createCalendarConfig(),
             current_turn_number: 7,
             id: "00000000-0000-0000-0000-000000000101",
             name: "Eastern Marches",
@@ -50,8 +53,10 @@ describe("WorldShellPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Eastern Marches" }),
     ).toBeDefined();
-    expect(screen.getByText("Current turn")).toBeDefined();
+    expect(screen.getByText("Planning turn")).toBeDefined();
     expect(screen.getByText("7")).toBeDefined();
+    expect(screen.getByText("In-world date")).toBeDefined();
+    expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
     expect(screen.getByText("private")).toBeDefined();
     expect(
       screen.getByRole("link", { name: "Back to worlds" }),
@@ -65,6 +70,8 @@ describe("WorldShellPage", () => {
         worldRows: [
           createWorldRow({
             archived_at: "2026-01-03T00:00:00.000Z",
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 3,
             id: "00000000-0000-0000-0000-000000000202",
             name: "Archived Realm",
             owner_id: "user-1",
@@ -79,8 +86,37 @@ describe("WorldShellPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Archived Realm" }),
     ).toBeDefined();
+    expect(screen.getByText("Planning turn")).toBeDefined();
+    expect(screen.getByText("3")).toBeDefined();
+    expect(screen.getByText("Firstday, Ember 1, 100 AG")).toBeDefined();
     expect(screen.getByText("Read-only archive")).toBeDefined();
     expect(screen.getByText(/gameplay actions are read-only/i)).toBeDefined();
+  });
+
+  it("renders a safe fallback when calendar data cannot be loaded", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: { months: [] },
+            current_turn_number: 2,
+            id: "00000000-0000-0000-0000-000000000303",
+            name: "Broken Calendar Realm",
+            owner_id: "user-1",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000000303");
+
+    expect(
+      await screen.findByRole("heading", { name: "Broken Calendar Realm" }),
+    ).toBeDefined();
+    expect(screen.getByText("Planning turn")).toBeDefined();
+    expect(screen.getByText("2")).toBeDefined();
+    expect(screen.getByText("Calendar unavailable")).toBeDefined();
   });
 
   it("renders back navigation for unavailable worlds", async () => {
@@ -166,6 +202,7 @@ type TestUser = {
 
 type TestWorldRow = {
   readonly archived_at: string | null;
+  readonly calendar_config_json: TestCalendarConfigJson;
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
@@ -175,6 +212,10 @@ type TestWorldRow = {
   readonly updated_at: string;
   readonly visibility: string;
 };
+type TestCalendarConfigJson =
+  | WorldCalendarConfig
+  | { readonly months: [] }
+  | null;
 
 function createUser(id: string): TestUser {
   return {
@@ -191,6 +232,7 @@ function createUser(id: string): TestUser {
 function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
   return {
     archived_at: null,
+    calendar_config_json: createCalendarConfig(),
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 1,
     id: "00000000-0000-0000-0000-000000000001",
@@ -200,6 +242,24 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",
     ...overrides,
+  };
+}
+
+function createCalendarConfig(): WorldCalendarConfig {
+  return {
+    months: [
+      { dayCount: 2, index: 0, name: "Dawn" },
+      { dayCount: 3, index: 1, name: "Ember" },
+    ],
+    startingDayOfMonth: 1,
+    startingMonthIndex: 0,
+    startingWeekdayOffset: 0,
+    startingYear: 100,
+    weekdays: [
+      { index: 0, name: "Firstday" },
+      { index: 1, name: "Secondday" },
+    ],
+    yearFormatTemplate: "{n} AG",
   };
 }
 

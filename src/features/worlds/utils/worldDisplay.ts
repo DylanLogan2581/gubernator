@@ -51,6 +51,12 @@ export function toAccessibleWorld(
     inWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       planningTurnNumber,
+      "compact",
+    ),
+    fullInWorldDateLabel: resolveInWorldDateLabel(
+      world.calendar_config_json,
+      planningTurnNumber,
+      "full",
     ),
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
@@ -86,6 +92,7 @@ function resolvePlanningTurnNumber(currentTurnNumber: number): number {
 function resolveInWorldDateLabel(
   calendarConfigJson: WorldRow["calendar_config_json"] | undefined,
   planningTurnNumber: number,
+  displayVariant: "compact" | "full",
 ): string {
   const parseResult = worldCalendarConfigSchema.safeParse(calendarConfigJson);
 
@@ -99,7 +106,7 @@ function resolveInWorldDateLabel(
     return formatCalendarDate(
       resolveTurnCalendarDate(calendarConfig, planningTurnNumber),
       {
-        displayVariant: "compact",
+        displayVariant,
         yearFormatTemplate: calendarConfig.yearFormatTemplate,
       },
     );

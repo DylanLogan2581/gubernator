@@ -120,8 +120,12 @@ function WorldShellContent({
             </h1>
             <dl className="flex flex-wrap gap-4 text-sm text-muted-foreground">
               <div>
-                <dt className="font-medium text-foreground">Current turn</dt>
-                <dd>{worldQuery.data.header.currentTurnNumber}</dd>
+                <dt className="font-medium text-foreground">Planning turn</dt>
+                <dd>{worldQuery.data.header.planningTurnNumber}</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-foreground">In-world date</dt>
+                <dd>{worldQuery.data.header.fullInWorldDateLabel}</dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Status</dt>
