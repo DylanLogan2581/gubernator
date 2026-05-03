@@ -1,7 +1,10 @@
 import type { WorldCalendarConfig } from "@/features/calendar";
-import type {
-  BasicEndTurnReadinessRow,
-  BasicEndTurnTransitionInput,
+import {
+  isBasicEndTurnTransitionPlanningError,
+  planBasicEndTurnTransition,
+  type BasicEndTurnReadinessRow,
+  type BasicEndTurnTransitionInput,
+  type BasicEndTurnTransitionResult,
 } from "@/features/turns";
 
 type EdgeRuntime = {
@@ -42,7 +45,7 @@ export type EndTurnBasicErrorResponse = {
 export type EndTurnBasicSuccessResponse = {
   readonly data: {
     readonly actorId: string;
-    readonly expectedTurnNumber: number;
+    readonly transition: EndTurnBasicDryWriteTransitionResult;
     readonly worldId: string;
   };
   readonly ok: true;
@@ -51,6 +54,14 @@ export type EndTurnBasicSuccessResponse = {
 export type EndTurnBasicResponse =
   | EndTurnBasicErrorResponse
   | EndTurnBasicSuccessResponse;
+
+export type EndTurnBasicDryWriteTransitionResult = {
+  readonly nextDate: BasicEndTurnTransitionResult["nextDate"];
+  readonly nextTurnNumber: number;
+  readonly previousDate: BasicEndTurnTransitionResult["previousDate"];
+  readonly previousTurnNumber: number;
+  readonly readinessSummary: BasicEndTurnTransitionResult["readinessSummary"];
+};
 
 export type EndTurnBasicAuthContext = {
   readonly authorizationHeader?: string;
@@ -179,14 +190,14 @@ export async function handleEndTurnBasicRequest(
     );
   }
 
-  const preWriteValidationResult = validateTransitionInputBeforeWrites(
+  const plannedTransitionResult = planDryWriteEndTurnTransition(
     transitionInputResult.input,
   );
 
-  if (!preWriteValidationResult.ok) {
+  if (!plannedTransitionResult.ok) {
     return createJsonResponse(
-      preWriteValidationResult.error,
-      preWriteValidationResult.status,
+      plannedTransitionResult.error,
+      plannedTransitionResult.status,
     );
   }
 
@@ -194,7 +205,9 @@ export async function handleEndTurnBasicRequest(
     {
       data: {
         actorId: authContextResult.context.userId,
-        expectedTurnNumber: requestBodyResult.body.expectedTurnNumber,
+        transition: mapDryWriteTransitionResult(
+          plannedTransitionResult.transition,
+        ),
         worldId: requestBodyResult.body.worldId,
       },
       ok: true,
@@ -554,34 +567,46 @@ function createTransitionStateUnavailableResult(): EndTurnBasicTransitionInputRe
   };
 }
 
-function validateTransitionInputBeforeWrites(
-  input: BasicEndTurnTransitionInput,
-): EndTurnBasicTransitionInputResult {
-  if (input.isWorldArchived) {
+function planDryWriteEndTurnTransition(input: BasicEndTurnTransitionInput):
+  | {
+      readonly ok: true;
+      readonly transition: BasicEndTurnTransitionResult;
+    }
+  | {
+      readonly error: EndTurnBasicErrorResponse;
+      readonly ok: false;
+      readonly status: number;
+    } {
+  try {
     return {
-      error: createErrorResponse({
-        code: "end_turn_world_archived",
-        message: "Archived worlds cannot advance turns.",
-      }),
-      ok: false,
-      status: 409,
+      ok: true,
+      transition: planBasicEndTurnTransition(input),
     };
-  }
+  } catch (error) {
+    if (isBasicEndTurnTransitionPlanningError(error)) {
+      return {
+        error: createErrorResponse({
+          code: error.code,
+          message: error.message,
+        }),
+        ok: false,
+        status: 409,
+      };
+    }
 
-  if (input.currentTurnNumber !== input.expectedCurrentTurnNumber) {
-    return {
-      error: createErrorResponse({
-        code: "end_turn_stale_expected_turn",
-        message: "Expected current turn no longer matches the world state.",
-      }),
-      ok: false,
-      status: 409,
-    };
+    return createTransitionStateUnavailableResult();
   }
+}
 
+function mapDryWriteTransitionResult(
+  transition: BasicEndTurnTransitionResult,
+): EndTurnBasicDryWriteTransitionResult {
   return {
-    input,
-    ok: true,
+    nextDate: transition.nextDate,
+    nextTurnNumber: transition.toTurnNumber,
+    previousDate: transition.previousDate,
+    previousTurnNumber: transition.fromTurnNumber,
+    readinessSummary: transition.readinessSummary,
   };
 }
 
