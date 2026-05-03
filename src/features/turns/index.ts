@@ -6,6 +6,12 @@ export {
   isCurrentTurnStateError,
   shouldRetryCurrentTurnStateQuery,
 } from "./queries/currentTurnStateQueries";
+export {
+  LatestTurnTransitionStatusError,
+  isLatestTurnTransitionStatusError,
+  latestTurnTransitionStatusQueryOptions,
+  shouldRetryLatestTurnTransitionStatusQuery,
+} from "./queries/latestTurnTransitionStatusQueries";
 export { turnQueryKeys } from "./queries/turnQueryKeys";
 export type {
   CurrentTurnDateDisplay,
@@ -19,6 +25,10 @@ export type {
   BasicEndTurnTransitionInput,
   BasicEndTurnTransitionResult,
 } from "./types/endTurnTransitionTypes";
+export type {
+  LatestTurnTransitionStatus,
+  TurnTransitionState,
+} from "./types/turnTransitionStatusTypes";
 export {
   BasicEndTurnTransitionPlanningError,
   isBasicEndTurnTransitionPlanningError,
