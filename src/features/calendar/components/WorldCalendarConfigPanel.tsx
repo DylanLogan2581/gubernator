@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Plus, RotateCcw, Save, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -18,9 +18,20 @@ import {
   saveWorldCalendarConfigMutationOptions,
 } from "../mutations/calendarMutations";
 import { worldCalendarConfigQueryOptions } from "../queries/calendarQueries";
+import {
+  worldCalendarConfigSchema,
+  type WorldCalendarConfig,
+} from "../schemas/calendarConfigSchemas";
 
-import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
-import type { FormEvent, JSX } from "react";
+type CalendarValidationErrors = {
+  months?: string;
+  startingDayOfMonth?: string;
+  startingWeekdayOffset?: string;
+  weekdays?: string;
+  yearFormatTemplate?: string;
+};
+
+const emptyCalendarValidationErrors: CalendarValidationErrors = {};
 
 type WorldCalendarConfigPanelProps = {
   readonly accessContext: WorldPermissionContext;
@@ -98,11 +109,21 @@ function WorldCalendarConfigPanelContent({
   );
   const [draftConfig, setDraftConfig] =
     useState<WorldCalendarConfig>(initialConfig);
+  const [validationErrors, setValidationErrors] =
+    useState<CalendarValidationErrors>(emptyCalendarValidationErrors);
 
   const canEdit = canAdmin && !isArchived;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+
+    const nextValidationErrors = getCalendarValidationErrors(draftConfig);
+    setValidationErrors(nextValidationErrors);
+
+    if (hasCalendarValidationErrors(nextValidationErrors)) {
+      saveMutation.reset();
+      return;
+    }
 
     saveMutation.mutate({
       config: draftConfig,
@@ -112,6 +133,7 @@ function WorldCalendarConfigPanelContent({
 
   function resetDraftConfig(): void {
     setDraftConfig(initialConfig);
+    setValidationErrors(emptyCalendarValidationErrors);
     saveMutation.reset();
   }
 
@@ -145,11 +167,16 @@ function WorldCalendarConfigPanelContent({
         <form
           aria-label="World calendar configuration"
           className="grid gap-5"
+          noValidate
           onSubmit={handleSubmit}
         >
           <CalendarEditableFields
             config={draftConfig}
-            onChange={setDraftConfig}
+            errors={validationErrors}
+            onChange={(config) => {
+              setDraftConfig(config);
+              setValidationErrors(emptyCalendarValidationErrors);
+            }}
           />
 
           {saveMutation.isError ? (
@@ -188,19 +215,23 @@ function WorldCalendarConfigPanelContent({
 
 function CalendarEditableFields({
   config,
+  errors,
   onChange,
 }: {
   readonly config: WorldCalendarConfig;
+  readonly errors: CalendarValidationErrors;
   readonly onChange: (config: WorldCalendarConfig) => void;
 }): JSX.Element {
+  const startingMonth = config.months[config.startingMonthIndex];
+
   return (
     <>
       <CalendarListEditor
         addButtonLabel="Add weekday"
+        error={errors.weekdays}
         fields={[{ key: "name", label: "Name", type: "text" }]}
         items={config.weekdays}
         legend="Weekdays"
-        minimumItemCount={1}
         onAdd={() =>
           onChange({
             ...config,
@@ -244,13 +275,13 @@ function CalendarEditableFields({
 
       <CalendarListEditor
         addButtonLabel="Add month"
+        error={errors.months}
         fields={[
           { key: "name", label: "Name", type: "text" },
           { key: "dayCount", label: "Days", type: "number" },
         ]}
         items={config.months}
         legend="Months"
-        minimumItemCount={1}
         onAdd={() =>
           onChange({
             ...config,
@@ -336,7 +367,14 @@ function CalendarEditableFields({
             </select>
           </label>
           <NumberField
+            describedBy={
+              errors.startingDayOfMonth === undefined
+                ? undefined
+                : "calendar-starting-day-error"
+            }
+            error={errors.startingDayOfMonth}
             label="Day"
+            max={startingMonth?.dayCount}
             min={1}
             value={config.startingDayOfMonth}
             onChange={(value) =>
@@ -351,6 +389,14 @@ function CalendarEditableFields({
           <label className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Weekday offset</span>
             <select
+              aria-describedby={
+                errors.startingWeekdayOffset === undefined
+                  ? undefined
+                  : "calendar-weekday-offset-error"
+              }
+              aria-invalid={
+                errors.startingWeekdayOffset === undefined ? undefined : true
+              }
               className="h-8 rounded-lg border border-input bg-background px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               value={config.startingWeekdayOffset}
               onChange={(event) =>
@@ -366,6 +412,12 @@ function CalendarEditableFields({
                 </option>
               ))}
             </select>
+            {errors.startingWeekdayOffset === undefined ? null : (
+              <FieldError
+                id="calendar-weekday-offset-error"
+                message={errors.startingWeekdayOffset}
+              />
+            )}
           </label>
         </div>
       </fieldset>
@@ -373,6 +425,14 @@ function CalendarEditableFields({
       <label className="grid gap-1 text-sm">
         <span className="font-medium">Year format template</span>
         <Input
+          aria-describedby={
+            errors.yearFormatTemplate === undefined
+              ? undefined
+              : "calendar-year-format-template-error"
+          }
+          aria-invalid={
+            errors.yearFormatTemplate === undefined ? undefined : true
+          }
           value={config.yearFormatTemplate}
           onChange={(event) =>
             onChange({
@@ -381,6 +441,12 @@ function CalendarEditableFields({
             })
           }
         />
+        {errors.yearFormatTemplate === undefined ? null : (
+          <FieldError
+            id="calendar-year-format-template-error"
+            message={errors.yearFormatTemplate}
+          />
+        )}
       </label>
     </>
   );
@@ -394,15 +460,16 @@ function CalendarListEditor<
   },
 >({
   addButtonLabel,
+  error,
   fields,
   items,
   legend,
-  minimumItemCount,
   onAdd,
   onRemove,
   onUpdate,
 }: {
   readonly addButtonLabel: string;
+  readonly error?: string;
   readonly fields: readonly {
     readonly key: Extract<keyof TItem, "dayCount" | "name">;
     readonly label: string;
@@ -410,7 +477,6 @@ function CalendarListEditor<
   }[];
   readonly items: readonly TItem[];
   readonly legend: string;
-  readonly minimumItemCount: number;
   readonly onAdd: () => void;
   readonly onRemove: (index: number) => void;
   readonly onUpdate: (
@@ -419,8 +485,14 @@ function CalendarListEditor<
     value: number | string,
   ) => void;
 }): JSX.Element {
+  const errorId = `calendar-${legend.toLowerCase()}-error`;
+
   return (
-    <fieldset className="grid gap-3">
+    <fieldset
+      aria-describedby={error === undefined ? undefined : errorId}
+      aria-invalid={error === undefined ? undefined : true}
+      className="grid gap-3"
+    >
       <div className="flex items-center justify-between gap-3">
         <legend className="text-sm font-medium">{legend}</legend>
         <Button type="button" variant="outline" size="sm" onClick={onAdd}>
@@ -428,6 +500,7 @@ function CalendarListEditor<
           {addButtonLabel}
         </Button>
       </div>
+      {error === undefined ? null : <FieldError id={errorId} message={error} />}
       <div className="grid gap-2">
         {items.map((item, index) => (
           <div
@@ -463,7 +536,6 @@ function CalendarListEditor<
               size="icon"
               className="self-end"
               aria-label={`Remove ${legend.toLowerCase()} ${index + 1}`}
-              disabled={items.length <= minimumItemCount}
               onClick={() => onRemove(index)}
             >
               <Trash2 aria-hidden="true" />
@@ -476,12 +548,18 @@ function CalendarListEditor<
 }
 
 function NumberField({
+  describedBy,
+  error,
   label,
+  max,
   min,
   onChange,
   value,
 }: {
+  readonly describedBy?: string;
+  readonly error?: string;
   readonly label: string;
+  readonly max?: number;
   readonly min?: number;
   readonly onChange: (value: number) => void;
   readonly value: number;
@@ -490,12 +568,32 @@ function NumberField({
     <label className="grid gap-1 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <Input
+        aria-describedby={describedBy}
+        aria-invalid={error === undefined ? undefined : true}
+        max={max}
         min={min}
         type="number"
         value={value}
         onChange={(event) => onChange(Number(event.currentTarget.value))}
       />
+      {error === undefined || describedBy === undefined ? null : (
+        <FieldError id={describedBy} message={error} />
+      )}
     </label>
+  );
+}
+
+function FieldError({
+  id,
+  message,
+}: {
+  readonly id: string;
+  readonly message: string;
+}): JSX.Element {
+  return (
+    <p id={id} role="alert" className="text-sm text-destructive">
+      {message}
+    </p>
   );
 }
 
@@ -560,6 +658,64 @@ function CalendarReadOnlyList({
         ))}
       </ul>
     </div>
+  );
+}
+
+function getCalendarValidationErrors(
+  config: WorldCalendarConfig,
+): CalendarValidationErrors {
+  const parseResult = worldCalendarConfigSchema.safeParse(config);
+
+  if (parseResult.success) {
+    return emptyCalendarValidationErrors;
+  }
+
+  const errors: CalendarValidationErrors = {};
+  const startingMonth = config.months[config.startingMonthIndex];
+
+  if (config.weekdays.length < 1) {
+    errors.weekdays = "Add at least one weekday.";
+  }
+
+  if (config.months.length < 1) {
+    errors.months = "Add at least one month.";
+  }
+
+  if (
+    startingMonth === undefined ||
+    config.startingDayOfMonth < 1 ||
+    config.startingDayOfMonth > startingMonth.dayCount
+  ) {
+    errors.startingDayOfMonth =
+      "Starting day must fit within the starting month.";
+  }
+
+  if (
+    config.startingWeekdayOffset < 0 ||
+    config.startingWeekdayOffset >= config.weekdays.length
+  ) {
+    errors.startingWeekdayOffset =
+      "Starting weekday offset must match an existing weekday.";
+  }
+
+  if (config.yearFormatTemplate.trim().length < 1) {
+    errors.yearFormatTemplate = "Year format template is required.";
+  } else if (!config.yearFormatTemplate.includes("{n}")) {
+    errors.yearFormatTemplate = "Year format template must include {n}.";
+  }
+
+  return errors;
+}
+
+function hasCalendarValidationErrors(
+  errors: CalendarValidationErrors,
+): boolean {
+  return (
+    errors.months !== undefined ||
+    errors.startingDayOfMonth !== undefined ||
+    errors.startingWeekdayOffset !== undefined ||
+    errors.weekdays !== undefined ||
+    errors.yearFormatTemplate !== undefined
   );
 }
 
