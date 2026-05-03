@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (18);
+  plan (22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -205,7 +205,7 @@ select
         )
     ),
     1,
-    'matching expected turn returns one running transition'
+    'matching expected turn returns one completed transition'
   );
 
 select
@@ -234,10 +234,10 @@ select
         and from_turn_number = 4
         and to_turn_number = 5
         and initiated_by_user_id = '89000000-0000-0000-0000-000000000001'
-        and status = 'running'
+        and status = 'completed'
     ),
     1,
-    'matching expected turn records the running transition'
+    'matching expected turn records the completed transition'
   );
 
 select
@@ -522,6 +522,92 @@ select
     ),
     6,
     'world admin advance still increments exactly one turn'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- FORCED FAILURE: transition is marked failed and world state rolls back.
+-- ---------------------------------------------------------------------------
+update public.settlements
+set
+  is_ready_current_turn = true,
+  ready_set_at = '2026-05-03 14:00:00+00'
+where
+  id = '8c000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"89000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.advance_world_turn_if_current (
+          '8a000000-0000-0000-0000-000000000001',
+          6,
+          null,
+          '{
+            "notificationType": "turn.completed"
+          }'::jsonb
+        ) transition_rows
+      where
+        transition_rows.status = 'failed'
+    ),
+    1,
+    'forced failure returns one failed transition row'
+  );
+
+select
+  is (
+    (
+      select
+        current_turn_number
+      from
+        public.worlds
+      where
+        id = '8a000000-0000-0000-0000-000000000001'
+    ),
+    6,
+    'forced failure rolls back the world turn advance'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.turn_transitions
+      where
+        world_id = '8a000000-0000-0000-0000-000000000001'
+        and from_turn_number = 6
+        and to_turn_number = 7
+        and status = 'failed'
+        and finished_at is null
+    ),
+    1,
+    'forced failure stores one failed transition without finished_at'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.settlements
+      where
+        id = '8c000000-0000-0000-0000-000000000001'
+        and is_ready_current_turn = true
+        and ready_set_at = '2026-05-03 14:00:00+00'::timestamptz
+    ),
+    'forced failure preserves settlement readiness state'
   );
 
 reset role;

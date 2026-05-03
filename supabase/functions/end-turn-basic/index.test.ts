@@ -135,7 +135,7 @@ describe("handleEndTurnBasicRequest", () => {
           id: "transition-1",
           initiatedByUserId: "user-1",
           startedAt: "2026-05-03T10:00:00.000Z",
-          status: "running",
+          status: "completed",
           toTurnNumber: 4,
           worldId: "world-1",
         },
@@ -325,13 +325,14 @@ describe("handleEndTurnBasicRequest", () => {
 });
 
 describe("persistSupabaseRunningTransition", () => {
-  it("advances the world one turn and returns the running transition", async () => {
+  it("advances the world one turn and returns the completed transition", async () => {
     const fetchMock = stubSupabaseRuntimeFetch([
       {
         body: [
-          createRunningTransitionRow({
+          createTransitionRow({
             from_turn_number: 3,
             initiated_by_user_id: "user-1",
+            status: "completed",
             to_turn_number: 4,
             world_id: "00000000-0000-0000-0000-000000000001",
           }),
@@ -359,7 +360,7 @@ describe("persistSupabaseRunningTransition", () => {
         id: "00000000-0000-0000-0000-000000000201",
         initiatedByUserId: "user-1",
         startedAt: "2026-05-03T10:00:00.000Z",
-        status: "running",
+        status: "completed",
         toTurnNumber: 4,
         worldId: "00000000-0000-0000-0000-000000000001",
       },
@@ -412,6 +413,41 @@ describe("persistSupabaseRunningTransition", () => {
         method: "POST",
       }),
     );
+  });
+
+  it("returns an unavailable error when the transition is finalized as failed", async () => {
+    const fetchMock = stubSupabaseRuntimeFetch([
+      {
+        body: [
+          createTransitionRow({
+            status: "failed",
+          }),
+        ],
+        status: 200,
+      },
+    ]);
+
+    const result = await persistSupabaseRunningTransition(
+      createTransitionInput(),
+      createPlannedTransition({ fromTurnNumber: 3, toTurnNumber: 4 }),
+      {
+        authorizationHeader: "Bearer token",
+        userId: "user-1",
+      },
+    );
+
+    expect(result).toEqual({
+      error: {
+        error: {
+          code: "end_turn_transition_unavailable",
+          message: "End turn transition could not be started.",
+        },
+        ok: false,
+      },
+      ok: false,
+      status: 500,
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it("returns a stale expected turn error when the atomic advance affects no rows", async () => {
@@ -911,13 +947,13 @@ function createPlannedTransition({
   };
 }
 
-function createRunningTransitionRow(
+function createTransitionRow(
   overrides: Partial<{
     readonly from_turn_number: number;
     readonly id: string;
     readonly initiated_by_user_id: string;
     readonly started_at: string;
-    readonly status: "running";
+    readonly status: "completed" | "failed";
     readonly to_turn_number: number;
     readonly world_id: string;
   }> = {},
@@ -926,7 +962,7 @@ function createRunningTransitionRow(
   readonly id: string;
   readonly initiated_by_user_id: string;
   readonly started_at: string;
-  readonly status: "running";
+  readonly status: "completed" | "failed";
   readonly to_turn_number: number;
   readonly world_id: string;
 } {
@@ -935,7 +971,7 @@ function createRunningTransitionRow(
     id: "00000000-0000-0000-0000-000000000201",
     initiated_by_user_id: "user-1",
     started_at: "2026-05-03T10:00:00.000Z",
-    status: "running",
+    status: "completed",
     to_turn_number: 4,
     world_id: "world-1",
     ...overrides,
