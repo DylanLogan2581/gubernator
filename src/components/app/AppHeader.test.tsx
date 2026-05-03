@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { notificationQueryKeys } from "@/features/notifications";
 
 import { AppHeader } from "./AppHeader";
 
@@ -15,7 +17,7 @@ vi.mock("@/lib/supabase", () => ({
 describe("AppHeader", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
-    requireSupabaseClient.mockReturnValue(createClient());
+    requireSupabaseClient.mockReturnValue(createClient().client);
   });
 
   it("renders the Gubernator app name", () => {
@@ -42,7 +44,7 @@ describe("AppHeader", () => {
 
   it("shows the unread notification badge when a user has unread rows", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ sessionUserId: "user-1", unreadCount: 3 }),
+      createClient({ sessionUserId: "user-1", initialUnreadCount: 3 }).client,
     );
 
     renderAppHeader();
@@ -51,6 +53,34 @@ describe("AppHeader", () => {
     expect(
       screen.getByRole("button", { name: "Notifications (3 unread)" }),
     ).toBeDefined();
+  });
+
+  it("refreshes the unread notification badge after notification invalidation", async () => {
+    const clientFixture = createClient({
+      sessionUserId: "user-1",
+      initialUnreadCount: 1,
+    });
+
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    const queryClient = renderAppHeader();
+
+    expect(
+      await screen.findByRole("button", { name: "Notifications (1 unread)" }),
+    ).toBeDefined();
+
+    clientFixture.setUnreadCount(2);
+
+    await act(async () => {
+      await queryClient.invalidateQueries({
+        queryKey: notificationQueryKeys.all,
+      });
+    });
+
+    expect(
+      await screen.findByRole("button", { name: "Notifications (2 unread)" }),
+    ).toBeDefined();
+    expect(clientFixture.select).toHaveBeenCalledTimes(2);
   });
 
   it("keeps notification control after header actions", () => {
@@ -68,7 +98,7 @@ describe("AppHeader", () => {
   });
 });
 
-function renderAppHeader(ui = <AppHeader />): void {
+function renderAppHeader(ui = <AppHeader />): QueryClient {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -76,40 +106,57 @@ function renderAppHeader(ui = <AppHeader />): void {
   });
 
   render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+
+  return queryClient;
 }
 
 function createClient({
   sessionUserId = null,
-  unreadCount = 0,
+  initialUnreadCount = 0,
 }: {
   readonly sessionUserId?: string | null;
-  readonly unreadCount?: number;
-} = {}): unknown {
+  readonly initialUnreadCount?: number;
+} = {}): {
+  readonly client: unknown;
+  readonly select: ReturnType<typeof vi.fn>;
+  readonly setUnreadCount: (count: number) => void;
+} {
+  let unreadCount = initialUnreadCount;
+  const select = vi.fn(() => ({
+    eq: vi.fn(() => ({
+      eq: vi.fn().mockImplementation(() =>
+        Promise.resolve({
+          count: unreadCount,
+          error: null,
+        }),
+      ),
+    })),
+  }));
+
   return {
-    auth: {
-      getSession: vi.fn().mockResolvedValue({
-        data: {
-          session:
-            sessionUserId === null ? null : { user: { id: sessionUserId } },
-        },
-        error: null,
+    client: {
+      auth: {
+        getSession: vi.fn().mockResolvedValue({
+          data: {
+            session:
+              sessionUserId === null ? null : { user: { id: sessionUserId } },
+          },
+          error: null,
+        }),
+      },
+      from: vi.fn((table: string) => {
+        if (table !== "notifications") {
+          throw new Error(`Unexpected table ${table}`);
+        }
+
+        return {
+          select,
+        };
       }),
     },
-    from: vi.fn((table: string) => {
-      if (table !== "notifications") {
-        throw new Error(`Unexpected table ${table}`);
-      }
-
-      return {
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn().mockResolvedValue({
-              count: unreadCount,
-              error: null,
-            }),
-          })),
-        })),
-      };
-    }),
+    select,
+    setUnreadCount: (count: number): void => {
+      unreadCount = count;
+    },
   };
 }
