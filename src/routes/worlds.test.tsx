@@ -248,8 +248,9 @@ describe("worlds route list", () => {
     expect(
       await screen.findByRole("heading", { name: "Public World" }),
     ).toBeDefined();
-    expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(screen.getByText("1")).toBeDefined();
+    const planningTurnLabel = screen.getByText("Planning turn");
+
+    expect(planningTurnLabel.nextElementSibling).toHaveTextContent("1");
   });
 });
 
