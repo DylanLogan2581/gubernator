@@ -9,7 +9,8 @@ export type SettlementReadinessListItem = {
 };
 
 export type SettlementReadinessSummary = {
-  readonly pendingSettlementCount: number;
+  readonly notReadySettlementCount: number;
+  readonly readyPercentage: number;
   readonly readySettlementCount: number;
   readonly totalSettlementCount: number;
 };

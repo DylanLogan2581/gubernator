@@ -6,6 +6,12 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import {
+  computeSettlementReadinessSummary,
+  isSettlementReadyForCurrentTurn,
+  type SettlementReadinessSummaryRow,
+} from "../utils/settlementReadinessSummary";
+
 import { settlementReadinessQueryKeys } from "./settlementReadinessQueryKeys";
 
 import type {
@@ -38,10 +44,6 @@ type SettlementReadinessRow = {
   readonly name: string;
   readonly nation_id: string;
   readonly ready_set_at: string | null;
-};
-type SettlementReadinessSummaryRow = {
-  readonly auto_ready_enabled: boolean;
-  readonly is_ready_current_turn: boolean;
 };
 
 const SETTLEMENT_READINESS_SELECT =
@@ -126,19 +128,5 @@ function toSettlementReadinessListItem(
 function toSettlementReadinessSummary(
   rows: readonly SettlementReadinessSummaryRow[],
 ): SettlementReadinessSummary {
-  const readySettlementCount = rows.filter(
-    isSettlementReadyForCurrentTurn,
-  ).length;
-
-  return {
-    pendingSettlementCount: rows.length - readySettlementCount,
-    readySettlementCount,
-    totalSettlementCount: rows.length,
-  };
-}
-
-function isSettlementReadyForCurrentTurn(
-  row: SettlementReadinessSummaryRow,
-): boolean {
-  return row.auto_ready_enabled || row.is_ready_current_turn;
+  return computeSettlementReadinessSummary(rows);
 }

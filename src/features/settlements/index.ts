@@ -13,6 +13,10 @@ export {
   settlementReadinessSummaryQueryOptions,
 } from "./queries/settlementReadinessQueries";
 export { settlementReadinessQueryKeys } from "./queries/settlementReadinessQueryKeys";
+export {
+  computeSettlementReadinessSummary,
+  isSettlementReadyForCurrentTurn,
+} from "./utils/settlementReadinessSummary";
 
 export type {
   SetSettlementAutoReadyInput,
@@ -24,3 +28,4 @@ export type {
   SettlementReadinessListItem,
   SettlementReadinessSummary,
 } from "./types/settlementReadinessTypes";
+export type { SettlementReadinessSummaryRow } from "./utils/settlementReadinessSummary";
