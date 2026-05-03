@@ -325,7 +325,7 @@ describe("handleEndTurnBasicRequest", () => {
 });
 
 describe("persistSupabaseRunningTransition", () => {
-  it("inserts one running transition row for the planned turn", async () => {
+  it("advances the world one turn and returns the running transition", async () => {
     const fetchMock = stubSupabaseRuntimeFetch([
       {
         body: [
@@ -366,41 +366,26 @@ describe("persistSupabaseRunningTransition", () => {
     });
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:54321/rest/v1/turn_transitions",
+      "http://localhost:54321/rest/v1/rpc/advance_world_turn_if_current",
       expect.objectContaining({
         body: JSON.stringify({
-          from_turn_number: 3,
-          initiated_by_user_id: "user-1",
-          status: "running",
-          to_turn_number: 4,
-          world_id: "00000000-0000-0000-0000-000000000001",
+          p_expected_turn_number: 3,
+          p_world_id: "00000000-0000-0000-0000-000000000001",
         }),
         headers: {
           apikey: "anon-key",
           authorization: "Bearer token",
           "content-type": "application/json",
-          prefer: "return=representation",
         },
         method: "POST",
       }),
     );
   });
 
-  it("reuses an existing running transition when the insert conflicts", async () => {
+  it("returns a stale expected turn error when the atomic advance affects no rows", async () => {
     const fetchMock = stubSupabaseRuntimeFetch([
       {
-        body: {
-          code: "23505",
-          message: "duplicate key value violates unique constraint",
-        },
-        status: 409,
-      },
-      {
-        body: [
-          createRunningTransitionRow({
-            id: "00000000-0000-0000-0000-000000000202",
-          }),
-        ],
+        body: [],
         status: 200,
       },
     ]);
@@ -415,23 +400,25 @@ describe("persistSupabaseRunningTransition", () => {
     );
 
     expect(result).toEqual({
-      ok: true,
-      transition: {
-        fromTurnNumber: 3,
-        id: "00000000-0000-0000-0000-000000000202",
-        initiatedByUserId: "user-1",
-        startedAt: "2026-05-03T10:00:00.000Z",
-        status: "running",
-        toTurnNumber: 4,
-        worldId: "world-1",
+      error: {
+        error: {
+          code: "end_turn_stale_expected_turn",
+          message: "Expected current turn no longer matches the world state.",
+        },
+        ok: false,
       },
+      ok: false,
+      status: 409,
     });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      "http://localhost:54321/rest/v1/turn_transitions?from_turn_number=eq.3&limit=1&order=started_at.desc&select=id%2Cworld_id%2Cfrom_turn_number%2Cto_turn_number%2Cinitiated_by_user_id%2Cstarted_at%2Cstatus&status=eq.running&world_id=eq.world-1",
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:54321/rest/v1/rpc/advance_world_turn_if_current",
       expect.objectContaining({
-        method: "GET",
+        body: JSON.stringify({
+          p_expected_turn_number: 3,
+          p_world_id: "world-1",
+        }),
+        method: "POST",
       }),
     );
   });

@@ -344,45 +344,29 @@ export async function persistSupabaseRunningTransition(
     return createTransitionPersistenceUnavailableResult();
   }
 
-  const insertResult = await insertSupabaseRunningTransition({
+  if (
+    transition.fromTurnNumber !== input.expectedCurrentTurnNumber ||
+    transition.toTurnNumber !== transition.fromTurnNumber + 1
+  ) {
+    return createTransitionPersistenceUnavailableResult();
+  }
+
+  const advanceResult = await advanceSupabaseWorldTurn({
     authorizationHeader,
-    fromTurnNumber: transition.fromTurnNumber,
-    initiatedByUserId: input.actorId,
+    expectedTurnNumber: input.expectedCurrentTurnNumber,
     supabaseAnonKey,
     supabaseUrl,
-    toTurnNumber: transition.toTurnNumber,
     worldId: input.worldId,
   });
 
-  if (insertResult.ok) {
+  if (advanceResult.ok) {
     return {
       ok: true,
-      transition: insertResult.transition,
+      transition: advanceResult.transition,
     };
   }
 
-  if (insertResult.error.reason !== "duplicate_running_transition") {
-    return transitionPersistenceResultFromFetchError(insertResult.error);
-  }
-
-  const existingTransitionResult = await fetchSupabaseRunningTransition({
-    authorizationHeader,
-    fromTurnNumber: transition.fromTurnNumber,
-    supabaseAnonKey,
-    supabaseUrl,
-    worldId: input.worldId,
-  });
-
-  if (!existingTransitionResult.ok) {
-    return transitionPersistenceResultFromFetchError(
-      existingTransitionResult.error,
-    );
-  }
-
-  return {
-    ok: true,
-    transition: existingTransitionResult.transition,
-  };
+  return transitionPersistenceResultFromFetchError(advanceResult.error);
 }
 
 export async function resolveSupabaseAuthContext(
@@ -876,10 +860,7 @@ type SupabaseRunningTransitionRow = {
 
 type SupabaseRunningTransitionFetchError =
   | {
-      readonly reason:
-        | "duplicate_running_transition"
-        | "fetch_failed"
-        | "invalid_payload";
+      readonly reason: "fetch_failed" | "invalid_payload" | "stale_world_turn";
     }
   | {
       readonly reason: "http_error";
@@ -1045,106 +1026,35 @@ async function fetchSupabaseEndTurnWorldState({
   };
 }
 
-async function insertSupabaseRunningTransition({
+async function advanceSupabaseWorldTurn({
   authorizationHeader,
-  fromTurnNumber,
-  initiatedByUserId,
-  supabaseAnonKey,
-  supabaseUrl,
-  toTurnNumber,
-  worldId,
-}: {
-  readonly authorizationHeader: string;
-  readonly fromTurnNumber: number;
-  readonly initiatedByUserId: string;
-  readonly supabaseAnonKey: string;
-  readonly supabaseUrl: string;
-  readonly toTurnNumber: number;
-  readonly worldId: string;
-}): Promise<SupabaseRunningTransitionResult> {
-  let response: Response;
-
-  try {
-    response = await fetch(`${supabaseUrl}/rest/v1/turn_transitions`, {
-      body: JSON.stringify({
-        from_turn_number: fromTurnNumber,
-        initiated_by_user_id: initiatedByUserId,
-        status: "running",
-        to_turn_number: toTurnNumber,
-        world_id: worldId,
-      }),
-      headers: {
-        apikey: supabaseAnonKey,
-        authorization: authorizationHeader,
-        "content-type": "application/json",
-        prefer: "return=representation",
-      },
-      method: "POST",
-    });
-  } catch {
-    return {
-      error: {
-        reason: "fetch_failed",
-      },
-      ok: false,
-    };
-  }
-
-  if (response.status === 409) {
-    return {
-      error: {
-        reason: "duplicate_running_transition",
-      },
-      ok: false,
-    };
-  }
-
-  if (!response.ok) {
-    return {
-      error: {
-        reason: "http_error",
-        safeDeny: response.status >= 400 && response.status < 500,
-      },
-      ok: false,
-    };
-  }
-
-  return runningTransitionResultFromResponse(response);
-}
-
-async function fetchSupabaseRunningTransition({
-  authorizationHeader,
-  fromTurnNumber,
+  expectedTurnNumber,
   supabaseAnonKey,
   supabaseUrl,
   worldId,
 }: {
   readonly authorizationHeader: string;
-  readonly fromTurnNumber: number;
+  readonly expectedTurnNumber: number;
   readonly supabaseAnonKey: string;
   readonly supabaseUrl: string;
   readonly worldId: string;
 }): Promise<SupabaseRunningTransitionResult> {
-  const searchParameters = new URLSearchParams({
-    from_turn_number: `eq.${fromTurnNumber}`,
-    limit: "1",
-    order: "started_at.desc",
-    select:
-      "id,world_id,from_turn_number,to_turn_number,initiated_by_user_id,started_at,status",
-    status: "eq.running",
-    world_id: `eq.${worldId}`,
-  });
   let response: Response;
 
   try {
     response = await fetch(
-      `${supabaseUrl}/rest/v1/turn_transitions?${searchParameters}`,
+      `${supabaseUrl}/rest/v1/rpc/advance_world_turn_if_current`,
       {
+        body: JSON.stringify({
+          p_expected_turn_number: expectedTurnNumber,
+          p_world_id: worldId,
+        }),
         headers: {
           apikey: supabaseAnonKey,
           authorization: authorizationHeader,
+          "content-type": "application/json",
         },
-        method: "GET",
+        method: "POST",
       },
     );
   } catch {
@@ -1166,7 +1076,7 @@ async function fetchSupabaseRunningTransition({
     };
   }
 
-  return runningTransitionResultFromResponse(response);
+  return advanceWorldTurnResultFromResponse(response);
 }
 
 async function fetchSupabaseEndTurnReadinessRows({
@@ -1339,9 +1249,37 @@ async function runningTransitionResultFromResponse(
   };
 }
 
+async function advanceWorldTurnResultFromResponse(
+  response: Response,
+): Promise<SupabaseRunningTransitionResult> {
+  const result = await runningTransitionResultFromResponse(response);
+
+  if (!result.ok && result.error.reason === "missing_transition") {
+    return {
+      error: {
+        reason: "stale_world_turn",
+      },
+      ok: false,
+    };
+  }
+
+  return result;
+}
+
 function transitionPersistenceResultFromFetchError(
   error: SupabaseRunningTransitionFetchError,
 ): EndTurnBasicPersistRunningTransitionResult {
+  if (error.reason === "stale_world_turn") {
+    return {
+      error: createErrorResponse({
+        code: "end_turn_stale_expected_turn",
+        message: "Expected current turn no longer matches the world state.",
+      }),
+      ok: false,
+      status: 409,
+    };
+  }
+
   if (error.reason === "http_error" && error.safeDeny) {
     return {
       error: createErrorResponse({
