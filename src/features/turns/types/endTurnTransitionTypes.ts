@@ -27,7 +27,6 @@ export type BasicEndTurnReadinessSummary = {
 };
 
 export type BasicEndTurnLogPayload = {
-  readonly category: "turn_transition";
   readonly fromTurnNumber: number;
   readonly nextDate: TurnCalendarDate;
   readonly previousDate: TurnCalendarDate;

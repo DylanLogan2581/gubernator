@@ -370,6 +370,34 @@ describe("persistSupabaseRunningTransition", () => {
       expect.objectContaining({
         body: JSON.stringify({
           p_expected_turn_number: 3,
+          p_log_payload_jsonb: {
+            fromTurnNumber: 3,
+            nextDate: {
+              dayOfMonth: 2,
+              monthIndex: 1,
+              monthName: "Rainmonth",
+              turnNumber: 4,
+              weekdayIndex: 1,
+              weekdayName: "Toilsday",
+              year: 12,
+            },
+            previousDate: {
+              dayOfMonth: 1,
+              monthIndex: 1,
+              monthName: "Rainmonth",
+              turnNumber: 3,
+              weekdayIndex: 0,
+              weekdayName: "Moonday",
+              year: 12,
+            },
+            readinessSummary: {
+              notReadySettlementCount: 0,
+              readyPercentage: 0,
+              readySettlementCount: 0,
+              totalSettlementCount: 0,
+            },
+            toTurnNumber: 4,
+          },
           p_world_id: "00000000-0000-0000-0000-000000000001",
         }),
         headers: {
@@ -416,6 +444,34 @@ describe("persistSupabaseRunningTransition", () => {
       expect.objectContaining({
         body: JSON.stringify({
           p_expected_turn_number: 3,
+          p_log_payload_jsonb: {
+            fromTurnNumber: 3,
+            nextDate: {
+              dayOfMonth: 2,
+              monthIndex: 1,
+              monthName: "Rainmonth",
+              turnNumber: 4,
+              weekdayIndex: 1,
+              weekdayName: "Toilsday",
+              year: 12,
+            },
+            previousDate: {
+              dayOfMonth: 1,
+              monthIndex: 1,
+              monthName: "Rainmonth",
+              turnNumber: 3,
+              weekdayIndex: 0,
+              weekdayName: "Moonday",
+              year: 12,
+            },
+            readinessSummary: {
+              notReadySettlementCount: 0,
+              readyPercentage: 0,
+              readySettlementCount: 0,
+              totalSettlementCount: 0,
+            },
+            toTurnNumber: 4,
+          },
           p_world_id: "world-1",
         }),
         method: "POST",
@@ -830,7 +886,6 @@ function createPlannedTransition({
   return {
     fromTurnNumber,
     logPayload: {
-      category: "turn_transition",
       fromTurnNumber,
       nextDate,
       previousDate,

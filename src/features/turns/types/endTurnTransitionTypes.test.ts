@@ -144,7 +144,6 @@ describe("BasicEndTurnTransitionInput", () => {
 describe("BasicEndTurnTransitionResult", () => {
   it("models the basic Epic 2 transition output shape", () => {
     const logPayload = {
-      category: "turn_transition",
       fromTurnNumber: 7,
       nextDate,
       previousDate,
@@ -168,7 +167,6 @@ describe("BasicEndTurnTransitionResult", () => {
     expect(result).toEqual({
       fromTurnNumber: 7,
       logPayload: {
-        category: "turn_transition",
         fromTurnNumber: 7,
         nextDate,
         previousDate,
