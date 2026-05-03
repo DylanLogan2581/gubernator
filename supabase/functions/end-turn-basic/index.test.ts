@@ -1,9 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   handleEndTurnBasicRequest,
+  resolveSupabaseEndTurnAuthorization,
   type EndTurnBasicAuthContextResult,
+  type EndTurnBasicAuthorizationResult,
 } from "./index";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("handleEndTurnBasicRequest", () => {
   it("returns a typed error response for an invalid request body", async () => {
@@ -85,6 +91,256 @@ describe("handleEndTurnBasicRequest", () => {
       ok: false,
     });
   });
+
+  it("returns a success response when authorization allows ending the turn", async () => {
+    const resolveAuthorization = vi.fn<
+      () => Promise<EndTurnBasicAuthorizationResult>
+    >(() => Promise.resolve({ ok: true }));
+
+    const response = await handleEndTurnBasicRequest(
+      createJsonRequest({
+        expectedTurnNumber: 3,
+        worldId: "world-1",
+      }),
+      {
+        resolveAuthContext: createResolveAuthContext("user-1"),
+        resolveAuthorization,
+      },
+    );
+
+    const responseBody: unknown = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(responseBody).toEqual({
+      data: {
+        actorId: "user-1",
+        expectedTurnNumber: 3,
+        worldId: "world-1",
+      },
+      ok: true,
+    });
+    expect(resolveAuthorization).toHaveBeenCalledWith(
+      {
+        expectedTurnNumber: 3,
+        worldId: "world-1",
+      },
+      {
+        userId: "user-1",
+      },
+    );
+  });
+
+  it("returns a safe authorization error when authorization denies ending the turn", async () => {
+    const response = await handleEndTurnBasicRequest(
+      createJsonRequest({
+        expectedTurnNumber: 3,
+        worldId: "world-1",
+      }),
+      {
+        resolveAuthContext: createResolveAuthContext("user-1"),
+        resolveAuthorization: () =>
+          Promise.resolve({
+            error: {
+              error: {
+                code: "unauthorized",
+                message: "End turn is unavailable for this world.",
+              },
+              ok: false,
+            },
+            ok: false,
+            status: 403,
+          }),
+      },
+    );
+
+    const responseBody: unknown = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(responseBody).toEqual({
+      error: {
+        code: "unauthorized",
+        message: "End turn is unavailable for this world.",
+      },
+      ok: false,
+    });
+  });
+});
+
+describe("resolveSupabaseEndTurnAuthorization", () => {
+  it("allows a super admin when the world exists", async () => {
+    const fetchMock = stubSupabaseRuntimeFetch([
+      {
+        body: true,
+        status: 200,
+      },
+      {
+        body: [{ id: "00000000-0000-0000-0000-000000000001" }],
+        status: 200,
+      },
+    ]);
+
+    const result = await resolveSupabaseEndTurnAuthorization(
+      {
+        expectedTurnNumber: 3,
+        worldId: "00000000-0000-0000-0000-000000000001",
+      },
+      {
+        authorizationHeader: "Bearer token",
+        userId: "super-admin-user",
+      },
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "http://localhost:54321/rest/v1/rpc/is_super_admin",
+      expect.objectContaining({
+        method: "POST",
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "http://localhost:54321/rest/v1/worlds?id=eq.00000000-0000-0000-0000-000000000001&limit=1&select=id",
+      expect.objectContaining({
+        method: "GET",
+      }),
+    );
+  });
+
+  it("allows a world admin", async () => {
+    stubSupabaseRuntimeFetch([
+      {
+        body: false,
+        status: 200,
+      },
+      {
+        body: true,
+        status: 200,
+      },
+    ]);
+
+    const result = await resolveSupabaseEndTurnAuthorization(
+      {
+        expectedTurnNumber: 3,
+        worldId: "00000000-0000-0000-0000-000000000001",
+      },
+      {
+        authorizationHeader: "Bearer token",
+        userId: "world-admin-user",
+      },
+    );
+
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("denies a non-admin world-access user", async () => {
+    stubSupabaseRuntimeFetch([
+      {
+        body: false,
+        status: 200,
+      },
+      {
+        body: false,
+        status: 200,
+      },
+    ]);
+
+    const result = await resolveSupabaseEndTurnAuthorization(
+      {
+        expectedTurnNumber: 3,
+        worldId: "00000000-0000-0000-0000-000000000001",
+      },
+      {
+        authorizationHeader: "Bearer token",
+        userId: "world-access-user",
+      },
+    );
+
+    expect(result).toEqual({
+      error: {
+        error: {
+          code: "unauthorized",
+          message: "End turn is unavailable for this world.",
+        },
+        ok: false,
+      },
+      ok: false,
+      status: 403,
+    });
+  });
+
+  it("denies an inactive user", async () => {
+    stubSupabaseRuntimeFetch([
+      {
+        body: false,
+        status: 200,
+      },
+      {
+        body: false,
+        status: 200,
+      },
+    ]);
+
+    const result = await resolveSupabaseEndTurnAuthorization(
+      {
+        expectedTurnNumber: 3,
+        worldId: "00000000-0000-0000-0000-000000000001",
+      },
+      {
+        authorizationHeader: "Bearer token",
+        userId: "inactive-user",
+      },
+    );
+
+    expect(result).toEqual({
+      error: {
+        error: {
+          code: "unauthorized",
+          message: "End turn is unavailable for this world.",
+        },
+        ok: false,
+      },
+      ok: false,
+      status: 403,
+    });
+  });
+
+  it("returns a safe error for a missing world", async () => {
+    stubSupabaseRuntimeFetch([
+      {
+        body: true,
+        status: 200,
+      },
+      {
+        body: [],
+        status: 200,
+      },
+    ]);
+
+    const result = await resolveSupabaseEndTurnAuthorization(
+      {
+        expectedTurnNumber: 3,
+        worldId: "00000000-0000-0000-0000-000000000099",
+      },
+      {
+        authorizationHeader: "Bearer token",
+        userId: "super-admin-user",
+      },
+    );
+
+    expect(result).toEqual({
+      error: {
+        error: {
+          code: "unauthorized",
+          message: "End turn is unavailable for this world.",
+        },
+        ok: false,
+      },
+      ok: false,
+      status: 403,
+    });
+  });
 });
 
 function createJsonRequest(body: unknown): Request {
@@ -95,4 +351,60 @@ function createJsonRequest(body: unknown): Request {
     },
     method: "POST",
   });
+}
+
+function createResolveAuthContext(
+  userId: string,
+): () => Promise<EndTurnBasicAuthContextResult> {
+  return () =>
+    Promise.resolve({
+      context: {
+        userId,
+      },
+      ok: true,
+    });
+}
+
+function stubSupabaseRuntimeFetch(
+  responses: readonly {
+    readonly body: unknown;
+    readonly status: number;
+  }[],
+): ReturnType<typeof vi.fn> {
+  vi.stubGlobal("Deno", {
+    env: {
+      get: (name: string): string | undefined => {
+        if (name === "SUPABASE_URL") {
+          return "http://localhost:54321";
+        }
+
+        if (name === "SUPABASE_ANON_KEY") {
+          return "anon-key";
+        }
+
+        return undefined;
+      },
+    },
+  });
+
+  let callIndex = 0;
+  const fetchMock = vi.fn(() => {
+    const response = responses[callIndex] ?? {
+      body: {
+        error: "Unexpected fetch call.",
+      },
+      status: 500,
+    };
+    callIndex += 1;
+
+    return Promise.resolve(
+      new Response(JSON.stringify(response.body), {
+        status: response.status,
+      }),
+    );
+  });
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  return fetchMock;
 }
