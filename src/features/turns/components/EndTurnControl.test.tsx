@@ -42,6 +42,74 @@ describe("EndTurnControl", () => {
     expect(screen.getByText("50%")).toBeDefined();
   });
 
+  it("confirms an all-ready end turn with current and next turn details", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({ auto_ready_enabled: true }),
+        createSettlementRow({
+          id: "settlement-2",
+          is_ready_current_turn: true,
+        }),
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(await screen.findByRole("button", { name: "End turn" }));
+
+    expect(
+      await screen.findByRole("dialog", { name: "Confirm end turn" }),
+    ).toBeDefined();
+    expect(screen.getAllByText("Current turn").length).toBeGreaterThan(0);
+    expect(screen.getByText("Next turn")).toBeDefined();
+    expect(screen.getByText("Turn 8")).toBeDefined();
+    expect(screen.getByText("Current date")).toBeDefined();
+    expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
+    expect(screen.getByText("Next date")).toBeDefined();
+    expect(screen.getByText("Secondday, Ember 1, 101 AG")).toBeDefined();
+    expect(screen.getByText("Readiness summary")).toBeDefined();
+    expect(screen.getByText(/2 of 2 settlements ready/i)).toBeDefined();
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Confirm end turn" }));
+
+    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-basic", {
+      body: {
+        expectedTurnNumber: 7,
+        worldId: "world-1",
+      },
+    });
+  });
+
+  it("warns about not-ready settlements without blocking confirmation", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({ auto_ready_enabled: true }),
+        createSettlementRow({ id: "settlement-2" }),
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(await screen.findByRole("button", { name: "End turn" }));
+
+    expect(await screen.findByText("Readiness summary")).toBeDefined();
+    expect(screen.getByText(/1 of 2 settlements ready/i)).toBeDefined();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /some settlements are not ready/i,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Confirm end turn" }));
+
+    expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
+  });
+
   it("hides the control for non-admin users and cannot submit", () => {
     const clientFixture = createClientFixture({ settlementRows: [] });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
@@ -84,9 +152,12 @@ describe("EndTurnControl", () => {
     await screen.findByText("Current turn");
 
     await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm end turn" }),
+    );
 
     expect(
-      await screen.findByRole("button", { name: "Ending turn..." }),
+      (await screen.findAllByRole("button", { name: "Ending turn..." }))[0],
     ).toBeDisabled();
     expect(screen.getByText("End-turn transition is running.")).toBeDefined();
     expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-basic", {
@@ -113,7 +184,10 @@ describe("EndTurnControl", () => {
 
     await user.click(button);
     await user.click(
-      await screen.findByRole("button", { name: "Ending turn..." }),
+      await screen.findByRole("button", { name: "Confirm end turn" }),
+    );
+    await user.click(
+      (await screen.findAllByRole("button", { name: "Ending turn..." }))[0],
     );
 
     expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
@@ -138,19 +212,28 @@ type TestSettlementReadinessRow = {
 
 function renderEndTurnControl({
   canAdmin = true,
+  currentDateLabel = "Firstday, Dawn 2, 101 AG",
   currentTurnNumber = 7,
   isArchived = false,
+  nextDateLabel = "Secondday, Ember 1, 101 AG",
+  nextTurnNumber = 8,
 }: {
   readonly canAdmin?: boolean;
+  readonly currentDateLabel?: string;
   readonly currentTurnNumber?: number;
   readonly isArchived?: boolean;
+  readonly nextDateLabel?: string;
+  readonly nextTurnNumber?: number;
 } = {}): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <EndTurnControl
         canAdmin={canAdmin}
+        currentDateLabel={currentDateLabel}
         currentTurnNumber={currentTurnNumber}
         isArchived={isArchived}
+        nextDateLabel={nextDateLabel}
+        nextTurnNumber={nextTurnNumber}
         worldId="world-1"
       />
     </QueryClientProvider>,

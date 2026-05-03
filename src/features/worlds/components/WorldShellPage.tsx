@@ -168,8 +168,11 @@ function WorldShellContent({
       />
       <EndTurnControl
         canAdmin={worldQuery.data.canAdmin}
+        currentDateLabel={worldQuery.data.header.fullInWorldDateLabel}
         currentTurnNumber={worldQuery.data.header.currentTurnNumber}
         isArchived={worldQuery.data.header.isArchived}
+        nextDateLabel={worldQuery.data.header.nextFullInWorldDateLabel}
+        nextTurnNumber={worldQuery.data.header.nextTurnNumber}
         worldId={worldId}
       />
       <SettlementReadinessSummaryPanel worldId={worldId} />
