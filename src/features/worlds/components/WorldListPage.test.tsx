@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { WorldCalendarConfig } from "@/features/calendar";
+
 import { WorldListPage } from "./WorldListPage";
 
 import type { ReactNode } from "react";
@@ -99,6 +101,54 @@ describe("WorldListPage", () => {
       "/worlds/00000000-0000-0000-0000-000000000101",
     );
   });
+
+  it("renders planning turn and computed in-world date", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 3,
+            name: "Calendar World",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    expect(await screen.findByText("Calendar World")).toBeDefined();
+    expect(screen.getByText("Planning turn")).toBeDefined();
+    expect(screen.getByText("3")).toBeDefined();
+    expect(screen.getByText("In-world date")).toBeDefined();
+    expect(screen.getByText("Ember 1, 100 AG")).toBeDefined();
+  });
+
+  it("renders a safe fallback for missing or invalid calendar config", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: null,
+            name: "Missing Calendar World",
+          }),
+          createWorldRow({
+            calendar_config_json: { months: [] },
+            id: "00000000-0000-0000-0000-000000000404",
+            name: "Invalid Calendar World",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    expect(await screen.findByText("Missing Calendar World")).toBeDefined();
+    expect(screen.getByText("Invalid Calendar World")).toBeDefined();
+    expect(screen.getAllByText("Calendar unavailable")).toHaveLength(2);
+  });
 });
 
 function renderWorldListPage(): void {
@@ -167,6 +217,7 @@ type TestUser = {
 
 type TestWorldRow = {
   readonly archived_at: string | null;
+  readonly calendar_config_json: TestCalendarConfigJson;
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
@@ -176,6 +227,10 @@ type TestWorldRow = {
   readonly updated_at: string;
   readonly visibility: string;
 };
+type TestCalendarConfigJson =
+  | WorldCalendarConfig
+  | { readonly months: [] }
+  | null;
 
 function createUser(id: string): TestUser {
   return {
@@ -192,6 +247,7 @@ function createUser(id: string): TestUser {
 function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
   return {
     archived_at: null,
+    calendar_config_json: createCalendarConfig(),
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 1,
     id: "00000000-0000-0000-0000-000000000001",
@@ -201,6 +257,24 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",
     ...overrides,
+  };
+}
+
+function createCalendarConfig(): WorldCalendarConfig {
+  return {
+    months: [
+      { dayCount: 2, index: 0, name: "Dawn" },
+      { dayCount: 3, index: 1, name: "Ember" },
+    ],
+    startingDayOfMonth: 1,
+    startingMonthIndex: 0,
+    startingWeekdayOffset: 0,
+    startingYear: 100,
+    weekdays: [
+      { index: 0, name: "Firstday" },
+      { index: 1, name: "Secondday" },
+    ],
+    yearFormatTemplate: "{n} AG",
   };
 }
 
