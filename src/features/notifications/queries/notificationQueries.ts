@@ -26,7 +26,7 @@ type TurnCompletedNotificationsQueryOptions = UseQueryOptions<
   readonly TurnCompletedNotification[],
   TurnCompletedNotificationsQueryKey
 >;
-type TurnCompletedNotificationsFilters = {
+export type TurnCompletedNotificationsFilters = {
   readonly worldId?: string | null;
 };
 type TurnCompletedNotificationRow = {
