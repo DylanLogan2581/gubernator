@@ -229,3 +229,84 @@ values
     '00000000-0000-0000-0000-000000000001'
   )
 on conflict (world_id, user_id) do nothing;
+
+insert into
+  public.nations (id, world_id, name, description, is_hidden)
+values
+  (
+    '00000000-0000-0000-0000-000000000201',
+    '00000000-0000-0000-0000-000000000101',
+    'Kingdom of Ashvale',
+    'Local development nation for Epic 2 turn and calendar workflows.',
+    false
+  )
+on conflict (id) do update
+set
+  world_id = excluded.world_id,
+  name = excluded.name,
+  description = excluded.description,
+  is_hidden = excluded.is_hidden,
+  updated_at = now();
+
+insert into
+  public.settlements (
+    id,
+    nation_id,
+    name,
+    description,
+    coord_x,
+    coord_z,
+    auto_ready_enabled,
+    is_ready_current_turn,
+    ready_set_at,
+    ready_set_by_citizen_id
+  )
+values
+  (
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0000-000000000201',
+    'Hearthwatch',
+    'Manual-ready settlement for local readiness summary testing.',
+    12.5000,
+    -4.2500,
+    false,
+    true,
+    '2026-05-03 12:00:00+00',
+    null
+  ),
+  (
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0000-000000000201',
+    'Mistfall Crossing',
+    'Not-ready settlement for local readiness summary testing.',
+    18.0000,
+    7.7500,
+    false,
+    false,
+    null,
+    null
+  ),
+  (
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0000-000000000201',
+    'Sunmere Hold',
+    'Auto-ready settlement for local end-turn reset testing.',
+    -3.1250,
+    14.5000,
+    true,
+    false,
+    null,
+    null
+  )
+on conflict (id) do update
+set
+  nation_id = excluded.nation_id,
+  name = excluded.name,
+  description = excluded.description,
+  coord_x = excluded.coord_x,
+  coord_z = excluded.coord_z,
+  auto_ready_enabled = excluded.auto_ready_enabled,
+  is_ready_current_turn = excluded.is_ready_current_turn,
+  ready_set_at = excluded.ready_set_at,
+  ready_set_by_citizen_id = excluded.ready_set_by_citizen_id,
+  updated_at = now();
