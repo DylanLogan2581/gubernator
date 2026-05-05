@@ -74,7 +74,7 @@ const calendarConfig = {
   startingDayOfMonth: 1,
   startingYear: 1,
   startingWeekdayOffset: 0,
-  yearFormatTemplate: "Year {n}",
+  dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
 } satisfies WorldCalendarConfig;
 
 const previousDate = {

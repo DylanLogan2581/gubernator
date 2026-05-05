@@ -45,10 +45,10 @@ describe("currentTurnStateQueryOptions", () => {
       },
       currentTurnNumber: 3,
       displayLabels: {
-        compactDateLabel: "Rainmonth 1, Year 12",
+        compactDateLabel: "Toilsday, Rainmonth 1, Year 12",
         dateLabel: "Toilsday, Rainmonth 1, Year 12",
         turnLabel: "Turn 3",
-        yearLabel: "Year 12",
+        yearLabel: "12",
       },
       worldId: "world-1",
     });
@@ -273,7 +273,7 @@ function createCalendarConfig(): WorldCalendarConfig {
         name: "Toilsday",
       },
     ],
-    yearFormatTemplate: "Year {n}",
+    dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
   };
 }
 

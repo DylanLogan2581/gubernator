@@ -37,11 +37,11 @@ describe("toAccessibleWorld", () => {
       canAdmin: true,
       canManage: true,
       currentTurnNumber: 3,
-      inWorldDateLabel: "Ember 1, 100 AG",
+      inWorldDateLabel: "Firstday, Ember 1, 100 AG",
       isArchived: false,
       isHidden: true,
       nextFullInWorldDateLabel: "Secondday, Ember 2, 100 AG",
-      nextInWorldDateLabel: "Ember 2, 100 AG",
+      nextInWorldDateLabel: "Secondday, Ember 2, 100 AG",
       nextTurnNumber: 4,
       ownerId: "user-2",
       planningTurnNumber: 3,
@@ -154,6 +154,6 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 0, name: "Firstday" },
       { index: 1, name: "Secondday" },
     ],
-    yearFormatTemplate: "{n} AG",
+    dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
   };
 }

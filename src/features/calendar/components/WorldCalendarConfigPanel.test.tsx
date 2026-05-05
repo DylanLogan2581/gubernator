@@ -60,8 +60,8 @@ describe("WorldCalendarConfigPanel", () => {
     expect(screen.getByLabelText("Month")).toHaveValue("0");
     expect(screen.getByLabelText("Weekday offset")).toHaveValue("0");
     expect(
-      screen.getByRole("textbox", { name: "Year format template" }),
-    ).toHaveValue("{n} AG");
+      screen.getByRole("textbox", { name: "Date format template" }),
+    ).toHaveValue("{weekday}, {month} {day}, {year} AG");
 
     await user.clear(screen.getByRole("textbox", { name: "Weekdays 1 Name" }));
     await user.type(
@@ -195,7 +195,7 @@ describe("WorldCalendarConfigPanel", () => {
     expect(client.from).toHaveBeenCalledTimes(1);
   });
 
-  it("blocks save and exposes an accessible error for an invalid year format template", async () => {
+  it("blocks save and exposes an accessible error for an invalid date format template", async () => {
     const user = userEvent.setup();
     const client = createClient({
       worldRows: [createWorldRow()],
@@ -213,18 +213,20 @@ describe("WorldCalendarConfigPanel", () => {
       isArchived: false,
     });
 
-    const yearFormatField = await screen.findByRole("textbox", {
-      name: "Year format template",
+    const dateFormatField = await screen.findByRole("textbox", {
+      name: "Date format template",
     });
 
-    await user.clear(yearFormatField);
-    await user.type(yearFormatField, "Year");
+    await user.clear(dateFormatField);
+    await user.type(dateFormatField, "Year");
     await user.click(screen.getByRole("button", { name: "Save calendar" }));
 
     expect(
-      screen.getByText("Year format template must include {n}."),
+      screen.getByText(
+        "Date format template must include at least one date token.",
+      ),
     ).toBeDefined();
-    expect(yearFormatField).toHaveAttribute("aria-invalid", "true");
+    expect(dateFormatField).toHaveAttribute("aria-invalid", "true");
     expect(client.from).toHaveBeenCalledTimes(1);
   });
 
@@ -252,7 +254,9 @@ describe("WorldCalendarConfigPanel", () => {
     expect(screen.getAllByText("Firstday")).toHaveLength(2);
     expect(screen.getByText("Dawn (2 days)")).toBeDefined();
     expect(screen.getByText("Dawn 1, 100")).toBeDefined();
-    expect(screen.getByText("{n} AG")).toBeDefined();
+    expect(
+      screen.getByText("{weekday}, {month} {day}, {year} AG"),
+    ).toBeDefined();
     expect(screen.queryByRole("button", { name: "Save calendar" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Add weekday" })).toBeNull();
     expect(
@@ -335,7 +339,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 0, name: "Firstday" },
       { index: 1, name: "Secondday" },
     ],
-    yearFormatTemplate: "{n} AG",
+    dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
   };
 }
 

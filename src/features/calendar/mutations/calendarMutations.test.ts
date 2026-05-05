@@ -308,7 +308,7 @@ function createCalendarConfig(): WorldCalendarConfig {
         name: "Moonday",
       },
     ],
-    yearFormatTemplate: "Year {n}",
+    dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
   };
 }
 

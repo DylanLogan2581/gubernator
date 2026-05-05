@@ -122,7 +122,7 @@ describe("WorldListPage", () => {
     expect(screen.getByText("Planning turn")).toBeDefined();
     expect(screen.getByText("3")).toBeDefined();
     expect(screen.getByText("In-world date")).toBeDefined();
-    expect(screen.getByText("Ember 1, 100 AG")).toBeDefined();
+    expect(screen.getByText("Firstday, Ember 1, 100 AG")).toBeDefined();
   });
 
   it("renders a safe fallback for missing or invalid calendar config", async () => {
@@ -274,7 +274,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 0, name: "Firstday" },
       { index: 1, name: "Secondday" },
     ],
-    yearFormatTemplate: "{n} AG",
+    dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
   };
 }
 

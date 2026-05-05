@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (9);
+  plan (10);
 
 insert into
   auth.users (
@@ -46,7 +46,7 @@ select
         "startingDayOfMonth": 1,
         "startingYear": -10,
         "startingWeekdayOffset": 0,
-        "yearFormatTemplate": "Year {n}"
+        "dateFormatTemplate": "{weekday}, {month} {day}, Year {year}"
       }'::jsonb
     ),
     'minimal valid calendar config accepts non-positive years'
@@ -153,12 +153,27 @@ select
     values (
       'Invalid Template World',
       '51000000-0000-0000-0000-000000000001',
-      jsonb_set(public.default_calendar_config(), '{yearFormatTemplate}', '"Year"'::jsonb)
+      jsonb_set(public.default_calendar_config(), '{dateFormatTemplate}', '"Year"'::jsonb)
     )
   $test$,
     '23514',
     null,
-    'rejects year format templates missing the year token'
+    'rejects date format templates missing a date token'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.worlds (name, owner_id, calendar_config_json)
+    values (
+      'Invalid Template Token World',
+      '51000000-0000-0000-0000-000000000001',
+      jsonb_set(public.default_calendar_config(), '{dateFormatTemplate}', '"{month} {era}"'::jsonb)
+    )
+  $test$,
+    '23514',
+    null,
+    'rejects unsupported date format template tokens'
   );
 
 rollback;

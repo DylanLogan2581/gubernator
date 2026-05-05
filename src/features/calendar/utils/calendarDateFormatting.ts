@@ -1,32 +1,24 @@
 import type { TurnCalendarDate } from "./turnCalendarDates";
 
-export type CalendarDateDisplayVariant = "full" | "compact";
-
 export type CalendarDateFormatOptions = {
-  displayVariant: CalendarDateDisplayVariant;
-  yearFormatTemplate: string;
+  dateFormatTemplate: string;
 };
 
 export function formatCalendarDate(
   calendarDate: TurnCalendarDate,
   options: CalendarDateFormatOptions,
 ): string {
-  const formattedYear = formatCalendarYear(
-    calendarDate.year,
-    options.yearFormatTemplate,
-  );
-  const monthDayYear = `${calendarDate.monthName} ${calendarDate.dayOfMonth}, ${formattedYear}`;
-
-  if (options.displayVariant === "compact") {
-    return monthDayYear;
-  }
-
-  return `${calendarDate.weekdayName}, ${monthDayYear}`;
+  return options.dateFormatTemplate
+    .split("{weekday}")
+    .join(calendarDate.weekdayName)
+    .split("{month}")
+    .join(calendarDate.monthName)
+    .split("{day}")
+    .join(String(calendarDate.dayOfMonth))
+    .split("{year}")
+    .join(String(calendarDate.year));
 }
 
-export function formatCalendarYear(
-  year: number,
-  yearFormatTemplate: string,
-): string {
-  return yearFormatTemplate.split("{n}").join(String(year));
+export function formatCalendarYear(year: number): string {
+  return String(year);
 }

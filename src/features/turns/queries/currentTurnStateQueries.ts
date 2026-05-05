@@ -144,18 +144,13 @@ async function getCurrentTurnState(
     currentTurnNumber,
     displayLabels: {
       compactDateLabel: formatCalendarDate(computedDate, {
-        displayVariant: "compact",
-        yearFormatTemplate: calendarConfig.yearFormatTemplate,
+        dateFormatTemplate: calendarConfig.dateFormatTemplate,
       }),
       dateLabel: formatCalendarDate(computedDate, {
-        displayVariant: "full",
-        yearFormatTemplate: calendarConfig.yearFormatTemplate,
+        dateFormatTemplate: calendarConfig.dateFormatTemplate,
       }),
       turnLabel: `Turn ${currentTurnNumber}`,
-      yearLabel: formatCalendarYear(
-        computedDate.year,
-        calendarConfig.yearFormatTemplate,
-      ),
+      yearLabel: formatCalendarYear(computedDate.year),
     },
     worldId,
   };

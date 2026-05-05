@@ -28,7 +28,7 @@ type CalendarValidationErrors = {
   startingDayOfMonth?: string;
   startingWeekdayOffset?: string;
   weekdays?: string;
-  yearFormatTemplate?: string;
+  dateFormatTemplate?: string;
 };
 
 const emptyCalendarValidationErrors: CalendarValidationErrors = {};
@@ -423,28 +423,28 @@ function CalendarEditableFields({
       </fieldset>
 
       <label className="grid gap-1 text-sm">
-        <span className="font-medium">Year format template</span>
+        <span className="font-medium">Date format template</span>
         <Input
           aria-describedby={
-            errors.yearFormatTemplate === undefined
+            errors.dateFormatTemplate === undefined
               ? undefined
-              : "calendar-year-format-template-error"
+              : "calendar-date-format-template-error"
           }
           aria-invalid={
-            errors.yearFormatTemplate === undefined ? undefined : true
+            errors.dateFormatTemplate === undefined ? undefined : true
           }
-          value={config.yearFormatTemplate}
+          value={config.dateFormatTemplate}
           onChange={(event) =>
             onChange({
               ...config,
-              yearFormatTemplate: event.currentTarget.value,
+              dateFormatTemplate: event.currentTarget.value,
             })
           }
         />
-        {errors.yearFormatTemplate === undefined ? null : (
+        {errors.dateFormatTemplate === undefined ? null : (
           <FieldError
-            id="calendar-year-format-template-error"
-            message={errors.yearFormatTemplate}
+            id="calendar-date-format-template-error"
+            message={errors.dateFormatTemplate}
           />
         )}
       </label>
@@ -634,8 +634,8 @@ function CalendarReadOnlySummary({
           </dd>
         </div>
         <div>
-          <dt className="font-medium text-foreground">Year format template</dt>
-          <dd className="text-muted-foreground">{config.yearFormatTemplate}</dd>
+          <dt className="font-medium text-foreground">Date format template</dt>
+          <dd className="text-muted-foreground">{config.dateFormatTemplate}</dd>
         </div>
       </dl>
     </div>
@@ -698,10 +698,20 @@ function getCalendarValidationErrors(
       "Starting weekday offset must match an existing weekday.";
   }
 
-  if (config.yearFormatTemplate.trim().length < 1) {
-    errors.yearFormatTemplate = "Year format template is required.";
-  } else if (!config.yearFormatTemplate.includes("{n}")) {
-    errors.yearFormatTemplate = "Year format template must include {n}.";
+  if (config.dateFormatTemplate.trim().length < 1) {
+    errors.dateFormatTemplate = "Date format template is required.";
+  } else if (
+    !/\{(?:weekday|month|day|year)\}/.test(config.dateFormatTemplate)
+  ) {
+    errors.dateFormatTemplate =
+      "Date format template must include at least one date token.";
+  } else if (
+    /\{(?!weekday\}|month\}|day\}|year\})[^{}]+\}/.test(
+      config.dateFormatTemplate,
+    )
+  ) {
+    errors.dateFormatTemplate =
+      "Date format template contains an unsupported token.";
   }
 
   return errors;
@@ -715,7 +725,7 @@ function hasCalendarValidationErrors(
     errors.startingDayOfMonth !== undefined ||
     errors.startingWeekdayOffset !== undefined ||
     errors.weekdays !== undefined ||
-    errors.yearFormatTemplate !== undefined
+    errors.dateFormatTemplate !== undefined
   );
 }
 
