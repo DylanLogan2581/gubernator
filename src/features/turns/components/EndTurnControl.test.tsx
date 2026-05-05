@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -110,7 +110,7 @@ describe("EndTurnControl", () => {
     ).toBeDefined();
     expect(screen.getAllByText("Current turn").length).toBeGreaterThan(0);
     expect(screen.getByText("Next turn")).toBeDefined();
-    expect(screen.getByText("Turn 8")).toBeDefined();
+    expect(screen.getByText("8")).toBeDefined();
     expect(screen.getByText("Current date")).toBeDefined();
     expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
     expect(screen.getByText("Next date")).toBeDefined();
@@ -127,6 +127,37 @@ describe("EndTurnControl", () => {
         worldId: "world-1",
       },
     });
+  });
+
+  it("shows numeric turn values in the confirmation dialog for turn zero", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl({
+      currentDateLabel: "Firstday, Dawn 1, 100 AG",
+      currentTurnNumber: 0,
+      nextDateLabel: "Secondday, Dawn 2, 100 AG",
+      nextTurnNumber: 1,
+    });
+
+    await screen.findByText("Current turn");
+    await user.click(await screen.findByRole("button", { name: "End turn" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Confirm end turn",
+    });
+
+    expect(dialog).toHaveTextContent("Current turn");
+    expect(dialog).toHaveTextContent("Next turn");
+    expect(within(dialog).getByText("0")).toBeDefined();
+    expect(within(dialog).getByText("1")).toBeDefined();
+    expect(screen.queryByText("Turn 0")).toBeNull();
+    expect(screen.queryByText("Turn 1")).toBeNull();
+    expect(screen.getByText("Firstday, Dawn 1, 100 AG")).toBeDefined();
+    expect(screen.getByText("Secondday, Dawn 2, 100 AG")).toBeDefined();
   });
 
   it("warns about not-ready settlements without blocking confirmation", async () => {
