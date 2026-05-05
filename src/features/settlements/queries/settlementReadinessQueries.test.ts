@@ -16,6 +16,7 @@ describe("settlementReadinessListQueryOptions", () => {
           auto_ready_enabled: true,
           id: "settlement-1",
           is_ready_current_turn: false,
+          last_ready_at: null,
           name: "Amberhold",
           nation_id: "nation-1",
           ready_set_at: null,
@@ -24,6 +25,7 @@ describe("settlementReadinessListQueryOptions", () => {
           auto_ready_enabled: false,
           id: "settlement-2",
           is_ready_current_turn: true,
+          last_ready_at: "2026-05-02T12:00:00.000Z",
           name: "Briarwatch",
           nation_id: "nation-2",
           ready_set_at: "2026-05-02T12:00:00.000Z",
@@ -44,6 +46,7 @@ describe("settlementReadinessListQueryOptions", () => {
         id: "settlement-1",
         isReadyCurrentTurn: false,
         isReadyForCurrentTurn: true,
+        lastReadyAt: null,
         name: "Amberhold",
         nationId: "nation-1",
         readySetAt: null,
@@ -53,6 +56,7 @@ describe("settlementReadinessListQueryOptions", () => {
         id: "settlement-2",
         isReadyCurrentTurn: true,
         isReadyForCurrentTurn: true,
+        lastReadyAt: "2026-05-02T12:00:00.000Z",
         name: "Briarwatch",
         nationId: "nation-2",
         readySetAt: "2026-05-02T12:00:00.000Z",
@@ -141,7 +145,7 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(builder.select).toHaveBeenCalledWith(
-      "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,nations!inner()",
+      "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner()",
     );
     expect(builder.eq).toHaveBeenCalledWith("nations.world_id", "world-1");
     expect(builder.order).toHaveBeenCalledWith("name", { ascending: true });
@@ -202,6 +206,7 @@ type TestSettlementReadinessRow = {
   readonly auto_ready_enabled: boolean;
   readonly id: string;
   readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
   readonly ready_set_at: string | null;
@@ -249,6 +254,7 @@ function createRow(
     auto_ready_enabled: false,
     id: "settlement-1",
     is_ready_current_turn: false,
+    last_ready_at: null,
     name: "Amberhold",
     nation_id: "nation-1",
     ready_set_at: null,

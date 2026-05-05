@@ -41,13 +41,14 @@ type SettlementReadinessRow = {
   readonly auto_ready_enabled: boolean;
   readonly id: string;
   readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
   readonly ready_set_at: string | null;
 };
 
 const SETTLEMENT_READINESS_SELECT =
-  "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,nations!inner()";
+  "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner()";
 const SETTLEMENT_READINESS_SUMMARY_SELECT =
   "auto_ready_enabled,is_ready_current_turn,nations!inner()";
 
@@ -119,6 +120,7 @@ function toSettlementReadinessListItem(
     id: row.id,
     isReadyCurrentTurn: row.is_ready_current_turn,
     isReadyForCurrentTurn: isSettlementReadyForCurrentTurn(row),
+    lastReadyAt: row.last_ready_at,
     name: row.name,
     nationId: row.nation_id,
     readySetAt: row.ready_set_at,

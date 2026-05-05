@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (22);
+  plan (23);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -124,6 +124,7 @@ insert into
     name,
     auto_ready_enabled,
     is_ready_current_turn,
+    last_ready_at,
     ready_set_at
   )
 values
@@ -133,6 +134,7 @@ values
     'Manual Ready Settlement',
     false,
     true,
+    '2026-05-02 12:00:00+00',
     '2026-05-02 12:00:00+00'
   ),
   (
@@ -141,6 +143,7 @@ values
     'Auto Ready Settlement',
     true,
     false,
+    '2026-05-02 12:05:00+00',
     '2026-05-02 12:05:00+00'
   ),
   (
@@ -149,6 +152,7 @@ values
     'Manual Not Ready Settlement',
     false,
     false,
+    null,
     null
   );
 
@@ -414,6 +418,22 @@ select
   );
 
 select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.settlements
+      where
+        id = '8c000000-0000-0000-0000-000000000001'
+        and is_ready_current_turn = false
+        and ready_set_at is null
+        and last_ready_at = '2026-05-02 12:00:00+00'::timestamptz
+    ),
+    'turn advance preserves historical last readiness for manually ready settlements'
+  );
+
+select
   is (
     (
       select
@@ -532,6 +552,7 @@ reset role;
 update public.settlements
 set
   is_ready_current_turn = true,
+  last_ready_at = '2026-05-03 14:00:00+00',
   ready_set_at = '2026-05-03 14:00:00+00'
 where
   id = '8c000000-0000-0000-0000-000000000001';
@@ -605,6 +626,7 @@ select
       where
         id = '8c000000-0000-0000-0000-000000000001'
         and is_ready_current_turn = true
+        and last_ready_at = '2026-05-03 14:00:00+00'::timestamptz
         and ready_set_at = '2026-05-03 14:00:00+00'::timestamptz
     ),
     'forced failure preserves settlement readiness state'

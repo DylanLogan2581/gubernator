@@ -33,8 +33,15 @@ describe("SettlementReadinessListPanel", () => {
           createSettlementRow({
             id: "settlement-2",
             is_ready_current_turn: true,
+            last_ready_at: "2026-05-02T12:00:00.000Z",
             name: "Briarwatch",
             ready_set_at: "2026-05-02T12:00:00.000Z",
+          }),
+          createSettlementRow({
+            id: "settlement-4",
+            last_ready_at: "2026-05-01T09:30:22.123456+00:00",
+            name: "Dawnport",
+            ready_set_at: null,
           }),
           createSettlementRow({
             id: "settlement-3",
@@ -52,8 +59,13 @@ describe("SettlementReadinessListPanel", () => {
       }),
     ).toBeDefined();
     expectSettlementRow("Amberhold", "Auto-ready", "Never");
-    expectSettlementRow("Briarwatch", "Ready", "2026-05-02T12:00:00.000Z");
+    expectSettlementRow("Briarwatch", "Ready", "5/2/26, 12:00 PM");
+    expectSettlementRow("Dawnport", "Not ready", "5/1/26, 9:30 AM");
     expectSettlementRow("Cinderford", "Not ready", "Never");
+    expect(screen.getByText("5/2/26, 12:00 PM")).toHaveAttribute(
+      "dateTime",
+      "2026-05-02T12:00:00.000Z",
+    );
   });
 
   it("shows an empty state", async () => {
@@ -132,6 +144,7 @@ describe("SettlementReadinessListPanel", () => {
     );
     expect(clientFixture.update).toHaveBeenCalledWith({
       is_ready_current_turn: true,
+      last_ready_at: "now",
       ready_set_at: "now",
     });
     expect(clientFixture.updateEq).toHaveBeenCalledWith("id", "settlement-1");
@@ -477,6 +490,7 @@ type TestSettlementReadinessListRow = {
   readonly auto_ready_enabled: boolean;
   readonly id: string;
   readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
   readonly ready_set_at: string | null;
@@ -526,6 +540,7 @@ function createSettlementRow(
     auto_ready_enabled: false,
     id: "settlement-1",
     is_ready_current_turn: false,
+    last_ready_at: null,
     name: "Settlement",
     nation_id: "nation-1",
     ready_set_at: null,

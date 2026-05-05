@@ -475,6 +475,7 @@ type TestSettlementReadinessRow = {
   readonly auto_ready_enabled: boolean;
   readonly id: string;
   readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
   readonly ready_set_at: string | null;
@@ -515,6 +516,7 @@ function createSettlementRow(
     auto_ready_enabled: false,
     id: "settlement-1",
     is_ready_current_turn: false,
+    last_ready_at: null,
     name: "Settlement",
     nation_id: "nation-1",
     ready_set_at: null,

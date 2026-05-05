@@ -258,6 +258,7 @@ insert into
     coord_z,
     auto_ready_enabled,
     is_ready_current_turn,
+    last_ready_at,
     ready_set_at,
     ready_set_by_citizen_id
   )
@@ -272,6 +273,7 @@ values
     false,
     true,
     '2026-05-03 12:00:00+00',
+    '2026-05-03 12:00:00+00',
     null
   ),
   (
@@ -283,6 +285,7 @@ values
     7.7500,
     false,
     false,
+    null,
     null,
     null
   ),
@@ -296,6 +299,7 @@ values
     true,
     false,
     null,
+    null,
     null
   )
 on conflict (id) do update
@@ -307,6 +311,7 @@ set
   coord_z = excluded.coord_z,
   auto_ready_enabled = excluded.auto_ready_enabled,
   is_ready_current_turn = excluded.is_ready_current_turn,
+  last_ready_at = excluded.last_ready_at,
   ready_set_at = excluded.ready_set_at,
   ready_set_by_citizen_id = excluded.ready_set_by_citizen_id,
   updated_at = now();

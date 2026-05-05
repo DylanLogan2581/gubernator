@@ -11,6 +11,7 @@ import {
   setSettlementReadinessMutationOptions,
 } from "../mutations/settlementReadinessMutations";
 import { settlementReadinessListQueryOptions } from "../queries/settlementReadinessQueries";
+import { formatSettlementReadyTimestamp } from "../utils/settlementReadyTimestampFormatting";
 
 import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";
 import type { JSX, ReactNode } from "react";
@@ -232,10 +233,12 @@ function SettlementReadinessRow({
         <ReadinessStateBadge item={item} />
       </td>
       <td className="px-4 py-3 text-muted-foreground">
-        {item.readySetAt === null ? (
+        {item.lastReadyAt === null ? (
           <span>Never</span>
         ) : (
-          <time dateTime={item.readySetAt}>{item.readySetAt}</time>
+          <time dateTime={item.lastReadyAt}>
+            {formatSettlementReadyTimestamp(item.lastReadyAt)}
+          </time>
         )}
       </td>
       <td className="py-3 pl-4">
