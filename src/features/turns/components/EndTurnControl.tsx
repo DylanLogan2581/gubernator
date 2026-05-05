@@ -430,6 +430,8 @@ function getErrorDescription(error: unknown): string {
         return "Another end-turn transition is already running. Refresh the page before trying again.";
       case "end_turn_stale_turn":
         return "This turn has already changed. Refresh the page to review the latest world state.";
+      case "end_turn_transition_failed":
+        return "End turn could not be saved. Refresh the page before trying again.";
       case "end_turn_unauthorized":
         return "End turn is unavailable for this world.";
     }

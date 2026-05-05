@@ -127,15 +127,31 @@ describe("endTurnBasicMutationOptions", () => {
   it("normalizes running transition errors", async () => {
     const mutationPromise = executeMutationWithResult({
       data: createErrorResponse({
-        code: "end_turn_transition_unavailable",
-        message: "End turn transition could not be started.",
+        code: "end_turn_running_transition",
+        message: "Another end-turn transition is already running.",
       }),
       error: null,
     });
 
     await expect(mutationPromise).rejects.toMatchObject({
       code: "end_turn_running_transition",
-      message: "End turn transition could not be started.",
+      message: "Another end-turn transition is already running.",
+      worldId: "world-1",
+    });
+  });
+
+  it("normalizes transition persistence failures separately from running transitions", async () => {
+    const mutationPromise = executeMutationWithResult({
+      data: createErrorResponse({
+        code: "end_turn_transition_failed",
+        message: "End turn persistence failed after the transition started.",
+      }),
+      error: null,
+    });
+
+    await expect(mutationPromise).rejects.toMatchObject({
+      code: "end_turn_transition_failed",
+      message: "End turn persistence failed after the transition started.",
       worldId: "world-1",
     });
   });

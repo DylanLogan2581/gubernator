@@ -1,7 +1,7 @@
 import type {
+  TurnCalendarConfig,
   TurnCalendarDate,
-  WorldCalendarConfig,
-} from "@/features/calendar";
+} from "../../calendar/utils/turnCalendarDates.ts";
 
 export type BasicEndTurnReadinessRow = {
   readonly autoReadyEnabled: boolean;
@@ -11,7 +11,7 @@ export type BasicEndTurnReadinessRow = {
 
 export type BasicEndTurnTransitionInput = {
   readonly actorId: string;
-  readonly calendarConfig: WorldCalendarConfig;
+  readonly calendarConfig: TurnCalendarConfig;
   readonly currentTurnNumber: number;
   readonly expectedCurrentTurnNumber: number;
   readonly isWorldArchived: boolean;

@@ -368,11 +368,11 @@ describe("EndTurnControl", () => {
     expect(screen.queryByText("Internal authorization detail")).toBeNull();
   });
 
-  it("shows a safe message for running-transition failures", async () => {
+  it("shows a safe message for transition persistence failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
-        code: "end_turn_transition_unavailable",
+        code: "end_turn_transition_failed",
         message: "Internal transition detail",
       }),
       settlementRows: [],
@@ -388,7 +388,7 @@ describe("EndTurnControl", () => {
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Another end-turn transition is already running. Refresh the page before trying again.",
+      "End turn could not be saved. Refresh the page before trying again.",
     );
     expect(screen.queryByText("Internal transition detail")).toBeNull();
   });

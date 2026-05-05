@@ -415,7 +415,7 @@ describe("persistSupabaseRunningTransition", () => {
     );
   });
 
-  it("returns an unavailable error when the transition is finalized as failed", async () => {
+  it("returns a transition-failed error when the transition is finalized as failed", async () => {
     const fetchMock = stubSupabaseRuntimeFetch([
       {
         body: [
@@ -439,13 +439,48 @@ describe("persistSupabaseRunningTransition", () => {
     expect(result).toEqual({
       error: {
         error: {
-          code: "end_turn_transition_unavailable",
-          message: "End turn transition could not be started.",
+          code: "end_turn_transition_failed",
+          message: "End turn persistence failed after the transition started.",
         },
         ok: false,
       },
       ok: false,
       status: 500,
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("returns a running-transition error when the RPC returns an existing running transition", async () => {
+    const fetchMock = stubSupabaseRuntimeFetch([
+      {
+        body: [
+          createTransitionRow({
+            status: "running",
+          }),
+        ],
+        status: 200,
+      },
+    ]);
+
+    const result = await persistSupabaseRunningTransition(
+      createTransitionInput(),
+      createPlannedTransition({ fromTurnNumber: 3, toTurnNumber: 4 }),
+      {
+        authorizationHeader: "Bearer token",
+        userId: "user-1",
+      },
+    );
+
+    expect(result).toEqual({
+      error: {
+        error: {
+          code: "end_turn_running_transition",
+          message: "Another end-turn transition is already running.",
+        },
+        ok: false,
+      },
+      ok: false,
+      status: 409,
     });
     expect(fetchMock).toHaveBeenCalledOnce();
   });
@@ -953,7 +988,7 @@ function createTransitionRow(
     readonly id: string;
     readonly initiated_by_user_id: string;
     readonly started_at: string;
-    readonly status: "completed" | "failed";
+    readonly status: "completed" | "failed" | "running";
     readonly to_turn_number: number;
     readonly world_id: string;
   }> = {},
@@ -962,7 +997,7 @@ function createTransitionRow(
   readonly id: string;
   readonly initiated_by_user_id: string;
   readonly started_at: string;
-  readonly status: "completed" | "failed";
+  readonly status: "completed" | "failed" | "running";
   readonly to_turn_number: number;
   readonly world_id: string;
 } {

@@ -1,11 +1,15 @@
-import type { WorldCalendarConfig } from "@/features/calendar";
+/* eslint-disable no-restricted-imports -- Supabase Edge Runtime cannot resolve Vite's @/ alias. */
 import {
   isBasicEndTurnTransitionPlanningError,
   planBasicEndTurnTransition,
-  type BasicEndTurnReadinessRow,
-  type BasicEndTurnTransitionInput,
-  type BasicEndTurnTransitionResult,
-} from "@/features/turns";
+} from "../../../src/features/turns/utils/endTurnTransitionPlanning.ts";
+
+import type { TurnCalendarConfig } from "../../../src/features/calendar/utils/turnCalendarDates.ts";
+import type {
+  BasicEndTurnReadinessRow,
+  BasicEndTurnTransitionInput,
+  BasicEndTurnTransitionResult,
+} from "../../../src/features/turns/types/endTurnTransitionTypes.ts";
 
 type EdgeRuntime = {
   readonly env: {
@@ -24,8 +28,10 @@ export type EndTurnBasicRequestBody = {
 export type EndTurnBasicErrorCode =
   | "auth_context_unavailable"
   | "end_turn_calendar_config_invalid"
+  | "end_turn_running_transition"
   | "end_turn_stale_expected_turn"
   | "end_turn_state_unavailable"
+  | "end_turn_transition_failed"
   | "end_turn_transition_unavailable"
   | "end_turn_world_archived"
   | "end_turn_world_not_found"
@@ -74,7 +80,7 @@ export type EndTurnBasicPersistedTransition = {
   readonly id: string;
   readonly initiatedByUserId: string;
   readonly startedAt: string;
-  readonly status: "completed" | "failed";
+  readonly status: "completed" | "failed" | "running";
   readonly toTurnNumber: number;
   readonly worldId: string;
 };
@@ -665,6 +671,28 @@ function createTransitionPersistenceUnavailableResult(): EndTurnBasicPersistRunn
   };
 }
 
+function createRunningTransitionResult(): EndTurnBasicPersistRunningTransitionResult {
+  return {
+    error: createErrorResponse({
+      code: "end_turn_running_transition",
+      message: "Another end-turn transition is already running.",
+    }),
+    ok: false,
+    status: 409,
+  };
+}
+
+function createTransitionFailedResult(): EndTurnBasicPersistRunningTransitionResult {
+  return {
+    error: createErrorResponse({
+      code: "end_turn_transition_failed",
+      message: "End turn persistence failed after the transition started.",
+    }),
+    ok: false,
+    status: 500,
+  };
+}
+
 function planDryWriteEndTurnTransition(input: BasicEndTurnTransitionInput):
   | {
       readonly ok: true;
@@ -855,7 +883,7 @@ type SupabasePersistedTransitionRow = {
   readonly id: string;
   readonly initiated_by_user_id: string;
   readonly started_at: string;
-  readonly status: "completed" | "failed";
+  readonly status: "completed" | "failed" | "running";
   readonly to_turn_number: number;
   readonly world_id: string;
 };
@@ -865,6 +893,7 @@ type SupabaseRunningTransitionFetchError =
       readonly reason:
         | "fetch_failed"
         | "invalid_payload"
+        | "running_transition"
         | "stale_world_turn"
         | "transition_failed";
     }
@@ -1284,6 +1313,15 @@ async function advanceWorldTurnResultFromResponse(
     };
   }
 
+  if (result.ok && result.transition.status === "running") {
+    return {
+      error: {
+        reason: "running_transition",
+      },
+      ok: false,
+    };
+  }
+
   return result;
 }
 
@@ -1313,7 +1351,11 @@ function transitionPersistenceResultFromFetchError(
   }
 
   if (error.reason === "transition_failed") {
-    return createTransitionPersistenceUnavailableResult();
+    return createTransitionFailedResult();
+  }
+
+  if (error.reason === "running_transition") {
+    return createRunningTransitionResult();
   }
 
   return createTransitionPersistenceUnavailableResult();
@@ -1357,7 +1399,7 @@ function resultFromSupabaseAuthorizationFetchError(
   return createAuthContextUnavailableResult();
 }
 
-function parseWorldCalendarConfig(value: unknown): WorldCalendarConfig | null {
+function parseWorldCalendarConfig(value: unknown): TurnCalendarConfig | null {
   if (
     !isRecord(value) ||
     !hasOnlyExpectedFields(value, expectedCalendarConfigFields)
@@ -1415,12 +1457,12 @@ function parseWorldCalendarConfig(value: unknown): WorldCalendarConfig | null {
 
 function parseCalendarWeekdays(
   value: unknown,
-): WorldCalendarConfig["weekdays"] | null {
+): TurnCalendarConfig["weekdays"] | null {
   if (!Array.isArray(value) || value.length === 0) {
     return null;
   }
 
-  const weekdays: WorldCalendarConfig["weekdays"] = [];
+  const weekdays: TurnCalendarConfig["weekdays"] = [];
 
   for (const [weekdayIndex, weekday] of value.entries()) {
     if (
@@ -1444,12 +1486,12 @@ function parseCalendarWeekdays(
 
 function parseCalendarMonths(
   value: unknown,
-): WorldCalendarConfig["months"] | null {
+): TurnCalendarConfig["months"] | null {
   if (!Array.isArray(value) || value.length === 0) {
     return null;
   }
 
-  const months: WorldCalendarConfig["months"] = [];
+  const months: TurnCalendarConfig["months"] = [];
 
   for (const [monthIndex, month] of value.entries()) {
     if (
@@ -1532,7 +1574,9 @@ function isSupabasePersistedTransitionRow(
     value.initiated_by_user_id.length > 0 &&
     typeof value.started_at === "string" &&
     value.started_at.length > 0 &&
-    (value.status === "completed" || value.status === "failed")
+    (value.status === "completed" ||
+      value.status === "failed" ||
+      value.status === "running")
   );
 }
 
