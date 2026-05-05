@@ -325,9 +325,9 @@ function EndTurnConfirmationDialog({
         <dl className="grid gap-3 sm:grid-cols-2">
           <EndTurnMetric
             label="Current turn"
-            value={`Turn ${currentTurnNumber}`}
+            value={currentTurnNumber.toString()}
           />
-          <EndTurnMetric label="Next turn" value={`Turn ${nextTurnNumber}`} />
+          <EndTurnMetric label="Next turn" value={nextTurnNumber.toString()} />
           <EndTurnMetric label="Current date" value={currentDateLabel} />
           <EndTurnMetric label="Next date" value={nextDateLabel} />
         </dl>

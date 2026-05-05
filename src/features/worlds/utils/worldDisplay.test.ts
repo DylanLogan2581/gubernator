@@ -49,6 +49,27 @@ describe("toAccessibleWorld", () => {
     });
   });
 
+  it("maps stored turn zero to the first planning date and next calendar day", () => {
+    const accessContext = createAccessContext({
+      isSuperAdmin: false,
+      userId: "user-1",
+      worldAdminWorldIds: ["world-1"],
+    });
+
+    const world = toAccessibleWorld(
+      createWorldRow({ current_turn_number: 0 }),
+      accessContext,
+    );
+
+    expect(world).toMatchObject({
+      currentTurnNumber: 0,
+      inWorldDateLabel: "Firstday, Dawn 1, 100 AG",
+      nextInWorldDateLabel: "Secondday, Dawn 2, 100 AG",
+      nextTurnNumber: 1,
+      planningTurnNumber: 1,
+    });
+  });
+
   it("falls back when calendar config is missing or invalid", () => {
     const accessContext = createAccessContext({
       isSuperAdmin: false,
