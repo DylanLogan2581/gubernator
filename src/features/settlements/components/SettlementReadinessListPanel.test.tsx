@@ -232,14 +232,16 @@ describe("SettlementReadinessListPanel", () => {
     renderSettlementReadinessListPanel();
 
     const switchControl = await screen.findByRole("switch", {
-      name: "Not ready",
+      name: "Ready (auto-ready)",
     });
 
     expect(switchControl).toBeDisabled();
+    expect(switchControl).toBeChecked();
     expect(screen.getAllByText("Auto-ready").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("switch", { name: "Not ready" })).toBeNull();
     expect(
       screen.getByText(
-        "Auto-ready is enabled, so this settlement does not need manual readiness.",
+        "Auto-ready is enabled, so this settlement counts as ready without manual readiness.",
       ),
     ).toBeDefined();
 
