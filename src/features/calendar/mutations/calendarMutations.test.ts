@@ -14,7 +14,7 @@ import {
 import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
 
 describe("saveWorldCalendarConfigMutationOptions", () => {
-  it("validates, saves only calendar_config_json, and invalidates calendar queries", async () => {
+  it("validates, saves only calendar_config_json, and invalidates date consumers", async () => {
     const config = createCalendarConfig();
     const clientFixture = createClient();
     const queryClient = createQueryClient();
@@ -54,6 +54,12 @@ describe("saveWorldCalendarConfigMutationOptions", () => {
     expect(clientFixture.updateSelect).toHaveBeenCalledWith("id");
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["calendar"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["worlds"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["turns", "current-turn-state", "world-1"],
     });
   });
 

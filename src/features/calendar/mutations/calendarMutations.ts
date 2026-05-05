@@ -5,7 +5,9 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { turnQueryKeys } from "@/features/turns";
 import type { WorldPermissionContext } from "@/features/worlds";
+import { worldQueryKeys } from "@/features/worlds";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -76,8 +78,14 @@ export function saveWorldCalendarConfigMutationOptions({
     mutationFn: (input: SaveWorldCalendarConfigInput) =>
       saveWorldCalendarConfig(client, accessContext, input),
     mutationKey: [...calendarQueryKeys.all, "save-world-calendar-config"],
-    onSuccess: async (): Promise<void> => {
-      await queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all });
+    onSuccess: async (_result, input): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: worldQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: turnQueryKeys.currentTurnState(input.worldId),
+        }),
+      ]);
     },
   });
 }
