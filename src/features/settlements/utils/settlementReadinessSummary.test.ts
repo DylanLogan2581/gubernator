@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { computeSettlementReadinessSummary } from "./settlementReadinessSummary";
+import {
+  computeSettlementReadinessSummary,
+  formatSettlementReadinessPercentage,
+} from "./settlementReadinessSummary";
 
 describe("computeSettlementReadinessSummary", () => {
   it("counts auto-ready settlements as ready", () => {
@@ -82,5 +85,19 @@ describe("computeSettlementReadinessSummary", () => {
       readySettlementCount: 0,
       totalSettlementCount: 0,
     });
+  });
+});
+
+describe("formatSettlementReadinessPercentage", () => {
+  it("floors uneven ratios to whole-number display labels", () => {
+    expect(formatSettlementReadinessPercentage(66.66666666666666)).toBe("66%");
+  });
+
+  it("formats zero-settlement readiness as zero percent", () => {
+    expect(formatSettlementReadinessPercentage(0)).toBe("0%");
+  });
+
+  it("does not round almost-complete percentages up", () => {
+    expect(formatSettlementReadinessPercentage(99.9)).toBe("99%");
   });
 });

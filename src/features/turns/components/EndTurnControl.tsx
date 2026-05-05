@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import {
+  formatSettlementReadinessPercentage,
   settlementReadinessSummaryQueryOptions,
   type SettlementReadinessSummary,
 } from "@/features/settlements";
@@ -177,7 +178,9 @@ function EndTurnControlContent({
           />
           <EndTurnMetric
             label="Ready percent"
-            value={`${readinessSummaryQuery.data.readyPercentage}%`}
+            value={formatSettlementReadinessPercentage(
+              readinessSummaryQuery.data.readyPercentage,
+            )}
           />
         </dl>
       ) : null}
@@ -411,7 +414,11 @@ function getControlDescription({
 function getReadinessSummaryDescription(
   readinessSummary: SettlementReadinessSummary,
 ): string {
-  return `${readinessSummary.readySettlementCount} of ${readinessSummary.totalSettlementCount} settlements ready (${readinessSummary.readyPercentage}%). ${readinessSummary.notReadySettlementCount} not ready.`;
+  const readyPercentageLabel = formatSettlementReadinessPercentage(
+    readinessSummary.readyPercentage,
+  );
+
+  return `${readinessSummary.readySettlementCount} of ${readinessSummary.totalSettlementCount} settlements ready (${readyPercentageLabel}). ${readinessSummary.notReadySettlementCount} not ready.`;
 }
 
 function getErrorDescription(error: unknown): string {

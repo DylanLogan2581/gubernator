@@ -23,6 +23,7 @@ export {
 export { settlementReadinessQueryKeys } from "./queries/settlementReadinessQueryKeys";
 export {
   computeSettlementReadinessSummary,
+  formatSettlementReadinessPercentage,
   isSettlementReadyForCurrentTurn,
 } from "./utils/settlementReadinessSummary";
 export {

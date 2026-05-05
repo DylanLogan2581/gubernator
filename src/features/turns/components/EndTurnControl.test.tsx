@@ -42,6 +42,51 @@ describe("EndTurnControl", () => {
     expect(screen.getByText("50%")).toBeDefined();
   });
 
+  it("floors uneven readiness percentages in summary labels", async () => {
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({ auto_ready_enabled: true }),
+        createSettlementRow({
+          id: "settlement-2",
+          is_ready_current_turn: true,
+        }),
+        createSettlementRow({ id: "settlement-3" }),
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    expect(await screen.findByText("Ready percent")).toBeDefined();
+    expect(screen.getByText("66%")).toBeDefined();
+    expect(screen.queryByText("66.66666666666666%")).toBeNull();
+  });
+
+  it("floors uneven readiness percentages in confirmation copy", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({ auto_ready_enabled: true }),
+        createSettlementRow({
+          id: "settlement-2",
+          is_ready_current_turn: true,
+        }),
+        createSettlementRow({ id: "settlement-3" }),
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(await screen.findByRole("button", { name: "End turn" }));
+
+    expect(
+      await screen.findByText("2 of 3 settlements ready (66%). 1 not ready."),
+    ).toBeDefined();
+    expect(screen.queryByText(/66\.66666666666666%/i)).toBeNull();
+  });
+
   it("confirms an all-ready end turn with current and next turn details", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({

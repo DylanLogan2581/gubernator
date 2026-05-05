@@ -26,6 +26,12 @@ export function computeSettlementReadinessSummary(
   };
 }
 
+export function formatSettlementReadinessPercentage(
+  readyPercentage: number,
+): string {
+  return `${Math.floor(readyPercentage)}%`;
+}
+
 export function isSettlementReadyForCurrentTurn(
   row: SettlementReadinessSummaryRow,
 ): boolean {
