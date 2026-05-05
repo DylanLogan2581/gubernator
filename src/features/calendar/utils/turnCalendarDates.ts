@@ -1,5 +1,3 @@
-import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
-
 export type TurnCalendarDate = {
   turnNumber: number;
   year: number;
@@ -10,6 +8,24 @@ export type TurnCalendarDate = {
   weekdayName: string;
 };
 
+export type TurnCalendarConfig = {
+  dateFormatTemplate: string;
+  months: {
+    dayCount: number;
+    index: number;
+    name: string;
+  }[];
+  startingDayOfMonth: number;
+  startingMonthIndex: number;
+  startingWeekdayOffset: number;
+  startingYear: number;
+  weekdays: {
+    index: number;
+    name: string;
+  }[];
+};
+
+type WorldCalendarConfig = TurnCalendarConfig;
 type CalendarMonth = WorldCalendarConfig["months"][number];
 type CalendarWeekday = WorldCalendarConfig["weekdays"][number];
 

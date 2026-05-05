@@ -135,6 +135,31 @@ describe("planBasicEndTurnTransition", () => {
     });
   });
 
+  it("plans the seeded bootstrap transition from turn zero to turn one", () => {
+    const result = planBasicEndTurnTransition({
+      ...baseInput,
+      currentTurnNumber: 0,
+      expectedCurrentTurnNumber: 0,
+    });
+
+    expect(result).toMatchObject({
+      fromTurnNumber: 0,
+      nextDate: {
+        dayOfMonth: 1,
+        monthName: "Frostmonth",
+        turnNumber: 1,
+      },
+      previousDate: {
+        dayOfMonth: 1,
+        monthName: "Frostmonth",
+        turnNumber: 1,
+      },
+      toTurnNumber: 1,
+    });
+    expect(result.logPayload.fromTurnNumber).toBe(0);
+    expect(result.logPayload.toTurnNumber).toBe(1);
+  });
+
   it("rejects archived worlds", () => {
     const error = getPlanningError(() =>
       planBasicEndTurnTransition({

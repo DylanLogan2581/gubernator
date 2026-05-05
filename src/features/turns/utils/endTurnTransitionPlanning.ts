@@ -1,11 +1,11 @@
-import { resolveTurnCalendarDate } from "@/features/calendar";
+import { resolveTurnCalendarDate } from "../../calendar/utils/turnCalendarDates.ts";
 
 import type {
   BasicEndTurnReadinessRow,
   BasicEndTurnReadinessSummary,
   BasicEndTurnTransitionInput,
   BasicEndTurnTransitionResult,
-} from "../types/endTurnTransitionTypes";
+} from "../types/endTurnTransitionTypes.ts";
 
 export type BasicEndTurnTransitionPlanningErrorCode =
   | "end_turn_stale_expected_turn"
@@ -64,9 +64,10 @@ export function planBasicEndTurnTransition(
 
   const fromTurnNumber = input.currentTurnNumber;
   const toTurnNumber = fromTurnNumber + 1;
+  const previousDateTurnNumber = Math.max(1, fromTurnNumber);
   const previousDate = resolveTurnCalendarDate(
     input.calendarConfig,
-    fromTurnNumber,
+    previousDateTurnNumber,
   );
   const nextDate = resolveTurnCalendarDate(input.calendarConfig, toTurnNumber);
   const readinessSummary = computeBasicEndTurnReadinessSummary(

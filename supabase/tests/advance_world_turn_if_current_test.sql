@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (23);
+  plan (25);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -630,6 +630,65 @@ select
         and ready_set_at = '2026-05-03 14:00:00+00'::timestamptz
     ),
     'forced failure preserves settlement readiness state'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- RUNNING CONFLICT: existing running transitions are reported, not completed.
+-- ---------------------------------------------------------------------------
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    '8d000000-0000-0000-0000-000000000099',
+    '8a000000-0000-0000-0000-000000000001',
+    6,
+    7,
+    '89000000-0000-0000-0000-000000000001',
+    'running'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"89000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.advance_world_turn_if_current ('8a000000-0000-0000-0000-000000000001', 6) transition_rows
+      where
+        transition_rows.id = '8d000000-0000-0000-0000-000000000099'
+        and transition_rows.status = 'running'
+    ),
+    1,
+    'existing running transition is returned as running'
+  );
+
+select
+  is (
+    (
+      select
+        current_turn_number
+      from
+        public.worlds
+      where
+        id = '8a000000-0000-0000-0000-000000000001'
+    ),
+    6,
+    'existing running transition does not advance the world'
   );
 
 reset role;

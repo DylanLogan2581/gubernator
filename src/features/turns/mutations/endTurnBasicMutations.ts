@@ -24,10 +24,12 @@ type EndTurnBasicExpectedErrorCode =
   | "end_turn_archived_world"
   | "end_turn_running_transition"
   | "end_turn_stale_turn"
+  | "end_turn_transition_failed"
   | "end_turn_unauthorized";
 type EndTurnBasicFunctionErrorCode =
   | "end_turn_running_transition"
   | "end_turn_stale_expected_turn"
+  | "end_turn_transition_failed"
   | "end_turn_transition_unavailable"
   | "end_turn_world_archived"
   | "end_turn_world_not_found"
@@ -138,7 +140,7 @@ async function endTurnBasic(
     }
 
     throw new EndTurnBasicError({
-      code: "end_turn_running_transition",
+      code: "end_turn_transition_failed",
       message: "End turn transition could not be started.",
       worldId: input.worldId,
     });
@@ -153,7 +155,7 @@ async function endTurnBasic(
   }
 
   throw new EndTurnBasicError({
-    code: "end_turn_running_transition",
+    code: "end_turn_transition_failed",
     message: "End turn transition response was invalid.",
     worldId: input.worldId,
   });
@@ -218,11 +220,13 @@ function normalizeEndTurnBasicErrorCode(
     case "end_turn_world_archived":
       return "end_turn_archived_world";
     case "end_turn_running_transition":
-    case "end_turn_transition_unavailable":
       return "end_turn_running_transition";
+    case "end_turn_transition_failed":
+    case "end_turn_transition_unavailable":
+      return "end_turn_transition_failed";
   }
 
-  return "end_turn_running_transition";
+  return "end_turn_transition_failed";
 }
 
 function isEndTurnBasicFunctionResponse(
