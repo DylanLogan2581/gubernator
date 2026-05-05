@@ -292,7 +292,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 0, name: "Firstday" },
       { index: 1, name: "Secondday" },
     ],
-    yearFormatTemplate: "{n} AG",
+    dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
   };
 }
 

@@ -1,7 +1,5 @@
--- Migration: add_world_calendar_config
--- Adds the Epic 2 fantasy calendar configuration contract to worlds.
--- ---------------------------------------------------------------------------
--- Calendar config helpers
+-- Migration: replace_calendar_year_template
+-- Replaces the calendar year-only template with a full date format template.
 -- ---------------------------------------------------------------------------
 create or replace function public.default_calendar_config () returns jsonb language sql immutable
 set
@@ -48,13 +46,13 @@ begin
   if
     not (
       config ?& array[
+        'dateFormatTemplate',
         'weekdays',
         'months',
         'startingMonthIndex',
         'startingDayOfMonth',
         'startingYear',
-        'startingWeekdayOffset',
-        'dateFormatTemplate'
+        'startingWeekdayOffset'
       ]
       and (
         select
@@ -204,11 +202,16 @@ exception
 end;
 $$;
 
--- ---------------------------------------------------------------------------
--- worlds
--- ---------------------------------------------------------------------------
-alter table public.worlds
-add column calendar_config_json jsonb not null default public.default_calendar_config (),
-add constraint worlds_calendar_config_json_check check (
-  public.is_valid_calendar_config (calendar_config_json)
-);
+update public.worlds
+set
+  calendar_config_json = (calendar_config_json - 'yearFormatTemplate') || jsonb_build_object(
+    'dateFormatTemplate',
+    '{weekday}, {month} {day}, ' || replace(
+      calendar_config_json ->> 'yearFormatTemplate',
+      '{n}',
+      '{year}'
+    )
+  )
+where
+  calendar_config_json ? 'yearFormatTemplate'
+  and not calendar_config_json ? 'dateFormatTemplate';

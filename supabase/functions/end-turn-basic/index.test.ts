@@ -891,7 +891,7 @@ function createCalendarConfig(): EndTurnBasicTransitionInput["calendarConfig"] {
         name: "Toilsday",
       },
     ],
-    yearFormatTemplate: "Year {n}",
+    dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
   };
 }
 

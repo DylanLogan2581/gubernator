@@ -19,7 +19,7 @@ const calendarConfig = {
   startingDayOfMonth: 1,
   startingYear: 12,
   startingWeekdayOffset: 1,
-  yearFormatTemplate: "Year {n}",
+  dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
 } satisfies WorldCalendarConfig;
 
 describe("resolveTurnCalendarDate", () => {

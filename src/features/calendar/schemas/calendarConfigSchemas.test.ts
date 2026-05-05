@@ -16,7 +16,7 @@ const validCalendarConfig = {
   startingDayOfMonth: 1,
   startingYear: -10,
   startingWeekdayOffset: 0,
-  yearFormatTemplate: "Year {n}",
+  dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
 };
 
 describe("worldCalendarConfigSchema", () => {
@@ -95,13 +95,38 @@ describe("worldCalendarConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects year format templates without the year token", () => {
+  it("rejects date format templates without a date token", () => {
     const result = worldCalendarConfigSchema.safeParse({
       ...validCalendarConfig,
-      yearFormatTemplate: "Year",
+      dateFormatTemplate: "Year",
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("rejects date format templates with unsupported tokens", () => {
+    const result = worldCalendarConfigSchema.safeParse({
+      ...validCalendarConfig,
+      dateFormatTemplate: "{month} {era}",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("maps the old year template field to the default full date shape", () => {
+    const { dateFormatTemplate: _dateFormatTemplate, ...oldConfig } =
+      validCalendarConfig;
+    const result = worldCalendarConfigSchema.safeParse({
+      ...oldConfig,
+      yearFormatTemplate: "Age {n}",
+    });
+
+    expect(result).toMatchObject({
+      data: {
+        dateFormatTemplate: "{weekday}, {month} {day}, Age {year}",
+      },
+      success: true,
+    });
   });
 
   it("rejects extra keys at every schema level", () => {

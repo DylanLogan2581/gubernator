@@ -21,7 +21,7 @@ const calendarConfig = {
   startingDayOfMonth: 1,
   startingYear: 1,
   startingWeekdayOffset: 0,
-  yearFormatTemplate: "Year {n}",
+  dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
 } satisfies WorldCalendarConfig;
 
 const computedDate = {
@@ -35,10 +35,10 @@ const computedDate = {
 } satisfies TurnCalendarDate;
 
 const displayLabels = {
-  compactDateLabel: "Frostmonth 7, Year 1",
+  compactDateLabel: "Moonday, Frostmonth 7, Year 1",
   dateLabel: "Moonday, Frostmonth 7, Year 1",
   turnLabel: "Turn 7",
-  yearLabel: "Year 1",
+  yearLabel: "1",
 } satisfies CurrentTurnDateDisplayLabels;
 
 describe("CurrentTurnDateDisplay", () => {

@@ -18,22 +18,28 @@ const calendarDate = {
 } satisfies TurnCalendarDate;
 
 describe("formatCalendarDate", () => {
-  it("formats full display with weekday, month, day, and formatted year", () => {
+  it("formats a template with weekday, month, day, and year", () => {
     expect(
       formatCalendarDate(calendarDate, {
-        displayVariant: "full",
-        yearFormatTemplate: "Age {n}",
+        dateFormatTemplate: "{weekday}, {month} {day}, Age {year}",
       }),
     ).toBe("Highday, Suncrest 7, Age 42");
   });
 
-  it("formats compact display without weekday", () => {
+  it("allows admins to omit date parts", () => {
     expect(
       formatCalendarDate(calendarDate, {
-        displayVariant: "compact",
-        yearFormatTemplate: "Age {n}",
+        dateFormatTemplate: "{month} {year}",
       }),
-    ).toBe("Suncrest 7, Age 42");
+    ).toBe("Suncrest 42");
+  });
+
+  it("allows admins to reorder date parts and punctuation", () => {
+    expect(
+      formatCalendarDate(calendarDate, {
+        dateFormatTemplate: "{year} // {day} {month} // {weekday}",
+      }),
+    ).toBe("42 // 7 Suncrest // Highday");
   });
 
   it("formats zero years from computed calendar date data", () => {
@@ -44,8 +50,7 @@ describe("formatCalendarDate", () => {
           year: 0,
         },
         {
-          displayVariant: "full",
-          yearFormatTemplate: "Year {n}",
+          dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
         },
       ),
     ).toBe("Highday, Suncrest 7, Year 0");
@@ -59,8 +64,7 @@ describe("formatCalendarDate", () => {
           year: -3,
         },
         {
-          displayVariant: "compact",
-          yearFormatTemplate: "{n} BT",
+          dateFormatTemplate: "{month} {day}, {year} BT",
         },
       ),
     ).toBe("Suncrest 7, -3 BT");
@@ -68,7 +72,7 @@ describe("formatCalendarDate", () => {
 });
 
 describe("formatCalendarYear", () => {
-  it("replaces every year placeholder with the computed year", () => {
-    expect(formatCalendarYear(12, "{n} / Year {n}")).toBe("12 / Year 12");
+  it("formats the computed numeric year by itself", () => {
+    expect(formatCalendarYear(12)).toBe("12");
   });
 });

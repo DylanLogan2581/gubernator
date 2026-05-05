@@ -52,12 +52,10 @@ export function toAccessibleWorld(
     inWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       planningTurnNumber,
-      "compact",
     ),
     fullInWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       planningTurnNumber,
-      "full",
     ),
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
@@ -65,12 +63,10 @@ export function toAccessibleWorld(
     nextFullInWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       nextTurnNumber,
-      "full",
     ),
     nextInWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       nextTurnNumber,
-      "compact",
     ),
     nextTurnNumber,
     ownerId: world.owner_id,
@@ -112,7 +108,6 @@ function resolveNextTurnNumber(currentTurnNumber: number): number {
 function resolveInWorldDateLabel(
   calendarConfigJson: WorldRow["calendar_config_json"] | undefined,
   planningTurnNumber: number,
-  displayVariant: "compact" | "full",
 ): string {
   const parseResult = worldCalendarConfigSchema.safeParse(calendarConfigJson);
 
@@ -126,8 +121,7 @@ function resolveInWorldDateLabel(
     return formatCalendarDate(
       resolveTurnCalendarDate(calendarConfig, planningTurnNumber),
       {
-        displayVariant,
-        yearFormatTemplate: calendarConfig.yearFormatTemplate,
+        dateFormatTemplate: calendarConfig.dateFormatTemplate,
       },
     );
   } catch {

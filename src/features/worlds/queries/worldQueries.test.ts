@@ -220,11 +220,11 @@ describe("worldRouteAccessQueryOptions", () => {
       archivedAt: null,
       currentTurnNumber: 8,
       fullInWorldDateLabel: "Secondday, Ember 1, 101 AG",
-      inWorldDateLabel: "Ember 1, 101 AG",
+      inWorldDateLabel: "Secondday, Ember 1, 101 AG",
       isArchived: false,
       name: "Local Development World",
       nextFullInWorldDateLabel: "Firstday, Ember 2, 101 AG",
-      nextInWorldDateLabel: "Ember 2, 101 AG",
+      nextInWorldDateLabel: "Firstday, Ember 2, 101 AG",
       nextTurnNumber: 9,
       planningTurnNumber: 8,
       slug: "local-development-world-00000000",
@@ -505,7 +505,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 0, name: "Firstday" },
       { index: 1, name: "Secondday" },
     ],
-    yearFormatTemplate: "{n} AG",
+    dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
   };
 }
 

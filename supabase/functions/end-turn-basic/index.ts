@@ -147,13 +147,13 @@ const jsonHeaders = {
 
 const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
 const expectedCalendarConfigFields = [
+  "dateFormatTemplate",
   "months",
   "startingDayOfMonth",
   "startingMonthIndex",
   "startingWeekdayOffset",
   "startingYear",
   "weekdays",
-  "yearFormatTemplate",
 ] as const;
 const expectedCalendarMonthFields = ["dayCount", "index", "name"] as const;
 const expectedCalendarWeekdayFields = ["index", "name"] as const;
@@ -1376,7 +1376,7 @@ function parseWorldCalendarConfig(value: unknown): WorldCalendarConfig | null {
   const startingMonthIndex = value.startingMonthIndex;
   const startingWeekdayOffset = value.startingWeekdayOffset;
   const startingYear = value.startingYear;
-  const yearFormatTemplate = value.yearFormatTemplate;
+  const dateFormatTemplate = value.dateFormatTemplate;
 
   if (
     !isNonnegativeInteger(startingMonthIndex) ||
@@ -1385,9 +1385,10 @@ function parseWorldCalendarConfig(value: unknown): WorldCalendarConfig | null {
     !isInteger(startingYear) ||
     !isNonnegativeInteger(startingWeekdayOffset) ||
     startingWeekdayOffset >= weekdays.length ||
-    typeof yearFormatTemplate !== "string" ||
-    yearFormatTemplate.trim().length === 0 ||
-    !yearFormatTemplate.includes("{n}")
+    typeof dateFormatTemplate !== "string" ||
+    dateFormatTemplate.trim().length === 0 ||
+    !/\{(?:weekday|month|day|year)\}/.test(dateFormatTemplate) ||
+    /\{(?!weekday\}|month\}|day\}|year\})[^{}]+\}/.test(dateFormatTemplate)
   ) {
     return null;
   }
@@ -1408,7 +1409,7 @@ function parseWorldCalendarConfig(value: unknown): WorldCalendarConfig | null {
     startingWeekdayOffset,
     startingYear,
     weekdays,
-    yearFormatTemplate,
+    dateFormatTemplate,
   };
 }
 

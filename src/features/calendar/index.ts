@@ -25,6 +25,5 @@ export {
 export {
   formatCalendarDate,
   formatCalendarYear,
-  type CalendarDateDisplayVariant,
   type CalendarDateFormatOptions,
 } from "./utils/calendarDateFormatting";

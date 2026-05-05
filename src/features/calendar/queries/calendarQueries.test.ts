@@ -187,7 +187,7 @@ function createCalendarConfig(): {
       readonly name: "Moonday";
     },
   ];
-  readonly yearFormatTemplate: "Year {n}";
+  readonly dateFormatTemplate: "{weekday}, {month} {day}, Year {year}";
 } {
   return {
     months: [
@@ -207,7 +207,7 @@ function createCalendarConfig(): {
         name: "Moonday",
       },
     ],
-    yearFormatTemplate: "Year {n}",
+    dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
   };
 }
 

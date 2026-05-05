@@ -8,7 +8,6 @@ import {
   shouldRetryWorldCalendarConfigQuery,
   worldCalendarConfigQueryOptions,
   worldCalendarConfigSchema,
-  type CalendarDateDisplayVariant,
   type CalendarDateFormatOptions,
   type TurnCalendarDate,
   type WorldCalendarConfig,
@@ -66,12 +65,8 @@ describe("public feature entrypoints", () => {
     expect(formatCalendarYear).toEqual(expect.any(Function));
     expect(resolveTurnCalendarDate).toEqual(expect.any(Function));
 
-    expectTypeOf<CalendarDateDisplayVariant>().toEqualTypeOf<
-      "compact" | "full"
-    >();
     expectTypeOf<CalendarDateFormatOptions>().toMatchTypeOf<{
-      readonly displayVariant: CalendarDateDisplayVariant;
-      readonly yearFormatTemplate: string;
+      readonly dateFormatTemplate: string;
     }>();
     expectTypeOf<
       Pick<TurnCalendarDate, "dayOfMonth" | "monthName" | "turnNumber" | "year">
