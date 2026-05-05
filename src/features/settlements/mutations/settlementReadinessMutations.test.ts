@@ -58,6 +58,7 @@ describe("setSettlementReadinessMutationOptions", () => {
     );
     expect(clientFixture.update).toHaveBeenCalledWith({
       is_ready_current_turn: true,
+      last_ready_at: "now",
       ready_set_at: "now",
     });
     expect(clientFixture.updateEq).toHaveBeenCalledWith("id", "settlement-1");
@@ -72,7 +73,7 @@ describe("setSettlementReadinessMutationOptions", () => {
     });
   });
 
-  it("clears one settlement readiness and ready_set_at", async () => {
+  it("clears one settlement readiness without clearing last readiness history", async () => {
     const clientFixture = createClient({
       updateResult: {
         data: {

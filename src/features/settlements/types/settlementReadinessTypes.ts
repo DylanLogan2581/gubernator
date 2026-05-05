@@ -3,6 +3,7 @@ export type SettlementReadinessListItem = {
   readonly id: string;
   readonly isReadyCurrentTurn: boolean;
   readonly isReadyForCurrentTurn: boolean;
+  readonly lastReadyAt: string | null;
   readonly name: string;
   readonly nationId: string;
   readonly readySetAt: string | null;

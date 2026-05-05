@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (12);
+  plan (13);
 
 select
   ok (
@@ -181,6 +181,22 @@ select
     ),
     2,
     'end-turn reset clears manual readiness for seeded settlements'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.settlements
+      where
+        id = '00000000-0000-0000-0000-000000000301'
+        and is_ready_current_turn = false
+        and ready_set_at is null
+        and last_ready_at = '2026-05-03 12:00:00+00'::timestamptz
+    ),
+    'end-turn reset preserves seeded manual readiness history'
   );
 
 select

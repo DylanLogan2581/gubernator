@@ -235,6 +235,9 @@ async function setSettlementReadiness(
     .from("settlements")
     .update({
       is_ready_current_turn: input.isReady,
+      ...(input.isReady
+        ? { last_ready_at: POSTGRES_CURRENT_TIMESTAMP_INPUT }
+        : {}),
       ready_set_at: input.isReady ? POSTGRES_CURRENT_TIMESTAMP_INPUT : null,
     })
     .eq("id", input.settlementId)

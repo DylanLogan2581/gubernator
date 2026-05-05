@@ -368,6 +368,7 @@ select
       nation_id,
       name,
       is_ready_current_turn,
+      last_ready_at,
       ready_set_at,
       ready_set_by_citizen_id
     )
@@ -376,6 +377,7 @@ select
       '73000000-0000-0000-0000-000000000001',
       'Owner Manual Ready',
       true,
+      now(),
       now(),
       '75000000-0000-0000-0000-000000000001'
     )
@@ -393,6 +395,7 @@ select
       where
         id = '74000000-0000-0000-0000-000000000004'
         and is_ready_current_turn = true
+        and last_ready_at is not null
         and ready_set_at is not null
         and ready_set_by_citizen_id = '75000000-0000-0000-0000-000000000001'
     ),

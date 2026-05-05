@@ -142,6 +142,7 @@ export type Database = {
           description: string | null;
           id: string;
           is_ready_current_turn: boolean;
+          last_ready_at: string | null;
           name: string;
           nation_id: string;
           ready_set_at: string | null;
@@ -156,6 +157,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           is_ready_current_turn?: boolean;
+          last_ready_at?: string | null;
           name: string;
           nation_id: string;
           ready_set_at?: string | null;
@@ -170,6 +172,7 @@ export type Database = {
           description?: string | null;
           id?: string;
           is_ready_current_turn?: boolean;
+          last_ready_at?: string | null;
           name?: string;
           nation_id?: string;
           ready_set_at?: string | null;
