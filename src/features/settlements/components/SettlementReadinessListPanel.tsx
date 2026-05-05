@@ -313,6 +313,7 @@ function ManualReadinessControl({
     isAutoReady,
     isPending,
   });
+  const label = getManualReadinessLabel(item);
 
   return (
     <div className="grid gap-2">
@@ -324,7 +325,7 @@ function ManualReadinessControl({
               : `${descriptionId} ${errorId}`
           }
           aria-invalid={mutationError === null ? undefined : true}
-          checked={item.isReadyCurrentTurn}
+          checked={item.isReadyForCurrentTurn}
           className="peer sr-only"
           disabled={isDisabled}
           onChange={(event) => {
@@ -340,7 +341,7 @@ function ManualReadinessControl({
             "after:absolute after:top-0.5 after:left-0.5 after:size-3.5 after:rounded-full after:bg-background after:shadow-sm after:transition-transform peer-checked:after:translate-x-4",
           )}
         />
-        <span>{item.isReadyCurrentTurn ? "Ready" : "Not ready"}</span>
+        <span>{label}</span>
       </label>
       <p id={descriptionId} className="max-w-64 text-xs text-muted-foreground">
         {description}
@@ -352,6 +353,14 @@ function ManualReadinessControl({
       )}
     </div>
   );
+}
+
+function getManualReadinessLabel(item: SettlementReadinessListItem): string {
+  if (item.autoReadyEnabled) {
+    return "Ready (auto-ready)";
+  }
+
+  return item.isReadyForCurrentTurn ? "Ready" : "Not ready";
 }
 
 function AutoReadyControl({
@@ -426,7 +435,7 @@ function getManualReadinessDescription({
   }
 
   if (isAutoReady) {
-    return "Auto-ready is enabled, so this settlement does not need manual readiness.";
+    return "Auto-ready is enabled, so this settlement counts as ready without manual readiness.";
   }
 
   if (isPending) {
