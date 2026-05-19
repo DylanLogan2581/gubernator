@@ -179,6 +179,7 @@ function WorldShellContent({
       <SettlementReadinessListPanel
         accessContext={accessContext}
         canAdmin={worldQuery.data.canAdmin}
+        canManage={worldQuery.data.canManage}
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
       />
