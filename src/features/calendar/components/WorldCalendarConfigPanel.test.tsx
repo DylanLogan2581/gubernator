@@ -8,6 +8,8 @@ import {
   type AccessContext,
 } from "@/features/permissions";
 
+import { calendarQueryKeys } from "../queries/calendarQueryKeys";
+
 import { WorldCalendarConfigPanel } from "./WorldCalendarConfigPanel";
 
 import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
@@ -228,6 +230,112 @@ describe("WorldCalendarConfigPanel", () => {
     ).toBeDefined();
     expect(dateFormatField).toHaveAttribute("aria-invalid", "true");
     expect(client.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("resets draft to the new world's config when worldId changes", async () => {
+    const user = userEvent.setup();
+    const queryClient = createQueryClient();
+    const worldRow1 = createWorldRow();
+    const worldRow2 = createWorldRow({
+      id: "00000000-0000-0000-0000-000000000002",
+      calendar_config_json: {
+        ...createCalendarConfig(),
+        weekdays: [{ index: 0, name: "OtherDay" }],
+        months: [{ dayCount: 5, index: 0, name: "OtherMonth" }],
+      },
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [worldRow1, worldRow2] }),
+    );
+
+    const accessContext = createAccessContext({
+      isSuperAdmin: false,
+      userId: "user-1",
+      worldAdminWorldIds: [],
+    });
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <WorldCalendarConfigPanel
+          accessContext={accessContext}
+          canAdmin={true}
+          isArchived={false}
+          worldId="00000000-0000-0000-0000-000000000001"
+        />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("heading", { name: "Calendar" });
+
+    const weekdayField = screen.getByRole("textbox", {
+      name: "Weekdays 1 Name",
+    });
+    await user.clear(weekdayField);
+    await user.type(weekdayField, "Edited");
+    expect(weekdayField).toHaveValue("Edited");
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <WorldCalendarConfigPanel
+          accessContext={accessContext}
+          canAdmin={true}
+          isArchived={false}
+          worldId="00000000-0000-0000-0000-000000000002"
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("textbox", { name: "Weekdays 1 Name" }),
+    ).toHaveValue("OtherDay");
+  });
+
+  it("preserves draft when initialConfig refreshes for the same world", async () => {
+    const user = userEvent.setup();
+    const queryClient = createQueryClient();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <WorldCalendarConfigPanel
+          accessContext={createAccessContext({
+            isSuperAdmin: false,
+            userId: "user-1",
+            worldAdminWorldIds: [],
+          })}
+          canAdmin={true}
+          isArchived={false}
+          worldId="00000000-0000-0000-0000-000000000001"
+        />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("heading", { name: "Calendar" });
+
+    const weekdayField = screen.getByRole("textbox", {
+      name: "Weekdays 1 Name",
+    });
+    await user.clear(weekdayField);
+    await user.type(weekdayField, "Edited");
+    expect(weekdayField).toHaveValue("Edited");
+
+    queryClient.setQueryData(
+      calendarQueryKeys.worldCalendarConfig(
+        "00000000-0000-0000-0000-000000000001",
+      ),
+      {
+        ...createCalendarConfig(),
+        weekdays: [{ index: 0, name: "Refreshed" }],
+      },
+    );
+
+    expect(
+      screen.getByRole("textbox", { name: "Weekdays 1 Name" }),
+    ).toHaveValue("Edited");
   });
 
   it("renders calendar configuration without edit controls for non-admin users", async () => {
