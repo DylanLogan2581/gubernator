@@ -229,6 +229,7 @@ describe("handleEndTurnBasicRequest", () => {
             weekdayName: "Toilsday",
             year: 12,
           },
+          nextDateLabel: "Toilsday, Rainmonth 2, Year 12",
           nextTurnNumber: 4,
           previousDate: {
             dayOfMonth: 1,
@@ -239,6 +240,7 @@ describe("handleEndTurnBasicRequest", () => {
             weekdayName: "Moonday",
             year: 12,
           },
+          previousDateLabel: "Moonday, Rainmonth 1, Year 12",
           previousTurnNumber: 3,
           readinessSummary: {
             notReadySettlementCount: 1,
