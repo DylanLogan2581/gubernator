@@ -19,6 +19,7 @@ import type { JSX, ReactNode } from "react";
 type SettlementReadinessListPanelProps = {
   readonly accessContext: WorldPermissionContext;
   readonly canAdmin: boolean;
+  readonly canManage: boolean;
   readonly isArchived: boolean;
   readonly worldId: string;
 };
@@ -26,6 +27,7 @@ type SettlementReadinessListPanelProps = {
 export function SettlementReadinessListPanel({
   accessContext,
   canAdmin,
+  canManage,
   isArchived,
   worldId,
 }: SettlementReadinessListPanelProps): JSX.Element {
@@ -67,6 +69,7 @@ export function SettlementReadinessListPanel({
     <SettlementReadinessListPanelContent
       accessContext={accessContext}
       canAdmin={canAdmin}
+      canManage={canManage}
       isArchived={isArchived}
       items={readinessListQuery.data}
       worldId={worldId}
@@ -77,12 +80,14 @@ export function SettlementReadinessListPanel({
 export function SettlementReadinessListPanelContent({
   accessContext,
   canAdmin,
+  canManage,
   isArchived,
   items,
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
   readonly canAdmin: boolean;
+  readonly canManage: boolean;
   readonly isArchived: boolean;
   readonly items: readonly SettlementReadinessListItem[];
   readonly worldId: string;
@@ -147,6 +152,7 @@ export function SettlementReadinessListPanelContent({
                     : null
                 }
                 canSetAutoReady={canAdmin}
+                canSetManualReady={canManage}
                 isArchived={isArchived}
                 item={item}
                 key={item.id}
@@ -206,6 +212,7 @@ function SettlementReadinessListFrame({
 function SettlementReadinessRow({
   autoReadyMutationError,
   canSetAutoReady,
+  canSetManualReady,
   isArchived,
   item,
   mutationError,
@@ -216,6 +223,7 @@ function SettlementReadinessRow({
 }: {
   readonly autoReadyMutationError: Error | null;
   readonly canSetAutoReady: boolean;
+  readonly canSetManualReady: boolean;
   readonly isArchived: boolean;
   readonly item: SettlementReadinessListItem;
   readonly mutationError: Error | null;
@@ -242,13 +250,17 @@ function SettlementReadinessRow({
         )}
       </td>
       <td className="py-3 pl-4">
-        <ManualReadinessControl
-          isArchived={isArchived}
-          item={item}
-          mutationError={mutationError}
-          isPending={pendingSettlementId === item.id}
-          setReadiness={setReadiness}
-        />
+        {canSetManualReady ? (
+          <ManualReadinessControl
+            isArchived={isArchived}
+            item={item}
+            mutationError={mutationError}
+            isPending={pendingSettlementId === item.id}
+            setReadiness={setReadiness}
+          />
+        ) : (
+          <ReadOnlyReadinessIndicator item={item} />
+        )}
       </td>
       {canSetAutoReady ? (
         <td className="py-3 pl-4">
@@ -289,6 +301,20 @@ function getReadinessStateLabel(item: SettlementReadinessListItem): string {
   }
 
   return "Not ready";
+}
+
+function ReadOnlyReadinessIndicator({
+  item,
+}: {
+  readonly item: SettlementReadinessListItem;
+}): JSX.Element {
+  const label = getReadinessStateLabel(item);
+
+  return (
+    <p className="text-sm text-muted-foreground" aria-label={label}>
+      {label}
+    </p>
+  );
 }
 
 function ManualReadinessControl({

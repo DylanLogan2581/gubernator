@@ -307,9 +307,111 @@ describe("SettlementReadinessListPanel", () => {
     renderSettlementReadinessListPanel({
       accessContext: createUnauthorizedAccessContext(),
       canAdmin: false,
+      canManage: false,
     });
 
     expect(await screen.findByText("Amberhold")).toBeDefined();
+    expect(screen.queryByRole("switch", { name: "Auto-ready" })).toBeNull();
+  });
+
+  it("hides manual readiness switch for read-only users", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({
+          id: "settlement-1",
+          name: "Amberhold",
+        }),
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderSettlementReadinessListPanel({
+      accessContext: createUnauthorizedAccessContext(),
+      canAdmin: false,
+      canManage: false,
+    });
+
+    expect(await screen.findByText("Amberhold")).toBeDefined();
+    expect(screen.queryByRole("switch", { name: "Not ready" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Ready" })).toBeNull();
+
+    await user.click(document.body);
+
+    expect(clientFixture.update).not.toHaveBeenCalled();
+  });
+
+  it("shows read-only readiness indicator for read-only users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClientFixture({
+        settlementRows: [
+          createSettlementRow({
+            id: "settlement-1",
+            is_ready_current_turn: true,
+            name: "Amberhold",
+            ready_set_at: "2026-05-02T12:00:00.000Z",
+          }),
+          createSettlementRow({
+            id: "settlement-2",
+            name: "Briarwatch",
+          }),
+          createSettlementRow({
+            auto_ready_enabled: true,
+            id: "settlement-3",
+            name: "Cinderford",
+          }),
+        ],
+      }).client,
+    );
+
+    renderSettlementReadinessListPanel({
+      accessContext: createUnauthorizedAccessContext(),
+      canAdmin: false,
+      canManage: false,
+    });
+
+    expect(await screen.findByText("Amberhold")).toBeDefined();
+    expect(screen.queryByRole("switch")).toBeNull();
+    expect(screen.getByLabelText("Ready")).toBeDefined();
+    expect(screen.getByLabelText("Not ready")).toBeDefined();
+    expect(screen.getByLabelText("Auto-ready")).toBeDefined();
+  });
+
+  it("shows manual readiness switch for managers without admin access", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({
+          id: "settlement-1",
+          name: "Amberhold",
+        }),
+      ],
+      updateResult: {
+        data: {
+          id: "settlement-1",
+          is_ready_current_turn: true,
+          ready_set_at: "2026-05-02T12:00:00.000Z",
+        },
+        error: null,
+      },
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    // canAdmin: false hides auto-ready; canManage: true shows manual switch.
+    // Access context must have actual manage access so the mutation succeeds.
+    renderSettlementReadinessListPanel({
+      accessContext: createAdminAccessContext(),
+      canAdmin: false,
+      canManage: true,
+    });
+
+    await user.click(await screen.findByRole("switch", { name: "Not ready" }));
+
+    expect(clientFixture.update).toHaveBeenCalledWith({
+      is_ready_current_turn: true,
+      last_ready_at: "now",
+      ready_set_at: "now",
+    });
     expect(screen.queryByRole("switch", { name: "Auto-ready" })).toBeNull();
   });
 
@@ -461,10 +563,12 @@ describe("SettlementReadinessListPanel", () => {
 function renderSettlementReadinessListPanel({
   accessContext = createAdminAccessContext(),
   canAdmin = true,
+  canManage = true,
   isArchived = false,
 }: {
   readonly accessContext?: WorldPermissionContext;
   readonly canAdmin?: boolean;
+  readonly canManage?: boolean;
   readonly isArchived?: boolean;
 } = {}): void {
   render(
@@ -472,6 +576,7 @@ function renderSettlementReadinessListPanel({
       <SettlementReadinessListPanel
         accessContext={accessContext}
         canAdmin={canAdmin}
+        canManage={canManage}
         isArchived={isArchived}
         worldId="world-1"
       />

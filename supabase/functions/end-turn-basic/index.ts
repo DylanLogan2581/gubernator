@@ -1,4 +1,5 @@
 /* eslint-disable no-restricted-imports -- Supabase Edge Runtime cannot resolve Vite's @/ alias. */
+import { formatCalendarDate } from "../../../src/features/calendar/utils/calendarDateFormatting.ts";
 import {
   isBasicEndTurnTransitionPlanningError,
   planBasicEndTurnTransition,
@@ -269,6 +270,7 @@ export async function handleEndTurnBasicRequest(
         actorId: authContextResult.context.userId,
         transition: mapDryWriteTransitionResult(
           plannedTransitionResult.transition,
+          transitionInputResult.input.calendarConfig.dateFormatTemplate,
         ),
         worldId: requestBodyResult.body.worldId,
       },
@@ -744,11 +746,18 @@ function planDryWriteEndTurnTransition(input: BasicEndTurnTransitionInput):
 
 function mapDryWriteTransitionResult(
   transition: BasicEndTurnTransitionResult,
+  dateFormatTemplate: string,
 ): EndTurnBasicDryWriteTransitionResult {
   return {
     nextDate: transition.nextDate,
+    nextDateLabel: formatCalendarDate(transition.nextDate, {
+      dateFormatTemplate,
+    }),
     nextTurnNumber: transition.toTurnNumber,
     previousDate: transition.previousDate,
+    previousDateLabel: formatCalendarDate(transition.previousDate, {
+      dateFormatTemplate,
+    }),
     previousTurnNumber: transition.fromTurnNumber,
     readinessSummary: transition.readinessSummary,
   };
