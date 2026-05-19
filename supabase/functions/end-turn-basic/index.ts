@@ -1,16 +1,20 @@
-/* eslint-disable no-restricted-imports -- Supabase Edge Runtime cannot resolve Vite's @/ alias. */
-import { formatCalendarDate } from "../../../src/features/calendar/utils/calendarDateFormatting.ts";
+// The @/ path alias is a Vite convention. Supabase Edge Functions cannot
+// resolve it unless an explicit import map is configured for the Edge runtime.
+// Shared pure logic lives under src/shared/ and is imported by relative path.
 import {
   isBasicEndTurnTransitionPlanningError,
   planBasicEndTurnTransition,
-} from "../../../src/features/turns/utils/endTurnTransitionPlanning.ts";
+} from "../../../src/shared/endTurnTransitionPlanning.ts";
+import {
+  formatCalendarDate,
+  type TurnCalendarConfig,
+} from "../../../src/shared/turnCalendarPrimitives.ts";
 
-import type { TurnCalendarConfig } from "../../../src/features/calendar/utils/turnCalendarDates.ts";
 import type {
   BasicEndTurnReadinessRow,
   BasicEndTurnTransitionInput,
   BasicEndTurnTransitionResult,
-} from "../../../src/features/turns/types/endTurnTransitionTypes.ts";
+} from "../../../src/shared/endTurnTransitionTypes.ts";
 
 type EdgeRuntime = {
   readonly env: {
