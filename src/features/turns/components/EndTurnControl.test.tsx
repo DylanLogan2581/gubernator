@@ -277,7 +277,9 @@ describe("EndTurnControl", () => {
           data: {
             actorId: "user-1",
             transition: {
+              nextDateLabel: "Secondday, Ember 1, 101 AG",
               nextTurnNumber: 8,
+              previousDateLabel: "Firstday, Dawn 2, 101 AG",
               previousTurnNumber: 7,
             },
             worldId: "world-1",
@@ -316,6 +318,48 @@ describe("EndTurnControl", () => {
     expect(screen.getByText("New date")).toBeDefined();
     expect(screen.getByText("Secondday, Ember 1, 101 AG")).toBeDefined();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("shows authoritative date labels from the response, not pre-submit prop values", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      invokeResult: {
+        data: {
+          data: {
+            actorId: "user-1",
+            transition: {
+              nextDateLabel: "Authoritative Next Date",
+              nextTurnNumber: 8,
+              previousDateLabel: "Authoritative Previous Date",
+              previousTurnNumber: 7,
+            },
+            worldId: "world-1",
+          },
+          ok: true,
+        },
+        error: null,
+      },
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl({
+      currentDateLabel: "Stale Current Date",
+      nextDateLabel: "Stale Next Date",
+    });
+
+    await screen.findByText("Current turn");
+    await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm end turn" }),
+    );
+
+    const status = await screen.findByRole("status");
+
+    expect(status).toHaveTextContent("Authoritative Previous Date");
+    expect(status).toHaveTextContent("Authoritative Next Date");
+    expect(screen.queryByText("Stale Current Date")).toBeNull();
+    expect(screen.queryByText("Stale Next Date")).toBeNull();
   });
 
   it("shows a refresh-safe message for stale-turn failures", async () => {
@@ -455,7 +499,9 @@ function createClientFixture({
       data: {
         actorId: "user-1",
         transition: {
+          nextDateLabel: "Secondday, Ember 1, 101 AG",
           nextTurnNumber: 8,
+          previousDateLabel: "Firstday, Dawn 2, 101 AG",
           previousTurnNumber: 7,
         },
         worldId: "world-1",

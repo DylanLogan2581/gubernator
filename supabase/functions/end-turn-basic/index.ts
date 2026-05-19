@@ -64,8 +64,10 @@ export type EndTurnBasicResponse =
 
 export type EndTurnBasicDryWriteTransitionResult = {
   readonly nextDate: BasicEndTurnTransitionResult["nextDate"];
+  readonly nextDateLabel: string;
   readonly nextTurnNumber: number;
   readonly previousDate: BasicEndTurnTransitionResult["previousDate"];
+  readonly previousDateLabel: string;
   readonly previousTurnNumber: number;
   readonly readinessSummary: BasicEndTurnTransitionResult["readinessSummary"];
 };

@@ -15,7 +15,9 @@ describe("endTurnBasicMutationOptions", () => {
         data: {
           actorId: "user-1",
           transition: {
+            nextDateLabel: "Turn 4 date",
             nextTurnNumber: 4,
+            previousDateLabel: "Turn 3 date",
             previousTurnNumber: 3,
           },
           worldId: "world-1",
@@ -41,7 +43,9 @@ describe("endTurnBasicMutationOptions", () => {
     expect(result).toEqual({
       actorId: "user-1",
       transition: {
+        nextDateLabel: "Turn 4 date",
         nextTurnNumber: 4,
+        previousDateLabel: "Turn 3 date",
         previousTurnNumber: 3,
       },
       worldId: "world-1",

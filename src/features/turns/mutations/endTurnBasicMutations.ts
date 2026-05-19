@@ -57,7 +57,9 @@ export type EndTurnBasicInput = {
 export type EndTurnBasicMutationResult = {
   readonly actorId: string;
   readonly transition: {
+    readonly nextDateLabel: string;
     readonly nextTurnNumber: number;
+    readonly previousDateLabel: string;
     readonly previousTurnNumber: number;
   };
   readonly worldId: string;
@@ -267,7 +269,9 @@ function isEndTurnBasicMutationResult(
     isRecord(value) &&
     typeof value.actorId === "string" &&
     isRecord(value.transition) &&
+    typeof value.transition.nextDateLabel === "string" &&
     typeof value.transition.nextTurnNumber === "number" &&
+    typeof value.transition.previousDateLabel === "string" &&
     typeof value.transition.previousTurnNumber === "number" &&
     typeof value.worldId === "string"
   );

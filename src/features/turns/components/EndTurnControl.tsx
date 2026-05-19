@@ -112,9 +112,9 @@ function EndTurnControlContent({
         onSuccess: (result) => {
           setIsConfirming(false);
           setSuccessfulTransition({
-            nextDateLabel,
+            nextDateLabel: result.transition.nextDateLabel,
             nextTurnNumber: result.transition.nextTurnNumber,
-            previousDateLabel: currentDateLabel,
+            previousDateLabel: result.transition.previousDateLabel,
             previousTurnNumber: result.transition.previousTurnNumber,
           });
         },
