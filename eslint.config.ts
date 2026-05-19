@@ -64,6 +64,11 @@ const boundariesConfig = createBoundariesConfig({
         mode: "full",
       },
       {
+        type: "shared-util",
+        pattern: "src/shared/**/*.{ts,tsx}",
+        mode: "full",
+      },
+      {
         type: "test",
         pattern: "src/test/**/*.{ts,tsx}",
         mode: "full",
@@ -80,7 +85,7 @@ const boundariesConfig = createBoundariesConfig({
         rules: [
           {
             from: { type: "bootstrap" },
-            allow: { to: { type: ["lib", "route"] } },
+            allow: { to: { type: ["lib", "shared-util", "route"] } },
           },
           {
             from: { type: "route" },
@@ -93,6 +98,7 @@ const boundariesConfig = createBoundariesConfig({
                   "ui-component",
                   "hook",
                   "lib",
+                  "shared-util",
                   "shared-type",
                 ],
               },
@@ -109,6 +115,7 @@ const boundariesConfig = createBoundariesConfig({
                   "ui-component",
                   "hook",
                   "lib",
+                  "shared-util",
                   "shared-type",
                 ],
               },
@@ -124,6 +131,7 @@ const boundariesConfig = createBoundariesConfig({
                   "ui-component",
                   "hook",
                   "lib",
+                  "shared-util",
                   "shared-type",
                 ],
               },
@@ -138,6 +146,7 @@ const boundariesConfig = createBoundariesConfig({
                   "ui-component",
                   "hook",
                   "lib",
+                  "shared-util",
                   "shared-type",
                 ],
               },
@@ -147,7 +156,7 @@ const boundariesConfig = createBoundariesConfig({
             from: { type: "ui-component" },
             allow: {
               to: {
-                type: ["ui-component", "lib", "shared-type"],
+                type: ["ui-component", "lib", "shared-util", "shared-type"],
               },
             },
           },
@@ -155,7 +164,7 @@ const boundariesConfig = createBoundariesConfig({
             from: { type: "hook" },
             allow: {
               to: {
-                type: ["hook", "lib", "shared-type"],
+                type: ["hook", "lib", "shared-util", "shared-type"],
               },
             },
           },
@@ -163,7 +172,15 @@ const boundariesConfig = createBoundariesConfig({
             from: { type: "lib" },
             allow: {
               to: {
-                type: ["lib", "shared-type"],
+                type: ["lib", "shared-util", "shared-type"],
+              },
+            },
+          },
+          {
+            from: { type: "shared-util" },
+            allow: {
+              to: {
+                type: ["shared-util", "shared-type"],
               },
             },
           },
@@ -731,6 +748,15 @@ export default defineConfig([
     files: ["src/components/ui/**/*.{ts,tsx}", "src/routes/**/*.{ts,tsx}"],
     rules: {
       "react-refresh/only-export-components": "off",
+    },
+  },
+  {
+    // Supabase Edge Functions cannot resolve the @/ Vite alias unless an
+    // explicit import map is configured for the Edge runtime. Parent-relative
+    // imports to src/shared/ are the approved alternative for shared pure logic.
+    files: ["supabase/functions/**/*.ts"],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
   eslintConfigPrettier,
