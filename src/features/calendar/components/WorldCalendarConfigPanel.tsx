@@ -76,6 +76,7 @@ export function WorldCalendarConfigPanel({
 
   return (
     <WorldCalendarConfigPanelContent
+      key={worldId}
       accessContext={accessContext}
       canAdmin={canAdmin}
       initialConfig={calendarQuery.data}
