@@ -649,7 +649,11 @@ function createAuthContextUnavailableResult(): EndTurnBasicAuthorizationResult {
   };
 }
 
-function createTransitionStateUnavailableResult(): EndTurnBasicTransitionInputResult {
+function createTransitionStateUnavailableResult(): {
+  readonly error: EndTurnBasicErrorResponse;
+  readonly ok: false;
+  readonly status: number;
+} {
   return {
     error: createErrorResponse({
       code: "end_turn_state_unavailable",
