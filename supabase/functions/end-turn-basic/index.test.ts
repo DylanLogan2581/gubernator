@@ -21,6 +21,64 @@ afterEach(() => {
 });
 
 describe("handleEndTurnBasicRequest", () => {
+  it("returns a 204 preflight response with CORS headers for OPTIONS", async () => {
+    const response = await handleEndTurnBasicRequest(
+      new Request("http://localhost/end-turn-basic", { method: "OPTIONS" }),
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(response.headers.get("access-control-allow-methods")).toContain(
+      "POST",
+    );
+    expect(response.headers.get("access-control-allow-headers")).toContain(
+      "authorization",
+    );
+  });
+
+  it("includes CORS headers on a successful JSON response", async () => {
+    const response = await handleEndTurnBasicRequest(
+      createJsonRequest({
+        expectedTurnNumber: 3,
+        worldId: "world-1",
+      }),
+      {
+        resolveAuthContext: createResolveAuthContext("user-1"),
+        resolveAuthorization: () => Promise.resolve({ ok: true }),
+        resolveTransitionInput: () =>
+          Promise.resolve(createTransitionInputResult()),
+        persistRunningTransition: () =>
+          Promise.resolve({
+            ok: true,
+            transition: {
+              fromTurnNumber: 3,
+              id: "transition-1",
+              initiatedByUserId: "user-1",
+              startedAt: "2026-05-03T10:00:00.000Z",
+              status: "completed",
+              toTurnNumber: 4,
+              worldId: "world-1",
+            },
+          }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+  });
+
+  it("includes CORS headers on an error JSON response", async () => {
+    const response = await handleEndTurnBasicRequest(
+      createJsonRequest({
+        expectedTurnNumber: 3,
+        worldId: "world-1",
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+  });
+
   it("returns a typed error response for an invalid request body", async () => {
     const resolveAuthContext = vi.fn<
       () => Promise<EndTurnBasicAuthContextResult>

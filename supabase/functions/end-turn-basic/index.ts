@@ -147,8 +147,16 @@ export type EndTurnBasicHandlerOptions = {
   ) => Promise<EndTurnBasicPersistRunningTransitionResult>;
 };
 
+const corsHeaders = {
+  "access-control-allow-headers":
+    "authorization, x-client-info, apikey, content-type",
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-origin": "*",
+} as const;
+
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
+  ...corsHeaders,
 } as const;
 
 const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
@@ -168,6 +176,10 @@ export async function handleEndTurnBasicRequest(
   request: Request,
   options: EndTurnBasicHandlerOptions = {},
 ): Promise<Response> {
+  if (request.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders, status: 204 });
+  }
+
   if (request.method !== "POST") {
     return createJsonResponse(
       createErrorResponse({
