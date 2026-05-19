@@ -2,6 +2,45 @@
 -- Run with: npx supabase test db
 begin;
 
+-- Reset fixture rows to their seed state so tests are repeatable regardless of
+-- local DB mutations (e.g. turns already advanced via the app). All changes are
+-- rolled back at the end of this transaction and do not affect the live DB.
+update public.worlds
+set
+  current_turn_number = 0
+where
+  id = '00000000-0000-0000-0000-000000000101';
+
+update public.settlements
+set
+  auto_ready_enabled = false,
+  is_ready_current_turn = true,
+  last_ready_at = '2026-05-03 12:00:00+00',
+  ready_set_at = '2026-05-03 12:00:00+00',
+  ready_set_by_citizen_id = null
+where
+  id = '00000000-0000-0000-0000-000000000301';
+
+update public.settlements
+set
+  auto_ready_enabled = false,
+  is_ready_current_turn = false,
+  last_ready_at = null,
+  ready_set_at = null,
+  ready_set_by_citizen_id = null
+where
+  id = '00000000-0000-0000-0000-000000000302';
+
+update public.settlements
+set
+  auto_ready_enabled = true,
+  is_ready_current_turn = false,
+  last_ready_at = null,
+  ready_set_at = null,
+  ready_set_by_citizen_id = null
+where
+  id = '00000000-0000-0000-0000-000000000303';
+
 select
   plan (13);
 
