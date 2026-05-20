@@ -451,6 +451,24 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
+      set_settlement_auto_ready: {
+        Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
+        Returns: {
+          auto_ready_enabled: boolean;
+          id: string;
+          is_ready_current_turn: boolean;
+          ready_set_at: string;
+        }[];
+      };
+      set_settlement_readiness: {
+        Args: { p_is_ready: boolean; p_settlement_id: string };
+        Returns: {
+          id: string;
+          is_ready_current_turn: boolean;
+          last_ready_at: string;
+          ready_set_at: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

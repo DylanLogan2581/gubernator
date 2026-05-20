@@ -16,10 +16,11 @@ import {
 describe("setSettlementReadinessMutationOptions", () => {
   it("sets one settlement ready and invalidates readiness list and summary queries", async () => {
     const clientFixture = createClient({
-      updateResult: {
+      rpcResult: {
         data: {
           id: "settlement-1",
           is_ready_current_turn: true,
+          last_ready_at: "2026-05-02T12:00:00.000Z",
           ready_set_at: "2026-05-02T12:00:00.000Z",
         },
         error: null,
@@ -56,15 +57,10 @@ describe("setSettlementReadinessMutationOptions", () => {
       "nations.world_id",
       "world-1",
     );
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      is_ready_current_turn: true,
-      last_ready_at: "now",
-      ready_set_at: "now",
+    expect(clientFixture.rpc).toHaveBeenCalledWith("set_settlement_readiness", {
+      p_is_ready: true,
+      p_settlement_id: "settlement-1",
     });
-    expect(clientFixture.updateEq).toHaveBeenCalledWith("id", "settlement-1");
-    expect(clientFixture.updateSelect).toHaveBeenCalledWith(
-      "id,is_ready_current_turn,ready_set_at",
-    );
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["settlements", "readiness", "list", "world-1"],
     });
@@ -75,10 +71,11 @@ describe("setSettlementReadinessMutationOptions", () => {
 
   it("clears one settlement readiness without clearing last readiness history", async () => {
     const clientFixture = createClient({
-      updateResult: {
+      rpcResult: {
         data: {
           id: "settlement-1",
           is_ready_current_turn: false,
+          last_ready_at: "2026-05-02T12:00:00.000Z",
           ready_set_at: null,
         },
         error: null,
@@ -102,9 +99,9 @@ describe("setSettlementReadinessMutationOptions", () => {
       isReadyCurrentTurn: false,
       readySetAt: null,
     });
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      is_ready_current_turn: false,
-      ready_set_at: null,
+    expect(clientFixture.rpc).toHaveBeenCalledWith("set_settlement_readiness", {
+      p_is_ready: false,
+      p_settlement_id: "settlement-1",
     });
   });
 
@@ -144,7 +141,7 @@ describe("setSettlementReadinessMutationOptions", () => {
       settlementId: "settlement-1",
       worldId: "world-1",
     });
-    expect(clientFixture.update).not.toHaveBeenCalled();
+    expect(clientFixture.rpc).not.toHaveBeenCalled();
   });
 
   it("returns an unauthorized error when RLS hides the settlement or world mismatch", async () => {
@@ -170,7 +167,7 @@ describe("setSettlementReadinessMutationOptions", () => {
       settlementId: "settlement-1",
       worldId: "world-1",
     });
-    expect(clientFixture.update).not.toHaveBeenCalled();
+    expect(clientFixture.rpc).not.toHaveBeenCalled();
   });
 
   it("returns an archived-world error before writing", async () => {
@@ -203,7 +200,7 @@ describe("setSettlementReadinessMutationOptions", () => {
       settlementId: "settlement-1",
       worldId: "world-1",
     });
-    expect(clientFixture.update).not.toHaveBeenCalled();
+    expect(clientFixture.rpc).not.toHaveBeenCalled();
   });
 
   it("normalizes Supabase write errors", async () => {
@@ -211,7 +208,7 @@ describe("setSettlementReadinessMutationOptions", () => {
     const options = setSettlementReadinessMutationOptions({
       accessContext: createAdminAccessContext(),
       client: createClient({
-        updateResult: {
+        rpcResult: {
           data: null,
           error: {
             code: "42501",
@@ -235,7 +232,7 @@ describe("setSettlementReadinessMutationOptions", () => {
 describe("setSettlementAutoReadyMutationOptions", () => {
   it("enables auto-ready for a world admin and preserves manual readiness fields", async () => {
     const clientFixture = createClient({
-      updateResult: {
+      rpcResult: {
         data: {
           auto_ready_enabled: true,
           id: "settlement-1",
@@ -269,12 +266,12 @@ describe("setSettlementAutoReadyMutationOptions", () => {
       readySetAt: null,
     });
     expect(options.mutationKey).toEqual(["settlements", "set-auto-ready"]);
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      auto_ready_enabled: true,
-    });
-    expect(clientFixture.updateEq).toHaveBeenCalledWith("id", "settlement-1");
-    expect(clientFixture.updateSelect).toHaveBeenCalledWith(
-      "id,auto_ready_enabled,is_ready_current_turn,ready_set_at",
+    expect(clientFixture.rpc).toHaveBeenCalledWith(
+      "set_settlement_auto_ready",
+      {
+        p_auto_ready_enabled: true,
+        p_settlement_id: "settlement-1",
+      },
     );
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["settlements", "readiness", "list", "world-1"],
@@ -286,7 +283,7 @@ describe("setSettlementAutoReadyMutationOptions", () => {
 
   it("disables auto-ready for a super admin without clearing manual readiness", async () => {
     const clientFixture = createClient({
-      updateResult: {
+      rpcResult: {
         data: {
           auto_ready_enabled: false,
           id: "settlement-1",
@@ -316,9 +313,13 @@ describe("setSettlementAutoReadyMutationOptions", () => {
       isReadyForCurrentTurn: true,
       readySetAt: "2026-05-02T12:00:00.000Z",
     });
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      auto_ready_enabled: false,
-    });
+    expect(clientFixture.rpc).toHaveBeenCalledWith(
+      "set_settlement_auto_ready",
+      {
+        p_auto_ready_enabled: false,
+        p_settlement_id: "settlement-1",
+      },
+    );
   });
 
   it("returns an unauthorized error when a non-admin user toggles auto-ready", async () => {
@@ -357,7 +358,7 @@ describe("setSettlementAutoReadyMutationOptions", () => {
       settlementId: "settlement-1",
       worldId: "world-1",
     });
-    expect(clientFixture.update).not.toHaveBeenCalled();
+    expect(clientFixture.rpc).not.toHaveBeenCalled();
   });
 
   it("returns an archived-world error before toggling auto-ready", async () => {
@@ -390,7 +391,7 @@ describe("setSettlementAutoReadyMutationOptions", () => {
       settlementId: "settlement-1",
       worldId: "world-1",
     });
-    expect(clientFixture.update).not.toHaveBeenCalled();
+    expect(clientFixture.rpc).not.toHaveBeenCalled();
   });
 });
 
@@ -430,6 +431,7 @@ type SettlementReadinessWorldAccessRow = {
 type SettlementReadinessUpdateRow = {
   readonly id: string;
   readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly ready_set_at: string | null;
 };
 type SettlementAutoReadyUpdateRow = {
@@ -447,46 +449,41 @@ function createClient({
     data: createAccessRow(),
     error: null,
   },
-  updateResult = {
+  rpcResult = {
     data: {
       id: "settlement-1",
       is_ready_current_turn: true,
+      last_ready_at: "2026-05-02T12:00:00.000Z",
       ready_set_at: "2026-05-02T12:00:00.000Z",
     },
     error: null,
   },
 }: {
   readonly readResult?: SupabaseResult<SettlementReadinessAccessRow>;
-  readonly updateResult?: SupabaseResult<SettlementUpdateRow>;
+  readonly rpcResult?: SupabaseResult<SettlementUpdateRow>;
 } = {}): {
   readonly client: GubernatorSupabaseClient;
   readonly from: ReturnType<typeof vi.fn>;
   readonly readEqId: ReturnType<typeof vi.fn>;
   readonly readEqWorldId: ReturnType<typeof vi.fn>;
   readonly readSelect: ReturnType<typeof vi.fn>;
-  readonly update: ReturnType<typeof vi.fn>;
-  readonly updateEq: ReturnType<typeof vi.fn>;
-  readonly updateSelect: ReturnType<typeof vi.fn>;
+  readonly rpc: ReturnType<typeof vi.fn>;
 } {
   const readMaybeSingle = vi.fn().mockResolvedValue(readResult);
   const readEqWorldId = vi.fn(() => ({ maybeSingle: readMaybeSingle }));
   const readEqId = vi.fn(() => ({ eq: readEqWorldId }));
   const readSelect = vi.fn(() => ({ eq: readEqId }));
-  const updateMaybeSingle = vi.fn().mockResolvedValue(updateResult);
-  const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
-  const updateEq = vi.fn(() => ({ select: updateSelect }));
-  const update = vi.fn(() => ({ eq: updateEq }));
-  const from = vi.fn(() => ({ select: readSelect, update }));
+  const from = vi.fn(() => ({ select: readSelect }));
+  const rpcMaybeSingle = vi.fn().mockResolvedValue(rpcResult);
+  const rpc = vi.fn(() => ({ maybeSingle: rpcMaybeSingle }));
 
   return {
-    client: { from } as unknown as GubernatorSupabaseClient,
+    client: { from, rpc } as unknown as GubernatorSupabaseClient,
     from,
     readEqId,
     readEqWorldId,
     readSelect,
-    update,
-    updateEq,
-    updateSelect,
+    rpc,
   };
 }
 

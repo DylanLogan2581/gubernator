@@ -142,12 +142,13 @@ describe("SettlementReadinessListPanel", () => {
       "nations.world_id",
       "world-1",
     );
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      is_ready_current_turn: true,
-      last_ready_at: "now",
-      ready_set_at: "now",
-    });
-    expect(clientFixture.updateEq).toHaveBeenCalledWith("id", "settlement-1");
+    expect(clientFixture.update).toHaveBeenCalledWith(
+      "set_settlement_readiness",
+      {
+        p_is_ready: true,
+        p_settlement_id: "settlement-1",
+      },
+    );
   });
 
   it("clears manual readiness through the readiness mutation", async () => {
@@ -180,10 +181,13 @@ describe("SettlementReadinessListPanel", () => {
       }),
     );
 
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      is_ready_current_turn: false,
-      ready_set_at: null,
-    });
+    expect(clientFixture.update).toHaveBeenCalledWith(
+      "set_settlement_readiness",
+      {
+        p_is_ready: false,
+        p_settlement_id: "settlement-1",
+      },
+    );
   });
 
   it("disables manual readiness for archived worlds", async () => {
@@ -407,11 +411,13 @@ describe("SettlementReadinessListPanel", () => {
 
     await user.click(await screen.findByRole("switch", { name: "Not ready" }));
 
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      is_ready_current_turn: true,
-      last_ready_at: "now",
-      ready_set_at: "now",
-    });
+    expect(clientFixture.update).toHaveBeenCalledWith(
+      "set_settlement_readiness",
+      {
+        p_is_ready: true,
+        p_settlement_id: "settlement-1",
+      },
+    );
     expect(screen.queryByRole("switch", { name: "Auto-ready" })).toBeNull();
   });
 
@@ -484,10 +490,13 @@ describe("SettlementReadinessListPanel", () => {
       "nations.world_id",
       "world-1",
     );
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      auto_ready_enabled: true,
-    });
-    expect(clientFixture.updateEq).toHaveBeenCalledWith("id", "settlement-1");
+    expect(clientFixture.update).toHaveBeenCalledWith(
+      "set_settlement_auto_ready",
+      {
+        p_auto_ready_enabled: true,
+        p_settlement_id: "settlement-1",
+      },
+    );
   });
 
   it("disables auto-ready through the auto-ready mutation", async () => {
@@ -522,9 +531,13 @@ describe("SettlementReadinessListPanel", () => {
       }),
     );
 
-    expect(clientFixture.update).toHaveBeenCalledWith({
-      auto_ready_enabled: false,
-    });
+    expect(clientFixture.update).toHaveBeenCalledWith(
+      "set_settlement_auto_ready",
+      {
+        p_auto_ready_enabled: false,
+        p_settlement_id: "settlement-1",
+      },
+    );
   });
 
   it("renders mutation errors as accessible alert text", async () => {
@@ -690,6 +703,8 @@ function createClientFixture({
     rows: settlementRows,
     updateResult,
   });
+  const rpcMaybeSingle = vi.fn().mockResolvedValue(updateResult);
+  const rpc = vi.fn(() => ({ maybeSingle: rpcMaybeSingle }));
   const client = {
     from: vi.fn((table: string) => {
       if (table === "settlements") {
@@ -698,14 +713,15 @@ function createClientFixture({
 
       throw new Error(`Unexpected table ${table}`);
     }),
+    rpc,
   };
 
   return {
     client,
     readEqId: settlementsBuilder.readEqId,
     readEqWorldId: settlementsBuilder.readEqWorldId,
-    update: settlementsBuilder.update,
-    updateEq: settlementsBuilder.updateEq,
+    update: rpc,
+    updateEq: rpc,
   };
 }
 
@@ -732,6 +748,9 @@ function createPendingClientFixture(): unknown {
 
       throw new Error(`Unexpected table ${table}`);
     }),
+    rpc: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    })),
   };
 }
 
