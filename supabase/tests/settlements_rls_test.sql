@@ -363,43 +363,25 @@ select
 select
   lives_ok (
     $test$
-    insert into public.settlements (
-      id,
-      nation_id,
-      name,
-      is_ready_current_turn,
-      last_ready_at,
-      ready_set_at,
-      ready_set_by_citizen_id
-    )
+    insert into public.settlements (id, nation_id, name)
     values (
       '74000000-0000-0000-0000-000000000004',
       '73000000-0000-0000-0000-000000000001',
-      'Owner Manual Ready',
-      true,
-      now(),
-      now(),
-      '75000000-0000-0000-0000-000000000001'
+      'Owner Manual Ready'
     )
   $test$,
-    'owner can insert manually ready settlements in their world'
+    'owner can insert settlements in their world'
   );
 
 select
   ok (
-    exists (
+    (
       select
-        1
+        is_ready_current_turn
       from
-        public.settlements
-      where
-        id = '74000000-0000-0000-0000-000000000004'
-        and is_ready_current_turn = true
-        and last_ready_at is not null
-        and ready_set_at is not null
-        and ready_set_by_citizen_id = '75000000-0000-0000-0000-000000000001'
+        public.set_settlement_readiness ('74000000-0000-0000-0000-000000000004', true)
     ),
-    'manual ready state can be represented on the settlement row'
+    'owner can mark settlement ready via set_settlement_readiness'
   );
 
 select
@@ -448,37 +430,25 @@ select
 select
   lives_ok (
     $test$
-    insert into public.settlements (
-      id,
-      nation_id,
-      name,
-      auto_ready_enabled,
-      is_ready_current_turn
-    )
+    insert into public.settlements (id, nation_id, name)
     values (
       '74000000-0000-0000-0000-000000000005',
       '73000000-0000-0000-0000-000000000001',
-      'Admin Auto Ready',
-      true,
-      true
+      'Admin Auto Ready'
     )
   $test$,
-    'world admin can insert auto-ready settlements in administered world'
+    'world admin can insert settlements in administered world'
   );
 
 select
   ok (
-    exists (
+    (
       select
-        1
+        auto_ready_enabled
       from
-        public.settlements
-      where
-        id = '74000000-0000-0000-0000-000000000005'
-        and auto_ready_enabled = true
-        and is_ready_current_turn = true
+        public.set_settlement_auto_ready ('74000000-0000-0000-0000-000000000005', true)
     ),
-    'auto-ready state can be represented on the settlement row'
+    'world admin can enable auto-ready via set_settlement_auto_ready'
   );
 
 select

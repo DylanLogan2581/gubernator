@@ -46,6 +46,7 @@ type SettlementReadinessWorldAccessRow = {
 type SettlementReadinessUpdateRow = {
   readonly id: string;
   readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly ready_set_at: string | null;
 };
 type SettlementAutoReadyUpdateRow = {
@@ -83,11 +84,6 @@ export type SettlementAutoReadyMutationResult = {
 
 const SETTLEMENT_READINESS_ACCESS_SELECT =
   "id,nations!inner(world_id,worlds!inner(archived_at,id,owner_id,status,visibility))";
-const SETTLEMENT_READINESS_UPDATE_SELECT =
-  "id,is_ready_current_turn,ready_set_at";
-const SETTLEMENT_AUTO_READY_UPDATE_SELECT =
-  "id,auto_ready_enabled,is_ready_current_turn,ready_set_at";
-const POSTGRES_CURRENT_TIMESTAMP_INPUT = "now";
 
 export class SetSettlementReadinessError extends Error {
   readonly code: SetSettlementReadinessErrorCode;
@@ -232,16 +228,10 @@ async function setSettlementReadiness(
   }
 
   const { data, error } = await client
-    .from("settlements")
-    .update({
-      is_ready_current_turn: input.isReady,
-      ...(input.isReady
-        ? { last_ready_at: POSTGRES_CURRENT_TIMESTAMP_INPUT }
-        : {}),
-      ready_set_at: input.isReady ? POSTGRES_CURRENT_TIMESTAMP_INPUT : null,
+    .rpc("set_settlement_readiness", {
+      p_is_ready: input.isReady,
+      p_settlement_id: input.settlementId,
     })
-    .eq("id", input.settlementId)
-    .select(SETTLEMENT_READINESS_UPDATE_SELECT)
     .maybeSingle();
 
   if (error !== null) {
@@ -291,10 +281,10 @@ async function setSettlementAutoReady(
   }
 
   const { data, error } = await client
-    .from("settlements")
-    .update({ auto_ready_enabled: input.autoReadyEnabled })
-    .eq("id", input.settlementId)
-    .select(SETTLEMENT_AUTO_READY_UPDATE_SELECT)
+    .rpc("set_settlement_auto_ready", {
+      p_auto_ready_enabled: input.autoReadyEnabled,
+      p_settlement_id: input.settlementId,
+    })
     .maybeSingle();
 
   if (error !== null) {
