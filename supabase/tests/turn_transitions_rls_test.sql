@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (25);
+  plan (24);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -253,55 +253,37 @@ select
     'outsider cannot insert turn transitions into readable public worlds without admin access'
   );
 
-update public.turn_transitions
-set
-  status = 'failed'
-where
-  id = '83000000-0000-0000-0000-000000000002';
-
-reset role;
-
 select
-  is (
-    (
-      select
-        status
-      from
-        public.turn_transitions
-      where
-        id = '83000000-0000-0000-0000-000000000002'
-    ),
-    'completed',
-    'outsider cannot update public-world turn transitions without admin access'
+  throws_ok (
+    $test$
+    update public.turn_transitions
+    set
+      status = 'failed'
+    where
+      id = '83000000-0000-0000-0000-000000000002'
+  $test$,
+    '42501',
+    null,
+    'outsider cannot update public-world turn transitions'
   );
 
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"81000000-0000-0000-0000-000000000003","role":"authenticated"}';
-
-delete from public.turn_transitions
-where
-  id = '83000000-0000-0000-0000-000000000002';
+select
+  throws_ok (
+    $test$
+    delete from public.turn_transitions
+    where
+      id = '83000000-0000-0000-0000-000000000002'
+  $test$,
+    '42501',
+    null,
+    'outsider cannot delete public-world turn transitions'
+  );
 
 reset role;
-
-select
-  ok (
-    exists (
-      select
-        1
-      from
-        public.turn_transitions
-      where
-        id = '83000000-0000-0000-0000-000000000002'
-    ),
-    'outsider cannot delete public-world turn transitions without admin access'
-  );
 
 -- ===========================================================================
--- OWNER: world owners can manage transitions.
+-- OWNER: world owners can read but no longer write transitions directly.
+-- Writes go through the privileged advance_world_turn_if_current RPC.
 -- ===========================================================================
 set
   local role authenticated;
@@ -323,73 +305,57 @@ select
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.turn_transitions (
       id,
       world_id,
       from_turn_number,
       to_turn_number,
-      initiated_by_user_id,
-      readiness_summary_jsonb,
-      forecast_snapshot_jsonb
+      initiated_by_user_id
     )
     values (
       '83000000-0000-0000-0000-000000000004',
       '82000000-0000-0000-0000-000000000001',
       4,
       5,
-      '81000000-0000-0000-0000-000000000001',
-      '{"readyCount": 2, "totalCount": 3}'::jsonb,
-      '{"nextTurnNumber": 5}'::jsonb
+      '81000000-0000-0000-0000-000000000001'
     )
   $test$,
-    'owner can insert turn transitions in their world'
+    '42501',
+    null,
+    'owner cannot insert turn transitions directly'
   );
 
 select
-  ok (
-    exists (
-      select
-        1
-      from
-        public.turn_transitions
-      where
-        id = '83000000-0000-0000-0000-000000000004'
-        and status = 'running'
-        and started_at is not null
-        and finished_at is null
-        and readiness_summary_jsonb = '{"readyCount": 2, "totalCount": 3}'::jsonb
-        and forecast_snapshot_jsonb = '{"nextTurnNumber": 5}'::jsonb
-    ),
-    'running transition metadata can be stored with nullable completion fields'
-  );
-
-select
-  lives_ok (
+  throws_ok (
     $test$
     update public.turn_transitions
     set
-      status = 'completed',
+      status = 'failed',
       finished_at = now()
-    where id = '83000000-0000-0000-0000-000000000004'
+    where id = '83000000-0000-0000-0000-000000000001'
   $test$,
-    'owner can update turn transitions in their world'
+    '42501',
+    null,
+    'owner cannot update turn transitions directly'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     delete from public.turn_transitions
-    where id = '83000000-0000-0000-0000-000000000004'
+    where id = '83000000-0000-0000-0000-000000000001'
   $test$,
-    'owner can delete turn transitions in their world'
+    '42501',
+    null,
+    'owner cannot delete turn transitions directly'
   );
 
 reset role;
 
 -- ===========================================================================
--- WORLD ADMIN: explicit world admins can manage transitions.
+-- WORLD ADMIN: explicit admins can read transitions but cannot write directly.
 -- ===========================================================================
 set
   local role authenticated;
@@ -411,7 +377,7 @@ select
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.turn_transitions (
       id,
@@ -428,34 +394,41 @@ select
       '81000000-0000-0000-0000-000000000002'
     )
   $test$,
-    'world admin can insert turn transitions in administered world'
+    '42501',
+    null,
+    'world admin cannot insert turn transitions directly'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     update public.turn_transitions
     set
       status = 'failed',
       finished_at = now()
-    where id = '83000000-0000-0000-0000-000000000005'
+    where id = '83000000-0000-0000-0000-000000000001'
   $test$,
-    'world admin can update turn transitions in administered world'
+    '42501',
+    null,
+    'world admin cannot update turn transitions directly'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     delete from public.turn_transitions
-    where id = '83000000-0000-0000-0000-000000000005'
+    where id = '83000000-0000-0000-0000-000000000001'
   $test$,
-    'world admin can delete turn transitions in administered world'
+    '42501',
+    null,
+    'world admin cannot delete turn transitions directly'
   );
 
 reset role;
 
 -- ===========================================================================
--- SUPER ADMIN: can read and manage transitions across worlds.
+-- SUPER ADMIN: can read across worlds but also cannot write transitions
+-- directly. Direct writes are reserved for the SECURITY DEFINER RPC path.
 -- ===========================================================================
 set
   local role authenticated;
@@ -482,7 +455,7 @@ select
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.turn_transitions (
       id,
@@ -499,26 +472,32 @@ select
       '81000000-0000-0000-0000-000000000004'
     )
   $test$,
-    'super admin can insert turn transitions in any world'
+    '42501',
+    null,
+    'super admin cannot insert turn transitions directly'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     update public.turn_transitions
     set status = 'completed'
-    where id = '83000000-0000-0000-0000-000000000006'
+    where id = '83000000-0000-0000-0000-000000000003'
   $test$,
-    'super admin can update turn transitions in any world'
+    '42501',
+    null,
+    'super admin cannot update turn transitions directly'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     delete from public.turn_transitions
-    where id = '83000000-0000-0000-0000-000000000006'
+    where id = '83000000-0000-0000-0000-000000000003'
   $test$,
-    'super admin can delete turn transitions in any world'
+    '42501',
+    null,
+    'super admin cannot delete turn transitions directly'
   );
 
 reset role;

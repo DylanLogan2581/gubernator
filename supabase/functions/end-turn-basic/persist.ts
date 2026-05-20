@@ -54,16 +54,12 @@ export async function persistSupabaseRunningTransition(
   transition: BasicEndTurnTransitionResult,
   authContext: EndTurnBasicAuthContext,
 ): Promise<EndTurnBasicPersistRunningTransitionResult> {
-  const authorizationHeader = authContext.authorizationHeader;
-
-  if (authorizationHeader === undefined) {
-    return createTransitionPersistenceUnavailableResult();
-  }
-
   const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
-  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+  const supabaseServiceRoleKey = getRequiredRuntimeEnv(
+    "SUPABASE_SERVICE_ROLE_KEY",
+  );
 
-  if (supabaseUrl === undefined || supabaseAnonKey === undefined) {
+  if (supabaseUrl === undefined || supabaseServiceRoleKey === undefined) {
     return createTransitionPersistenceUnavailableResult();
   }
 
@@ -75,11 +71,11 @@ export async function persistSupabaseRunningTransition(
   }
 
   const advanceResult = await advanceSupabaseWorldTurn({
-    authorizationHeader,
     expectedTurnNumber: input.expectedCurrentTurnNumber,
+    initiatedByUserId: authContext.userId,
     logPayload: transition.logPayload,
     notificationPayload: transition.notificationPayload,
-    supabaseAnonKey,
+    supabaseServiceRoleKey,
     supabaseUrl,
     worldId: input.worldId,
   });
@@ -95,19 +91,19 @@ export async function persistSupabaseRunningTransition(
 }
 
 async function advanceSupabaseWorldTurn({
-  authorizationHeader,
   expectedTurnNumber,
+  initiatedByUserId,
   logPayload,
   notificationPayload,
-  supabaseAnonKey,
+  supabaseServiceRoleKey,
   supabaseUrl,
   worldId,
 }: {
-  readonly authorizationHeader: string;
   readonly expectedTurnNumber: number;
+  readonly initiatedByUserId: string;
   readonly logPayload: BasicEndTurnTransitionResult["logPayload"];
   readonly notificationPayload: BasicEndTurnTransitionResult["notificationPayload"];
-  readonly supabaseAnonKey: string;
+  readonly supabaseServiceRoleKey: string;
   readonly supabaseUrl: string;
   readonly worldId: string;
 }): Promise<SupabaseRunningTransitionResult> {
@@ -119,13 +115,14 @@ async function advanceSupabaseWorldTurn({
       {
         body: JSON.stringify({
           p_expected_turn_number: expectedTurnNumber,
+          p_initiated_by_user_id: initiatedByUserId,
           p_log_payload_jsonb: logPayload,
           p_notification_payload_jsonb: notificationPayload,
           p_world_id: worldId,
         }),
         headers: {
-          apikey: supabaseAnonKey,
-          authorization: authorizationHeader,
+          apikey: supabaseServiceRoleKey,
+          authorization: `Bearer ${supabaseServiceRoleKey}`,
           "content-type": "application/json",
         },
         method: "POST",

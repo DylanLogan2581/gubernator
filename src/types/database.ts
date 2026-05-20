@@ -429,6 +429,7 @@ export type Database = {
       advance_world_turn_if_current: {
         Args: {
           p_expected_turn_number: number;
+          p_initiated_by_user_id: string;
           p_log_payload_jsonb?: Json;
           p_notification_payload_jsonb?: Json;
           p_world_id: string;
