@@ -183,58 +183,41 @@ set
   local "request.jwt.claims" = '{"sub":"a1000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.notifications (
-      id,
       recipient_user_id,
       world_id,
-      citizen_id,
-      nation_id,
-      settlement_id,
-      event_id,
-      trade_route_id,
       notification_type,
       message_text,
       generated_in_transition_id
     )
     values (
-      'a6000000-0000-0000-0000-000000000001',
       'a1000000-0000-0000-0000-000000000001',
       'a2000000-0000-0000-0000-000000000001',
-      'a7000000-0000-0000-0000-000000000001',
-      'a3000000-0000-0000-0000-000000000001',
-      'a4000000-0000-0000-0000-000000000001',
-      'a8000000-0000-0000-0000-000000000001',
-      'a9000000-0000-0000-0000-000000000001',
       'turn.completed',
-      'Turn 4 completed.',
+      'Forged self notification.',
       'a5000000-0000-0000-0000-000000000001'
     )
   $test$,
-    'recipient can insert a transition-generated notification for an accessible world'
+    '42501',
+    null,
+    'authenticated recipients cannot insert notifications directly'
   );
 
 select
-  ok (
-    exists (
+  is (
+    (
       select
-        1
+        count(*)::integer
       from
         public.notifications
       where
-        id = 'a6000000-0000-0000-0000-000000000001'
-        and recipient_user_id = 'a1000000-0000-0000-0000-000000000001'
+        recipient_user_id = 'a1000000-0000-0000-0000-000000000001'
         and world_id = 'a2000000-0000-0000-0000-000000000001'
-        and nation_id = 'a3000000-0000-0000-0000-000000000001'
-        and settlement_id = 'a4000000-0000-0000-0000-000000000001'
-        and generated_in_transition_id = 'a5000000-0000-0000-0000-000000000001'
-        and notification_type = 'turn.completed'
-        and message_text = 'Turn 4 completed.'
-        and is_read = false
-        and generated_at is not null
     ),
-    'recipient can read the inserted notification with defaults and transition reference'
+    0,
+    'direct authenticated insert leaves no notification rows behind'
   );
 
 reset role;
@@ -422,12 +405,9 @@ reset role;
 -- ===========================================================================
 -- CONSTRAINTS
 -- ===========================================================================
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"a1000000-0000-0000-0000-000000000001","role":"authenticated"}';
-
+-- Authenticated callers can no longer insert notifications directly, so the
+-- DB-level CHECK constraints are exercised as the table owner — the same
+-- effective role used by the SECURITY DEFINER turn-advancement RPC.
 select
   throws_ok (
     $test$
@@ -486,13 +466,13 @@ select
     values (
       'a1000000-0000-0000-0000-000000000001',
       'a2000000-0000-0000-0000-000000000001',
-      '',
-      'Missing notification type.'
+      'world.unannounced',
+      'Unknown notification type.'
     )
   $test$,
     '23514',
     null,
-    'notifications require a non-empty notification_type'
+    'notification_type is constrained to the system allowlist'
   );
 
 select
@@ -515,7 +495,5 @@ select
     null,
     'notifications require non-empty message_text'
   );
-
-reset role;
 
 rollback;
