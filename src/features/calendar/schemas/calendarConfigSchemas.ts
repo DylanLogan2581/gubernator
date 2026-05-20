@@ -1,23 +1,30 @@
 import { z } from "zod";
 
+import { calendarInputLimits } from "@/lib/inputLimits";
+
 const nonnegativeIntegerSchema = z.number().int().nonnegative();
 const positiveIntegerSchema = z.number().int().positive();
-const namedCalendarItemNameSchema = z
-  .string()
-  .refine((value): boolean => value.trim().length > 0, "Name is required.");
+const namedCalendarItemNameSchema = (maxLength: number): z.ZodString =>
+  z
+    .string()
+    .max(maxLength, "Name is too long.")
+    .refine((value): boolean => value.trim().length > 0, "Name is required.");
 const dateFormatTokenPattern = /\{(?:weekday|month|day|year)\}/;
 const unsupportedDateFormatTokenPattern =
   /\{(?!weekday\}|month\}|day\}|year\})[^{}]+\}/;
 
 const calendarWeekdaySchema = z.strictObject({
   index: nonnegativeIntegerSchema,
-  name: namedCalendarItemNameSchema,
+  name: namedCalendarItemNameSchema(calendarInputLimits.weekdayNameMax),
 });
 
 const calendarMonthSchema = z.strictObject({
   index: nonnegativeIntegerSchema,
-  name: namedCalendarItemNameSchema,
-  dayCount: positiveIntegerSchema,
+  name: namedCalendarItemNameSchema(calendarInputLimits.monthNameMax),
+  dayCount: positiveIntegerSchema.max(
+    calendarInputLimits.monthDayCountMax,
+    "Day count is too large.",
+  ),
 });
 
 export const worldCalendarConfigSchema = z.preprocess(
@@ -26,6 +33,10 @@ export const worldCalendarConfigSchema = z.preprocess(
     .strictObject({
       dateFormatTemplate: z
         .string()
+        .max(
+          calendarInputLimits.dateFormatTemplateMax,
+          "Date format template is too long.",
+        )
         .refine(
           (value): boolean => value.trim().length > 0,
           "Date format template is required.",
@@ -40,11 +51,19 @@ export const worldCalendarConfigSchema = z.preprocess(
         ),
       weekdays: z
         .array(calendarWeekdaySchema)
-        .nonempty("Weekdays are required."),
-      months: z.array(calendarMonthSchema).nonempty("Months are required."),
+        .nonempty("Weekdays are required.")
+        .max(calendarInputLimits.weekdayCountMax, "Too many weekdays."),
+      months: z
+        .array(calendarMonthSchema)
+        .nonempty("Months are required.")
+        .max(calendarInputLimits.monthCountMax, "Too many months."),
       startingMonthIndex: nonnegativeIntegerSchema,
       startingDayOfMonth: positiveIntegerSchema,
-      startingYear: z.number().int(),
+      startingYear: z
+        .number()
+        .int()
+        .min(calendarInputLimits.startingYearMin, "Starting year is too low.")
+        .max(calendarInputLimits.startingYearMax, "Starting year is too high."),
       startingWeekdayOffset: nonnegativeIntegerSchema,
     })
     .superRefine((config, context): void => {
