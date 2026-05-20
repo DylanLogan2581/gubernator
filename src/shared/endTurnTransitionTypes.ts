@@ -8,7 +8,7 @@
 import type {
   TurnCalendarConfig,
   TurnCalendarDate,
-} from "./turnCalendarPrimitives";
+} from "./turnCalendarPrimitives.ts";
 
 export type BasicEndTurnReadinessRow = {
   readonly autoReadyEnabled: boolean;

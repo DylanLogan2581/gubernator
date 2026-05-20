@@ -126,6 +126,16 @@ When schema changes:
 
 Never add an application table without RLS and appropriate policies.
 
+### Shared Modules Used by Edge Functions
+
+Files under `src/shared/` that are imported by Edge Functions must use explicit `.ts` extensions in all their own imports. Deno (which runs the edge runtime) requires them; Vite resolves extension-less imports automatically, so the problem is invisible during local frontend development and only surfaces as a 503 at runtime.
+
+After editing a shared module that an Edge Function imports, you must also clear the Deno module cache — the edge runtime caches the module graph and won't pick up the change on a plain restart:
+
+```bash
+npm run functions:cache-clear
+```
+
 ### Local Auth and Seeded Access
 
 `supabase db reset` applies migrations and then loads `supabase/seed.sql`. The seed creates local-only confirmed email users and private worlds for access testing:
