@@ -235,19 +235,16 @@ select
 reset role;
 
 -- ===========================================================================
--- Regression: advance_world_turn_if_current still works for the owner
--- (SECURITY DEFINER path bypasses column grants).
+-- Regression: advance_world_turn_if_current still advances the world when
+-- called via the privileged (service-role) path with the owner as initiator.
+-- The SECURITY DEFINER path bypasses column grants on public.worlds.
 -- ===========================================================================
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"70000000-0000-0000-0000-000000000001","role":"authenticated"}';
-
 select
-  public.advance_world_turn_if_current ('71000000-0000-0000-0000-000000000001', 0);
-
-reset role;
+  public.advance_world_turn_if_current (
+    '71000000-0000-0000-0000-000000000001',
+    0,
+    '70000000-0000-0000-0000-000000000001'
+  );
 
 select
   is (

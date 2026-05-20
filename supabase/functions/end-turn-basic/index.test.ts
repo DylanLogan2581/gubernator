@@ -431,6 +431,7 @@ describe("persistSupabaseRunningTransition", () => {
       expect.objectContaining({
         body: JSON.stringify({
           p_expected_turn_number: 3,
+          p_initiated_by_user_id: "user-1",
           p_log_payload_jsonb: {
             fromTurnNumber: 3,
             nextDate: {
@@ -466,8 +467,8 @@ describe("persistSupabaseRunningTransition", () => {
           p_world_id: "00000000-0000-0000-0000-000000000001",
         }),
         headers: {
-          apikey: "anon-key",
-          authorization: "Bearer token",
+          apikey: "service-role-key",
+          authorization: "Bearer service-role-key",
           "content-type": "application/json",
         },
         method: "POST",
@@ -579,6 +580,7 @@ describe("persistSupabaseRunningTransition", () => {
       expect.objectContaining({
         body: JSON.stringify({
           p_expected_turn_number: 3,
+          p_initiated_by_user_id: "user-1",
           p_log_payload_jsonb: {
             fromTurnNumber: 3,
             nextDate: {
@@ -1088,6 +1090,10 @@ function stubSupabaseRuntimeFetch(
 
         if (name === "SUPABASE_ANON_KEY") {
           return "anon-key";
+        }
+
+        if (name === "SUPABASE_SERVICE_ROLE_KEY") {
+          return "service-role-key";
         }
 
         return undefined;

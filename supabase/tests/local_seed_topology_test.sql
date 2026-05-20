@@ -171,25 +171,21 @@ select
     'local seed supports readiness summary not-ready counts'
   );
 
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
-
 select
   is (
     (
       select
         count(*)::integer
       from
-        public.advance_world_turn_if_current ('00000000-0000-0000-0000-000000000101', 0)
+        public.advance_world_turn_if_current (
+          '00000000-0000-0000-0000-000000000101',
+          0,
+          '00000000-0000-0000-0000-000000000001'
+        )
     ),
     1,
-    'local seeded world can be advanced by its admin'
+    'local seeded world can be advanced through the privileged RPC by its admin'
   );
-
-reset role;
 
 select
   is (

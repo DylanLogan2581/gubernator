@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (15);
+  plan (14);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -237,24 +237,27 @@ select
     'recipient can read the inserted notification with defaults and transition reference'
   );
 
+reset role;
+
+-- Generate the notification through the privileged path so the visibility
+-- assertions below have data to read.
 select
-  lives_ok (
-    $test$
-    select
-      *
-    from
-      public.advance_world_turn_if_current (
-        'a2000000-0000-0000-0000-000000000001',
-        4,
-        null,
-        '{
-          "notificationType": "turn.completed",
-          "messageText": "World advanced to turn 5."
-        }'::jsonb
-      )
-  $test$,
-    'world owner can generate turn-completed notifications through the narrow RPC'
+  public.advance_world_turn_if_current (
+    'a2000000-0000-0000-0000-000000000001',
+    4,
+    'a1000000-0000-0000-0000-000000000001',
+    null,
+    '{
+      "notificationType": "turn.completed",
+      "messageText": "World advanced to turn 5."
+    }'::jsonb
   );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"a1000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
   ok (

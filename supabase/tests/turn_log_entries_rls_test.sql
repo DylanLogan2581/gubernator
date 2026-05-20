@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (11);
+  plan (10);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -231,7 +231,8 @@ select
 reset role;
 
 -- ===========================================================================
--- OWNER: a basic transition can write and read a log entry.
+-- OWNER: world owners can read existing logs but cannot insert directly.
+-- Writes are reserved for the privileged advance_world_turn_if_current path.
 -- ===========================================================================
 set
   local role authenticated;
@@ -240,7 +241,20 @@ set
   local "request.jwt.claims" = '{"sub":"91000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
-  lives_ok (
+  ok (
+    exists (
+      select
+        1
+      from
+        public.turn_log_entries
+      where
+        id = '96000000-0000-0000-0000-000000000001'
+    ),
+    'owner can read existing turn log entries in their world'
+  );
+
+select
+  throws_ok (
     $test$
     insert into public.turn_log_entries (
       id,
@@ -265,34 +279,15 @@ select
       '{"settlementName":"Turn Log Settlement"}'::jsonb
     )
   $test$,
-    'owner can insert one turn log entry for a transition'
-  );
-
-select
-  ok (
-    exists (
-      select
-        1
-      from
-        public.turn_log_entries
-      where
-        id = '96000000-0000-0000-0000-000000000002'
-        and turn_transition_id = '95000000-0000-0000-0000-000000000001'
-        and world_id = '92000000-0000-0000-0000-000000000001'
-        and nation_id = '93000000-0000-0000-0000-000000000001'
-        and settlement_id = '94000000-0000-0000-0000-000000000001'
-        and citizen_id = '97000000-0000-0000-0000-000000000001'
-        and resource_id = '98000000-0000-0000-0000-000000000001'
-        and log_category = 'settlement.ready_reset'
-        and payload_jsonb = '{"settlementName":"Turn Log Settlement"}'::jsonb
-    ),
-    'owner can read the inserted turn log entry payload and entity references'
+    '42501',
+    null,
+    'owner cannot insert turn log entries directly'
   );
 
 reset role;
 
 -- ===========================================================================
--- WORLD ADMIN: explicit admins can write logs in administered worlds.
+-- WORLD ADMIN: explicit admins also cannot insert turn log entries directly.
 -- ===========================================================================
 set
   local role authenticated;
@@ -301,7 +296,7 @@ set
   local "request.jwt.claims" = '{"sub":"91000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.turn_log_entries (
       id,
@@ -316,27 +311,15 @@ select
       'transition.note'
     )
   $test$,
-    'world admin can insert turn log entries in administered worlds'
-  );
-
-select
-  ok (
-    exists (
-      select
-        1
-      from
-        public.turn_log_entries
-      where
-        id = '96000000-0000-0000-0000-000000000003'
-        and payload_jsonb = '{}'::jsonb
-    ),
-    'turn log entries default to an empty JSON payload'
+    '42501',
+    null,
+    'world admin cannot insert turn log entries directly'
   );
 
 reset role;
 
 -- ===========================================================================
--- SUPER ADMIN: can read and write logs across worlds.
+-- SUPER ADMIN: can read across worlds but cannot insert directly either.
 -- ===========================================================================
 set
   local role authenticated;
@@ -352,18 +335,14 @@ select
       from
         public.turn_log_entries
       where
-        id in (
-          '96000000-0000-0000-0000-000000000001',
-          '96000000-0000-0000-0000-000000000002',
-          '96000000-0000-0000-0000-000000000003'
-        )
+        id = '96000000-0000-0000-0000-000000000001'
     ),
-    3,
+    1,
     'super admin can read turn log entries across worlds'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.turn_log_entries (
       id,
@@ -378,13 +357,15 @@ select
       'transition.reviewed'
     )
   $test$,
-    'super admin can insert turn log entries in any world'
+    '42501',
+    null,
+    'super admin cannot insert turn log entries directly'
   );
 
 reset role;
 
 -- ===========================================================================
--- CONSTRAINTS
+-- CONSTRAINTS (postgres test role bypasses revoke and RLS)
 -- ===========================================================================
 select
   throws_ok (

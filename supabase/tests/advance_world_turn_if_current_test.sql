@@ -1,9 +1,14 @@
 -- pgTAP tests for public.advance_world_turn_if_current().
 -- Run with: npx supabase test db
+--
+-- The RPC is now a service-role-only privileged path. The tests therefore
+-- invoke it from the default (postgres) test role and pass the initiating
+-- user id explicitly. A dedicated test confirms that authenticated browser
+-- sessions cannot execute the function at all.
 begin;
 
 select
-  plan (25);
+  plan (28);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -159,12 +164,6 @@ values
 -- ---------------------------------------------------------------------------
 -- OWNER: matching expected turn advances exactly one turn.
 -- ---------------------------------------------------------------------------
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"89000000-0000-0000-0000-000000000001","role":"authenticated"}';
-
 select
   is (
     (
@@ -174,6 +173,7 @@ select
         public.advance_world_turn_if_current (
           '8a000000-0000-0000-0000-000000000001',
           4,
+          '89000000-0000-0000-0000-000000000001',
           '{
             "fromTurnNumber": 4,
             "toTurnNumber": 5,
@@ -241,7 +241,7 @@ select
         and status = 'completed'
     ),
     1,
-    'matching expected turn records the completed transition'
+    'matching expected turn records the completed transition with the supplied actor'
   );
 
 select
@@ -290,8 +290,6 @@ select
     1,
     'matching expected turn records one basic advancement log payload'
   );
-
-reset role;
 
 select
   is (
@@ -474,7 +472,11 @@ select
       select
         count(*)::integer
       from
-        public.advance_world_turn_if_current ('8a000000-0000-0000-0000-000000000001', 4)
+        public.advance_world_turn_if_current (
+          '8a000000-0000-0000-0000-000000000001',
+          4,
+          '89000000-0000-0000-0000-000000000001'
+        )
     ),
     0,
     'stale expected turn returns no transition'
@@ -510,21 +512,19 @@ select
   );
 
 -- ---------------------------------------------------------------------------
--- WORLD ADMIN: explicit admins may advance through the narrow RPC.
+-- WORLD ADMIN: explicit admins are an accepted initiator.
 -- ---------------------------------------------------------------------------
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"89000000-0000-0000-0000-000000000002","role":"authenticated"}';
-
 select
   is (
     (
       select
         count(*)::integer
       from
-        public.advance_world_turn_if_current ('8a000000-0000-0000-0000-000000000001', 5)
+        public.advance_world_turn_if_current (
+          '8a000000-0000-0000-0000-000000000001',
+          5,
+          '89000000-0000-0000-0000-000000000002'
+        )
     ),
     1,
     'world admin can advance an administered world'
@@ -544,8 +544,6 @@ select
     'world admin advance still increments exactly one turn'
   );
 
-reset role;
-
 -- ---------------------------------------------------------------------------
 -- FORCED FAILURE: transition is marked failed and world state rolls back.
 -- ---------------------------------------------------------------------------
@@ -557,12 +555,6 @@ set
 where
   id = '8c000000-0000-0000-0000-000000000001';
 
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"89000000-0000-0000-0000-000000000001","role":"authenticated"}';
-
 select
   is (
     (
@@ -572,6 +564,7 @@ select
         public.advance_world_turn_if_current (
           '8a000000-0000-0000-0000-000000000001',
           6,
+          '89000000-0000-0000-0000-000000000001',
           null,
           '{
             "notificationType": "turn.completed"
@@ -632,8 +625,6 @@ select
     'forced failure preserves settlement readiness state'
   );
 
-reset role;
-
 -- ---------------------------------------------------------------------------
 -- RUNNING CONFLICT: existing running transitions are reported, not completed.
 -- ---------------------------------------------------------------------------
@@ -656,19 +647,17 @@ values
     'running'
   );
 
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"89000000-0000-0000-0000-000000000001","role":"authenticated"}';
-
 select
   is (
     (
       select
         count(*)::integer
       from
-        public.advance_world_turn_if_current ('8a000000-0000-0000-0000-000000000001', 6) transition_rows
+        public.advance_world_turn_if_current (
+          '8a000000-0000-0000-0000-000000000001',
+          6,
+          '89000000-0000-0000-0000-000000000001'
+        ) transition_rows
       where
         transition_rows.id = '8d000000-0000-0000-0000-000000000099'
         and transition_rows.status = 'running'
@@ -691,30 +680,24 @@ select
     'existing running transition does not advance the world'
   );
 
-reset role;
-
 -- ---------------------------------------------------------------------------
--- OUTSIDER: unauthorized callers cannot advance the world.
+-- OUTSIDER: a non-admin initiator id is rejected by the in-function check.
 -- ---------------------------------------------------------------------------
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"89000000-0000-0000-0000-000000000003","role":"authenticated"}';
-
 select
   is (
     (
       select
         count(*)::integer
       from
-        public.advance_world_turn_if_current ('8a000000-0000-0000-0000-000000000001', 6)
+        public.advance_world_turn_if_current (
+          '8a000000-0000-0000-0000-000000000001',
+          6,
+          '89000000-0000-0000-0000-000000000003'
+        )
     ),
     0,
-    'outsider cannot advance an inaccessible world'
+    'outsider initiator id cannot advance an inaccessible world'
   );
-
-reset role;
 
 select
   is (
@@ -727,7 +710,52 @@ select
         id = '8a000000-0000-0000-0000-000000000001'
     ),
     6,
-    'outsider request does not advance the world'
+    'outsider initiator id does not advance the world'
+  );
+
+-- ---------------------------------------------------------------------------
+-- SUSPENDED INITIATOR: inactive users cannot advance even if they hold an
+-- explicit world_admins row.
+-- ---------------------------------------------------------------------------
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.advance_world_turn_if_current (
+          '8a000000-0000-0000-0000-000000000001',
+          6,
+          '89000000-0000-0000-0000-000000000005'
+        )
+    ),
+    0,
+    'suspended initiator cannot advance the world'
+  );
+
+-- ---------------------------------------------------------------------------
+-- EXECUTE PRIVILEGE: the RPC is only callable by the service role; browser
+-- (authenticated) and anonymous sessions must be denied at the privilege
+-- check layer.
+-- ---------------------------------------------------------------------------
+select
+  ok (
+    not has_function_privilege(
+      'authenticated',
+      'public.advance_world_turn_if_current(uuid, integer, uuid, jsonb, jsonb)',
+      'EXECUTE'
+    ),
+    'authenticated role cannot execute the advance turn rpc'
+  );
+
+select
+  ok (
+    not has_function_privilege(
+      'anon',
+      'public.advance_world_turn_if_current(uuid, integer, uuid, jsonb, jsonb)',
+      'EXECUTE'
+    ),
+    'anon role cannot execute the advance turn rpc'
   );
 
 rollback;
