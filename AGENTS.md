@@ -122,6 +122,8 @@ supabase/
 - One function per `supabase/functions/<function-name>/index.ts`
 - Keep service-role or secret-bearing logic out of the browser app.
 - Validate Edge Function input before privileged work.
+- Always use explicit `.ts` extensions in imports inside Edge Functions and any `src/shared` modules they import. Deno requires them; Vite resolves them automatically, so missing extensions only surface as runtime 503 errors in the edge runtime.
+- After changing a shared module imported by an Edge Function, clear the Deno module cache and restart the edge runtime — otherwise the runtime serves a stale module graph even though the file changed: `npm run functions:cache-clear`
 
 ## Naming
 

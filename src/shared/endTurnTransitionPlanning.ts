@@ -5,14 +5,14 @@
 // here — @/ is a Vite convention that Edge Functions cannot resolve unless an
 // explicit import map is configured for the Edge runtime.
 
-import { resolveTurnCalendarDate } from "./turnCalendarPrimitives";
+import { resolveTurnCalendarDate } from "./turnCalendarPrimitives.ts";
 
 import type {
   BasicEndTurnReadinessRow,
   BasicEndTurnReadinessSummary,
   BasicEndTurnTransitionInput,
   BasicEndTurnTransitionResult,
-} from "./endTurnTransitionTypes";
+} from "./endTurnTransitionTypes.ts";
 
 export type BasicEndTurnTransitionPlanningErrorCode =
   | "end_turn_stale_expected_turn"
