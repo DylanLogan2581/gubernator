@@ -141,10 +141,14 @@ function WorldListItem({
             <h2 className="truncate text-base font-medium">{world.name}</h2>
             <WorldBadge world={world} />
           </div>
-          <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+          <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
             <div>
-              <dt className="font-medium text-foreground">Turn</dt>
-              <dd>{world.currentTurnNumber}</dd>
+              <dt className="font-medium text-foreground">Planning turn</dt>
+              <dd>{world.planningTurnNumber}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">In-world date</dt>
+              <dd>{world.inWorldDateLabel}</dd>
             </div>
             <div>
               <dt className="font-medium text-foreground">Status</dt>

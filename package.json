@@ -9,7 +9,7 @@
     "commitlint": "commitlint --edit",
     "db:types": "sh -c \"printf '/* eslint-disable @typescript-eslint/no-redundant-type-constituents */\\n\\n' > src/types/database.ts && supabase gen types typescript --local --schema public >> src/types/database.ts && prettier --write src/types/database.ts\"",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc -p tsconfig.edge-functions.json && vite build",
     "lint": "npm run lint:eslint && npm run lint:docs && npm run lint:sql",
     "lint:docs": "markdownlint-cli2 \"*.md\" \".github/**/*.md\" \"src/**/*.md\" \"supabase/**/*.md\"",
     "lint:eslint": "eslint .",
@@ -19,6 +19,7 @@
     "release": "node --experimental-strip-types ./scripts/release.ts",
     "release:dry": "node --experimental-strip-types ./scripts/release.ts --dry-run",
     "test": "vitest run --passWithNoTests",
+    "functions:cache-clear": "docker stop supabase_edge_runtime_gubernator && docker run --rm -v supabase_edge_runtime_gubernator:/cache alpine sh -c \"rm -rf /cache/*\" && docker start supabase_edge_runtime_gubernator",
     "test:db": "supabase test db",
     "test:coverage": "vitest run --coverage"
   },

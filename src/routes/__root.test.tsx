@@ -248,6 +248,10 @@ function createClient(
         return createWorldsQueryBuilder();
       }
 
+      if (table === "notifications") {
+        return createNotificationsQueryBuilder();
+      }
+
       throw new Error(`Unexpected table ${table}`);
     }),
   };
@@ -318,6 +322,16 @@ function createWorldsQueryBuilder(): unknown {
   return {
     select: vi.fn(() => ({
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    })),
+  };
+}
+
+function createNotificationsQueryBuilder(): unknown {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+      })),
     })),
   };
 }

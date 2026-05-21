@@ -11,6 +11,303 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      nations: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_hidden: boolean;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_hidden?: boolean;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_hidden?: boolean;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nations_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          citizen_id: string | null;
+          event_id: string | null;
+          generated_at: string;
+          generated_in_transition_id: string | null;
+          id: string;
+          is_read: boolean;
+          message_text: string;
+          nation_id: string | null;
+          notification_type: string;
+          recipient_user_id: string;
+          settlement_id: string | null;
+          trade_route_id: string | null;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id?: string | null;
+          event_id?: string | null;
+          generated_at?: string;
+          generated_in_transition_id?: string | null;
+          id?: string;
+          is_read?: boolean;
+          message_text: string;
+          nation_id?: string | null;
+          notification_type: string;
+          recipient_user_id: string;
+          settlement_id?: string | null;
+          trade_route_id?: string | null;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string | null;
+          event_id?: string | null;
+          generated_at?: string;
+          generated_in_transition_id?: string | null;
+          id?: string;
+          is_read?: boolean;
+          message_text?: string;
+          nation_id?: string | null;
+          notification_type?: string;
+          recipient_user_id?: string;
+          settlement_id?: string | null;
+          trade_route_id?: string | null;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_recipient_user_id_fkey";
+            columns: ["recipient_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_transition_world_fkey";
+            columns: ["generated_in_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "notifications_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      settlements: {
+        Row: {
+          auto_ready_enabled: boolean;
+          coord_x: number | null;
+          coord_z: number | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_ready_current_turn: boolean;
+          last_ready_at: string | null;
+          name: string;
+          nation_id: string;
+          ready_set_at: string | null;
+          ready_set_by_citizen_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          auto_ready_enabled?: boolean;
+          coord_x?: number | null;
+          coord_z?: number | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_ready_current_turn?: boolean;
+          last_ready_at?: string | null;
+          name: string;
+          nation_id: string;
+          ready_set_at?: string | null;
+          ready_set_by_citizen_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          auto_ready_enabled?: boolean;
+          coord_x?: number | null;
+          coord_z?: number | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_ready_current_turn?: boolean;
+          last_ready_at?: string | null;
+          name?: string;
+          nation_id?: string;
+          ready_set_at?: string | null;
+          ready_set_by_citizen_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlements_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      turn_log_entries: {
+        Row: {
+          citizen_id: string | null;
+          id: string;
+          log_category: string;
+          nation_id: string | null;
+          payload_jsonb: Json;
+          resource_id: string | null;
+          settlement_id: string | null;
+          turn_transition_id: string;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id?: string | null;
+          id?: string;
+          log_category: string;
+          nation_id?: string | null;
+          payload_jsonb?: Json;
+          resource_id?: string | null;
+          settlement_id?: string | null;
+          turn_transition_id: string;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string | null;
+          id?: string;
+          log_category?: string;
+          nation_id?: string | null;
+          payload_jsonb?: Json;
+          resource_id?: string | null;
+          settlement_id?: string | null;
+          turn_transition_id?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "turn_log_entries_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "turn_log_entries_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "turn_log_entries_transition_world_fkey";
+            columns: ["turn_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "turn_log_entries_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      turn_transitions: {
+        Row: {
+          finished_at: string | null;
+          forecast_snapshot_jsonb: Json | null;
+          from_turn_number: number;
+          id: string;
+          initiated_by_user_id: string;
+          readiness_summary_jsonb: Json | null;
+          started_at: string;
+          status: string;
+          to_turn_number: number;
+          world_id: string;
+        };
+        Insert: {
+          finished_at?: string | null;
+          forecast_snapshot_jsonb?: Json | null;
+          from_turn_number: number;
+          id?: string;
+          initiated_by_user_id: string;
+          readiness_summary_jsonb?: Json | null;
+          started_at?: string;
+          status?: string;
+          to_turn_number: number;
+          world_id: string;
+        };
+        Update: {
+          finished_at?: string | null;
+          forecast_snapshot_jsonb?: Json | null;
+          from_turn_number?: number;
+          id?: string;
+          initiated_by_user_id?: string;
+          readiness_summary_jsonb?: Json | null;
+          started_at?: string;
+          status?: string;
+          to_turn_number?: number;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "turn_transitions_initiated_by_user_id_fkey";
+            columns: ["initiated_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "turn_transitions_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       users: {
         Row: {
           created_at: string;
@@ -80,6 +377,7 @@ export type Database = {
       worlds: {
         Row: {
           archived_at: string | null;
+          calendar_config_json: Json;
           created_at: string;
           current_turn_number: number;
           id: string;
@@ -91,6 +389,7 @@ export type Database = {
         };
         Insert: {
           archived_at?: string | null;
+          calendar_config_json?: Json;
           created_at?: string;
           current_turn_number?: number;
           id?: string;
@@ -102,6 +401,7 @@ export type Database = {
         };
         Update: {
           archived_at?: string | null;
+          calendar_config_json?: Json;
           created_at?: string;
           current_turn_number?: number;
           id?: string;
@@ -126,11 +426,49 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      advance_world_turn_if_current: {
+        Args: {
+          p_expected_turn_number: number;
+          p_initiated_by_user_id: string;
+          p_log_payload_jsonb?: Json;
+          p_notification_payload_jsonb?: Json;
+          p_world_id: string;
+        };
+        Returns: {
+          from_turn_number: number;
+          id: string;
+          initiated_by_user_id: string;
+          started_at: string;
+          status: string;
+          to_turn_number: number;
+          world_id: string;
+        }[];
+      };
       current_app_user_id: { Args: never; Returns: string };
+      default_calendar_config: { Args: never; Returns: Json };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       is_active_app_user: { Args: never; Returns: boolean };
       is_super_admin: { Args: never; Returns: boolean };
+      is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
+      set_settlement_auto_ready: {
+        Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
+        Returns: {
+          auto_ready_enabled: boolean;
+          id: string;
+          is_ready_current_turn: boolean;
+          ready_set_at: string;
+        }[];
+      };
+      set_settlement_readiness: {
+        Args: { p_is_ready: boolean; p_settlement_id: string };
+        Returns: {
+          id: string;
+          is_ready_current_turn: boolean;
+          last_ready_at: string;
+          ready_set_at: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

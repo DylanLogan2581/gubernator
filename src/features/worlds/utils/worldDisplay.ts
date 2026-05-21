@@ -1,9 +1,16 @@
+import {
+  formatCalendarDate,
+  resolveTurnCalendarDate,
+  worldCalendarConfigSchema,
+} from "@/features/calendar";
 import type { Tables } from "@/types/database";
 
 import type {
   AccessibleWorld,
   WorldPermissionContext,
 } from "../types/worldTypes";
+
+const FALLBACK_IN_WORLD_DATE_LABEL = "Calendar unavailable";
 
 type WorldRow = Pick<
   Tables<"worlds">,
@@ -16,7 +23,9 @@ type WorldRow = Pick<
   | "status"
   | "updated_at"
   | "visibility"
->;
+> & {
+  readonly calendar_config_json?: Tables<"worlds">["calendar_config_json"];
+};
 
 export function toAccessibleWorld(
   world: WorldRow,
@@ -27,6 +36,13 @@ export function toAccessibleWorld(
     ownerId: world.owner_id,
     visibility: world.visibility,
   };
+  const planningTurnNumber = resolvePlanningTurnNumber(
+    world.current_turn_number,
+  );
+  const nextTurnNumber = resolveNextTurnNumber(world.current_turn_number);
+  const nextPlanningTurnNumber = resolveNextPlanningTurnNumber(
+    world.current_turn_number,
+  );
 
   return {
     archivedAt: world.archived_at,
@@ -36,10 +52,28 @@ export function toAccessibleWorld(
     createdAt: world.created_at,
     currentTurnNumber: world.current_turn_number,
     id: world.id,
+    inWorldDateLabel: resolveInWorldDateLabel(
+      world.calendar_config_json,
+      planningTurnNumber,
+    ),
+    fullInWorldDateLabel: resolveInWorldDateLabel(
+      world.calendar_config_json,
+      planningTurnNumber,
+    ),
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
     name: world.name,
+    nextFullInWorldDateLabel: resolveInWorldDateLabel(
+      world.calendar_config_json,
+      nextPlanningTurnNumber,
+    ),
+    nextInWorldDateLabel: resolveInWorldDateLabel(
+      world.calendar_config_json,
+      nextPlanningTurnNumber,
+    ),
+    nextTurnNumber,
     ownerId: world.owner_id,
+    planningTurnNumber,
     slug: createWorldSlug(world.name, world.id),
     status: world.status,
     updatedAt: world.updated_at,
@@ -56,4 +90,48 @@ export function createWorldSlug(name: string, id: string): string {
   const slugBase = normalizedName === "" ? "world" : normalizedName;
 
   return `${slugBase}-${normalizedId}`;
+}
+
+function resolvePlanningTurnNumber(currentTurnNumber: number): number {
+  if (!Number.isInteger(currentTurnNumber) || currentTurnNumber < 0) {
+    return 1;
+  }
+
+  return Math.max(1, currentTurnNumber);
+}
+
+function resolveNextTurnNumber(currentTurnNumber: number): number {
+  if (!Number.isInteger(currentTurnNumber) || currentTurnNumber < 0) {
+    return 2;
+  }
+
+  return currentTurnNumber + 1;
+}
+
+function resolveNextPlanningTurnNumber(currentTurnNumber: number): number {
+  return resolvePlanningTurnNumber(currentTurnNumber) + 1;
+}
+
+function resolveInWorldDateLabel(
+  calendarConfigJson: WorldRow["calendar_config_json"] | undefined,
+  planningTurnNumber: number,
+): string {
+  const parseResult = worldCalendarConfigSchema.safeParse(calendarConfigJson);
+
+  if (!parseResult.success) {
+    return FALLBACK_IN_WORLD_DATE_LABEL;
+  }
+
+  const calendarConfig = parseResult.data;
+
+  try {
+    return formatCalendarDate(
+      resolveTurnCalendarDate(calendarConfig, planningTurnNumber),
+      {
+        dateFormatTemplate: calendarConfig.dateFormatTemplate,
+      },
+    );
+  } catch {
+    return FALLBACK_IN_WORLD_DATE_LABEL;
+  }
 }

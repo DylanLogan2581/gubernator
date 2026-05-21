@@ -3,18 +3,26 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 export const authStateQueryCacheKeys = {
   authAll: ["auth"] as const,
+  calendarAll: ["calendar"] as const,
   currentAppUser: () =>
     [...authStateQueryCacheKeys.authAll, "current-app-user"] as const,
   currentSession: () =>
     [...authStateQueryCacheKeys.authAll, "current-session"] as const,
+  notificationsAll: ["notifications"] as const,
   permissionsAll: ["permissions"] as const,
+  settlementsAll: ["settlements"] as const,
+  turnsAll: ["turns"] as const,
   worldAccessAll: ["world-access"] as const,
   worldsAll: ["worlds"] as const,
 } as const;
 
 const authDependentQueryKeys = [
   authStateQueryCacheKeys.currentAppUser(),
+  authStateQueryCacheKeys.calendarAll,
+  authStateQueryCacheKeys.notificationsAll,
   authStateQueryCacheKeys.permissionsAll,
+  authStateQueryCacheKeys.settlementsAll,
+  authStateQueryCacheKeys.turnsAll,
   authStateQueryCacheKeys.worldAccessAll,
   authStateQueryCacheKeys.worldsAll,
 ] as const satisfies readonly QueryKey[];

@@ -1,0 +1,259 @@
+-- pgTAP tests for local Epic 2 seed topology.
+-- Run with: npx supabase test db
+begin;
+
+-- Reset fixture rows to their seed state so tests are repeatable regardless of
+-- local DB mutations (e.g. turns already advanced via the app). All changes are
+-- rolled back at the end of this transaction and do not affect the live DB.
+update public.worlds
+set
+  current_turn_number = 0
+where
+  id = '00000000-0000-0000-0000-000000000101';
+
+update public.settlements
+set
+  auto_ready_enabled = false,
+  is_ready_current_turn = true,
+  last_ready_at = '2026-05-03 12:00:00+00',
+  ready_set_at = '2026-05-03 12:00:00+00',
+  ready_set_by_citizen_id = null
+where
+  id = '00000000-0000-0000-0000-000000000301';
+
+update public.settlements
+set
+  auto_ready_enabled = false,
+  is_ready_current_turn = false,
+  last_ready_at = null,
+  ready_set_at = null,
+  ready_set_by_citizen_id = null
+where
+  id = '00000000-0000-0000-0000-000000000302';
+
+update public.settlements
+set
+  auto_ready_enabled = true,
+  is_ready_current_turn = false,
+  last_ready_at = null,
+  ready_set_at = null,
+  ready_set_by_citizen_id = null
+where
+  id = '00000000-0000-0000-0000-000000000303';
+
+select
+  plan (13);
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = '00000000-0000-0000-0000-000000000101'
+        and public.is_valid_calendar_config (calendar_config_json)
+    ),
+    'local seed includes a valid world calendar config'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.nations
+      where
+        id = '00000000-0000-0000-0000-000000000201'
+        and world_id = '00000000-0000-0000-0000-000000000101'
+    ),
+    1,
+    'local seed includes a nation for the local development world'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '00000000-0000-0000-0000-000000000201'
+    ),
+    3,
+    'local seed includes settlements under the seeded nation'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '00000000-0000-0000-0000-000000000201'
+        and auto_ready_enabled = false
+        and is_ready_current_turn = true
+    ),
+    1,
+    'local seed includes a manually ready settlement'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '00000000-0000-0000-0000-000000000201'
+        and auto_ready_enabled = false
+        and is_ready_current_turn = false
+    ),
+    1,
+    'local seed includes a not-ready settlement'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '00000000-0000-0000-0000-000000000201'
+        and auto_ready_enabled = true
+        and is_ready_current_turn = false
+    ),
+    1,
+    'local seed includes an auto-ready settlement'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '00000000-0000-0000-0000-000000000201'
+        and (
+          auto_ready_enabled
+          or is_ready_current_turn
+        )
+    ),
+    2,
+    'local seed supports readiness summary ready counts'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '00000000-0000-0000-0000-000000000201'
+        and not (
+          auto_ready_enabled
+          or is_ready_current_turn
+        )
+    ),
+    1,
+    'local seed supports readiness summary not-ready counts'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.advance_world_turn_if_current (
+          '00000000-0000-0000-0000-000000000101',
+          0,
+          '00000000-0000-0000-0000-000000000001'
+        )
+    ),
+    1,
+    'local seeded world can be advanced through the privileged RPC by its admin'
+  );
+
+select
+  is (
+    (
+      select
+        current_turn_number
+      from
+        public.worlds
+      where
+        id = '00000000-0000-0000-0000-000000000101'
+    ),
+    1,
+    'local seeded world advances exactly one turn'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '00000000-0000-0000-0000-000000000201'
+        and auto_ready_enabled = false
+        and is_ready_current_turn = false
+        and ready_set_at is null
+    ),
+    2,
+    'end-turn reset clears manual readiness for seeded settlements'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.settlements
+      where
+        id = '00000000-0000-0000-0000-000000000301'
+        and is_ready_current_turn = false
+        and ready_set_at is null
+        and last_ready_at = '2026-05-03 12:00:00+00'::timestamptz
+    ),
+    'end-turn reset preserves seeded manual readiness history'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlements
+      where
+        nation_id = '00000000-0000-0000-0000-000000000201'
+        and auto_ready_enabled = true
+        and is_ready_current_turn = true
+        and ready_set_at is null
+    ),
+    1,
+    'end-turn reset reapplies auto-readiness for seeded settlements'
+  );
+
+select
+  *
+from
+  finish ();
+
+rollback;

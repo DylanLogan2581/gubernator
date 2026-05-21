@@ -88,8 +88,24 @@ function seedAuthDependentQueries(queryClient: QueryClient): void {
     id: "user-1",
   });
   queryClient.setQueryData(
+    [
+      ...authStateQueryCacheKeys.calendarAll,
+      "world-calendar-config",
+      "world-1",
+    ],
+    { epoch: { day: 1 } },
+  );
+  queryClient.setQueryData(
     [...authStateQueryCacheKeys.permissionsAll, "current-access-context"],
     { userId: "user-1" },
+  );
+  queryClient.setQueryData(
+    [...authStateQueryCacheKeys.notificationsAll, "unread-count", "user-1"],
+    2,
+  );
+  queryClient.setQueryData(
+    [...authStateQueryCacheKeys.settlementsAll, "readiness", "list", "world-1"],
+    [{ id: "settlement-1" }],
   );
   queryClient.setQueryData(
     [
@@ -109,7 +125,12 @@ function expectAuthDependentQueriesToBeCleared(queryClient: QueryClient): void {
   expect(
     queryClient.getQueryData(authStateQueryCacheKeys.currentAppUser()),
   ).toBeUndefined();
+  expect(queryClient.getQueriesData({ queryKey: ["calendar"] })).toEqual([]);
+  expect(queryClient.getQueriesData({ queryKey: ["notifications"] })).toEqual(
+    [],
+  );
   expect(queryClient.getQueriesData({ queryKey: ["permissions"] })).toEqual([]);
+  expect(queryClient.getQueriesData({ queryKey: ["settlements"] })).toEqual([]);
   expect(queryClient.getQueriesData({ queryKey: ["world-access"] })).toEqual(
     [],
   );
