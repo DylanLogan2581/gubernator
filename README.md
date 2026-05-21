@@ -166,3 +166,39 @@ If you changed schema, also confirm:
 - generated database types were updated if the project uses them
 
 `npm run test:db` runs Supabase pgTAP tests under `supabase/tests`. These tests cover auth user synchronization, permission helpers, RLS behavior for anonymous/authenticated/world-owner/world-admin/super-admin sessions, denied private world access, restricted write paths, and super-admin elevation guards.
+
+## Production Security Headers
+
+Gubernator is a Vite/React SPA that talks to Supabase from the browser. A successful script injection would have access to the user's authenticated Supabase session, so production deployments **must** send a defense-in-depth header set. This repository does not ship a deployment-platform config (no `vercel.json`, `netlify.toml`, `_headers`, or Cloudflare/NGINX rules), so the operator must configure these headers on whichever host serves the built `dist/` assets.
+
+Headers should be applied to **every** response — `index.html`, hashed JS/CSS bundles, and static assets in `public/`. They are not needed on the Vite dev server (`npm run dev`) and should not be baked into `index.html` via `<meta http-equiv>` (several directives, including `frame-ancestors`, are ignored when delivered that way).
+
+### Required headers
+
+Replace `https://YOUR-PROJECT.supabase.co` with the value of `VITE_SUPABASE_URL` configured for the deployment. Include the matching `wss://` origin so Supabase Realtime can connect.
+
+```http
+Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://YOUR-PROJECT.supabase.co wss://YOUR-PROJECT.supabase.co; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: accelerometer=(), autoplay=(), camera=(), clipboard-read=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), xr-spatial-tracking=()
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+```
+
+Notes on the CSP:
+
+- `default-src 'none'` is the fallback; every other directive is explicit.
+- `script-src 'self'` only — Vite emits hashed bundles and `index.html` contains no inline scripts. If a future change adds inline scripts, prefer nonces/hashes over `'unsafe-inline'`.
+- `style-src 'self' 'unsafe-inline'` is required because Radix/shadcn components inject inline styles at runtime (for positioning, animation, etc.). Tighten to nonce-based later if a CSP-aware Radix release lands.
+- `img-src 'self' data:` covers app icons and small data-URL images used by some UI primitives.
+- `connect-src` must list both the `https://` and `wss://` Supabase origins so REST, Auth, and Realtime channels succeed.
+- `frame-ancestors 'none'` (plus `object-src 'none'` and `base-uri 'self'`) blocks clickjacking, plugin embedding, and `<base>` tag hijacking. There is no embedding use case for Gubernator today.
+- `Strict-Transport-Security` should only be sent over HTTPS; omit on plain-HTTP staging environments.
+
+### Validating in production
+
+1. Build and serve a production-like bundle (`npm run build && npm run preview`, or the host's preview/staging deploy).
+2. From DevTools → Network, inspect the response headers on `/` and on a hashed asset (e.g. `/assets/index-*.js`). Confirm every header above is present and identical across HTML and assets.
+3. Cross-check with an external scanner such as `curl -sI https://your-deployment/ | grep -iE 'content-security|x-content|referrer|permissions|strict-transport'` or <https://securityheaders.com>.
+4. Exercise the app end-to-end while watching the browser console for CSP violation reports — failed font/script/connect loads will be reported there. Pay particular attention to Supabase Auth flows (sign-in, recovery) and Realtime subscriptions.
+5. Confirm the headers are **not** applied by the Vite dev server: `npm run dev` should continue to work without CSP relaxations, since dev relies on inline scripts and websocket HMR that this policy would block.
