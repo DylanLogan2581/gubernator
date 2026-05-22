@@ -27,6 +27,10 @@ export {
   unlinkUserFromCitizenMutationOptions,
 } from "./mutations/playerCharacterRoleMutations";
 export {
+  assignmentsInSettlementQueryOptions,
+  currentAssignmentForCitizenQueryOptions,
+} from "./queries/citizenAssignmentsQueries";
+export {
   citizenAggregateStatsForNationQueryOptions,
   citizenAggregateStatsForSettlementQueryOptions,
   citizenByIdQueryOptions,
@@ -94,6 +98,7 @@ export type {
   ReassignPartnerInput,
   ReassignPartnerValues,
 } from "./schemas/partnershipSchemas";
+export type { CitizenAssignment } from "./types/citizenAssignmentTypes";
 export type {
   Citizen,
   CitizenAggregateStats,
