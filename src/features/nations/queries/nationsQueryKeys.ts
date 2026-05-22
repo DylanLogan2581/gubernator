@@ -1,0 +1,11 @@
+import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
+
+export const nationsQueryKeys = {
+  all: authStateQueryCacheKeys.nationsAll,
+  detail: (nationId: string) =>
+    [...nationsQueryKeys.all, "detail", nationId] as const,
+  list: (worldId: string) =>
+    [...nationsQueryKeys.all, "list", worldId] as const,
+  settlements: (nationId: string) =>
+    [...nationsQueryKeys.all, "settlements", nationId] as const,
+} as const;

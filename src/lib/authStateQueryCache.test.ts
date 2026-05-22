@@ -100,6 +100,10 @@ function seedAuthDependentQueries(queryClient: QueryClient): void {
     { userId: "user-1" },
   );
   queryClient.setQueryData(
+    [...authStateQueryCacheKeys.nationsAll, "list", "world-1"],
+    [{ id: "nation-1" }],
+  );
+  queryClient.setQueryData(
     [...authStateQueryCacheKeys.notificationsAll, "unread-count", "user-1"],
     2,
   );
@@ -126,6 +130,7 @@ function expectAuthDependentQueriesToBeCleared(queryClient: QueryClient): void {
     queryClient.getQueryData(authStateQueryCacheKeys.currentAppUser()),
   ).toBeUndefined();
   expect(queryClient.getQueriesData({ queryKey: ["calendar"] })).toEqual([]);
+  expect(queryClient.getQueriesData({ queryKey: ["nations"] })).toEqual([]);
   expect(queryClient.getQueriesData({ queryKey: ["notifications"] })).toEqual(
     [],
   );
