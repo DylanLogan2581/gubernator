@@ -11,6 +11,14 @@ export {
   updateCitizenNpcFieldsMutationOptions,
 } from "./mutations/citizensMutations";
 export {
+  createPartnershipMutationOptions,
+  dissolvePartnershipMutationOptions,
+  isPartnershipMutationError,
+  markPartnershipWidowedMutationOptions,
+  PartnershipMutationError,
+  reassignPartnerMutationOptions,
+} from "./mutations/partnershipsMutations";
+export {
   assignCitizenRoleMutationOptions,
   isPlayerCharacterRoleMutationError,
   linkUserToCitizenMutationOptions,
@@ -26,6 +34,10 @@ export {
 } from "./queries/citizensQueries";
 export { citizensQueryKeys } from "./queries/citizensQueryKeys";
 export {
+  activePartnershipForCitizenQueryOptions,
+  partnershipsForCitizenQueryOptions,
+} from "./queries/partnershipsQueries";
+export {
   assignCitizenRoleInputSchema,
   citizenRoleAssignmentSchema,
   createNpcInputSchema,
@@ -38,8 +50,15 @@ export {
   updateCitizenCoreInputSchema,
   updateCitizenNpcFieldsInputSchema,
 } from "./schemas/citizenSchemas";
+export {
+  createPartnershipInputSchema,
+  dissolvePartnershipInputSchema,
+  markPartnershipWidowedInputSchema,
+  reassignPartnerInputSchema,
+} from "./schemas/partnershipSchemas";
 
 export type { CitizenMutationIssue } from "./mutations/citizensMutations";
+export type { PartnershipMutationIssue } from "./mutations/partnershipsMutations";
 export type { PlayerCharacterRoleMutationIssue } from "./mutations/playerCharacterRoleMutations";
 export type {
   AssignCitizenRoleInput,
@@ -66,6 +85,16 @@ export type {
   UpdateCitizenNpcFieldsValues,
 } from "./schemas/citizenSchemas";
 export type {
+  CreatePartnershipInput,
+  CreatePartnershipValues,
+  DissolvePartnershipInput,
+  DissolvePartnershipValues,
+  MarkPartnershipWidowedInput,
+  MarkPartnershipWidowedValues,
+  ReassignPartnerInput,
+  ReassignPartnerValues,
+} from "./schemas/partnershipSchemas";
+export type {
   Citizen,
   CitizenAggregateStats,
   CitizenAssignmentType,
@@ -76,3 +105,4 @@ export type {
   CitizenType,
   CitizenTypeBreakdown,
 } from "./types/citizenTypes";
+export type { Partnership, PartnershipStatus } from "./types/partnershipTypes";

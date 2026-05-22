@@ -812,6 +812,18 @@ export type Database = {
         };
         Returns: boolean;
       };
+      create_partnership: {
+        Args: {
+          p_change_reason: string;
+          p_citizen_a_id: string;
+          p_citizen_b_id: string;
+          p_ended_on_turn_number?: number | null;
+          p_formed_on_turn_number: number;
+          p_status?: string;
+          p_turn_transition_id: string;
+        };
+        Returns: Database["public"]["Tables"]["partnerships"]["Row"][];
+      };
       current_app_user_id: { Args: never; Returns: string };
       current_user_active_player_character_id: {
         Args: { p_world_id: string };
@@ -834,6 +846,26 @@ export type Database = {
         Returns: string[];
       };
       default_calendar_config: { Args: never; Returns: Json };
+      dissolve_partnership: {
+        Args: {
+          p_change_reason: string;
+          p_ended_on_turn_number: number;
+          p_partnership_id: string;
+          p_turn_transition_id: string;
+        };
+        Returns: Database["public"]["Tables"]["partnerships"]["Row"][];
+      };
+      end_partnership_internal: {
+        Args: {
+          p_change_reason: string;
+          p_ended_on_turn_number: number;
+          p_log_category: string;
+          p_partnership_id: string;
+          p_terminal_status: string;
+          p_turn_transition_id: string;
+        };
+        Returns: Database["public"]["Tables"]["partnerships"]["Row"][];
+      };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       is_active_app_user: { Args: never; Returns: boolean };
       is_nation_manager_of: { Args: { p_nation_id: string }; Returns: boolean };
@@ -848,9 +880,34 @@ export type Database = {
         Args: { p_citizen_id: string; p_user_id: string };
         Returns: Database["public"]["Tables"]["citizens"]["Row"][];
       };
+      mark_partnership_widowed: {
+        Args: {
+          p_change_reason: string;
+          p_ended_on_turn_number: number;
+          p_partnership_id: string;
+          p_turn_transition_id: string;
+        };
+        Returns: Database["public"]["Tables"]["partnerships"]["Row"][];
+      };
       nation_visible_to_current_user: {
         Args: { p_nation_id: string };
         Returns: boolean;
+      };
+      partnership_admin_can_write: {
+        Args: { p_citizen_id: string };
+        Returns: boolean;
+      };
+      reassign_partner: {
+        Args: {
+          p_change_reason: string;
+          p_ended_on_turn_number: number;
+          p_formed_on_turn_number: number;
+          p_new_partner_citizen_id: string;
+          p_old_partnership_id: string;
+          p_retained_citizen_id: string;
+          p_turn_transition_id: string;
+        };
+        Returns: Database["public"]["Tables"]["partnerships"]["Row"][];
       };
       revoke_citizen_role: {
         Args: { p_citizen_id: string };
