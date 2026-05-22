@@ -794,6 +794,24 @@ export type Database = {
           world_id: string;
         }[];
       };
+      assign_citizen_role: {
+        Args: {
+          p_citizen_id: string;
+          p_role_nation_id: string | null;
+          p_role_settlement_id: string | null;
+          p_role_type: string;
+        };
+        Returns: Database["public"]["Tables"]["citizens"]["Row"][];
+      };
+      citizen_role_scope_matches: {
+        Args: {
+          p_citizen_settlement_id: string;
+          p_role_nation_id: string | null;
+          p_role_settlement_id: string | null;
+          p_role_type: string;
+        };
+        Returns: boolean;
+      };
       current_app_user_id: { Args: never; Returns: string };
       current_user_active_player_character_id: {
         Args: { p_world_id: string };
@@ -826,9 +844,17 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
+      link_user_to_citizen: {
+        Args: { p_citizen_id: string; p_user_id: string };
+        Returns: Database["public"]["Tables"]["citizens"]["Row"][];
+      };
       nation_visible_to_current_user: {
         Args: { p_nation_id: string };
         Returns: boolean;
+      };
+      revoke_citizen_role: {
+        Args: { p_citizen_id: string };
+        Returns: Database["public"]["Tables"]["citizens"]["Row"][];
       };
       set_settlement_auto_ready: {
         Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
@@ -847,6 +873,10 @@ export type Database = {
           last_ready_at: string;
           ready_set_at: string;
         }[];
+      };
+      unlink_user_from_citizen: {
+        Args: { p_citizen_id: string };
+        Returns: Database["public"]["Tables"]["citizens"]["Row"][];
       };
       user_has_player_character_in_world: {
         Args: { p_world_id: string };
