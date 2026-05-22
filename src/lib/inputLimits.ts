@@ -13,6 +13,7 @@ export const textInputLimits = {
   nationDescriptionMax: 1000,
   settlementNameMax: 64,
   settlementDescriptionMax: 1000,
+  citizenNameMax: 64,
   notificationTypeMax: 32,
   notificationMessageMax: 500,
 } as const;
