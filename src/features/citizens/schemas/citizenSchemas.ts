@@ -115,6 +115,73 @@ export const reviveCitizenInputSchema = z.strictObject({
   worldId: worldIdSchema,
 });
 
+export const linkUserToCitizenInputSchema = z.strictObject({
+  citizenId: citizenIdSchema,
+  userId: userIdSchema,
+  worldId: worldIdSchema,
+});
+
+export const unlinkUserFromCitizenInputSchema = z.strictObject({
+  citizenId: citizenIdSchema,
+  worldId: worldIdSchema,
+});
+
+const assignableCitizenRoleTypeSchema = z.enum([
+  "nation_manager",
+  "settlement_manager",
+]);
+
+export const assignCitizenRoleInputSchema = z
+  .strictObject({
+    citizenId: citizenIdSchema,
+    roleNationId: z.union([nationIdSchema, z.null()]).optional(),
+    roleSettlementId: z.union([settlementIdSchema, z.null()]).optional(),
+    roleType: assignableCitizenRoleTypeSchema,
+    worldId: worldIdSchema,
+  })
+  .superRefine((value, ctx): void => {
+    const nationId = value.roleNationId ?? null;
+    const settlementId = value.roleSettlementId ?? null;
+
+    if (value.roleType === "nation_manager") {
+      if (nationId === null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Nation manager role requires a role nation.",
+          path: ["roleNationId"],
+        });
+      }
+      if (settlementId !== null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Nation manager role must not set a role settlement.",
+          path: ["roleSettlementId"],
+        });
+      }
+      return;
+    }
+
+    if (settlementId === null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Settlement manager role requires a role settlement.",
+        path: ["roleSettlementId"],
+      });
+    }
+    if (nationId !== null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Settlement manager role must not set a role nation.",
+        path: ["roleNationId"],
+      });
+    }
+  });
+
+export const revokeCitizenRoleInputSchema = z.strictObject({
+  citizenId: citizenIdSchema,
+  worldId: worldIdSchema,
+});
+
 // Role assignment shape used by the dedicated character-link and
 // role-assignment surface that ships in a later issue. Exported here so the
 // scope-matching invariant is validated in one place; the listed mutations in
@@ -213,4 +280,28 @@ export type CitizenRoleAssignmentInput = z.input<
 >;
 export type CitizenRoleAssignmentValues = z.output<
   typeof citizenRoleAssignmentSchema
+>;
+export type LinkUserToCitizenInput = z.input<
+  typeof linkUserToCitizenInputSchema
+>;
+export type LinkUserToCitizenValues = z.output<
+  typeof linkUserToCitizenInputSchema
+>;
+export type UnlinkUserFromCitizenInput = z.input<
+  typeof unlinkUserFromCitizenInputSchema
+>;
+export type UnlinkUserFromCitizenValues = z.output<
+  typeof unlinkUserFromCitizenInputSchema
+>;
+export type AssignCitizenRoleInput = z.input<
+  typeof assignCitizenRoleInputSchema
+>;
+export type AssignCitizenRoleValues = z.output<
+  typeof assignCitizenRoleInputSchema
+>;
+export type RevokeCitizenRoleInput = z.input<
+  typeof revokeCitizenRoleInputSchema
+>;
+export type RevokeCitizenRoleValues = z.output<
+  typeof revokeCitizenRoleInputSchema
 >;

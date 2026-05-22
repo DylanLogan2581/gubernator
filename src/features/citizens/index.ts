@@ -11,6 +11,14 @@ export {
   updateCitizenNpcFieldsMutationOptions,
 } from "./mutations/citizensMutations";
 export {
+  assignCitizenRoleMutationOptions,
+  isPlayerCharacterRoleMutationError,
+  linkUserToCitizenMutationOptions,
+  PlayerCharacterRoleMutationError,
+  revokeCitizenRoleMutationOptions,
+  unlinkUserFromCitizenMutationOptions,
+} from "./mutations/playerCharacterRoleMutations";
+export {
   citizenAggregateStatsForNationQueryOptions,
   citizenAggregateStatsForSettlementQueryOptions,
   citizenByIdQueryOptions,
@@ -18,27 +26,40 @@ export {
 } from "./queries/citizensQueries";
 export { citizensQueryKeys } from "./queries/citizensQueryKeys";
 export {
+  assignCitizenRoleInputSchema,
   citizenRoleAssignmentSchema,
   createNpcInputSchema,
   createPlayerCharacterInputSchema,
+  linkUserToCitizenInputSchema,
   markCitizenDeadInputSchema,
+  revokeCitizenRoleInputSchema,
   reviveCitizenInputSchema,
+  unlinkUserFromCitizenInputSchema,
   updateCitizenCoreInputSchema,
   updateCitizenNpcFieldsInputSchema,
 } from "./schemas/citizenSchemas";
 
 export type { CitizenMutationIssue } from "./mutations/citizensMutations";
+export type { PlayerCharacterRoleMutationIssue } from "./mutations/playerCharacterRoleMutations";
 export type {
+  AssignCitizenRoleInput,
+  AssignCitizenRoleValues,
   CitizenRoleAssignmentInput,
   CitizenRoleAssignmentValues,
   CreateNpcInput,
   CreateNpcValues,
   CreatePlayerCharacterInput,
   CreatePlayerCharacterValues,
+  LinkUserToCitizenInput,
+  LinkUserToCitizenValues,
   MarkCitizenDeadInput,
   MarkCitizenDeadValues,
+  RevokeCitizenRoleInput,
+  RevokeCitizenRoleValues,
   ReviveCitizenInput,
   ReviveCitizenValues,
+  UnlinkUserFromCitizenInput,
+  UnlinkUserFromCitizenValues,
   UpdateCitizenCoreInput,
   UpdateCitizenCoreValues,
   UpdateCitizenNpcFieldsInput,
