@@ -6,6 +6,15 @@ export const nationsQueryKeys = {
     [...nationsQueryKeys.all, "detail", nationId] as const,
   list: (worldId: string) =>
     [...nationsQueryKeys.all, "list", worldId] as const,
+  relationshipPair: (fromNationId: string, toNationId: string) =>
+    [
+      ...nationsQueryKeys.all,
+      "relationship-pair",
+      fromNationId,
+      toNationId,
+    ] as const,
+  relationshipsFromNation: (nationId: string) =>
+    [...nationsQueryKeys.all, "relationships-from-nation", nationId] as const,
   settlements: (nationId: string) =>
     [...nationsQueryKeys.all, "settlements", nationId] as const,
 } as const;
