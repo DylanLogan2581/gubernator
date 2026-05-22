@@ -608,6 +608,49 @@ export type Database = {
           },
         ];
       };
+      user_active_player_characters: {
+        Row: {
+          citizen_id: string;
+          updated_at: string;
+          user_id: string;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id: string;
+          updated_at?: string;
+          user_id: string;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string;
+          updated_at?: string;
+          user_id?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_active_player_characters_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_active_player_characters_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_active_player_characters_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       users: {
         Row: {
           created_at: string;
