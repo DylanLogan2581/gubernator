@@ -230,6 +230,64 @@ export type Database = {
           },
         ];
       };
+      nation_relationships: {
+        Row: {
+          created_at: string;
+          current_stance: string;
+          from_nation_id: string;
+          id: string;
+          pending_changed_by_citizen_id: string | null;
+          pending_stance: string | null;
+          pending_status: string | null;
+          to_nation_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          current_stance?: string;
+          from_nation_id: string;
+          id?: string;
+          pending_changed_by_citizen_id?: string | null;
+          pending_stance?: string | null;
+          pending_status?: string | null;
+          to_nation_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          current_stance?: string;
+          from_nation_id?: string;
+          id?: string;
+          pending_changed_by_citizen_id?: string | null;
+          pending_stance?: string | null;
+          pending_status?: string | null;
+          to_nation_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_relationships_from_nation_id_fkey";
+            columns: ["from_nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_relationships_pending_changed_by_citizen_id_fkey";
+            columns: ["pending_changed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_relationships_to_nation_id_fkey";
+            columns: ["to_nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           citizen_id: string | null;
