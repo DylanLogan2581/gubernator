@@ -795,6 +795,26 @@ export type Database = {
         }[];
       };
       current_app_user_id: { Args: never; Returns: string };
+      current_user_active_player_character_id: {
+        Args: { p_world_id: string };
+        Returns: string;
+      };
+      current_user_has_world_access: {
+        Args: { p_world_id: string };
+        Returns: boolean;
+      };
+      current_user_manages_nation: {
+        Args: { p_nation_id: string };
+        Returns: boolean;
+      };
+      current_user_manages_settlement: {
+        Args: { p_settlement_id: string };
+        Returns: boolean;
+      };
+      current_user_player_character_ids: {
+        Args: { p_world_id: string };
+        Returns: string[];
+      };
       default_calendar_config: { Args: never; Returns: Json };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       is_active_app_user: { Args: never; Returns: boolean };
@@ -806,6 +826,10 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
+      nation_visible_to_current_user: {
+        Args: { p_nation_id: string };
+        Returns: boolean;
+      };
       set_settlement_auto_ready: {
         Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
         Returns: {
