@@ -10,6 +10,18 @@ export const citizensQueryKeys = {
       "active-partnership-for-citizen",
       citizenId,
     ] as const,
+  assignmentsInSettlement: (settlementId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "assignments-in-settlement",
+      settlementId,
+    ] as const,
+  currentAssignmentForCitizen: (citizenId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "current-assignment-for-citizen",
+      citizenId,
+    ] as const,
   nationAggregateStats: (nationId: string) =>
     [...citizensQueryKeys.all, "nation-aggregate-stats", nationId] as const,
   partnershipsForCitizen: (citizenId: string) =>
