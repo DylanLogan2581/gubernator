@@ -11,6 +11,140 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      citizens: {
+        Row: {
+          born_on_turn_number: number | null;
+          citizen_type: string;
+          created_at: string;
+          death_cause: string | null;
+          id: string;
+          name: string;
+          npc_flaw: string | null;
+          npc_goal: string | null;
+          npc_secret_contradiction: string | null;
+          npc_trait_1: string | null;
+          npc_trait_2: string | null;
+          parent_a_citizen_id: string | null;
+          parent_b_citizen_id: string | null;
+          personality_text: string | null;
+          profile_photo_url: string | null;
+          role_nation_id: string | null;
+          role_settlement_id: string | null;
+          role_type: string;
+          settlement_id: string | null;
+          sex: string | null;
+          skills_text: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string | null;
+          world_id: string;
+        };
+        Insert: {
+          born_on_turn_number?: number | null;
+          citizen_type: string;
+          created_at?: string;
+          death_cause?: string | null;
+          id?: string;
+          name: string;
+          npc_flaw?: string | null;
+          npc_goal?: string | null;
+          npc_secret_contradiction?: string | null;
+          npc_trait_1?: string | null;
+          npc_trait_2?: string | null;
+          parent_a_citizen_id?: string | null;
+          parent_b_citizen_id?: string | null;
+          personality_text?: string | null;
+          profile_photo_url?: string | null;
+          role_nation_id?: string | null;
+          role_settlement_id?: string | null;
+          role_type?: string;
+          settlement_id?: string | null;
+          sex?: string | null;
+          skills_text?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string | null;
+          world_id: string;
+        };
+        Update: {
+          born_on_turn_number?: number | null;
+          citizen_type?: string;
+          created_at?: string;
+          death_cause?: string | null;
+          id?: string;
+          name?: string;
+          npc_flaw?: string | null;
+          npc_goal?: string | null;
+          npc_secret_contradiction?: string | null;
+          npc_trait_1?: string | null;
+          npc_trait_2?: string | null;
+          parent_a_citizen_id?: string | null;
+          parent_b_citizen_id?: string | null;
+          personality_text?: string | null;
+          profile_photo_url?: string | null;
+          role_nation_id?: string | null;
+          role_settlement_id?: string | null;
+          role_type?: string;
+          settlement_id?: string | null;
+          sex?: string | null;
+          skills_text?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string | null;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "citizens_parent_a_citizen_id_fkey";
+            columns: ["parent_a_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_b_citizen_id_fkey";
+            columns: ["parent_b_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_role_nation_id_fkey";
+            columns: ["role_nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_role_settlement_id_fkey";
+            columns: ["role_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nations: {
         Row: {
           created_at: string;
@@ -185,6 +319,13 @@ export type Database = {
             columns: ["nation_id"];
             isOneToOne: false;
             referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_ready_set_by_citizen_id_fkey";
+            columns: ["ready_set_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
         ];
@@ -448,9 +589,21 @@ export type Database = {
       default_calendar_config: { Args: never; Returns: Json };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       is_active_app_user: { Args: never; Returns: boolean };
+      is_nation_manager_of: {
+        Args: { p_nation_id: string };
+        Returns: boolean;
+      };
+      is_settlement_manager_of: {
+        Args: { p_settlement_id: string };
+        Returns: boolean;
+      };
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
+      user_has_player_character_in_world: {
+        Args: { p_world_id: string };
+        Returns: boolean;
+      };
       set_settlement_auto_ready: {
         Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
         Returns: {
