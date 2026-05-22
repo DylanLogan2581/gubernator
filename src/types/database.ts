@@ -11,6 +11,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      citizen_assignments: {
+        Row: {
+          assigned_on_turn_number: number;
+          assignment_type: string;
+          citizen_id: string;
+          construction_project_id: number | null;
+          created_at: string;
+          deposit_instance_id: number | null;
+          job_id: number;
+          managed_population_instance_id: number | null;
+          trade_route_id: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          assigned_on_turn_number: number;
+          assignment_type: string;
+          citizen_id: string;
+          construction_project_id?: number | null;
+          created_at?: string;
+          deposit_instance_id?: number | null;
+          job_id: number;
+          managed_population_instance_id?: number | null;
+          trade_route_id?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          assigned_on_turn_number?: number;
+          assignment_type?: string;
+          citizen_id?: string;
+          construction_project_id?: number | null;
+          created_at?: string;
+          deposit_instance_id?: number | null;
+          job_id?: number;
+          managed_population_instance_id?: number | null;
+          trade_route_id?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "citizen_assignments_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: true;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       citizens: {
         Row: {
           born_on_turn_number: number | null;
@@ -32,7 +79,7 @@ export type Database = {
           role_settlement_id: string | null;
           role_type: string;
           settlement_id: string | null;
-          sex: string | null;
+          sex: string;
           skills_text: string | null;
           status: string;
           updated_at: string;
@@ -59,7 +106,7 @@ export type Database = {
           role_settlement_id?: string | null;
           role_type?: string;
           settlement_id?: string | null;
-          sex?: string | null;
+          sex: string;
           skills_text?: string | null;
           status?: string;
           updated_at?: string;
@@ -86,7 +133,7 @@ export type Database = {
           role_settlement_id?: string | null;
           role_type?: string;
           settlement_id?: string | null;
-          sex?: string | null;
+          sex?: string;
           skills_text?: string | null;
           status?: string;
           updated_at?: string;
@@ -319,13 +366,6 @@ export type Database = {
             columns: ["nation_id"];
             isOneToOne: false;
             referencedRelation: "nations";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "settlements_ready_set_by_citizen_id_fkey";
-            columns: ["ready_set_by_citizen_id"];
-            isOneToOne: false;
-            referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
         ];
@@ -589,21 +629,9 @@ export type Database = {
       default_calendar_config: { Args: never; Returns: Json };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       is_active_app_user: { Args: never; Returns: boolean };
-      is_nation_manager_of: {
-        Args: { p_nation_id: string };
-        Returns: boolean;
-      };
-      is_settlement_manager_of: {
-        Args: { p_settlement_id: string };
-        Returns: boolean;
-      };
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
-      user_has_player_character_in_world: {
-        Args: { p_world_id: string };
-        Returns: boolean;
-      };
       set_settlement_auto_ready: {
         Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
         Returns: {
@@ -621,6 +649,18 @@ export type Database = {
           last_ready_at: string;
           ready_set_at: string;
         }[];
+      };
+      user_controls_player_character_in_world: {
+        Args: { p_world_id: string };
+        Returns: boolean;
+      };
+      user_is_nation_manager_of: {
+        Args: { p_nation_id: string };
+        Returns: boolean;
+      };
+      user_is_settlement_manager_of: {
+        Args: { p_settlement_id: string };
+        Returns: boolean;
       };
     };
     Enums: {
