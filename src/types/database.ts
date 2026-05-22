@@ -19,7 +19,7 @@ export type Database = {
           construction_project_id: number | null;
           created_at: string;
           deposit_instance_id: number | null;
-          job_id: number;
+          job_id: number | null;
           managed_population_instance_id: number | null;
           trade_route_id: number | null;
           updated_at: string;
@@ -31,7 +31,7 @@ export type Database = {
           construction_project_id?: number | null;
           created_at?: string;
           deposit_instance_id?: number | null;
-          job_id: number;
+          job_id?: number | null;
           managed_population_instance_id?: number | null;
           trade_route_id?: number | null;
           updated_at?: string;
@@ -43,7 +43,7 @@ export type Database = {
           construction_project_id?: number | null;
           created_at?: string;
           deposit_instance_id?: number | null;
-          job_id?: number;
+          job_id?: number | null;
           managed_population_instance_id?: number | null;
           trade_route_id?: number | null;
           updated_at?: string;
@@ -79,7 +79,7 @@ export type Database = {
           role_settlement_id: string | null;
           role_type: string;
           settlement_id: string | null;
-          sex: string;
+          sex: string | null;
           skills_text: string | null;
           status: string;
           updated_at: string;
@@ -106,7 +106,7 @@ export type Database = {
           role_settlement_id?: string | null;
           role_type?: string;
           settlement_id?: string | null;
-          sex: string;
+          sex?: string | null;
           skills_text?: string | null;
           status?: string;
           updated_at?: string;
@@ -133,7 +133,7 @@ export type Database = {
           role_settlement_id?: string | null;
           role_type?: string;
           settlement_id?: string | null;
-          sex?: string;
+          sex?: string | null;
           skills_text?: string | null;
           status?: string;
           updated_at?: string;
@@ -185,44 +185,6 @@ export type Database = {
           },
           {
             foreignKeyName: "citizens_world_id_fkey";
-            columns: ["world_id"];
-            isOneToOne: false;
-            referencedRelation: "worlds";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      nations: {
-        Row: {
-          created_at: string;
-          description: string | null;
-          id: string;
-          is_hidden: boolean;
-          name: string;
-          updated_at: string;
-          world_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          description?: string | null;
-          id?: string;
-          is_hidden?: boolean;
-          name: string;
-          updated_at?: string;
-          world_id: string;
-        };
-        Update: {
-          created_at?: string;
-          description?: string | null;
-          id?: string;
-          is_hidden?: boolean;
-          name?: string;
-          updated_at?: string;
-          world_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "nations_world_id_fkey";
             columns: ["world_id"];
             isOneToOne: false;
             referencedRelation: "worlds";
@@ -284,6 +246,44 @@ export type Database = {
             columns: ["to_nation_id"];
             isOneToOne: false;
             referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      nations: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_hidden: boolean;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_hidden?: boolean;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_hidden?: boolean;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nations_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
             referencedColumns: ["id"];
           },
         ];
@@ -485,6 +485,13 @@ export type Database = {
             columns: ["nation_id"];
             isOneToOne: false;
             referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_ready_set_by_citizen_id_fkey";
+            columns: ["ready_set_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
         ];
@@ -791,6 +798,11 @@ export type Database = {
       default_calendar_config: { Args: never; Returns: Json };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       is_active_app_user: { Args: never; Returns: boolean };
+      is_nation_manager_of: { Args: { p_nation_id: string }; Returns: boolean };
+      is_settlement_manager_of: {
+        Args: { p_settlement_id: string };
+        Returns: boolean;
+      };
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
@@ -812,16 +824,8 @@ export type Database = {
           ready_set_at: string;
         }[];
       };
-      user_controls_player_character_in_world: {
+      user_has_player_character_in_world: {
         Args: { p_world_id: string };
-        Returns: boolean;
-      };
-      user_is_nation_manager_of: {
-        Args: { p_nation_id: string };
-        Returns: boolean;
-      };
-      user_is_settlement_manager_of: {
-        Args: { p_settlement_id: string };
         Returns: boolean;
       };
     };
