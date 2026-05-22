@@ -314,6 +314,67 @@ export type Database = {
           },
         ];
       };
+      partnerships: {
+        Row: {
+          change_reason: string | null;
+          changed_by_user_id: string | null;
+          citizen_a_id: string;
+          citizen_b_id: string;
+          created_at: string;
+          ended_on_turn_number: number | null;
+          formed_on_turn_number: number;
+          id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          change_reason?: string | null;
+          changed_by_user_id?: string | null;
+          citizen_a_id: string;
+          citizen_b_id: string;
+          created_at?: string;
+          ended_on_turn_number?: number | null;
+          formed_on_turn_number: number;
+          id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          change_reason?: string | null;
+          changed_by_user_id?: string | null;
+          citizen_a_id?: string;
+          citizen_b_id?: string;
+          created_at?: string;
+          ended_on_turn_number?: number | null;
+          formed_on_turn_number?: number;
+          id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "partnerships_changed_by_user_id_fkey";
+            columns: ["changed_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partnerships_citizen_a_id_fkey";
+            columns: ["citizen_a_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partnerships_citizen_b_id_fkey";
+            columns: ["citizen_b_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlements: {
         Row: {
           auto_ready_enabled: boolean;
