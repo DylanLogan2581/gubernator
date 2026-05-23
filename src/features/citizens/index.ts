@@ -35,6 +35,7 @@ export {
   citizenAggregateStatsForSettlementQueryOptions,
   citizenByIdQueryOptions,
   citizensInSettlementQueryOptions,
+  toCitizen,
 } from "./queries/citizensQueries";
 export { citizensQueryKeys } from "./queries/citizensQueryKeys";
 export {
@@ -98,6 +99,7 @@ export type {
   ReassignPartnerInput,
   ReassignPartnerValues,
 } from "./schemas/partnershipSchemas";
+export type { CitizenRow } from "./queries/citizensQueries";
 export type { CitizenAssignment } from "./types/citizenAssignmentTypes";
 export type {
   Citizen,
