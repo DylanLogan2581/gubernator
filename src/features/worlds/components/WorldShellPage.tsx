@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Archive, ArrowLeft } from "lucide-react";
+import { Archive, ArrowLeft, ArrowRight } from "lucide-react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -175,6 +175,14 @@ function WorldShellContent({
         nextTurnNumber={worldQuery.data.header.nextTurnNumber}
         worldId={worldId}
       />
+      <nav aria-label="World sections">
+        <Button asChild variant="outline" size="sm" className="w-fit">
+          <Link to="/worlds/$worldId/nations" params={{ worldId }}>
+            Nations
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+      </nav>
       <SettlementReadinessSummaryPanel worldId={worldId} />
       <SettlementReadinessListPanel
         accessContext={accessContext}
