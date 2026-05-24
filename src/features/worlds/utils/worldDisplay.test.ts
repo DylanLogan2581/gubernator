@@ -123,6 +123,7 @@ function createWorldRow(
     readonly created_at: string;
     readonly current_turn_number: number;
     readonly id: string;
+    readonly incest_prevention_depth: number;
     readonly name: string;
     readonly owner_id: string;
     readonly status: string;
@@ -135,6 +136,7 @@ function createWorldRow(
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
+  readonly incest_prevention_depth: number;
   readonly name: string;
   readonly owner_id: string;
   readonly status: string;
@@ -147,6 +149,7 @@ function createWorldRow(
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 3,
     id: "world-1",
+    incest_prevention_depth: 4,
     name: "Local Development World",
     owner_id: "user-2",
     status: "active",

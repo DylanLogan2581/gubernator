@@ -30,7 +30,10 @@ import {
 import type { Citizen } from "../types/citizenTypes";
 import type { z } from "zod";
 
-type CitizenMutationErrorCode = "citizen_input_invalid" | "citizen_not_found";
+type CitizenMutationErrorCode =
+  | "citizen_creation_blocked"
+  | "citizen_input_invalid"
+  | "citizen_not_found";
 
 type CreateNpcMutationOptions = UseMutationOptions<
   Citizen,
@@ -221,26 +224,23 @@ async function createNpc(
   const values = parseInput(createNpcInputSchema, input);
 
   const { data, error } = await client
-    .from("citizens")
-    .insert({
-      born_on_turn_number: values.bornOnTurnNumber ?? null,
-      citizen_type: "npc",
-      name: values.name.trim(),
-      npc_flaw: values.npcFlaw,
-      npc_goal: values.npcGoal,
-      npc_secret_contradiction: values.npcSecretContradiction,
-      npc_trait_1: values.npcTrait1,
-      npc_trait_2: values.npcTrait2,
-      parent_a_citizen_id: values.parentACitizenId ?? null,
-      parent_b_citizen_id: values.parentBCitizenId ?? null,
-      personality_text: values.personalityText,
-      profile_photo_url: values.profilePhotoUrl,
-      settlement_id: values.settlementId ?? null,
-      sex: values.sex,
-      skills_text: values.skillsText,
-      world_id: values.worldId,
+    .rpc("create_npc", {
+      p_born_on_turn_number: values.bornOnTurnNumber ?? null,
+      p_name: values.name.trim(),
+      p_npc_flaw: values.npcFlaw,
+      p_npc_goal: values.npcGoal,
+      p_npc_secret_contradiction: values.npcSecretContradiction,
+      p_npc_trait_1: values.npcTrait1,
+      p_npc_trait_2: values.npcTrait2,
+      p_parent_a_citizen_id: values.parentACitizenId ?? null,
+      p_parent_b_citizen_id: values.parentBCitizenId ?? null,
+      p_personality_text: values.personalityText,
+      p_profile_photo_url: values.profilePhotoUrl,
+      p_settlement_id: values.settlementId ?? null,
+      p_sex: values.sex,
+      p_skills_text: values.skillsText,
+      p_world_id: values.worldId,
     })
-    .select(CITIZEN_SELECT)
     .maybeSingle<CitizenRow>();
 
   if (error !== null) {
@@ -248,10 +248,7 @@ async function createNpc(
   }
 
   if (data === null) {
-    throw new CitizenMutationError({
-      code: "citizen_not_found",
-      message: "Citizen could not be created.",
-    });
+    throw creationBlockedError("NPC");
   }
 
   return toCitizen(data);
@@ -263,28 +260,20 @@ async function createPlayerCharacter(
 ): Promise<Citizen> {
   const values = parseInput(createPlayerCharacterInputSchema, input);
 
-  // user_id is locked from direct table writes by the citizens column-level
-  // grants; the dedicated character-link SECURITY DEFINER mutation ships in a
-  // later issue. The insert payload below intentionally includes user_id so
-  // the data-layer surface matches the desired shape — the DB will reject
-  // direct writes until that mutation is wired up.
   const { data, error } = await client
-    .from("citizens")
-    .insert({
-      born_on_turn_number: values.bornOnTurnNumber ?? null,
-      citizen_type: "player_character",
-      name: values.name.trim(),
-      parent_a_citizen_id: values.parentACitizenId ?? null,
-      parent_b_citizen_id: values.parentBCitizenId ?? null,
-      personality_text: values.personalityText,
-      profile_photo_url: values.profilePhotoUrl,
-      settlement_id: values.settlementId ?? null,
-      sex: values.sex,
-      skills_text: values.skillsText,
-      user_id: values.userId,
-      world_id: values.worldId,
+    .rpc("create_player_character", {
+      p_born_on_turn_number: values.bornOnTurnNumber ?? null,
+      p_name: values.name.trim(),
+      p_parent_a_citizen_id: values.parentACitizenId ?? null,
+      p_parent_b_citizen_id: values.parentBCitizenId ?? null,
+      p_personality_text: values.personalityText,
+      p_profile_photo_url: values.profilePhotoUrl,
+      p_settlement_id: values.settlementId ?? null,
+      p_sex: values.sex,
+      p_skills_text: values.skillsText,
+      p_user_id: values.userId,
+      p_world_id: values.worldId,
     })
-    .select(CITIZEN_SELECT)
     .maybeSingle<CitizenRow>();
 
   if (error !== null) {
@@ -292,10 +281,7 @@ async function createPlayerCharacter(
   }
 
   if (data === null) {
-    throw new CitizenMutationError({
-      code: "citizen_not_found",
-      message: "Player character could not be created.",
-    });
+    throw creationBlockedError("Player character");
   }
 
   return toCitizen(data);
@@ -432,6 +418,19 @@ async function reviveCitizen(
   }
 
   return toCitizen(data);
+}
+
+function creationBlockedError(subject: string): CitizenMutationError {
+  // The create_npc and create_player_character RPCs return zero rows for any
+  // server-side guard violation (admin check, archived world, missing user,
+  // mismatched worlds, or an incest-prevention block). The RPC cannot
+  // distinguish these from the wire, so the dialog layer is responsible for
+  // pre-validating with citizensHaveCloseKinship and surfacing a more
+  // specific message when it knows the reason.
+  return new CitizenMutationError({
+    code: "citizen_creation_blocked",
+    message: `${subject} could not be created. Verify the world is active, the parents are not closely related, and you have admin access.`,
+  });
 }
 
 function parseInput<TSchema extends z.ZodTypeAny>(

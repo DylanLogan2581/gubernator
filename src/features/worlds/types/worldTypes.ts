@@ -30,6 +30,7 @@ export type AccessibleWorld = {
   readonly currentTurnNumber: number;
   readonly fullInWorldDateLabel: string;
   readonly id: string;
+  readonly incestPreventionDepth: number;
   readonly inWorldDateLabel: string;
   readonly isArchived: boolean;
   readonly isHidden: boolean;

@@ -291,6 +291,7 @@ function SettlementDetailLoaded({
 
       <CitizensPanel
         canAdmin={worldAccess.canAdmin}
+        incestPreventionDepth={worldAccess.world.incestPreventionDepth}
         isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}

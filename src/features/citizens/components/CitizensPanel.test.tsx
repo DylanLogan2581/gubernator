@@ -156,7 +156,7 @@ describe("CitizensPanel", () => {
     expect(caelRow).toHaveTextContent("Deceased");
   });
 
-  it("exposes a disabled Create citizen action for world admins", async () => {
+  it("exposes Create NPC and Create player character actions for world admins on active worlds", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizens: [createCitizenRow({ id: "c-1", name: "Aldra" })],
@@ -166,11 +166,30 @@ describe("CitizensPanel", () => {
 
     renderPanel({ canAdmin: true });
 
-    const button = await screen.findByRole("button", {
-      name: "Create citizen",
+    const npcButton = await screen.findByRole("button", { name: "Create NPC" });
+    const pcButton = screen.getByRole("button", {
+      name: "Create player character",
     });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute("title", "Citizen creation is coming soon.");
+    expect(npcButton).not.toBeDisabled();
+    expect(pcButton).not.toBeDisabled();
+  });
+
+  it("disables the create actions when the world is archived", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizens: [createCitizenRow({ id: "c-1", name: "Aldra" })],
+        assignments: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: true });
+
+    const npcButton = await screen.findByRole("button", { name: "Create NPC" });
+    expect(npcButton).toBeDisabled();
+    expect(npcButton).toHaveAttribute(
+      "title",
+      "Creating citizens is disabled because this world is archived.",
+    );
   });
 
   it("renders aggregate counts for non-admin roles without listing citizens", async () => {
@@ -219,7 +238,10 @@ describe("CitizensPanel", () => {
 
     expect(screen.queryByText("c-1")).toBeNull();
     expect(screen.queryByRole("list", { name: "Citizens" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Create citizen" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Create NPC" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Create player character" }),
+    ).toBeNull();
   });
 
   it("shows an empty aggregate state when the settlement has no citizens", async () => {
@@ -250,15 +272,18 @@ describe("CitizensPanel", () => {
 
 function renderPanel({
   canAdmin,
+  incestPreventionDepth = 4,
   isArchived = false,
 }: {
   readonly canAdmin: boolean;
+  readonly incestPreventionDepth?: number;
   readonly isArchived?: boolean;
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <CitizensPanel
         canAdmin={canAdmin}
+        incestPreventionDepth={incestPreventionDepth}
         isArchived={isArchived}
         settlementId="settlement-1"
         worldId="world-1"

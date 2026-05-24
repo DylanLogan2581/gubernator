@@ -731,6 +731,7 @@ export type Database = {
           created_at: string;
           current_turn_number: number;
           id: string;
+          incest_prevention_depth: number;
           name: string;
           owner_id: string;
           status: string;
@@ -743,6 +744,7 @@ export type Database = {
           created_at?: string;
           current_turn_number?: number;
           id?: string;
+          incest_prevention_depth?: number;
           name: string;
           owner_id: string;
           status?: string;
@@ -755,6 +757,7 @@ export type Database = {
           created_at?: string;
           current_turn_number?: number;
           id?: string;
+          incest_prevention_depth?: number;
           name?: string;
           owner_id?: string;
           status?: string;
@@ -812,6 +815,56 @@ export type Database = {
         };
         Returns: boolean;
       };
+      citizens_have_close_kinship: {
+        Args: {
+          p_citizen_a_id: string;
+          p_citizen_b_id: string;
+          p_depth: number;
+        };
+        Returns: boolean;
+      };
+      create_citizen_internal: {
+        Args: {
+          p_born_on_turn_number: number | null;
+          p_citizen_type: string;
+          p_name: string;
+          p_npc_flaw: string | null;
+          p_npc_goal: string | null;
+          p_npc_secret_contradiction: string | null;
+          p_npc_trait_1: string | null;
+          p_npc_trait_2: string | null;
+          p_parent_a_citizen_id: string | null;
+          p_parent_b_citizen_id: string | null;
+          p_personality_text: string | null;
+          p_profile_photo_url: string | null;
+          p_settlement_id: string | null;
+          p_sex: string | null;
+          p_skills_text: string | null;
+          p_user_id: string | null;
+          p_world_id: string;
+        };
+        Returns: Database["public"]["Tables"]["citizens"]["Row"][];
+      };
+      create_npc: {
+        Args: {
+          p_born_on_turn_number: number | null;
+          p_name: string;
+          p_npc_flaw: string | null;
+          p_npc_goal: string | null;
+          p_npc_secret_contradiction: string | null;
+          p_npc_trait_1: string | null;
+          p_npc_trait_2: string | null;
+          p_parent_a_citizen_id: string | null;
+          p_parent_b_citizen_id: string | null;
+          p_personality_text: string | null;
+          p_profile_photo_url: string | null;
+          p_settlement_id: string | null;
+          p_sex: string | null;
+          p_skills_text: string | null;
+          p_world_id: string;
+        };
+        Returns: Database["public"]["Tables"]["citizens"]["Row"][];
+      };
       create_partnership: {
         Args: {
           p_change_reason: string;
@@ -823,6 +876,22 @@ export type Database = {
           p_turn_transition_id: string;
         };
         Returns: Database["public"]["Tables"]["partnerships"]["Row"][];
+      };
+      create_player_character: {
+        Args: {
+          p_born_on_turn_number: number | null;
+          p_name: string;
+          p_parent_a_citizen_id: string | null;
+          p_parent_b_citizen_id: string | null;
+          p_personality_text: string | null;
+          p_profile_photo_url: string | null;
+          p_settlement_id: string | null;
+          p_sex: string | null;
+          p_skills_text: string | null;
+          p_user_id: string;
+          p_world_id: string;
+        };
+        Returns: Database["public"]["Tables"]["citizens"]["Row"][];
       };
       current_app_user_id: { Args: never; Returns: string };
       current_user_active_player_character_id: {
