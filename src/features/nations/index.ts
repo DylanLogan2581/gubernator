@@ -26,6 +26,7 @@ export {
 export {
   nationRelationshipPairQueryOptions,
   nationRelationshipsFromNationQueryOptions,
+  nationRelationshipsToNationQueryOptions,
 } from "./queries/nationRelationshipQueries";
 export { nationsQueryKeys } from "./queries/nationsQueryKeys";
 export {

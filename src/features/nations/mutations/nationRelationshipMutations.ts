@@ -317,6 +317,9 @@ async function invalidateRelationshipCaches(
       ),
     }),
     queryClient.invalidateQueries({
+      queryKey: nationsQueryKeys.relationshipsToNation(relationship.toNationId),
+    }),
+    queryClient.invalidateQueries({
       queryKey: nationsQueryKeys.relationshipPair(
         relationship.fromNationId,
         relationship.toNationId,

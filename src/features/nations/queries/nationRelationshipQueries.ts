@@ -15,18 +15,27 @@ import type {
   NationRelationshipStance,
 } from "../types/nationRelationshipTypes";
 
-type NationRelationshipListQueryKey = ReturnType<
+type NationRelationshipsFromNationQueryKey = ReturnType<
   typeof nationsQueryKeys.relationshipsFromNation
+>;
+type NationRelationshipsToNationQueryKey = ReturnType<
+  typeof nationsQueryKeys.relationshipsToNation
 >;
 type NationRelationshipPairQueryKey = ReturnType<
   typeof nationsQueryKeys.relationshipPair
 >;
 
-type NationRelationshipListQueryOptions = UseQueryOptions<
+type NationRelationshipsFromNationQueryOptions = UseQueryOptions<
   readonly NationRelationship[],
   AuthUiError,
   readonly NationRelationship[],
-  NationRelationshipListQueryKey
+  NationRelationshipsFromNationQueryKey
+>;
+type NationRelationshipsToNationQueryOptions = UseQueryOptions<
+  readonly NationRelationship[],
+  AuthUiError,
+  readonly NationRelationship[],
+  NationRelationshipsToNationQueryKey
 >;
 type NationRelationshipPairQueryOptions = UseQueryOptions<
   NationRelationship | null,
@@ -53,11 +62,22 @@ const NATION_RELATIONSHIP_SELECT =
 export function nationRelationshipsFromNationQueryOptions(
   fromNationId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
-): NationRelationshipListQueryOptions {
+): NationRelationshipsFromNationQueryOptions {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
     queryFn: () => getNationRelationshipsFromNation(client, fromNationId),
     queryKey: nationsQueryKeys.relationshipsFromNation(fromNationId),
+  });
+}
+
+export function nationRelationshipsToNationQueryOptions(
+  toNationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): NationRelationshipsToNationQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getNationRelationshipsToNation(client, toNationId),
+    queryKey: nationsQueryKeys.relationshipsToNation(toNationId),
   });
 }
 
@@ -82,6 +102,24 @@ async function getNationRelationshipsFromNation(
     .select(NATION_RELATIONSHIP_SELECT)
     .eq("from_nation_id", fromNationId)
     .order("to_nation_id", { ascending: true })
+    .returns<NationRelationshipRow[]>();
+
+  if (error !== null) {
+    throw normalizeAuthError(error);
+  }
+
+  return data.map(toNationRelationship);
+}
+
+async function getNationRelationshipsToNation(
+  client: GubernatorSupabaseClient,
+  toNationId: string,
+): Promise<readonly NationRelationship[]> {
+  const { data, error } = await client
+    .from("nation_relationships")
+    .select(NATION_RELATIONSHIP_SELECT)
+    .eq("to_nation_id", toNationId)
+    .order("from_nation_id", { ascending: true })
     .returns<NationRelationshipRow[]>();
 
   if (error !== null) {
