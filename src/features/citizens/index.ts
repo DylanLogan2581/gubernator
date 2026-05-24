@@ -1,5 +1,6 @@
 // Citizens feature — query and mutation API for NPCs and player characters.
 // Implemented in Epic 3.
+export { CitizensPanel } from "./components/CitizensPanel";
 export {
   CitizenMutationError,
   createNpcMutationOptions,

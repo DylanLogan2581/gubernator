@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CitizensPanel } from "@/features/citizens";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
@@ -288,10 +289,10 @@ function SettlementDetailLoaded({
         settlement={settlement}
       />
 
-      <SettlementCitizensSection
-        nationId={settlement.nationId}
+      <CitizensPanel
+        canAdmin={worldAccess.canAdmin}
+        isArchived={isArchived}
         settlementId={settlement.id}
-        worldId={worldId}
       />
 
       {canDelete ? (
@@ -870,38 +871,6 @@ function CoordinateField({
         </p>
       )}
     </label>
-  );
-}
-
-function SettlementCitizensSection({
-  nationId,
-  settlementId,
-  worldId,
-}: {
-  readonly nationId: string;
-  readonly settlementId: string;
-  readonly worldId: string;
-}): JSX.Element {
-  // Placeholder until the citizens panel item lands. The settlement detail
-  // route reserves this slot so navigating here surfaces the future entry
-  // point without depending on the citizens feature module yet.
-  void nationId;
-  void settlementId;
-  void worldId;
-
-  return (
-    <section
-      aria-labelledby="settlement-citizens-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
-      <h2 id="settlement-citizens-heading" className="text-base font-medium">
-        Citizens
-      </h2>
-      <EmptyState
-        title="Citizens coming soon"
-        description="The citizen list for this settlement will appear here."
-      />
-    </section>
   );
 }
 
