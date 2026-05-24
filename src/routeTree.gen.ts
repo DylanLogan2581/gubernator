@@ -18,6 +18,7 @@ import { Route as WorldsWorldIdIndexRouteImport } from './routes/worlds.$worldId
 import { Route as WorldsWorldIdNationsRouteImport } from './routes/worlds.$worldId.nations'
 import { Route as WorldsWorldIdNationsIndexRouteImport } from './routes/worlds.$worldId.nations.index'
 import { Route as WorldsWorldIdNationsNationIdRouteImport } from './routes/worlds.$worldId.nations.$nationId'
+import { Route as WorldsWorldIdCitizensCitizenIdRouteImport } from './routes/worlds.$worldId.citizens.$citizenId'
 import { Route as WorldsWorldIdNationsNationIdIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId.index'
 import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId'
 
@@ -68,6 +69,12 @@ const WorldsWorldIdNationsNationIdRoute =
     path: '/$nationId',
     getParentRoute: () => WorldsWorldIdNationsRoute,
   } as any)
+const WorldsWorldIdCitizensCitizenIdRoute =
+  WorldsWorldIdCitizensCitizenIdRouteImport.update({
+    id: '/citizens/$citizenId',
+    path: '/citizens/$citizenId',
+    getParentRoute: () => WorldsWorldIdRoute,
+  } as any)
 const WorldsWorldIdNationsNationIdIndexRoute =
   WorldsWorldIdNationsNationIdIndexRouteImport.update({
     id: '/',
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
   '/worlds/$worldId/': typeof WorldsWorldIdIndexRoute
+  '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
   '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRouteWithChildren
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdIndexRoute
@@ -99,6 +107,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/worlds': typeof WorldsIndexRoute
   '/worlds/$worldId': typeof WorldsWorldIdIndexRoute
+  '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdIndexRoute
   '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
@@ -112,6 +121,7 @@ export interface FileRoutesById {
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
   '/worlds/$worldId/': typeof WorldsWorldIdIndexRoute
+  '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
   '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRouteWithChildren
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdIndexRoute
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/worlds/'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/'
+    | '/worlds/$worldId/citizens/$citizenId'
     | '/worlds/$worldId/nations/$nationId'
     | '/worlds/$worldId/nations/'
     | '/worlds/$worldId/nations/$nationId/'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/worlds'
     | '/worlds/$worldId'
+    | '/worlds/$worldId/citizens/$citizenId'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/nations/$nationId'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
@@ -149,6 +161,7 @@ export interface FileRouteTypes {
     | '/worlds/'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/'
+    | '/worlds/$worldId/citizens/$citizenId'
     | '/worlds/$worldId/nations/$nationId'
     | '/worlds/$worldId/nations/'
     | '/worlds/$worldId/nations/$nationId/'
@@ -226,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdNationsNationIdRouteImport
       parentRoute: typeof WorldsWorldIdNationsRoute
     }
+    '/worlds/$worldId/citizens/$citizenId': {
+      id: '/worlds/$worldId/citizens/$citizenId'
+      path: '/citizens/$citizenId'
+      fullPath: '/worlds/$worldId/citizens/$citizenId'
+      preLoaderRoute: typeof WorldsWorldIdCitizensCitizenIdRouteImport
+      parentRoute: typeof WorldsWorldIdRoute
+    }
     '/worlds/$worldId/nations/$nationId/': {
       id: '/worlds/$worldId/nations/$nationId/'
       path: '/'
@@ -278,11 +298,13 @@ const WorldsWorldIdNationsRouteWithChildren =
 interface WorldsWorldIdRouteChildren {
   WorldsWorldIdNationsRoute: typeof WorldsWorldIdNationsRouteWithChildren
   WorldsWorldIdIndexRoute: typeof WorldsWorldIdIndexRoute
+  WorldsWorldIdCitizensCitizenIdRoute: typeof WorldsWorldIdCitizensCitizenIdRoute
 }
 
 const WorldsWorldIdRouteChildren: WorldsWorldIdRouteChildren = {
   WorldsWorldIdNationsRoute: WorldsWorldIdNationsRouteWithChildren,
   WorldsWorldIdIndexRoute: WorldsWorldIdIndexRoute,
+  WorldsWorldIdCitizensCitizenIdRoute: WorldsWorldIdCitizensCitizenIdRoute,
 }
 
 const WorldsWorldIdRouteWithChildren = WorldsWorldIdRoute._addFileChildren(
