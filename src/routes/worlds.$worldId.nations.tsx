@@ -1,16 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { requireAuthenticatedRoute } from "@/features/auth";
-import { NationListPage } from "@/features/nations";
 
 import type { JSX } from "react";
-
-function NationListRoute(): JSX.Element {
-  const { worldId } = Route.useParams();
-
-  return <NationListPage worldId={worldId} />;
-}
 
 export const Route = createFileRoute("/worlds/$worldId/nations")({
   beforeLoad: ({ context, location }) =>
@@ -18,10 +11,10 @@ export const Route = createFileRoute("/worlds/$worldId/nations")({
       queryClient: context.queryClient,
       returnTo: location.href,
     }),
-  component: NationListRoute,
-  pendingComponent: NationListPendingRoute,
+  component: Outlet,
+  pendingComponent: NationsLayoutPendingRoute,
 });
 
-function NationListPendingRoute(): JSX.Element {
+function NationsLayoutPendingRoute(): JSX.Element {
   return <LoadingState label="Checking session…" />;
 }

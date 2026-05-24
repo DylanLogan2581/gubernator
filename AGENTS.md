@@ -92,6 +92,7 @@ supabase/
 - Keep business logic, large forms, and reusable UI out of routes once they start growing.
 - Move feature-owned logic into `src/features/<feature-name>`.
 - Keep auth checks, redirects, and route guards close to the route boundary.
+- A parent route file (e.g. `worlds.$worldId.tsx`) with child routes underneath (e.g. `worlds.$worldId.nations.tsx`) is a layout: its component must render `<Outlet />` so children can mount. Put the parent's own page content in a sibling `*.index.tsx` route, not in the layout component — otherwise navigating to a child URL silently shows the parent and hides the child.
 
 ### Components
 

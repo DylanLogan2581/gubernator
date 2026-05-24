@@ -101,6 +101,7 @@ That single command updates `package.json`/lockfile and `CHANGELOG.md`, creates 
 The short version:
 
 - keep route files thin
+- when a route has children, treat the parent as a layout: render `<Outlet />` and move its page content into a sibling `*.index.tsx` route
 - organize reusable logic under `src/features/<feature-name>`
 - use the `@/` alias for cross-layer imports inside `src`
 - use local relative imports freely within the same feature when that keeps feature internals simple
