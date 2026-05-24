@@ -280,6 +280,9 @@ function createClient({
       if (table === "nations") {
         return createNationsQueryBuilder(nationRow);
       }
+      if (table === "nation_relationships") {
+        return createNationRelationshipsQueryBuilder();
+      }
       if (table === "settlements") {
         return createSettlementsQueryBuilder(settlementRows);
       }
@@ -389,13 +392,35 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
 }
 
 function createNationsQueryBuilder(row: TestNationRow | null): unknown {
+  const listRows = row === null ? [] : [row];
+  const listBuilder = {
+    eq: vi.fn(() => listBuilder),
+    order: vi.fn(() => listBuilder),
+    returns: vi.fn().mockResolvedValue({ data: listRows, error: null }),
+  };
   return {
     select: vi.fn(() => ({
-      eq: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue({ data: row, error: null }),
-      })),
+      ...listBuilder,
+      eq: vi.fn((column: string) => {
+        if (column === "id") {
+          return {
+            maybeSingle: vi.fn().mockResolvedValue({ data: row, error: null }),
+          };
+        }
+        return listBuilder;
+      }),
     })),
   };
+}
+
+function createNationRelationshipsQueryBuilder(): unknown {
+  const builder = {
+    eq: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+    select: vi.fn(() => builder),
+  };
+  return builder;
 }
 
 function createSettlementsQueryBuilder(
