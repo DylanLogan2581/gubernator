@@ -5,12 +5,41 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CitizensPanel } from "./CitizensPanel";
 
+import type { ReactNode } from "react";
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    to,
+    params,
+    className,
+  }: {
+    readonly children: ReactNode;
+    readonly to: string;
+    readonly params?: Readonly<Record<string, string>>;
+    readonly className?: string;
+  }) => {
+    const href =
+      params === undefined
+        ? to
+        : Object.entries(params).reduce(
+            (path, [name, value]) => path.replace(`$${name}`, value),
+            to,
+          );
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  },
 }));
 
 type CitizenRowFixture = {
@@ -232,6 +261,7 @@ function renderPanel({
         canAdmin={canAdmin}
         isArchived={isArchived}
         settlementId="settlement-1"
+        worldId="world-1"
       />
     </QueryClientProvider>,
   );
@@ -350,12 +380,10 @@ function createCitizensQueryBuilder({
       const builder = {
         eq: vi.fn(() => builder),
         order: vi.fn(() => builder),
-        returns: vi
-          .fn()
-          .mockResolvedValue({
-            data,
-            error: isAggregate ? null : citizensError,
-          }),
+        returns: vi.fn().mockResolvedValue({
+          data,
+          error: isAggregate ? null : citizensError,
+        }),
       };
       return builder;
     }),

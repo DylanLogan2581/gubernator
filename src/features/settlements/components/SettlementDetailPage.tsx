@@ -293,6 +293,7 @@ function SettlementDetailLoaded({
         canAdmin={worldAccess.canAdmin}
         isArchived={isArchived}
         settlementId={settlement.id}
+        worldId={worldId}
       />
 
       {canDelete ? (

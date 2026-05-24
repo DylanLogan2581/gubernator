@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { UserPlus } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
 
@@ -24,6 +25,7 @@ type CitizensPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly settlementId: string;
+  readonly worldId: string;
 };
 
 const PAGE_SIZE = 25;
@@ -32,6 +34,7 @@ export function CitizensPanel({
   canAdmin,
   isArchived,
   settlementId,
+  worldId,
 }: CitizensPanelProps): JSX.Element {
   return (
     <section
@@ -53,7 +56,7 @@ export function CitizensPanel({
       </div>
 
       {canAdmin ? (
-        <CitizensAdminList settlementId={settlementId} />
+        <CitizensAdminList settlementId={settlementId} worldId={worldId} />
       ) : (
         <CitizensAggregateView settlementId={settlementId} />
       )}
@@ -89,8 +92,10 @@ function CitizensCreateAction({
 
 function CitizensAdminList({
   settlementId,
+  worldId,
 }: {
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const [includeDead, setIncludeDead] = useState(false);
   const [page, setPage] = useState(0);
@@ -177,6 +182,7 @@ function CitizensAdminList({
                 key={citizen.id}
                 assignment={assignmentByCitizenId.get(citizen.id) ?? null}
                 citizen={citizen}
+                worldId={worldId}
               />
             ))}
           </ul>
@@ -216,15 +222,22 @@ function CitizensAdminList({
 function CitizenRow({
   assignment,
   citizen,
+  worldId,
 }: {
   readonly assignment: CitizenAssignment | null;
   readonly citizen: Citizen;
+  readonly worldId: string;
 }): JSX.Element {
-  // Citizen detail route lands in a follow-up; render plain rows until then.
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2">
       <div className="flex min-w-0 flex-col">
-        <span className="truncate text-sm font-medium">{citizen.name}</span>
+        <Link
+          to="/worlds/$worldId/citizens/$citizenId"
+          params={{ citizenId: citizen.id, worldId }}
+          className="truncate text-sm font-medium underline-offset-4 hover:underline"
+        >
+          {citizen.name}
+        </Link>
         {citizen.sex === null ? null : (
           <span className="text-xs text-muted-foreground">{citizen.sex}</span>
         )}
