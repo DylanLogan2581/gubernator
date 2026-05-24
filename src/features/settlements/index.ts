@@ -12,6 +12,7 @@ export {
   settlementReadinessListQueryOptions,
   settlementReadinessSummaryQueryOptions,
 } from "./queries/settlementReadinessQueries";
+export { SettlementDetailPage } from "./components/SettlementDetailPage";
 export {
   SettlementReadinessListPanel,
   SettlementReadinessListPanelContent,
