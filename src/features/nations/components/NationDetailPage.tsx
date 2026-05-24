@@ -603,12 +603,17 @@ function NationSettlementListItem({
 }): JSX.Element {
   return (
     <li className="rounded-md border border-border bg-background p-3">
-      <a
-        href={`/worlds/${worldId}/settlements/${settlement.id}`}
+      <Link
+        to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
+        params={{
+          nationId: settlement.nationId,
+          settlementId: settlement.id,
+          worldId,
+        }}
         className="text-sm font-medium underline-offset-4 hover:underline"
       >
         {settlement.name}
-      </a>
+      </Link>
     </li>
   );
 }

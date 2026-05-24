@@ -28,12 +28,15 @@ vi.mock("@tanstack/react-router", () => ({
   }: {
     readonly children: ReactNode;
     readonly to: string;
-    readonly params?: { readonly worldId?: string };
+    readonly params?: Readonly<Record<string, string>>;
   }) => {
     const href =
-      params?.worldId !== undefined
-        ? to.replace("$worldId", params.worldId)
-        : to;
+      params === undefined
+        ? to
+        : Object.entries(params).reduce(
+            (path, [name, value]) => path.replace(`$${name}`, value),
+            to,
+          );
     return <a href={href}>{children}</a>;
   },
   useNavigate: () => navigateMock,
@@ -132,7 +135,7 @@ describe("NationDetailPage", () => {
     const link = await screen.findByRole("link", { name: "Stonehold" });
     expect(link).toHaveAttribute(
       "href",
-      `/worlds/${worldId}/settlements/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+      `/worlds/${worldId}/nations/${nationId}/settlements/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
     );
   });
 

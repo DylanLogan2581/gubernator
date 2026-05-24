@@ -18,6 +18,8 @@ import { Route as WorldsWorldIdIndexRouteImport } from './routes/worlds.$worldId
 import { Route as WorldsWorldIdNationsRouteImport } from './routes/worlds.$worldId.nations'
 import { Route as WorldsWorldIdNationsIndexRouteImport } from './routes/worlds.$worldId.nations.index'
 import { Route as WorldsWorldIdNationsNationIdRouteImport } from './routes/worlds.$worldId.nations.$nationId'
+import { Route as WorldsWorldIdNationsNationIdIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId.index'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId'
 
 const WorldsRoute = WorldsRouteImport.update({
   id: '/worlds',
@@ -66,6 +68,18 @@ const WorldsWorldIdNationsNationIdRoute =
     path: '/$nationId',
     getParentRoute: () => WorldsWorldIdNationsRoute,
   } as any)
+const WorldsWorldIdNationsNationIdIndexRoute =
+  WorldsWorldIdNationsNationIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => WorldsWorldIdNationsNationIdRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport.update({
+    id: '/settlements/$settlementId',
+    path: '/settlements/$settlementId',
+    getParentRoute: () => WorldsWorldIdNationsNationIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,16 +89,19 @@ export interface FileRoutesByFullPath {
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
   '/worlds/$worldId/': typeof WorldsWorldIdIndexRoute
-  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRoute
+  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRouteWithChildren
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
+  '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdIndexRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/worlds': typeof WorldsIndexRoute
   '/worlds/$worldId': typeof WorldsWorldIdIndexRoute
-  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsIndexRoute
+  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdIndexRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,8 +112,10 @@ export interface FileRoutesById {
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
   '/worlds/$worldId/': typeof WorldsWorldIdIndexRoute
-  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRoute
+  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRouteWithChildren
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
+  '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdIndexRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,14 +129,17 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/'
     | '/worlds/$worldId/nations/$nationId'
     | '/worlds/$worldId/nations/'
+    | '/worlds/$worldId/nations/$nationId/'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/sign-in'
     | '/worlds'
     | '/worlds/$worldId'
-    | '/worlds/$worldId/nations/$nationId'
     | '/worlds/$worldId/nations'
+    | '/worlds/$worldId/nations/$nationId'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
   id:
     | '__root__'
     | '/'
@@ -129,6 +151,8 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/'
     | '/worlds/$worldId/nations/$nationId'
     | '/worlds/$worldId/nations/'
+    | '/worlds/$worldId/nations/$nationId/'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -202,16 +226,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdNationsNationIdRouteImport
       parentRoute: typeof WorldsWorldIdNationsRoute
     }
+    '/worlds/$worldId/nations/$nationId/': {
+      id: '/worlds/$worldId/nations/$nationId/'
+      path: '/'
+      fullPath: '/worlds/$worldId/nations/$nationId/'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdIndexRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
+      path: '/settlements/$settlementId'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdRoute
+    }
   }
 }
 
+interface WorldsWorldIdNationsNationIdRouteChildren {
+  WorldsWorldIdNationsNationIdIndexRoute: typeof WorldsWorldIdNationsNationIdIndexRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+}
+
+const WorldsWorldIdNationsNationIdRouteChildren: WorldsWorldIdNationsNationIdRouteChildren =
+  {
+    WorldsWorldIdNationsNationIdIndexRoute:
+      WorldsWorldIdNationsNationIdIndexRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+  }
+
+const WorldsWorldIdNationsNationIdRouteWithChildren =
+  WorldsWorldIdNationsNationIdRoute._addFileChildren(
+    WorldsWorldIdNationsNationIdRouteChildren,
+  )
+
 interface WorldsWorldIdNationsRouteChildren {
-  WorldsWorldIdNationsNationIdRoute: typeof WorldsWorldIdNationsNationIdRoute
+  WorldsWorldIdNationsNationIdRoute: typeof WorldsWorldIdNationsNationIdRouteWithChildren
   WorldsWorldIdNationsIndexRoute: typeof WorldsWorldIdNationsIndexRoute
 }
 
 const WorldsWorldIdNationsRouteChildren: WorldsWorldIdNationsRouteChildren = {
-  WorldsWorldIdNationsNationIdRoute: WorldsWorldIdNationsNationIdRoute,
+  WorldsWorldIdNationsNationIdRoute:
+    WorldsWorldIdNationsNationIdRouteWithChildren,
   WorldsWorldIdNationsIndexRoute: WorldsWorldIdNationsIndexRoute,
 }
 
