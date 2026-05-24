@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { UserPlus } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
@@ -14,6 +14,9 @@ import {
   citizensInSettlementQueryOptions,
 } from "../queries/citizensQueries";
 
+import { CreateNpcDialog } from "./citizenCreation/CreateNpcDialog";
+import { CreatePlayerCharacterDialog } from "./citizenCreation/CreatePlayerCharacterDialog";
+
 import type { CitizenAssignment } from "../types/citizenAssignmentTypes";
 import type {
   Citizen,
@@ -23,6 +26,7 @@ import type {
 
 type CitizensPanelProps = {
   readonly canAdmin: boolean;
+  readonly incestPreventionDepth: number;
   readonly isArchived: boolean;
   readonly settlementId: string;
   readonly worldId: string;
@@ -32,6 +36,7 @@ const PAGE_SIZE = 25;
 
 export function CitizensPanel({
   canAdmin,
+  incestPreventionDepth,
   isArchived,
   settlementId,
   worldId,
@@ -52,7 +57,14 @@ export function CitizensPanel({
               : "Population summary for this settlement."}
           </p>
         </div>
-        {canAdmin ? <CitizensCreateAction isArchived={isArchived} /> : null}
+        {canAdmin ? (
+          <CitizensCreateActions
+            incestPreventionDepth={incestPreventionDepth}
+            isArchived={isArchived}
+            settlementId={settlementId}
+            worldId={worldId}
+          />
+        ) : null}
       </div>
 
       {canAdmin ? (
@@ -64,29 +76,75 @@ export function CitizensPanel({
   );
 }
 
-function CitizensCreateAction({
+type CitizensCreateMode = "npc" | "player_character" | null;
+
+function CitizensCreateActions({
+  incestPreventionDepth,
   isArchived,
+  settlementId,
+  worldId,
 }: {
+  readonly incestPreventionDepth: number;
   readonly isArchived: boolean;
+  readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
-  // The creation flow is not implemented yet; surface the affordance so the
-  // policy is visible and ship the form in a follow-up.
-  const reason = isArchived
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState<CitizensCreateMode>(null);
+
+  const disabledReason = isArchived
     ? "Creating citizens is disabled because this world is archived."
-    : "Citizen creation is coming soon.";
+    : undefined;
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      disabled
-      title={reason}
-      aria-label="Create citizen"
-    >
-      <UserPlus aria-hidden="true" />
-      Create citizen
-    </Button>
+    <>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isArchived}
+          title={disabledReason}
+          aria-label="Create NPC"
+          onClick={() => setMode("npc")}
+        >
+          <UserPlus aria-hidden="true" />
+          Create NPC
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isArchived}
+          title={disabledReason}
+          aria-label="Create player character"
+          onClick={() => setMode("player_character")}
+        >
+          <UserPlus aria-hidden="true" />
+          Create player character
+        </Button>
+      </div>
+      {mode === "npc" ? (
+        <CreateNpcDialog
+          incestPreventionDepth={incestPreventionDepth}
+          onClose={() => setMode(null)}
+          onCreated={() => undefined}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+        />
+      ) : null}
+      {mode === "player_character" ? (
+        <CreatePlayerCharacterDialog
+          incestPreventionDepth={incestPreventionDepth}
+          onClose={() => setMode(null)}
+          onCreated={() => undefined}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+        />
+      ) : null}
+    </>
   );
 }
 

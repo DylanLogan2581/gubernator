@@ -10,6 +10,7 @@ export {
   currentAppUserQueryOptions,
   currentSessionQueryOptions,
 } from "./queries/authQueries";
+export { availableUsersQueryOptions } from "./queries/usersQueries";
 export {
   parseSignInSearch,
   SIGN_IN_DEFAULT_RETURN_PATH,
