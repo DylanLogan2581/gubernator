@@ -334,7 +334,11 @@ function CitizenDetailLoaded({
         />
       ) : null}
 
-      <PartnershipHistoryPanel citizenId={citizen.id} />
+      <PartnershipHistoryPanel
+        canAdmin={canAdmin}
+        citizen={citizen}
+        isArchived={isArchived}
+      />
 
       {canAdmin ? (
         <CitizenLifecycleSection

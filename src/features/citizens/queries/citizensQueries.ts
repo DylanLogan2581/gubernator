@@ -19,6 +19,9 @@ import type {
 
 type CitizenListQueryKey = ReturnType<typeof citizensQueryKeys.settlementList>;
 type CitizenDetailQueryKey = ReturnType<typeof citizensQueryKeys.detail>;
+type UnpairedAliveInWorldQueryKey = ReturnType<
+  typeof citizensQueryKeys.unpairedAliveInWorld
+>;
 type CitizenSettlementAggregateQueryKey = ReturnType<
   typeof citizensQueryKeys.settlementAggregateStats
 >;
@@ -31,6 +34,12 @@ type CitizenListQueryOptions = UseQueryOptions<
   AuthUiError,
   readonly Citizen[],
   CitizenListQueryKey
+>;
+type UnpairedAliveInWorldQueryOptions = UseQueryOptions<
+  readonly Citizen[],
+  AuthUiError,
+  readonly Citizen[],
+  UnpairedAliveInWorldQueryKey
 >;
 type CitizenDetailQueryOptions = UseQueryOptions<
   Citizen | null,
@@ -119,6 +128,17 @@ export function citizenByIdQueryOptions(
   });
 }
 
+export function unpairedAliveCitizensInWorldQueryOptions(
+  worldId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): UnpairedAliveInWorldQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getUnpairedAliveCitizensInWorld(client, worldId),
+    queryKey: citizensQueryKeys.unpairedAliveInWorld(worldId),
+  });
+}
+
 export function citizenAggregateStatsForSettlementQueryOptions(
   settlementId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
@@ -175,6 +195,71 @@ async function getCitizenById(
   }
 
   return data === null ? null : toCitizen(data);
+}
+
+type PartnershipPairRow = {
+  readonly citizen_a_id: string;
+  readonly citizen_b_id: string;
+};
+
+async function getUnpairedAliveCitizensInWorld(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+): Promise<readonly Citizen[]> {
+  const { data: citizenRows, error: citizensError } = await client
+    .from("citizens")
+    .select(CITIZEN_SELECT)
+    .eq("world_id", worldId)
+    .eq("status", "alive")
+    .order("name", { ascending: true })
+    .returns<CitizenRow[]>();
+
+  if (citizensError !== null) {
+    throw normalizeAuthError(citizensError);
+  }
+
+  if (citizenRows.length === 0) {
+    return [];
+  }
+
+  const citizenIds = citizenRows.map((row) => row.id);
+
+  // Active partnerships place each partner on a different column, so we run
+  // the two single-column lookups in parallel and merge their results — same
+  // shape as partnershipsForCitizen but scoped to the world's citizens.
+  const [aSide, bSide] = await Promise.all([
+    client
+      .from("partnerships")
+      .select("citizen_a_id,citizen_b_id")
+      .eq("status", "active")
+      .in("citizen_a_id", citizenIds)
+      .returns<PartnershipPairRow[]>(),
+    client
+      .from("partnerships")
+      .select("citizen_a_id,citizen_b_id")
+      .eq("status", "active")
+      .in("citizen_b_id", citizenIds)
+      .returns<PartnershipPairRow[]>(),
+  ]);
+
+  if (aSide.error !== null) {
+    throw normalizeAuthError(aSide.error);
+  }
+  if (bSide.error !== null) {
+    throw normalizeAuthError(bSide.error);
+  }
+
+  const partneredIds = new Set<string>();
+  for (const row of aSide.data) {
+    partneredIds.add(row.citizen_a_id);
+    partneredIds.add(row.citizen_b_id);
+  }
+  for (const row of bSide.data) {
+    partneredIds.add(row.citizen_a_id);
+    partneredIds.add(row.citizen_b_id);
+  }
+
+  return citizenRows.filter((row) => !partneredIds.has(row.id)).map(toCitizen);
 }
 
 async function getCitizenAggregateStatsForSettlement(
