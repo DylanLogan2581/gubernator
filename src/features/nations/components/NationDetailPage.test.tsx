@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import type { WorldCalendarConfig } from "@/features/calendar";
 
@@ -44,6 +45,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 const worldId = "00000000-0000-0000-0000-000000000101";
 const nationId = "11111111-1111-1111-1111-111111111111";
+const otherNationId = "22222222-2222-2222-2222-222222222222";
 
 describe("NationDetailPage", () => {
   beforeEach(() => {
@@ -54,10 +56,12 @@ describe("NationDetailPage", () => {
   it("renders nation name, description, and a back link to the nations list", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        nationRow: createNationRow({
-          description: "A mountain realm.",
-          name: "Highmark",
-        }),
+        nationRows: [
+          createNationRow({
+            description: "A mountain realm.",
+            name: "Highmark",
+          }),
+        ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
         worldRows: [createWorldRow({ owner_id: "user-1" })],
@@ -78,7 +82,7 @@ describe("NationDetailPage", () => {
   it("shows admin controls (edit, hide, delete) for world admins", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        nationRow: createNationRow({ name: "Highmark" }),
+        nationRows: [createNationRow({ name: "Highmark" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
         worldRows: [createWorldRow({ owner_id: "user-1" })],
@@ -95,7 +99,7 @@ describe("NationDetailPage", () => {
   it("hides admin controls for non-admin viewers", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        nationRow: createNationRow({ name: "Highmark" }),
+        nationRows: [createNationRow({ name: "Highmark" })],
         session: { user: { id: "user-2" } },
         settlementRows: [],
         worldRows: [
@@ -117,7 +121,7 @@ describe("NationDetailPage", () => {
   it("lists settlements with links to the settlement detail page", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        nationRow: createNationRow({ name: "Highmark" }),
+        nationRows: [createNationRow({ name: "Highmark" })],
         session: { user: { id: "user-1" } },
         settlementRows: [
           {
@@ -142,7 +146,7 @@ describe("NationDetailPage", () => {
   it("redirects out when the nation is hidden and the viewer cannot manage the world", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        nationRow: createNationRow({ is_hidden: true, name: "Veilreach" }),
+        nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-2" } },
         settlementRows: [],
         worldRows: [
@@ -162,10 +166,10 @@ describe("NationDetailPage", () => {
     expect(screen.queryByRole("heading", { name: "Veilreach" })).toBeNull();
   });
 
-  it("shows the hidden badge to admins viewing a hidden nation", async () => {
+  it("shows the hidden badge to world owners viewing a hidden nation", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        nationRow: createNationRow({ is_hidden: true, name: "Veilreach" }),
+        nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
         worldRows: [createWorldRow({ owner_id: "user-1" })],
@@ -181,10 +185,53 @@ describe("NationDetailPage", () => {
     expect(screen.getByRole("button", { name: /Show nation/ })).toBeDefined();
   });
 
+  it("shows the hidden badge to delegated world admins viewing a hidden nation", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: worldId }],
+        nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
+        session: { user: { id: "user-2" } },
+        settlementRows: [],
+        worldRows: [
+          createWorldRow({ owner_id: "user-1", visibility: "public" }),
+        ],
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Veilreach" }),
+    ).toBeDefined();
+    expect(screen.getByText("Hidden")).toBeDefined();
+    expect(screen.getByRole("button", { name: /Show nation/ })).toBeDefined();
+  });
+
+  it("shows the hidden badge to super admins viewing a hidden nation", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
+        session: { user: { id: "user-3" } },
+        settlementRows: [],
+        worldRows: [
+          createWorldRow({ owner_id: "user-1", visibility: "private" }),
+        ],
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Veilreach" }),
+    ).toBeDefined();
+    expect(screen.getByText("Hidden")).toBeDefined();
+  });
+
   it("renders an access-denied state when the world is not visible", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        nationRow: createNationRow({ name: "Highmark" }),
+        nationRows: [createNationRow({ name: "Highmark" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
         worldRows: [],
@@ -194,6 +241,303 @@ describe("NationDetailPage", () => {
     renderPage();
 
     expect(await screen.findByText("World unavailable")).toBeDefined();
+  });
+
+  it("lists relationships against other nations for admins", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const list = await screen.findByRole("list", { name: "Relationships" });
+    expect(list).toBeDefined();
+    expect(
+      await screen.findByText(
+        (_, element) => element?.textContent === "Current stance: Neutral",
+      ),
+    ).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Propose alliance/ }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Propose non-aggression pact/ }),
+    ).toBeDefined();
+  });
+
+  it("hides relationship controls from non-admin viewers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        session: { user: { id: "user-2" } },
+        settlementRows: [],
+        worldRows: [
+          createWorldRow({ owner_id: "user-1", visibility: "public" }),
+        ],
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("list", { name: "Relationships" });
+    expect(
+      screen.queryByRole("button", { name: /Propose alliance/ }),
+    ).toBeNull();
+    expect(screen.queryByRole("combobox", { name: /Set stance/ })).toBeNull();
+  });
+
+  it("shows pending-outgoing proposal copy when a proposal awaits the other nation", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        outgoingRelationships: [
+          createRelationshipRow({
+            from_nation_id: nationId,
+            pending_stance: "allied",
+            pending_status: "proposed",
+            to_nation_id: otherNationId,
+          }),
+        ],
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("list", { name: "Relationships" });
+    expect(await screen.findByText(/Sent proposal:/)).toBeDefined();
+    expect(screen.getByText(/Allied — awaiting Veilreach\./)).toBeDefined();
+    expect(
+      screen.queryByRole("button", { name: /Propose alliance/ }),
+    ).toBeNull();
+  });
+
+  it("shows incoming-proposal copy with accept and decline controls", async () => {
+    const respondToBilateral: UpdateMock = vi.fn(() => ({
+      data: createRelationshipRow({
+        current_stance: "allied",
+        from_nation_id: otherNationId,
+        pending_stance: "allied",
+        pending_status: "accepted",
+        to_nation_id: nationId,
+      }),
+      error: null,
+    }));
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        incomingRelationships: [
+          createRelationshipRow({
+            from_nation_id: otherNationId,
+            pending_stance: "non_aggression_pact",
+            pending_status: "proposed",
+            to_nation_id: nationId,
+          }),
+        ],
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        respondToBilateralExisting: { pending_stance: "non_aggression_pact" },
+        respondToBilateralResult: respondToBilateral,
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByText(/Incoming proposal:/);
+    expect(
+      screen.getByText(/Veilreach proposes Non-aggression pact/),
+    ).toBeDefined();
+
+    const accept = await screen.findByRole("button", {
+      name: /Accept proposal/,
+    });
+    await userEvent.click(accept);
+
+    await waitFor(() => {
+      expect(respondToBilateral).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("calls decline when the user declines an incoming proposal", async () => {
+    const respondToBilateral: UpdateMock = vi.fn(() => ({
+      data: createRelationshipRow({
+        from_nation_id: otherNationId,
+        pending_stance: null,
+        pending_status: "declined",
+        to_nation_id: nationId,
+      }),
+      error: null,
+    }));
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        incomingRelationships: [
+          createRelationshipRow({
+            from_nation_id: otherNationId,
+            pending_stance: "allied",
+            pending_status: "proposed",
+            to_nation_id: nationId,
+          }),
+        ],
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        respondToBilateralExisting: { pending_stance: "allied" },
+        respondToBilateralResult: respondToBilateral,
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const decline = await screen.findByRole("button", {
+      name: /Decline proposal/,
+    });
+    await userEvent.click(decline);
+
+    await waitFor(() => {
+      expect(respondToBilateral).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("invokes the propose-bilateral mutation when proposing an alliance", async () => {
+    const upsertMock: UpsertMock = vi.fn(() => ({
+      data: createRelationshipRow({
+        from_nation_id: nationId,
+        pending_stance: "allied",
+        pending_status: "proposed",
+        to_nation_id: otherNationId,
+      }),
+      error: null,
+    }));
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        relationshipsUpsertResult: upsertMock,
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const propose = await screen.findByRole("button", {
+      name: /Propose alliance/,
+    });
+    await userEvent.click(propose);
+
+    await waitFor(() => {
+      expect(upsertMock).toHaveBeenCalledTimes(1);
+    });
+    const [payload] = upsertMock.mock.calls[0];
+    expect(payload).toMatchObject({
+      from_nation_id: nationId,
+      pending_stance: "allied",
+      pending_status: "proposed",
+      to_nation_id: otherNationId,
+    });
+  });
+
+  it("invokes the unilateral-stance mutation when the stance is changed", async () => {
+    const upsertMock: UpsertMock = vi.fn(() => ({
+      data: createRelationshipRow({
+        current_stance: "hostile",
+        from_nation_id: nationId,
+        to_nation_id: otherNationId,
+      }),
+      error: null,
+    }));
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        relationshipsUpsertResult: upsertMock,
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const select = await screen.findByRole("combobox", {
+      name: /Set stance/,
+    });
+    await userEvent.selectOptions(select, "hostile");
+
+    await waitFor(() => {
+      expect(upsertMock).toHaveBeenCalledTimes(1);
+    });
+    const [payload] = upsertMock.mock.calls[0];
+    expect(payload).toMatchObject({
+      current_stance: "hostile",
+      from_nation_id: nationId,
+      pending_stance: null,
+      pending_status: null,
+      to_nation_id: otherNationId,
+    });
+  });
+
+  it("renders a withdraw control when the relationship is allied", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        outgoingRelationships: [
+          createRelationshipRow({
+            current_stance: "allied",
+            from_nation_id: nationId,
+            to_nation_id: otherNationId,
+          }),
+        ],
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", { name: /Withdraw agreement/ }),
+    ).toBeDefined();
+    expect(
+      screen.queryByRole("button", { name: /Propose alliance/ }),
+    ).toBeNull();
   });
 });
 
@@ -227,6 +571,18 @@ type TestSettlementRow = {
   readonly nation_id: string;
 };
 
+type TestRelationshipRow = {
+  readonly created_at: string;
+  readonly current_stance: string;
+  readonly from_nation_id: string;
+  readonly id: string;
+  readonly pending_changed_by_citizen_id: string | null;
+  readonly pending_stance: string | null;
+  readonly pending_status: string | null;
+  readonly to_nation_id: string;
+  readonly updated_at: string;
+};
+
 type TestWorldRow = {
   readonly archived_at: string | null;
   readonly calendar_config_json: WorldCalendarConfig | null;
@@ -250,15 +606,45 @@ type TestUser = {
   readonly username: string;
 };
 
+type RelationshipMutationResult = {
+  readonly data: TestRelationshipRow | null;
+  readonly error: unknown;
+};
+
+type UpsertMock = Mock<
+  (
+    values: Record<string, unknown>,
+    options: unknown,
+  ) => RelationshipMutationResult
+>;
+
+type UpdateMock = Mock<
+  (values: Record<string, unknown>) => RelationshipMutationResult
+>;
+
 function createClient({
   adminRows = [],
-  nationRow,
+  incomingRelationships = [],
+  isSuperAdmin = false,
+  nationRows,
+  outgoingRelationships = [],
+  relationshipsUpsertResult,
+  respondToBilateralExisting = null,
+  respondToBilateralResult,
   session,
   settlementRows,
   worldRows,
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
-  readonly nationRow: TestNationRow | null;
+  readonly incomingRelationships?: readonly TestRelationshipRow[];
+  readonly isSuperAdmin?: boolean;
+  readonly nationRows: readonly TestNationRow[];
+  readonly outgoingRelationships?: readonly TestRelationshipRow[];
+  readonly relationshipsUpsertResult?: UpsertMock;
+  readonly respondToBilateralExisting?: {
+    readonly pending_stance: string | null;
+  } | null;
+  readonly respondToBilateralResult?: UpdateMock;
   readonly session: { readonly user: { readonly id: string } };
   readonly settlementRows: readonly TestSettlementRow[];
   readonly worldRows: readonly TestWorldRow[];
@@ -272,7 +658,9 @@ function createClient({
     },
     from: vi.fn((table: string) => {
       if (table === "users") {
-        return createUsersQueryBuilder(createUser(session.user.id));
+        return createUsersQueryBuilder(
+          createUser(session.user.id, isSuperAdmin),
+        );
       }
       if (table === "world_admins") {
         return createWorldAdminsQueryBuilder(adminRows);
@@ -281,10 +669,16 @@ function createClient({
         return createWorldsQueryBuilder(worldRows);
       }
       if (table === "nations") {
-        return createNationsQueryBuilder(nationRow);
+        return createNationsQueryBuilder(nationRows);
       }
       if (table === "nation_relationships") {
-        return createNationRelationshipsQueryBuilder();
+        return createNationRelationshipsQueryBuilder({
+          incoming: incomingRelationships,
+          outgoing: outgoingRelationships,
+          respondExisting: respondToBilateralExisting,
+          respondResult: respondToBilateralResult,
+          upsertResult: relationshipsUpsertResult,
+        });
       }
       if (table === "settlements") {
         return createSettlementsQueryBuilder(settlementRows);
@@ -294,12 +688,12 @@ function createClient({
   };
 }
 
-function createUser(id: string): TestUser {
+function createUser(id: string, isSuperAdmin: boolean): TestUser {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
     email: `${id}@example.com`,
     id,
-    is_super_admin: false,
+    is_super_admin: isSuperAdmin,
     status: "active",
     updated_at: "2026-01-01T00:00:00.000Z",
     username: id,
@@ -355,6 +749,23 @@ function createNationRow(
   };
 }
 
+function createRelationshipRow(
+  overrides: Partial<TestRelationshipRow> = {},
+): TestRelationshipRow {
+  return {
+    created_at: "2026-01-01T00:00:00.000Z",
+    current_stance: "neutral",
+    from_nation_id: nationId,
+    id: "99999999-9999-9999-9999-999999999999",
+    pending_changed_by_citizen_id: null,
+    pending_stance: null,
+    pending_status: null,
+    to_nation_id: otherNationId,
+    updated_at: "2026-01-02T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
 function createUsersQueryBuilder(user: TestUser): unknown {
   return {
     select: vi.fn(() => ({
@@ -394,18 +805,18 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
   };
 }
 
-function createNationsQueryBuilder(row: TestNationRow | null): unknown {
-  const listRows = row === null ? [] : [row];
+function createNationsQueryBuilder(rows: readonly TestNationRow[]): unknown {
   const listBuilder = {
     eq: vi.fn(() => listBuilder),
     order: vi.fn(() => listBuilder),
-    returns: vi.fn().mockResolvedValue({ data: listRows, error: null }),
+    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
   };
   return {
     select: vi.fn(() => ({
       ...listBuilder,
-      eq: vi.fn((column: string) => {
+      eq: vi.fn((column: string, value: string) => {
         if (column === "id") {
+          const row = rows.find((candidate) => candidate.id === value) ?? null;
           return {
             maybeSingle: vi.fn().mockResolvedValue({ data: row, error: null }),
           };
@@ -416,14 +827,70 @@ function createNationsQueryBuilder(row: TestNationRow | null): unknown {
   };
 }
 
-function createNationRelationshipsQueryBuilder(): unknown {
-  const builder = {
-    eq: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    returns: vi.fn().mockResolvedValue({ data: [], error: null }),
-    select: vi.fn(() => builder),
+function createNationRelationshipsQueryBuilder({
+  incoming,
+  outgoing,
+  respondExisting,
+  respondResult,
+  upsertResult,
+}: {
+  readonly incoming: readonly TestRelationshipRow[];
+  readonly outgoing: readonly TestRelationshipRow[];
+  readonly respondExisting: {
+    readonly pending_stance: string | null;
+  } | null;
+  readonly respondResult?: UpdateMock;
+  readonly upsertResult?: UpsertMock;
+}): unknown {
+  return {
+    select: vi.fn((selectArg: string) => {
+      const isPendingLookup = selectArg === "pending_stance";
+      let columnFilter: string | null = null;
+      const builder = {
+        eq: vi.fn((column: string) => {
+          columnFilter = column;
+          return builder;
+        }),
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: respondExisting, error: null }),
+        order: vi.fn(() => builder),
+        returns: vi.fn().mockImplementation(() => {
+          if (isPendingLookup) {
+            return Promise.resolve({ data: respondExisting, error: null });
+          }
+          if (columnFilter === "from_nation_id") {
+            return Promise.resolve({ data: outgoing, error: null });
+          }
+          return Promise.resolve({ data: incoming, error: null });
+        }),
+      };
+      return builder;
+    }),
+    upsert: vi.fn((values: Record<string, unknown>, options: unknown) => ({
+      select: vi.fn(() => ({
+        maybeSingle: vi.fn().mockImplementation(() => {
+          if (upsertResult !== undefined) {
+            return Promise.resolve(upsertResult(values, options));
+          }
+          return Promise.resolve({ data: null, error: null });
+        }),
+      })),
+    })),
+    update: vi.fn((values: Record<string, unknown>) => {
+      const chain = {
+        eq: vi.fn(() => chain),
+        maybeSingle: vi.fn().mockImplementation(() => {
+          if (respondResult !== undefined) {
+            return Promise.resolve(respondResult(values));
+          }
+          return Promise.resolve({ data: null, error: null });
+        }),
+        select: vi.fn(() => chain),
+      };
+      return chain;
+    }),
   };
-  return builder;
 }
 
 function createSettlementsQueryBuilder(
