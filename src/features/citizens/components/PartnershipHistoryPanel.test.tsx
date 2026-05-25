@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PartnershipHistoryPanel } from "./PartnershipHistoryPanel";
@@ -41,6 +42,11 @@ vi.mock("@tanstack/react-router", () => ({
     );
   },
 }));
+
+const FOCAL_CITIZEN_ID = "11111111-1111-1111-1111-111111111111";
+const PARTNER_CITIZEN_ID = "22222222-2222-2222-2222-222222222222";
+const PARTNERSHIP_ID = "33333333-3333-3333-3333-333333333333";
+const TURN_TRANSITION_ID = "44444444-4444-4444-4444-444444444444";
 
 type PartnershipRowFixture = {
   readonly change_reason: string | null;
@@ -221,6 +227,252 @@ describe("PartnershipHistoryPanel", () => {
     });
     expect(createButton).toBeDisabled();
   });
+
+  it("exposes Dissolve, Mark widowed, and Reassign for active partnerships", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        partnerships: [
+          createPartnershipRow({
+            citizen_a_id: "c-focal",
+            citizen_b_id: "c-partner",
+            id: "p-1",
+            status: "active",
+          }),
+        ],
+        citizens: [
+          createCitizenRow({ id: "c-focal" }),
+          createCitizenRow({ id: "c-partner", name: "Brann" }),
+        ],
+        currentTurnNumber: 9,
+        latestTransitionId: "tt-1",
+      }),
+    );
+
+    renderPanel({ canAdmin: true });
+
+    const dissolve = await screen.findByRole("button", { name: "Dissolve" });
+    await waitFor(() => {
+      expect(dissolve).not.toBeDisabled();
+    });
+    expect(screen.getByRole("button", { name: "Mark widowed" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Reassign" })).toBeDefined();
+  });
+
+  it("dispatches dissolve_partnership when the dissolve form is submitted", async () => {
+    const rpc = vi.fn().mockReturnValue({
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: createPartnershipRow({
+          citizen_a_id: FOCAL_CITIZEN_ID,
+          citizen_b_id: PARTNER_CITIZEN_ID,
+          ended_on_turn_number: 9,
+          id: PARTNERSHIP_ID,
+          status: "dissolved",
+        }),
+        error: null,
+      }),
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        partnerships: [
+          createPartnershipRow({
+            citizen_a_id: FOCAL_CITIZEN_ID,
+            citizen_b_id: PARTNER_CITIZEN_ID,
+            id: PARTNERSHIP_ID,
+            status: "active",
+          }),
+        ],
+        citizens: [
+          createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+          createCitizenRow({ id: PARTNER_CITIZEN_ID, name: "Brann" }),
+        ],
+        currentTurnNumber: 9,
+        latestTransitionId: TURN_TRANSITION_ID,
+        rpc,
+      }),
+    );
+
+    renderPanel({
+      canAdmin: true,
+      focal: createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+    });
+
+    const user = userEvent.setup();
+    const dissolveButton = await screen.findByRole("button", {
+      name: "Dissolve",
+    });
+    await waitFor(() => {
+      expect(dissolveButton).not.toBeDisabled();
+    });
+    await user.click(dissolveButton);
+
+    const form = await screen.findByRole("form", {
+      name: "Dissolve partnership",
+    });
+    const reasonInput = within(form).getByLabelText("Change reason");
+    await user.type(reasonInput, "Mutual separation.");
+    await user.click(within(form).getByRole("button", { name: "Dissolve" }));
+
+    await waitFor(() => {
+      expect(rpc).toHaveBeenCalledWith("dissolve_partnership", {
+        p_change_reason: "Mutual separation.",
+        p_ended_on_turn_number: 9,
+        p_partnership_id: PARTNERSHIP_ID,
+        p_turn_transition_id: TURN_TRANSITION_ID,
+      });
+    });
+  });
+
+  it("rejects the dissolve form without a change reason without calling the RPC", async () => {
+    const rpc = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        partnerships: [
+          createPartnershipRow({
+            citizen_a_id: FOCAL_CITIZEN_ID,
+            citizen_b_id: PARTNER_CITIZEN_ID,
+            id: PARTNERSHIP_ID,
+            status: "active",
+          }),
+        ],
+        citizens: [
+          createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+          createCitizenRow({ id: PARTNER_CITIZEN_ID, name: "Brann" }),
+        ],
+        currentTurnNumber: 9,
+        latestTransitionId: TURN_TRANSITION_ID,
+        rpc,
+      }),
+    );
+
+    renderPanel({
+      canAdmin: true,
+      focal: createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+    });
+
+    const user = userEvent.setup();
+    const dissolveButton = await screen.findByRole("button", {
+      name: "Dissolve",
+    });
+    await waitFor(() => {
+      expect(dissolveButton).not.toBeDisabled();
+    });
+    await user.click(dissolveButton);
+
+    const form = await screen.findByRole("form", {
+      name: "Dissolve partnership",
+    });
+    await user.click(within(form).getByRole("button", { name: "Dissolve" }));
+
+    expect(within(form).getByText("Change reason is required.")).toBeDefined();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("dispatches mark_partnership_widowed when the widowed form is submitted", async () => {
+    const rpc = vi.fn().mockReturnValue({
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: createPartnershipRow({
+          citizen_a_id: FOCAL_CITIZEN_ID,
+          citizen_b_id: PARTNER_CITIZEN_ID,
+          ended_on_turn_number: 9,
+          id: PARTNERSHIP_ID,
+          status: "widowed",
+        }),
+        error: null,
+      }),
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        partnerships: [
+          createPartnershipRow({
+            citizen_a_id: FOCAL_CITIZEN_ID,
+            citizen_b_id: PARTNER_CITIZEN_ID,
+            id: PARTNERSHIP_ID,
+            status: "active",
+          }),
+        ],
+        citizens: [
+          createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+          createCitizenRow({ id: PARTNER_CITIZEN_ID, name: "Brann" }),
+        ],
+        currentTurnNumber: 9,
+        latestTransitionId: TURN_TRANSITION_ID,
+        rpc,
+      }),
+    );
+
+    renderPanel({
+      canAdmin: true,
+      focal: createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+    });
+
+    const user = userEvent.setup();
+    const widowedButton = await screen.findByRole("button", {
+      name: "Mark widowed",
+    });
+    await waitFor(() => {
+      expect(widowedButton).not.toBeDisabled();
+    });
+    await user.click(widowedButton);
+
+    const form = await screen.findByRole("form", { name: "Mark widowed" });
+    await user.type(
+      within(form).getByLabelText("Change reason"),
+      "Partner died in winter.",
+    );
+    await user.click(
+      within(form).getByRole("button", { name: "Mark widowed" }),
+    );
+
+    await waitFor(() => {
+      expect(rpc).toHaveBeenCalledWith("mark_partnership_widowed", {
+        p_change_reason: "Partner died in winter.",
+        p_ended_on_turn_number: 9,
+        p_partnership_id: PARTNERSHIP_ID,
+        p_turn_transition_id: TURN_TRANSITION_ID,
+      });
+    });
+  });
+
+  it("opens the reassign form with new partner and turn fields", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        partnerships: [
+          createPartnershipRow({
+            citizen_a_id: "c-focal",
+            citizen_b_id: "c-partner",
+            id: "p-1",
+            status: "active",
+          }),
+        ],
+        citizens: [
+          createCitizenRow({ id: "c-focal" }),
+          createCitizenRow({ id: "c-partner", name: "Brann" }),
+        ],
+        currentTurnNumber: 9,
+        latestTransitionId: "tt-1",
+      }),
+    );
+
+    renderPanel({ canAdmin: true });
+
+    const user = userEvent.setup();
+    const reassignButton = await screen.findByRole("button", {
+      name: "Reassign",
+    });
+    await waitFor(() => {
+      expect(reassignButton).not.toBeDisabled();
+    });
+    await user.click(reassignButton);
+
+    const form = await screen.findByRole("form", { name: "Reassign partner" });
+    expect(within(form).getByLabelText("New partner")).toBeDefined();
+    expect(
+      within(form).getByLabelText("Old partnership ended on turn"),
+    ).toBeDefined();
+    expect(
+      within(form).getByLabelText("New partnership formed on turn"),
+    ).toBeDefined();
+  });
 });
 
 function renderPanel({
@@ -338,6 +590,7 @@ type ClientFixtures = {
   readonly citizens: readonly CitizenRowFixture[];
   readonly currentTurnNumber?: number;
   readonly latestTransitionId?: string | null;
+  readonly rpc?: ReturnType<typeof vi.fn>;
 };
 
 function createClient({
@@ -345,6 +598,7 @@ function createClient({
   citizens,
   currentTurnNumber = 1,
   latestTransitionId = null,
+  rpc,
 }: ClientFixtures): unknown {
   return {
     from: vi.fn((table: string) => {
@@ -362,6 +616,11 @@ function createClient({
       }
       throw new Error(`Unexpected table ${table}`);
     }),
+    rpc:
+      rpc ??
+      vi.fn(() => ({
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      })),
   };
 }
 
