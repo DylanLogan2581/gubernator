@@ -178,9 +178,10 @@ describe("WorldEntryGate", () => {
   });
 
   it("falls back to the chooser when the persisted active row points at a dead PC", async () => {
-    // The selectable PCs query already filters to status='alive', so a dead
-    // persisted citizen simply won't appear in the selectable list and the
-    // resume path won't match.
+    // Include the persisted citizen in the citizens table with status='dead'.
+    // The selectable PCs query filters by status='alive', so this row gets
+    // excluded and the resume path can no longer match.
+    const DEAD_PC_ID = "00000000-0000-0000-0000-0000000000cc";
     requireSupabaseClient.mockReturnValue(
       createClient({
         worldRows: [
@@ -189,12 +190,15 @@ describe("WorldEntryGate", () => {
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
+          createCitizenRow({
+            death_cause: "old age",
+            id: DEAD_PC_ID,
+            name: "Ghost",
+            status: "dead",
+          }),
         ],
-        // The active row points at a citizen that is not in the selectable
-        // list — same effect as that citizen being dead per the RLS-backed
-        // selectable query (status='alive' filter).
         activeRow: {
-          citizen_id: "00000000-0000-0000-0000-0000000000cc",
+          citizen_id: DEAD_PC_ID,
           updated_at: "2026-05-01T00:00:00.000Z",
           user_id: USER_ID,
           world_id: WORLD_ID,
@@ -207,6 +211,7 @@ describe("WorldEntryGate", () => {
     expect(
       await screen.findByText("Choose your player character"),
     ).toBeDefined();
+    expect(screen.queryByText("Ghost")).toBeNull();
   });
 
   it("tapping a chooser row persists the selection", async () => {
@@ -243,9 +248,69 @@ describe("WorldEntryGate", () => {
       );
     });
   });
+
+  it("switching the active character upserts the row and invalidates role-dependent queries", async () => {
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [
+          createWorldRow({ owner_id: "another-user", visibility: "public" }),
+        ],
+        playerCharacters: [
+          createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
+          createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
+        ],
+        // Persisted active is Bravo so the gate resumes into the world with
+        // Bravo active and the switcher (not the chooser) is rendered.
+        activeRow: {
+          citizen_id: PC_ID_B,
+          updated_at: "2026-05-01T00:00:00.000Z",
+          user_id: USER_ID,
+          world_id: WORLD_ID,
+        },
+        upsertActiveRow: upsert,
+      }),
+    );
+
+    const queryClient = renderGate();
+    const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+
+    expect(await screen.findByText("ENTERED")).toBeDefined();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Bravo/ }));
+    await user.click(await screen.findByRole("menuitem", { name: /Alpha/ }));
+
+    await waitFor(() => {
+      expect(upsert).toHaveBeenCalledWith(
+        {
+          citizen_id: PC_ID_A,
+          user_id: USER_ID,
+          world_id: WORLD_ID,
+        },
+        { onConflict: "user_id,world_id" },
+      );
+    });
+
+    await waitFor(() => {
+      expect(invalidateQueries).toHaveBeenCalledWith({
+        queryKey: [
+          "permissions",
+          "active-player-character-row",
+          USER_ID,
+          WORLD_ID,
+        ],
+      });
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["citizens"] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["nations"] });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["settlements"],
+    });
+  });
 });
 
-function renderGate(): void {
+function renderGate(): QueryClient {
   const queryClient = new QueryClient({
     defaultOptions: {
       mutations: { retry: false },
@@ -259,6 +324,7 @@ function renderGate(): void {
       </WorldEntryGate>
     </QueryClientProvider>,
   );
+  return queryClient;
 }
 
 type TestUser = {
