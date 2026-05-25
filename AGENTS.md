@@ -222,3 +222,7 @@ Do not implement per-commit version bumps or per-commit tagging automation unles
 - shared infrastructure: `src/lib`
 - Edge Functions: `supabase/functions`
 - schema changes: `supabase/migrations`
+
+## Epic References
+
+- Epic 3 world topology and roles — `docs/epic-3-world-topology.md` (role hierarchy, world-entry decision tree, citizen DB-vs-UI visibility, partnership lifecycle ownership across epics).
