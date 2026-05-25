@@ -46,10 +46,13 @@ import {
 import { currentAssignmentForCitizenQueryOptions } from "../queries/citizenAssignmentsQueries";
 import { citizenByIdQueryOptions } from "../queries/citizensQueries";
 
+import { NpcFlavorEditor } from "./NpcFlavorEditor";
+import { NpcFlavorLine } from "./NpcFlavorLine";
 import { PartnershipHistoryPanel } from "./PartnershipHistoryPanel";
 
 import type { CitizenAssignment } from "../types/citizenAssignmentTypes";
 import type { Citizen, CitizenAssignmentType } from "../types/citizenTypes";
+import type { NpcFlavor } from "../utils/npcFlavor";
 
 type CitizenDetailPageProps = {
   readonly citizenId: string;
@@ -309,11 +312,18 @@ function CitizenDetailLoaded({
       <CitizenAssignmentSection citizenId={citizen.id} />
 
       {citizen.citizenType === "npc" ? (
-        <CitizenNpcFlavorSection
-          canEdit={canEdit}
-          citizen={citizen}
-          queryClient={queryClient}
-        />
+        <>
+          <CitizenNpcNotesSection
+            canEdit={canEdit}
+            citizen={citizen}
+            queryClient={queryClient}
+          />
+          <CitizenNpcFlavorSection
+            canEdit={canEdit}
+            citizen={citizen}
+            queryClient={queryClient}
+          />
+        </>
       ) : null}
 
       {citizen.citizenType === "player_character" ? (
@@ -597,7 +607,126 @@ function CitizenAssignmentSummary({
   );
 }
 
+function citizenToNpcFlavor(citizen: Citizen): NpcFlavor {
+  return {
+    contradiction: citizen.npcSecretContradiction ?? "",
+    flaw: citizen.npcFlaw ?? "",
+    goal: citizen.npcGoal ?? "",
+    trait1: citizen.npcTrait1 ?? "",
+    trait2: citizen.npcTrait2 ?? "",
+  };
+}
+
 function CitizenNpcFlavorSection({
+  canEdit,
+  citizen,
+  queryClient,
+}: {
+  readonly canEdit: boolean;
+  readonly citizen: Citizen;
+  readonly queryClient: QueryClient;
+}): JSX.Element {
+  const [isEditing, setIsEditing] = useState(false);
+  const updateMutation = useMutation(
+    updateCitizenNpcFieldsMutationOptions({ queryClient }),
+  );
+
+  function closeEditor(): void {
+    setIsEditing(false);
+    updateMutation.reset();
+  }
+
+  function handleSave(next: NpcFlavor): void {
+    updateMutation.reset();
+    updateMutation.mutate(
+      {
+        citizenId: citizen.id,
+        npcFlaw: next.flaw,
+        npcGoal: next.goal,
+        npcSecretContradiction: next.contradiction,
+        npcTrait1: next.trait1,
+        npcTrait2: next.trait2,
+        personalityText: citizen.personalityText ?? "",
+        skillsText: citizen.skillsText ?? "",
+        worldId: citizen.worldId,
+      },
+      {
+        onSuccess: () => {
+          setIsEditing(false);
+        },
+      },
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <section
+        aria-labelledby="citizen-npc-flavor-heading"
+        className="grid gap-3"
+      >
+        <h2 id="citizen-npc-flavor-heading" className="sr-only">
+          NPC flavor
+        </h2>
+        <NpcFlavorEditor
+          disabled={updateMutation.isPending}
+          initial={citizenToNpcFlavor(citizen)}
+          onCancel={closeEditor}
+          onSave={handleSave}
+          submitLabel={updateMutation.isPending ? "Saving…" : "Save flavor"}
+        />
+        {updateMutation.isError ? (
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {getCitizenMutationErrorDescription(updateMutation.error)}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
+
+  return (
+    <section
+      aria-labelledby="citizen-npc-flavor-heading"
+      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="citizen-npc-flavor-heading" className="text-base font-medium">
+          NPC flavor
+        </h2>
+        {canEdit ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+          >
+            <Pencil aria-hidden="true" />
+            Edit
+          </Button>
+        ) : null}
+      </div>
+      <NpcFlavorLine
+        citizenId={citizen.id}
+        flavor={citizenToNpcFlavor(citizen)}
+      />
+      <dl className="flex flex-col gap-2">
+        <Readout label="Trait 1" value={citizen.npcTrait1} />
+        <Readout label="Trait 2" value={citizen.npcTrait2} />
+        <Readout label="Goal" value={citizen.npcGoal} block />
+        <Readout label="Flaw" value={citizen.npcFlaw} block />
+        <Readout
+          label="Secret / contradiction"
+          value={citizen.npcSecretContradiction}
+          block
+        />
+      </dl>
+    </section>
+  );
+}
+
+function CitizenNpcNotesSection({
   canEdit,
   citizen,
   queryClient,
@@ -611,46 +740,29 @@ function CitizenNpcFlavorSection({
     citizen.personalityText ?? "",
   );
   const [skillsText, setSkillsText] = useState(citizen.skillsText ?? "");
-  const [npcTrait1, setNpcTrait1] = useState(citizen.npcTrait1 ?? "");
-  const [npcTrait2, setNpcTrait2] = useState(citizen.npcTrait2 ?? "");
-  const [npcGoal, setNpcGoal] = useState(citizen.npcGoal ?? "");
-  const [npcFlaw, setNpcFlaw] = useState(citizen.npcFlaw ?? "");
-  const [npcSecretContradiction, setNpcSecretContradiction] = useState(
-    citizen.npcSecretContradiction ?? "",
-  );
 
   const updateMutation = useMutation(
     updateCitizenNpcFieldsMutationOptions({ queryClient }),
   );
 
-  function resetForm(): void {
-    setPersonalityText(citizen.personalityText ?? "");
-    setSkillsText(citizen.skillsText ?? "");
-    setNpcTrait1(citizen.npcTrait1 ?? "");
-    setNpcTrait2(citizen.npcTrait2 ?? "");
-    setNpcGoal(citizen.npcGoal ?? "");
-    setNpcFlaw(citizen.npcFlaw ?? "");
-    setNpcSecretContradiction(citizen.npcSecretContradiction ?? "");
-    updateMutation.reset();
-  }
-
   function closeEditor(): void {
     setIsEditing(false);
-    resetForm();
+    setPersonalityText(citizen.personalityText ?? "");
+    setSkillsText(citizen.skillsText ?? "");
+    updateMutation.reset();
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     updateMutation.reset();
-
     updateMutation.mutate(
       {
         citizenId: citizen.id,
-        npcFlaw,
-        npcGoal,
-        npcSecretContradiction,
-        npcTrait1,
-        npcTrait2,
+        npcFlaw: citizen.npcFlaw ?? "",
+        npcGoal: citizen.npcGoal ?? "",
+        npcSecretContradiction: citizen.npcSecretContradiction ?? "",
+        npcTrait1: citizen.npcTrait1 ?? "",
+        npcTrait2: citizen.npcTrait2 ?? "",
         personalityText,
         skillsText,
         worldId: citizen.worldId,
@@ -666,12 +778,12 @@ function CitizenNpcFlavorSection({
   if (!isEditing) {
     return (
       <section
-        aria-labelledby="citizen-npc-flavor-heading"
+        aria-labelledby="citizen-npc-notes-heading"
         className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
       >
         <div className="flex items-center justify-between gap-2">
-          <h2 id="citizen-npc-flavor-heading" className="text-base font-medium">
-            NPC flavor
+          <h2 id="citizen-npc-notes-heading" className="text-base font-medium">
+            Personality and skills
           </h2>
           {canEdit ? (
             <Button
@@ -685,18 +797,9 @@ function CitizenNpcFlavorSection({
             </Button>
           ) : null}
         </div>
-        <dl className="grid grid-cols-1 gap-2">
+        <dl className="flex flex-col gap-2">
           <Readout label="Personality" value={citizen.personalityText} block />
           <Readout label="Skills" value={citizen.skillsText} block />
-          <Readout label="Trait 1" value={citizen.npcTrait1} />
-          <Readout label="Trait 2" value={citizen.npcTrait2} />
-          <Readout label="Goal" value={citizen.npcGoal} block />
-          <Readout label="Flaw" value={citizen.npcFlaw} block />
-          <Readout
-            label="Secret / contradiction"
-            value={citizen.npcSecretContradiction}
-            block
-          />
         </dl>
       </section>
     );
@@ -704,13 +807,13 @@ function CitizenNpcFlavorSection({
 
   return (
     <form
-      aria-label="Edit NPC flavor"
+      aria-label="Edit personality and skills"
       className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
       noValidate
       onSubmit={handleSubmit}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium">Edit NPC flavor</h2>
+        <h2 className="text-base font-medium">Edit personality and skills</h2>
         <Button
           type="button"
           variant="ghost"
@@ -721,50 +824,24 @@ function CitizenNpcFlavorSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <FlavorTextField
-        disabled={updateMutation.isPending}
-        label="Personality"
-        onChange={setPersonalityText}
-        value={personalityText}
-      />
-      <FlavorTextField
-        disabled={updateMutation.isPending}
-        label="Skills"
-        onChange={setSkillsText}
-        value={skillsText}
-      />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <FlavorInputField
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Personality</span>
+        <textarea
+          className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
-          label="Trait 1"
-          onChange={setNpcTrait1}
-          value={npcTrait1}
+          value={personalityText}
+          onChange={(event) => setPersonalityText(event.currentTarget.value)}
         />
-        <FlavorInputField
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Skills</span>
+        <textarea
+          className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
-          label="Trait 2"
-          onChange={setNpcTrait2}
-          value={npcTrait2}
+          value={skillsText}
+          onChange={(event) => setSkillsText(event.currentTarget.value)}
         />
-      </div>
-      <FlavorTextField
-        disabled={updateMutation.isPending}
-        label="Goal"
-        onChange={setNpcGoal}
-        value={npcGoal}
-      />
-      <FlavorTextField
-        disabled={updateMutation.isPending}
-        label="Flaw"
-        onChange={setNpcFlaw}
-        value={npcFlaw}
-      />
-      <FlavorTextField
-        disabled={updateMutation.isPending}
-        label="Secret / contradiction"
-        onChange={setNpcSecretContradiction}
-        value={npcSecretContradiction}
-      />
+      </label>
       {updateMutation.isError ? (
         <p
           role="alert"
@@ -788,53 +865,6 @@ function CitizenNpcFlavorSection({
         </Button>
       </div>
     </form>
-  );
-}
-
-function FlavorTextField({
-  disabled,
-  label,
-  onChange,
-  value,
-}: {
-  readonly disabled: boolean;
-  readonly label: string;
-  readonly onChange: (value: string) => void;
-  readonly value: string;
-}): JSX.Element {
-  return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <textarea
-        className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-      />
-    </label>
-  );
-}
-
-function FlavorInputField({
-  disabled,
-  label,
-  onChange,
-  value,
-}: {
-  readonly disabled: boolean;
-  readonly label: string;
-  readonly onChange: (value: string) => void;
-  readonly value: string;
-}): JSX.Element {
-  return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <Input
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-      />
-    </label>
   );
 }
 
