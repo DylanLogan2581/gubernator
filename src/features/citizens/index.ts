@@ -48,6 +48,7 @@ export {
   citizenByIdQueryOptions,
   citizensInSettlementQueryOptions,
   toCitizen,
+  unpairedAliveCitizensInWorldQueryOptions,
 } from "./queries/citizensQueries";
 export { citizensQueryKeys } from "./queries/citizensQueryKeys";
 export {
