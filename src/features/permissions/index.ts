@@ -1,3 +1,4 @@
+export { PlayerCharacterChooser } from "./components/PlayerCharacterChooser";
 export { RoleAssignmentControls } from "./components/RoleAssignmentControls";
 export { ActivePlayerCharacterProvider } from "./context/ActivePlayerCharacterProvider";
 export { useActivePlayerCharacter } from "./context/activePlayerCharacterContext";
@@ -13,6 +14,7 @@ export { currentAccessContextQueryOptions } from "./queries/permissionQueries";
 export { permissionQueryKeys } from "./queries/permissionQueryKeys";
 export { createAccessContext } from "./utils/accessContext";
 
+export type { PlayerCharacterChooserProps } from "./components/PlayerCharacterChooser";
 export type { RoleAssignmentControlsProps } from "./components/RoleAssignmentControls";
 export type { ActivePlayerCharacterContextValue } from "./context/activePlayerCharacterContext";
 export type { ActivePlayerCharacterProviderProps } from "./context/ActivePlayerCharacterProvider";
