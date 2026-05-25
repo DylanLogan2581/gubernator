@@ -47,6 +47,7 @@ export {
   citizenAggregateStatsForSettlementQueryOptions,
   citizenByIdQueryOptions,
   citizensInSettlementQueryOptions,
+  playerCharactersInNationQueryOptions,
   toCitizen,
   unpairedAliveCitizensInWorldQueryOptions,
 } from "./queries/citizensQueries";
