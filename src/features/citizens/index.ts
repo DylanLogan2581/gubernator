@@ -2,6 +2,8 @@
 // Implemented in Epic 3.
 export { CitizenDetailPage } from "./components/CitizenDetailPage";
 export { CitizensPanel } from "./components/CitizensPanel";
+export { NpcFlavorLine } from "./components/NpcFlavorLine";
+export { NpcFlavorEditor } from "./components/NpcFlavorEditor";
 export { PartnershipHistoryPanel } from "./components/PartnershipHistoryPanel";
 export {
   CitizenMutationError,
@@ -33,6 +35,13 @@ export {
   assignmentsInSettlementQueryOptions,
   currentAssignmentForCitizenQueryOptions,
 } from "./queries/citizenAssignmentsQueries";
+export {
+  emptyNpcFlavor,
+  generateNpcFlavor,
+  renderNpcFlavorLine,
+  roleLabelForAssignment,
+  UNASSIGNED_ROLE_LABEL,
+} from "./utils/npcFlavor";
 export {
   citizenAggregateStatsForNationQueryOptions,
   citizenAggregateStatsForSettlementQueryOptions,
@@ -104,6 +113,7 @@ export type {
 } from "./schemas/partnershipSchemas";
 export type { CitizenRow } from "./queries/citizensQueries";
 export type { CitizenAssignment } from "./types/citizenAssignmentTypes";
+export type { NpcFlavor, NpcFlavorConfig } from "./utils/npcFlavor";
 export type {
   Citizen,
   CitizenAggregateStats,
