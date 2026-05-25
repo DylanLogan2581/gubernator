@@ -19,6 +19,9 @@ import type {
 
 type CitizenListQueryKey = ReturnType<typeof citizensQueryKeys.settlementList>;
 type CitizenDetailQueryKey = ReturnType<typeof citizensQueryKeys.detail>;
+type PlayerCharactersInNationQueryKey = ReturnType<
+  typeof citizensQueryKeys.playerCharactersInNation
+>;
 type UnpairedAliveInWorldQueryKey = ReturnType<
   typeof citizensQueryKeys.unpairedAliveInWorld
 >;
@@ -46,6 +49,12 @@ type CitizenDetailQueryOptions = UseQueryOptions<
   AuthUiError,
   Citizen | null,
   CitizenDetailQueryKey
+>;
+type PlayerCharactersInNationQueryOptions = UseQueryOptions<
+  readonly Citizen[],
+  AuthUiError,
+  readonly Citizen[],
+  PlayerCharactersInNationQueryKey
 >;
 type CitizenSettlementAggregateQueryOptions = UseQueryOptions<
   CitizenAggregateStats,
@@ -136,6 +145,17 @@ export function unpairedAliveCitizensInWorldQueryOptions(
   return queryOptions({
     queryFn: () => getUnpairedAliveCitizensInWorld(client, worldId),
     queryKey: citizensQueryKeys.unpairedAliveInWorld(worldId),
+  });
+}
+
+export function playerCharactersInNationQueryOptions(
+  nationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): PlayerCharactersInNationQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getPlayerCharactersInNation(client, nationId),
+    queryKey: citizensQueryKeys.playerCharactersInNation(nationId),
   });
 }
 
@@ -260,6 +280,44 @@ async function getUnpairedAliveCitizensInWorld(
   }
 
   return citizenRows.filter((row) => !partneredIds.has(row.id)).map(toCitizen);
+}
+
+async function getPlayerCharactersInNation(
+  client: GubernatorSupabaseClient,
+  nationId: string,
+): Promise<readonly Citizen[]> {
+  const { data: settlements, error: settlementsError } = await client
+    .from("settlements")
+    .select("id")
+    .eq("nation_id", nationId)
+    .returns<Array<{ readonly id: string }>>();
+
+  if (settlementsError !== null) {
+    throw normalizeAuthError(settlementsError);
+  }
+
+  const settlementIds = settlements.map(
+    (row: { readonly id: string }) => row.id,
+  );
+
+  if (settlementIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_SELECT)
+    .in("settlement_id", settlementIds)
+    .eq("citizen_type", "player_character")
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .returns<CitizenRow[]>();
+
+  if (error !== null) {
+    throw normalizeAuthError(error);
+  }
+
+  return data.map(toCitizen);
 }
 
 async function getCitizenAggregateStatsForSettlement(

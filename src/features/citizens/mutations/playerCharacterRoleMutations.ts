@@ -144,28 +144,12 @@ export function revokeCitizenRoleMutationOptions({
 
 async function invalidateAfterRoleChange(
   queryClient: QueryClient,
-  citizen: Citizen,
+  _citizen: Citizen,
 ): Promise<void> {
-  const invalidations = [
-    queryClient.invalidateQueries({
-      queryKey: citizensQueryKeys.detail(citizen.id),
-    }),
-  ];
-
-  if (citizen.settlementId !== null) {
-    invalidations.push(
-      queryClient.invalidateQueries({
-        queryKey: citizensQueryKeys.settlementList(citizen.settlementId),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: citizensQueryKeys.settlementAggregateStats(
-          citizen.settlementId,
-        ),
-      }),
-    );
-  }
-
-  await Promise.all(invalidations);
+  // Role changes affect the citizen detail, settlement lists, aggregate stats,
+  // and the player-character-by-nation lookup. Invalidating the full citizens
+  // namespace is cheaper than enumerating every key, and the data is small.
+  await queryClient.invalidateQueries({ queryKey: citizensQueryKeys.all });
 }
 
 async function linkUserToCitizen(

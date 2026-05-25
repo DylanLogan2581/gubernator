@@ -26,6 +26,12 @@ export const citizensQueryKeys = {
     [...citizensQueryKeys.all, "nation-aggregate-stats", nationId] as const,
   partnershipsForCitizen: (citizenId: string) =>
     [...citizensQueryKeys.all, "partnerships-for-citizen", citizenId] as const,
+  playerCharactersInNation: (nationId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "player-characters-in-nation",
+      nationId,
+    ] as const,
   settlementAggregateStats: (settlementId: string) =>
     [
       ...citizensQueryKeys.all,

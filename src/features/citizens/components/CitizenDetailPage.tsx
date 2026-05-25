@@ -19,7 +19,10 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  RoleAssignmentControls,
+  currentAccessContextQueryOptions,
+} from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import {
@@ -37,10 +40,8 @@ import {
   updateCitizenNpcFieldsMutationOptions,
 } from "../mutations/citizensMutations";
 import {
-  assignCitizenRoleMutationOptions,
   isPlayerCharacterRoleMutationError,
   linkUserToCitizenMutationOptions,
-  revokeCitizenRoleMutationOptions,
   unlinkUserFromCitizenMutationOptions,
 } from "../mutations/playerCharacterRoleMutations";
 import { currentAssignmentForCitizenQueryOptions } from "../queries/citizenAssignmentsQueries";
@@ -328,8 +329,10 @@ function CitizenDetailLoaded({
 
       {citizen.citizenType === "player_character" ? (
         <CitizenPlayerCharacterSection
+          canAdmin={canAdmin}
           canEdit={canEdit}
           citizen={citizen}
+          isArchived={isArchived}
           queryClient={queryClient}
         />
       ) : null}
@@ -876,12 +879,16 @@ function CitizenNpcNotesSection({
 // SECURITY DEFINER mutations — direct table writes to `user_id` and the
 // `role_*` columns are blocked by column-level grants.
 function CitizenPlayerCharacterSection({
+  canAdmin,
   canEdit,
   citizen,
+  isArchived,
   queryClient,
 }: {
+  readonly canAdmin: boolean;
   readonly canEdit: boolean;
   readonly citizen: Citizen;
+  readonly isArchived: boolean;
   readonly queryClient: QueryClient;
 }): JSX.Element {
   return (
@@ -905,10 +912,11 @@ function CitizenPlayerCharacterSection({
         citizen={citizen}
         queryClient={queryClient}
       />
-      <CitizenRoleControl
-        canEdit={canEdit}
+      <RoleAssignmentControls
+        canAdminWorld={canAdmin}
         citizen={citizen}
-        queryClient={queryClient}
+        isArchived={isArchived}
+        variant="citizen"
       />
     </section>
   );
@@ -1046,210 +1054,6 @@ function CitizenLinkedUserControl({
               size="sm"
               onClick={closeEditor}
               disabled={linkMutation.isPending}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      ) : null}
-      {firstError !== null ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getRoleMutationErrorDescription(firstError)}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-type RoleSelection = "none" | "nation_manager" | "settlement_manager";
-
-function CitizenRoleControl({
-  canEdit,
-  citizen,
-  queryClient,
-}: {
-  readonly canEdit: boolean;
-  readonly citizen: Citizen;
-  readonly queryClient: QueryClient;
-}): JSX.Element {
-  const [isEditing, setIsEditing] = useState(false);
-  const [roleType, setRoleType] = useState<RoleSelection>(citizen.roleType);
-  const [roleNationId, setRoleNationId] = useState(citizen.roleNationId ?? "");
-  const [roleSettlementId, setRoleSettlementId] = useState(
-    citizen.roleSettlementId ?? "",
-  );
-  const [scopeError, setScopeError] = useState<string | undefined>(undefined);
-
-  const assignMutation = useMutation(
-    assignCitizenRoleMutationOptions({ queryClient }),
-  );
-  const revokeMutation = useMutation(
-    revokeCitizenRoleMutationOptions({ queryClient }),
-  );
-
-  function closeEditor(): void {
-    setIsEditing(false);
-    setRoleType(citizen.roleType);
-    setRoleNationId(citizen.roleNationId ?? "");
-    setRoleSettlementId(citizen.roleSettlementId ?? "");
-    setScopeError(undefined);
-    assignMutation.reset();
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    setScopeError(undefined);
-    assignMutation.reset();
-
-    if (roleType === "none") {
-      revokeMutation.reset();
-      revokeMutation.mutate(
-        { citizenId: citizen.id, worldId: citizen.worldId },
-        {
-          onSuccess: () => {
-            setIsEditing(false);
-          },
-        },
-      );
-      return;
-    }
-
-    if (roleType === "nation_manager") {
-      const trimmed = roleNationId.trim();
-      if (trimmed.length === 0) {
-        setScopeError("Nation id is required for the nation manager role.");
-        return;
-      }
-      assignMutation.mutate(
-        {
-          citizenId: citizen.id,
-          roleNationId: trimmed,
-          roleType: "nation_manager",
-          worldId: citizen.worldId,
-        },
-        {
-          onSuccess: () => {
-            setIsEditing(false);
-          },
-        },
-      );
-      return;
-    }
-
-    const trimmedSettlement = roleSettlementId.trim();
-    if (trimmedSettlement.length === 0) {
-      setScopeError(
-        "Settlement id is required for the settlement manager role.",
-      );
-      return;
-    }
-    assignMutation.mutate(
-      {
-        citizenId: citizen.id,
-        roleSettlementId: trimmedSettlement,
-        roleType: "settlement_manager",
-        worldId: citizen.worldId,
-      },
-      {
-        onSuccess: () => {
-          setIsEditing(false);
-        },
-      },
-    );
-  }
-
-  const firstError = assignMutation.error ?? revokeMutation.error ?? null;
-
-  return (
-    <div className="grid gap-2 rounded-md border border-border bg-background px-3 py-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="grid gap-0.5 text-sm">
-          <span className="text-xs text-muted-foreground">Role</span>
-          <span>{citizenRoleLabel(citizen)}</span>
-        </div>
-        {canEdit && !isEditing ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-          >
-            <Pencil aria-hidden="true" />
-            Change role
-          </Button>
-        ) : null}
-      </div>
-      {isEditing ? (
-        <form className="grid gap-2" noValidate onSubmit={handleSubmit}>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Role type</span>
-            <select
-              className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
-              disabled={assignMutation.isPending || revokeMutation.isPending}
-              value={roleType}
-              onChange={(event) => {
-                setRoleType(event.currentTarget.value as RoleSelection);
-                setScopeError(undefined);
-              }}
-            >
-              <option value="none">None</option>
-              <option value="nation_manager">Nation manager</option>
-              <option value="settlement_manager">Settlement manager</option>
-            </select>
-          </label>
-          {roleType === "nation_manager" ? (
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Nation id (UUID)</span>
-              <Input
-                disabled={assignMutation.isPending}
-                value={roleNationId}
-                onChange={(event) => {
-                  setRoleNationId(event.currentTarget.value);
-                  setScopeError(undefined);
-                }}
-              />
-            </label>
-          ) : null}
-          {roleType === "settlement_manager" ? (
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">
-                Settlement id (UUID)
-              </span>
-              <Input
-                disabled={assignMutation.isPending}
-                value={roleSettlementId}
-                onChange={(event) => {
-                  setRoleSettlementId(event.currentTarget.value);
-                  setScopeError(undefined);
-                }}
-              />
-            </label>
-          ) : null}
-          {scopeError === undefined ? null : (
-            <p role="alert" className="text-sm text-destructive">
-              {scopeError}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={assignMutation.isPending || revokeMutation.isPending}
-            >
-              <Save aria-hidden="true" />
-              {assignMutation.isPending || revokeMutation.isPending
-                ? "Saving…"
-                : "Save role"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={closeEditor}
-              disabled={assignMutation.isPending || revokeMutation.isPending}
             >
               Cancel
             </Button>
@@ -1541,23 +1345,6 @@ function assignmentTargetLabel(assignment: CitizenAssignment): string | null {
       return assignment.tradeRouteId === null
         ? null
         : `Trade route #${assignment.tradeRouteId}`;
-  }
-}
-
-function citizenRoleLabel(citizen: Citizen): string {
-  switch (citizen.roleType) {
-    case "none":
-      return "None";
-    case "nation_manager":
-      return `Nation manager${
-        citizen.roleNationId === null ? "" : ` (nation ${citizen.roleNationId})`
-      }`;
-    case "settlement_manager":
-      return `Settlement manager${
-        citizen.roleSettlementId === null
-          ? ""
-          : ` (settlement ${citizen.roleSettlementId})`
-      }`;
   }
 }
 
