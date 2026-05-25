@@ -2,7 +2,6 @@ import { type JSX, type ReactNode } from "react";
 
 import { AppFooter } from "./AppFooter";
 import { AppHeader } from "./AppHeader";
-import { WorldContextBar } from "./WorldContextBar";
 
 type AppLayoutProps = {
   readonly headerAction?: ReactNode;
@@ -26,7 +25,6 @@ export function AppLayout({
 
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4">
         <AppHeader action={headerAction} />
-        <WorldContextBar />
         <main id="main-content" className="flex-1 py-4">
           {children}
         </main>

@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, type JSX, type ReactNode } from "react";
 
+import { WorldContextBar } from "@/components/app/WorldContextBar";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import {
+  ActiveCharacterSwitcher,
   ActivePlayerCharacterProvider,
   PlayerCharacterChooser,
   activePlayerCharacterRowQueryOptions,
@@ -181,7 +183,7 @@ function WorldEntryDecision({
 
   if (selectableCharacters.length === 0) {
     if (worldAccess.canAdmin) {
-      return <>{children}</>;
+      return <WorldEntryContent canAdmin>{children}</WorldEntryContent>;
     }
     return (
       <AccessDeniedState
@@ -192,14 +194,39 @@ function WorldEntryDecision({
   }
 
   if (selectableCharacters.length === 1) {
-    return <>{children}</>;
+    return (
+      <WorldEntryContent canAdmin={worldAccess.canAdmin}>
+        {children}
+      </WorldEntryContent>
+    );
   }
 
   if (resumedCitizen !== null) {
-    return <>{children}</>;
+    return (
+      <WorldEntryContent canAdmin={worldAccess.canAdmin}>
+        {children}
+      </WorldEntryContent>
+    );
   }
 
   return <PlayerCharacterChooser />;
+}
+
+function WorldEntryContent({
+  canAdmin,
+  children,
+}: {
+  readonly canAdmin: boolean;
+  readonly children: ReactNode;
+}): JSX.Element {
+  return (
+    <>
+      <WorldContextBar>
+        <ActiveCharacterSwitcher canAdmin={canAdmin} />
+      </WorldContextBar>
+      {children}
+    </>
+  );
 }
 
 type AutoSelectMutate = (input: {
