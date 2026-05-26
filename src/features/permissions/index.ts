@@ -2,7 +2,10 @@ export { ActiveCharacterSwitcher } from "./components/ActiveCharacterSwitcher";
 export { PlayerCharacterChooser } from "./components/PlayerCharacterChooser";
 export { RoleAssignmentControls } from "./components/RoleAssignmentControls";
 export { ActivePlayerCharacterProvider } from "./context/ActivePlayerCharacterProvider";
-export { useActivePlayerCharacter } from "./context/activePlayerCharacterContext";
+export {
+  ActivePlayerCharacterContext,
+  useActivePlayerCharacter,
+} from "./context/activePlayerCharacterContext";
 export {
   clearActivePlayerCharacterMutationOptions,
   setActivePlayerCharacterMutationOptions,

@@ -10,6 +10,7 @@ import { ActivePlayerCharacterContext } from "../context/activePlayerCharacterCo
 import { ActiveCharacterSwitcher } from "./ActiveCharacterSwitcher";
 
 import type { ActivePlayerCharacterContextValue } from "../context/activePlayerCharacterContext";
+import type { ReactNode } from "react";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -17,6 +18,35 @@ const { requireSupabaseClient } = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    "aria-label": ariaLabel,
+    children,
+    className,
+    params,
+    to,
+  }: {
+    readonly "aria-label"?: string;
+    readonly children: ReactNode;
+    readonly className?: string;
+    readonly params?: Readonly<Record<string, string>>;
+    readonly to: string;
+  }) => {
+    const href =
+      params === undefined
+        ? to
+        : Object.entries(params).reduce(
+            (path, [name, value]) => path.replace(`$${name}`, value),
+            to,
+          );
+    return (
+      <a aria-label={ariaLabel} className={className} href={href}>
+        {children}
+      </a>
+    );
+  },
 }));
 
 describe("ActiveCharacterSwitcher", () => {
@@ -46,7 +76,7 @@ describe("ActiveCharacterSwitcher", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("renders a static indicator when there is exactly one selectable character", () => {
+  it("renders a link to the citizen detail when there is exactly one selectable character", () => {
     const pc = createCitizen({ id: "pc-1", name: "Solo" });
     renderSwitcher({
       activeCharacter: pc,
@@ -54,10 +84,30 @@ describe("ActiveCharacterSwitcher", () => {
       selectableCharacters: [pc],
     });
 
-    expect(screen.getByLabelText("Active player character")).toBeDefined();
+    const link = screen.getByLabelText("Active player character");
+    expect(link).toBeDefined();
+    expect(link).toHaveAttribute("href", "/worlds/world-42/citizens/pc-1");
     expect(screen.getByText("Solo")).toBeDefined();
-    // No menu trigger when there is nothing to switch to.
+    // No dropdown trigger when there is nothing to switch to.
     expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("renders a link to citizen detail alongside the switcher for multiple characters", () => {
+    const pcA = createCitizen({ id: "pc-a", name: "Alpha" });
+    const pcB = createCitizen({ id: "pc-b", name: "Bravo" });
+    renderSwitcher({
+      activeCharacter: pcA,
+      canAdmin: false,
+      selectableCharacters: [pcA, pcB],
+    });
+
+    // The name area should be a link to the active PC's detail page.
+    const links = screen.getAllByRole("link");
+    expect(
+      links.some(
+        (l) => l.getAttribute("href") === "/worlds/world-42/citizens/pc-a",
+      ),
+    ).toBe(true);
   });
 
   it("opens a switcher and calls switchTo when selecting another character", async () => {
@@ -72,7 +122,7 @@ describe("ActiveCharacterSwitcher", () => {
     });
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button"));
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
 
     expect(await screen.findByText("Switch character")).toBeDefined();
     await user.click(screen.getByRole("menuitem", { name: /Bravo/ }));
@@ -94,7 +144,7 @@ describe("ActiveCharacterSwitcher", () => {
     });
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button"));
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
 
     // The active row is disabled and shouldn't fire onSelect.
     const activeItem = screen.getByRole("menuitem", { name: /Alpha/ });
@@ -108,6 +158,7 @@ type RenderOptions = {
   readonly canAdmin: boolean;
   readonly selectableCharacters: readonly Citizen[];
   readonly switchTo?: (id: string) => void;
+  readonly worldId?: string;
 };
 
 function renderSwitcher({
@@ -115,6 +166,7 @@ function renderSwitcher({
   canAdmin,
   selectableCharacters,
   switchTo = (): void => {},
+  worldId = "world-42",
 }: RenderOptions): ReturnType<typeof render> {
   const value: ActivePlayerCharacterContextValue = {
     activeCharacter,
@@ -127,7 +179,7 @@ function renderSwitcher({
   return render(
     <QueryClientProvider client={createQueryClient()}>
       <ActivePlayerCharacterContext value={value}>
-        <ActiveCharacterSwitcher canAdmin={canAdmin} />
+        <ActiveCharacterSwitcher canAdmin={canAdmin} worldId={worldId} />
       </ActivePlayerCharacterContext>
     </QueryClientProvider>,
   );

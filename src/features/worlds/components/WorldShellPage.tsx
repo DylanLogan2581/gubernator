@@ -7,7 +7,10 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  currentAccessContextQueryOptions,
+  useActivePlayerCharacter,
+} from "@/features/permissions";
 import {
   SettlementReadinessListPanel,
   SettlementReadinessSummaryPanel,
@@ -68,6 +71,7 @@ function WorldShellContent({
   const worldQuery = useQuery(
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
+  const { activeCharacter } = useActivePlayerCharacter();
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
@@ -175,13 +179,24 @@ function WorldShellContent({
         nextTurnNumber={worldQuery.data.header.nextTurnNumber}
         worldId={worldId}
       />
-      <nav aria-label="World sections">
+      <nav aria-label="World sections" className="flex flex-wrap gap-2">
         <Button asChild variant="outline" size="sm" className="w-fit">
           <Link to="/worlds/$worldId/nations" params={{ worldId }}>
             Nations
             <ArrowRight aria-hidden="true" />
           </Link>
         </Button>
+        {activeCharacter !== null ? (
+          <Button asChild variant="outline" size="sm" className="w-fit">
+            <Link
+              to="/worlds/$worldId/citizens/$citizenId"
+              params={{ citizenId: activeCharacter.id, worldId }}
+            >
+              My character
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+        ) : null}
       </nav>
       <SettlementReadinessSummaryPanel worldId={worldId} />
       <SettlementReadinessListPanel

@@ -5,12 +5,35 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { WorldEntryGate } from "./WorldEntryGate";
 
+import type { ReactNode } from "react";
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    params,
+    to,
+  }: {
+    readonly children: ReactNode;
+    readonly params?: Readonly<Record<string, string>>;
+    readonly to: string;
+  }) => {
+    const href =
+      params === undefined
+        ? to
+        : Object.entries(params).reduce(
+            (path, [name, value]) => path.replace(`$${name}`, value),
+            to,
+          );
+    return <a href={href}>{children}</a>;
+  },
 }));
 
 const USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -278,7 +301,7 @@ describe("WorldEntryGate", () => {
     expect(await screen.findByText("ENTERED")).toBeDefined();
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Bravo/ }));
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
     await user.click(await screen.findByRole("menuitem", { name: /Alpha/ }));
 
     await waitFor(() => {
