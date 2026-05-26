@@ -31,13 +31,11 @@ const optionalCitizenIdSchema = z.union([citizenIdSchema, z.null()]).optional();
 const optionalSettlementIdSchema = z
   .union([settlementIdSchema, z.null()])
   .optional();
-const nullableSettlementIdSchema = z.union([settlementIdSchema, z.null()]);
 
 const optionalIntegerSchema = z
   .union([z.number().int("Turn number must be an integer."), z.null()])
   .optional();
 
-const citizenStatusSchema = z.enum(["alive", "dead"]);
 const citizenRoleTypeSchema = z.enum([
   "none",
   "nation_manager",
@@ -84,11 +82,7 @@ export const createPlayerCharacterInputSchema = z
 export const updateCitizenCoreInputSchema = z.strictObject({
   citizenId: citizenIdSchema,
   name: citizenNameSchema,
-  parentACitizenId: optionalCitizenIdSchema,
-  parentBCitizenId: optionalCitizenIdSchema,
-  settlementId: nullableSettlementIdSchema,
   sex: optionalTrimmedTextSchema,
-  status: citizenStatusSchema,
   worldId: worldIdSchema,
 });
 

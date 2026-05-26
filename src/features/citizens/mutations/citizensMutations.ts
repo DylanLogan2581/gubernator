@@ -297,11 +297,7 @@ async function updateCitizenCore(
     .from("citizens")
     .update({
       name: values.name.trim(),
-      parent_a_citizen_id: values.parentACitizenId ?? null,
-      parent_b_citizen_id: values.parentBCitizenId ?? null,
-      settlement_id: values.settlementId,
       sex: values.sex,
-      status: values.status,
     })
     .eq("id", values.citizenId)
     .eq("world_id", values.worldId)
