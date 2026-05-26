@@ -24,12 +24,18 @@ vi.mock("@tanstack/react-router", () => ({
   }: {
     readonly children: ReactNode;
     readonly to: string;
-    readonly params?: { readonly worldId?: string };
+    readonly params?: {
+      readonly nationId?: string;
+      readonly worldId?: string;
+    };
   }) => {
-    const href =
-      params?.worldId !== undefined
-        ? to.replace("$worldId", params.worldId)
-        : to;
+    let href = to;
+    if (params?.worldId !== undefined) {
+      href = href.replace("$worldId", params.worldId);
+    }
+    if (params?.nationId !== undefined) {
+      href = href.replace("$nationId", params.nationId);
+    }
     return <a href={href}>{children}</a>;
   },
 }));
@@ -102,6 +108,57 @@ describe("NationListPage", () => {
     expect(screen.getByRole("heading", { name: "Veilreach" })).toBeDefined();
     expect(screen.getByText("Hidden")).toBeDefined();
     expect(screen.getByText("No description.")).toBeDefined();
+  });
+
+  it("links each nation row to the nation detail page", async () => {
+    const nationId = "11111111-1111-1111-1111-111111111111";
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({
+            id: nationId,
+            is_hidden: false,
+            name: "Highmark",
+          }),
+        ],
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const link = await screen.findByRole("link", { name: "Highmark" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/worlds/${worldId}/nations/${nationId}`,
+    );
+  });
+
+  it("links hidden nations to the nation detail page", async () => {
+    const nationId = "22222222-2222-2222-2222-222222222222";
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({
+            id: nationId,
+            is_hidden: true,
+            name: "Veilreach",
+          }),
+        ],
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const link = await screen.findByRole("link", { name: "Veilreach" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/worlds/${worldId}/nations/${nationId}`,
+    );
+    expect(screen.getByText("Hidden")).toBeDefined();
   });
 
   it("shows the Create nation control for world admins", async () => {

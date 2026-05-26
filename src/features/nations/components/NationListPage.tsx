@@ -169,7 +169,7 @@ function NationListContent({
       ) : (
         <ul className="grid gap-3" aria-label="Nations">
           {nationsQuery.data.map((nation) => (
-            <NationListItem key={nation.id} nation={nation} />
+            <NationListItem key={nation.id} nation={nation} worldId={worldId} />
           ))}
         </ul>
       )}
@@ -177,13 +177,27 @@ function NationListContent({
   );
 }
 
-function NationListItem({ nation }: { readonly nation: Nation }): JSX.Element {
+function NationListItem({
+  nation,
+  worldId,
+}: {
+  readonly nation: Nation;
+  readonly worldId: string;
+}): JSX.Element {
   const descriptionPreview = getDescriptionPreview(nation.description);
 
   return (
     <li className="grid gap-2 rounded-md border border-border bg-card p-4 text-card-foreground">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <h2 className="truncate text-base font-medium">{nation.name}</h2>
+        <h2 className="truncate text-base font-medium">
+          <Link
+            to="/worlds/$worldId/nations/$nationId"
+            params={{ nationId: nation.id, worldId }}
+            className="underline-offset-4 hover:underline"
+          >
+            {nation.name}
+          </Link>
+        </h2>
         {nation.isHidden ? (
           <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
             <LockKeyhole className="size-3" aria-hidden="true" />
