@@ -978,6 +978,14 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["partnerships"]["Row"][];
       };
+      respond_to_bilateral: {
+        Args: {
+          p_from_nation_id: string;
+          p_response: string;
+          p_to_nation_id: string;
+        };
+        Returns: Database["public"]["Tables"]["nation_relationships"]["Row"][];
+      };
       revoke_citizen_role: {
         Args: { p_citizen_id: string };
         Returns: Database["public"]["Tables"]["citizens"]["Row"][];

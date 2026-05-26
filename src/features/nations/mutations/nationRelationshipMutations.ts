@@ -214,44 +214,12 @@ async function respondToBilateral(
 ): Promise<NationRelationship> {
   const values = parseInput(respondToBilateralInputSchema, input);
 
-  const existing = await client
-    .from("nation_relationships")
-    .select("pending_stance")
-    .eq("from_nation_id", values.fromNationId)
-    .eq("to_nation_id", values.toNationId)
-    .maybeSingle<{ readonly pending_stance: string | null }>();
-
-  if (existing.error !== null) {
-    throw normalizeAuthError(existing.error);
-  }
-
-  if (existing.data === null || existing.data.pending_stance === null) {
-    throw new NationRelationshipMutationError({
-      code: "relationship_not_found",
-      message: "No pending proposal exists for this nation pair.",
-    });
-  }
-
-  const accepted = values.response === "accepted";
-  const update: {
-    current_stance?: string;
-    pending_stance: string | null;
-    pending_status: string;
-  } = {
-    pending_stance: accepted ? existing.data.pending_stance : null,
-    pending_status: values.response,
-  };
-
-  if (accepted) {
-    update.current_stance = existing.data.pending_stance;
-  }
-
   const { data, error } = await client
-    .from("nation_relationships")
-    .update(update)
-    .eq("from_nation_id", values.fromNationId)
-    .eq("to_nation_id", values.toNationId)
-    .select(NATION_RELATIONSHIP_SELECT)
+    .rpc("respond_to_bilateral", {
+      p_from_nation_id: values.fromNationId,
+      p_response: values.response,
+      p_to_nation_id: values.toNationId,
+    })
     .maybeSingle<NationRelationshipRow>();
 
   return assertRelationshipRow(
@@ -317,12 +285,28 @@ async function invalidateRelationshipCaches(
       ),
     }),
     queryClient.invalidateQueries({
+      queryKey: nationsQueryKeys.relationshipsFromNation(
+        relationship.toNationId,
+      ),
+    }),
+    queryClient.invalidateQueries({
       queryKey: nationsQueryKeys.relationshipsToNation(relationship.toNationId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: nationsQueryKeys.relationshipsToNation(
+        relationship.fromNationId,
+      ),
     }),
     queryClient.invalidateQueries({
       queryKey: nationsQueryKeys.relationshipPair(
         relationship.fromNationId,
         relationship.toNationId,
+      ),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: nationsQueryKeys.relationshipPair(
+        relationship.toNationId,
+        relationship.fromNationId,
       ),
     }),
   ]);

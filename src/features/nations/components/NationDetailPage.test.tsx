@@ -354,7 +354,6 @@ describe("NationDetailPage", () => {
           createNationRow({ id: nationId, name: "Highmark" }),
           createNationRow({ id: otherNationId, name: "Veilreach" }),
         ],
-        respondToBilateralExisting: { pending_stance: "non_aggression_pact" },
         respondToBilateralResult: respondToBilateral,
         session: { user: { id: "user-1" } },
         settlementRows: [],
@@ -404,7 +403,6 @@ describe("NationDetailPage", () => {
           createNationRow({ id: nationId, name: "Highmark" }),
           createNationRow({ id: otherNationId, name: "Veilreach" }),
         ],
-        respondToBilateralExisting: { pending_stance: "allied" },
         respondToBilateralResult: respondToBilateral,
         session: { user: { id: "user-1" } },
         settlementRows: [],
@@ -629,7 +627,6 @@ function createClient({
   nationRows,
   outgoingRelationships = [],
   relationshipsUpsertResult,
-  respondToBilateralExisting = null,
   respondToBilateralResult,
   session,
   settlementRows,
@@ -641,9 +638,6 @@ function createClient({
   readonly nationRows: readonly TestNationRow[];
   readonly outgoingRelationships?: readonly TestRelationshipRow[];
   readonly relationshipsUpsertResult?: UpsertMock;
-  readonly respondToBilateralExisting?: {
-    readonly pending_stance: string | null;
-  } | null;
   readonly respondToBilateralResult?: UpdateMock;
   readonly session: { readonly user: { readonly id: string } };
   readonly settlementRows: readonly TestSettlementRow[];
@@ -675,8 +669,6 @@ function createClient({
         return createNationRelationshipsQueryBuilder({
           incoming: incomingRelationships,
           outgoing: outgoingRelationships,
-          respondExisting: respondToBilateralExisting,
-          respondResult: respondToBilateralResult,
           upsertResult: relationshipsUpsertResult,
         });
       }
@@ -684,6 +676,19 @@ function createClient({
         return createSettlementsQueryBuilder(settlementRows);
       }
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn((fn: string, params: Record<string, unknown>) => {
+      if (fn === "respond_to_bilateral") {
+        return {
+          maybeSingle: vi.fn().mockImplementation(() => {
+            if (respondToBilateralResult !== undefined) {
+              return Promise.resolve(respondToBilateralResult(params));
+            }
+            return Promise.resolve({ data: null, error: null });
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
     }),
   };
 }
@@ -830,35 +835,22 @@ function createNationsQueryBuilder(rows: readonly TestNationRow[]): unknown {
 function createNationRelationshipsQueryBuilder({
   incoming,
   outgoing,
-  respondExisting,
-  respondResult,
   upsertResult,
 }: {
   readonly incoming: readonly TestRelationshipRow[];
   readonly outgoing: readonly TestRelationshipRow[];
-  readonly respondExisting: {
-    readonly pending_stance: string | null;
-  } | null;
-  readonly respondResult?: UpdateMock;
   readonly upsertResult?: UpsertMock;
 }): unknown {
   return {
-    select: vi.fn((selectArg: string) => {
-      const isPendingLookup = selectArg === "pending_stance";
+    select: vi.fn(() => {
       let columnFilter: string | null = null;
       const builder = {
         eq: vi.fn((column: string) => {
           columnFilter = column;
           return builder;
         }),
-        maybeSingle: vi
-          .fn()
-          .mockResolvedValue({ data: respondExisting, error: null }),
         order: vi.fn(() => builder),
         returns: vi.fn().mockImplementation(() => {
-          if (isPendingLookup) {
-            return Promise.resolve({ data: respondExisting, error: null });
-          }
           if (columnFilter === "from_nation_id") {
             return Promise.resolve({ data: outgoing, error: null });
           }
@@ -877,15 +869,10 @@ function createNationRelationshipsQueryBuilder({
         }),
       })),
     })),
-    update: vi.fn((values: Record<string, unknown>) => {
+    update: vi.fn(() => {
       const chain = {
         eq: vi.fn(() => chain),
-        maybeSingle: vi.fn().mockImplementation(() => {
-          if (respondResult !== undefined) {
-            return Promise.resolve(respondResult(values));
-          }
-          return Promise.resolve({ data: null, error: null });
-        }),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         select: vi.fn(() => chain),
       };
       return chain;
