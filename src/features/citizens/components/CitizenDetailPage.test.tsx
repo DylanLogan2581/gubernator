@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
@@ -285,6 +286,105 @@ describe("CitizenDetailPage", () => {
     ).toBeDefined();
     expect(navigateMock).not.toHaveBeenCalled();
   });
+
+  describe("CitizenLinkedUserControl", () => {
+    it("shows a user picker with username · email options when the admin opens the link editor", async () => {
+      requireSupabaseClient.mockReturnValue(
+        createClient({
+          adminRows: [{ world_id: WORLD_ID }],
+          citizen: createCitizenRow({
+            citizen_type: "player_character",
+            name: "Aldra",
+            user_id: null,
+          }),
+          usersRows: [USER_ROW, OTHER_USER_ROW],
+        }),
+      );
+
+      renderPage();
+
+      const linkButton = await screen.findByRole("button", {
+        name: "Link user",
+      });
+      await userEvent.click(linkButton);
+
+      const select = screen.getByRole("combobox");
+      expect(select).toBeDefined();
+
+      const options = Array.from((select as HTMLSelectElement).options).map(
+        (o) => o.text,
+      );
+      expect(options).toContain("user · user@example.com");
+      expect(options).toContain("otheruser · other@example.com");
+    });
+
+    it("shows an error message when the users query fails", async () => {
+      requireSupabaseClient.mockReturnValue(
+        createClient({
+          adminRows: [{ world_id: WORLD_ID }],
+          citizen: createCitizenRow({
+            citizen_type: "player_character",
+            name: "Aldra",
+            user_id: null,
+          }),
+          usersQueryFails: true,
+        }),
+      );
+
+      renderPage();
+
+      const linkButton = await screen.findByRole("button", {
+        name: "Link user",
+      });
+      await userEvent.click(linkButton);
+
+      expect(await screen.findByText(/Failed to load users/i)).toBeDefined();
+    });
+
+    it("links the selected user when the form is submitted", async () => {
+      const linkedCitizenRow = createCitizenRow({
+        citizen_type: "player_character",
+        name: "Aldra",
+        user_id: OTHER_USER_ID,
+      });
+      const rpcMock = vi.fn().mockReturnValue({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: linkedCitizenRow,
+          error: null,
+        }),
+      });
+      const client = createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "player_character",
+          name: "Aldra",
+          user_id: null,
+        }),
+        usersRows: [USER_ROW, OTHER_USER_ROW],
+      });
+      (client as Record<string, unknown>).rpc = rpcMock;
+      requireSupabaseClient.mockReturnValue(client);
+
+      renderPage();
+
+      const linkButton = await screen.findByRole("button", {
+        name: "Link user",
+      });
+      await userEvent.click(linkButton);
+
+      const select = await screen.findByRole("combobox");
+      await userEvent.selectOptions(select, OTHER_USER_ID);
+
+      await userEvent.click(screen.getByRole("button", { name: "Link user" }));
+
+      await waitFor(() => {
+        expect(rpcMock).toHaveBeenCalledWith("link_user_to_citizen", {
+          p_citizen_id: CITIZEN_ID,
+          p_user_id: OTHER_USER_ID,
+        });
+      });
+    });
+  });
 });
 
 function renderPage(): void {
@@ -365,26 +465,41 @@ function createCitizenRow(
   };
 }
 
+const USER_ROW = {
+  created_at: "2026-01-01T00:00:00.000Z",
+  email: "user@example.com",
+  id: USER_ID,
+  is_super_admin: false,
+  status: "active",
+  updated_at: "2026-01-01T00:00:00.000Z",
+  username: "user",
+};
+
+const OTHER_USER_ROW = {
+  created_at: "2026-01-01T00:00:00.000Z",
+  email: "other@example.com",
+  id: OTHER_USER_ID,
+  is_super_admin: false,
+  status: "active",
+  updated_at: "2026-01-01T00:00:00.000Z",
+  username: "otheruser",
+};
+
 function createClient({
   adminRows,
   citizen,
+  usersRows = [USER_ROW],
+  usersQueryFails = false,
   worldOwnerId = USER_ID,
   worldVisibility = "private",
 }: {
   readonly adminRows: ReadonlyArray<{ readonly world_id: string }>;
   readonly citizen: CitizenRowFixture;
+  readonly usersRows?: readonly (typeof USER_ROW)[];
+  readonly usersQueryFails?: boolean;
   readonly worldOwnerId?: string;
   readonly worldVisibility?: string;
 }): unknown {
-  const user = {
-    created_at: "2026-01-01T00:00:00.000Z",
-    email: "user@example.com",
-    id: USER_ID,
-    is_super_admin: false,
-    status: "active",
-    updated_at: "2026-01-01T00:00:00.000Z",
-    username: "user",
-  };
   const worldRow = {
     archived_at: null,
     calendar_config_json: createCalendarConfig(),
@@ -408,7 +523,7 @@ function createClient({
     },
     from: vi.fn((table: string) => {
       if (table === "users") {
-        return createSingleSelectBuilder(user);
+        return createUsersBuilder(USER_ROW, usersRows, usersQueryFails);
       }
       if (table === "world_admins") {
         return createWorldAdminsBuilder(adminRows);
@@ -471,6 +586,28 @@ function createSingleSelectBuilder(data: unknown): unknown {
         eq: vi.fn(() => builder),
         order: vi.fn(() => builder),
         maybeSingle: vi.fn().mockResolvedValue({ data, error: null }),
+      };
+      return builder;
+    }),
+  };
+}
+
+function createUsersBuilder(
+  singleUser: unknown,
+  listRows: readonly unknown[],
+  listQueryFails = false,
+): unknown {
+  const listResult = listQueryFails
+    ? { data: null, error: { code: "PGRST301", message: "Forbidden" } }
+    : { data: listRows, error: null };
+  return {
+    select: vi.fn(() => {
+      const builder: Record<string, unknown> = {
+        eq: vi.fn(() => builder),
+        order: vi.fn().mockResolvedValue(listResult),
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: singleUser, error: null }),
       };
       return builder;
     }),
