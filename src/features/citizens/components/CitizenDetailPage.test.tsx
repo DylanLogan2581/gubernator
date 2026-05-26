@@ -341,6 +341,129 @@ describe("CitizenDetailPage", () => {
       expect(await screen.findByText(/Failed to load users/i)).toBeDefined();
     });
 
+    it("unlinks a plain PC immediately without a confirmation dialog", async () => {
+      const rpcMock = vi.fn().mockReturnValue({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: createCitizenRow({
+            citizen_type: "player_character",
+            user_id: null,
+          }),
+          error: null,
+        }),
+      });
+      const client = createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "player_character",
+          name: "Aldra",
+          role_type: "none",
+          user_id: OTHER_USER_ID,
+        }),
+      });
+      (client as Record<string, unknown>).rpc = rpcMock;
+      requireSupabaseClient.mockReturnValue(client);
+
+      renderPage();
+
+      const unlinkButton = await screen.findByRole("button", {
+        name: "Unlink",
+      });
+      await userEvent.click(unlinkButton);
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await waitFor(() => {
+        expect(rpcMock).toHaveBeenCalledWith("unlink_user_from_citizen", {
+          p_citizen_id: CITIZEN_ID,
+        });
+      });
+    });
+
+    it("shows a confirmation dialog naming the nation before unlinking a nation manager", async () => {
+      const client = createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "player_character",
+          name: "Aldra",
+          role_nation_id: NATION_ID,
+          role_type: "nation_manager",
+          user_id: OTHER_USER_ID,
+        }),
+      });
+      requireSupabaseClient.mockReturnValue(client);
+
+      renderPage();
+
+      const unlinkButton = await screen.findByRole("button", {
+        name: "Unlink",
+      });
+      await userEvent.click(unlinkButton);
+
+      const dialog = await screen.findByRole("dialog");
+      expect(dialog).toBeDefined();
+      expect(
+        screen.getByText(/revoke the Nation Manager role for Homeland/i),
+      ).toBeDefined();
+    });
+
+    it("shows a confirmation dialog naming the settlement before unlinking a settlement manager", async () => {
+      const client = createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "player_character",
+          name: "Aldra",
+          role_settlement_id: SETTLEMENT_ID,
+          role_type: "settlement_manager",
+          user_id: OTHER_USER_ID,
+        }),
+      });
+      requireSupabaseClient.mockReturnValue(client);
+
+      renderPage();
+
+      const unlinkButton = await screen.findByRole("button", {
+        name: "Unlink",
+      });
+      await userEvent.click(unlinkButton);
+
+      const dialog = await screen.findByRole("dialog");
+      expect(dialog).toBeDefined();
+      expect(
+        screen.getByText(/revoke the Settlement Manager role for Hometown/i),
+      ).toBeDefined();
+    });
+
+    it("cancels the unlink confirmation dialog without calling the mutation", async () => {
+      const rpcMock = vi.fn();
+      const client = createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "player_character",
+          name: "Aldra",
+          role_nation_id: NATION_ID,
+          role_type: "nation_manager",
+          user_id: OTHER_USER_ID,
+        }),
+      });
+      (client as Record<string, unknown>).rpc = rpcMock;
+      requireSupabaseClient.mockReturnValue(client);
+
+      renderPage();
+
+      const unlinkButton = await screen.findByRole("button", {
+        name: "Unlink",
+      });
+      await userEvent.click(unlinkButton);
+
+      await screen.findByRole("dialog");
+      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(rpcMock).not.toHaveBeenCalledWith(
+        "unlink_user_from_citizen",
+        expect.anything(),
+      );
+    });
+
     it("links the selected user when the form is submitted", async () => {
       const linkedCitizenRow = createCitizenRow({
         citizen_type: "player_character",
@@ -485,6 +608,16 @@ const OTHER_USER_ROW = {
   username: "otheruser",
 };
 
+const NATION_ROW = {
+  created_at: "2026-05-01T00:00:00.000Z",
+  description: null,
+  id: NATION_ID,
+  is_hidden: false,
+  name: "Homeland",
+  updated_at: "2026-05-01T00:00:00.000Z",
+  world_id: WORLD_ID,
+};
+
 function createClient({
   adminRows,
   citizen,
@@ -552,6 +685,9 @@ function createClient({
       }
       if (table === "citizen_assignments") {
         return createSingleSelectBuilder(null);
+      }
+      if (table === "nations") {
+        return createSingleSelectBuilder(NATION_ROW);
       }
       if (table === "settlements") {
         return createSettlementsBuilder();
