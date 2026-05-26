@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (33);
+  plan (44);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -86,6 +86,15 @@ values
     'x',
     now(),
     '{"username":"citizens_superadmin"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'c1000000-0000-0000-0000-000000000008',
+    'citizens-pc-other@example.com',
+    'x',
+    now(),
+    '{"username":"citizens_pc_other"}'::jsonb,
     now(),
     now()
   );
@@ -256,6 +265,30 @@ values
     'c1000000-0000-0000-0000-000000000005'
   );
 
+-- Second PC in World A, owned by a different user than the PC holder.
+-- Used by the cross-citizen update tests to verify that a PC cannot edit
+-- another player character's row even when they can see it.
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status,
+    user_id
+  )
+values
+  (
+    'c5000000-0000-0000-0000-000000000004',
+    'c2000000-0000-0000-0000-000000000001',
+    'c4000000-0000-0000-0000-0000000000a2',
+    'player_character',
+    'World A PC Other',
+    'alive',
+    'c1000000-0000-0000-0000-000000000008'
+  );
+
 -- NPCs across the World A nations/settlements to drive visibility checks.
 insert into
   public.citizens (
@@ -367,7 +400,7 @@ select
       where
         world_id = 'c2000000-0000-0000-0000-000000000001'
     ),
-    4,
+    5,
     'world admin can read every citizen in administered world'
   );
 
@@ -524,7 +557,7 @@ select
       where
         world_id = 'c2000000-0000-0000-0000-000000000001'
     ),
-    4,
+    5,
     'PC holder can read every citizen in their world'
   );
 
@@ -566,7 +599,7 @@ select
           'c2000000-0000-0000-0000-000000000003'
         )
     ),
-    7,
+    8,
     'super admin can read citizens across worlds'
   );
 
@@ -852,6 +885,100 @@ select
     'PC can change their own name via the table API'
   );
 
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set sex = 'female'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    'PC can change their own sex via the table API'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set profile_photo_url = 'https://example.com/photo.png'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    'PC can change their own profile_photo_url via the table API'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set personality_text = 'Brave and curious.'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    'PC can change their own personality_text via the table API'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set skills_text = 'Archery, stealth.'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    'PC can change their own skills_text via the table API'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- PC CROSS-CITIZEN EDIT: a player_character cannot update another citizen's
+-- row at all. The citizens_update_self RLS policy restricts UPDATE to rows
+-- where user_id = current_app_user_id(), so any attempt on a row owned by
+-- a different user is silently filtered out (0 rows affected, no error).
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000005","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    do $$
+    declare
+      n integer;
+    begin
+      update public.citizens
+      set settlement_id = 'c4000000-0000-0000-0000-0000000000a1'
+      where id = 'c5000000-0000-0000-0000-000000000004';
+      get diagnostics n = row_count;
+      if n != 0 then
+        raise exception 'expected 0 rows but % were updated', n;
+      end if;
+    end;
+    $$
+    $test$,
+    'PC cannot update a protected column on another PC''s row (RLS silently blocks)'
+  );
+
+select
+  lives_ok (
+    $test$
+    do $$
+    declare
+      n integer;
+    begin
+      update public.citizens
+      set name = 'Hacked Name'
+      where id = 'c5000000-0000-0000-0000-000000000004';
+      get diagnostics n = row_count;
+      if n != 0 then
+        raise exception 'expected 0 rows but % were updated', n;
+      end if;
+    end;
+    $$
+    $test$,
+    'PC cannot update a safe column on another PC''s row (RLS silently blocks)'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -872,6 +999,56 @@ select
     where id = 'c5000000-0000-0000-0000-000000000010'
   $test$,
     'world admin can update settlement_id on any citizen in the administered world'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set parent_a_citizen_id = 'c5000000-0000-0000-0000-000000000011'
+    where id = 'c5000000-0000-0000-0000-000000000010'
+  $test$,
+    'world admin can update parent_a_citizen_id on any citizen in the administered world'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set parent_b_citizen_id = 'c5000000-0000-0000-0000-000000000012'
+    where id = 'c5000000-0000-0000-0000-000000000010'
+  $test$,
+    'world admin can update parent_b_citizen_id on any citizen in the administered world'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set status = 'dead'
+    where id = 'c5000000-0000-0000-0000-000000000010'
+  $test$,
+    'world admin can update status on any citizen in the administered world'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set born_on_turn_number = 5
+    where id = 'c5000000-0000-0000-0000-000000000010'
+  $test$,
+    'world admin can update born_on_turn_number on any citizen in the administered world'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set death_cause = 'battle'
+    where id = 'c5000000-0000-0000-0000-000000000010'
+  $test$,
+    'world admin can update death_cause on any citizen in the administered world'
   );
 
 reset role;
