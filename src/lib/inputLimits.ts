@@ -32,3 +32,8 @@ export const calendarInputLimits = {
 export const jsonInputLimits = {
   turnLogPayloadBytesMax: 32_768,
 } as const;
+
+export const npcFlavorInputLimits = {
+  poolSizeMax: 100,
+  poolEntryMax: 200,
+} as const;

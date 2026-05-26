@@ -1,14 +1,17 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
-import { Save, UserPlus, X } from "lucide-react";
-import { useId, useState, type FormEvent, type JSX } from "react";
+import { Save, UserPlus, Wand2, X } from "lucide-react";
+import { useId, useMemo, useState, type FormEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
 import { textInputLimits } from "@/lib/inputLimits";
+import { createSeededRng } from "@/lib/seededRng";
 
 import { createNpcMutationOptions } from "../../mutations/citizensMutations";
 import { citizensHaveCloseKinship } from "../../queries/citizenKinshipQueries";
 import { citizensInSettlementQueryOptions } from "../../queries/citizensQueries";
+import { emptyNpcFlavor, generateNpcFlavor } from "../../utils/npcFlavor";
 
 import {
   EMPTY_COMMON_FIELDS,
@@ -19,6 +22,7 @@ import {
 } from "./CitizenCreationShared";
 
 import type { Citizen } from "../../types/citizenTypes";
+import type { NpcFlavor } from "../../utils/npcFlavor";
 
 type CreateNpcDialogProps = {
   readonly incestPreventionDepth: number;
@@ -43,10 +47,30 @@ export function CreateNpcDialog({
   const [kinshipError, setKinshipError] = useState<string | undefined>(
     undefined,
   );
+  const [seed, setSeed] = useState(() => crypto.randomUUID());
+  const [userFlavor, setUserFlavor] = useState<NpcFlavor | null>(null);
   const citizensQuery = useQuery(
     citizensInSettlementQueryOptions(settlementId),
   );
+  const flavorConfigQuery = useQuery(worldNpcFlavorConfigQueryOptions(worldId));
   const mutation = useMutation(createNpcMutationOptions({ queryClient }));
+
+  const generatedFlavor = useMemo(() => {
+    const config = flavorConfigQuery.data;
+    if (config === undefined) return emptyNpcFlavor();
+    return generateNpcFlavor(config, createSeededRng(seed));
+  }, [flavorConfigQuery.data, seed]);
+
+  const flavor = userFlavor ?? generatedFlavor;
+
+  function handleRegenerate(): void {
+    setSeed(crypto.randomUUID());
+    setUserFlavor(null);
+  }
+
+  function handleFlavorChange(field: keyof NpcFlavor, value: string): void {
+    setUserFlavor({ ...flavor, [field]: value });
+  }
 
   const parentChoices = (citizensQuery.data ?? []).filter(
     (citizen) => citizen.status === "alive",
@@ -77,11 +101,12 @@ export function CreateNpcDialog({
       mutation.mutate(
         {
           name: trimmedName,
-          npcFlaw: null,
-          npcGoal: null,
-          npcSecretContradiction: null,
-          npcTrait1: null,
-          npcTrait2: null,
+          npcFlaw: flavor.flaw !== "" ? flavor.flaw : null,
+          npcGoal: flavor.goal !== "" ? flavor.goal : null,
+          npcSecretContradiction:
+            flavor.contradiction !== "" ? flavor.contradiction : null,
+          npcTrait1: flavor.trait1 !== "" ? flavor.trait1 : null,
+          npcTrait2: flavor.trait2 !== "" ? flavor.trait2 : null,
           parentACitizenId,
           parentBCitizenId,
           personalityText: null,
@@ -211,6 +236,81 @@ export function CreateNpcDialog({
           }}
           value={fields.parentBCitizenId}
         />
+
+        <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">NPC flavor</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={
+                mutation.isPending || flavorConfigQuery.data === undefined
+              }
+              onClick={handleRegenerate}
+            >
+              <Wand2 aria-hidden="true" />
+              Regenerate
+            </Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Trait 1</span>
+              <Input
+                disabled={mutation.isPending}
+                value={flavor.trait1}
+                onChange={(event) =>
+                  handleFlavorChange("trait1", event.currentTarget.value)
+                }
+              />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Trait 2</span>
+              <Input
+                disabled={mutation.isPending}
+                value={flavor.trait2}
+                onChange={(event) =>
+                  handleFlavorChange("trait2", event.currentTarget.value)
+                }
+              />
+            </label>
+          </div>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">
+              Secret / contradiction
+            </span>
+            <textarea
+              className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              disabled={mutation.isPending}
+              value={flavor.contradiction}
+              onChange={(event) =>
+                handleFlavorChange("contradiction", event.currentTarget.value)
+              }
+            />
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Goal</span>
+            <textarea
+              className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              disabled={mutation.isPending}
+              value={flavor.goal}
+              onChange={(event) =>
+                handleFlavorChange("goal", event.currentTarget.value)
+              }
+            />
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Flaw</span>
+            <textarea
+              className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              disabled={mutation.isPending}
+              value={flavor.flaw}
+              onChange={(event) =>
+                handleFlavorChange("flaw", event.currentTarget.value)
+              }
+            />
+          </label>
+        </div>
 
         {errorDescription === "" ? null : (
           <p

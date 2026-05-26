@@ -733,6 +733,7 @@ export type Database = {
           id: string;
           incest_prevention_depth: number;
           name: string;
+          npc_flavor_config_json: Json;
           owner_id: string;
           status: string;
           updated_at: string;
@@ -746,6 +747,7 @@ export type Database = {
           id?: string;
           incest_prevention_depth?: number;
           name: string;
+          npc_flavor_config_json?: Json;
           owner_id: string;
           status?: string;
           updated_at?: string;
@@ -759,6 +761,7 @@ export type Database = {
           id?: string;
           incest_prevention_depth?: number;
           name?: string;
+          npc_flavor_config_json?: Json;
           owner_id?: string;
           status?: string;
           updated_at?: string;
