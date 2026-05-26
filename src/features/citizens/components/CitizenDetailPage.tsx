@@ -28,10 +28,12 @@ import type { AccessContext } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import {
   isWorldNotFoundError,
+  worldNpcFlavorConfigQueryOptions,
   worldRouteAccessQueryOptions,
 } from "@/features/worlds";
 import type { WorldRouteAccess } from "@/features/worlds";
 import { textInputLimits } from "@/lib/inputLimits";
+import { createSeededRng } from "@/lib/seededRng";
 
 import {
   isCitizenMutationError,
@@ -47,6 +49,7 @@ import {
 } from "../mutations/playerCharacterRoleMutations";
 import { currentAssignmentForCitizenQueryOptions } from "../queries/citizenAssignmentsQueries";
 import { citizenByIdQueryOptions } from "../queries/citizensQueries";
+import { generateNpcFlavor } from "../utils/npcFlavor";
 
 import { NpcFlavorEditor } from "./NpcFlavorEditor";
 import { NpcFlavorLine } from "./NpcFlavorLine";
@@ -336,6 +339,7 @@ function CitizenDetailLoaded({
             canEdit={canEdit}
             citizen={citizen}
             queryClient={queryClient}
+            worldId={worldId}
           />
         </>
       ) : null}
@@ -637,15 +641,18 @@ function CitizenNpcFlavorSection({
   canEdit,
   citizen,
   queryClient,
+  worldId,
 }: {
   readonly canEdit: boolean;
   readonly citizen: Citizen;
   readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
   const updateMutation = useMutation(
     updateCitizenNpcFieldsMutationOptions({ queryClient }),
   );
+  const flavorConfigQuery = useQuery(worldNpcFlavorConfigQueryOptions(worldId));
 
   function closeEditor(): void {
     setIsEditing(false);
@@ -674,6 +681,16 @@ function CitizenNpcFlavorSection({
     );
   }
 
+  function handleGenerate(): NpcFlavor {
+    const config = flavorConfigQuery.data ?? {
+      traits: [],
+      contradictions: [],
+      goals: [],
+      flaws: [],
+    };
+    return generateNpcFlavor(config, createSeededRng(crypto.randomUUID()));
+  }
+
   if (isEditing) {
     return (
       <section
@@ -687,6 +704,9 @@ function CitizenNpcFlavorSection({
           disabled={updateMutation.isPending}
           initial={citizenToNpcFlavor(citizen)}
           onCancel={closeEditor}
+          onGenerate={
+            flavorConfigQuery.data !== undefined ? handleGenerate : undefined
+          }
           onSave={handleSave}
           submitLabel={updateMutation.isPending ? "Saving…" : "Save flavor"}
         />

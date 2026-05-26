@@ -25,4 +25,6 @@ export const worldQueryKeys = {
       ...accessContext.worldAdminWorldIds,
       ...accessContext.playerCharacterWorldIds,
     ] as const,
+  npcFlavorConfig: (worldId: string) =>
+    [...worldQueryKeys.all, "npc-flavor-config", worldId] as const,
 } as const;

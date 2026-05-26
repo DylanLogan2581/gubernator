@@ -2,6 +2,7 @@
 // Implemented in Epic 2.
 export { WorldEntryGate } from "./components/WorldEntryGate";
 export { WorldListPage } from "./components/WorldListPage";
+export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
 export {
   currentUserAdminWorldIdsQueryOptions,
@@ -15,6 +16,17 @@ export {
   worldRouteAccessQueryOptions,
 } from "./queries/worldQueries";
 export { worldQueryKeys } from "./queries/worldQueryKeys";
+export {
+  WorldNpcFlavorConfigError,
+  isWorldNpcFlavorConfigError,
+  worldNpcFlavorConfigQueryOptions,
+} from "./queries/worldNpcFlavorConfigQueries";
+export {
+  SaveWorldNpcFlavorConfigError,
+  isSaveWorldNpcFlavorConfigError,
+  saveWorldNpcFlavorConfigMutationOptions,
+} from "./mutations/worldNpcFlavorConfigMutations";
+export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
 export { createWorldSlug, toAccessibleWorld } from "./utils/worldDisplay";
 
 export type {

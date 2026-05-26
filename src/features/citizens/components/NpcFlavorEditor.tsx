@@ -1,4 +1,4 @@
-import { Save, X } from "lucide-react";
+import { Save, Wand2, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ type NpcFlavorEditorProps = {
   readonly disabled?: boolean;
   readonly initial: NpcFlavor;
   readonly onCancel?: () => void;
+  readonly onGenerate?: () => NpcFlavor;
   readonly onSave: (next: NpcFlavor) => void;
   readonly submitLabel?: string;
 };
@@ -18,6 +19,7 @@ export function NpcFlavorEditor({
   disabled = false,
   initial,
   onCancel,
+  onGenerate,
   onSave,
   submitLabel = "Save flavor",
 }: NpcFlavorEditorProps): JSX.Element {
@@ -91,6 +93,24 @@ export function NpcFlavorEditor({
           <Save aria-hidden="true" />
           {submitLabel}
         </Button>
+        {onGenerate !== undefined ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            onClick={() => {
+              const flavor = onGenerate();
+              setTrait1(flavor.trait1);
+              setTrait2(flavor.trait2);
+              setContradiction(flavor.contradiction);
+              setGoal(flavor.goal);
+              setFlaw(flavor.flaw);
+            }}
+          >
+            <Wand2 aria-hidden="true" />
+            Generate
+          </Button>
+        ) : null}
         {onCancel === undefined ? null : (
           <Button
             type="button"

@@ -22,6 +22,8 @@ import {
   worldRouteAccessQueryOptions,
 } from "../queries/worldQueries";
 
+import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
+
 import type { JSX, ReactNode } from "react";
 
 type WorldShellPageProps = {
@@ -165,6 +167,12 @@ function WorldShellContent({
         ) : null}
       </section>
       <WorldCalendarConfigPanel
+        accessContext={accessContext}
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+      <WorldNpcFlavorConfigPanel
         accessContext={accessContext}
         canAdmin={worldQuery.data.canAdmin}
         isArchived={worldQuery.data.header.isArchived}
