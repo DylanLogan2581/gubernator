@@ -101,7 +101,7 @@ function PlayerCharacterChooserRow({
         disabled={disabled}
         onClick={onSelect}
       >
-        <Avatar name={citizen.name} profilePhotoUrl={citizen.profilePhotoUrl} />
+        <Avatar profilePhotoUrl={citizen.profilePhotoUrl} />
         <div className="grid gap-0.5">
           <span className="text-sm font-medium">{citizen.name}</span>
           <span className="text-xs text-muted-foreground">
@@ -127,10 +127,8 @@ function PlayerCharacterChooserRow({
 }
 
 function Avatar({
-  name,
   profilePhotoUrl,
 }: {
-  readonly name: string;
   readonly profilePhotoUrl: string | null;
 }): JSX.Element {
   if (profilePhotoUrl !== null && profilePhotoUrl !== "") {
@@ -146,7 +144,6 @@ function Avatar({
   return (
     <span
       aria-hidden="true"
-      aria-label={name}
       className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground"
     >
       <UserCircle2 className="size-6" />
