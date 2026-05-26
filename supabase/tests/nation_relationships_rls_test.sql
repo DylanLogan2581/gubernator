@@ -472,7 +472,7 @@ select
   lives_ok (
     $test$
     update public.nation_relationships
-    set current_stance = 'allied'
+    set current_stance = 'friendly'
     where id = 'f6000000-0000-0000-0000-000000000001'
   $test$,
     'nation A manager can update a relationship originating from Nation A'
