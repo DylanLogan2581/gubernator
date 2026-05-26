@@ -20,6 +20,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { availableUsersQueryOptions } from "@/features/auth";
+import { nationByIdQueryOptions } from "@/features/nations";
 import {
   RoleAssignmentControls,
   currentAccessContextQueryOptions,
@@ -962,6 +963,7 @@ function CitizenLinkedUserControl({
   readonly queryClient: QueryClient;
 }): JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
+  const [isConfirmingUnlink, setIsConfirmingUnlink] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [inputError, setInputError] = useState<string | undefined>(undefined);
 
@@ -972,6 +974,18 @@ function CitizenLinkedUserControl({
   const unlinkMutation = useMutation(
     unlinkUserFromCitizenMutationOptions({ queryClient }),
   );
+
+  const nationQuery = useQuery({
+    ...nationByIdQueryOptions(citizen.roleNationId ?? ""),
+    enabled:
+      citizen.roleType === "nation_manager" && citizen.roleNationId !== null,
+  });
+  const settlementQuery = useQuery({
+    ...settlementByIdQueryOptions(citizen.roleSettlementId ?? ""),
+    enabled:
+      citizen.roleType === "settlement_manager" &&
+      citizen.roleSettlementId !== null,
+  });
 
   function closeEditor(): void {
     setIsEditing(false);
@@ -1006,6 +1020,10 @@ function CitizenLinkedUserControl({
   }
 
   function handleUnlink(): void {
+    if (citizen.roleType !== "none") {
+      setIsConfirmingUnlink(true);
+      return;
+    }
     unlinkMutation.reset();
     unlinkMutation.mutate({
       citizenId: citizen.id,
@@ -1013,8 +1031,36 @@ function CitizenLinkedUserControl({
     });
   }
 
+  function handleUnlinkConfirm(): void {
+    unlinkMutation.reset();
+    unlinkMutation.mutate(
+      { citizenId: citizen.id, worldId: citizen.worldId },
+      {
+        onSuccess: () => {
+          setIsConfirmingUnlink(false);
+        },
+      },
+    );
+  }
+
   const userChoices = usersQuery.data ?? [];
   const firstError = linkMutation.error ?? unlinkMutation.error ?? null;
+
+  function unlinkRoleDescription(): string {
+    if (citizen.roleType === "nation_manager") {
+      const name = nationQuery.data?.name ?? null;
+      return name !== null
+        ? `This will revoke the Nation Manager role for ${name}.`
+        : "This will revoke the Nation Manager role.";
+    }
+    if (citizen.roleType === "settlement_manager") {
+      const name = settlementQuery.data?.name ?? null;
+      return name !== null
+        ? `This will revoke the Settlement Manager role for ${name}.`
+        : "This will revoke the Settlement Manager role.";
+    }
+    return "";
+  }
 
   return (
     <div className="grid gap-2 rounded-md border border-border bg-background px-3 py-2">
@@ -1120,6 +1166,71 @@ function CitizenLinkedUserControl({
           {getRoleMutationErrorDescription(firstError)}
         </p>
       ) : null}
+      {isConfirmingUnlink ? (
+        <UnlinkRoleConfirmDialog
+          isPending={unlinkMutation.isPending}
+          roleDescription={unlinkRoleDescription()}
+          onCancel={() => {
+            setIsConfirmingUnlink(false);
+            unlinkMutation.reset();
+          }}
+          onConfirm={handleUnlinkConfirm}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function UnlinkRoleConfirmDialog({
+  isPending,
+  roleDescription,
+  onCancel,
+  onConfirm,
+}: {
+  readonly isPending: boolean;
+  readonly roleDescription: string;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}): JSX.Element {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
+      <div
+        aria-labelledby="unlink-role-confirm-title"
+        aria-modal="true"
+        className="grid w-full max-w-md gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
+        role="dialog"
+      >
+        <div className="space-y-1">
+          <h3
+            id="unlink-role-confirm-title"
+            className="text-lg font-semibold tracking-normal"
+          >
+            Unlink user
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {roleDescription} Unlinking this user will also clear their role.
+            This action cannot be undone without reassigning.
+          </p>
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            {isPending ? "Unlinking…" : "Unlink user"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
