@@ -965,10 +965,6 @@ export type Database = {
         Args: { p_nation_id: string };
         Returns: boolean;
       };
-      partnership_admin_can_write: {
-        Args: { p_citizen_id: string };
-        Returns: boolean;
-      };
       reassign_partner: {
         Args: {
           p_change_reason: string;
