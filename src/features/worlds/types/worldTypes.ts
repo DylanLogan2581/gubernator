@@ -19,6 +19,7 @@ export type WorldPermissionContext = {
   readonly isSuperAdmin: boolean;
   readonly userId: string | null;
   readonly worldAdminWorldIds: readonly string[];
+  readonly playerCharacterWorldIds: readonly string[];
 };
 
 export type AccessibleWorld = {

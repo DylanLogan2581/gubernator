@@ -351,7 +351,23 @@ function createClient({
         return createWorldsBuilder(worldRow);
       }
       if (table === "citizens") {
-        return createSingleSelectBuilder(citizen);
+        return {
+          select: vi.fn((columns: string) => {
+            if (columns === "world_id") {
+              const b: Record<string, unknown> = {};
+              b.eq = vi.fn(() => b);
+              b.order = vi.fn().mockResolvedValue({ data: [], error: null });
+              return b;
+            }
+            const detailBuilder: Record<string, unknown> = {};
+            detailBuilder.eq = vi.fn(() => detailBuilder);
+            detailBuilder.order = vi.fn(() => detailBuilder);
+            detailBuilder.maybeSingle = vi
+              .fn()
+              .mockResolvedValue({ data: citizen, error: null });
+            return detailBuilder;
+          }),
+        };
       }
       if (table === "citizen_assignments") {
         return createSingleSelectBuilder(null);

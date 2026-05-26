@@ -12,6 +12,7 @@ export const worldQueryKeys = {
       accessContext.isActiveUser,
       accessContext.isSuperAdmin,
       ...accessContext.worldAdminWorldIds,
+      ...accessContext.playerCharacterWorldIds,
     ] as const,
   byId: (worldId: string, accessContext: WorldPermissionContext) =>
     [
@@ -22,5 +23,6 @@ export const worldQueryKeys = {
       accessContext.isActiveUser,
       accessContext.isSuperAdmin,
       ...accessContext.worldAdminWorldIds,
+      ...accessContext.playerCharacterWorldIds,
     ] as const,
 } as const;

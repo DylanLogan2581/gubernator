@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (31);
+  plan (32);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -752,13 +752,26 @@ where
   id = '74000000-0000-0000-0000-000000000001';
 
 -- ===========================================================================
--- PLAIN PC: player character without a management role cannot update.
+-- PLAIN PC: player character without a management role can read but not update.
 -- ===========================================================================
 set
   local role authenticated;
 
 set
   local "request.jwt.claims" = '{"sub":"71000000-0000-0000-0000-000000000007","role":"authenticated"}';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.settlements
+      where
+        id = '74000000-0000-0000-0000-000000000001'
+    ),
+    'plain PC holder can read settlements in their world'
+  );
 
 update public.settlements
 set

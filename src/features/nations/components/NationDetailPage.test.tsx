@@ -675,6 +675,12 @@ function createClient({
       if (table === "settlements") {
         return createSettlementsQueryBuilder(settlementRows);
       }
+      if (table === "citizens") {
+        const b: Record<string, unknown> = {};
+        b.eq = vi.fn(() => b);
+        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
+        return { select: vi.fn(() => b) };
+      }
       throw new Error(`Unexpected table ${table}`);
     }),
     rpc: vi.fn((fn: string, params: Record<string, unknown>) => {
