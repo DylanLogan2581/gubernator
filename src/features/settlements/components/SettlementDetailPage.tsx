@@ -245,8 +245,14 @@ function SettlementDetailLoaded({
     activeCharacter.roleType === "nation_manager" &&
     activeCharacter.roleNationId === settlement.nationId &&
     activeCharacter.status === "alive";
+  const isSettlementManager =
+    activeCharacter !== null &&
+    activeCharacter.roleType === "settlement_manager" &&
+    activeCharacter.roleSettlementId === settlement.id &&
+    activeCharacter.status === "alive";
   const canEditDetails =
-    (worldAccess.canAdmin || isNationManager) && !isArchived;
+    (worldAccess.canAdmin || isNationManager || isSettlementManager) &&
+    !isArchived;
   const canDelete = worldAccess.canAdmin && !isArchived;
 
   return (
