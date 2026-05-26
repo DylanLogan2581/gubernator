@@ -232,7 +232,7 @@ async function updateSettlementDetails(
     .eq("id", values.settlementId)
     .eq("nation_id", values.nationId)
     .select(SETTLEMENT_SELECT)
-    .maybeSingle<SettlementRow>();
+    .single<SettlementRow>();
 
   if (error !== null) {
     throw normalizeAuthError(error);
@@ -263,7 +263,7 @@ async function updateSettlementCoordinates(
     .eq("id", values.settlementId)
     .eq("nation_id", values.nationId)
     .select(SETTLEMENT_SELECT)
-    .maybeSingle<SettlementRow>();
+    .single<SettlementRow>();
 
   if (error !== null) {
     throw normalizeAuthError(error);
