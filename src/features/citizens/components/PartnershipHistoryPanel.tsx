@@ -508,6 +508,12 @@ function EndPartnershipForm({
       setFieldError("End turn must be a non-negative integer.");
       return;
     }
+    if (parsedTurn < partnership.formedOnTurnNumber) {
+      setFieldError(
+        `End turn must be on or after the formed turn (turn ${partnership.formedOnTurnNumber}).`,
+      );
+      return;
+    }
     if (changeReason.trim().length === 0) {
       setFieldError("Change reason is required.");
       return;
@@ -642,6 +648,12 @@ function ReassignPartnerForm({
     const parsedFormed = Number.parseInt(formedTurn, 10);
     if (!Number.isFinite(parsedEnd) || parsedEnd < 0) {
       setFieldError("End turn must be a non-negative integer.");
+      return;
+    }
+    if (parsedEnd < partnership.formedOnTurnNumber) {
+      setFieldError(
+        `Old partnership end turn must be on or after the formed turn (turn ${partnership.formedOnTurnNumber}).`,
+      );
       return;
     }
     if (!Number.isFinite(parsedFormed) || parsedFormed < 0) {

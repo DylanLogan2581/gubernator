@@ -23,7 +23,7 @@
 begin;
 
 select
-  plan (25);
+  plan (28);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -843,6 +843,99 @@ select
     null,
     'non-active partnership must have non-null ended_on_turn_number'
   );
+
+-- partnerships_ended_on_turn_after_formed_check: ended_on_turn_number must be
+-- >= formed_on_turn_number when it is set.
+select
+  throws_ok (
+    $test$
+    insert into public.partnerships (
+      citizen_a_id, citizen_b_id, status, formed_on_turn_number, ended_on_turn_number
+    ) values (
+      'e5000000-0000-0000-0000-0000000000a7',
+      'e5000000-0000-0000-0000-0000000000a8',
+      'dissolved',
+      10,
+      5
+    )
+  $test$,
+    '23514',
+    null,
+    'ended_on_turn_number before formed_on_turn_number is rejected'
+  );
+
+-- ===========================================================================
+-- RPC defense-in-depth: dissolve_partnership and reassign_partner return zero
+-- rows when ended_on_turn_number < formed_on_turn_number.
+--
+-- A fresh active partnership (0009) is inserted here as the migration owner so
+-- it exists when the authenticated-role RPC calls below run. A7 and A8 were
+-- freed when partnership 0004 was dissolved in the earlier dissolve RPC test.
+-- ===========================================================================
+insert into
+  public.partnerships (
+    id,
+    citizen_a_id,
+    citizen_b_id,
+    status,
+    formed_on_turn_number
+  )
+values
+  (
+    'e6000000-0000-0000-0000-000000000009',
+    'e5000000-0000-0000-0000-0000000000a7',
+    'e5000000-0000-0000-0000-0000000000a8',
+    'active',
+    10
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.dissolve_partnership (
+          'e6000000-0000-0000-0000-000000000009',
+          5,
+          'end before formed',
+          'e7000000-0000-0000-0000-000000000001'
+        )
+    ),
+    0,
+    'dissolve_partnership returns zero rows when ended turn is before formed turn'
+  );
+
+-- 0009 is still active (RPC returned 0 rows). Use it as the old partnership
+-- for the reassign_partner probe. The new-partner slot (A1) is already in an
+-- active partnership; since the RPC returns before the insert, no conflict fires.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.reassign_partner (
+          'e6000000-0000-0000-0000-000000000009',
+          'e5000000-0000-0000-0000-0000000000a7',
+          'e5000000-0000-0000-0000-0000000000a1',
+          5,
+          11,
+          'end before formed',
+          'e7000000-0000-0000-0000-000000000001'
+        )
+    ),
+    0,
+    'reassign_partner returns zero rows when ended turn is before old partnership formed turn'
+  );
+
+reset role;
 
 select
   *
