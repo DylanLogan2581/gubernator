@@ -2,8 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
+
 import { CitizenDetailPage } from "./CitizenDetailPage";
 
+import type { Citizen } from "../types/citizenTypes";
 import type { ReactNode } from "react";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
@@ -16,6 +19,18 @@ vi.mock("@/lib/supabase", () => ({
 
 const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
+}));
+
+const { useActivePlayerCharacterMock } = vi.hoisted(() => ({
+  useActivePlayerCharacterMock: vi.fn<() => ActivePlayerCharacterContextValue>(
+    () => ({
+      activeCharacter: null,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    }),
+  ),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -72,6 +87,7 @@ vi.mock("@/features/permissions", async () => {
       readonly canAdminWorld: boolean;
     }) =>
       canAdminWorld ? <div data-testid="role-assignment-controls" /> : null,
+    useActivePlayerCharacter: useActivePlayerCharacterMock,
   };
 });
 
@@ -86,6 +102,14 @@ describe("CitizenDetailPage", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     navigateMock.mockReset();
+    useActivePlayerCharacterMock.mockReset();
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: null,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
   });
 
   it("renders admin-only edit and lifecycle controls for world admins", async () => {
@@ -165,6 +189,13 @@ describe("CitizenDetailPage", () => {
   });
 
   it("redirects nation and settlement managers to their settlement detail screen", async () => {
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: { roleType: "nation_manager" } as Citizen,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
     requireSupabaseClient.mockReturnValue(
       createClient({
         adminRows: [],
@@ -182,6 +213,41 @@ describe("CitizenDetailPage", () => {
 
     expect(
       await screen.findByText(/Nation and settlement managers/i),
+    ).toBeDefined();
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith({
+        params: {
+          nationId: NATION_ID,
+          settlementId: SETTLEMENT_ID,
+          worldId: WORLD_ID,
+        },
+        replace: true,
+        to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
+      });
+    });
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  });
+
+  it("redirects plain player characters with a tailored message", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [],
+        citizen: createCitizenRow({
+          citizen_type: "player_character",
+          name: "Renn",
+          user_id: OTHER_USER_ID,
+        }),
+        worldOwnerId: OTHER_USER_ID,
+        worldVisibility: "public",
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByText(
+        /Citizen detail is only available for your own living character/i,
+      ),
     ).toBeDefined();
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith({

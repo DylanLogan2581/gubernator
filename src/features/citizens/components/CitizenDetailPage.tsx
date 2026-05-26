@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import {
   RoleAssignmentControls,
   currentAccessContextQueryOptions,
+  useActivePlayerCharacter,
 } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
@@ -236,6 +237,7 @@ function CitizenManagerRedirect({
   readonly worldId: string;
 }): JSX.Element {
   const navigate = useNavigate();
+  const { activeCharacter } = useActivePlayerCharacter();
   const settlementId = citizen.settlementId;
   const settlementQuery = useQuery({
     ...settlementByIdQueryOptions(settlementId ?? ""),
@@ -243,6 +245,11 @@ function CitizenManagerRedirect({
   });
   const settlement = settlementQuery.data ?? null;
   const nationId = settlement?.nationId ?? null;
+
+  const isManager =
+    activeCharacter !== null &&
+    (activeCharacter.roleType === "nation_manager" ||
+      activeCharacter.roleType === "settlement_manager");
 
   useEffect(() => {
     if (settlementId === null || nationId === null) {
@@ -255,15 +262,21 @@ function CitizenManagerRedirect({
     });
   }, [navigate, nationId, settlementId, worldId]);
 
+  function redirectDescription(): string {
+    if (settlementId === null) {
+      return "Only world administrators can view citizens that are not in a settlement.";
+    }
+    if (isManager) {
+      return "Nation and settlement managers manage citizens from the settlement detail screen. Redirecting now…";
+    }
+    return "Citizen detail is only available for your own living character. You will be redirected to the settlement view.";
+  }
+
   return (
     <CitizenDetailFrame worldId={worldId}>
       <AccessDeniedState
         title="Citizen detail not available"
-        description={
-          settlementId === null
-            ? "Only world administrators can view citizens that are not in a settlement."
-            : "Nation and settlement managers manage citizens from the settlement detail screen. Redirecting now…"
-        }
+        description={redirectDescription()}
       />
     </CitizenDetailFrame>
   );
