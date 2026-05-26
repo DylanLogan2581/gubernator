@@ -1,4 +1,4 @@
--- pgTAP tests for public.partnerships RLS, admin-only writes, and constraints.
+-- pgTAP tests for public.partnerships RLS, write revocation, and constraints.
 -- Run with: npx supabase test db
 --
 -- Partnership read visibility mirrors citizens read visibility: a partnership
@@ -8,9 +8,10 @@
 -- that a World A admin sees it only via citizen_b and a World B admin sees it
 -- only via citizen_a.
 --
--- Writes via the table API are admin-only: super admin or world admin of the
--- world containing the partnership's citizen_a_id. The dedicated mutation
--- RPCs (create_partnership, dissolve_partnership, ...) are covered separately.
+-- Direct INSERT/UPDATE/DELETE on public.partnerships is revoked from the
+-- authenticated role (20260525000006_revoke_partnership_direct_writes.sql).
+-- All mutations must go through the SECURITY DEFINER RPCs so every write is
+-- paired with a turn_log_entries audit row.
 --
 -- Constraints exercised:
 --   • partnerships_distinct_citizens_check: a self-pair is rejected.
@@ -22,7 +23,7 @@
 begin;
 
 select
-  plan (23);
+  plan (25);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -319,6 +320,48 @@ values
     1
   );
 
+-- Turn transition used as the audit anchor for RPC write tests.
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status,
+    finished_at
+  )
+values
+  (
+    'e7000000-0000-0000-0000-000000000001',
+    'e2000000-0000-0000-0000-000000000001',
+    0,
+    1,
+    'e1000000-0000-0000-0000-000000000001',
+    'completed',
+    now()
+  );
+
+-- Pre-inserted active partnership used as the target for the RPC dissolve test.
+-- Inserted as the migration owner (bypassing RLS) so it exists before the
+-- authenticated-role RPC tests run.
+insert into
+  public.partnerships (
+    id,
+    citizen_a_id,
+    citizen_b_id,
+    status,
+    formed_on_turn_number
+  )
+values
+  (
+    'e6000000-0000-0000-0000-000000000004',
+    'e5000000-0000-0000-0000-0000000000a7',
+    'e5000000-0000-0000-0000-0000000000a8',
+    'active',
+    1
+  );
+
 -- ===========================================================================
 -- ANONYMOUS: no read access
 -- ===========================================================================
@@ -577,53 +620,38 @@ select
     'non-admin authenticated user cannot insert partnerships'
   );
 
-with
-  affected as (
+select
+  throws_ok (
+    $test$
     update public.partnerships
     set
       change_reason = 'should not stick'
     where
       id = 'e6000000-0000-0000-0000-000000000001'
-    returning
-      1
-  )
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        affected
-    ),
-    0,
-    'non-admin authenticated update on a non-visible partnership affects zero rows'
+  $test$,
+    '42501',
+    null,
+    'non-admin authenticated cannot update partnerships (permission denied)'
   );
 
-with
-  affected as (
+select
+  throws_ok (
+    $test$
     delete from public.partnerships
     where
       id = 'e6000000-0000-0000-0000-000000000001'
-    returning
-      1
-  )
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        affected
-    ),
-    0,
-    'non-admin authenticated delete on a non-visible partnership affects zero rows'
+  $test$,
+    '42501',
+    null,
+    'non-admin authenticated cannot delete partnerships (permission denied)'
   );
 
 reset role;
 
 -- ===========================================================================
--- WRITES: world admin (world A owner) can insert, update, and delete a
--- partnership in their world via the table API.
+-- WRITES: direct table-API INSERT/UPDATE/DELETE is rejected for all
+-- authenticated callers including world admins. The authenticated role no
+-- longer holds INSERT, UPDATE, or DELETE on public.partnerships.
 -- ===========================================================================
 set
   local role authenticated;
@@ -632,37 +660,87 @@ set
   local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.partnerships (
-      id, citizen_a_id, citizen_b_id, formed_on_turn_number
+      citizen_a_id, citizen_b_id, formed_on_turn_number
     ) values (
-      'e6000000-0000-0000-0000-0000000000a5',
       'e5000000-0000-0000-0000-0000000000a5',
       'e5000000-0000-0000-0000-0000000000a6',
       2
     )
   $test$,
-    'world admin can insert a partnership between citizens in their world'
+    '42501',
+    null,
+    'world admin cannot directly insert a partnership (must use RPC)'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     update public.partnerships
     set change_reason = 'admin clarification'
     where id = 'e6000000-0000-0000-0000-000000000001'
   $test$,
-    'world admin can update a partnership in their world'
+    '42501',
+    null,
+    'world admin cannot directly update a partnership (must use RPC)'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     delete from public.partnerships
-    where id = 'e6000000-0000-0000-0000-0000000000a5'
+    where id = 'e6000000-0000-0000-0000-000000000001'
   $test$,
-    'world admin can delete a partnership in their world'
+    '42501',
+    null,
+    'world admin cannot directly delete a partnership (must use RPC)'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- WRITES: RPC paths still work for world admin after the table grant revoke.
+-- The SECURITY DEFINER functions run with function-owner privileges.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  results_eq (
+    $test$
+    select status from public.create_partnership(
+      'e5000000-0000-0000-0000-0000000000a5',
+      'e5000000-0000-0000-0000-0000000000a6',
+      2,
+      'rpc test create',
+      'e7000000-0000-0000-0000-000000000001'
+    )
+  $test$,
+    $expected$
+    values ('active'::text)
+  $expected$,
+    'world admin can create a partnership via RPC'
+  );
+
+select
+  results_eq (
+    $test$
+    select status from public.dissolve_partnership(
+      'e6000000-0000-0000-0000-000000000004',
+      2,
+      'rpc test dissolve',
+      'e7000000-0000-0000-0000-000000000001'
+    )
+  $test$,
+    $expected$
+    values ('dissolved'::text)
+  $expected$,
+    'world admin can dissolve a partnership via RPC'
   );
 
 reset role;
