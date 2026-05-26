@@ -19,6 +19,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { availableUsersQueryOptions } from "@/features/auth";
 import {
   RoleAssignmentControls,
   currentAccessContextQueryOptions,
@@ -961,9 +962,10 @@ function CitizenLinkedUserControl({
   readonly queryClient: QueryClient;
 }): JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
-  const [userIdInput, setUserIdInput] = useState(citizen.userId ?? "");
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [inputError, setInputError] = useState<string | undefined>(undefined);
 
+  const usersQuery = useQuery(availableUsersQueryOptions());
   const linkMutation = useMutation(
     linkUserToCitizenMutationOptions({ queryClient }),
   );
@@ -973,7 +975,7 @@ function CitizenLinkedUserControl({
 
   function closeEditor(): void {
     setIsEditing(false);
-    setUserIdInput(citizen.userId ?? "");
+    setSelectedUserId("");
     setInputError(undefined);
     linkMutation.reset();
   }
@@ -983,9 +985,9 @@ function CitizenLinkedUserControl({
     setInputError(undefined);
     linkMutation.reset();
 
-    const trimmed = userIdInput.trim();
+    const trimmed = selectedUserId.trim();
     if (trimmed.length === 0) {
-      setInputError("User id is required.");
+      setInputError("Select a user to link.");
       return;
     }
 
@@ -1011,6 +1013,7 @@ function CitizenLinkedUserControl({
     });
   }
 
+  const userChoices = usersQuery.data ?? [];
   const firstError = linkMutation.error ?? unlinkMutation.error ?? null;
 
   return (
@@ -1054,18 +1057,34 @@ function CitizenLinkedUserControl({
       {isEditing ? (
         <form className="grid gap-2" noValidate onSubmit={handleLink}>
           <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">User id (UUID)</span>
-            <Input
-              aria-invalid={inputError === undefined ? undefined : true}
-              disabled={linkMutation.isPending}
-              value={userIdInput}
-              onChange={(event) => {
-                setUserIdInput(event.currentTarget.value);
-                if (inputError !== undefined) {
-                  setInputError(undefined);
-                }
-              }}
-            />
+            <span className="text-muted-foreground">User</span>
+            {usersQuery.isError ? (
+              <p role="alert" className="text-sm text-destructive">
+                Failed to load users. Please try again.
+              </p>
+            ) : (
+              <select
+                aria-invalid={inputError === undefined ? undefined : true}
+                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={linkMutation.isPending || usersQuery.isPending}
+                value={selectedUserId}
+                onChange={(event) => {
+                  setSelectedUserId(event.currentTarget.value);
+                  if (inputError !== undefined) {
+                    setInputError(undefined);
+                  }
+                }}
+              >
+                <option value="">
+                  {usersQuery.isPending ? "Loading users…" : "Select a user…"}
+                </option>
+                {userChoices.map((appUser) => (
+                  <option key={appUser.id} value={appUser.id}>
+                    {appUser.username} · {appUser.email}
+                  </option>
+                ))}
+              </select>
+            )}
             {inputError === undefined ? null : (
               <p role="alert" className="text-sm text-destructive">
                 {inputError}
@@ -1073,7 +1092,11 @@ function CitizenLinkedUserControl({
             )}
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" size="sm" disabled={linkMutation.isPending}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={linkMutation.isPending || usersQuery.isPending}
+            >
               <Save aria-hidden="true" />
               {linkMutation.isPending ? "Linking…" : "Link user"}
             </Button>
