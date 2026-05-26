@@ -537,6 +537,129 @@ describe("NationDetailPage", () => {
       screen.queryByRole("button", { name: /Propose alliance/ }),
     ).toBeNull();
   });
+
+  it("opens a confirmation dialog when changing stance from a bilateral relationship", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        outgoingRelationships: [
+          createRelationshipRow({
+            current_stance: "allied",
+            from_nation_id: nationId,
+            to_nation_id: otherNationId,
+          }),
+        ],
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const select = await screen.findByRole("combobox", { name: /Set stance/ });
+    await userEvent.selectOptions(select, "hostile");
+
+    expect(await screen.findByRole("dialog")).toBeDefined();
+    expect(screen.getByText(/will dissolve the existing/)).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /Withdraw agreement/ }),
+    ).toBeDefined();
+  });
+
+  it("fires the unilateral mutation after confirming a bilateral override", async () => {
+    const upsertMock: UpsertMock = vi.fn(() => ({
+      data: createRelationshipRow({
+        current_stance: "hostile",
+        from_nation_id: nationId,
+        to_nation_id: otherNationId,
+      }),
+      error: null,
+    }));
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        outgoingRelationships: [
+          createRelationshipRow({
+            current_stance: "allied",
+            from_nation_id: nationId,
+            to_nation_id: otherNationId,
+          }),
+        ],
+        relationshipsUpsertResult: upsertMock,
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const select = await screen.findByRole("combobox", { name: /Set stance/ });
+    await userEvent.selectOptions(select, "hostile");
+
+    const confirmBtn = await screen.findByRole("button", {
+      name: /Set hostile/,
+    });
+    await userEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(upsertMock).toHaveBeenCalledTimes(1);
+    });
+    const [payload] = upsertMock.mock.calls[0];
+    expect(payload).toMatchObject({
+      current_stance: "hostile",
+      from_nation_id: nationId,
+      to_nation_id: otherNationId,
+    });
+  });
+
+  it("does not fire the mutation when a bilateral override is cancelled", async () => {
+    const upsertMock: UpsertMock = vi.fn(() => ({
+      data: null,
+      error: null,
+    }));
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [
+          createNationRow({ id: nationId, name: "Highmark" }),
+          createNationRow({ id: otherNationId, name: "Veilreach" }),
+        ],
+        outgoingRelationships: [
+          createRelationshipRow({
+            current_stance: "allied",
+            from_nation_id: nationId,
+            to_nation_id: otherNationId,
+          }),
+        ],
+        relationshipsUpsertResult: upsertMock,
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    const select = await screen.findByRole("combobox", { name: /Set stance/ });
+    await userEvent.selectOptions(select, "hostile");
+
+    await screen.findByRole("dialog");
+
+    const cancelBtn = screen.getByRole("button", { name: /Cancel/ });
+    await userEvent.click(cancelBtn);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
 });
 
 function renderPage(): void {
