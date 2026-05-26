@@ -3,7 +3,10 @@
 export { WorldEntryGate } from "./components/WorldEntryGate";
 export { WorldListPage } from "./components/WorldListPage";
 export { WorldShellPage } from "./components/WorldShellPage";
-export { currentUserAdminWorldIdsQueryOptions } from "./queries/worldAccessQueries";
+export {
+  currentUserAdminWorldIdsQueryOptions,
+  currentUserPlayerCharacterWorldIdsQueryOptions,
+} from "./queries/worldAccessQueries";
 export { worldAccessQueryKeys } from "./queries/worldAccessQueryKeys";
 export {
   WorldNotFoundError,

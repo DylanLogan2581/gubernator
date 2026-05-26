@@ -552,7 +552,13 @@ function createSettlementsBuilder(): unknown {
 
 function createCitizensBuilder(rows: readonly CitizenRowFixture[]): unknown {
   return {
-    select: vi.fn(() => {
+    select: vi.fn((columns: string) => {
+      if (columns === "world_id") {
+        const b: Record<string, unknown> = {};
+        b.eq = vi.fn(() => b);
+        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
+        return b;
+      }
       const filters: Record<string, unknown> = {};
       const builder: Record<string, unknown> = {
         eq: vi.fn((column: string, value: unknown) => {
