@@ -45,6 +45,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 const FOCAL_CITIZEN_ID = "11111111-1111-1111-1111-111111111111";
 const PARTNER_CITIZEN_ID = "22222222-2222-2222-2222-222222222222";
+const THIRD_CITIZEN_ID = "55555555-5555-5555-5555-555555555555";
 const PARTNERSHIP_ID = "33333333-3333-3333-3333-333333333333";
 const TURN_TRANSITION_ID = "44444444-4444-4444-4444-444444444444";
 
@@ -431,6 +432,117 @@ describe("PartnershipHistoryPanel", () => {
         p_turn_transition_id: TURN_TRANSITION_ID,
       });
     });
+  });
+
+  it("rejects the dissolve form when end turn is before the formed turn", async () => {
+    const rpc = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        partnerships: [
+          createPartnershipRow({
+            citizen_a_id: FOCAL_CITIZEN_ID,
+            citizen_b_id: PARTNER_CITIZEN_ID,
+            formed_on_turn_number: 5,
+            id: PARTNERSHIP_ID,
+            status: "active",
+          }),
+        ],
+        citizens: [
+          createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+          createCitizenRow({ id: PARTNER_CITIZEN_ID, name: "Brann" }),
+        ],
+        currentTurnNumber: 9,
+        latestTransitionId: TURN_TRANSITION_ID,
+        rpc,
+      }),
+    );
+
+    renderPanel({
+      canAdmin: true,
+      focal: createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+    });
+
+    const user = userEvent.setup();
+    const dissolveButton = await screen.findByRole("button", {
+      name: "Dissolve",
+    });
+    await waitFor(() => {
+      expect(dissolveButton).not.toBeDisabled();
+    });
+    await user.click(dissolveButton);
+
+    const form = await screen.findByRole("form", {
+      name: "Dissolve partnership",
+    });
+    const endTurnInput = within(form).getByLabelText("Ended on turn");
+    await user.clear(endTurnInput);
+    await user.type(endTurnInput, "3");
+    await user.click(within(form).getByRole("button", { name: "Dissolve" }));
+
+    expect(
+      within(form).getByText(
+        "End turn must be on or after the formed turn (turn 5).",
+      ),
+    ).toBeDefined();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects the reassign form when end turn is before the old partnership formed turn", async () => {
+    const rpc = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        partnerships: [
+          createPartnershipRow({
+            citizen_a_id: FOCAL_CITIZEN_ID,
+            citizen_b_id: PARTNER_CITIZEN_ID,
+            formed_on_turn_number: 5,
+            id: PARTNERSHIP_ID,
+            status: "active",
+          }),
+        ],
+        citizens: [
+          createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+          createCitizenRow({ id: PARTNER_CITIZEN_ID, name: "Brann" }),
+          createCitizenRow({ id: THIRD_CITIZEN_ID, name: "Corvin" }),
+        ],
+        currentTurnNumber: 9,
+        latestTransitionId: TURN_TRANSITION_ID,
+        rpc,
+      }),
+    );
+
+    renderPanel({
+      canAdmin: true,
+      focal: createCitizenRow({ id: FOCAL_CITIZEN_ID }),
+    });
+
+    const user = userEvent.setup();
+    const reassignButton = await screen.findByRole("button", {
+      name: "Reassign",
+    });
+    await waitFor(() => {
+      expect(reassignButton).not.toBeDisabled();
+    });
+    await user.click(reassignButton);
+
+    const form = await screen.findByRole("form", { name: "Reassign partner" });
+    await user.selectOptions(
+      within(form).getByLabelText("New partner"),
+      THIRD_CITIZEN_ID,
+    );
+    const endTurnInput = within(form).getByLabelText(
+      "Old partnership ended on turn",
+    );
+    await user.clear(endTurnInput);
+    await user.type(endTurnInput, "3");
+    await user.click(within(form).getByRole("button", { name: "Reassign" }));
+
+    expect(
+      within(form).getByText(
+        "Old partnership end turn must be on or after the formed turn (turn 5).",
+      ),
+    ).toBeDefined();
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("opens the reassign form with new partner and turn fields", async () => {
