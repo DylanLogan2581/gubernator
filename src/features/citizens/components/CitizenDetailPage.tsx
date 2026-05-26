@@ -398,11 +398,7 @@ function CitizenCoreSection({
       {
         citizenId: citizen.id,
         name,
-        parentACitizenId: citizen.parentACitizenId,
-        parentBCitizenId: citizen.parentBCitizenId,
-        settlementId: citizen.settlementId,
         sex,
-        status: citizen.status,
         worldId: citizen.worldId,
       },
       {

@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (25);
+  plan (33);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -757,6 +757,124 @@ select
     null,
     'parent_a_citizen_id must reference an existing citizen'
   );
+
+-- ===========================================================================
+-- PC SELF-EDIT: player_character may only change the safe column subset.
+-- Protected columns (settlement_id, parent_a/b_citizen_id, status,
+-- born_on_turn_number, death_cause) must be rejected with 42501 when a PC
+-- attempts to change them directly via the table API.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000005","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    update public.citizens
+    set settlement_id = 'c4000000-0000-0000-0000-0000000000a1'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    '42501',
+    null,
+    'PC cannot change their own settlement_id via the table API'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.citizens
+    set parent_a_citizen_id = 'c5000000-0000-0000-0000-000000000010'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    '42501',
+    null,
+    'PC cannot change their own parent_a_citizen_id via the table API'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.citizens
+    set parent_b_citizen_id = 'c5000000-0000-0000-0000-000000000010'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    '42501',
+    null,
+    'PC cannot change their own parent_b_citizen_id via the table API'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.citizens
+    set status = 'dead'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    '42501',
+    null,
+    'PC cannot self-mark status=dead via the table API'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.citizens
+    set born_on_turn_number = 1
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    '42501',
+    null,
+    'PC cannot change their own born_on_turn_number via the table API'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.citizens
+    set death_cause = 'poisoned'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    '42501',
+    null,
+    'PC cannot set their own death_cause via the table API'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set name = 'Renamed PC'
+    where id = 'c5000000-0000-0000-0000-000000000003'
+  $test$,
+    'PC can change their own name via the table API'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- ADMIN PROTECTED COLUMN UPDATE: world admin can still update protected
+-- columns on any citizen in the world.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    update public.citizens
+    set settlement_id = 'c4000000-0000-0000-0000-0000000000a2'
+    where id = 'c5000000-0000-0000-0000-000000000010'
+  $test$,
+    'world admin can update settlement_id on any citizen in the administered world'
+  );
+
+reset role;
 
 select
   *

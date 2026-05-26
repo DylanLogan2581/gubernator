@@ -239,7 +239,7 @@ describe("createPlayerCharacterMutationOptions", () => {
 });
 
 describe("updateCitizenCoreMutationOptions", () => {
-  it("rejects an unknown citizen status", async () => {
+  it("rejects a blank citizen name before touching the Supabase client", async () => {
     const from = vi.fn();
     const client = { from } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
@@ -248,19 +248,15 @@ describe("updateCitizenCoreMutationOptions", () => {
     await expect(
       executeMutation(queryClient, options, {
         citizenId: CITIZEN_ID,
-        name: "Aldra",
-        parentACitizenId: null,
-        parentBCitizenId: null,
-        settlementId: null,
+        name: "   ",
         sex: null,
-        status: "vanished",
         worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "citizen_input_invalid" });
     expect(from).not.toHaveBeenCalled();
   });
 
-  it("updates the citizens row scoped by id and world and invalidates caches", async () => {
+  it("updates only name and sex, scoped by id and world, and invalidates caches", async () => {
     const citizenRow = createCitizenRow();
     const { client, calls } = createUpdateClient({
       data: citizenRow,
@@ -275,22 +271,14 @@ describe("updateCitizenCoreMutationOptions", () => {
     await executeMutation(queryClient, options, {
       citizenId: CITIZEN_ID,
       name: " Aldra ",
-      parentACitizenId: null,
-      parentBCitizenId: null,
-      settlementId: SETTLEMENT_ID,
       sex: " f ",
-      status: "alive",
       worldId: WORLD_ID,
     });
 
     expect(calls.from).toHaveBeenCalledWith("citizens");
     expect(calls.update).toHaveBeenCalledWith({
       name: "Aldra",
-      parent_a_citizen_id: null,
-      parent_b_citizen_id: null,
-      settlement_id: SETTLEMENT_ID,
       sex: "f",
-      status: "alive",
     });
     expect(calls.eqId).toHaveBeenCalledWith("id", CITIZEN_ID);
     expect(calls.eqWorld).toHaveBeenCalledWith("world_id", WORLD_ID);
@@ -314,11 +302,7 @@ describe("updateCitizenCoreMutationOptions", () => {
       executeMutation(queryClient, options, {
         citizenId: CITIZEN_ID,
         name: "Aldra",
-        parentACitizenId: null,
-        parentBCitizenId: null,
-        settlementId: null,
         sex: null,
-        status: "alive",
         worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "citizen_not_found" });
