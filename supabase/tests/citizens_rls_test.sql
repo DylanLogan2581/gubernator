@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (44);
+  plan (46);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -789,6 +789,40 @@ select
     '23503',
     null,
     'parent_a_citizen_id must reference an existing citizen'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.citizens (
+      world_id, citizen_type, name, parent_a_citizen_id
+    ) values (
+      'c2000000-0000-0000-0000-000000000001',
+      'npc',
+      'Child With Cross-World Parent A',
+      'c5000000-0000-0000-0000-000000000020'
+    )
+  $test$,
+    'P0001',
+    null,
+    'parent_a_citizen_id must belong to the same world as the child citizen'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.citizens (
+      world_id, citizen_type, name, parent_b_citizen_id
+    ) values (
+      'c2000000-0000-0000-0000-000000000001',
+      'npc',
+      'Child With Cross-World Parent B',
+      'c5000000-0000-0000-0000-000000000020'
+    )
+  $test$,
+    'P0001',
+    null,
+    'parent_b_citizen_id must belong to the same world as the child citizen'
   );
 
 -- ===========================================================================
