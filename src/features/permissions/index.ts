@@ -17,6 +17,7 @@ export {
 export { currentAccessContextQueryOptions } from "./queries/permissionQueries";
 export { permissionQueryKeys } from "./queries/permissionQueryKeys";
 export { createAccessContext } from "./utils/accessContext";
+export { toWorldAccessTarget } from "./utils/worldAccessTarget";
 
 export type { ActiveCharacterSwitcherProps } from "./components/ActiveCharacterSwitcher";
 export type { PlayerCharacterChooserProps } from "./components/PlayerCharacterChooser";
