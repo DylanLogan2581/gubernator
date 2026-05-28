@@ -139,6 +139,7 @@ set
     where c.user_id = auth.uid()
       and c.citizen_type = 'player_character'
       and c.world_id = p_world_id
+      and c.status = 'alive'
   )
 $$;
 
