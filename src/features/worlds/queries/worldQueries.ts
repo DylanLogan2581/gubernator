@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -95,7 +95,7 @@ async function getAccessibleWorlds(
     .order("updated_at", { ascending: false });
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data
@@ -119,7 +119,7 @@ async function getWorldRouteAccess(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   const world =

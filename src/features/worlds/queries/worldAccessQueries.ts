@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -63,7 +63,7 @@ async function getCurrentUserAdminWorldIds(
     .order("world_id", { ascending: true });
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data.map((row) => row.world_id);
@@ -82,7 +82,7 @@ async function getCurrentUserPlayerCharacterWorldIds(
     .order("world_id", { ascending: true });
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return [...new Set(data.map((row) => row.world_id))];

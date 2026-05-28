@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   formatCalendarDate,
   formatCalendarYear,
@@ -90,7 +90,7 @@ async function getCurrentTurnState(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {

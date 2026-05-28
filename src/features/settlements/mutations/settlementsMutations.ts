@@ -4,7 +4,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { nationsQueryKeys } from "@/features/nations";
 import {
   requireSupabaseClient,
@@ -205,7 +205,7 @@ async function createSettlement(
     .maybeSingle<SettlementRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -236,7 +236,7 @@ async function updateSettlementDetails(
     .single<SettlementRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -267,7 +267,7 @@ async function updateSettlementCoordinates(
     .single<SettlementRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -295,7 +295,7 @@ async function deleteSettlement(
     .maybeSingle<{ readonly id: string; readonly nation_id: string }>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {

@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { toCitizen, type Citizen, type CitizenRow } from "@/features/citizens";
 import {
   requireSupabaseClient,
@@ -81,7 +81,7 @@ async function getSelectablePlayerCharacters(
     .returns<CitizenRow[]>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data.map(toCitizen);
@@ -107,7 +107,7 @@ async function getActivePlayerCharacterRow(
     .maybeSingle<ActivePlayerCharacterRowRecord>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {

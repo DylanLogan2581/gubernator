@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -85,7 +85,7 @@ async function getWorldNpcFlavorConfig(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null || data.npc_flavor_config_json === null) {

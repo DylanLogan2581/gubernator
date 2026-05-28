@@ -4,7 +4,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -272,7 +272,7 @@ function assertPartnershipRow(
   notFoundMessage: string,
 ): Partnership {
   if (error !== null && error !== undefined) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {

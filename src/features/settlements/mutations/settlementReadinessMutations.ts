@@ -4,7 +4,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { toWorldAccessTarget } from "@/features/permissions";
 import type { WorldPermissionContext } from "@/features/worlds";
 import {
@@ -237,7 +237,7 @@ async function setSettlementReadiness(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -290,7 +290,7 @@ async function setSettlementAutoReady(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -320,7 +320,7 @@ async function getSettlementReadinessAccessRow(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data;

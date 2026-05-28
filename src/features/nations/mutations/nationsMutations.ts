@@ -4,7 +4,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -203,7 +203,7 @@ async function createNation(
     .maybeSingle<NationRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -234,7 +234,7 @@ async function updateNationDetails(
     .maybeSingle<NationRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -262,7 +262,7 @@ async function setNationHidden(
     .maybeSingle<NationRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -290,7 +290,7 @@ async function deleteNation(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {

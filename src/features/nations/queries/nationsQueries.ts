@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -100,7 +100,7 @@ async function getNationsList(
     .returns<NationRow[]>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data.map(toNation);
@@ -117,7 +117,7 @@ async function getNationById(
     .maybeSingle<NationRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data === null ? null : toNation(data);
@@ -136,7 +136,7 @@ async function getNationSettlements(
     .returns<NationSettlementRow[]>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data.map(toNationSettlement);

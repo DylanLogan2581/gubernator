@@ -4,7 +4,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { citizensQueryKeys } from "@/features/citizens";
 import { nationsQueryKeys } from "@/features/nations";
 import { settlementsQueryKeys } from "@/features/settlements";
@@ -84,7 +84,7 @@ async function setActivePlayerCharacter(
   );
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 }
 
@@ -99,7 +99,7 @@ async function clearActivePlayerCharacter(
     .eq("world_id", input.worldId);
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 }
 

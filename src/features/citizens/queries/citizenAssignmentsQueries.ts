@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -88,7 +88,7 @@ async function getCurrentAssignmentForCitizen(
     .maybeSingle<CitizenAssignmentRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data === null ? null : toCitizenAssignment(data);
@@ -106,7 +106,7 @@ async function getAssignmentsInSettlement(
     .returns<CitizenAssignmentInSettlementRow[]>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data.map(toCitizenAssignment);

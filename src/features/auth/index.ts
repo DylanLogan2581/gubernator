@@ -21,7 +21,7 @@ export {
   redirectAuthenticatedRoute,
   requireAuthenticatedRoute,
 } from "./utils/protectedRouteGuards";
-export { AuthUiError, normalizeAuthError } from "./utils/authErrors";
+export { AuthUiError, normalizeSupabaseError } from "./utils/authErrors";
 
 export type {
   AppUser,

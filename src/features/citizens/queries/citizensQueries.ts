@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -194,7 +194,7 @@ async function getCitizensInSettlement(
     .returns<CitizenRow[]>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data.map(toCitizen);
@@ -211,7 +211,7 @@ async function getCitizenById(
     .maybeSingle<CitizenRow>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data === null ? null : toCitizen(data);
@@ -235,7 +235,7 @@ async function getUnpairedAliveCitizensInWorld(
     .returns<CitizenRow[]>();
 
   if (citizensError !== null) {
-    throw normalizeAuthError(citizensError);
+    throw normalizeSupabaseError(citizensError);
   }
 
   if (citizenRows.length === 0) {
@@ -263,10 +263,10 @@ async function getUnpairedAliveCitizensInWorld(
   ]);
 
   if (aSide.error !== null) {
-    throw normalizeAuthError(aSide.error);
+    throw normalizeSupabaseError(aSide.error);
   }
   if (bSide.error !== null) {
-    throw normalizeAuthError(bSide.error);
+    throw normalizeSupabaseError(bSide.error);
   }
 
   const partneredIds = new Set<string>();
@@ -293,7 +293,7 @@ async function getPlayerCharactersInNation(
     .returns<Array<{ readonly id: string }>>();
 
   if (settlementsError !== null) {
-    throw normalizeAuthError(settlementsError);
+    throw normalizeSupabaseError(settlementsError);
   }
 
   const settlementIds = settlements.map(
@@ -314,7 +314,7 @@ async function getPlayerCharactersInNation(
     .returns<CitizenRow[]>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data.map(toCitizen);
@@ -331,7 +331,7 @@ async function getCitizenAggregateStatsForSettlement(
     .returns<CitizenAggregateWithAssignmentRow[]>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return computeAggregate(data);
@@ -348,7 +348,7 @@ async function getCitizenAggregateStatsForNation(
     .returns<Array<{ readonly id: string }>>();
 
   if (settlementsError !== null) {
-    throw normalizeAuthError(settlementsError);
+    throw normalizeSupabaseError(settlementsError);
   }
 
   const settlementIds = settlements.map(
@@ -366,7 +366,7 @@ async function getCitizenAggregateStatsForNation(
     .returns<CitizenAggregateWithAssignmentRow[]>();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return computeAggregate(data);

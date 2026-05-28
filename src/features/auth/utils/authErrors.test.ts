@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import { SupabaseConfigurationError } from "@/lib/supabaseConfig";
 
-import { AuthUiError, normalizeAuthError } from "./authErrors";
+import { AuthUiError, normalizeSupabaseError } from "./authErrors";
 
-describe("normalizeAuthError", () => {
+describe("normalizeSupabaseError", () => {
   it("preserves normalized auth UI errors", () => {
     const error = new AuthUiError({
       code: "already_normalized",
@@ -13,11 +13,11 @@ describe("normalizeAuthError", () => {
       status: 400,
     });
 
-    expect(normalizeAuthError(error)).toBe(error);
+    expect(normalizeSupabaseError(error)).toBe(error);
   });
 
   it("normalizes Supabase auth errors", () => {
-    const error = normalizeAuthError(
+    const error = normalizeSupabaseError(
       new AuthError("Invalid credentials.", 400, "invalid_credentials"),
     );
 
@@ -30,7 +30,7 @@ describe("normalizeAuthError", () => {
   });
 
   it("normalizes PostgREST-shaped errors", () => {
-    const error = normalizeAuthError({
+    const error = normalizeSupabaseError({
       code: "PGRST116",
       message: "Cannot coerce the result to a single JSON object.",
     });
@@ -42,7 +42,7 @@ describe("normalizeAuthError", () => {
   });
 
   it("normalizes Supabase configuration errors", () => {
-    const error = normalizeAuthError(
+    const error = normalizeSupabaseError(
       new SupabaseConfigurationError({
         isProduction: true,
         message:
@@ -60,7 +60,7 @@ describe("normalizeAuthError", () => {
   });
 
   it("normalizes native errors", () => {
-    const error = normalizeAuthError(new Error("Session storage failed."));
+    const error = normalizeSupabaseError(new Error("Session storage failed."));
 
     expect(error).toMatchObject({
       message: "Session storage failed.",
@@ -69,6 +69,6 @@ describe("normalizeAuthError", () => {
   });
 
   it("uses a generic message for unknown thrown values", () => {
-    expect(normalizeAuthError(null).message).toBe("Authentication failed.");
+    expect(normalizeSupabaseError(null).message).toBe("Authentication failed.");
   });
 });
