@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (24);
+  plan (26);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -52,6 +52,24 @@ values
     'x',
     now(),
     '{"username":"turn_transitions_superadmin"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '81000000-0000-0000-0000-000000000005',
+    'turn-transitions-pc-holder@example.com',
+    'x',
+    now(),
+    '{"username":"turn_transitions_pc_holder"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '81000000-0000-0000-0000-000000000006',
+    'turn-transitions-dead-pc@example.com',
+    'x',
+    now(),
+    '{"username":"turn_transitions_dead_pc"}'::jsonb,
     now(),
     now()
   );
@@ -103,6 +121,57 @@ values
   (
     '82000000-0000-0000-0000-000000000001',
     '81000000-0000-0000-0000-000000000002'
+  );
+
+insert into
+  public.nations (id, world_id, name)
+values
+  (
+    '84000000-0000-0000-0000-000000000001',
+    '82000000-0000-0000-0000-000000000001',
+    'Turn Transitions Nation'
+  );
+
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    '85000000-0000-0000-0000-000000000001',
+    '84000000-0000-0000-0000-000000000001',
+    'Turn Transitions Settlement'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status,
+    user_id,
+    role_type
+  )
+values
+  (
+    '86000000-0000-0000-0000-000000000001',
+    '82000000-0000-0000-0000-000000000001',
+    '85000000-0000-0000-0000-000000000001',
+    'player_character',
+    'PC Holder Citizen',
+    'alive',
+    '81000000-0000-0000-0000-000000000005',
+    'none'
+  ),
+  (
+    '86000000-0000-0000-0000-000000000002',
+    '82000000-0000-0000-0000-000000000001',
+    '85000000-0000-0000-0000-000000000001',
+    'player_character',
+    'Dead PC Holder Citizen',
+    'dead',
+    '81000000-0000-0000-0000-000000000006',
+    'none'
   );
 
 insert into
@@ -498,6 +567,54 @@ select
     '42501',
     null,
     'super admin cannot delete turn transitions directly'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- PC HOLDER: active user with a living PC in the world can read transitions
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"81000000-0000-0000-0000-000000000005","role":"authenticated"}';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.turn_transitions
+      where
+        id = '83000000-0000-0000-0000-000000000001'
+    ),
+    'pc holder can read turn transitions in a private world they have PC access to'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- DEAD PC HOLDER: user whose only PC is dead cannot read via the PC path
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"81000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.turn_transitions
+      where
+        id = '83000000-0000-0000-0000-000000000001'
+    ),
+    'user with only a dead PC cannot read turn transitions via the PC path'
   );
 
 reset role;
