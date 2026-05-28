@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -90,10 +90,10 @@ async function getPartnershipsForCitizen(
   ]);
 
   if (aSide.error !== null) {
-    throw normalizeAuthError(aSide.error);
+    throw normalizeSupabaseError(aSide.error);
   }
   if (bSide.error !== null) {
-    throw normalizeAuthError(bSide.error);
+    throw normalizeSupabaseError(bSide.error);
   }
 
   const merged = new Map<string, PartnershipRow>();
@@ -133,10 +133,10 @@ async function getActivePartnershipForCitizen(
   ]);
 
   if (aSide.error !== null) {
-    throw normalizeAuthError(aSide.error);
+    throw normalizeSupabaseError(aSide.error);
   }
   if (bSide.error !== null) {
-    throw normalizeAuthError(bSide.error);
+    throw normalizeSupabaseError(bSide.error);
   }
 
   const row = aSide.data ?? bSide.data;

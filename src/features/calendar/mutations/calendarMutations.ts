@@ -4,7 +4,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { toWorldAccessTarget } from "@/features/permissions";
 import { turnQueryKeys } from "@/features/turns";
 import type { WorldPermissionContext } from "@/features/worlds";
@@ -142,7 +142,7 @@ async function saveWorldCalendarConfig(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -167,7 +167,7 @@ async function getCalendarSaveAccessRow(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data;

@@ -1,4 +1,4 @@
-import { normalizeAuthError } from "@/features/auth";
+import { normalizeSupabaseError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -29,7 +29,7 @@ export async function citizensHaveCloseKinship(
   });
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data === true;

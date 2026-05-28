@@ -9,7 +9,7 @@ import {
 } from "@/lib/supabase";
 
 import { authQueryKeys } from "../queries/authQueryKeys";
-import { normalizeAuthError } from "../utils/authErrors";
+import { normalizeSupabaseError } from "../utils/authErrors";
 
 import type { SignInWithPasswordInput } from "../types/authTypes";
 import type { AuthUiError } from "../utils/authErrors";
@@ -50,7 +50,7 @@ async function signInWithPassword(
   const { data, error } = await client.auth.signInWithPassword(credentials);
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data;
@@ -60,6 +60,6 @@ async function signOut(client: GubernatorSupabaseClient): Promise<void> {
   const { error } = await client.auth.signOut();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 }

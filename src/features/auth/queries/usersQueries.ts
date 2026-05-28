@@ -5,7 +5,7 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
-import { normalizeAuthError, type AuthUiError } from "../utils/authErrors";
+import { normalizeSupabaseError, type AuthUiError } from "../utils/authErrors";
 
 import { authQueryKeys } from "./authQueryKeys";
 
@@ -44,7 +44,7 @@ async function getAvailableUsers(
     .order("username", { ascending: true });
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data;
