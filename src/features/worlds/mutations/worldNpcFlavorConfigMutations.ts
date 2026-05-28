@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { toWorldAccessTarget } from "@/features/permissions";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -163,16 +164,4 @@ async function getNpcFlavorSaveAccessRow(
   }
 
   return data;
-}
-
-function toWorldAccessTarget(world: WorldNpcFlavorSaveAccessRow): {
-  readonly id: string;
-  readonly ownerId: string;
-  readonly visibility: string;
-} {
-  return {
-    id: world.id,
-    ownerId: world.owner_id,
-    visibility: world.visibility,
-  };
 }

@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { toWorldAccessTarget } from "@/features/permissions";
 import type { WorldPermissionContext } from "@/features/worlds";
 import {
   requireSupabaseClient,
@@ -343,17 +344,5 @@ function toSettlementAutoReadyMutationResult(
     isReadyCurrentTurn: row.is_ready_current_turn,
     isReadyForCurrentTurn: row.auto_ready_enabled || row.is_ready_current_turn,
     readySetAt: row.ready_set_at,
-  };
-}
-
-function toWorldAccessTarget(world: SettlementReadinessWorldAccessRow): {
-  readonly id: string;
-  readonly ownerId: string;
-  readonly visibility: string;
-} {
-  return {
-    id: world.id,
-    ownerId: world.owner_id,
-    visibility: world.visibility,
   };
 }
