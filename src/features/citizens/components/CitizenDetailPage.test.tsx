@@ -264,7 +264,7 @@ describe("CitizenDetailPage", () => {
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
   });
 
-  it("renders an access-denied state for citizens without a settlement", async () => {
+  it("renders an informational state for citizens without a settlement", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         adminRows: [],
@@ -282,7 +282,9 @@ describe("CitizenDetailPage", () => {
     renderPage();
 
     expect(
-      await screen.findByText(/Only world administrators can view/i),
+      await screen.findByText(
+        /This citizen has not been assigned to a settlement yet/i,
+      ),
     ).toBeDefined();
     expect(navigateMock).not.toHaveBeenCalled();
   });
