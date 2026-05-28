@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementReadinessSummaryQueryOptions } from "../queries/settlementReadinessQueries";
 
@@ -101,12 +102,4 @@ function ReadinessMetric({
       <dd className="text-2xl font-semibold tracking-normal">{value}</dd>
     </div>
   );
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }

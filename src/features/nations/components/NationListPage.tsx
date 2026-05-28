@@ -21,6 +21,7 @@ import {
   worldRouteAccessQueryOptions,
 } from "@/features/worlds";
 import type { WorldRouteAccess } from "@/features/worlds";
+import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
 
 import {
@@ -395,14 +396,6 @@ function getDescriptionPreview(description: string | null): string | null {
   }
 
   return `${collapsed.slice(0, limit).trimEnd()}…`;
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }
 
 function getCreateErrorDescription(error: unknown): string {

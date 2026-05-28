@@ -1,9 +1,7 @@
+import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
-import {
-  getAutoReadyDescription,
-  getErrorDescription,
-} from "./SettlementReadinessDisplayText";
+import { getAutoReadyDescription } from "./SettlementReadinessDisplayText";
 
 import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";
 import type { JSX } from "react";

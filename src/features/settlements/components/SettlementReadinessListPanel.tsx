@@ -4,10 +4,10 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import type { WorldPermissionContext } from "@/features/worlds";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementReadinessListQueryOptions } from "../queries/settlementReadinessQueries";
 
-import { getErrorDescription } from "./SettlementReadinessDisplayText";
 import { SettlementReadinessTable } from "./SettlementReadinessTable";
 
 import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";

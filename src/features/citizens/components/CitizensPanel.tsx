@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import { assignmentsInSettlementQueryOptions } from "../queries/citizenAssignmentsQueries";
 import {
@@ -467,11 +468,4 @@ function assignmentTypeLabel(type: CitizenAssignmentType): string {
 
 function citizenTypeLabel(type: Citizen["citizenType"]): string {
   return type === "npc" ? "NPC" : "Player character";
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }
