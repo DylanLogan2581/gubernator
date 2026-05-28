@@ -5,7 +5,7 @@
 begin;
 
 select
-  plan (4);
+  plan (5);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -54,6 +54,15 @@ values
     'x',
     now(),
     '{"username":"worlds_pc_suspended"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '81000000-0000-0000-0000-000000000005',
+    'worlds-pc-dead@example.com',
+    'x',
+    now(),
+    '{"username":"worlds_pc_dead"}'::jsonb,
     now(),
     now()
   );
@@ -117,6 +126,16 @@ values
     'Suspended PC Holder Citizen',
     'alive',
     '81000000-0000-0000-0000-000000000004',
+    'none'
+  ),
+  (
+    '85000000-0000-0000-0000-000000000005',
+    '82000000-0000-0000-0000-000000000001',
+    '84000000-0000-0000-0000-000000000001',
+    'player_character',
+    'Dead PC Holder Citizen',
+    'dead',
+    '81000000-0000-0000-0000-000000000005',
     'none'
   );
 
@@ -218,6 +237,30 @@ select
         id = '82000000-0000-0000-0000-000000000001'
     ),
     'suspended PC holder cannot read a private world via the PC path'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- DEAD PC HOLDER: user whose only PC is dead loses PC-path world access
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"81000000-0000-0000-0000-000000000005","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.worlds
+      where
+        id = '82000000-0000-0000-0000-000000000001'
+    ),
+    'user with only a dead PC cannot read a private world via the PC path'
   );
 
 reset role;
