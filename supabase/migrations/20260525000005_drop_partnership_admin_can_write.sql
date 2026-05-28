@@ -3,4 +3,12 @@
 -- 20260522000003_add_partnership_mutations.sql. The function was never called
 -- by any partnership RPC; each RPC inlines its own admin check instead. This
 -- cleans up the public API surface and the authenticated grant.
+--
+-- Security note: the original migration granted execute to authenticated,
+-- meaning any authenticated user could have called the function by name during
+-- the window between 20260522000003 and this migration. The function body is
+-- a single stable SELECT EXISTS (read-only, no side effects) that returns a
+-- boolean — it cannot write data, elevate privileges, or expose information
+-- beyond what the caller could obtain through existing RLS policies. No
+-- exploitable query path existed; the grant was unnecessary but harmless.
 drop function if exists public.partnership_admin_can_write (uuid);
