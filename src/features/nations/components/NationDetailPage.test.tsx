@@ -749,6 +749,7 @@ function createClient({
   isSuperAdmin = false,
   nationRows,
   outgoingRelationships = [],
+  relationshipsPendingStatusResult,
   relationshipsUpsertResult,
   respondToBilateralResult,
   session,
@@ -760,6 +761,10 @@ function createClient({
   readonly isSuperAdmin?: boolean;
   readonly nationRows: readonly TestNationRow[];
   readonly outgoingRelationships?: readonly TestRelationshipRow[];
+  readonly relationshipsPendingStatusResult?: {
+    readonly data: { readonly pending_status: string | null } | null;
+    readonly error: null;
+  };
   readonly relationshipsUpsertResult?: UpsertMock;
   readonly respondToBilateralResult?: UpdateMock;
   readonly session: { readonly user: { readonly id: string } };
@@ -792,6 +797,7 @@ function createClient({
         return createNationRelationshipsQueryBuilder({
           incoming: incomingRelationships,
           outgoing: outgoingRelationships,
+          pendingStatusResult: relationshipsPendingStatusResult,
           upsertResult: relationshipsUpsertResult,
         });
       }
@@ -964,10 +970,15 @@ function createNationsQueryBuilder(rows: readonly TestNationRow[]): unknown {
 function createNationRelationshipsQueryBuilder({
   incoming,
   outgoing,
+  pendingStatusResult = { data: null, error: null },
   upsertResult,
 }: {
   readonly incoming: readonly TestRelationshipRow[];
   readonly outgoing: readonly TestRelationshipRow[];
+  readonly pendingStatusResult?: {
+    readonly data: { readonly pending_status: string | null } | null;
+    readonly error: null;
+  };
   readonly upsertResult?: UpsertMock;
 }): unknown {
   return {
@@ -978,6 +989,7 @@ function createNationRelationshipsQueryBuilder({
           columnFilter = column;
           return builder;
         }),
+        maybeSingle: vi.fn().mockResolvedValue(pendingStatusResult),
         order: vi.fn(() => builder),
         returns: vi.fn().mockImplementation(() => {
           if (columnFilter === "from_nation_id") {

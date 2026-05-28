@@ -30,6 +30,7 @@ import type { NationRelationship } from "../types/nationRelationshipTypes";
 import type { z } from "zod";
 
 type NationRelationshipMutationErrorCode =
+  | "relationship_already_accepted"
   | "relationship_input_invalid"
   | "relationship_not_found";
 
@@ -186,6 +187,21 @@ async function proposeBilateral(
   input: ProposeBilateralInput,
 ): Promise<NationRelationship> {
   const values = parseInput(proposeBilateralInputSchema, input);
+
+  const { data: existing } = await client
+    .from("nation_relationships")
+    .select("pending_status")
+    .eq("from_nation_id", values.fromNationId)
+    .eq("to_nation_id", values.toNationId)
+    .maybeSingle<{ pending_status: string | null }>();
+
+  if (existing?.pending_status === "accepted") {
+    throw new NationRelationshipMutationError({
+      code: "relationship_already_accepted",
+      message:
+        "This proposal has already been accepted. Withdraw the existing agreement before proposing again.",
+    });
+  }
 
   const { data, error } = await client
     .from("nation_relationships")
