@@ -1,8 +1,8 @@
-import { resolveSupabaseAuthContext } from "./auth.ts";
 import { resolveSupabaseEndTurnAuthorization } from "./authorize.ts";
 import { getEdgeRuntime } from "./env.ts";
 import { corsHeaders, createJsonResponse } from "./http.ts";
 import { persistSupabaseRunningTransition } from "./persist.ts";
+import { resolveSupabaseAuthContext } from "./session.ts";
 import { resolveSupabaseEndTurnTransitionInput } from "./state.ts";
 import {
   mapDryWriteTransitionResult,
