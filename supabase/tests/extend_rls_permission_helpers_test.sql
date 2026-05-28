@@ -135,7 +135,9 @@ values
     '71000000-0000-0000-0000-000000000002'
   );
 
--- Two nations: A (non-hidden) and B (hidden). Plus C in the other world.
+-- Two nations: A (non-hidden) and B (hidden). Plus C in the other world. Plus
+-- D (hidden) in world 1 so we have a same-world hidden/hidden pair for the
+-- nation_relationships visibility test (cross-world inserts are now rejected).
 insert into
   public.nations (id, world_id, name, is_hidden)
 values
@@ -156,6 +158,12 @@ values
     '72000000-0000-0000-0000-000000000002',
     'Nation C',
     false
+  ),
+  (
+    '73000000-0000-0000-0000-00000000000d',
+    '72000000-0000-0000-0000-000000000001',
+    'Nation D (hidden)',
+    true
   );
 
 insert into
@@ -238,7 +246,7 @@ values
   (
     '76000000-0000-0000-0000-000000000002',
     '73000000-0000-0000-0000-00000000000b',
-    '73000000-0000-0000-0000-00000000000c',
+    '73000000-0000-0000-0000-00000000000d',
     'neutral'
   );
 
@@ -747,7 +755,7 @@ select
       where
         id = '76000000-0000-0000-0000-000000000002'
     ),
-    'plain PC holder cannot see relationship between hidden Nation B and other-world Nation C'
+    'plain PC holder cannot see relationship between hidden Nation B and hidden Nation D'
   );
 
 reset role;

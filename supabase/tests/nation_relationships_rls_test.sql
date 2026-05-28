@@ -21,7 +21,7 @@
 begin;
 
 select
-  plan (21);
+  plan (22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -619,6 +619,45 @@ reset role;
 -- CONSTRAINTS: table-level shape checks run as the migration owner so RLS
 -- does not mask them.
 -- ===========================================================================
+-- cross-world constraint: nations from different worlds must be rejected.
+-- Insert a second world and one nation in it so we have a foreign nation to
+-- target.
+insert into
+  public.worlds (id, name, owner_id, visibility, status)
+values
+  (
+    'f2000000-0000-0000-0000-000000000002',
+    'Other World',
+    'f1000000-0000-0000-0000-000000000001',
+    'private',
+    'active'
+  );
+
+insert into
+  public.nations (id, world_id, name, is_hidden)
+values
+  (
+    'f3000000-0000-0000-0000-00000000000e',
+    'f2000000-0000-0000-0000-000000000002',
+    'Foreign Nation',
+    false
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.nation_relationships (
+      from_nation_id, to_nation_id
+    ) values (
+      'f3000000-0000-0000-0000-00000000000a',
+      'f3000000-0000-0000-0000-00000000000e'
+    )
+  $test$,
+    'P0001',
+    null,
+    'cross-world nation_relationships pair is rejected'
+  );
+
 -- nation_relationships_distinct_nations_check
 select
   throws_ok (
