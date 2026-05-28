@@ -1,7 +1,7 @@
+import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
 import {
-  getErrorDescription,
   getManualReadinessDescription,
   getManualReadinessLabel,
 } from "./SettlementReadinessDisplayText";

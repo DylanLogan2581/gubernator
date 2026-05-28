@@ -20,6 +20,7 @@ import {
 } from "@/features/citizens";
 import type { Nation } from "@/features/nations";
 import { settlementByIdQueryOptions } from "@/features/settlements";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import { permissionQueryKeys } from "../queries/permissionQueryKeys";
 
@@ -490,13 +491,6 @@ function citizenRoleLabel(
         settlementName === null ? "" : ` — ${settlementName}`
       }`;
   }
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }
 
 function getRoleMutationErrorDescription(error: unknown): string {

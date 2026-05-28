@@ -28,6 +28,7 @@ import type {
   WorldPermissionContext,
   WorldRouteAccess,
 } from "@/features/worlds";
+import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
 
 import {
@@ -1088,14 +1089,6 @@ function formatCoordinate(value: number | null): string {
     return "";
   }
   return String(value);
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }
 
 function getMutationErrorDescription(error: unknown): string {

@@ -16,6 +16,7 @@ import {
   SettlementReadinessSummaryPanel,
 } from "@/features/settlements";
 import { EndTurnControl } from "@/features/turns";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
   isWorldNotFoundError,
@@ -234,12 +235,4 @@ function WorldShellFrame({
       {children}
     </div>
   );
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }

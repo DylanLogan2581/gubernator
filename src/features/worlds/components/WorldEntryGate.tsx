@@ -15,6 +15,7 @@ import {
   useActivePlayerCharacter,
   type AccessContext,
 } from "@/features/permissions";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
   isWorldNotFoundError,
@@ -291,11 +292,4 @@ function useAutoSelectSinglePlayerCharacter({
     userId,
     worldId,
   ]);
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }

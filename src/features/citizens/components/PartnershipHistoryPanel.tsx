@@ -12,6 +12,7 @@ import {
   currentTurnStateQueryOptions,
   latestTurnTransitionStatusQueryOptions,
 } from "@/features/turns";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
   createPartnershipMutationOptions,
@@ -966,13 +967,6 @@ function partnershipStatusLabel(status: PartnershipStatus): string {
     case "widowed":
       return "Widowed";
   }
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }
 
 function getPartnershipMutationErrorDescription(error: unknown): string {
