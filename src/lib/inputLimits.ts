@@ -14,8 +14,6 @@ export const textInputLimits = {
   settlementNameMax: 64,
   settlementDescriptionMax: 1000,
   citizenNameMax: 64,
-  notificationTypeMax: 32,
-  notificationMessageMax: 500,
 } as const;
 
 export const calendarInputLimits = {
@@ -27,10 +25,6 @@ export const calendarInputLimits = {
   dateFormatTemplateMax: 200,
   startingYearMin: -1_000_000,
   startingYearMax: 1_000_000,
-} as const;
-
-export const jsonInputLimits = {
-  turnLogPayloadBytesMax: 32_768,
 } as const;
 
 export const npcFlavorInputLimits = {
