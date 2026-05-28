@@ -137,7 +137,7 @@ function WorldShellContent({
               </div>
               <div>
                 <dt className="font-medium text-foreground">In-world date</dt>
-                <dd>{worldQuery.data.header.fullInWorldDateLabel}</dd>
+                <dd>{worldQuery.data.header.inWorldDateLabel}</dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Status</dt>
@@ -180,10 +180,10 @@ function WorldShellContent({
       />
       <EndTurnControl
         canAdmin={worldQuery.data.canAdmin}
-        currentDateLabel={worldQuery.data.header.fullInWorldDateLabel}
+        currentDateLabel={worldQuery.data.header.inWorldDateLabel}
         currentTurnNumber={worldQuery.data.header.currentTurnNumber}
         isArchived={worldQuery.data.header.isArchived}
-        nextDateLabel={worldQuery.data.header.nextFullInWorldDateLabel}
+        nextDateLabel={worldQuery.data.header.nextInWorldDateLabel}
         nextTurnNumber={worldQuery.data.header.nextTurnNumber}
         worldId={worldId}
       />

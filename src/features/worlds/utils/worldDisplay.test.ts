@@ -40,7 +40,6 @@ describe("toAccessibleWorld", () => {
       inWorldDateLabel: "Firstday, Ember 1, 100 AG",
       isArchived: false,
       isHidden: true,
-      nextFullInWorldDateLabel: "Secondday, Ember 2, 100 AG",
       nextInWorldDateLabel: "Secondday, Ember 2, 100 AG",
       nextTurnNumber: 4,
       ownerId: "user-2",

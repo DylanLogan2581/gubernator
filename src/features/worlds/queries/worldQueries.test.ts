@@ -219,11 +219,9 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(routeAccess.header).toEqual({
       archivedAt: null,
       currentTurnNumber: 8,
-      fullInWorldDateLabel: "Secondday, Ember 1, 101 AG",
       inWorldDateLabel: "Secondday, Ember 1, 101 AG",
       isArchived: false,
       name: "Local Development World",
-      nextFullInWorldDateLabel: "Firstday, Ember 2, 101 AG",
       nextInWorldDateLabel: "Firstday, Ember 2, 101 AG",
       nextTurnNumber: 9,
       planningTurnNumber: 8,

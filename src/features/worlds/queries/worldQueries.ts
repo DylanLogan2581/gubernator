@@ -135,11 +135,9 @@ async function getWorldRouteAccess(
     header: {
       archivedAt: world.archivedAt,
       currentTurnNumber: world.currentTurnNumber,
-      fullInWorldDateLabel: world.fullInWorldDateLabel,
       inWorldDateLabel: world.inWorldDateLabel,
       isArchived: world.isArchived,
       name: world.name,
-      nextFullInWorldDateLabel: world.nextFullInWorldDateLabel,
       nextInWorldDateLabel: world.nextInWorldDateLabel,
       nextTurnNumber: world.nextTurnNumber,
       planningTurnNumber: world.planningTurnNumber,

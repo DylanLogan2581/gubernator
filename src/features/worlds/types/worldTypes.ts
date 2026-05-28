@@ -29,14 +29,12 @@ export type AccessibleWorld = {
   readonly canManage: boolean;
   readonly createdAt: string;
   readonly currentTurnNumber: number;
-  readonly fullInWorldDateLabel: string;
   readonly id: string;
   readonly incestPreventionDepth: number;
   readonly inWorldDateLabel: string;
   readonly isArchived: boolean;
   readonly isHidden: boolean;
   readonly name: string;
-  readonly nextFullInWorldDateLabel: string;
   readonly nextInWorldDateLabel: string;
   readonly nextTurnNumber: number;
   readonly ownerId: string;
@@ -50,11 +48,9 @@ export type AccessibleWorld = {
 export type WorldShellHeader = {
   readonly archivedAt: string | null;
   readonly currentTurnNumber: number;
-  readonly fullInWorldDateLabel: string;
   readonly inWorldDateLabel: string;
   readonly isArchived: boolean;
   readonly name: string;
-  readonly nextFullInWorldDateLabel: string;
   readonly nextInWorldDateLabel: string;
   readonly nextTurnNumber: number;
   readonly planningTurnNumber: number;
