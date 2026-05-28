@@ -4,6 +4,7 @@ import { npcFlavorInputLimits } from "@/lib/inputLimits";
 
 const poolEntrySchema = z
   .string()
+  .min(1, "Entry cannot be empty.")
   .max(npcFlavorInputLimits.poolEntryMax, "Entry is too long.");
 
 const poolSchema = z
