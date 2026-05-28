@@ -58,17 +58,9 @@ export function toAccessibleWorld(
       world.calendar_config_json,
       planningTurnNumber,
     ),
-    fullInWorldDateLabel: resolveInWorldDateLabel(
-      world.calendar_config_json,
-      planningTurnNumber,
-    ),
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
     name: world.name,
-    nextFullInWorldDateLabel: resolveInWorldDateLabel(
-      world.calendar_config_json,
-      nextPlanningTurnNumber,
-    ),
     nextInWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       nextPlanningTurnNumber,
