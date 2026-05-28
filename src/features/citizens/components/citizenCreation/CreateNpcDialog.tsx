@@ -11,15 +11,14 @@ import { createSeededRng } from "@/lib/seededRng";
 import { createNpcMutationOptions } from "../../mutations/citizensMutations";
 import { citizensHaveCloseKinship } from "../../queries/citizenKinshipQueries";
 import { citizensInSettlementQueryOptions } from "../../queries/citizensQueries";
-import { emptyNpcFlavor, generateNpcFlavor } from "../../utils/npcFlavor";
-
 import {
   EMPTY_COMMON_FIELDS,
   getCreationErrorDescription,
   normalizeOptionalText,
   normalizeOptionalUuid,
   validateParentPairing,
-} from "./CitizenCreationShared";
+} from "../../utils/citizenCreationUtils";
+import { emptyNpcFlavor, generateNpcFlavor } from "../../utils/npcFlavor";
 
 import type { Citizen } from "../../types/citizenTypes";
 import type { NpcFlavor } from "../../utils/npcFlavor";

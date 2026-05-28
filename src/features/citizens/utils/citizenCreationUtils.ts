@@ -3,7 +3,7 @@ import { AuthUiError } from "@/features/auth";
 import {
   isCitizenMutationError,
   type CitizenMutationError,
-} from "../../mutations/citizensMutations";
+} from "../mutations/citizensMutations";
 
 export type CitizenCreationCommonFields = {
   readonly name: string;

@@ -10,14 +10,13 @@ import { textInputLimits } from "@/lib/inputLimits";
 import { createPlayerCharacterMutationOptions } from "../../mutations/citizensMutations";
 import { citizensHaveCloseKinship } from "../../queries/citizenKinshipQueries";
 import { citizensInSettlementQueryOptions } from "../../queries/citizensQueries";
-
 import {
   EMPTY_COMMON_FIELDS,
   getCreationErrorDescription,
   normalizeOptionalText,
   normalizeOptionalUuid,
   validateParentPairing,
-} from "./CitizenCreationShared";
+} from "../../utils/citizenCreationUtils";
 
 import type { Citizen } from "../../types/citizenTypes";
 
