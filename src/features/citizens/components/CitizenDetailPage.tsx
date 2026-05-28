@@ -246,7 +246,7 @@ function CitizenManagerRedirect({
   const settlementId = citizen.settlementId;
   const settlementQuery = useQuery({
     ...settlementByIdQueryOptions(settlementId ?? ""),
-    enabled: settlementId !== null,
+    enabled: settlementId !== null && settlementId !== "",
   });
   const settlement = settlementQuery.data ?? null;
   const nationId = settlement?.nationId ?? null;
@@ -269,7 +269,7 @@ function CitizenManagerRedirect({
 
   function redirectDescription(): string {
     if (settlementId === null) {
-      return "Only world administrators can view citizens that are not in a settlement.";
+      return "This citizen has not been assigned to a settlement yet.";
     }
     if (isManager) {
       return "Nation and settlement managers manage citizens from the settlement detail screen. Redirecting now…";
