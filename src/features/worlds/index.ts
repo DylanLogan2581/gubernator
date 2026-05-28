@@ -27,11 +27,8 @@ export {
   saveWorldNpcFlavorConfigMutationOptions,
 } from "./mutations/worldNpcFlavorConfigMutations";
 export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
-export { createWorldSlug, toAccessibleWorld } from "./utils/worldDisplay";
-
 export type {
   AccessibleWorld,
   WorldPermissionContext,
   WorldRouteAccess,
-  WorldShellHeader,
 } from "./types/worldTypes";

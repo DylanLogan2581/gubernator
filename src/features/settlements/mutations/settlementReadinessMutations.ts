@@ -186,6 +186,7 @@ export function setSettlementAutoReadyMutationOptions({
   });
 }
 
+// Planned for use in settlement readiness UI error handling (not yet wired to a component).
 export function isSetSettlementReadinessError(
   error: unknown,
 ): error is SetSettlementReadinessError {

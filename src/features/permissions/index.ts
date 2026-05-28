@@ -28,9 +28,7 @@ export type {
   ClearActivePlayerCharacterInput,
   SetActivePlayerCharacterInput,
 } from "./mutations/activePlayerCharacterMutations";
-export type { ActivePlayerCharacterRow } from "./queries/activePlayerCharacterQueries";
 export type {
   AccessContext,
-  AccessContextPredicates,
   WorldAccessTarget,
 } from "./types/accessContextTypes";

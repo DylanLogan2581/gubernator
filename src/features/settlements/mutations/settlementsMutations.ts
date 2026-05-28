@@ -101,6 +101,7 @@ export function isSettlementMutationError(
   return error instanceof SettlementMutationError;
 }
 
+// Planned for use in the settlement creation UI (not yet wired to a component).
 export function createSettlementMutationOptions({
   client = requireSupabaseClient(),
   queryClient,

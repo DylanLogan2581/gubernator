@@ -3,8 +3,6 @@
 export {
   SetSettlementAutoReadyError,
   SetSettlementReadinessError,
-  isSetSettlementAutoReadyError,
-  isSetSettlementReadinessError,
   setSettlementAutoReadyMutationOptions,
   setSettlementReadinessMutationOptions,
 } from "./mutations/settlementReadinessMutations";
@@ -24,7 +22,6 @@ export {
 export { settlementReadinessQueryKeys } from "./queries/settlementReadinessQueryKeys";
 export {
   SettlementMutationError,
-  createSettlementMutationOptions,
   deleteSettlementMutationOptions,
   isSettlementMutationError,
   updateSettlementCoordinatesMutationOptions,
