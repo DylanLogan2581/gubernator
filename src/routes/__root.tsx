@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { MapPinOff } from "lucide-react";
 import { lazy, Suspense, useEffect, type JSX } from "react";
+import { Toaster } from "sonner";
 
 import { AppLayout } from "@/components/app/AppLayout";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -57,6 +58,7 @@ function RootLayout(): JSX.Element {
       <AppLayout headerAction={<AuthNavigationControl />}>
         {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
       </AppLayout>
+      <Toaster theme="system" richColors closeButton position="bottom-right" />
       {TanStackRouterDevtools !== null ? (
         <Suspense fallback={null}>
           <TanStackRouterDevtools />
