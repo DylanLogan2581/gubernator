@@ -368,6 +368,16 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Comma-separated origin allowlist enforced by the end-turn-basic function.
+# Browser requests carry an `Origin` header; values not on this list are
+# rejected with a bare HTTP 403 before any other logic runs. The local Vite
+# dev server is served from both http://localhost:5173 and
+# http://127.0.0.1:5173, so both are listed. Production deployments must
+# override this with their own frontend origin(s) — without it, every
+# browser end-turn request fails closed.
+[edge_runtime.secrets]
+END_TURN_BASIC_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+
 [analytics]
 enabled = true
 port = 54327
