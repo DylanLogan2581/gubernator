@@ -2,8 +2,10 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import { deleteSettlementMutationOptions } from "../../mutations/settlementsMutations";
 
@@ -35,8 +37,12 @@ export function SettlementDeleteSection({
         worldId,
       },
       {
+        onError: (error) => {
+          toast.error(getMutationErrorDescription(error));
+        },
         onSuccess: () => {
           setIsConfirming(false);
+          notifyMutationSuccess("Settlement deleted.");
           void navigate({
             params: { nationId: settlement.nationId, worldId },
             replace: true,
@@ -81,14 +87,6 @@ export function SettlementDeleteSection({
           }}
           onConfirm={handleConfirm}
         />
-      ) : null}
-      {deleteMutation.isError ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getMutationErrorDescription(deleteMutation.error)}
-        </p>
       ) : null}
     </section>
   );

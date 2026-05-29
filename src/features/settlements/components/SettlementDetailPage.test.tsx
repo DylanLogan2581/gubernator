@@ -17,6 +17,18 @@ vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
 }));
 
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
+}));
+
 const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
 }));
@@ -360,6 +372,8 @@ describe("SettlementDetailPage", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     navigateMock.mockReset();
+    toastError.mockReset();
+    toastSuccess.mockReset();
     useActivePlayerCharacterMock.mockReset();
     useActivePlayerCharacterMock.mockReturnValue({
       activeCharacter: null,
@@ -462,7 +476,7 @@ describe("SettlementDetailPage", () => {
     });
   });
 
-  it("renders a mutation error when the details update fails", async () => {
+  it("emits an error toast when the details update fails", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         adminRows: [{ world_id: WORLD_ID }],
@@ -480,8 +494,14 @@ describe("SettlementDetailPage", () => {
     await userEvent.click(detailsEditBtn);
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(await screen.findByRole("alert")).toBeDefined();
-    expect(screen.getByText("Update failed")).toBeDefined();
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith(
+        expect.stringContaining("Update failed"),
+      );
+    });
+    expect(
+      screen.getByRole("form", { name: "Edit settlement details" }),
+    ).toBeDefined();
   });
 
   it("fires the set-readiness mutation when the manual readiness toggle is clicked", async () => {
@@ -580,6 +600,10 @@ describe("SettlementDetailPage", () => {
         to: "/worlds/$worldId/nations/$nationId",
       });
     });
+    expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+      "Settlement deleted.",
+      undefined,
+    );
   });
 });
 

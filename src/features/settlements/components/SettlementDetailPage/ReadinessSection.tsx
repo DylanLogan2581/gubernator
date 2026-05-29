@@ -5,6 +5,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import type { WorldPermissionContext } from "@/features/worlds";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { notifyMutationError } from "@/lib/notify";
 
 import {
   setSettlementAutoReadyMutationOptions,
@@ -59,11 +60,6 @@ export function SettlementReadinessSection({
         />
       ) : (
         <SettlementReadinessSectionContent
-          autoReadyError={
-            setAutoReadyMutation.variables?.settlementId === settlementId
-              ? setAutoReadyMutation.error
-              : null
-          }
           canSetAutoReady={canAdmin}
           canSetManualReady={canManage}
           isArchived={isArchived}
@@ -79,24 +75,33 @@ export function SettlementReadinessSection({
             readinessQuery.data.find((entry) => entry.id === settlementId) ??
             null
           }
-          readinessError={
-            setReadinessMutation.variables?.settlementId === settlementId
-              ? setReadinessMutation.error
-              : null
-          }
           setAutoReady={(autoReadyEnabled) => {
-            setAutoReadyMutation.mutate({
-              autoReadyEnabled,
-              settlementId,
-              worldId,
-            });
+            setAutoReadyMutation.mutate(
+              {
+                autoReadyEnabled,
+                settlementId,
+                worldId,
+              },
+              {
+                onError: (error) => {
+                  notifyMutationError(error);
+                },
+              },
+            );
           }}
           setReadiness={(isReady) => {
-            setReadinessMutation.mutate({
-              isReady,
-              settlementId,
-              worldId,
-            });
+            setReadinessMutation.mutate(
+              {
+                isReady,
+                settlementId,
+                worldId,
+              },
+              {
+                onError: (error) => {
+                  notifyMutationError(error);
+                },
+              },
+            );
           }}
         />
       )}
@@ -105,25 +110,21 @@ export function SettlementReadinessSection({
 }
 
 function SettlementReadinessSectionContent({
-  autoReadyError,
   canSetAutoReady,
   canSetManualReady,
   isArchived,
   isAutoReadyPending,
   isReadinessPending,
   item,
-  readinessError,
   setAutoReady,
   setReadiness,
 }: {
-  readonly autoReadyError: Error | null;
   readonly canSetAutoReady: boolean;
   readonly canSetManualReady: boolean;
   readonly isArchived: boolean;
   readonly isAutoReadyPending: boolean;
   readonly isReadinessPending: boolean;
   readonly item: SettlementReadinessListItem | null;
-  readonly readinessError: Error | null;
   readonly setAutoReady: (autoReadyEnabled: boolean) => void;
   readonly setReadiness: (isReady: boolean) => void;
 }): JSX.Element {
@@ -145,7 +146,6 @@ function SettlementReadinessSectionContent({
             isArchived={isArchived}
             isPending={isReadinessPending}
             item={item}
-            mutationError={readinessError}
             setReadiness={setReadiness}
           />
         ) : null}
@@ -154,7 +154,6 @@ function SettlementReadinessSectionContent({
             isArchived={isArchived}
             isPending={isAutoReadyPending}
             item={item}
-            mutationError={autoReadyError}
             setAutoReady={setAutoReady}
           />
         ) : null}

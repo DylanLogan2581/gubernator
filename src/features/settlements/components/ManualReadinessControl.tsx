@@ -1,4 +1,3 @@
-import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
 import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
@@ -15,7 +14,6 @@ type ManualReadinessControlProps = {
   readonly isArchived: boolean;
   readonly isPending: boolean;
   readonly item: SettlementReadinessListItem;
-  readonly mutationError: Error | null;
   readonly setReadiness: (isReady: boolean) => void;
 };
 
@@ -23,12 +21,10 @@ export function ManualReadinessControl({
   isArchived,
   isPending,
   item,
-  mutationError,
   setReadiness,
 }: ManualReadinessControlProps): JSX.Element {
   const state = deriveSettlementReadinessState(item);
   const descriptionId = `settlement-readiness-${item.id}-description`;
-  const errorId = `settlement-readiness-${item.id}-error`;
   const isAutoReady = state.kind === "auto-ready";
   const isDisabled = isArchived || isAutoReady || isPending;
   const description = getManualReadinessDescription({
@@ -42,12 +38,7 @@ export function ManualReadinessControl({
     <div className="grid gap-2">
       <label className="inline-flex w-fit items-center gap-2 text-sm font-medium text-foreground">
         <input
-          aria-describedby={
-            mutationError === null
-              ? descriptionId
-              : `${descriptionId} ${errorId}`
-          }
-          aria-invalid={mutationError === null ? undefined : true}
+          aria-describedby={descriptionId}
           checked={state.isReadyForCurrentTurn}
           className="peer sr-only"
           disabled={isDisabled}
@@ -69,11 +60,6 @@ export function ManualReadinessControl({
       <p id={descriptionId} className="max-w-64 text-xs text-muted-foreground">
         {description}
       </p>
-      {mutationError === null ? null : (
-        <p id={errorId} role="alert" className="text-xs text-destructive">
-          {getErrorDescription(mutationError)}
-        </p>
-      )}
     </div>
   );
 }
