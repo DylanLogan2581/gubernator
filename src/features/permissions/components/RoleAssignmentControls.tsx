@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import {
   assignCitizenRoleMutationOptions,
   isPlayerCharacterRoleMutationError,
+  isPlayerRole,
+  managerScopeLabel,
   playerCharactersInNationQueryOptions,
   revokeCitizenRoleMutationOptions,
   type Citizen,
@@ -119,7 +121,7 @@ function CitizenRoleAssignmentForm({
     assignMutation.reset();
     revokeMutation.reset();
 
-    if (roleType === "none") {
+    if (isPlayerRole(roleType)) {
       revokeMutation.mutate(
         { citizenId: citizen.id, worldId: citizen.worldId },
         {
@@ -139,7 +141,7 @@ function CitizenRoleAssignmentForm({
       return;
     }
 
-    if (roleType === "nation_manager") {
+    if (managerScopeLabel(roleType) === "nation") {
       if (settlementNationId === null) {
         setScopeError("Citizen's settlement is not attached to a nation.");
         return;
@@ -224,7 +226,7 @@ function CitizenRoleAssignmentForm({
               <option value="settlement_manager">Settlement manager</option>
             </select>
           </label>
-          {roleType === "nation_manager" ? (
+          {managerScopeLabel(roleType) === "nation" ? (
             <ScopeDropdown
               label="Nation"
               optionLabel={nationName ?? settlementNationId ?? ""}
@@ -232,7 +234,7 @@ function CitizenRoleAssignmentForm({
               isLoading={settlementQuery.isPending && settlementId !== null}
             />
           ) : null}
-          {roleType === "settlement_manager" ? (
+          {managerScopeLabel(roleType) === "settlement" ? (
             <ScopeDropdown
               label="Settlement"
               optionLabel={settlementName ?? settlementId ?? ""}
@@ -351,8 +353,7 @@ function NationRoleAssignmentList({
   }
 
   const candidates = playerCharactersQuery.data.filter(
-    (citizen) =>
-      citizen.roleType === "none" || citizen.roleType === "settlement_manager",
+    (citizen) => managerScopeLabel(citizen.roleType) !== "nation",
   );
 
   if (candidates.length === 0) {
@@ -394,7 +395,8 @@ function NationRoleAssignmentRow({
 
   const settlementId = citizen.settlementId;
   const isPending = assignMutation.isPending || revokeMutation.isPending;
-  const isSettlementManager = citizen.roleType === "settlement_manager";
+  const isSettlementManager =
+    managerScopeLabel(citizen.roleType) === "settlement";
 
   function handleAssign(): void {
     if (settlementId === null) {
