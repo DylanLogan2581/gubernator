@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -23,6 +24,7 @@ import {
 import type { Nation } from "@/features/nations";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import { permissionQueryKeys } from "../queries/permissionQueryKeys";
 
@@ -125,8 +127,12 @@ function CitizenRoleAssignmentForm({
       revokeMutation.mutate(
         { citizenId: citizen.id, worldId: citizen.worldId },
         {
+          onError: (error) => {
+            toast.error(getRoleMutationErrorDescription(error));
+          },
           onSuccess: () => {
             invalidatePermissionsContext(queryClient);
+            notifyMutationSuccess(`Role removed from ${citizen.name}.`);
             setIsEditing(false);
           },
         },
@@ -154,8 +160,14 @@ function CitizenRoleAssignmentForm({
           worldId: citizen.worldId,
         },
         {
+          onError: (error) => {
+            toast.error(getRoleMutationErrorDescription(error));
+          },
           onSuccess: () => {
             invalidatePermissionsContext(queryClient);
+            notifyMutationSuccess(
+              `Assigned Nation Manager to ${citizen.name}.`,
+            );
             setIsEditing(false);
           },
         },
@@ -171,8 +183,14 @@ function CitizenRoleAssignmentForm({
         worldId: citizen.worldId,
       },
       {
+        onError: (error) => {
+          toast.error(getRoleMutationErrorDescription(error));
+        },
         onSuccess: () => {
           invalidatePermissionsContext(queryClient);
+          notifyMutationSuccess(
+            `Assigned Settlement Manager to ${citizen.name}.`,
+          );
           setIsEditing(false);
         },
       },
@@ -180,7 +198,6 @@ function CitizenRoleAssignmentForm({
   }
 
   const canEdit = !isArchived;
-  const firstError = assignMutation.error ?? revokeMutation.error ?? null;
   const isPending = assignMutation.isPending || revokeMutation.isPending;
 
   return (
@@ -264,14 +281,6 @@ function CitizenRoleAssignmentForm({
             </Button>
           </div>
         </form>
-      ) : null}
-      {firstError !== null ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getRoleMutationErrorDescription(firstError)}
-        </p>
       ) : null}
     </div>
   );
@@ -412,7 +421,15 @@ function NationRoleAssignmentRow({
         worldId: citizen.worldId,
       },
       {
-        onSuccess: () => invalidatePermissionsContext(queryClient),
+        onError: (error) => {
+          toast.error(getRoleMutationErrorDescription(error));
+        },
+        onSuccess: () => {
+          invalidatePermissionsContext(queryClient);
+          notifyMutationSuccess(
+            `Assigned Settlement Manager to ${citizen.name}.`,
+          );
+        },
       },
     );
   }
@@ -423,12 +440,16 @@ function NationRoleAssignmentRow({
     revokeMutation.mutate(
       { citizenId: citizen.id, worldId: citizen.worldId },
       {
-        onSuccess: () => invalidatePermissionsContext(queryClient),
+        onError: (error) => {
+          toast.error(getRoleMutationErrorDescription(error));
+        },
+        onSuccess: () => {
+          invalidatePermissionsContext(queryClient);
+          notifyMutationSuccess(`Role removed from ${citizen.name}.`);
+        },
       },
     );
   }
-
-  const firstError = assignMutation.error ?? revokeMutation.error ?? null;
 
   return (
     <li className="grid gap-2 rounded-md border border-border bg-background p-3">
@@ -465,14 +486,6 @@ function NationRoleAssignmentRow({
           )}
         </div>
       </div>
-      {firstError !== null ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getRoleMutationErrorDescription(firstError)}
-        </p>
-      ) : null}
     </li>
   );
 }
