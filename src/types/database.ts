@@ -206,6 +206,137 @@ export type Database = {
           },
         ];
       };
+      deposit_types: {
+        Row: {
+          created_at: string;
+          id: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deposit_types_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      job_definitions: {
+        Row: {
+          base_capacity: number | null;
+          created_at: string;
+          id: string;
+          inputs_json: Json;
+          is_active: boolean;
+          job_type: string;
+          linked_deposit_type_id: string | null;
+          linked_managed_population_type_id: string | null;
+          name: string;
+          outputs_json: Json;
+          slug: string;
+          trader_capacity_per_worker: number | null;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          base_capacity?: number | null;
+          created_at?: string;
+          id?: string;
+          inputs_json?: Json;
+          is_active?: boolean;
+          job_type: string;
+          linked_deposit_type_id?: string | null;
+          linked_managed_population_type_id?: string | null;
+          name: string;
+          outputs_json?: Json;
+          slug: string;
+          trader_capacity_per_worker?: number | null;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          base_capacity?: number | null;
+          created_at?: string;
+          id?: string;
+          inputs_json?: Json;
+          is_active?: boolean;
+          job_type?: string;
+          linked_deposit_type_id?: string | null;
+          linked_managed_population_type_id?: string | null;
+          name?: string;
+          outputs_json?: Json;
+          slug?: string;
+          trader_capacity_per_worker?: number | null;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_definitions_linked_deposit_type_fk";
+            columns: ["linked_deposit_type_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_definitions_linked_managed_pop_type_fk";
+            columns: ["linked_managed_population_type_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_definitions_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      managed_population_types: {
+        Row: {
+          created_at: string;
+          id: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "managed_population_types_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_relationships: {
         Row: {
           created_at: string;
