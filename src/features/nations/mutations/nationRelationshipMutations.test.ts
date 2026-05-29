@@ -17,6 +17,7 @@ import type { NationRelationshipRow } from "../queries/nationRelationshipQueries
 const FROM_NATION_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const TO_NATION_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const RELATIONSHIP_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const WORLD_ID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 
 describe("proposeBilateralMutationOptions", () => {
   it("upserts with proposed status when no existing row", async () => {
@@ -32,6 +33,7 @@ describe("proposeBilateralMutationOptions", () => {
       fromNationId: FROM_NATION_ID,
       stance: "allied",
       toNationId: TO_NATION_ID,
+      worldId: WORLD_ID,
     });
 
     expect(upsertFn).toHaveBeenCalledWith(
@@ -61,6 +63,7 @@ describe("proposeBilateralMutationOptions", () => {
       fromNationId: FROM_NATION_ID,
       stance: "allied",
       toNationId: TO_NATION_ID,
+      worldId: WORLD_ID,
     });
 
     expect(upsertFn).toHaveBeenCalled();
@@ -82,6 +85,7 @@ describe("proposeBilateralMutationOptions", () => {
         fromNationId: FROM_NATION_ID,
         stance: "allied",
         toNationId: TO_NATION_ID,
+        worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "relationship_already_accepted" });
 
@@ -104,6 +108,7 @@ describe("proposeBilateralMutationOptions", () => {
         fromNationId: FROM_NATION_ID,
         stance: "allied",
         toNationId: TO_NATION_ID,
+        worldId: WORLD_ID,
       }),
     ).rejects.toBeInstanceOf(NationRelationshipMutationError);
   });
@@ -121,6 +126,7 @@ describe("proposeBilateralMutationOptions", () => {
         fromNationId: FROM_NATION_ID,
         stance: "allied",
         toNationId: TO_NATION_ID,
+        worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "relationship_not_found" });
   });
@@ -136,6 +142,7 @@ describe("proposeBilateralMutationOptions", () => {
         fromNationId: FROM_NATION_ID,
         stance: "at_war",
         toNationId: TO_NATION_ID,
+        worldId: WORLD_ID,
       }),
     ).rejects.toSatisfy(isNationRelationshipMutationError);
     expect(from).not.toHaveBeenCalled();

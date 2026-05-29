@@ -183,7 +183,7 @@ describe("RoleAssignmentControls — citizen variant", () => {
     await waitFor(() => {
       expect(rpcAssign).toHaveBeenCalledWith({
         p_citizen_id: CITIZEN_PC_ID,
-        p_role_nation_id: null,
+        p_role_nation_id: undefined,
         p_role_settlement_id: SETTLEMENT_ID,
         p_role_type: "settlement_manager",
       });
@@ -372,7 +372,7 @@ describe("RoleAssignmentControls — nation variant", () => {
     await waitFor(() => {
       expect(rpcAssign).toHaveBeenCalledWith({
         p_citizen_id: CITIZEN_ELIGIBLE_ID,
-        p_role_nation_id: null,
+        p_role_nation_id: undefined,
         p_role_settlement_id: SETTLEMENT_ID,
         p_role_type: "settlement_manager",
       });
