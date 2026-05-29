@@ -114,6 +114,7 @@ export type EndTurnBasicPersistRunningTransitionResult =
     };
 
 export type EndTurnBasicHandlerOptions = {
+  readonly allowedOrigins?: readonly string[];
   readonly resolveTransitionInput?: (
     requestBody: EndTurnBasicRequestBody,
     authContext: EndTurnBasicAuthContext,

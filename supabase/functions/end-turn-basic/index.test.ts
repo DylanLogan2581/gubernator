@@ -27,7 +27,7 @@ describe("handleEndTurnBasicRequest", () => {
     );
 
     expect(response.status).toBe(204);
-    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
     expect(response.headers.get("access-control-allow-methods")).toContain(
       "POST",
     );
@@ -36,7 +36,40 @@ describe("handleEndTurnBasicRequest", () => {
     );
   });
 
-  it("includes CORS headers on a successful JSON response", async () => {
+  it("returns a 204 preflight response with echoed origin for a recognized Origin", async () => {
+    const response = await handleEndTurnBasicRequest(
+      new Request("http://localhost/end-turn-basic", {
+        headers: { origin: "http://localhost:5173" },
+        method: "OPTIONS",
+      }),
+      { allowedOrigins: ["http://localhost:5173", "http://127.0.0.1:5173"] },
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe(
+      "http://localhost:5173",
+    );
+    expect(response.headers.get("access-control-allow-methods")).toContain(
+      "POST",
+    );
+    expect(response.headers.get("access-control-allow-headers")).toContain(
+      "authorization",
+    );
+  });
+
+  it("returns a 403 preflight response for an unrecognized Origin on OPTIONS", async () => {
+    const response = await handleEndTurnBasicRequest(
+      new Request("http://localhost/end-turn-basic", {
+        headers: { origin: "http://evil.example.com" },
+        method: "OPTIONS",
+      }),
+      { allowedOrigins: ["http://localhost:5173"] },
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it("includes no access-control-allow-origin on a successful JSON response without Origin", async () => {
     const response = await handleEndTurnBasicRequest(
       createJsonRequest({
         expectedTurnNumber: 3,
@@ -64,10 +97,56 @@ describe("handleEndTurnBasicRequest", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
   });
 
-  it("includes CORS headers on an error JSON response", async () => {
+  it("echoes the allowed Origin in access-control-allow-origin on a successful JSON response", async () => {
+    const response = await handleEndTurnBasicRequest(
+      createJsonRequest(
+        { expectedTurnNumber: 3, worldId: "world-1" },
+        "http://localhost:5173",
+      ),
+      {
+        allowedOrigins: ["http://localhost:5173"],
+        resolveAuthContext: createResolveAuthContext("user-1"),
+        resolveAuthorization: () => Promise.resolve({ ok: true }),
+        resolveTransitionInput: () =>
+          Promise.resolve(createTransitionInputResult()),
+        persistRunningTransition: () =>
+          Promise.resolve({
+            ok: true,
+            transition: {
+              fromTurnNumber: 3,
+              id: "transition-1",
+              initiatedByUserId: "user-1",
+              startedAt: "2026-05-03T10:00:00.000Z",
+              status: "completed",
+              toTurnNumber: 4,
+              worldId: "world-1",
+            },
+          }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-allow-origin")).toBe(
+      "http://localhost:5173",
+    );
+  });
+
+  it("returns a 403 for an unrecognized Origin on POST", async () => {
+    const response = await handleEndTurnBasicRequest(
+      createJsonRequest(
+        { expectedTurnNumber: 3, worldId: "world-1" },
+        "http://evil.example.com",
+      ),
+      { allowedOrigins: ["http://localhost:5173"] },
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it("includes no access-control-allow-origin on an error JSON response without Origin", async () => {
     const response = await handleEndTurnBasicRequest(
       createJsonRequest({
         expectedTurnNumber: 3,
@@ -76,7 +155,7 @@ describe("handleEndTurnBasicRequest", () => {
     );
 
     expect(response.status).toBe(401);
-    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
   });
 
   it("returns a typed error response for an invalid request body", async () => {
@@ -914,12 +993,16 @@ describe("resolveSupabaseEndTurnAuthorization", () => {
   });
 });
 
-function createJsonRequest(body: unknown): Request {
+function createJsonRequest(body: unknown, origin?: string): Request {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (origin !== undefined) {
+    headers["origin"] = origin;
+  }
   return new Request("http://localhost/end-turn-basic", {
     body: JSON.stringify(body),
-    headers: {
-      "content-type": "application/json",
-    },
+    headers,
     method: "POST",
   });
 }
