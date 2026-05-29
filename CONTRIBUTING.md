@@ -110,6 +110,7 @@ The short version:
 - keep raw data access out of routes and components
 - prefer TypeScript `type` imports and explicit return types
 - avoid `any`, non-null assertions, and ad hoc browser side effects
+- use Sonner toasts for mutation success and failure feedback via `src/lib/notify.ts` (`notifyMutationSuccess`, `notifyMutationError`); do not render conditional success/failure banners in document flow — they shift the page on click
 
 If you are unsure where something belongs, check `AGENTS.md`.
 
