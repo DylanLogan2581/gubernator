@@ -6,11 +6,13 @@ import {
 } from "@tanstack/react-query";
 import { Plus, RotateCcw, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import { saveWorldNpcFlavorConfigMutationOptions } from "../mutations/worldNpcFlavorConfigMutations";
 import { worldNpcFlavorConfigQueryOptions } from "../queries/worldNpcFlavorConfigQueries";
@@ -100,12 +102,21 @@ function WorldNpcFlavorConfigPanelContent({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    saveMutation.mutate({ config: draftConfig, worldId });
+    saveMutation.mutate(
+      { config: draftConfig, worldId },
+      {
+        onError: (error) => {
+          toast.error(getNpcFlavorErrorDescription(error));
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("NPC flavor pools saved.");
+        },
+      },
+    );
   }
 
   function resetDraftConfig(): void {
     setDraftConfig(initialConfig);
-    saveMutation.reset();
   }
 
   return (
@@ -169,17 +180,6 @@ function WorldNpcFlavorConfigPanelContent({
               setDraftConfig((current) => ({ ...current, flaws }))
             }
           />
-
-          {saveMutation.isError ? (
-            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {getNpcFlavorErrorDescription(saveMutation.error)}
-            </p>
-          ) : null}
-          {saveMutation.isSuccess ? (
-            <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-              NPC flavor pools saved.
-            </p>
-          ) : null}
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={saveMutation.isPending}>

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -22,9 +22,24 @@ vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
 }));
 
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
+}));
+
 describe("WorldCalendarConfigPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+    toastError.mockReset();
+    toastSuccess.mockReset();
   });
 
   it("renders editable calendar controls for world admins", async () => {
@@ -338,6 +353,67 @@ describe("WorldCalendarConfigPanel", () => {
     ).toHaveValue("Edited");
   });
 
+  it("emits a success toast after saving the calendar config", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Calendar saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("emits an error toast when saving the calendar config fails", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        updateResult: {
+          data: null,
+          error: { message: "permission denied" },
+        },
+        worldRows: [createWorldRow()],
+      }),
+    );
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith(
+        expect.stringContaining("permission denied"),
+      );
+    });
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
   it("renders calendar configuration without edit controls for non-admin users", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -403,8 +479,16 @@ function createQueryClient(): QueryClient {
 }
 
 function createClient({
+  updateResult = {
+    data: { id: "00000000-0000-0000-0000-000000000001" },
+    error: null,
+  },
   worldRows,
 }: {
+  readonly updateResult?: {
+    readonly data: { readonly id: string } | null;
+    readonly error: { readonly message: string } | null;
+  };
   readonly worldRows: readonly TestWorldRow[];
 }): {
   readonly from: ReturnType<typeof vi.fn>;
@@ -412,7 +496,7 @@ function createClient({
   return {
     from: vi.fn((table: string) => {
       if (table === "worlds") {
-        return createWorldsQueryBuilder(worldRows);
+        return createWorldsQueryBuilder(worldRows, updateResult);
       }
 
       throw new Error(`Unexpected table ${table}`);
@@ -421,14 +505,22 @@ function createClient({
 }
 
 type TestWorldRow = {
+  readonly archived_at: string | null;
   readonly calendar_config_json: WorldCalendarConfig;
   readonly id: string;
+  readonly owner_id: string;
+  readonly status: string;
+  readonly visibility: string;
 };
 
 function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
   return {
+    archived_at: null,
     calendar_config_json: createCalendarConfig(),
     id: "00000000-0000-0000-0000-000000000001",
+    owner_id: "user-1",
+    status: "active",
+    visibility: "private",
     ...overrides,
   };
 }
@@ -451,7 +543,13 @@ function createCalendarConfig(): WorldCalendarConfig {
   };
 }
 
-function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
+function createWorldsQueryBuilder(
+  rows: readonly TestWorldRow[],
+  updateResult: {
+    readonly data: { readonly id: string } | null;
+    readonly error: { readonly message: string } | null;
+  },
+): unknown {
   return {
     select: vi.fn(() => ({
       eq: vi.fn((column: string, value: string) => {
@@ -464,6 +562,15 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
           maybeSingle: vi.fn().mockResolvedValue({ data, error: null }),
         };
       }),
+    })),
+    update: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          select: vi.fn(() => ({
+            maybeSingle: vi.fn().mockResolvedValue(updateResult),
+          })),
+        })),
+      })),
     })),
   };
 }
