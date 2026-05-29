@@ -11,12 +11,10 @@ import type { SettlementReadinessListItem } from "../types/settlementReadinessTy
 import type { JSX } from "react";
 
 type SettlementReadinessRowProps = {
-  readonly autoReadyMutationError: Error | null;
   readonly canSetAutoReady: boolean;
   readonly canSetManualReady: boolean;
   readonly isArchived: boolean;
   readonly item: SettlementReadinessListItem;
-  readonly mutationError: Error | null;
   readonly pendingAutoReadySettlementId: string | null;
   readonly pendingSettlementId: string | null;
   readonly setAutoReady: (autoReadyEnabled: boolean) => void;
@@ -24,12 +22,10 @@ type SettlementReadinessRowProps = {
 };
 
 export function SettlementReadinessRow({
-  autoReadyMutationError,
   canSetAutoReady,
   canSetManualReady,
   isArchived,
   item,
-  mutationError,
   pendingAutoReadySettlementId,
   pendingSettlementId,
   setAutoReady,
@@ -57,7 +53,6 @@ export function SettlementReadinessRow({
           <ManualReadinessControl
             isArchived={isArchived}
             item={item}
-            mutationError={mutationError}
             isPending={pendingSettlementId === item.id}
             setReadiness={setReadiness}
           />
@@ -71,7 +66,6 @@ export function SettlementReadinessRow({
             isArchived={isArchived}
             isPending={pendingAutoReadySettlementId === item.id}
             item={item}
-            mutationError={autoReadyMutationError}
             setAutoReady={setAutoReady}
           />
         </td>

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { WorldPermissionContext } from "@/features/worlds";
+import { notifyMutationError } from "@/lib/notify";
 
 import {
   setSettlementAutoReadyMutationOptions,
@@ -70,21 +71,11 @@ export function SettlementReadinessTable({
         <tbody className="divide-y divide-border">
           {items.map((item) => (
             <SettlementReadinessRow
-              autoReadyMutationError={
-                setAutoReadyMutation.variables?.settlementId === item.id
-                  ? setAutoReadyMutation.error
-                  : null
-              }
               canSetAutoReady={canAdmin}
               canSetManualReady={canManage}
               isArchived={isArchived}
               item={item}
               key={item.id}
-              mutationError={
-                setReadinessMutation.variables?.settlementId === item.id
-                  ? setReadinessMutation.error
-                  : null
-              }
               pendingAutoReadySettlementId={
                 setAutoReadyMutation.isPending
                   ? setAutoReadyMutation.variables.settlementId
@@ -96,18 +87,32 @@ export function SettlementReadinessTable({
                   : null
               }
               setAutoReady={(autoReadyEnabled) => {
-                setAutoReadyMutation.mutate({
-                  autoReadyEnabled,
-                  settlementId: item.id,
-                  worldId,
-                });
+                setAutoReadyMutation.mutate(
+                  {
+                    autoReadyEnabled,
+                    settlementId: item.id,
+                    worldId,
+                  },
+                  {
+                    onError: (error) => {
+                      notifyMutationError(error);
+                    },
+                  },
+                );
               }}
               setReadiness={(isReady) => {
-                setReadinessMutation.mutate({
-                  isReady,
-                  settlementId: item.id,
-                  worldId,
-                });
+                setReadinessMutation.mutate(
+                  {
+                    isReady,
+                    settlementId: item.id,
+                    worldId,
+                  },
+                  {
+                    onError: (error) => {
+                      notifyMutationError(error);
+                    },
+                  },
+                );
               }}
             />
           ))}
