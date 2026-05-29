@@ -1,5 +1,6 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
@@ -23,11 +24,18 @@ export function NationHiddenToggleSection({
 
   function handleToggle(): void {
     setHiddenMutation.reset();
-    setHiddenMutation.mutate({
-      isHidden: !nation.isHidden,
-      nationId: nation.id,
-      worldId: nation.worldId,
-    });
+    setHiddenMutation.mutate(
+      {
+        isHidden: !nation.isHidden,
+        nationId: nation.id,
+        worldId: nation.worldId,
+      },
+      {
+        onError: (error) => {
+          toast.error(getMutationErrorDescription(error));
+        },
+      },
+    );
   }
 
   return (
@@ -60,14 +68,6 @@ export function NationHiddenToggleSection({
           {nation.isHidden ? "Show nation" : "Hide nation"}
         </Button>
       </div>
-      {setHiddenMutation.isError ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getMutationErrorDescription(setHiddenMutation.error)}
-        </p>
-      ) : null}
     </section>
   );
 }

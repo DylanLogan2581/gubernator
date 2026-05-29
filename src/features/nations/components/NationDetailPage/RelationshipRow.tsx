@@ -1,7 +1,9 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
   proposeBilateralMutationOptions,
@@ -94,12 +96,13 @@ export function NationRelationshipRow({
     respondToBilateral.isPending ||
     withdrawFromBilateral.isPending;
 
-  const firstError =
-    setUnilateral.error ??
-    proposeBilateral.error ??
-    respondToBilateral.error ??
-    withdrawFromBilateral.error ??
-    null;
+  function notifyStanceSuccess(): void {
+    notifyMutationSuccess(`Stance toward ${other.name} updated.`);
+  }
+
+  function notifyStanceError(error: unknown): void {
+    toast.error(getRelationshipMutationErrorDescription(error));
+  }
 
   return (
     <li className="grid gap-3 rounded-md border border-border bg-background p-3">
@@ -156,11 +159,17 @@ export function NationRelationshipRow({
                   return;
                 }
                 setUnilateral.reset();
-                setUnilateral.mutate({
-                  fromNationId: nation.id,
-                  stance,
-                  toNationId: other.id,
-                });
+                setUnilateral.mutate(
+                  {
+                    fromNationId: nation.id,
+                    stance,
+                    toNationId: other.id,
+                  },
+                  {
+                    onError: notifyStanceError,
+                    onSuccess: notifyStanceSuccess,
+                  },
+                );
               }}
             >
               <option value="neutral">Neutral</option>
@@ -179,11 +188,17 @@ export function NationRelationshipRow({
                   disabled={anyPending}
                   onClick={() => {
                     proposeBilateral.reset();
-                    proposeBilateral.mutate({
-                      fromNationId: nation.id,
-                      stance: "allied",
-                      toNationId: other.id,
-                    });
+                    proposeBilateral.mutate(
+                      {
+                        fromNationId: nation.id,
+                        stance: "allied",
+                        toNationId: other.id,
+                      },
+                      {
+                        onError: notifyStanceError,
+                        onSuccess: notifyStanceSuccess,
+                      },
+                    );
                   }}
                 >
                   Propose alliance
@@ -195,11 +210,17 @@ export function NationRelationshipRow({
                   disabled={anyPending}
                   onClick={() => {
                     proposeBilateral.reset();
-                    proposeBilateral.mutate({
-                      fromNationId: nation.id,
-                      stance: "non_aggression_pact",
-                      toNationId: other.id,
-                    });
+                    proposeBilateral.mutate(
+                      {
+                        fromNationId: nation.id,
+                        stance: "non_aggression_pact",
+                        toNationId: other.id,
+                      },
+                      {
+                        onError: notifyStanceError,
+                        onSuccess: notifyStanceSuccess,
+                      },
+                    );
                   }}
                 >
                   Propose non-aggression pact
@@ -214,10 +235,16 @@ export function NationRelationshipRow({
                 disabled={anyPending}
                 onClick={() => {
                   withdrawFromBilateral.reset();
-                  withdrawFromBilateral.mutate({
-                    fromNationId: nation.id,
-                    toNationId: other.id,
-                  });
+                  withdrawFromBilateral.mutate(
+                    {
+                      fromNationId: nation.id,
+                      toNationId: other.id,
+                    },
+                    {
+                      onError: notifyStanceError,
+                      onSuccess: notifyStanceSuccess,
+                    },
+                  );
                 }}
               >
                 Withdraw agreement
@@ -231,11 +258,17 @@ export function NationRelationshipRow({
                   disabled={anyPending}
                   onClick={() => {
                     respondToBilateral.reset();
-                    respondToBilateral.mutate({
-                      fromNationId: other.id,
-                      response: "accepted",
-                      toNationId: nation.id,
-                    });
+                    respondToBilateral.mutate(
+                      {
+                        fromNationId: other.id,
+                        response: "accepted",
+                        toNationId: nation.id,
+                      },
+                      {
+                        onError: notifyStanceError,
+                        onSuccess: notifyStanceSuccess,
+                      },
+                    );
                   }}
                 >
                   Accept proposal
@@ -247,11 +280,17 @@ export function NationRelationshipRow({
                   disabled={anyPending}
                   onClick={() => {
                     respondToBilateral.reset();
-                    respondToBilateral.mutate({
-                      fromNationId: other.id,
-                      response: "declined",
-                      toNationId: nation.id,
-                    });
+                    respondToBilateral.mutate(
+                      {
+                        fromNationId: other.id,
+                        response: "declined",
+                        toNationId: nation.id,
+                      },
+                      {
+                        onError: notifyStanceError,
+                        onSuccess: notifyStanceSuccess,
+                      },
+                    );
                   }}
                 >
                   Decline proposal
@@ -259,14 +298,6 @@ export function NationRelationshipRow({
               </>
             ) : null}
           </div>
-          {firstError !== null ? (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
-            >
-              {getRelationshipMutationErrorDescription(firstError)}
-            </p>
-          ) : null}
         </div>
       ) : null}
       {pendingUnilateralStance !== null ? (
@@ -288,9 +319,11 @@ export function NationRelationshipRow({
                 toNationId: other.id,
               },
               {
+                onError: notifyStanceError,
                 onSettled: () => {
                   setPendingUnilateralStance(null);
                 },
+                onSuccess: notifyStanceSuccess,
               },
             );
           }}

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorldCalendarConfig } from "@/features/calendar";
@@ -14,6 +15,19 @@ const { requireSupabaseClient } = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -45,6 +59,8 @@ const worldId = "00000000-0000-0000-0000-000000000101";
 describe("NationListPage", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+    toastError.mockReset();
+    toastSuccess.mockReset();
   });
 
   it("shows a back link to the world shell", async () => {
@@ -198,6 +214,81 @@ describe("NationListPage", () => {
     expect(screen.queryByRole("button", { name: /Create nation/i })).toBeNull();
   });
 
+  it("emits a success toast and closes the form after creating a nation", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationInsertResult: {
+          data: createNationRow({ name: "Highmark" }),
+          error: null,
+        },
+        nationRows: [],
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Create nation/i }),
+    );
+
+    const form = await screen.findByRole("form", { name: "Create nation" });
+    await userEvent.type(
+      within(form).getByRole("textbox", { name: "Name" }),
+      "Highmark",
+    );
+    await userEvent.click(
+      within(form).getByRole("button", { name: /Create nation/i }),
+    );
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        'Nation "Highmark" created.',
+        undefined,
+      );
+    });
+    expect(screen.queryByRole("form", { name: "Create nation" })).toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("emits an error toast when nation creation fails", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationInsertResult: {
+          data: null,
+          error: { message: "duplicate nation name" },
+        },
+        nationRows: [],
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Create nation/i }),
+    );
+
+    const form = await screen.findByRole("form", { name: "Create nation" });
+    await userEvent.type(
+      within(form).getByRole("textbox", { name: "Name" }),
+      "Highmark",
+    );
+    await userEvent.click(
+      within(form).getByRole("button", { name: /Create nation/i }),
+    );
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith(
+        expect.stringContaining("duplicate nation name"),
+      );
+    });
+    expect(screen.getByRole("form", { name: "Create nation" })).toBeDefined();
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
   it("renders an access-denied state when the world is not visible", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -260,13 +351,20 @@ type TestUser = {
   readonly username: string;
 };
 
+type NationInsertResult = {
+  readonly data: TestNationRow | null;
+  readonly error: { readonly message: string } | null;
+};
+
 function createClient({
   adminRows = [],
+  nationInsertResult,
   nationRows,
   session,
   worldRows,
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly nationInsertResult?: NationInsertResult;
   readonly nationRows: readonly TestNationRow[];
   readonly session: { readonly user: { readonly id: string } };
   readonly worldRows: readonly TestWorldRow[];
@@ -289,7 +387,7 @@ function createClient({
         return createWorldsQueryBuilder(worldRows);
       }
       if (table === "nations") {
-        return createNationsQueryBuilder(nationRows);
+        return createNationsQueryBuilder(nationRows, nationInsertResult);
       }
       if (table === "citizens") {
         const b: Record<string, unknown> = {};
@@ -402,12 +500,24 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
   };
 }
 
-function createNationsQueryBuilder(rows: readonly TestNationRow[]): unknown {
-  const builder = {
-    eq: vi.fn(() => builder),
-    order: vi.fn(() => builder),
+function createNationsQueryBuilder(
+  rows: readonly TestNationRow[],
+  insertResult?: NationInsertResult,
+): unknown {
+  const listBuilder = {
+    eq: vi.fn(() => listBuilder),
+    order: vi.fn(() => listBuilder),
     returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-    select: vi.fn(() => builder),
+    select: vi.fn(() => listBuilder),
   };
-  return builder;
+  return {
+    insert: vi.fn(() => ({
+      select: vi.fn(() => ({
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue(insertResult ?? { data: null, error: null }),
+      })),
+    })),
+    select: vi.fn(() => listBuilder),
+  };
 }

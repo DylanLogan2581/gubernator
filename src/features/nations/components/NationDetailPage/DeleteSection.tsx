@@ -2,8 +2,10 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import { deleteNationMutationOptions } from "../../mutations/nationsMutations";
 
@@ -29,8 +31,12 @@ export function NationDeleteSection({
     deleteMutation.mutate(
       { nationId: nation.id, worldId: nation.worldId },
       {
+        onError: (error) => {
+          toast.error(getMutationErrorDescription(error));
+        },
         onSuccess: () => {
           setIsConfirming(false);
+          notifyMutationSuccess("Nation deleted.");
           void navigate({
             params: { worldId: nation.worldId },
             replace: true,
@@ -75,14 +81,6 @@ export function NationDeleteSection({
           }}
           onConfirm={handleConfirm}
         />
-      ) : null}
-      {deleteMutation.isError ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getMutationErrorDescription(deleteMutation.error)}
-        </p>
       ) : null}
     </section>
   );
