@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
@@ -15,6 +15,19 @@ const { requireSupabaseClient } = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
 }));
 
 const { navigateMock } = vi.hoisted(() => ({
@@ -51,6 +64,8 @@ describe("NationDetailPage", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     navigateMock.mockReset();
+    toastError.mockReset();
+    toastSuccess.mockReset();
   });
 
   it("renders nation name, description, and a back link to the nations list", async () => {
@@ -506,6 +521,12 @@ describe("NationDetailPage", () => {
       pending_status: null,
       to_nation_id: otherNationId,
     });
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Stance toward Veilreach updated.",
+        undefined,
+      );
+    });
   });
 
   it("renders a withdraw control when the relationship is allied", async () => {
@@ -619,6 +640,44 @@ describe("NationDetailPage", () => {
       from_nation_id: nationId,
       to_nation_id: otherNationId,
     });
+  });
+
+  it("emits a success toast and navigates after a nation is deleted", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationDeleteResult: {
+          data: { id: nationId, world_id: worldId },
+          error: null,
+        },
+        nationRows: [createNationRow({ id: nationId, name: "Highmark" })],
+        session: { user: { id: "user-1" } },
+        settlementRows: [],
+        worldRows: [createWorldRow({ owner_id: "user-1" })],
+      }),
+    );
+
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Delete nation/ }),
+    );
+
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: /Delete nation/ }),
+    );
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith({
+        params: { worldId },
+        replace: true,
+        to: "/worlds/$worldId/nations",
+      });
+    });
+    expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+      "Nation deleted.",
+      undefined,
+    );
   });
 
   it("does not fire the mutation when a bilateral override is cancelled", async () => {
@@ -743,10 +802,19 @@ type UpdateMock = Mock<
   (values: Record<string, unknown>) => RelationshipMutationResult
 >;
 
+type NationDeleteResult = {
+  readonly data: {
+    readonly id: string;
+    readonly world_id: string;
+  } | null;
+  readonly error: { readonly message: string } | null;
+};
+
 function createClient({
   adminRows = [],
   incomingRelationships = [],
   isSuperAdmin = false,
+  nationDeleteResult,
   nationRows,
   outgoingRelationships = [],
   relationshipsPendingStatusResult,
@@ -759,6 +827,7 @@ function createClient({
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly incomingRelationships?: readonly TestRelationshipRow[];
   readonly isSuperAdmin?: boolean;
+  readonly nationDeleteResult?: NationDeleteResult;
   readonly nationRows: readonly TestNationRow[];
   readonly outgoingRelationships?: readonly TestRelationshipRow[];
   readonly relationshipsPendingStatusResult?: {
@@ -791,7 +860,7 @@ function createClient({
         return createWorldsQueryBuilder(worldRows);
       }
       if (table === "nations") {
-        return createNationsQueryBuilder(nationRows);
+        return createNationsQueryBuilder(nationRows, nationDeleteResult);
       }
       if (table === "nation_relationships") {
         return createNationRelationshipsQueryBuilder({
@@ -945,13 +1014,25 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
   };
 }
 
-function createNationsQueryBuilder(rows: readonly TestNationRow[]): unknown {
+function createNationsQueryBuilder(
+  rows: readonly TestNationRow[],
+  deleteResult?: NationDeleteResult,
+): unknown {
   const listBuilder = {
     eq: vi.fn(() => listBuilder),
     order: vi.fn(() => listBuilder),
     returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
   };
   return {
+    delete: vi.fn(() => {
+      const chain: Record<string, unknown> = {};
+      chain.eq = vi.fn(() => chain);
+      chain.select = vi.fn(() => chain);
+      chain.maybeSingle = vi
+        .fn()
+        .mockResolvedValue(deleteResult ?? { data: null, error: null });
+      return chain;
+    }),
     select: vi.fn(() => ({
       ...listBuilder,
       eq: vi.fn((column: string, value: string) => {

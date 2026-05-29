@@ -7,6 +7,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, LockKeyhole, Plus, X } from "lucide-react";
 import { useState, type FormEvent, type JSX, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -23,6 +24,7 @@ import {
 import type { WorldRouteAccess } from "@/features/worlds";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
   createNationMutationOptions,
@@ -261,7 +263,11 @@ function CreateNationSection({
         worldId,
       },
       {
-        onSuccess: () => {
+        onError: (error) => {
+          toast.error(getCreateErrorDescription(error));
+        },
+        onSuccess: (nation) => {
+          notifyMutationSuccess(`Nation "${nation.name}" created.`);
           closeForm();
         },
       },
@@ -334,14 +340,6 @@ function CreateNationSection({
           onChange={(event) => setDescription(event.currentTarget.value)}
         />
       </label>
-      {createMutation.isError ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getCreateErrorDescription(createMutation.error)}
-        </p>
-      ) : null}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={createMutation.isPending}>
           <Plus aria-hidden="true" />

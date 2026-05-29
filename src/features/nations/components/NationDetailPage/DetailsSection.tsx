@@ -1,6 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,9 @@ export function NationDetailsSection({
         worldId: nation.worldId,
       },
       {
+        onError: (error) => {
+          toast.error(getMutationErrorDescription(error));
+        },
         onSuccess: () => {
           setIsEditing(false);
         },
@@ -159,14 +163,6 @@ export function NationDetailsSection({
           onChange={(event) => setDescription(event.currentTarget.value)}
         />
       </label>
-      {updateMutation.isError ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getMutationErrorDescription(updateMutation.error)}
-        </p>
-      ) : null}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />
