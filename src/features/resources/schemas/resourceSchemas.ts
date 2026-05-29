@@ -1,0 +1,76 @@
+import { z } from "zod";
+
+import { resourceInputLimits } from "@/lib/inputLimits";
+
+const resourceIdSchema = z.guid("Resource id must be a valid UUID.");
+const worldIdSchema = z.guid("World id must be a valid UUID.");
+
+const resourceNameSchema = z
+  .string()
+  .max(resourceInputLimits.resourceNameMax, "Resource name is too long.")
+  .refine(
+    (value): boolean => value.trim().length > 0,
+    "Resource name is required.",
+  );
+
+const resourceSlugSchema = z
+  .string()
+  .max(resourceInputLimits.resourceSlugMax, "Resource slug is too long.")
+  .refine(
+    (value): boolean => value.trim().length > 0,
+    "Resource slug is required.",
+  );
+
+const baseStockpileCapSchema = z
+  .string()
+  .regex(
+    /^\d+(\.\d{1,4})?$/,
+    "Base stockpile cap must be a non-negative decimal with up to four decimal places.",
+  )
+  .transform((value): number => parseFloat(value));
+
+export const createResourceInputSchema = z.strictObject({
+  baseStockpileCap: baseStockpileCapSchema.optional(),
+  name: resourceNameSchema,
+  slug: resourceSlugSchema,
+  worldId: worldIdSchema,
+});
+
+export const updateResourceInputSchema = z
+  .strictObject({
+    baseStockpileCap: baseStockpileCapSchema.optional(),
+    name: resourceNameSchema.optional(),
+    resourceId: resourceIdSchema,
+    slug: resourceSlugSchema.optional(),
+    worldId: worldIdSchema,
+  })
+  .superRefine((value, ctx): void => {
+    if (
+      value.name === undefined &&
+      value.slug === undefined &&
+      value.baseStockpileCap === undefined
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "At least one of name, slug, or baseStockpileCap must be provided.",
+        path: ["name"],
+      });
+    }
+  });
+
+export const softDeleteResourceInputSchema = z.strictObject({
+  resourceId: resourceIdSchema,
+  worldId: worldIdSchema,
+});
+
+export type CreateResourceInput = z.input<typeof createResourceInputSchema>;
+export type CreateResourceValues = z.output<typeof createResourceInputSchema>;
+export type UpdateResourceInput = z.input<typeof updateResourceInputSchema>;
+export type UpdateResourceValues = z.output<typeof updateResourceInputSchema>;
+export type SoftDeleteResourceInput = z.input<
+  typeof softDeleteResourceInputSchema
+>;
+export type SoftDeleteResourceValues = z.output<
+  typeof softDeleteResourceInputSchema
+>;
