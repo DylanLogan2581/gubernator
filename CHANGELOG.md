@@ -1,5 +1,73 @@
 # Changelog
 
+## [0.4.0](https://github.com/DylanLogan2581/gubernator/compare/v0.3.0...v0.4.0) (2026-05-29)
+
+### Bug Fixes
+
+- **auth:** add users_select_world_admin rls policy for user pickers ([b1dbf9c](https://github.com/DylanLogan2581/gubernator/commit/b1dbf9c4666b40690ec38cc642e2cfffcb9a94bf)), closes [#187](https://github.com/DylanLogan2581/gubernator/issues/187)
+- **citizens:** accurate message for citizen with no settlement ([9a2e1e6](https://github.com/DylanLogan2581/gubernator/commit/9a2e1e6acc0603d27187f332a3c1685780b1f69f)), closes [#194](https://github.com/DylanLogan2581/gubernator/issues/194)
+- **citizens:** confirm before unlinking a pc with a manager role ([888337e](https://github.com/DylanLogan2581/gubernator/commit/888337edd40ef99eedbad00026553a51172cf44d)), closes [#186](https://github.com/DylanLogan2581/gubernator/issues/186)
+- **citizens:** enforce max-length on npc text columns at db and in zod ([ae6fd60](https://github.com/DylanLogan2581/gubernator/commit/ae6fd6032427caf9770c22a3cac733cb34a782cd)), closes [#226](https://github.com/DylanLogan2581/gubernator/issues/226)
+- **citizens:** filter dead pcs from user_has_player_character_in_world ([522c514](https://github.com/DylanLogan2581/gubernator/commit/522c5146e9229a68254fde4afdd9d483981a02b4)), closes [#188](https://github.com/DylanLogan2581/gubernator/issues/188)
+- **citizens:** reject cross-world parent pointers via trigger ([d5acb2d](https://github.com/DylanLogan2581/gubernator/commit/d5acb2de688616f20a784bc9747e151d79371c22)), closes [#191](https://github.com/DylanLogan2581/gubernator/issues/191)
+- **citizens:** reject ended turn before partnership formed turn ([0e6a66b](https://github.com/DylanLogan2581/gubernator/commit/0e6a66ba633e1f2f8094c5fd440066534bf499ac)), closes [#185](https://github.com/DylanLogan2581/gubernator/issues/185)
+- **citizens:** replace uuid input with user picker in link editor ([c1a0d2f](https://github.com/DylanLogan2581/gubernator/commit/c1a0d2fc01598645a8b80d069567038d7a58e728)), closes [#183](https://github.com/DylanLogan2581/gubernator/issues/183)
+- **citizens:** restrict player character self-update to safe columns ([80134f9](https://github.com/DylanLogan2581/gubernator/commit/80134f9611f13aad59ede83fafb32ade93e78ea2)), closes [#170](https://github.com/DylanLogan2581/gubernator/issues/170)
+- **citizens:** tailor redirect copy for plain player characters ([5ea6f9d](https://github.com/DylanLogan2581/gubernator/commit/5ea6f9d450d26d0b3592c884bcafe096fd4ccbc3)), closes [#175](https://github.com/DylanLogan2581/gubernator/issues/175)
+- **nations:** block bilateral proposal when status is already accepted ([ff45009](https://github.com/DylanLogan2581/gubernator/commit/ff450096c45731af464453198ff545a983f81bd4)), closes [#195](https://github.com/DylanLogan2581/gubernator/issues/195)
+- **nations:** link nation list rows to nation detail page ([79d9f00](https://github.com/DylanLogan2581/gubernator/commit/79d9f00919511851b6a3e09ea9e8807ac43c25e9)), closes [#173](https://github.com/DylanLogan2581/gubernator/issues/173)
+- **nations:** mirror bilateral stance on accept and withdraw ([0debca3](https://github.com/DylanLogan2581/gubernator/commit/0debca3a8a5001736f4c30918b7b3af27b668d8c)), closes [#171](https://github.com/DylanLogan2581/gubernator/issues/171)
+- **nations:** missing outlet ([d6045ee](https://github.com/DylanLogan2581/gubernator/commit/d6045eed8f26429c803299cdb8db11dc36dfcea5))
+- **nations:** reject cross-world nation_relationships via trigger ([567ccc0](https://github.com/DylanLogan2581/gubernator/commit/567ccc05229e4ec9fcb4f4c289dccc8c006b275a)), closes [#190](https://github.com/DylanLogan2581/gubernator/issues/190)
+- **nations:** require confirmation when overriding a bilateral stance ([c506dea](https://github.com/DylanLogan2581/gubernator/commit/c506deab06cd93462430a25b99a85dcb485fdfbf)), closes [#177](https://github.com/DylanLogan2581/gubernator/issues/177)
+- **permissions:** remove redundant aria-label from avatar fallback span ([e6aa386](https://github.com/DylanLogan2581/gubernator/commit/e6aa38647796d26891bde82367a0df441c870ad9)), closes [#182](https://github.com/DylanLogan2581/gubernator/issues/182)
+- **repo:** clean up repo mistakes ([a66c5f0](https://github.com/DylanLogan2581/gubernator/commit/a66c5f061c8d4b11107f321f96f952e87dd05539))
+- **settlements:** grant nation and settlement managers edit access ([3fbe6b4](https://github.com/DylanLogan2581/gubernator/commit/3fbe6b47f6e85603d1ed96c39544d9c228787d2a)), closes [#172](https://github.com/DylanLogan2581/gubernator/issues/172)
+- **supabase:** configure end-turn-basic origin allowlist for local dev ([dca324e](https://github.com/DylanLogan2581/gubernator/commit/dca324e6a48ced5cc88503d9848c9c8ef57eae49))
+- **supabase:** revoke direct partnership writes to enforce audit trail ([a01004f](https://github.com/DylanLogan2581/gubernator/commit/a01004f5279f2317783d4ed1095db5b961ec1cac)), closes [#181](https://github.com/DylanLogan2581/gubernator/issues/181)
+- **turns:** allow pc holders to read turn history in private worlds ([1f56a4a](https://github.com/DylanLogan2581/gubernator/commit/1f56a4ae65c7ca5f752ad131c773bc115369bf22)), closes [#189](https://github.com/DylanLogan2581/gubernator/issues/189)
+- **turns:** fold admin check into for update lock in turn advance ([608d7b7](https://github.com/DylanLogan2581/gubernator/commit/608d7b7685b60c9994349823afca3c230661950f)), closes [#192](https://github.com/DylanLogan2581/gubernator/issues/192)
+- **worlds:** enforce npc flavor pool and entry size limits ([728178f](https://github.com/DylanLogan2581/gubernator/commit/728178ff99b7a98225aebd765c3b5f5776af40a1)), closes [#227](https://github.com/DylanLogan2581/gubernator/issues/227)
+
+### Features
+
+- **app:** add active character switcher ([510c6d2](https://github.com/DylanLogan2581/gubernator/commit/510c6d21a357026cdc4b554cde3e03929ecfd1e5)), closes [#157](https://github.com/DylanLogan2581/gubernator/issues/157)
+- **app:** install sonner and add notify helpers ([103e59a](https://github.com/DylanLogan2581/gubernator/commit/103e59ac8831c9ae91947b022cc219d20ce6d49f)), closes [#242](https://github.com/DylanLogan2581/gubernator/issues/242)
+- **citizens:** add active character table ([840dde5](https://github.com/DylanLogan2581/gubernator/commit/840dde54a5e09ca30d4f0e5791cfba557aa3b031)), closes [#135](https://github.com/DylanLogan2581/gubernator/issues/135)
+- **citizens:** add assignments queries ([9093c13](https://github.com/DylanLogan2581/gubernator/commit/9093c13d7f4fbef9f4b190708c23f29a8dd1fcdd)), closes [#144](https://github.com/DylanLogan2581/gubernator/issues/144)
+- **citizens:** add character link and role mutations ([58d740c](https://github.com/DylanLogan2581/gubernator/commit/58d740ca428e0d0f78410aebfb6f414d92de3ab5)), closes [#142](https://github.com/DylanLogan2581/gubernator/issues/142)
+- **citizens:** add citizen assignments schema ([cdd0f6a](https://github.com/DylanLogan2581/gubernator/commit/cdd0f6a09cd09f07d1beb93e55622c8f14e01161)), closes [#132](https://github.com/DylanLogan2581/gubernator/issues/132)
+- **citizens:** add citizen creation flows ([b1c1f6f](https://github.com/DylanLogan2581/gubernator/commit/b1c1f6ffb3c34eee5fac704045df87b29c8d7bd7)), closes [#152](https://github.com/DylanLogan2581/gubernator/issues/152)
+- **citizens:** add citizen detail route ([1c1f7ab](https://github.com/DylanLogan2581/gubernator/commit/1c1f7ab915b35b704d1f5701a5d8513d39a9e9db)), closes [#151](https://github.com/DylanLogan2581/gubernator/issues/151)
+- **citizens:** add citizens data layer ([214828a](https://github.com/DylanLogan2581/gubernator/commit/214828ab543d09f72d23bf4cfbdb092d8228e25b)), closes [#141](https://github.com/DylanLogan2581/gubernator/issues/141)
+- **citizens:** add citizens panel ([51e9e89](https://github.com/DylanLogan2581/gubernator/commit/51e9e8956b137774bff1d24a5449f8a36d99d39a)), closes [#150](https://github.com/DylanLogan2581/gubernator/issues/150)
+- **citizens:** add citizens schema ([dd2e8ab](https://github.com/DylanLogan2581/gubernator/commit/dd2e8abef42a935b065f64de3bc39dae7b0d6a31)), closes [#131](https://github.com/DylanLogan2581/gubernator/issues/131)
+- **citizens:** add npc flavor generator ([e6e0d12](https://github.com/DylanLogan2581/gubernator/commit/e6e0d1233842142794450195be462549dd2d5224)), closes [#153](https://github.com/DylanLogan2581/gubernator/issues/153)
+- **citizens:** add npc flavor generator and per-world pool storage ([a4de362](https://github.com/DylanLogan2581/gubernator/commit/a4de3625f3ae8cb06ab16dce6333b8e630c8e7c2)), closes [#179](https://github.com/DylanLogan2581/gubernator/issues/179)
+- **citizens:** add partnership history panel ([a1e2d58](https://github.com/DylanLogan2581/gubernator/commit/a1e2d587cbc9d3a31dda988c6bf766311b3a879d)), closes [#154](https://github.com/DylanLogan2581/gubernator/issues/154)
+- **citizens:** add partnerships data layer ([5cc37f5](https://github.com/DylanLogan2581/gubernator/commit/5cc37f5586e9d5d371e0df94773e3e2ee135dd5b)), closes [#143](https://github.com/DylanLogan2581/gubernator/issues/143)
+- **citizens:** add partnerships schema ([e8df35f](https://github.com/DylanLogan2581/gubernator/commit/e8df35f20ca4da45fa7380c93332f4a6bace9399)), closes [#133](https://github.com/DylanLogan2581/gubernator/issues/133)
+- **nations:** add nation detail route ([91ddb49](https://github.com/DylanLogan2581/gubernator/commit/91ddb49fe517e64ab75a338afb0ea6aea9cb904a)), closes [#147](https://github.com/DylanLogan2581/gubernator/issues/147)
+- **nations:** add nation relationships schema ([e341d53](https://github.com/DylanLogan2581/gubernator/commit/e341d537c94311dfac53075983eef1effc200012)), closes [#134](https://github.com/DylanLogan2581/gubernator/issues/134)
+- **nations:** add nations data layer ([de0c2a7](https://github.com/DylanLogan2581/gubernator/commit/de0c2a76e15e1b54e140b0155d2d92c738abfd47)), closes [#138](https://github.com/DylanLogan2581/gubernator/issues/138)
+- **nations:** add nations list route ([825b7af](https://github.com/DylanLogan2581/gubernator/commit/825b7afc3469e9679701f557728581539855edde)), closes [#146](https://github.com/DylanLogan2581/gubernator/issues/146)
+- **nations:** add relationships data layer ([642f00c](https://github.com/DylanLogan2581/gubernator/commit/642f00c6f00af2929968888300f45271dbc1b4b0)), closes [#139](https://github.com/DylanLogan2581/gubernator/issues/139)
+- **nations:** add relationships panel ([224f1c7](https://github.com/DylanLogan2581/gubernator/commit/224f1c78051b64dc067cdfa98cc342d86f4e06cc)), closes [#148](https://github.com/DylanLogan2581/gubernator/issues/148)
+- **permissions:** add active character context ([a6f5ff2](https://github.com/DylanLogan2581/gubernator/commit/a6f5ff2f169eef520ab1c294d85f177cb2bb0c99)), closes [#145](https://github.com/DylanLogan2581/gubernator/issues/145)
+- **permissions:** add role assignment ui ([a5e10e1](https://github.com/DylanLogan2581/gubernator/commit/a5e10e137da84acab226e369a998c74d9e82955a)), closes [#155](https://github.com/DylanLogan2581/gubernator/issues/155)
+- **permissions:** extend rls permission helpers ([d52638c](https://github.com/DylanLogan2581/gubernator/commit/d52638c8054aa4b4234f78926599f864e721cc8a)), closes [#137](https://github.com/DylanLogan2581/gubernator/issues/137)
+- **permissions:** link active character indicator to citizen detail ([9d4c2e8](https://github.com/DylanLogan2581/gubernator/commit/9d4c2e8c3ed22fdc14d520e2301265ecf2e3c5fc)), closes [#176](https://github.com/DylanLogan2581/gubernator/issues/176)
+- **settlements:** add settlement detail route ([882dc95](https://github.com/DylanLogan2581/gubernator/commit/882dc958016dbb43fea22cf5cb50e926a7fce519)), closes [#149](https://github.com/DylanLogan2581/gubernator/issues/149)
+- **settlements:** add settlements crud ([9d679a1](https://github.com/DylanLogan2581/gubernator/commit/9d679a1b3c3625062bb4bb4f464bd2488b413d42)), closes [#140](https://github.com/DylanLogan2581/gubernator/issues/140)
+- **settlements:** wire citizen fk on settlements ([b99be91](https://github.com/DylanLogan2581/gubernator/commit/b99be913f89357fc7350dff8c350d8727d97a3b4)), closes [#136](https://github.com/DylanLogan2581/gubernator/issues/136)
+- **worlds:** add world entry character selection ([d0f3759](https://github.com/DylanLogan2581/gubernator/commit/d0f3759a98f09fd22e59667e9a25e35a950c4c17)), closes [#156](https://github.com/DylanLogan2581/gubernator/issues/156)
+- **worlds:** extend rls for player-character world access path ([06737a9](https://github.com/DylanLogan2581/gubernator/commit/06737a9f223a748107215d243b8256ce81472aa3)), closes [#174](https://github.com/DylanLogan2581/gubernator/issues/174)
+
+### Performance Improvements
+
+- **citizens:** add citizen_visible_to_current_user rls helper ([28981c5](https://github.com/DylanLogan2581/gubernator/commit/28981c539a34abf53a007c5e07b43a44926cb082)), closes [#193](https://github.com/DylanLogan2581/gubernator/issues/193)
+- **supabase:** add indexes on parent and pending citizen fk columns ([cb797d8](https://github.com/DylanLogan2581/gubernator/commit/cb797d881902a1b49636b6da280286510c4c344f)), closes [#229](https://github.com/DylanLogan2581/gubernator/issues/229)
+
 ## [0.3.0](https://github.com/DylanLogan2581/gubernator/compare/v0.2.0...v0.3.0) (2026-05-22)
 
 ### Bug Fixes
