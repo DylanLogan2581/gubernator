@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -54,36 +55,17 @@ type ReassignPartnerMutationOptions = UseMutationOptions<
   ReassignPartnerInput
 >;
 
-export type PartnershipMutationIssue = {
-  readonly message: string;
-  readonly path: readonly PropertyKey[];
-};
+export type PartnershipMutationIssue = MutationIssue;
 
-export class PartnershipMutationError extends Error {
-  readonly code: PartnershipMutationErrorCode;
-  readonly issues: readonly PartnershipMutationIssue[];
-
-  constructor({
-    code,
-    issues = [],
-    message,
-  }: {
-    readonly code: PartnershipMutationErrorCode;
-    readonly issues?: readonly PartnershipMutationIssue[];
-    readonly message: string;
-  }) {
-    super(message);
-    this.name = "PartnershipMutationError";
-    this.code = code;
-    this.issues = issues;
-  }
-}
-
-export function isPartnershipMutationError(
-  error: unknown,
-): error is PartnershipMutationError {
-  return error instanceof PartnershipMutationError;
-}
+export const {
+  ErrorClass: PartnershipMutationError,
+  isError: isPartnershipMutationError,
+} = createMutationError<PartnershipMutationErrorCode>(
+  "PartnershipMutationError",
+);
+export type PartnershipMutationError = InstanceType<
+  typeof PartnershipMutationError
+>;
 
 export function createPartnershipMutationOptions({
   client = requireSupabaseClient(),

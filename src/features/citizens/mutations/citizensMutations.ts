@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -66,36 +67,13 @@ type ReviveCitizenMutationOptions = UseMutationOptions<
   ReviveCitizenInput
 >;
 
-export type CitizenMutationIssue = {
-  readonly message: string;
-  readonly path: readonly PropertyKey[];
-};
+export type CitizenMutationIssue = MutationIssue;
 
-export class CitizenMutationError extends Error {
-  readonly code: CitizenMutationErrorCode;
-  readonly issues: readonly CitizenMutationIssue[];
-
-  constructor({
-    code,
-    issues = [],
-    message,
-  }: {
-    readonly code: CitizenMutationErrorCode;
-    readonly issues?: readonly CitizenMutationIssue[];
-    readonly message: string;
-  }) {
-    super(message);
-    this.name = "CitizenMutationError";
-    this.code = code;
-    this.issues = issues;
-  }
-}
-
-export function isCitizenMutationError(
-  error: unknown,
-): error is CitizenMutationError {
-  return error instanceof CitizenMutationError;
-}
+export const {
+  ErrorClass: CitizenMutationError,
+  isError: isCitizenMutationError,
+} = createMutationError<CitizenMutationErrorCode>("CitizenMutationError");
+export type CitizenMutationError = InstanceType<typeof CitizenMutationError>;
 
 const CITIZEN_SELECT =
   "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,created_at,updated_at";
