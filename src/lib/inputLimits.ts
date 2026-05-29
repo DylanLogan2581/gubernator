@@ -14,6 +14,8 @@ export const textInputLimits = {
   settlementNameMax: 64,
   settlementDescriptionMax: 1000,
   citizenNameMax: 64,
+  citizenNpcTextMax: 1000,
+  citizenNpcTraitMax: 200,
 } as const;
 
 export const calendarInputLimits = {

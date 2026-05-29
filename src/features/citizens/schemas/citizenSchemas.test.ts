@@ -3,12 +3,76 @@ import { describe, expect, it } from "vitest";
 import {
   assignCitizenRoleInputSchema,
   citizenRoleAssignmentSchema,
+  markCitizenDeadInputSchema,
+  updateCitizenNpcFieldsInputSchema,
 } from "./citizenSchemas";
 
 const CITIZEN_ID = "11111111-1111-1111-1111-111111111111";
 const WORLD_ID = "22222222-2222-2222-2222-222222222222";
 const NATION_ID = "33333333-3333-3333-3333-333333333333";
 const SETTLEMENT_ID = "44444444-4444-4444-4444-444444444444";
+
+describe("citizen NPC text field length limits", () => {
+  it("accepts personalityText at 1000 chars", () => {
+    const result = updateCitizenNpcFieldsInputSchema.safeParse({
+      citizenId: CITIZEN_ID,
+      worldId: WORLD_ID,
+      personalityText: "x".repeat(1000),
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects personalityText over 1000 chars", () => {
+    const result = updateCitizenNpcFieldsInputSchema.safeParse({
+      citizenId: CITIZEN_ID,
+      worldId: WORLD_ID,
+      personalityText: "x".repeat(1001),
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts npcTrait1 at 200 chars", () => {
+    const result = updateCitizenNpcFieldsInputSchema.safeParse({
+      citizenId: CITIZEN_ID,
+      worldId: WORLD_ID,
+      npcTrait1: "x".repeat(200),
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects npcTrait1 over 200 chars", () => {
+    const result = updateCitizenNpcFieldsInputSchema.safeParse({
+      citizenId: CITIZEN_ID,
+      worldId: WORLD_ID,
+      npcTrait1: "x".repeat(201),
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts deathCause at 1000 chars", () => {
+    const result = markCitizenDeadInputSchema.safeParse({
+      citizenId: CITIZEN_ID,
+      worldId: WORLD_ID,
+      deathCause: "x".repeat(1000),
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects deathCause over 1000 chars", () => {
+    const result = markCitizenDeadInputSchema.safeParse({
+      citizenId: CITIZEN_ID,
+      worldId: WORLD_ID,
+      deathCause: "x".repeat(1001),
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
 
 describe("assignCitizenRoleInputSchema", () => {
   it("accepts nation_manager with a roleNationId and null roleSettlementId", () => {
