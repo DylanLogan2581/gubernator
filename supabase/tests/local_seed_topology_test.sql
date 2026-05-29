@@ -161,6 +161,18 @@ where
   user_id = '00000000-0000-0000-0000-000000000003'
   and world_id = '00000000-0000-0000-0000-000000000101';
 
+-- Worlds 102/103: remove any citizens created locally that are not part of the
+-- canonical seed, so the minimal-topology count assertions stay hermetic.
+delete from public.citizens
+where
+  world_id = '00000000-0000-0000-0000-000000000102'
+  and id <> '00000000-0000-0000-0000-000000000451';
+
+delete from public.citizens
+where
+  world_id = '00000000-0000-0000-0000-000000000103'
+  and id <> '00000000-0000-0000-0000-000000000461';
+
 select
   plan (37);
 
