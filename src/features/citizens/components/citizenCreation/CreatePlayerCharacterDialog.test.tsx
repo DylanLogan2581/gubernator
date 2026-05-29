@@ -17,6 +17,18 @@ vi.mock("../../queries/citizenKinshipQueries", () => ({
   citizensHaveCloseKinship,
 }));
 
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
+}));
+
 const WORLD_ID = "00000000-0000-0000-0000-000000000010";
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000030";
 const CITIZEN_A_ID = "11111111-1111-1111-1111-111111111111";
@@ -163,6 +175,8 @@ describe("CreatePlayerCharacterDialog", () => {
     citizensHaveCloseKinship.mockReset();
     onClose.mockReset();
     onCreated.mockReset();
+    toastError.mockReset();
+    toastSuccess.mockReset();
   });
 
   function renderDialog(
@@ -288,7 +302,7 @@ describe("CreatePlayerCharacterDialog", () => {
     expect(rpcMock).not.toHaveBeenCalled();
   });
 
-  it("displays the mutation error when the creation RPC fails", async () => {
+  it("emits an error toast when the creation RPC fails", async () => {
     rpcMock.mockReturnValue({
       maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
     });
@@ -307,10 +321,14 @@ describe("CreatePlayerCharacterDialog", () => {
       screen.getByRole("button", { name: "Create player character" }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Player character could not be created.",
-    );
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith(
+        expect.stringContaining("Player character could not be created."),
+      );
+    });
+    expect(screen.queryByRole("alert")).toBeNull();
     expect(onClose).not.toHaveBeenCalled();
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("calls the mutation with the correct arguments and closes the dialog on success", async () => {
@@ -348,5 +366,10 @@ describe("CreatePlayerCharacterDialog", () => {
     });
     await waitFor(() => expect(onCreated).toHaveBeenCalledOnce());
     expect(onClose).toHaveBeenCalledOnce();
+    expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+      "Player character created.",
+      undefined,
+    );
+    expect(toastError).not.toHaveBeenCalled();
   });
 });

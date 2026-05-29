@@ -1,6 +1,7 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { availableUsersQueryOptions } from "@/features/auth";
@@ -122,6 +123,9 @@ function CitizenLinkedUserControl({
         worldId: citizen.worldId,
       },
       {
+        onError: (error) => {
+          toast.error(getRoleMutationErrorDescription(error));
+        },
         onSuccess: () => {
           setIsEditing(false);
         },
@@ -135,10 +139,17 @@ function CitizenLinkedUserControl({
       return;
     }
     unlinkMutation.reset();
-    unlinkMutation.mutate({
-      citizenId: citizen.id,
-      worldId: citizen.worldId,
-    });
+    unlinkMutation.mutate(
+      {
+        citizenId: citizen.id,
+        worldId: citizen.worldId,
+      },
+      {
+        onError: (error) => {
+          toast.error(getRoleMutationErrorDescription(error));
+        },
+      },
+    );
   }
 
   function handleUnlinkConfirm(): void {
@@ -146,6 +157,9 @@ function CitizenLinkedUserControl({
     unlinkMutation.mutate(
       { citizenId: citizen.id, worldId: citizen.worldId },
       {
+        onError: (error) => {
+          toast.error(getRoleMutationErrorDescription(error));
+        },
         onSuccess: () => {
           setIsConfirmingUnlink(false);
         },
@@ -154,7 +168,6 @@ function CitizenLinkedUserControl({
   }
 
   const userChoices = usersQuery.data ?? [];
-  const firstError = linkMutation.error ?? unlinkMutation.error ?? null;
 
   function unlinkRoleDescription(): string {
     if (roleScope === "nation") {
@@ -215,7 +228,10 @@ function CitizenLinkedUserControl({
           <label className="grid gap-1 text-sm">
             <span className="text-muted-foreground">User</span>
             {usersQuery.isError ? (
-              <p role="alert" className="text-sm text-destructive">
+              <p
+                role="alert"
+                className="flex h-9 items-center text-sm text-destructive"
+              >
                 Failed to load users. Please try again.
               </p>
             ) : (
@@ -267,14 +283,6 @@ function CitizenLinkedUserControl({
             </Button>
           </div>
         </form>
-      ) : null}
-      {firstError !== null ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getRoleMutationErrorDescription(firstError)}
-        </p>
       ) : null}
       {isConfirmingUnlink ? (
         <UnlinkRoleConfirmDialog

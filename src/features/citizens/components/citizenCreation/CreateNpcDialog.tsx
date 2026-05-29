@@ -1,11 +1,13 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Save, UserPlus, Wand2, X } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
 import { textInputLimits } from "@/lib/inputLimits";
+import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 
 import { createNpcMutationOptions } from "../../mutations/citizensMutations";
@@ -116,7 +118,11 @@ export function CreateNpcDialog({
           worldId,
         },
         {
+          onError: (error) => {
+            toast.error(getCreationErrorDescription(error));
+          },
           onSuccess: (citizen) => {
+            notifyMutationSuccess("NPC created.");
             onCreated(citizen);
             onClose();
           },
@@ -148,12 +154,7 @@ export function CreateNpcDialog({
     runMutation();
   };
 
-  const errorDescription =
-    kinshipError !== undefined
-      ? kinshipError
-      : mutation.isError
-        ? getCreationErrorDescription(mutation.error)
-        : "";
+  const fieldError = kinshipError;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
@@ -311,12 +312,12 @@ export function CreateNpcDialog({
           </label>
         </div>
 
-        {errorDescription === "" ? null : (
+        {fieldError === undefined ? null : (
           <p
             role="alert"
             className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
-            {errorDescription}
+            {fieldError}
           </p>
         )}
 

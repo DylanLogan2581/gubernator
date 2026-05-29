@@ -1,6 +1,7 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Pencil } from "lucide-react";
 import { useState, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
@@ -63,6 +64,9 @@ export function CitizenNpcFlavorSection({
         worldId: citizen.worldId,
       },
       {
+        onError: (error) => {
+          toast.error(getCitizenMutationErrorDescription(error));
+        },
         onSuccess: () => {
           setIsEditing(false);
         },
@@ -99,14 +103,6 @@ export function CitizenNpcFlavorSection({
           onSave={handleSave}
           submitLabel={updateMutation.isPending ? "Saving…" : "Save flavor"}
         />
-        {updateMutation.isError ? (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {getCitizenMutationErrorDescription(updateMutation.error)}
-          </p>
-        ) : null}
       </section>
     );
   }
