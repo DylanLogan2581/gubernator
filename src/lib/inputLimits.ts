@@ -29,6 +29,11 @@ export const calendarInputLimits = {
   startingYearMax: 1_000_000,
 } as const;
 
+export const resourceInputLimits = {
+  resourceNameMax: 64,
+  resourceSlugMax: 64,
+} as const;
+
 export const npcFlavorInputLimits = {
   poolSizeMax: 100,
   poolEntryMax: 200,
