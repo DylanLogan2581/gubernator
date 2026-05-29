@@ -76,6 +76,7 @@ src/
   hooks/
   lib/
   routes/
+  shared/              # cross-runtime primitives — browser app and Edge Functions
   test/
   types/
 
@@ -83,6 +84,13 @@ supabase/
   functions/
   migrations/
 ```
+
+`src/shared/` contains cross-runtime primitives that must run in both the Vite/browser app and
+Supabase Edge Functions (Deno). Files there must use explicit `.ts` extensions in all imports —
+Deno requires them, while Vite resolves them automatically, so missing extensions only surface as
+runtime 503 errors in the edge runtime. Do not use browser-only APIs, Vite-specific code, or the
+`@/` path alias inside `src/shared`; the alias is a Vite convention that the Deno runtime cannot
+resolve without an explicit import map.
 
 ## Placement Rules
 
@@ -117,6 +125,20 @@ supabase/
 - Put zod schemas in `src/features/<feature-name>/schemas`.
 - Put shared domain types in `src/types`.
 - Put feature-only types in `src/features/<feature-name>/types`.
+- A feature `types/` file that re-exports from `src/shared` is an intentional public-surface
+  adapter — it gives the feature a stable `@/features/<feature>/types` entrypoint while the
+  cross-runtime source stays in `src/shared`. Do not collapse the re-export or move the types to
+  `src/types`; the split is load-bearing.
+
+### Shared Cross-Runtime Modules
+
+- Put code in `src/shared` only when it must run in both the Vite/browser app and a Supabase Edge
+  Function (Deno). If it is browser-only infrastructure (Supabase client, query helpers, etc.) put
+  it in `src/lib` instead.
+- `src/lib` is browser-only; do not import it from `src/shared` or from Edge Functions.
+- Every file in `src/shared` must use explicit `.ts` extensions in its own imports (e.g.,
+  `import type { Foo } from "./foo.ts"`).
+- Do not use browser-only APIs, Vite-specific code, or the `@/` path alias inside `src/shared`.
 
 ### Edge Functions
 
@@ -220,6 +242,7 @@ Do not implement per-commit version bumps or per-commit tagging automation unles
 - reusable UI: `src/components`
 - feature logic: `src/features`
 - shared infrastructure: `src/lib`
+- cross-runtime primitives (browser + Edge): `src/shared`
 - Edge Functions: `supabase/functions`
 - schema changes: `supabase/migrations`
 
