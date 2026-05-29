@@ -3,6 +3,19 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
+}));
+
 import type { Citizen } from "@/features/citizens";
 import type { Nation } from "@/features/nations";
 
@@ -57,6 +70,8 @@ const CITIZEN_NM_ID = "00000000-0000-4000-8000-000000000202";
 
 describe("RoleAssignmentControls — citizen variant", () => {
   beforeEach(() => {
+    toastError.mockReset();
+    toastSuccess.mockReset();
     requireSupabaseClient.mockReset();
   });
 
@@ -240,6 +255,8 @@ describe("RoleAssignmentControls — citizen variant", () => {
 
 describe("RoleAssignmentControls — nation variant", () => {
   beforeEach(() => {
+    toastError.mockReset();
+    toastSuccess.mockReset();
     requireSupabaseClient.mockReset();
   });
 
