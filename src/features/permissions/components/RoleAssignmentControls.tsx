@@ -275,6 +275,12 @@ function CitizenRoleAssignmentForm({
   );
 }
 
+// Read-only preview of the resolved scope. The scope is always derived from
+// the citizen's current settlement, so the select is intentionally disabled —
+// it confirms where the role will be applied, not allows the user to pick a
+// different target. If multi-target assignment is ever supported (e.g. assigning
+// a nation_manager to any nation regardless of settlement), this will become
+// an interactive picker.
 function ScopeDropdown({
   isLoading,
   label,
