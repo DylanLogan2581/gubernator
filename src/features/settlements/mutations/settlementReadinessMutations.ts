@@ -1,10 +1,15 @@
+// See src/features/settlements/utils/settlementReadinessState.ts for the settlement
+// readiness state machine: legal (autoReadyEnabled, isReadyCurrentTurn) combinations,
+// named UI states, and legal transitions.
+
 import {
   mutationOptions,
   type QueryClient,
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { toWorldAccessTarget } from "@/features/permissions";
 import type { WorldPermissionContext } from "@/features/worlds";
 import {
   requireSupabaseClient,
@@ -12,6 +17,7 @@ import {
 } from "@/lib/supabase";
 
 import { settlementReadinessQueryKeys } from "../queries/settlementReadinessQueryKeys";
+import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
 
 type SetSettlementReadinessErrorCode =
   | "settlement_readiness_archived"
@@ -185,6 +191,7 @@ export function setSettlementAutoReadyMutationOptions({
   });
 }
 
+// Planned for use in settlement readiness UI error handling (not yet wired to a component).
 export function isSetSettlementReadinessError(
   error: unknown,
 ): error is SetSettlementReadinessError {
@@ -235,7 +242,7 @@ async function setSettlementReadiness(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -288,7 +295,7 @@ async function setSettlementAutoReady(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -318,7 +325,7 @@ async function getSettlementReadinessAccessRow(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data;
@@ -337,23 +344,15 @@ function toSettlementReadinessMutationResult(
 function toSettlementAutoReadyMutationResult(
   row: SettlementAutoReadyUpdateRow,
 ): SettlementAutoReadyMutationResult {
+  const { isReadyForCurrentTurn } = deriveSettlementReadinessState({
+    autoReadyEnabled: row.auto_ready_enabled,
+    isReadyCurrentTurn: row.is_ready_current_turn,
+  });
   return {
     autoReadyEnabled: row.auto_ready_enabled,
     id: row.id,
     isReadyCurrentTurn: row.is_ready_current_turn,
-    isReadyForCurrentTurn: row.auto_ready_enabled || row.is_ready_current_turn,
+    isReadyForCurrentTurn,
     readySetAt: row.ready_set_at,
-  };
-}
-
-function toWorldAccessTarget(world: SettlementReadinessWorldAccessRow): {
-  readonly id: string;
-  readonly ownerId: string;
-  readonly visibility: string;
-} {
-  return {
-    id: world.id,
-    ownerId: world.owner_id,
-    visibility: world.visibility,
   };
 }

@@ -7,6 +7,7 @@ import {
   type FormEvent,
   type JSX,
 } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,13 +35,11 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
   const formDescriptionId = useId();
   const emailErrorId = useId();
   const passwordErrorId = useId();
-  const formErrorId = useId();
   const queryClient = useQueryClient();
   const signInMutation = useMutation(signInMutationOptions());
   const [credentials, setCredentials] =
     useState<SignInCredentials>(initialCredentials);
   const [fieldErrors, setFieldErrors] = useState<SignInFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
   const isSubmitting = signInMutation.isPending;
 
   function handleEmailChange(event: ChangeEvent<HTMLInputElement>): void {
@@ -70,12 +69,10 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
         email: result.error.flatten().fieldErrors.email?.[0],
         password: result.error.flatten().fieldErrors.password?.[0],
       });
-      setFormError(null);
       return;
     }
 
     setFieldErrors({});
-    setFormError(null);
 
     try {
       const signInResult = await signInMutation.mutateAsync(result.data);
@@ -83,7 +80,7 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: authQueryKeys.all });
       await onSignInSuccess();
     } catch (error) {
-      setFormError(getSafeSignInErrorMessage(error));
+      toast.error(getSafeSignInErrorMessage(error));
     }
   }
 
@@ -106,16 +103,6 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
           className="flex flex-col gap-4"
           onSubmit={handleSubmit}
         >
-          {formError !== null ? (
-            <p
-              id={formErrorId}
-              role="alert"
-              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {formError}
-            </p>
-          ) : null}
-
           <div className="flex flex-col gap-1.5">
             <label htmlFor="sign-in-email" className="text-sm font-medium">
               Email

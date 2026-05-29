@@ -16,7 +16,7 @@ export class AuthUiError extends Error {
   }
 }
 
-export function normalizeAuthError(error: unknown): AuthUiError {
+export function normalizeSupabaseError(error: unknown): AuthUiError {
   if (error instanceof AuthUiError) {
     return error;
   }

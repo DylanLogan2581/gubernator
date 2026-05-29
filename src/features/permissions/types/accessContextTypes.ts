@@ -20,4 +20,5 @@ export type AccessContext = AccessContextPredicates & {
   readonly isSuperAdmin: boolean;
   readonly userId: string | null;
   readonly worldAdminWorldIds: readonly string[];
+  readonly playerCharacterWorldIds: readonly string[];
 };

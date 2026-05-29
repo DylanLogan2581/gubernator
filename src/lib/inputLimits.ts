@@ -13,8 +13,9 @@ export const textInputLimits = {
   nationDescriptionMax: 1000,
   settlementNameMax: 64,
   settlementDescriptionMax: 1000,
-  notificationTypeMax: 32,
-  notificationMessageMax: 500,
+  citizenNameMax: 64,
+  citizenNpcTextMax: 1000,
+  citizenNpcTraitMax: 200,
 } as const;
 
 export const calendarInputLimits = {
@@ -28,6 +29,7 @@ export const calendarInputLimits = {
   startingYearMax: 1_000_000,
 } as const;
 
-export const jsonInputLimits = {
-  turnLogPayloadBytesMax: 32_768,
+export const npcFlavorInputLimits = {
+  poolSizeMax: 100,
+  poolEntryMax: 200,
 } as const;

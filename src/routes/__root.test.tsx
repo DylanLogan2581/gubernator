@@ -11,6 +11,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
 import { routeTree } from "@/routeTree.gen";
 
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
+  Toaster: () => null,
+}));
+
 const requireSupabaseClient = vi.hoisted(() => vi.fn<() => unknown>());
 const supabaseState = vi.hoisted<{ current: unknown }>(() => ({
   current: null,
@@ -82,6 +96,8 @@ describe("not-found route", () => {
 
 describe("app shell auth controls", () => {
   beforeEach(() => {
+    toastError.mockReset();
+    toastSuccess.mockReset();
     requireSupabaseClient.mockReset();
     requireSupabaseClient.mockReturnValue(createClient());
   });
@@ -127,6 +143,10 @@ describe("app shell auth controls", () => {
     const user = userEvent.setup();
     const signOut = vi.fn().mockResolvedValue({ error: null });
     const queryClient = createTestQueryClient();
+    queryClient.setQueryData(
+      authStateQueryCacheKeys.currentSession(),
+      createSession("user-1"),
+    );
     queryClient.setQueryData(["worlds"], [{ id: "world-1" }]);
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -163,12 +183,12 @@ describe("app shell auth controls", () => {
     renderAt("/worlds");
     await user.click(await screen.findByRole("button", { name: "Sign out" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Sign-out failed. Try again.",
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("Sign-out failed. Try again.");
+    });
+    expect(toastError).not.toHaveBeenCalledWith(
+      "Internal credential cleanup failed.",
     );
-    expect(
-      screen.queryByText("Internal credential cleanup failed."),
-    ).toBeNull();
   });
 
   it("syncs cached auth-dependent queries from root auth events", async () => {
@@ -250,6 +270,13 @@ function createClient(
 
       if (table === "notifications") {
         return createNotificationsQueryBuilder();
+      }
+
+      if (table === "citizens") {
+        const b: Record<string, unknown> = {};
+        b.eq = vi.fn(() => b);
+        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
+        return { select: vi.fn(() => b) };
       }
 
       throw new Error(`Unexpected table ${table}`);

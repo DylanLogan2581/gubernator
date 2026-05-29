@@ -1,16 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { requireAuthenticatedRoute } from "@/features/auth";
-import { WorldShellPage } from "@/features/worlds";
+import { WorldEntryGate } from "@/features/worlds";
 
 import type { JSX } from "react";
-
-function WorldShellRoute(): JSX.Element {
-  const { worldId } = Route.useParams();
-
-  return <WorldShellPage worldId={worldId} />;
-}
 
 export const Route = createFileRoute("/worlds/$worldId")({
   beforeLoad: ({ context, location }) =>
@@ -18,10 +12,19 @@ export const Route = createFileRoute("/worlds/$worldId")({
       queryClient: context.queryClient,
       returnTo: location.href,
     }),
-  component: WorldShellRoute,
-  pendingComponent: WorldShellPendingRoute,
+  component: WorldLayoutRoute,
+  pendingComponent: WorldLayoutPendingRoute,
 });
 
-function WorldShellPendingRoute(): JSX.Element {
+function WorldLayoutRoute(): JSX.Element {
+  const { worldId } = Route.useParams();
+  return (
+    <WorldEntryGate worldId={worldId}>
+      <Outlet />
+    </WorldEntryGate>
+  );
+}
+
+function WorldLayoutPendingRoute(): JSX.Element {
   return <LoadingState label="Checking session…" />;
 }

@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -34,9 +34,9 @@ type WorldRouteAccessQueryOptions = UseQueryOptions<
 >;
 
 const WORLD_HEADER_SELECT =
-  "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility";
+  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility";
 const ACCESSIBLE_WORLDS_SELECT =
-  "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility";
+  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility";
 
 export class WorldNotFoundError extends Error {
   readonly worldId: string;
@@ -95,7 +95,7 @@ async function getAccessibleWorlds(
     .order("updated_at", { ascending: false });
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data
@@ -119,7 +119,7 @@ async function getWorldRouteAccess(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   const world =
@@ -135,11 +135,9 @@ async function getWorldRouteAccess(
     header: {
       archivedAt: world.archivedAt,
       currentTurnNumber: world.currentTurnNumber,
-      fullInWorldDateLabel: world.fullInWorldDateLabel,
       inWorldDateLabel: world.inWorldDateLabel,
       isArchived: world.isArchived,
       name: world.name,
-      nextFullInWorldDateLabel: world.nextFullInWorldDateLabel,
       nextInWorldDateLabel: world.nextInWorldDateLabel,
       nextTurnNumber: world.nextTurnNumber,
       planningTurnNumber: world.planningTurnNumber,

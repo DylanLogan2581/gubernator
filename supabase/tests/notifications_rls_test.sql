@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (14);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -259,6 +259,29 @@ select
     'owner can read their own generated turn-completed notification'
   );
 
+select
+  throws_ok (
+    $test$
+    update public.notifications
+    set message_text = 'tampered'
+    where recipient_user_id = 'a1000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'owner cannot update their own notifications directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    delete from public.notifications
+    where recipient_user_id = 'a1000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'owner cannot delete their own notifications directly'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -366,6 +389,29 @@ select
         and message_text = 'World advanced to turn 5.'
     ),
     'super admin cannot read another recipient notification row'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.notifications
+    set message_text = 'tampered'
+    where recipient_user_id = 'a1000000-0000-0000-0000-000000000004'
+  $test$,
+    '42501',
+    null,
+    'super admin cannot update notifications directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    delete from public.notifications
+    where recipient_user_id = 'a1000000-0000-0000-0000-000000000004'
+  $test$,
+    '42501',
+    null,
+    'super admin cannot delete notifications directly'
   );
 
 reset role;

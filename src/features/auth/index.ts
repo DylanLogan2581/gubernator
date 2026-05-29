@@ -10,6 +10,7 @@ export {
   currentAppUserQueryOptions,
   currentSessionQueryOptions,
 } from "./queries/authQueries";
+export { availableUsersQueryOptions } from "./queries/usersQueries";
 export {
   parseSignInSearch,
   SIGN_IN_DEFAULT_RETURN_PATH,
@@ -20,7 +21,7 @@ export {
   redirectAuthenticatedRoute,
   requireAuthenticatedRoute,
 } from "./utils/protectedRouteGuards";
-export { AuthUiError, normalizeAuthError } from "./utils/authErrors";
+export { AuthUiError, normalizeSupabaseError } from "./utils/authErrors";
 
 export type {
   AppUser,

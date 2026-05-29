@@ -1,23 +1,29 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Archive, ArrowLeft } from "lucide-react";
+import { Archive, ArrowLeft, ArrowRight } from "lucide-react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  currentAccessContextQueryOptions,
+  useActivePlayerCharacter,
+} from "@/features/permissions";
 import {
   SettlementReadinessListPanel,
   SettlementReadinessSummaryPanel,
 } from "@/features/settlements";
 import { EndTurnControl } from "@/features/turns";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
 } from "../queries/worldQueries";
+
+import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 
 import type { JSX, ReactNode } from "react";
 
@@ -68,6 +74,7 @@ function WorldShellContent({
   const worldQuery = useQuery(
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
+  const { activeCharacter } = useActivePlayerCharacter();
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
@@ -131,7 +138,7 @@ function WorldShellContent({
               </div>
               <div>
                 <dt className="font-medium text-foreground">In-world date</dt>
-                <dd>{worldQuery.data.header.fullInWorldDateLabel}</dd>
+                <dd>{worldQuery.data.header.inWorldDateLabel}</dd>
               </div>
               <div>
                 <dt className="font-medium text-foreground">Status</dt>
@@ -166,15 +173,40 @@ function WorldShellContent({
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
       />
+      <WorldNpcFlavorConfigPanel
+        accessContext={accessContext}
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
       <EndTurnControl
         canAdmin={worldQuery.data.canAdmin}
-        currentDateLabel={worldQuery.data.header.fullInWorldDateLabel}
+        currentDateLabel={worldQuery.data.header.inWorldDateLabel}
         currentTurnNumber={worldQuery.data.header.currentTurnNumber}
         isArchived={worldQuery.data.header.isArchived}
-        nextDateLabel={worldQuery.data.header.nextFullInWorldDateLabel}
+        nextDateLabel={worldQuery.data.header.nextInWorldDateLabel}
         nextTurnNumber={worldQuery.data.header.nextTurnNumber}
         worldId={worldId}
       />
+      <nav aria-label="World sections" className="flex flex-wrap gap-2">
+        <Button asChild variant="outline" size="sm" className="w-fit">
+          <Link to="/worlds/$worldId/nations" params={{ worldId }}>
+            Nations
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+        {activeCharacter !== null ? (
+          <Button asChild variant="outline" size="sm" className="w-fit">
+            <Link
+              to="/worlds/$worldId/citizens/$citizenId"
+              params={{ citizenId: activeCharacter.id, worldId }}
+            >
+              My character
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+        ) : null}
+      </nav>
       <SettlementReadinessSummaryPanel worldId={worldId} />
       <SettlementReadinessListPanel
         accessContext={accessContext}
@@ -203,12 +235,4 @@ function WorldShellFrame({
       {children}
     </div>
   );
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }

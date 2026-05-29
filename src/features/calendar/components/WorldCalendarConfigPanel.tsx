@@ -6,11 +6,13 @@ import {
 } from "@tanstack/react-query";
 import { RotateCcw, Save } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import type { WorldPermissionContext } from "@/features/worlds";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import { saveWorldCalendarConfigMutationOptions } from "../mutations/calendarMutations";
 import { worldCalendarConfigQueryOptions } from "../queries/calendarQueries";
@@ -116,20 +118,28 @@ function WorldCalendarConfigPanelContent({
     setValidationErrors(nextValidationErrors);
 
     if (hasCalendarValidationErrors(nextValidationErrors)) {
-      saveMutation.reset();
       return;
     }
 
-    saveMutation.mutate({
-      config: draftConfig,
-      worldId,
-    });
+    saveMutation.mutate(
+      {
+        config: draftConfig,
+        worldId,
+      },
+      {
+        onError: (error) => {
+          toast.error(getCalendarErrorDescription(error));
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Calendar saved.");
+        },
+      },
+    );
   }
 
   function resetDraftConfig(): void {
     setDraftConfig(initialConfig);
     setValidationErrors(emptyCalendarValidationErrors);
-    saveMutation.reset();
   }
 
   return (
@@ -173,17 +183,6 @@ function WorldCalendarConfigPanelContent({
               setValidationErrors(emptyCalendarValidationErrors);
             }}
           />
-
-          {saveMutation.isError ? (
-            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {getCalendarErrorDescription(saveMutation.error)}
-            </p>
-          ) : null}
-          {saveMutation.isSuccess ? (
-            <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-              Calendar saved.
-            </p>
-          ) : null}
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={saveMutation.isPending}>

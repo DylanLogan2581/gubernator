@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { StepForward } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -9,6 +10,7 @@ import {
   formatSettlementReadinessPercentage,
   settlementReadinessSummaryQueryOptions,
 } from "@/features/settlements";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import { endTurnBasicMutationOptions } from "../mutations/endTurnBasicMutations";
 import {
@@ -18,10 +20,6 @@ import {
 
 import { EndTurnConfirmationDialog } from "./EndTurnConfirmationDialog";
 import { EndTurnMetric } from "./EndTurnMetric";
-import {
-  EndTurnSuccessMessage,
-  type SuccessfulEndTurnTransition,
-} from "./EndTurnSuccessMessage";
 
 import type { JSX } from "react";
 
@@ -76,8 +74,6 @@ function EndTurnControlContent({
   readonly worldId: string;
 }): JSX.Element {
   const [isConfirming, setIsConfirming] = useState(false);
-  const [successfulTransition, setSuccessfulTransition] =
-    useState<SuccessfulEndTurnTransition | null>(null);
   const queryClient = useQueryClient();
   const readinessSummaryQuery = useQuery(
     settlementReadinessSummaryQueryOptions(worldId),
@@ -103,21 +99,23 @@ function EndTurnControlContent({
       return;
     }
 
-    setSuccessfulTransition(null);
     endTurnMutation.mutate(
       {
         expectedTurnNumber: currentTurnNumber,
         worldId,
       },
       {
+        onError: (error) => {
+          toast.error(getErrorDescription(error));
+        },
         onSuccess: (result) => {
           setIsConfirming(false);
-          setSuccessfulTransition({
-            nextDateLabel: result.transition.nextDateLabel,
-            nextTurnNumber: result.transition.nextTurnNumber,
-            previousDateLabel: result.transition.previousDateLabel,
-            previousTurnNumber: result.transition.previousTurnNumber,
-          });
+          notifyMutationSuccess(
+            `Advanced to turn ${result.transition.nextTurnNumber.toString()}`,
+            {
+              description: `Now ${result.transition.nextDateLabel} (was turn ${result.transition.previousTurnNumber.toString()} on ${result.transition.previousDateLabel}).`,
+            },
+          );
         },
       },
     );
@@ -193,16 +191,6 @@ function EndTurnControlContent({
           isReadinessUnavailable,
         })}
       </p>
-
-      {endTurnMutation.isError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {getErrorDescription(endTurnMutation.error)}
-        </p>
-      ) : null}
-
-      {successfulTransition !== null ? (
-        <EndTurnSuccessMessage transition={successfulTransition} />
-      ) : null}
 
       {isConfirming && readinessSummaryQuery.isSuccess ? (
         <EndTurnConfirmationDialog

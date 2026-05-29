@@ -150,7 +150,7 @@ async function advanceSupabaseWorldTurn({
   return advanceWorldTurnResultFromResponse(response);
 }
 
-async function runningTransitionResultFromResponse(
+async function transitionResultFromResponse(
   response: Response,
 ): Promise<SupabaseRunningTransitionResult> {
   const payload: unknown = await response.json();
@@ -194,7 +194,7 @@ async function runningTransitionResultFromResponse(
 async function advanceWorldTurnResultFromResponse(
   response: Response,
 ): Promise<SupabaseRunningTransitionResult> {
-  const result = await runningTransitionResultFromResponse(response);
+  const result = await transitionResultFromResponse(response);
 
   if (!result.ok && result.error.reason === "missing_transition") {
     return {

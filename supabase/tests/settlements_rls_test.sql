@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (27);
+  plan (32);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -52,6 +52,33 @@ values
     'x',
     now(),
     '{"username":"settlements_superadmin"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '71000000-0000-0000-0000-000000000005',
+    'settlements-nation-manager@example.com',
+    'x',
+    now(),
+    '{"username":"settlements_nation_manager"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '71000000-0000-0000-0000-000000000006',
+    'settlements-settlement-manager@example.com',
+    'x',
+    now(),
+    '{"username":"settlements_settlement_manager"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '71000000-0000-0000-0000-000000000007',
+    'settlements-plain-pc@example.com',
+    'x',
+    now(),
+    '{"username":"settlements_plain_pc"}'::jsonb,
     now(),
     now()
   );
@@ -155,6 +182,53 @@ values
     null,
     true,
     true
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    citizen_type,
+    name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id,
+    role_settlement_id
+  )
+values
+  (
+    '75000000-0000-0000-0000-000000000001',
+    '72000000-0000-0000-0000-000000000001',
+    'player_character',
+    'Nation Manager PC',
+    'alive',
+    '71000000-0000-0000-0000-000000000005',
+    'nation_manager',
+    '73000000-0000-0000-0000-000000000001',
+    null
+  ),
+  (
+    '75000000-0000-0000-0000-000000000002',
+    '72000000-0000-0000-0000-000000000001',
+    'player_character',
+    'Settlement Manager PC',
+    'alive',
+    '71000000-0000-0000-0000-000000000006',
+    'settlement_manager',
+    null,
+    '74000000-0000-0000-0000-000000000001'
+  ),
+  (
+    '75000000-0000-0000-0000-000000000003',
+    '72000000-0000-0000-0000-000000000001',
+    'player_character',
+    'Plain PC',
+    'alive',
+    '71000000-0000-0000-0000-000000000007',
+    'none',
+    null,
+    null
   );
 
 -- ===========================================================================
@@ -586,6 +660,139 @@ select
     '23514',
     null,
     'settlements require a non-empty name'
+  );
+
+-- ===========================================================================
+-- NATION MANAGER: can read and update settlements in their nation.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"71000000-0000-0000-0000-000000000005","role":"authenticated"}';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.settlements
+      where
+        id = '74000000-0000-0000-0000-000000000001'
+    ),
+    'nation manager can read settlements in their nation''s world'
+  );
+
+update public.settlements
+set
+  name = 'Nation Manager Update'
+where
+  id = '74000000-0000-0000-0000-000000000001';
+
+reset role;
+
+select
+  is (
+    (
+      select
+        name
+      from
+        public.settlements
+      where
+        id = '74000000-0000-0000-0000-000000000001'
+    ),
+    'Nation Manager Update',
+    'nation manager can update settlement in their nation'
+  );
+
+-- Restore name for subsequent tests.
+update public.settlements
+set
+  name = 'Private Settlement'
+where
+  id = '74000000-0000-0000-0000-000000000001';
+
+-- ===========================================================================
+-- SETTLEMENT MANAGER: can update their assigned settlement.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"71000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+update public.settlements
+set
+  name = 'Settlement Manager Update'
+where
+  id = '74000000-0000-0000-0000-000000000001';
+
+reset role;
+
+select
+  is (
+    (
+      select
+        name
+      from
+        public.settlements
+      where
+        id = '74000000-0000-0000-0000-000000000001'
+    ),
+    'Settlement Manager Update',
+    'settlement manager can update their assigned settlement'
+  );
+
+-- Restore name for subsequent tests.
+update public.settlements
+set
+  name = 'Private Settlement'
+where
+  id = '74000000-0000-0000-0000-000000000001';
+
+-- ===========================================================================
+-- PLAIN PC: player character without a management role can read but not update.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"71000000-0000-0000-0000-000000000007","role":"authenticated"}';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.settlements
+      where
+        id = '74000000-0000-0000-0000-000000000001'
+    ),
+    'plain PC holder can read settlements in their world'
+  );
+
+update public.settlements
+set
+  name = 'Plain PC Update'
+where
+  id = '74000000-0000-0000-0000-000000000001';
+
+reset role;
+
+select
+  is (
+    (
+      select
+        name
+      from
+        public.settlements
+      where
+        id = '74000000-0000-0000-0000-000000000001'
+    ),
+    'Private Settlement',
+    'plain player character without management role cannot update settlements'
   );
 
 rollback;

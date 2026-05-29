@@ -13,6 +13,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import { accessibleWorldsQueryOptions } from "../queries/worldQueries";
 
@@ -207,12 +208,4 @@ function WorldBadge({
       Public
     </span>
   );
-}
-
-function getErrorDescription(error: unknown): string {
-  if (error instanceof Error && error.message !== "") {
-    return error.message;
-  }
-
-  return "Try refreshing the page. If the problem continues, contact an administrator.";
 }

@@ -1,6 +1,6 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -18,6 +18,16 @@ type CurrentUserAdminWorldIdsQueryOptions = UseQueryOptions<
   CurrentUserAdminWorldIdsQueryKey
 >;
 
+type CurrentUserPlayerCharacterWorldIdsQueryKey = ReturnType<
+  typeof worldAccessQueryKeys.currentUserPlayerCharacterWorldIds
+>;
+type CurrentUserPlayerCharacterWorldIdsQueryOptions = UseQueryOptions<
+  readonly string[],
+  AuthUiError,
+  readonly string[],
+  CurrentUserPlayerCharacterWorldIdsQueryKey
+>;
+
 export function currentUserAdminWorldIdsQueryOptions(
   userId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
@@ -27,6 +37,18 @@ export function currentUserAdminWorldIdsQueryOptions(
   return queryOptions({
     queryFn: () => getCurrentUserAdminWorldIds(client, userId),
     queryKey: worldAccessQueryKeys.currentUserAdminWorldIds(userId),
+  });
+}
+
+export function currentUserPlayerCharacterWorldIdsQueryOptions(
+  userId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CurrentUserPlayerCharacterWorldIdsQueryOptions {
+  // The client is the configured Supabase singleton in app code; tests inject a fake.
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getCurrentUserPlayerCharacterWorldIds(client, userId),
+    queryKey: worldAccessQueryKeys.currentUserPlayerCharacterWorldIds(userId),
   });
 }
 
@@ -41,8 +63,27 @@ async function getCurrentUserAdminWorldIds(
     .order("world_id", { ascending: true });
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data.map((row) => row.world_id);
+}
+
+async function getCurrentUserPlayerCharacterWorldIds(
+  client: GubernatorSupabaseClient,
+  userId: string,
+): Promise<readonly string[]> {
+  const { data, error } = await client
+    .from("citizens")
+    .select("world_id")
+    .eq("user_id", userId)
+    .eq("citizen_type", "player_character")
+    .eq("status", "alive")
+    .order("world_id", { ascending: true });
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return [...new Set(data.map((row) => row.world_id))];
 }

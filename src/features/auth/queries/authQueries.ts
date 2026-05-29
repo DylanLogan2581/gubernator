@@ -6,7 +6,7 @@ import {
 } from "@/lib/supabase";
 import { getSupabaseAuthSession } from "@/lib/supabaseAuthState";
 
-import { normalizeAuthError } from "../utils/authErrors";
+import { normalizeSupabaseError } from "../utils/authErrors";
 
 import { authQueryKeys } from "./authQueryKeys";
 
@@ -57,7 +57,7 @@ async function getCurrentSession(
   try {
     return await getSupabaseAuthSession(client);
   } catch (error) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 }
 
@@ -77,7 +77,7 @@ async function getCurrentAppUser(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data;

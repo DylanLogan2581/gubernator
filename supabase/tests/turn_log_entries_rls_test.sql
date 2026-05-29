@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (10);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -52,6 +52,24 @@ values
     'x',
     now(),
     '{"username":"turn_log_superadmin"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '91000000-0000-0000-0000-000000000005',
+    'turn-log-pc-holder@example.com',
+    'x',
+    now(),
+    '{"username":"turn_log_pc_holder"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '91000000-0000-0000-0000-000000000006',
+    'turn-log-dead-pc@example.com',
+    'x',
+    now(),
+    '{"username":"turn_log_dead_pc"}'::jsonb,
     now(),
     now()
   );
@@ -113,6 +131,39 @@ values
     '94000000-0000-0000-0000-000000000001',
     '93000000-0000-0000-0000-000000000001',
     'Turn Log Settlement'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status,
+    user_id,
+    role_type
+  )
+values
+  (
+    '97000000-0000-0000-0000-000000000001',
+    '92000000-0000-0000-0000-000000000001',
+    '94000000-0000-0000-0000-000000000001',
+    'player_character',
+    'PC Holder Citizen',
+    'alive',
+    '91000000-0000-0000-0000-000000000005',
+    'none'
+  ),
+  (
+    '97000000-0000-0000-0000-000000000002',
+    '92000000-0000-0000-0000-000000000001',
+    '94000000-0000-0000-0000-000000000001',
+    'player_character',
+    'Dead PC Holder Citizen',
+    'dead',
+    '91000000-0000-0000-0000-000000000006',
+    'none'
   );
 
 insert into
@@ -284,6 +335,29 @@ select
     'owner cannot insert turn log entries directly'
   );
 
+select
+  throws_ok (
+    $test$
+    update public.turn_log_entries
+    set log_category = 'tampered'
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'owner cannot update turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    delete from public.turn_log_entries
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'owner cannot delete turn log entries directly'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -314,6 +388,29 @@ select
     '42501',
     null,
     'world admin cannot insert turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.turn_log_entries
+    set log_category = 'tampered'
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'world admin cannot update turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    delete from public.turn_log_entries
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'world admin cannot delete turn log entries directly'
   );
 
 reset role;
@@ -360,6 +457,77 @@ select
     '42501',
     null,
     'super admin cannot insert turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.turn_log_entries
+    set log_category = 'tampered'
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'super admin cannot update turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    delete from public.turn_log_entries
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'super admin cannot delete turn log entries directly'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- PC HOLDER: active user with a living PC in the world can read log entries
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"91000000-0000-0000-0000-000000000005","role":"authenticated"}';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.turn_log_entries
+      where
+        id = '96000000-0000-0000-0000-000000000001'
+    ),
+    'pc holder can read turn log entries in a private world they have PC access to'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- DEAD PC HOLDER: user whose only PC is dead cannot read via the PC path
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"91000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.turn_log_entries
+      where
+        id = '96000000-0000-0000-0000-000000000001'
+    ),
+    'user with only a dead PC cannot read turn log entries via the PC path'
   );
 
 reset role;
