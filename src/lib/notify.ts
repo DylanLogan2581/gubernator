@@ -2,8 +2,15 @@ import { toast } from "sonner";
 
 import { getErrorDescription } from "./errorUtils";
 
-export function notifyMutationSuccess(message: string): void {
-  toast.success(message);
+export type NotifyMutationOptions = {
+  readonly description?: string;
+};
+
+export function notifyMutationSuccess(
+  message: string,
+  options?: NotifyMutationOptions,
+): void {
+  toast.success(message, options);
 }
 
 export function notifyMutationError(error: unknown, fallback?: string): void {

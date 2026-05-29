@@ -30,7 +30,14 @@ afterEach(() => {
 describe("notifyMutationSuccess", () => {
   it("forwards the message to toast.success", () => {
     notifyMutationSuccess("Saved!");
-    expect(successMock).toHaveBeenCalledExactlyOnceWith("Saved!");
+    expect(successMock).toHaveBeenCalledExactlyOnceWith("Saved!", undefined);
+  });
+
+  it("forwards a description option to toast.success", () => {
+    notifyMutationSuccess("Saved!", { description: "All changes synced." });
+    expect(successMock).toHaveBeenCalledExactlyOnceWith("Saved!", {
+      description: "All changes synced.",
+    });
   });
 });
 
