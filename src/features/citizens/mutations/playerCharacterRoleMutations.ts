@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -51,36 +52,17 @@ type RevokeCitizenRoleMutationOptions = UseMutationOptions<
   RevokeCitizenRoleInput
 >;
 
-export type PlayerCharacterRoleMutationIssue = {
-  readonly message: string;
-  readonly path: readonly PropertyKey[];
-};
+export type PlayerCharacterRoleMutationIssue = MutationIssue;
 
-export class PlayerCharacterRoleMutationError extends Error {
-  readonly code: PlayerCharacterRoleMutationErrorCode;
-  readonly issues: readonly PlayerCharacterRoleMutationIssue[];
-
-  constructor({
-    code,
-    issues = [],
-    message,
-  }: {
-    readonly code: PlayerCharacterRoleMutationErrorCode;
-    readonly issues?: readonly PlayerCharacterRoleMutationIssue[];
-    readonly message: string;
-  }) {
-    super(message);
-    this.name = "PlayerCharacterRoleMutationError";
-    this.code = code;
-    this.issues = issues;
-  }
-}
-
-export function isPlayerCharacterRoleMutationError(
-  error: unknown,
-): error is PlayerCharacterRoleMutationError {
-  return error instanceof PlayerCharacterRoleMutationError;
-}
+export const {
+  ErrorClass: PlayerCharacterRoleMutationError,
+  isError: isPlayerCharacterRoleMutationError,
+} = createMutationError<PlayerCharacterRoleMutationErrorCode>(
+  "PlayerCharacterRoleMutationError",
+);
+export type PlayerCharacterRoleMutationError = InstanceType<
+  typeof PlayerCharacterRoleMutationError
+>;
 
 export function linkUserToCitizenMutationOptions({
   client = requireSupabaseClient(),

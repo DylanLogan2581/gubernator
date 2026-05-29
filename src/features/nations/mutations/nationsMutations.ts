@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -65,36 +66,13 @@ export type DeleteNationResult = {
 const NATION_SELECT =
   "id,world_id,name,description,is_hidden,created_at,updated_at";
 
-export class NationMutationError extends Error {
-  readonly code: NationMutationErrorCode;
-  readonly issues: readonly NationMutationIssue[];
+export type NationMutationIssue = MutationIssue;
 
-  constructor({
-    code,
-    issues = [],
-    message,
-  }: {
-    readonly code: NationMutationErrorCode;
-    readonly issues?: readonly NationMutationIssue[];
-    readonly message: string;
-  }) {
-    super(message);
-    this.name = "NationMutationError";
-    this.code = code;
-    this.issues = issues;
-  }
-}
-
-export type NationMutationIssue = {
-  readonly message: string;
-  readonly path: readonly PropertyKey[];
-};
-
-export function isNationMutationError(
-  error: unknown,
-): error is NationMutationError {
-  return error instanceof NationMutationError;
-}
+export const {
+  ErrorClass: NationMutationError,
+  isError: isNationMutationError,
+} = createMutationError<NationMutationErrorCode>("NationMutationError");
+export type NationMutationError = InstanceType<typeof NationMutationError>;
 
 export function createNationMutationOptions({
   client = requireSupabaseClient(),

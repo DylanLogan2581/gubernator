@@ -6,6 +6,7 @@ import {
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { nationsQueryKeys } from "@/features/nations";
+import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -67,39 +68,18 @@ export type DeleteSettlementResult = {
   readonly settlementId: string;
 };
 
-export type SettlementMutationIssue = {
-  readonly message: string;
-  readonly path: readonly PropertyKey[];
-};
+export type SettlementMutationIssue = MutationIssue;
 
 const SETTLEMENT_SELECT =
   "id,nation_id,name,description,coord_x,coord_z,created_at,updated_at";
 
-export class SettlementMutationError extends Error {
-  readonly code: SettlementMutationErrorCode;
-  readonly issues: readonly SettlementMutationIssue[];
-
-  constructor({
-    code,
-    issues = [],
-    message,
-  }: {
-    readonly code: SettlementMutationErrorCode;
-    readonly issues?: readonly SettlementMutationIssue[];
-    readonly message: string;
-  }) {
-    super(message);
-    this.name = "SettlementMutationError";
-    this.code = code;
-    this.issues = issues;
-  }
-}
-
-export function isSettlementMutationError(
-  error: unknown,
-): error is SettlementMutationError {
-  return error instanceof SettlementMutationError;
-}
+export const {
+  ErrorClass: SettlementMutationError,
+  isError: isSettlementMutationError,
+} = createMutationError<SettlementMutationErrorCode>("SettlementMutationError");
+export type SettlementMutationError = InstanceType<
+  typeof SettlementMutationError
+>;
 
 // Planned for use in the settlement creation UI (not yet wired to a component).
 export function createSettlementMutationOptions({

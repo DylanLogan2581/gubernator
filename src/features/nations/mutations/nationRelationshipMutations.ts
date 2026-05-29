@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -58,36 +59,17 @@ type WithdrawFromBilateralMutationOptions = UseMutationOptions<
 const NATION_RELATIONSHIP_SELECT =
   "id,from_nation_id,to_nation_id,current_stance,pending_stance,pending_status,pending_changed_by_citizen_id,created_at,updated_at";
 
-export type NationRelationshipMutationIssue = {
-  readonly message: string;
-  readonly path: readonly PropertyKey[];
-};
+export type NationRelationshipMutationIssue = MutationIssue;
 
-export class NationRelationshipMutationError extends Error {
-  readonly code: NationRelationshipMutationErrorCode;
-  readonly issues: readonly NationRelationshipMutationIssue[];
-
-  constructor({
-    code,
-    issues = [],
-    message,
-  }: {
-    readonly code: NationRelationshipMutationErrorCode;
-    readonly issues?: readonly NationRelationshipMutationIssue[];
-    readonly message: string;
-  }) {
-    super(message);
-    this.name = "NationRelationshipMutationError";
-    this.code = code;
-    this.issues = issues;
-  }
-}
-
-export function isNationRelationshipMutationError(
-  error: unknown,
-): error is NationRelationshipMutationError {
-  return error instanceof NationRelationshipMutationError;
-}
+export const {
+  ErrorClass: NationRelationshipMutationError,
+  isError: isNationRelationshipMutationError,
+} = createMutationError<NationRelationshipMutationErrorCode>(
+  "NationRelationshipMutationError",
+);
+export type NationRelationshipMutationError = InstanceType<
+  typeof NationRelationshipMutationError
+>;
 
 export function setUnilateralStanceMutationOptions({
   client = requireSupabaseClient(),
