@@ -8,10 +8,15 @@
 --   • RLS: world admin can update npc_flavor_config_json
 --   • invalid config (not an object) is rejected by CHECK constraint
 --   • invalid config (pool entry not string) is rejected
+--   • pool at max size (100) is accepted
+--   • pool exceeding max size (101) is rejected
+--   • entry at max length (200) is accepted
+--   • entry exceeding max length (201) is rejected
+--   • empty string entry is rejected
 begin;
 
 select
-  plan (9);
+  plan (14);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -210,6 +215,102 @@ select
     where id = '81000000-0000-0000-0000-000000000001'
   $test$,
     'valid npc_flavor_config_json update succeeds'
+  );
+
+-- ===========================================================================
+-- Pool at max size (100 entries) is accepted
+-- ===========================================================================
+select
+  lives_ok (
+    $test$
+    update public.worlds
+    set npc_flavor_config_json = jsonb_build_object(
+      'traits',         (select jsonb_agg(to_jsonb('entry'::text)) from generate_series(1, 100)),
+      'contradictions', '[]'::jsonb,
+      'goals',          '[]'::jsonb,
+      'flaws',          '[]'::jsonb
+    )
+    where id = '81000000-0000-0000-0000-000000000001'
+  $test$,
+    'pool at exactly 100 entries is accepted'
+  );
+
+-- ===========================================================================
+-- Pool exceeding max size (101 entries) is rejected
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    update public.worlds
+    set npc_flavor_config_json = jsonb_build_object(
+      'traits',         (select jsonb_agg(to_jsonb('entry'::text)) from generate_series(1, 101)),
+      'contradictions', '[]'::jsonb,
+      'goals',          '[]'::jsonb,
+      'flaws',          '[]'::jsonb
+    )
+    where id = '81000000-0000-0000-0000-000000000001'
+  $test$,
+    '23514',
+    null,
+    'CHECK constraint rejects a pool with 101 entries'
+  );
+
+-- ===========================================================================
+-- Entry at max length (200 chars) is accepted
+-- ===========================================================================
+select
+  lives_ok (
+    $test$
+    update public.worlds
+    set npc_flavor_config_json = jsonb_build_object(
+      'traits',         jsonb_build_array(repeat('x', 200)),
+      'contradictions', '[]'::jsonb,
+      'goals',          '[]'::jsonb,
+      'flaws',          '[]'::jsonb
+    )
+    where id = '81000000-0000-0000-0000-000000000001'
+  $test$,
+    'entry at exactly 200 chars is accepted'
+  );
+
+-- ===========================================================================
+-- Entry exceeding max length (201 chars) is rejected
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    update public.worlds
+    set npc_flavor_config_json = jsonb_build_object(
+      'traits',         jsonb_build_array(repeat('x', 201)),
+      'contradictions', '[]'::jsonb,
+      'goals',          '[]'::jsonb,
+      'flaws',          '[]'::jsonb
+    )
+    where id = '81000000-0000-0000-0000-000000000001'
+  $test$,
+    '23514',
+    null,
+    'CHECK constraint rejects an entry longer than 200 chars'
+  );
+
+-- ===========================================================================
+-- Empty string entry is rejected
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    update public.worlds
+    set npc_flavor_config_json = '{
+      "traits": [""],
+      "contradictions": [],
+      "goals": [],
+      "flaws": []
+    }'::jsonb
+    where id = '81000000-0000-0000-0000-000000000001'
+  $test$,
+    '23514',
+    null,
+    'CHECK constraint rejects an empty string entry'
   );
 
 select
