@@ -5,17 +5,29 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EndTurnControl } from "./EndTurnControl";
 
-const { requireSupabaseClient } = vi.hoisted(() => ({
+const { requireSupabaseClient, toastSuccess, toastError } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+  toastError: vi.fn<(message: string) => void>(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
+}));
+
 describe("EndTurnControl", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+    toastSuccess.mockReset();
+    toastError.mockReset();
   });
 
   it("shows the current turn and readiness summary for admins", async () => {
@@ -269,7 +281,7 @@ describe("EndTurnControl", () => {
     expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
   });
 
-  it("shows successful transition details after ending the turn", async () => {
+  it("toasts the new turn and date after ending the turn", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: {
@@ -306,21 +318,18 @@ describe("EndTurnControl", () => {
       await screen.findByRole("button", { name: "Confirm end turn" }),
     );
 
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "End-turn transition completed.",
-    );
-    expect(screen.getByText("Previous turn")).toBeDefined();
-    expect(screen.getByText("New turn")).toBeDefined();
-    expect(screen.getAllByText("Turn 7").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Turn 8").length).toBeGreaterThan(0);
-    expect(screen.getByText("Previous date")).toBeDefined();
-    expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
-    expect(screen.getByText("New date")).toBeDefined();
-    expect(screen.getByText("Secondday, Ember 1, 101 AG")).toBeDefined();
+    await vi.waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledTimes(1);
+    });
+    expect(toastSuccess).toHaveBeenCalledWith("Advanced to turn 8", {
+      description:
+        "Now Secondday, Ember 1, 101 AG (was turn 7 on Firstday, Dawn 2, 101 AG).",
+    });
     expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByText("End-turn transition completed.")).toBeNull();
   });
 
-  it("shows authoritative date labels from the response, not pre-submit prop values", async () => {
+  it("toasts authoritative date labels from the response, not pre-submit prop values", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: {
@@ -354,15 +363,18 @@ describe("EndTurnControl", () => {
       await screen.findByRole("button", { name: "Confirm end turn" }),
     );
 
-    const status = await screen.findByRole("status");
+    await vi.waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledTimes(1);
+    });
+    const [, options] = toastSuccess.mock.calls[0];
 
-    expect(status).toHaveTextContent("Authoritative Previous Date");
-    expect(status).toHaveTextContent("Authoritative Next Date");
-    expect(screen.queryByText("Stale Current Date")).toBeNull();
-    expect(screen.queryByText("Stale Next Date")).toBeNull();
+    expect(options?.description).toContain("Authoritative Next Date");
+    expect(options?.description).toContain("Authoritative Previous Date");
+    expect(options?.description).not.toContain("Stale Current Date");
+    expect(options?.description).not.toContain("Stale Next Date");
   });
 
-  it("shows a refresh-safe message for stale-turn failures", async () => {
+  it("toasts a refresh-safe message for stale-turn failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
@@ -381,13 +393,16 @@ describe("EndTurnControl", () => {
       await screen.findByRole("button", { name: "Confirm end turn" }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    await vi.waitFor(() => {
+      expect(toastError).toHaveBeenCalledTimes(1);
+    });
+    expect(toastError).toHaveBeenCalledWith(
       "This turn has already changed. Refresh the page to review the latest world state.",
     );
-    expect(screen.queryByText("Internal stale detail")).toBeNull();
+    expect(toastError).not.toHaveBeenCalledWith("Internal stale detail");
   });
 
-  it("shows a safe message for unauthorized failures", async () => {
+  it("toasts a safe message for unauthorized failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
@@ -406,13 +421,18 @@ describe("EndTurnControl", () => {
       await screen.findByRole("button", { name: "Confirm end turn" }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    await vi.waitFor(() => {
+      expect(toastError).toHaveBeenCalledTimes(1);
+    });
+    expect(toastError).toHaveBeenCalledWith(
       "End turn is unavailable for this world.",
     );
-    expect(screen.queryByText("Internal authorization detail")).toBeNull();
+    expect(toastError).not.toHaveBeenCalledWith(
+      "Internal authorization detail",
+    );
   });
 
-  it("shows a safe message for transition persistence failures", async () => {
+  it("toasts a safe message for transition persistence failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
@@ -431,10 +451,13 @@ describe("EndTurnControl", () => {
       await screen.findByRole("button", { name: "Confirm end turn" }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    await vi.waitFor(() => {
+      expect(toastError).toHaveBeenCalledTimes(1);
+    });
+    expect(toastError).toHaveBeenCalledWith(
       "End turn could not be saved. Refresh the page before trying again.",
     );
-    expect(screen.queryByText("Internal transition detail")).toBeNull();
+    expect(toastError).not.toHaveBeenCalledWith("Internal transition detail");
   });
 });
 

@@ -8,6 +8,7 @@ type CreateAccessContextInput = {
   readonly isSuperAdmin: boolean;
   readonly userId: string | null;
   readonly worldAdminWorldIds: readonly string[];
+  readonly playerCharacterWorldIds?: readonly string[];
 };
 
 export function createAccessContext({
@@ -15,13 +16,18 @@ export function createAccessContext({
   isSuperAdmin,
   userId,
   worldAdminWorldIds,
+  playerCharacterWorldIds = [],
 }: CreateAccessContextInput): AccessContext {
   const hasActiveAppUser = isActiveUser ?? userId !== null;
   const effectiveIsSuperAdmin = hasActiveAppUser && isSuperAdmin;
   const effectiveWorldAdminWorldIds = hasActiveAppUser
     ? worldAdminWorldIds
     : [];
+  const effectivePlayerCharacterWorldIds = hasActiveAppUser
+    ? playerCharacterWorldIds
+    : [];
   const worldAdminWorldIdSet = new Set(effectiveWorldAdminWorldIds);
+  const playerCharacterWorldIdSet = new Set(effectivePlayerCharacterWorldIds);
 
   function canAdminWorld(world: WorldAccessTarget): boolean {
     if (!hasActiveAppUser) {
@@ -44,7 +50,11 @@ export function createAccessContext({
       return false;
     }
 
-    return canManageWorld(world) || world.visibility === "public";
+    return (
+      canManageWorld(world) ||
+      world.visibility === "public" ||
+      playerCharacterWorldIdSet.has(world.id)
+    );
   }
 
   return {
@@ -56,5 +66,6 @@ export function createAccessContext({
     isSuperAdmin: effectiveIsSuperAdmin,
     userId,
     worldAdminWorldIds: effectiveWorldAdminWorldIds,
+    playerCharacterWorldIds: effectivePlayerCharacterWorldIds,
   };
 }

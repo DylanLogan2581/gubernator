@@ -1,8 +1,13 @@
 // Worlds feature — create, list, and manage simulation worlds.
 // Implemented in Epic 2.
+export { WorldEntryGate } from "./components/WorldEntryGate";
 export { WorldListPage } from "./components/WorldListPage";
+export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
-export { currentUserAdminWorldIdsQueryOptions } from "./queries/worldAccessQueries";
+export {
+  currentUserAdminWorldIdsQueryOptions,
+  currentUserPlayerCharacterWorldIdsQueryOptions,
+} from "./queries/worldAccessQueries";
 export { worldAccessQueryKeys } from "./queries/worldAccessQueryKeys";
 export {
   WorldNotFoundError,
@@ -11,11 +16,19 @@ export {
   worldRouteAccessQueryOptions,
 } from "./queries/worldQueries";
 export { worldQueryKeys } from "./queries/worldQueryKeys";
-export { createWorldSlug, toAccessibleWorld } from "./utils/worldDisplay";
-
+export {
+  WorldNpcFlavorConfigError,
+  isWorldNpcFlavorConfigError,
+  worldNpcFlavorConfigQueryOptions,
+} from "./queries/worldNpcFlavorConfigQueries";
+export {
+  SaveWorldNpcFlavorConfigError,
+  isSaveWorldNpcFlavorConfigError,
+  saveWorldNpcFlavorConfigMutationOptions,
+} from "./mutations/worldNpcFlavorConfigMutations";
+export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
 export type {
   AccessibleWorld,
   WorldPermissionContext,
   WorldRouteAccess,
-  WorldShellHeader,
 } from "./types/worldTypes";

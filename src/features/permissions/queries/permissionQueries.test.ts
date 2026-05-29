@@ -69,6 +69,44 @@ describe("currentAccessContextQueryOptions", () => {
     expect(context.canAccessWorld({ id: "world-3" })).toBe(true);
   });
 
+  it("returns player-character world ids in the access context", async () => {
+    const queryClient = createQueryClient();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        user: {
+          created_at: "2026-01-01T00:00:00.000Z",
+          email: "player@example.com",
+          id: "user-1",
+          is_super_admin: false,
+          status: "active",
+          updated_at: "2026-01-01T00:00:00.000Z",
+          username: "player",
+        },
+        worldAdminRows: [],
+        playerCharacterWorldRows: [
+          { world_id: "world-pc-1" },
+          { world_id: "world-pc-2" },
+        ],
+      }),
+    );
+
+    const context = await queryClient.fetchQuery(
+      currentAccessContextQueryOptions(queryClient),
+    );
+
+    expect(context.playerCharacterWorldIds).toEqual([
+      "world-pc-1",
+      "world-pc-2",
+    ]);
+    expect(context.canAccessWorld({ id: "world-pc-1" })).toBe(true);
+    expect(context.canAccessWorld({ id: "world-pc-2" })).toBe(true);
+    expect(
+      context.canAccessWorld({ id: "world-not-pc", visibility: "private" }),
+    ).toBe(false);
+    expect(context.canAdminWorld({ id: "world-pc-1" })).toBe(false);
+  });
+
   it("returns blocked access context for inactive application users", async () => {
     const queryClient = createQueryClient();
     const inactiveUser = {
@@ -86,7 +124,7 @@ describe("currentAccessContextQueryOptions", () => {
       }
 
       if (table === "world_admins") {
-        return createWorldAdminsQueryBuilder([{ world_id: "world-1" }]);
+        return createMultiEqOrderQueryBuilder([{ world_id: "world-1" }]);
       }
 
       throw new Error(`Unexpected table: ${table}`);
@@ -133,6 +171,7 @@ type FakeClientInput = {
   } | null;
   readonly user?: unknown;
   readonly worldAdminRows?: readonly { readonly world_id: string }[];
+  readonly playerCharacterWorldRows?: readonly { readonly world_id: string }[];
 };
 
 function createClient({
@@ -140,6 +179,7 @@ function createClient({
   session,
   user = null,
   worldAdminRows = [],
+  playerCharacterWorldRows = [],
 }: FakeClientInput): unknown {
   const fromHandler = from ?? vi.fn(createQueryBuilder);
 
@@ -149,7 +189,11 @@ function createClient({
     }
 
     if (table === "world_admins") {
-      return createWorldAdminsQueryBuilder(worldAdminRows);
+      return createMultiEqOrderQueryBuilder(worldAdminRows);
+    }
+
+    if (table === "citizens") {
+      return createMultiEqOrderQueryBuilder(playerCharacterWorldRows);
     }
 
     throw new Error(`Unexpected table: ${table}`);
@@ -179,7 +223,7 @@ function createUserQueryBuilder(user: unknown): unknown {
   return builder;
 }
 
-function createWorldAdminsQueryBuilder(
+function createMultiEqOrderQueryBuilder(
   rows: readonly { readonly world_id: string }[],
 ): unknown {
   const builder = {

@@ -101,6 +101,7 @@ That single command updates `package.json`/lockfile and `CHANGELOG.md`, creates 
 The short version:
 
 - keep route files thin
+- when a route has children, treat the parent as a layout: render `<Outlet />` and move its page content into a sibling `*.index.tsx` route
 - organize reusable logic under `src/features/<feature-name>`
 - use the `@/` alias for cross-layer imports inside `src`
 - use local relative imports freely within the same feature when that keeps feature internals simple
@@ -109,6 +110,7 @@ The short version:
 - keep raw data access out of routes and components
 - prefer TypeScript `type` imports and explicit return types
 - avoid `any`, non-null assertions, and ad hoc browser side effects
+- use Sonner toasts for mutation success and failure feedback via `src/lib/notify.ts` (`notifyMutationSuccess`, `notifyMutationError`); do not render conditional success/failure banners in document flow — they shift the page on click
 
 If you are unsure where something belongs, check `AGENTS.md`.
 
@@ -135,6 +137,13 @@ After editing a shared module that an Edge Function imports, you must also clear
 ```bash
 npm run functions:cache-clear
 ```
+
+### Edge Function Origin Allowlist
+
+`end-turn-basic` rejects browser requests whose `Origin` header is not in the allowlist read from the `END_TURN_BASIC_ALLOWED_ORIGINS` env var (comma-separated). The rejection is a bare HTTP 403 with no body, which surfaces in the UI as the generic "End turn could not be saved. Refresh the page before trying again." toast.
+
+- **Local:** the allowlist is set in `supabase/config.toml` under `[edge_runtime.secrets]` to `http://localhost:5173,http://127.0.0.1:5173`. Restart with `npx supabase stop && npx supabase start` after editing.
+- **Production:** every deployment must set `END_TURN_BASIC_ALLOWED_ORIGINS` to the deployed frontend origin(s) (no path, no trailing slash, scheme included — e.g. `https://app.example.com`). Without it the function rejects every browser request and end-turn fails closed.
 
 ### Local Auth and Seeded Access
 

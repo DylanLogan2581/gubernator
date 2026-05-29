@@ -1,7 +1,5 @@
 import { type JSX, type ReactNode } from "react";
 
-import { APP_DESCRIPTION, APP_NAME } from "@/lib/appMeta";
-
 import { NotificationBellPlaceholder } from "./NotificationBellPlaceholder";
 
 type AppHeaderProps = {
@@ -20,8 +18,10 @@ export function AppHeader({ action }: AppHeaderProps): JSX.Element {
               className="size-10 rounded-xl object-contain"
             />
             <div>
-              <p className="text-sm font-medium">{APP_NAME}</p>
-              <p className="text-xs text-muted-foreground">{APP_DESCRIPTION}</p>
+              <p className="text-sm font-medium">Gubernator</p>
+              <p className="text-xs text-muted-foreground">
+                A turn-based world simulation and management application.
+              </p>
             </div>
           </div>
 

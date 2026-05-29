@@ -3,6 +3,11 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorldCalendarConfig } from "@/features/calendar";
+import type { Citizen } from "@/features/citizens";
+import {
+  ActivePlayerCharacterContext,
+  type ActivePlayerCharacterContextValue,
+} from "@/features/permissions";
 
 import { WorldShellPage } from "./WorldShellPage";
 
@@ -19,11 +24,22 @@ vi.mock("@/lib/supabase", () => ({
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
     children,
+    params,
     to,
   }: {
     readonly children: ReactNode;
+    readonly params?: Readonly<Record<string, string>>;
     readonly to: string;
-  }) => <a href={to}>{children}</a>,
+  }) => {
+    const href =
+      params === undefined
+        ? to
+        : Object.entries(params).reduce(
+            (path, [name, value]) => path.replace(`$${name}`, value),
+            to,
+          );
+    return <a href={href}>{children}</a>;
+  },
 }));
 
 describe("WorldShellPage", () => {
@@ -153,12 +169,82 @@ describe("WorldShellPage", () => {
       screen.getByRole("link", { name: "Back to worlds" }),
     ).toHaveAttribute("href", "/worlds");
   });
+
+  it("shows a My character nav link when the user has an active player character", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 1,
+            id: "00000000-0000-0000-0000-000000000505",
+            name: "Test World",
+            owner_id: "user-1",
+          }),
+        ],
+      }),
+    );
+
+    const pc = createCitizen({
+      id: "citizen-99",
+      worldId: "00000000-0000-0000-0000-000000000505",
+    });
+    renderWorldShellPage("00000000-0000-0000-0000-000000000505", pc);
+
+    expect(
+      await screen.findByRole("heading", { name: "Test World" }),
+    ).toBeDefined();
+    const myCharLink = screen.getByRole("link", { name: /my character/i });
+    expect(myCharLink).toHaveAttribute(
+      "href",
+      "/worlds/00000000-0000-0000-0000-000000000505/citizens/citizen-99",
+    );
+  });
+
+  it("does not show a My character nav link when there is no active player character", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 1,
+            id: "00000000-0000-0000-0000-000000000606",
+            name: "Admin World",
+            owner_id: "user-1",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000000606");
+
+    expect(
+      await screen.findByRole("heading", { name: "Admin World" }),
+    ).toBeDefined();
+    expect(screen.queryByRole("link", { name: /my character/i })).toBeNull();
+  });
 });
 
-function renderWorldShellPage(worldId: string): void {
+function renderWorldShellPage(
+  worldId: string,
+  activeCharacter?: Citizen,
+): void {
+  const contextValue: ActivePlayerCharacterContextValue = {
+    activeCharacter: activeCharacter ?? null,
+    clear: (): void => {},
+    isPending: false,
+    selectableCharacters:
+      activeCharacter !== undefined ? [activeCharacter] : [],
+    switchTo: (): void => {},
+  };
+
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <WorldShellPage worldId={worldId} />
+      <ActivePlayerCharacterContext value={contextValue}>
+        <WorldShellPage worldId={worldId} />
+      </ActivePlayerCharacterContext>
     </QueryClientProvider>,
   );
 }
@@ -210,6 +296,13 @@ function createClient({
         return createSettlementsQueryBuilder(settlementRows);
       }
 
+      if (table === "citizens") {
+        const b: Record<string, unknown> = {};
+        b.eq = vi.fn(() => b);
+        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
+        return { select: vi.fn(() => b) };
+      }
+
       throw new Error(`Unexpected table ${table}`);
     }),
   };
@@ -231,6 +324,7 @@ type TestWorldRow = {
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
+  readonly incest_prevention_depth: number;
   readonly name: string;
   readonly owner_id: string;
   readonly status: string;
@@ -270,6 +364,7 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 1,
     id: "00000000-0000-0000-0000-000000000001",
+    incest_prevention_depth: 4,
     name: "World",
     owner_id: "user-1",
     status: "active",
@@ -295,6 +390,37 @@ function createCalendarConfig(): WorldCalendarConfig {
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
   };
+}
+
+function createCitizen(overrides: Partial<Citizen> = {}): Citizen {
+  return {
+    bornOnTurnNumber: null,
+    citizenType: "player_character",
+    createdAt: "2026-05-01T00:00:00.000Z",
+    deathCause: null,
+    id: "citizen-1",
+    name: "Player",
+    npcFlaw: null,
+    npcGoal: null,
+    npcSecretContradiction: null,
+    npcTrait1: null,
+    npcTrait2: null,
+    parentACitizenId: null,
+    parentBCitizenId: null,
+    personalityText: null,
+    profilePhotoUrl: null,
+    roleNationId: null,
+    roleSettlementId: null,
+    roleType: "none",
+    settlementId: null,
+    sex: null,
+    skillsText: null,
+    status: "alive",
+    updatedAt: "2026-05-01T00:00:00.000Z",
+    userId: "user-1",
+    worldId: "world-1",
+    ...overrides,
+  } satisfies Citizen;
 }
 
 function createSettlementRow(

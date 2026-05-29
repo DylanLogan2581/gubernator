@@ -1,8 +1,12 @@
-import { resolveSupabaseAuthContext } from "./auth.ts";
 import { resolveSupabaseEndTurnAuthorization } from "./authorize.ts";
 import { getEdgeRuntime } from "./env.ts";
-import { corsHeaders, createJsonResponse } from "./http.ts";
+import {
+  buildCorsHeaders,
+  createJsonResponse,
+  getAllowedOrigins,
+} from "./http.ts";
 import { persistSupabaseRunningTransition } from "./persist.ts";
+import { resolveSupabaseAuthContext } from "./session.ts";
 import { resolveSupabaseEndTurnTransitionInput } from "./state.ts";
 import {
   mapDryWriteTransitionResult,
@@ -10,7 +14,10 @@ import {
 } from "./transition.ts";
 import { parseEndTurnBasicRequestBody } from "./validate.ts";
 
-import type { EndTurnBasicHandlerOptions } from "./types.ts";
+import type {
+  EndTurnBasicHandlerOptions,
+  EndTurnBasicResponse,
+} from "./types.ts";
 
 export type {
   EndTurnBasicAuthContext,
@@ -39,12 +46,25 @@ export async function handleEndTurnBasicRequest(
   request: Request,
   options: EndTurnBasicHandlerOptions = {},
 ): Promise<Response> {
+  const allowedOrigins = options.allowedOrigins ?? getAllowedOrigins();
+  const origin = request.headers.get("origin");
+
+  if (origin !== null && !allowedOrigins.includes(origin)) {
+    return new Response(null, { status: 403 });
+  }
+
+  const allowedOrigin = origin;
+  const corsHeaders = buildCorsHeaders(allowedOrigin);
+
+  const respond = (body: EndTurnBasicResponse, status: number): Response =>
+    createJsonResponse(body, status, allowedOrigin);
+
   if (request.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders, status: 204 });
   }
 
   if (request.method !== "POST") {
-    return createJsonResponse(
+    return respond(
       {
         error: {
           code: "method_not_allowed",
@@ -59,7 +79,7 @@ export async function handleEndTurnBasicRequest(
   const requestBodyResult = await parseEndTurnBasicRequestBody(request);
 
   if (!requestBodyResult.ok) {
-    return createJsonResponse(requestBodyResult.error, 400);
+    return respond(requestBodyResult.error, 400);
   }
 
   const resolveAuthContext =
@@ -67,10 +87,7 @@ export async function handleEndTurnBasicRequest(
   const authContextResult = await resolveAuthContext(request);
 
   if (!authContextResult.ok) {
-    return createJsonResponse(
-      authContextResult.error,
-      authContextResult.status,
-    );
+    return respond(authContextResult.error, authContextResult.status);
   }
 
   const resolveAuthorization =
@@ -81,10 +98,7 @@ export async function handleEndTurnBasicRequest(
   );
 
   if (!authorizationResult.ok) {
-    return createJsonResponse(
-      authorizationResult.error,
-      authorizationResult.status,
-    );
+    return respond(authorizationResult.error, authorizationResult.status);
   }
 
   const resolveTransitionInput =
@@ -95,10 +109,7 @@ export async function handleEndTurnBasicRequest(
   );
 
   if (!transitionInputResult.ok) {
-    return createJsonResponse(
-      transitionInputResult.error,
-      transitionInputResult.status,
-    );
+    return respond(transitionInputResult.error, transitionInputResult.status);
   }
 
   const plannedTransitionResult = planDryWriteEndTurnTransition(
@@ -106,7 +117,7 @@ export async function handleEndTurnBasicRequest(
   );
 
   if (!plannedTransitionResult.ok) {
-    return createJsonResponse(
+    return respond(
       plannedTransitionResult.error,
       plannedTransitionResult.status,
     );
@@ -121,13 +132,13 @@ export async function handleEndTurnBasicRequest(
   );
 
   if (!persistedTransitionResult.ok) {
-    return createJsonResponse(
+    return respond(
       persistedTransitionResult.error,
       persistedTransitionResult.status,
     );
   }
 
-  return createJsonResponse(
+  return respond(
     {
       data: {
         actorId: authContextResult.context.userId,

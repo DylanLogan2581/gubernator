@@ -99,7 +99,7 @@ describe("accessibleWorldsQueryOptions", () => {
     ]);
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility",
     );
     expect(order).toHaveBeenCalledWith("updated_at", { ascending: false });
   });
@@ -219,11 +219,9 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(routeAccess.header).toEqual({
       archivedAt: null,
       currentTurnNumber: 8,
-      fullInWorldDateLabel: "Secondday, Ember 1, 101 AG",
       inWorldDateLabel: "Secondday, Ember 1, 101 AG",
       isArchived: false,
       name: "Local Development World",
-      nextFullInWorldDateLabel: "Firstday, Ember 2, 101 AG",
       nextInWorldDateLabel: "Firstday, Ember 2, 101 AG",
       nextTurnNumber: 9,
       planningTurnNumber: 8,
@@ -236,7 +234,7 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(routeAccess.world.slug).toBe("local-development-world-00000000");
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,name,owner_id,status,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility",
     );
     expect(eq).toHaveBeenCalledWith(
       "id",
@@ -458,6 +456,7 @@ function createWorldRow(
     readonly created_at: string;
     readonly current_turn_number: number;
     readonly id: string;
+    readonly incest_prevention_depth: number;
     readonly name: string;
     readonly owner_id: string;
     readonly status: string;
@@ -470,6 +469,7 @@ function createWorldRow(
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
+  readonly incest_prevention_depth: number;
   readonly name: string;
   readonly owner_id: string;
   readonly status: string;
@@ -482,6 +482,7 @@ function createWorldRow(
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 5,
     id: "00000000-0000-0000-0000-000000000101",
+    incest_prevention_depth: 4,
     name: "Local Development World",
     owner_id: "user-1",
     status: "active",

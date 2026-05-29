@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -16,9 +16,23 @@ vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
 }));
 
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
+}));
+
 describe("SettlementReadinessListPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+    toastError.mockReset();
+    toastSuccess.mockReset();
   });
 
   it("shows settlement readiness rows", async () => {
@@ -540,7 +554,7 @@ describe("SettlementReadinessListPanel", () => {
     );
   });
 
-  it("renders mutation errors as accessible alert text", async () => {
+  it("emits an error toast when the readiness mutation fails", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       settlementRows: [
@@ -567,9 +581,12 @@ describe("SettlementReadinessListPanel", () => {
       }),
     );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "permission denied for table settlements",
-    );
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith(
+        expect.stringContaining("permission denied for table settlements"),
+      );
+    });
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });
 

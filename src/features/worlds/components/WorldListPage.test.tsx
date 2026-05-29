@@ -200,6 +200,13 @@ function createClient({
         return createWorldsQueryBuilder(worldRows);
       }
 
+      if (table === "citizens") {
+        const b: Record<string, unknown> = {};
+        b.eq = vi.fn(() => b);
+        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
+        return { select: vi.fn(() => b) };
+      }
+
       throw new Error(`Unexpected table ${table}`);
     }),
   };
@@ -221,6 +228,7 @@ type TestWorldRow = {
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
+  readonly incest_prevention_depth: number;
   readonly name: string;
   readonly owner_id: string;
   readonly status: string;
@@ -251,6 +259,7 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 1,
     id: "00000000-0000-0000-0000-000000000001",
+    incest_prevention_depth: 4,
     name: "World",
     owner_id: "user-1",
     status: "active",

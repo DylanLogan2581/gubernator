@@ -4,7 +4,8 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeAuthError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { toWorldAccessTarget } from "@/features/permissions";
 import { turnQueryKeys } from "@/features/turns";
 import type { WorldPermissionContext } from "@/features/worlds";
 import { worldQueryKeys } from "@/features/worlds";
@@ -141,7 +142,7 @@ async function saveWorldCalendarConfig(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   if (data === null) {
@@ -166,20 +167,8 @@ async function getCalendarSaveAccessRow(
     .maybeSingle();
 
   if (error !== null) {
-    throw normalizeAuthError(error);
+    throw normalizeSupabaseError(error);
   }
 
   return data;
-}
-
-function toWorldAccessTarget(world: WorldCalendarSaveAccessRow): {
-  readonly id: string;
-  readonly ownerId: string;
-  readonly visibility: string;
-} {
-  return {
-    id: world.id,
-    ownerId: world.owner_id,
-    visibility: world.visibility,
-  };
 }

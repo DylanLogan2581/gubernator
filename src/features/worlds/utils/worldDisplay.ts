@@ -18,6 +18,7 @@ type WorldRow = Pick<
   | "created_at"
   | "current_turn_number"
   | "id"
+  | "incest_prevention_depth"
   | "name"
   | "owner_id"
   | "status"
@@ -52,21 +53,14 @@ export function toAccessibleWorld(
     createdAt: world.created_at,
     currentTurnNumber: world.current_turn_number,
     id: world.id,
+    incestPreventionDepth: world.incest_prevention_depth,
     inWorldDateLabel: resolveInWorldDateLabel(
-      world.calendar_config_json,
-      planningTurnNumber,
-    ),
-    fullInWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       planningTurnNumber,
     ),
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
     name: world.name,
-    nextFullInWorldDateLabel: resolveInWorldDateLabel(
-      world.calendar_config_json,
-      nextPlanningTurnNumber,
-    ),
     nextInWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       nextPlanningTurnNumber,

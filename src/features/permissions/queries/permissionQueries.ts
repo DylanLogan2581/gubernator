@@ -5,7 +5,10 @@ import {
 } from "@tanstack/react-query";
 
 import { currentAppUserQueryOptions, type AuthUiError } from "@/features/auth";
-import { currentUserAdminWorldIdsQueryOptions } from "@/features/worlds";
+import {
+  currentUserAdminWorldIdsQueryOptions,
+  currentUserPlayerCharacterWorldIdsQueryOptions,
+} from "@/features/worlds";
 
 import { createAccessContext } from "../utils/accessContext";
 
@@ -59,14 +62,20 @@ async function getCurrentAccessContext(
     });
   }
 
-  const worldAdminWorldIds = await queryClient.fetchQuery(
-    currentUserAdminWorldIdsQueryOptions(currentUser.id),
-  );
+  const [worldAdminWorldIds, playerCharacterWorldIds] = await Promise.all([
+    queryClient.fetchQuery(
+      currentUserAdminWorldIdsQueryOptions(currentUser.id),
+    ),
+    queryClient.fetchQuery(
+      currentUserPlayerCharacterWorldIdsQueryOptions(currentUser.id),
+    ),
+  ]);
 
   return createAccessContext({
     isActiveUser: true,
     isSuperAdmin: currentUser.is_super_admin,
     userId: currentUser.id,
     worldAdminWorldIds,
+    playerCharacterWorldIds,
   });
 }

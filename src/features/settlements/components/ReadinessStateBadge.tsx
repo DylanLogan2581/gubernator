@@ -1,3 +1,5 @@
+import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
+
 import { getReadinessStateLabel } from "./SettlementReadinessDisplayText";
 
 import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";
@@ -8,7 +10,8 @@ export function ReadinessStateBadge({
 }: {
   readonly item: SettlementReadinessListItem;
 }): JSX.Element {
-  const label = getReadinessStateLabel(item);
+  const state = deriveSettlementReadinessState(item);
+  const label = getReadinessStateLabel(state);
 
   return (
     <span className="inline-flex w-fit rounded-sm border border-border bg-background px-2 py-1 text-xs font-medium text-foreground">
@@ -22,7 +25,8 @@ export function ReadOnlyReadinessIndicator({
 }: {
   readonly item: SettlementReadinessListItem;
 }): JSX.Element {
-  const label = getReadinessStateLabel(item);
+  const state = deriveSettlementReadinessState(item);
+  const label = getReadinessStateLabel(state);
 
   return (
     <p className="text-sm text-muted-foreground" aria-label={label}>
