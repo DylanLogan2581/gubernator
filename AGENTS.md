@@ -178,6 +178,11 @@ resolve without an explicit import map.
 - If markup repeats, extract a component.
 - Preserve accessibility: semantic HTML, labels, keyboard support, and visible focus states.
 - Prefer design tokens from `src/index.css` over one-off values.
+- Use Sonner toasts for mutation success and failure feedback via the helpers
+  in `src/lib/notify.ts` (`notifyMutationSuccess`, `notifyMutationError`). Do
+  not render conditional success/failure banners in document flow — they shift
+  the page on click. Field-level validation errors rendered directly under an
+  input (e.g. `text-destructive` strings) stay inline.
 
 ## Supabase Rules
 
