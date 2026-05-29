@@ -206,6 +206,18 @@ function WorldShellContent({
             </Link>
           </Button>
         ) : null}
+        {worldQuery.data.canAdmin ? (
+          <Button asChild variant="outline" size="sm" className="w-fit">
+            <Link
+              to="/worlds/$worldId/configuration"
+              params={{ worldId }}
+              search={{ tab: "resources" }}
+            >
+              Configuration
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+        ) : null}
       </nav>
       <SettlementReadinessSummaryPanel worldId={worldId} />
       <SettlementReadinessListPanel

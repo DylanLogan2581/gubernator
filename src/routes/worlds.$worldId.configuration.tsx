@@ -1,0 +1,82 @@
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { z } from "zod";
+
+import { requireAuthenticatedRoute } from "@/features/auth";
+import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  WorldConfigurationPage,
+  isWorldNotFoundError,
+  worldRouteAccessQueryOptions,
+} from "@/features/worlds";
+
+import type { JSX } from "react";
+
+const CONFIGURATION_TABS = [
+  "resources",
+  "jobs",
+  "buildings",
+  "deposits",
+  "managed-populations",
+  "calendar",
+  "naming",
+  "npc-flavor",
+  "population-rules",
+] as const;
+
+type ConfigurationTab = (typeof CONFIGURATION_TABS)[number];
+
+const DEFAULT_TAB: ConfigurationTab = "resources";
+
+const configurationSearchSchema = z.object({
+  tab: z.enum(CONFIGURATION_TABS).optional(),
+});
+
+function parseConfigurationSearch(search: unknown): {
+  readonly tab: ConfigurationTab;
+} {
+  const result = configurationSearchSchema.safeParse(search);
+  const tab = result.success ? (result.data.tab ?? DEFAULT_TAB) : DEFAULT_TAB;
+  return { tab };
+}
+
+function WorldConfigurationRoute(): JSX.Element {
+  const { worldId } = Route.useParams();
+  const { tab } = Route.useSearch();
+  return <WorldConfigurationPage activeTab={tab} worldId={worldId} />;
+}
+
+export const Route = createFileRoute("/worlds/$worldId/configuration")({
+  beforeLoad: async ({ context, location, params }) => {
+    const authRedirect = await requireAuthenticatedRoute({
+      queryClient: context.queryClient,
+      returnTo: location.href,
+    });
+
+    if (authRedirect !== undefined) {
+      return authRedirect;
+    }
+
+    const accessContext = await context.queryClient.ensureQueryData(
+      currentAccessContextQueryOptions(context.queryClient),
+    );
+
+    try {
+      const worldAccess = await context.queryClient.ensureQueryData(
+        worldRouteAccessQueryOptions(params.worldId, accessContext),
+      );
+
+      if (!worldAccess.canAdmin) {
+        return redirect({
+          params: { worldId: params.worldId },
+          to: "/worlds/$worldId",
+        });
+      }
+    } catch (error) {
+      if (!isWorldNotFoundError(error)) {
+        throw error;
+      }
+    }
+  },
+  component: WorldConfigurationRoute,
+  validateSearch: parseConfigurationSearch,
+});
