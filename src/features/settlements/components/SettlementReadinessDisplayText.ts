@@ -1,27 +1,29 @@
-import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";
+import type { SettlementReadinessState } from "../utils/settlementReadinessState";
 
 export function getReadinessStateLabel(
-  item: SettlementReadinessListItem,
+  state: SettlementReadinessState,
 ): string {
-  if (item.autoReadyEnabled) {
-    return "Auto-ready";
+  switch (state.kind) {
+    case "auto-ready":
+      return "Auto-ready";
+    case "manually-ready":
+      return "Ready";
+    case "not-ready":
+      return "Not ready";
   }
-
-  if (item.isReadyForCurrentTurn) {
-    return "Ready";
-  }
-
-  return "Not ready";
 }
 
 export function getManualReadinessLabel(
-  item: SettlementReadinessListItem,
+  state: SettlementReadinessState,
 ): string {
-  if (item.autoReadyEnabled) {
-    return "Ready (auto-ready)";
+  switch (state.kind) {
+    case "auto-ready":
+      return "Ready (auto-ready)";
+    case "manually-ready":
+      return "Ready";
+    case "not-ready":
+      return "Not ready";
   }
-
-  return item.isReadyForCurrentTurn ? "Ready" : "Not ready";
 }
 
 export function getManualReadinessDescription({

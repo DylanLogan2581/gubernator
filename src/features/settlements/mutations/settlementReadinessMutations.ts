@@ -1,3 +1,7 @@
+// See src/features/settlements/utils/settlementReadinessState.ts for the settlement
+// readiness state machine: legal (autoReadyEnabled, isReadyCurrentTurn) combinations,
+// named UI states, and legal transitions.
+
 import {
   mutationOptions,
   type QueryClient,
@@ -13,6 +17,7 @@ import {
 } from "@/lib/supabase";
 
 import { settlementReadinessQueryKeys } from "../queries/settlementReadinessQueryKeys";
+import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
 
 type SetSettlementReadinessErrorCode =
   | "settlement_readiness_archived"
@@ -339,11 +344,15 @@ function toSettlementReadinessMutationResult(
 function toSettlementAutoReadyMutationResult(
   row: SettlementAutoReadyUpdateRow,
 ): SettlementAutoReadyMutationResult {
+  const { isReadyForCurrentTurn } = deriveSettlementReadinessState({
+    autoReadyEnabled: row.auto_ready_enabled,
+    isReadyCurrentTurn: row.is_ready_current_turn,
+  });
   return {
     autoReadyEnabled: row.auto_ready_enabled,
     id: row.id,
     isReadyCurrentTurn: row.is_ready_current_turn,
-    isReadyForCurrentTurn: row.auto_ready_enabled || row.is_ready_current_turn,
+    isReadyForCurrentTurn,
     readySetAt: row.ready_set_at,
   };
 }

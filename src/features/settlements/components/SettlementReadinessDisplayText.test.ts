@@ -3,7 +3,52 @@ import { describe, expect, it } from "vitest";
 import {
   getAutoReadyDescription,
   getManualReadinessDescription,
+  getManualReadinessLabel,
+  getReadinessStateLabel,
 } from "./SettlementReadinessDisplayText";
+
+import type { SettlementReadinessState } from "../utils/settlementReadinessState";
+
+const autoReadyState: SettlementReadinessState = {
+  isReadyForCurrentTurn: true,
+  kind: "auto-ready",
+};
+const manuallyReadyState: SettlementReadinessState = {
+  isReadyForCurrentTurn: true,
+  kind: "manually-ready",
+};
+const notReadyState: SettlementReadinessState = {
+  isReadyForCurrentTurn: false,
+  kind: "not-ready",
+};
+
+describe("getReadinessStateLabel", () => {
+  it('returns "Auto-ready" for auto-ready state', () => {
+    expect(getReadinessStateLabel(autoReadyState)).toBe("Auto-ready");
+  });
+
+  it('returns "Ready" for manually-ready state', () => {
+    expect(getReadinessStateLabel(manuallyReadyState)).toBe("Ready");
+  });
+
+  it('returns "Not ready" for not-ready state', () => {
+    expect(getReadinessStateLabel(notReadyState)).toBe("Not ready");
+  });
+});
+
+describe("getManualReadinessLabel", () => {
+  it('returns "Ready (auto-ready)" for auto-ready state', () => {
+    expect(getManualReadinessLabel(autoReadyState)).toBe("Ready (auto-ready)");
+  });
+
+  it('returns "Ready" for manually-ready state', () => {
+    expect(getManualReadinessLabel(manuallyReadyState)).toBe("Ready");
+  });
+
+  it('returns "Not ready" for not-ready state', () => {
+    expect(getManualReadinessLabel(notReadyState)).toBe("Not ready");
+  });
+});
 
 describe("getManualReadinessDescription", () => {
   it("returns archived message when isArchived is true", () => {
