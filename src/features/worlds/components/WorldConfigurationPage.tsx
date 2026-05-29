@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
+import { WorldResourcesConfigPanel } from "./WorldResourcesConfigPanel";
 
 import type { JSX } from "react";
 
@@ -121,6 +122,16 @@ function WorldConfigurationContent({
       <ErrorState
         title="Configuration could not be loaded"
         description={getErrorDescription(worldQuery.error)}
+      />
+    );
+  }
+
+  if (activeTab === "resources") {
+    return (
+      <WorldResourcesConfigPanel
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
       />
     );
   }
