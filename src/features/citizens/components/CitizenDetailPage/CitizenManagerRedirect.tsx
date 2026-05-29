@@ -6,6 +6,8 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 
+import { isManagerRole } from "../../utils/citizenRoles";
+
 import { CitizenDetailFrame } from "./CitizenDetailFrame";
 
 import type { Citizen } from "../../types/citizenTypes";
@@ -32,9 +34,7 @@ export function CitizenManagerRedirect({
   const nationId = settlement?.nationId ?? null;
 
   const isManager =
-    activeCharacter !== null &&
-    (activeCharacter.roleType === "nation_manager" ||
-      activeCharacter.roleType === "settlement_manager");
+    activeCharacter !== null && isManagerRole(activeCharacter.roleType);
 
   useEffect(() => {
     if (settlementId === null || nationId === null) {

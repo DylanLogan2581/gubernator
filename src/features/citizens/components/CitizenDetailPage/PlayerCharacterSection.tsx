@@ -12,6 +12,7 @@ import {
   linkUserToCitizenMutationOptions,
   unlinkUserFromCitizenMutationOptions,
 } from "../../mutations/playerCharacterRoleMutations";
+import { isManagerRole, managerScopeLabel } from "../../utils/citizenRoles";
 
 import { getRoleMutationErrorDescription } from "./ErrorMessages";
 
@@ -86,16 +87,14 @@ function CitizenLinkedUserControl({
     unlinkUserFromCitizenMutationOptions({ queryClient }),
   );
 
+  const roleScope = managerScopeLabel(citizen.roleType);
   const nationQuery = useQuery({
     ...nationByIdQueryOptions(citizen.roleNationId ?? ""),
-    enabled:
-      citizen.roleType === "nation_manager" && citizen.roleNationId !== null,
+    enabled: roleScope === "nation" && citizen.roleNationId !== null,
   });
   const settlementQuery = useQuery({
     ...settlementByIdQueryOptions(citizen.roleSettlementId ?? ""),
-    enabled:
-      citizen.roleType === "settlement_manager" &&
-      citizen.roleSettlementId !== null,
+    enabled: roleScope === "settlement" && citizen.roleSettlementId !== null,
   });
 
   function closeEditor(): void {
@@ -131,7 +130,7 @@ function CitizenLinkedUserControl({
   }
 
   function handleUnlink(): void {
-    if (citizen.roleType !== "none") {
+    if (isManagerRole(citizen.roleType)) {
       setIsConfirmingUnlink(true);
       return;
     }
@@ -158,13 +157,13 @@ function CitizenLinkedUserControl({
   const firstError = linkMutation.error ?? unlinkMutation.error ?? null;
 
   function unlinkRoleDescription(): string {
-    if (citizen.roleType === "nation_manager") {
+    if (roleScope === "nation") {
       const name = nationQuery.data?.name ?? null;
       return name !== null
         ? `This will revoke the Nation Manager role for ${name}.`
         : "This will revoke the Nation Manager role.";
     }
-    if (citizen.roleType === "settlement_manager") {
+    if (roleScope === "settlement") {
       const name = settlementQuery.data?.name ?? null;
       return name !== null
         ? `This will revoke the Settlement Manager role for ${name}.`

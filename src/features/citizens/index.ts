@@ -36,6 +36,11 @@ export {
   currentAssignmentForCitizenQueryOptions,
 } from "./queries/citizenAssignmentsQueries";
 export {
+  isManagerRole,
+  isPlayerRole,
+  managerScopeLabel,
+} from "./utils/citizenRoles";
+export {
   emptyNpcFlavor,
   generateNpcFlavor,
   renderNpcFlavorLine,
