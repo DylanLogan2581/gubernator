@@ -808,42 +808,72 @@ export type Database = {
           calendar_config_json: Json;
           created_at: string;
           current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
           name: string;
+          naming_config_json: Json;
           npc_flavor_config_json: Json;
           owner_id: string;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
           status: string;
           updated_at: string;
           visibility: string;
+          water_consumption_per_citizen: number;
         };
         Insert: {
           archived_at?: string | null;
           calendar_config_json?: Json;
           created_at?: string;
           current_turn_number?: number;
+          fertility_chance?: number;
+          food_consumption_per_citizen?: number;
+          homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
+          maximum_fertility_age_turns?: number | null;
+          minimum_partnership_age_turns?: number;
+          mourning_period_turns?: number;
           name: string;
+          naming_config_json?: Json;
           npc_flavor_config_json?: Json;
           owner_id: string;
+          partnership_seek_chance?: number;
+          starvation_severity_multiplier?: number;
           status?: string;
           updated_at?: string;
           visibility?: string;
+          water_consumption_per_citizen?: number;
         };
         Update: {
           archived_at?: string | null;
           calendar_config_json?: Json;
           created_at?: string;
           current_turn_number?: number;
+          fertility_chance?: number;
+          food_consumption_per_citizen?: number;
+          homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
+          maximum_fertility_age_turns?: number | null;
+          minimum_partnership_age_turns?: number;
+          mourning_period_turns?: number;
           name?: string;
+          naming_config_json?: Json;
           npc_flavor_config_json?: Json;
           owner_id?: string;
+          partnership_seek_chance?: number;
+          starvation_severity_multiplier?: number;
           status?: string;
           updated_at?: string;
           visibility?: string;
+          water_consumption_per_citizen?: number;
         };
         Relationships: [
           {
@@ -1145,6 +1175,7 @@ export type Database = {
         Returns: string[];
       };
       default_calendar_config: { Args: never; Returns: Json };
+      default_naming_config: { Args: never; Returns: Json };
       default_npc_flavor_config: { Args: never; Returns: Json };
       dissolve_partnership: {
         Args: {
@@ -1210,6 +1241,7 @@ export type Database = {
       };
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
+      is_valid_naming_config: { Args: { config: Json }; Returns: boolean };
       is_valid_npc_flavor_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
       link_user_to_citizen: {
