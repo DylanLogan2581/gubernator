@@ -1,11 +1,13 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Save, UserPlus, X } from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { textInputLimits } from "@/lib/inputLimits";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import { createPlayerCharacterMutationOptions } from "../../mutations/citizensMutations";
 import { citizensHaveCloseKinship } from "../../queries/citizenKinshipQueries";
@@ -99,7 +101,11 @@ export function CreatePlayerCharacterDialog({
           worldId,
         },
         {
+          onError: (error) => {
+            toast.error(getCreationErrorDescription(error));
+          },
           onSuccess: (citizen) => {
+            notifyMutationSuccess("Player character created.");
             onCreated(citizen);
             onClose();
           },
@@ -130,13 +136,6 @@ export function CreatePlayerCharacterDialog({
 
     runMutation();
   };
-
-  const errorDescription =
-    formError !== undefined
-      ? formError
-      : mutation.isError
-        ? getCreationErrorDescription(mutation.error)
-        : "";
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
@@ -242,12 +241,12 @@ export function CreatePlayerCharacterDialog({
           value={fields.parentBCitizenId}
         />
 
-        {errorDescription === "" ? null : (
+        {formError === undefined ? null : (
           <p
             role="alert"
             className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
-            {errorDescription}
+            {formError}
           </p>
         )}
 

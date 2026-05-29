@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Heart, HeartCrack, Pencil, Save, UserPlus, X } from "lucide-react";
 import { useMemo, useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -406,7 +407,12 @@ function CreatePartnershipForm({
         status: "active",
         turnTransitionId,
       },
-      { onSuccess: onClose },
+      {
+        onError: (error) => {
+          toast.error(getPartnershipMutationErrorDescription(error));
+        },
+        onSuccess: onClose,
+      },
     );
   }
 
@@ -450,10 +456,7 @@ function CreatePartnershipForm({
         onChange={setChangeReason}
         value={changeReason}
       />
-      <FormError
-        fieldError={fieldError}
-        mutationError={mutation.isError ? mutation.error : null}
-      />
+      <FormError fieldError={fieldError} />
       <div className="flex flex-wrap gap-2">
         <Button type="submit" size="sm" disabled={mutation.isPending}>
           <Save aria-hidden="true" />
@@ -528,9 +531,19 @@ function EndPartnershipForm({
     };
 
     if (kind === "dissolve") {
-      dissolveMutation.mutate(input, { onSuccess: onClose });
+      dissolveMutation.mutate(input, {
+        onError: (error) => {
+          toast.error(getPartnershipMutationErrorDescription(error));
+        },
+        onSuccess: onClose,
+      });
     } else {
-      widowMutation.mutate(input, { onSuccess: onClose });
+      widowMutation.mutate(input, {
+        onError: (error) => {
+          toast.error(getPartnershipMutationErrorDescription(error));
+        },
+        onSuccess: onClose,
+      });
     }
   }
 
@@ -574,10 +587,7 @@ function EndPartnershipForm({
         onChange={setChangeReason}
         value={changeReason}
       />
-      <FormError
-        fieldError={fieldError}
-        mutationError={mutation.isError ? mutation.error : null}
-      />
+      <FormError fieldError={fieldError} />
       <div className="flex flex-wrap gap-2">
         <Button
           type="submit"
@@ -676,7 +686,12 @@ function ReassignPartnerForm({
         retainedCitizenId,
         turnTransitionId,
       },
-      { onSuccess: onClose },
+      {
+        onError: (error) => {
+          toast.error(getPartnershipMutationErrorDescription(error));
+        },
+        onSuccess: onClose,
+      },
     );
   }
 
@@ -726,10 +741,7 @@ function ReassignPartnerForm({
         onChange={setChangeReason}
         value={changeReason}
       />
-      <FormError
-        fieldError={fieldError}
-        mutationError={mutation.isError ? mutation.error : null}
-      />
+      <FormError fieldError={fieldError} />
       <div className="flex flex-wrap gap-2">
         <Button type="submit" size="sm" disabled={mutation.isPending}>
           <Save aria-hidden="true" />
@@ -852,17 +864,10 @@ function ChangeReasonField({
 
 function FormError({
   fieldError,
-  mutationError,
 }: {
   readonly fieldError: string | undefined;
-  readonly mutationError: unknown;
 }): JSX.Element | null {
-  const description =
-    fieldError ??
-    (mutationError === null || mutationError === undefined
-      ? null
-      : getPartnershipMutationErrorDescription(mutationError));
-  if (description === null) {
+  if (fieldError === undefined) {
     return null;
   }
   return (
@@ -870,7 +875,7 @@ function FormError({
       role="alert"
       className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
-      {description}
+      {fieldError}
     </p>
   );
 }

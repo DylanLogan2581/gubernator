@@ -1,6 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Heart, Skull } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,9 @@ export function CitizenLifecycleSection({
         worldId: citizen.worldId,
       },
       {
+        onError: (error) => {
+          toast.error(getCitizenMutationErrorDescription(error));
+        },
         onSuccess: () => {
           setIsMarkingDead(false);
           setDeathCause("");
@@ -53,13 +57,18 @@ export function CitizenLifecycleSection({
 
   function handleRevive(): void {
     reviveMutation.reset();
-    reviveMutation.mutate({
-      citizenId: citizen.id,
-      worldId: citizen.worldId,
-    });
+    reviveMutation.mutate(
+      {
+        citizenId: citizen.id,
+        worldId: citizen.worldId,
+      },
+      {
+        onError: (error) => {
+          toast.error(getCitizenMutationErrorDescription(error));
+        },
+      },
+    );
   }
-
-  const firstError = markDeadMutation.error ?? reviveMutation.error ?? null;
 
   return (
     <section
@@ -150,14 +159,6 @@ export function CitizenLifecycleSection({
           </Button>
         </div>
       )}
-      {firstError !== null ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {getCitizenMutationErrorDescription(firstError)}
-        </p>
-      ) : null}
     </section>
   );
 }
