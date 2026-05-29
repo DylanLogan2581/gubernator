@@ -3,6 +3,7 @@
 export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
 export { WorldListPage } from "./components/WorldListPage";
+export { WorldNamingConfigPanel } from "./components/WorldNamingConfigPanel";
 export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
 export { WorldPopulationRulesConfigPanel } from "./components/WorldPopulationRulesConfigPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
@@ -19,6 +20,11 @@ export {
 } from "./queries/worldQueries";
 export { worldQueryKeys } from "./queries/worldQueryKeys";
 export {
+  WorldNamingConfigError,
+  isWorldNamingConfigError,
+  worldNamingConfigQueryOptions,
+} from "./queries/worldNamingConfigQueries";
+export {
   WorldNpcFlavorConfigError,
   isWorldNpcFlavorConfigError,
   worldNpcFlavorConfigQueryOptions,
@@ -29,6 +35,11 @@ export {
   worldPopulationRulesQueryOptions,
 } from "./queries/worldPopulationRulesQueries";
 export {
+  SaveWorldNamingConfigError,
+  isSaveWorldNamingConfigError,
+  saveWorldNamingConfigMutationOptions,
+} from "./mutations/worldNamingConfigMutations";
+export {
   SaveWorldNpcFlavorConfigError,
   isSaveWorldNpcFlavorConfigError,
   saveWorldNpcFlavorConfigMutationOptions,
@@ -38,6 +49,10 @@ export {
   isSaveWorldPopulationRulesError,
   saveWorldPopulationRulesMutationOptions,
 } from "./mutations/worldPopulationRulesMutations";
+export type {
+  NameConvention,
+  WorldNamingConfig,
+} from "./schemas/worldNamingConfigSchemas";
 export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
 export type { WorldPopulationRules } from "./schemas/worldPopulationRulesSchemas";
 export type {
