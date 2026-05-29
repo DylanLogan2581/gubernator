@@ -1,6 +1,8 @@
 import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
+import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
+
 import {
   getManualReadinessDescription,
   getManualReadinessLabel,
@@ -24,16 +26,17 @@ export function ManualReadinessControl({
   mutationError,
   setReadiness,
 }: ManualReadinessControlProps): JSX.Element {
+  const state = deriveSettlementReadinessState(item);
   const descriptionId = `settlement-readiness-${item.id}-description`;
   const errorId = `settlement-readiness-${item.id}-error`;
-  const isAutoReady = item.autoReadyEnabled;
+  const isAutoReady = state.kind === "auto-ready";
   const isDisabled = isArchived || isAutoReady || isPending;
   const description = getManualReadinessDescription({
     isArchived,
     isAutoReady,
     isPending,
   });
-  const label = getManualReadinessLabel(item);
+  const label = getManualReadinessLabel(state);
 
   return (
     <div className="grid gap-2">
@@ -45,7 +48,7 @@ export function ManualReadinessControl({
               : `${descriptionId} ${errorId}`
           }
           aria-invalid={mutationError === null ? undefined : true}
-          checked={item.isReadyForCurrentTurn}
+          checked={state.isReadyForCurrentTurn}
           className="peer sr-only"
           disabled={isDisabled}
           onChange={(event) => {

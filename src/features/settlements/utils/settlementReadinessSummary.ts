@@ -1,3 +1,5 @@
+import { deriveSettlementReadinessState } from "./settlementReadinessState";
+
 import type { SettlementReadinessSummary } from "../types/settlementReadinessTypes";
 
 export type SettlementReadinessSummaryRow = {
@@ -35,5 +37,8 @@ export function formatSettlementReadinessPercentage(
 export function isSettlementReadyForCurrentTurn(
   row: SettlementReadinessSummaryRow,
 ): boolean {
-  return row.auto_ready_enabled || row.is_ready_current_turn;
+  return deriveSettlementReadinessState({
+    autoReadyEnabled: row.auto_ready_enabled,
+    isReadyCurrentTurn: row.is_ready_current_turn,
+  }).isReadyForCurrentTurn;
 }
