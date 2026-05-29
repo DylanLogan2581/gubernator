@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
+import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
 import { WorldResourcesConfigPanel } from "./WorldResourcesConfigPanel";
@@ -140,6 +141,17 @@ function WorldConfigurationContent({
   if (activeTab === "calendar") {
     return (
       <WorldCalendarConfigPanel
+        accessContext={accessContext}
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+    );
+  }
+
+  if (activeTab === "naming") {
+    return (
+      <WorldNamingConfigPanel
         accessContext={accessContext}
         canAdmin={worldQuery.data.canAdmin}
         isArchived={worldQuery.data.header.isArchived}

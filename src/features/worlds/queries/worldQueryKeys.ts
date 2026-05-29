@@ -25,6 +25,8 @@ export const worldQueryKeys = {
       ...accessContext.worldAdminWorldIds,
       ...accessContext.playerCharacterWorldIds,
     ] as const,
+  namingConfig: (worldId: string) =>
+    [...worldQueryKeys.all, "naming-config", worldId] as const,
   npcFlavorConfig: (worldId: string) =>
     [...worldQueryKeys.all, "npc-flavor-config", worldId] as const,
   populationRules: (worldId: string) =>
