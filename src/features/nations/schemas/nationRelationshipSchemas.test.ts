@@ -14,6 +14,7 @@ describe("setUnilateralStanceInputSchema", () => {
       fromNationId: FROM_NATION_ID,
       stance: "hostile",
       toNationId: TO_NATION_ID,
+      worldId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
     });
 
     expect(result.success).toBe(true);
@@ -24,6 +25,7 @@ describe("setUnilateralStanceInputSchema", () => {
       fromNationId: FROM_NATION_ID,
       stance: "neutral",
       toNationId: FROM_NATION_ID,
+      worldId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
     });
 
     expect(result.success).toBe(false);
@@ -52,6 +54,7 @@ describe("proposeBilateralInputSchema", () => {
       fromNationId: FROM_NATION_ID,
       stance: "allied",
       toNationId: TO_NATION_ID,
+      worldId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
     });
 
     expect(result.success).toBe(true);
@@ -62,6 +65,7 @@ describe("proposeBilateralInputSchema", () => {
       fromNationId: FROM_NATION_ID,
       stance: "non_aggression_pact",
       toNationId: FROM_NATION_ID,
+      worldId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
     });
 
     expect(result.success).toBe(false);

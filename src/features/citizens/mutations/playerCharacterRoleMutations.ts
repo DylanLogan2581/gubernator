@@ -189,8 +189,8 @@ async function assignCitizenRole(
   const { data, error } = await client
     .rpc("assign_citizen_role", {
       p_citizen_id: values.citizenId,
-      p_role_nation_id: values.roleNationId ?? null,
-      p_role_settlement_id: values.roleSettlementId ?? null,
+      p_role_nation_id: values.roleNationId ?? undefined,
+      p_role_settlement_id: values.roleSettlementId ?? undefined,
       p_role_type: values.roleType,
     })
     .maybeSingle<CitizenRow>();

@@ -174,7 +174,7 @@ where
   and id <> '00000000-0000-0000-0000-000000000461';
 
 select
-  plan (37);
+  plan (40);
 
 -- ===========================================================================
 -- Existing Epic 2 assertions: world calendar, nation, settlement readiness.
@@ -764,6 +764,56 @@ select
     ),
     1,
     'end-turn reset reapplies auto-readiness for seeded settlements'
+  );
+
+-- ===========================================================================
+-- Epic 4 resource seeding assertions: every seeded world must have Food and
+-- Fresh Water seeded as system resources by the worlds_seed_system_resources
+-- trigger that fires on each world INSERT.
+-- ===========================================================================
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.resources
+      where
+        world_id = '00000000-0000-0000-0000-000000000101'
+        and is_system_resource = true
+    ),
+    2,
+    'world 101 has exactly two system resources (Food and Fresh Water)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.resources
+      where
+        world_id = '00000000-0000-0000-0000-000000000102'
+        and is_system_resource = true
+    ),
+    2,
+    'world 102 has exactly two system resources (Food and Fresh Water)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.resources
+      where
+        world_id = '00000000-0000-0000-0000-000000000103'
+        and is_system_resource = true
+    ),
+    2,
+    'world 103 has exactly two system resources (Food and Fresh Water)'
   );
 
 select
