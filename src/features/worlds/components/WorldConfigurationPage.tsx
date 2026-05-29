@@ -1,8 +1,18 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
+import { ErrorState } from "@/components/shared/ErrorState";
+import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { WorldCalendarConfigPanel } from "@/features/calendar";
+import { currentAccessContextQueryOptions } from "@/features/permissions";
+import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
+
+import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
+
+import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 
 import type { JSX } from "react";
 
@@ -27,6 +37,11 @@ export function WorldConfigurationPage({
   activeTab,
   worldId,
 }: WorldConfigurationPageProps): JSX.Element {
+  const queryClient = useQueryClient();
+  const accessContextQuery = useQuery(
+    currentAccessContextQueryOptions(queryClient),
+  );
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
       <Button asChild variant="outline" size="sm" className="w-fit">
@@ -64,7 +79,73 @@ export function WorldConfigurationPage({
         role="tabpanel"
         aria-label={`${activeTab} configuration`}
         className="min-h-[200px]"
-      />
+      >
+        {accessContextQuery.isPending ? (
+          <LoadingState label="Loading configuration…" />
+        ) : accessContextQuery.isError ? (
+          <ErrorState
+            title="Configuration could not be loaded"
+            description={getErrorDescription(accessContextQuery.error)}
+          />
+        ) : (
+          <WorldConfigurationContent
+            accessContext={accessContextQuery.data}
+            activeTab={activeTab}
+            worldId={worldId}
+          />
+        )}
+      </section>
     </div>
   );
+}
+
+function WorldConfigurationContent({
+  accessContext,
+  activeTab,
+  worldId,
+}: {
+  readonly accessContext: Parameters<typeof worldRouteAccessQueryOptions>[1];
+  readonly activeTab: string;
+  readonly worldId: string;
+}): JSX.Element | null {
+  const worldQuery = useQuery(
+    worldRouteAccessQueryOptions(worldId, accessContext),
+  );
+
+  if (worldQuery.isPending) {
+    return <LoadingState label="Loading configuration…" />;
+  }
+
+  if (worldQuery.isError) {
+    return (
+      <ErrorState
+        title="Configuration could not be loaded"
+        description={getErrorDescription(worldQuery.error)}
+      />
+    );
+  }
+
+  if (activeTab === "calendar") {
+    return (
+      <WorldCalendarConfigPanel
+        accessContext={accessContext}
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+    );
+  }
+
+  if (activeTab === "npc-flavor") {
+    return (
+      <WorldNpcFlavorConfigPanel
+        accessContext={accessContext}
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+    );
+  }
+
+  return null;
 }

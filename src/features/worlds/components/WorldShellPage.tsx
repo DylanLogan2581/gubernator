@@ -6,7 +6,6 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
-import { WorldCalendarConfigPanel } from "@/features/calendar";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
@@ -22,8 +21,6 @@ import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
 } from "../queries/worldQueries";
-
-import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 
 import type { JSX, ReactNode } from "react";
 
@@ -167,18 +164,6 @@ function WorldShellContent({
           </p>
         ) : null}
       </section>
-      <WorldCalendarConfigPanel
-        accessContext={accessContext}
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
-      <WorldNpcFlavorConfigPanel
-        accessContext={accessContext}
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
       <EndTurnControl
         canAdmin={worldQuery.data.canAdmin}
         currentDateLabel={worldQuery.data.header.inWorldDateLabel}

@@ -202,6 +202,31 @@ describe("WorldShellPage", () => {
     );
   });
 
+  it("does not render the calendar or NPC flavor config panels", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 1,
+            id: "00000000-0000-0000-0000-000000000707",
+            name: "Panel-Free World",
+            owner_id: "user-1",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000000707");
+
+    await screen.findByRole("heading", { name: "Panel-Free World" });
+    expect(screen.queryByRole("heading", { name: "Calendar" })).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: "NPC flavor pools" }),
+    ).toBeNull();
+  });
+
   it("does not show a My character nav link when there is no active player character", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
