@@ -45,6 +45,25 @@ describe("WorldConfigurationPage", () => {
     requireSupabaseClient.mockReset();
   });
 
+  it("mounts the resources panel when the resources tab is active", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow()],
+      }),
+    );
+
+    renderPage({ activeTab: "resources", worldId: WORLD_ID });
+
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Resources" },
+        { timeout: 5000 },
+      ),
+    ).toBeDefined();
+  });
+
   it("mounts the calendar panel when the calendar tab is active", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -174,6 +193,23 @@ function createClient({
         b.eq = vi.fn(() => b);
         b.order = vi.fn().mockResolvedValue({ data: [], error: null });
         return { select: vi.fn(() => b) };
+      }
+
+      if (table === "resources") {
+        const b: Record<string, unknown> = {};
+        b.eq = vi.fn(() => b);
+        b.order = vi.fn(() => b);
+        b.returns = vi.fn().mockResolvedValue({ data: [], error: null });
+        return {
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({ data: null, error: null }),
+            })),
+          })),
+          select: vi.fn(() => b),
+        };
       }
 
       throw new Error(`Unexpected table ${table}`);
