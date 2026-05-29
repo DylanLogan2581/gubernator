@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (12);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -335,6 +335,29 @@ select
     'owner cannot insert turn log entries directly'
   );
 
+select
+  throws_ok (
+    $test$
+    update public.turn_log_entries
+    set log_category = 'tampered'
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'owner cannot update turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    delete from public.turn_log_entries
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'owner cannot delete turn log entries directly'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -365,6 +388,29 @@ select
     '42501',
     null,
     'world admin cannot insert turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.turn_log_entries
+    set log_category = 'tampered'
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'world admin cannot update turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    delete from public.turn_log_entries
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'world admin cannot delete turn log entries directly'
   );
 
 reset role;
@@ -411,6 +457,29 @@ select
     '42501',
     null,
     'super admin cannot insert turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.turn_log_entries
+    set log_category = 'tampered'
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'super admin cannot update turn log entries directly'
+  );
+
+select
+  throws_ok (
+    $test$
+    delete from public.turn_log_entries
+    where id = '96000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'super admin cannot delete turn log entries directly'
   );
 
 reset role;
