@@ -27,6 +27,34 @@ const optionalTrimmedTextSchema = z
     return trimmed.length === 0 ? null : trimmed;
   });
 
+const optionalNpcTextSchema = z
+  .union([
+    z.string().max(textInputLimits.citizenNpcTextMax, "Text is too long."),
+    z.null(),
+  ])
+  .optional()
+  .transform((value): string | null => {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? null : trimmed;
+  });
+
+const optionalNpcTraitSchema = z
+  .union([
+    z.string().max(textInputLimits.citizenNpcTraitMax, "Trait is too long."),
+    z.null(),
+  ])
+  .optional()
+  .transform((value): string | null => {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? null : trimmed;
+  });
+
 const optionalCitizenIdSchema = z.union([citizenIdSchema, z.null()]).optional();
 const optionalSettlementIdSchema = z
   .union([settlementIdSchema, z.null()])
@@ -45,18 +73,18 @@ const citizenRoleTypeSchema = z.enum([
 const baseCitizenWriteShape = {
   bornOnTurnNumber: optionalIntegerSchema,
   name: citizenNameSchema,
-  npcFlaw: optionalTrimmedTextSchema,
-  npcGoal: optionalTrimmedTextSchema,
-  npcSecretContradiction: optionalTrimmedTextSchema,
-  npcTrait1: optionalTrimmedTextSchema,
-  npcTrait2: optionalTrimmedTextSchema,
+  npcFlaw: optionalNpcTextSchema,
+  npcGoal: optionalNpcTextSchema,
+  npcSecretContradiction: optionalNpcTextSchema,
+  npcTrait1: optionalNpcTraitSchema,
+  npcTrait2: optionalNpcTraitSchema,
   parentACitizenId: optionalCitizenIdSchema,
   parentBCitizenId: optionalCitizenIdSchema,
-  personalityText: optionalTrimmedTextSchema,
+  personalityText: optionalNpcTextSchema,
   profilePhotoUrl: optionalTrimmedTextSchema,
   settlementId: optionalSettlementIdSchema,
   sex: optionalTrimmedTextSchema,
-  skillsText: optionalTrimmedTextSchema,
+  skillsText: optionalNpcTextSchema,
   worldId: worldIdSchema,
 };
 
@@ -88,19 +116,19 @@ export const updateCitizenCoreInputSchema = z.strictObject({
 
 export const updateCitizenNpcFieldsInputSchema = z.strictObject({
   citizenId: citizenIdSchema,
-  npcFlaw: optionalTrimmedTextSchema,
-  npcGoal: optionalTrimmedTextSchema,
-  npcSecretContradiction: optionalTrimmedTextSchema,
-  npcTrait1: optionalTrimmedTextSchema,
-  npcTrait2: optionalTrimmedTextSchema,
-  personalityText: optionalTrimmedTextSchema,
-  skillsText: optionalTrimmedTextSchema,
+  npcFlaw: optionalNpcTextSchema,
+  npcGoal: optionalNpcTextSchema,
+  npcSecretContradiction: optionalNpcTextSchema,
+  npcTrait1: optionalNpcTraitSchema,
+  npcTrait2: optionalNpcTraitSchema,
+  personalityText: optionalNpcTextSchema,
+  skillsText: optionalNpcTextSchema,
   worldId: worldIdSchema,
 });
 
 export const markCitizenDeadInputSchema = z.strictObject({
   citizenId: citizenIdSchema,
-  deathCause: optionalTrimmedTextSchema,
+  deathCause: optionalNpcTextSchema,
   worldId: worldIdSchema,
 });
 
