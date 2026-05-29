@@ -653,7 +653,7 @@ select
       'f3000000-0000-0000-0000-00000000000e'
     )
   $test$,
-    'P0001',
+    '23503',
     null,
     'cross-world nation_relationships pair is rejected'
   );
