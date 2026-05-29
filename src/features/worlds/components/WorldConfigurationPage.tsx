@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
+import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
 import { WorldResourcesConfigPanel } from "./WorldResourcesConfigPanel";
 
 import type { JSX } from "react";
@@ -150,6 +151,17 @@ function WorldConfigurationContent({
   if (activeTab === "npc-flavor") {
     return (
       <WorldNpcFlavorConfigPanel
+        accessContext={accessContext}
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+    );
+  }
+
+  if (activeTab === "population-rules") {
+    return (
+      <WorldPopulationRulesConfigPanel
         accessContext={accessContext}
         canAdmin={worldQuery.data.canAdmin}
         isArchived={worldQuery.data.header.isArchived}

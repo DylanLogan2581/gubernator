@@ -4,6 +4,7 @@ export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
 export { WorldListPage } from "./components/WorldListPage";
 export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
+export { WorldPopulationRulesConfigPanel } from "./components/WorldPopulationRulesConfigPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
 export {
   currentUserAdminWorldIdsQueryOptions,
@@ -23,11 +24,22 @@ export {
   worldNpcFlavorConfigQueryOptions,
 } from "./queries/worldNpcFlavorConfigQueries";
 export {
+  WorldPopulationRulesError,
+  isWorldPopulationRulesError,
+  worldPopulationRulesQueryOptions,
+} from "./queries/worldPopulationRulesQueries";
+export {
   SaveWorldNpcFlavorConfigError,
   isSaveWorldNpcFlavorConfigError,
   saveWorldNpcFlavorConfigMutationOptions,
 } from "./mutations/worldNpcFlavorConfigMutations";
+export {
+  SaveWorldPopulationRulesError,
+  isSaveWorldPopulationRulesError,
+  saveWorldPopulationRulesMutationOptions,
+} from "./mutations/worldPopulationRulesMutations";
 export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
+export type { WorldPopulationRules } from "./schemas/worldPopulationRulesSchemas";
 export type {
   AccessibleWorld,
   WorldPermissionContext,

@@ -27,4 +27,6 @@ export const worldQueryKeys = {
     ] as const,
   npcFlavorConfig: (worldId: string) =>
     [...worldQueryKeys.all, "npc-flavor-config", worldId] as const,
+  populationRules: (worldId: string) =>
+    [...worldQueryKeys.all, "population-rules", worldId] as const,
 } as const;
