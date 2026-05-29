@@ -803,7 +803,7 @@ select
       'c5000000-0000-0000-0000-000000000020'
     )
   $test$,
-    'P0001',
+    '23503',
     null,
     'parent_a_citizen_id must belong to the same world as the child citizen'
   );
@@ -820,7 +820,7 @@ select
       'c5000000-0000-0000-0000-000000000020'
     )
   $test$,
-    'P0001',
+    '23503',
     null,
     'parent_b_citizen_id must belong to the same world as the child citizen'
   );

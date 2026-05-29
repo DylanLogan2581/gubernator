@@ -149,11 +149,25 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "citizens_parent_a_world_fkey";
+            columns: ["parent_a_citizen_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
             foreignKeyName: "citizens_parent_b_citizen_id_fkey";
             columns: ["parent_b_citizen_id"];
             isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_b_world_fkey";
+            columns: ["parent_b_citizen_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id", "world_id"];
           },
           {
             foreignKeyName: "citizens_role_nation_id_fkey";
@@ -203,6 +217,7 @@ export type Database = {
           pending_status: string | null;
           to_nation_id: string;
           updated_at: string;
+          world_id: string;
         };
         Insert: {
           created_at?: string;
@@ -214,6 +229,7 @@ export type Database = {
           pending_status?: string | null;
           to_nation_id: string;
           updated_at?: string;
+          world_id?: string;
         };
         Update: {
           created_at?: string;
@@ -225,6 +241,7 @@ export type Database = {
           pending_status?: string | null;
           to_nation_id?: string;
           updated_at?: string;
+          world_id?: string;
         };
         Relationships: [
           {
@@ -233,6 +250,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "nations";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_relationships_from_nation_world_fkey";
+            columns: ["from_nation_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id", "world_id"];
           },
           {
             foreignKeyName: "nation_relationships_pending_changed_by_citizen_id_fkey";
@@ -247,6 +271,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "nations";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_relationships_to_nation_world_fkey";
+            columns: ["to_nation_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id", "world_id"];
           },
         ];
       };

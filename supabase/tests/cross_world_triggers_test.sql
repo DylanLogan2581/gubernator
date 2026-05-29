@@ -1,16 +1,16 @@
--- pgTAP tests for the BEFORE INSERT OR UPDATE triggers added in migrations
--- 20260528000002 and 20260528000003. Run with: npx supabase test db
+-- pgTAP tests for the composite FK same-world invariants added in migration
+-- 20260528000010. Run with: npx supabase test db
 --
 -- Covers:
---   check_nation_relationships_same_world (migration 20260528000002):
+--   nation_relationships composite FKs (migration 20260528000010):
 --     • inserting a relationship between nations in the same world succeeds
---     • inserting a relationship between nations in different worlds raises P0001
+--     • inserting a relationship between nations in different worlds raises 23503
 --
---   check_citizens_same_world_parents (migration 20260528000003):
+--   citizens composite FKs (migration 20260528000010):
 --     • inserting a citizen with parent_a in the same world succeeds
---     • inserting a citizen with parent_a in a different world raises P0001
+--     • inserting a citizen with parent_a in a different world raises 23503
 --     • inserting a citizen with parent_b in the same world succeeds
---     • inserting a citizen with parent_b in a different world raises P0001
+--     • inserting a citizen with parent_b in a different world raises 23503
 begin;
 
 select
@@ -125,7 +125,7 @@ values
   );
 
 -- ===========================================================================
--- check_nation_relationships_same_world
+-- nation_relationships composite FK same-world invariant
 -- ===========================================================================
 select
   lives_ok (
@@ -148,13 +148,13 @@ select
       'd8000000-0000-0000-0000-00000000000c'
     )
   $test$,
-    'P0001',
+    '23503',
     null,
-    'cross-world nation relationship insert raises P0001'
+    'cross-world nation relationship insert raises 23503'
   );
 
 -- ===========================================================================
--- check_citizens_same_world_parents
+-- citizens composite FK same-world parent invariant
 -- ===========================================================================
 select
   lives_ok (
@@ -187,9 +187,9 @@ select
       'da000000-0000-0000-0000-000000000003'
     )
   $test$,
-    'P0001',
+    '23503',
     null,
-    'citizen insert with cross-world parent_a raises P0001'
+    'citizen insert with cross-world parent_a raises 23503'
   );
 
 select
@@ -223,9 +223,9 @@ select
       'da000000-0000-0000-0000-000000000003'
     )
   $test$,
-    'P0001',
+    '23503',
     null,
-    'citizen insert with cross-world parent_b raises P0001'
+    'citizen insert with cross-world parent_b raises 23503'
   );
 
 select
