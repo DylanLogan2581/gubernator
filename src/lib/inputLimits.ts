@@ -39,6 +39,11 @@ export const npcFlavorInputLimits = {
   poolEntryMax: 200,
 } as const;
 
+export const jobInputLimits = {
+  jobNameMax: 64,
+  jobSlugMax: 64,
+} as const;
+
 export const namingInputLimits = {
   namePoolSizeMax: 100,
   namePoolEntryMax: 64,
