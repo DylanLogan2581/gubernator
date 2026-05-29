@@ -7,6 +7,7 @@ import {
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { nationsQueryKeys } from "@/features/nations";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
+import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -292,20 +293,16 @@ function parseInput<TSchema extends z.ZodTypeAny>(
   schema: TSchema,
   input: unknown,
 ): z.output<TSchema> {
-  const result = schema.safeParse(input);
-
-  if (!result.success) {
-    throw new SettlementMutationError({
-      code: "settlement_input_invalid",
-      issues: result.error.issues.map((issue) => ({
-        message: issue.message,
-        path: issue.path,
-      })),
-      message: "Settlement input is invalid.",
-    });
-  }
-
-  return result.data;
+  return parseMutationInput(
+    schema,
+    input,
+    (issues) =>
+      new SettlementMutationError({
+        code: "settlement_input_invalid",
+        issues,
+        message: "Settlement input is invalid.",
+      }),
+  );
 }
 
 function toSettlement(row: SettlementRow): Settlement {
