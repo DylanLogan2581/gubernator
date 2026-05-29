@@ -6,6 +6,7 @@ import {
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
+import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -237,18 +238,14 @@ function parseInput<TSchema extends z.ZodTypeAny>(
   schema: TSchema,
   input: unknown,
 ): z.output<TSchema> {
-  const result = schema.safeParse(input);
-
-  if (!result.success) {
-    throw new PlayerCharacterRoleMutationError({
-      code: "citizen_role_input_invalid",
-      issues: result.error.issues.map((issue) => ({
-        message: issue.message,
-        path: issue.path,
-      })),
-      message: "Citizen role input is invalid.",
-    });
-  }
-
-  return result.data;
+  return parseMutationInput(
+    schema,
+    input,
+    (issues) =>
+      new PlayerCharacterRoleMutationError({
+        code: "citizen_role_input_invalid",
+        issues,
+        message: "Citizen role input is invalid.",
+      }),
+  );
 }
