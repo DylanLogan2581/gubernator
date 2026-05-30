@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -163,6 +163,96 @@ describe("WorldPopulationRulesConfigPanel", () => {
 
     await screen.findByRole("heading", { name: "Population rules" });
     expect(screen.getByText("60 turns")).toBeDefined();
+  });
+
+  it("displays probability fields as whole-number percentages in read-only summary", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [
+          createWorldRow({
+            fertility_chance: 0.1,
+            partnership_seek_chance: 0.3,
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "reader-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: false,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Population rules" });
+    expect(screen.getByText("30%")).toBeDefined();
+    expect(screen.getByText("10%")).toBeDefined();
+  });
+
+  it("converts displayed whole-percent input to a 0–1 float on save", async () => {
+    const user = userEvent.setup();
+
+    const updateSpy = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          select: vi.fn(() => ({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { id: WORLD_ID }, error: null }),
+          })),
+        })),
+      })),
+    }));
+
+    requireSupabaseClient.mockReturnValue({
+      from: vi.fn((table: string) => {
+        if (table === "worlds") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn((column: string, value: string) => {
+                const row = createWorldRow({ partnership_seek_chance: 0.3 });
+                const data = column === "id" && value === WORLD_ID ? row : null;
+                return {
+                  maybeSingle: vi.fn().mockResolvedValue({ data, error: null }),
+                };
+              }),
+            })),
+            update: updateSpy,
+          };
+        }
+        throw new Error(`Unexpected table ${table}`);
+      }),
+    });
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Population rules" });
+
+    const input = screen.getByRole("spinbutton", {
+      name: /Partnership seek chance/,
+    });
+    fireEvent.change(input, { target: { value: "50" } });
+
+    await user.click(screen.getByRole("button", { name: "Save rules" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalled();
+    });
+
+    const calls = updateSpy.mock.calls as unknown[][];
+    const payload = calls[0]?.[0] as Record<string, unknown>;
+    expect(payload?.["partnership_seek_chance"]).toBe(0.5);
   });
 });
 
