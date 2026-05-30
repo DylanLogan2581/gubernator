@@ -11,6 +11,88 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      building_blueprint_tiers: {
+        Row: {
+          building_blueprint_id: string;
+          construction_costs_json: Json;
+          created_at: string;
+          effects_json: Json;
+          id: string;
+          tier_number: number;
+          updated_at: string;
+          upkeep_costs_json: Json;
+          worker_turns_required: number;
+        };
+        Insert: {
+          building_blueprint_id: string;
+          construction_costs_json?: Json;
+          created_at?: string;
+          effects_json?: Json;
+          id?: string;
+          tier_number: number;
+          updated_at?: string;
+          upkeep_costs_json?: Json;
+          worker_turns_required?: number;
+        };
+        Update: {
+          building_blueprint_id?: string;
+          construction_costs_json?: Json;
+          created_at?: string;
+          effects_json?: Json;
+          id?: string;
+          tier_number?: number;
+          updated_at?: string;
+          upkeep_costs_json?: Json;
+          worker_turns_required?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "building_blueprint_tiers_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      building_blueprints: {
+        Row: {
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          name: string;
+          slug: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          slug: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          slug?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "building_blueprints_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       citizen_assignments: {
         Row: {
           assigned_on_turn_number: number;
@@ -1372,6 +1454,10 @@ export type Database = {
       };
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
+      is_valid_job_io_array: {
+        Args: { arr: Json; p_world_id: string };
+        Returns: boolean;
+      };
       is_valid_naming_config: { Args: { config: Json }; Returns: boolean };
       is_valid_npc_flavor_config: { Args: { config: Json }; Returns: boolean };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
