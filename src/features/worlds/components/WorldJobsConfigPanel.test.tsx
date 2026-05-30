@@ -368,6 +368,124 @@ describe("WorldJobsConfigPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
+  // ── Create form — IO editor ──────────────────────────────────────────────
+
+  it("creates a standard job with IO rows populated", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        insertResult: {
+          data: createJobRow({ job_type: "standard" }),
+          error: null,
+        },
+        jobRows: [],
+        resourceRows: [createResourceRow({ name: "Grain" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Jobs" });
+    await user.click(screen.getByRole("button", { name: "Add job" }));
+
+    await user.click(screen.getByRole("radio", { name: "Standard" }));
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farming");
+
+    await user.click(screen.getByRole("button", { name: "Add input" }));
+    expect(
+      screen.getByRole("combobox", { name: "Inputs entry 1 resource" }),
+    ).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Add output" }));
+    expect(
+      screen.getByRole("combobox", { name: "Outputs entry 1 resource" }),
+    ).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Job created.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("creates a construction job with empty IO rows", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        insertResult: {
+          data: createJobRow({ job_type: "construction" }),
+          error: null,
+        },
+        jobRows: [],
+        resourceRows: [createResourceRow()],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Jobs" });
+    await user.click(screen.getByRole("button", { name: "Add job" }));
+
+    await user.click(screen.getByRole("radio", { name: "Construction" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "Name" }),
+      "Build Wall",
+    );
+
+    expect(screen.getByText("No inputs.")).toBeDefined();
+    expect(screen.getByText("No outputs.")).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Job created.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("shows a validation error when an IO row has an invalid amount in the create form", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        insertResult: {
+          data: createJobRow({ job_type: "standard" }),
+          error: null,
+        },
+        jobRows: [],
+        resourceRows: [createResourceRow({ name: "Grain" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Jobs" });
+    await user.click(screen.getByRole("button", { name: "Add job" }));
+
+    await user.click(screen.getByRole("radio", { name: "Standard" }));
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farming");
+
+    await user.click(screen.getByRole("button", { name: "Add input" }));
+
+    const amountInput = screen.getByRole("textbox", {
+      name: "Inputs entry 1 amount per worker",
+    });
+    await user.clear(amountInput);
+
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).not.toHaveBeenCalled();
+    });
+    expect(screen.queryByText("Job created.")).toBeNull();
+  });
+
   // ── Edit form ────────────────────────────────────────────────────────────
 
   it("hides the Edit button for non-admin users", async () => {

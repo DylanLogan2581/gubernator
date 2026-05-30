@@ -1041,7 +1041,9 @@ function JobIoEditor({
 
 type FieldErrors = {
   readonly baseCapacity?: string;
+  readonly inputsJson?: string;
   readonly name?: string;
+  readonly outputsJson?: string;
   readonly slug?: string;
   readonly traderCapacityPerWorker?: string;
 };
@@ -1057,12 +1059,16 @@ function CreateJobForm({
   readonly onSubmit: (input: CreateJobInput) => void;
   readonly worldId: string;
 }): JSX.Element {
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+  const resources = resourcesQuery.data ?? [];
   const [selectedType, setSelectedType] = useState<JobType | null>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [baseCapacity, setBaseCapacity] = useState("");
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
+  const [inputRows, setInputRows] = useState<IoRow[]>([]);
+  const [outputRows, setOutputRows] = useState<IoRow[]>([]);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   function handleNameChange(value: string): void {
@@ -1082,6 +1088,31 @@ function CreateJobForm({
     if (selectedType === null) return;
     setFieldErrors({});
 
+    const isIoType =
+      selectedType === "standard" || selectedType === "construction";
+    const inputsJson = isIoType ? inputRows.map(rowToEntry) : undefined;
+    const outputsJson = isIoType ? outputRows.map(rowToEntry) : undefined;
+
+    if (isIoType && inputsJson !== undefined && outputsJson !== undefined) {
+      const refIssues = validateJobReferencesAgainstWorld(
+        { inputsJson, outputsJson },
+        resources,
+      );
+      if (refIssues.length > 0) {
+        const errors: Record<string, string> = {};
+        for (const issue of refIssues) {
+          if (!(issue.field in errors)) {
+            errors[issue.field] = issue.message;
+          }
+        }
+        setFieldErrors({
+          inputsJson: errors.inputsJson,
+          outputsJson: errors.outputsJson,
+        });
+        return;
+      }
+    }
+
     let input: CreateJobInput;
 
     switch (selectedType) {
@@ -1090,8 +1121,10 @@ function CreateJobForm({
         input = {
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
+          inputsJson,
           jobType: selectedType,
           name,
+          outputsJson,
           slug,
           worldId,
         };
@@ -1135,6 +1168,8 @@ function CreateJobForm({
       let slugError: string | undefined;
       let baseCapacityError: string | undefined;
       let traderCapacityPerWorkerError: string | undefined;
+      let inputsJsonError: string | undefined;
+      let outputsJsonError: string | undefined;
       for (const issue of result.error.issues) {
         const field = issue.path[0];
         if (field === "name") nameError ??= issue.message;
@@ -1142,10 +1177,14 @@ function CreateJobForm({
         else if (field === "baseCapacity") baseCapacityError ??= issue.message;
         else if (field === "traderCapacityPerWorker")
           traderCapacityPerWorkerError ??= issue.message;
+        else if (field === "inputsJson") inputsJsonError ??= issue.message;
+        else if (field === "outputsJson") outputsJsonError ??= issue.message;
       }
       setFieldErrors({
         baseCapacity: baseCapacityError,
+        inputsJson: inputsJsonError,
         name: nameError,
+        outputsJson: outputsJsonError,
         slug: slugError,
         traderCapacityPerWorker: traderCapacityPerWorkerError,
       });
@@ -1264,6 +1303,27 @@ function CreateJobForm({
                   </p>
                 ) : null}
               </label>
+            ) : null}
+
+            {selectedType === "standard" || selectedType === "construction" ? (
+              <>
+                <JobIoEditor
+                  disabled={isPending}
+                  fieldError={fieldErrors.inputsJson}
+                  label="Inputs"
+                  resources={resources}
+                  rows={inputRows}
+                  onChange={setInputRows}
+                />
+                <JobIoEditor
+                  disabled={isPending}
+                  fieldError={fieldErrors.outputsJson}
+                  label="Outputs"
+                  resources={resources}
+                  rows={outputRows}
+                  onChange={setOutputRows}
+                />
+              </>
             ) : null}
 
             {selectedType === "deposit" ? (
