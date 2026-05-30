@@ -99,7 +99,7 @@ describe("WorldDepositsConfigPanel", () => {
     expect(await screen.findByText(/Iron Mining/)).toBeDefined();
   });
 
-  it("shows archived deposit types and badge when toggle is active", async () => {
+  it("shows trashed deposit types when trash view is toggled", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -108,7 +108,7 @@ describe("WorldDepositsConfigPanel", () => {
           createDepositTypeRow({
             id: "00000000-0000-0000-0000-000000000010",
             is_active: false,
-            name: "Archived Deposit",
+            name: "Trashed Deposit",
           }),
         ],
         jobRows: [],
@@ -116,16 +116,15 @@ describe("WorldDepositsConfigPanel", () => {
       }),
     );
 
-    renderPanel({ canAdmin: false, isArchived: false });
+    renderPanel({ canAdmin: true, isArchived: false });
 
     await screen.findByText("Active Deposit");
-    expect(screen.queryByText("Archived Deposit")).toBeNull();
+    expect(screen.queryByText("Trashed Deposit")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Show archived" }));
+    await user.click(screen.getByRole("button", { name: "View trash" }));
 
-    expect(screen.getByText("Archived Deposit")).toBeDefined();
-    expect(screen.getByText("archived")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Hide archived" })).toBeDefined();
+    expect(screen.getByText("Trashed Deposit")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
   });
 
   it("emits a success toast after creating a deposit type", async () => {
@@ -333,6 +332,7 @@ type TestDepositTypeRow = {
   readonly job_id: string;
   readonly name: string;
   readonly output_units_per_worker: number;
+  readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly slug: string;
   readonly updated_at: string;
   readonly worker_inputs_json: readonly unknown[];
@@ -342,6 +342,9 @@ type TestDepositTypeRow = {
 type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
+  readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly unknown[];
   readonly is_active: boolean;
@@ -379,6 +382,7 @@ function createDepositTypeRow(
     job_id: JOB_ID,
     name: "Test Deposit",
     output_units_per_worker: 1,
+    referencing_jobs: [],
     slug: "test-deposit",
     updated_at: "2026-01-01T00:00:00.000Z",
     worker_inputs_json: [],
@@ -391,6 +395,9 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
   return {
     base_capacity: null,
     created_at: "2026-01-01T00:00:00.000Z",
+    culling_mpt: [],
+    deposit_types: [],
+    husbandry_mpt: [],
     id: JOB_ID,
     inputs_json: [],
     is_active: true,

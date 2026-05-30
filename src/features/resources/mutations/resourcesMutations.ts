@@ -16,15 +16,21 @@ import type { Json } from "@/types/database";
 import { resourcesQueryKeys } from "../queries/resourcesQueryKeys";
 import {
   createResourceInputSchema,
+  hardDeleteResourceInputSchema,
+  restoreResourceInputSchema,
   softDeleteResourceInputSchema,
   updateResourceInputSchema,
   type CreateResourceInput,
+  type HardDeleteResourceInput,
+  type RestoreResourceInput,
   type SoftDeleteResourceInput,
   type UpdateResourceInput,
 } from "../schemas/resourceSchemas";
 
 import type {
+  HardDeleteResourceResult,
   Resource,
+  RestoreResourceResult,
   SoftDeleteResourceResult,
 } from "../types/resourceTypes";
 import type { z } from "zod";
@@ -47,6 +53,16 @@ type SoftDeleteResourceMutationOptions = UseMutationOptions<
   SoftDeleteResourceResult,
   AuthUiError | ResourceMutationError,
   SoftDeleteResourceInput
+>;
+type RestoreResourceMutationOptions = UseMutationOptions<
+  RestoreResourceResult,
+  AuthUiError | ResourceMutationError,
+  RestoreResourceInput
+>;
+type HardDeleteResourceMutationOptions = UseMutationOptions<
+  HardDeleteResourceResult,
+  AuthUiError | ResourceMutationError,
+  HardDeleteResourceInput
 >;
 
 type ResourceRow = {
@@ -137,6 +153,56 @@ export function softDeleteResourceMutationOptions({
       queryClient.removeQueries({
         queryKey: resourcesQueryKeys.detail(result.resourceId),
       });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: resourcesQueryKeys.byWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: resourcesQueryKeys.activeByWorld(result.worldId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function restoreResourceMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): RestoreResourceMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: RestoreResourceInput) => restoreResource(client, input),
+    mutationKey: [...resourcesQueryKeys.all, "restore-resource"],
+    onSuccess: async (result): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: resourcesQueryKeys.byWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: resourcesQueryKeys.activeByWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: resourcesQueryKeys.detail(result.resourceId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function hardDeleteResourceMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): HardDeleteResourceMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: HardDeleteResourceInput) =>
+      hardDeleteResource(client, input),
+    mutationKey: [...resourcesQueryKeys.all, "hard-delete-resource"],
+    onSuccess: async (result): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: resourcesQueryKeys.byWorld(result.worldId),
@@ -245,6 +311,60 @@ async function softDeleteResource(
     throw new ResourceMutationError({
       code: "resource_not_found",
       message: "Resource could not be soft-deleted.",
+    });
+  }
+
+  return { resourceId: data.id, worldId: data.world_id };
+}
+
+async function restoreResource(
+  client: GubernatorSupabaseClient,
+  input: RestoreResourceInput,
+): Promise<RestoreResourceResult> {
+  const values = parseInput(restoreResourceInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("restore_resource", {
+      p_resource_id: values.resourceId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new ResourceMutationError({
+      code: "resource_not_found",
+      message: "Resource could not be restored.",
+    });
+  }
+
+  return { resourceId: data.id, worldId: data.world_id };
+}
+
+async function hardDeleteResource(
+  client: GubernatorSupabaseClient,
+  input: HardDeleteResourceInput,
+): Promise<HardDeleteResourceResult> {
+  const values = parseInput(hardDeleteResourceInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("hard_delete_resource", {
+      p_resource_id: values.resourceId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new ResourceMutationError({
+      code: "resource_not_found",
+      message: "Resource could not be permanently deleted.",
     });
   }
 

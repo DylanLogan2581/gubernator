@@ -4,7 +4,9 @@ import {
   createBlueprintInputSchema,
   createTierInputSchema,
   deleteTierInputSchema,
-  setBlueprintActiveInputSchema,
+  hardDeleteBlueprintInputSchema,
+  restoreBlueprintInputSchema,
+  softDeleteBlueprintInputSchema,
   tierCostEntrySchema,
   tierEffectSchema,
   updateBlueprintInputSchema,
@@ -309,31 +311,69 @@ describe("updateBlueprintInputSchema", () => {
   });
 });
 
-describe("setBlueprintActiveInputSchema", () => {
-  it("accepts isActive: true", () => {
-    const result = setBlueprintActiveInputSchema.safeParse({
+describe("softDeleteBlueprintInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = softDeleteBlueprintInputSchema.safeParse({
       blueprintId: BLUEPRINT_ID,
-      isActive: true,
       worldId: WORLD_ID,
     });
 
     expect(result.success).toBe(true);
   });
 
-  it("accepts isActive: false", () => {
-    const result = setBlueprintActiveInputSchema.safeParse({
+  it("rejects an invalid blueprintId", () => {
+    const result = softDeleteBlueprintInputSchema.safeParse({
+      blueprintId: "not-a-uuid",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects unknown fields", () => {
+    const result = softDeleteBlueprintInputSchema.safeParse({
       blueprintId: BLUEPRINT_ID,
-      isActive: false,
+      extra: "field",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("restoreBlueprintInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = restoreBlueprintInputSchema.safeParse({
+      blueprintId: BLUEPRINT_ID,
       worldId: WORLD_ID,
     });
 
     expect(result.success).toBe(true);
   });
 
-  it("rejects a non-boolean isActive", () => {
-    const result = setBlueprintActiveInputSchema.safeParse({
+  it("rejects an invalid blueprintId", () => {
+    const result = restoreBlueprintInputSchema.safeParse({
+      blueprintId: "not-a-uuid",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("hardDeleteBlueprintInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = hardDeleteBlueprintInputSchema.safeParse({
       blueprintId: BLUEPRINT_ID,
-      isActive: "true",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid blueprintId", () => {
+    const result = hardDeleteBlueprintInputSchema.safeParse({
+      blueprintId: "not-a-uuid",
       worldId: WORLD_ID,
     });
 

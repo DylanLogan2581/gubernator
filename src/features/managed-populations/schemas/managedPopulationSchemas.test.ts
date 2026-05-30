@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   createManagedPopulationTypeInputSchema,
+  hardDeleteManagedPopulationTypeInputSchema,
   populationResourceEntrySchema,
-  setManagedPopulationTypeActiveInputSchema,
+  restoreManagedPopulationTypeInputSchema,
+  softDeleteManagedPopulationTypeInputSchema,
   updateManagedPopulationTypeInputSchema,
 } from "./managedPopulationSchemas";
 
@@ -319,40 +321,18 @@ describe("updateManagedPopulationTypeInputSchema", () => {
   });
 });
 
-describe("setManagedPopulationTypeActiveInputSchema", () => {
-  it("accepts a valid set-active request", () => {
-    const result = setManagedPopulationTypeActiveInputSchema.safeParse({
-      isActive: true,
+describe("softDeleteManagedPopulationTypeInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = softDeleteManagedPopulationTypeInputSchema.safeParse({
       managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
       worldId: WORLD_ID,
     });
 
     expect(result.success).toBe(true);
-  });
-
-  it("accepts isActive: false", () => {
-    const result = setManagedPopulationTypeActiveInputSchema.safeParse({
-      isActive: false,
-      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it("rejects a non-boolean isActive", () => {
-    const result = setManagedPopulationTypeActiveInputSchema.safeParse({
-      isActive: "true",
-      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(false);
   });
 
   it("rejects an invalid managedPopulationTypeId", () => {
-    const result = setManagedPopulationTypeActiveInputSchema.safeParse({
-      isActive: true,
+    const result = softDeleteManagedPopulationTypeInputSchema.safeParse({
       managedPopulationTypeId: "not-a-uuid",
       worldId: WORLD_ID,
     });
@@ -361,10 +341,49 @@ describe("setManagedPopulationTypeActiveInputSchema", () => {
   });
 
   it("rejects unknown fields", () => {
-    const result = setManagedPopulationTypeActiveInputSchema.safeParse({
+    const result = softDeleteManagedPopulationTypeInputSchema.safeParse({
       extra: "field",
-      isActive: true,
       managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("restoreManagedPopulationTypeInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = restoreManagedPopulationTypeInputSchema.safeParse({
+      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid managedPopulationTypeId", () => {
+    const result = restoreManagedPopulationTypeInputSchema.safeParse({
+      managedPopulationTypeId: "not-a-uuid",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("hardDeleteManagedPopulationTypeInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = hardDeleteManagedPopulationTypeInputSchema.safeParse({
+      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid managedPopulationTypeId", () => {
+    const result = hardDeleteManagedPopulationTypeInputSchema.safeParse({
+      managedPopulationTypeId: "not-a-uuid",
       worldId: WORLD_ID,
     });
 

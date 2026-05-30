@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   createJobInputSchema,
+  hardDeleteJobInputSchema,
   jobIoEntrySchema,
-  setJobActiveInputSchema,
+  restoreJobInputSchema,
+  softDeleteJobInputSchema,
   updateJobInputSchema,
 } from "./jobSchemas";
 
@@ -428,40 +430,18 @@ describe("updateJobInputSchema", () => {
   });
 });
 
-describe("setJobActiveInputSchema", () => {
-  it("accepts a valid set-active request", () => {
-    const result = setJobActiveInputSchema.safeParse({
-      isActive: true,
+describe("softDeleteJobInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = softDeleteJobInputSchema.safeParse({
       jobId: JOB_ID,
       worldId: WORLD_ID,
     });
 
     expect(result.success).toBe(true);
-  });
-
-  it("accepts isActive: false", () => {
-    const result = setJobActiveInputSchema.safeParse({
-      isActive: false,
-      jobId: JOB_ID,
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it("rejects a non-boolean isActive", () => {
-    const result = setJobActiveInputSchema.safeParse({
-      isActive: "true",
-      jobId: JOB_ID,
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(false);
   });
 
   it("rejects an invalid jobId", () => {
-    const result = setJobActiveInputSchema.safeParse({
-      isActive: true,
+    const result = softDeleteJobInputSchema.safeParse({
       jobId: "not-a-uuid",
       worldId: WORLD_ID,
     });
@@ -470,10 +450,49 @@ describe("setJobActiveInputSchema", () => {
   });
 
   it("rejects unknown fields", () => {
-    const result = setJobActiveInputSchema.safeParse({
+    const result = softDeleteJobInputSchema.safeParse({
       extra: "field",
-      isActive: true,
       jobId: JOB_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("restoreJobInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = restoreJobInputSchema.safeParse({
+      jobId: JOB_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid jobId", () => {
+    const result = restoreJobInputSchema.safeParse({
+      jobId: "not-a-uuid",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("hardDeleteJobInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = hardDeleteJobInputSchema.safeParse({
+      jobId: JOB_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid jobId", () => {
+    const result = hardDeleteJobInputSchema.safeParse({
+      jobId: "not-a-uuid",
       worldId: WORLD_ID,
     });
 

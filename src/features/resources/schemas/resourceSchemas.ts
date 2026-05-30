@@ -64,6 +64,16 @@ export const softDeleteResourceInputSchema = z.strictObject({
   worldId: worldIdSchema,
 });
 
+export const restoreResourceInputSchema = z.strictObject({
+  resourceId: resourceIdSchema,
+  worldId: worldIdSchema,
+});
+
+export const hardDeleteResourceInputSchema = z.strictObject({
+  resourceId: resourceIdSchema,
+  worldId: worldIdSchema,
+});
+
 export type CreateResourceInput = z.input<typeof createResourceInputSchema>;
 export type CreateResourceValues = z.output<typeof createResourceInputSchema>;
 export type UpdateResourceInput = z.input<typeof updateResourceInputSchema>;
@@ -73,4 +83,12 @@ export type SoftDeleteResourceInput = z.input<
 >;
 export type SoftDeleteResourceValues = z.output<
   typeof softDeleteResourceInputSchema
+>;
+export type RestoreResourceInput = z.input<typeof restoreResourceInputSchema>;
+export type RestoreResourceValues = z.output<typeof restoreResourceInputSchema>;
+export type HardDeleteResourceInput = z.input<
+  typeof hardDeleteResourceInputSchema
+>;
+export type HardDeleteResourceValues = z.output<
+  typeof hardDeleteResourceInputSchema
 >;

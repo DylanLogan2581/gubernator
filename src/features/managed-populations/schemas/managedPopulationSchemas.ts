@@ -111,8 +111,17 @@ export const updateManagedPopulationTypeInputSchema = z
     }
   });
 
-export const setManagedPopulationTypeActiveInputSchema = z.strictObject({
-  isActive: z.boolean(),
+export const softDeleteManagedPopulationTypeInputSchema = z.strictObject({
+  managedPopulationTypeId: managedPopulationTypeIdSchema,
+  worldId: worldIdSchema,
+});
+
+export const restoreManagedPopulationTypeInputSchema = z.strictObject({
+  managedPopulationTypeId: managedPopulationTypeIdSchema,
+  worldId: worldIdSchema,
+});
+
+export const hardDeleteManagedPopulationTypeInputSchema = z.strictObject({
   managedPopulationTypeId: managedPopulationTypeIdSchema,
   worldId: worldIdSchema,
 });
@@ -129,11 +138,23 @@ export type UpdateManagedPopulationTypeInput = z.input<
 export type UpdateManagedPopulationTypeValues = z.output<
   typeof updateManagedPopulationTypeInputSchema
 >;
-export type SetManagedPopulationTypeActiveInput = z.input<
-  typeof setManagedPopulationTypeActiveInputSchema
+export type SoftDeleteManagedPopulationTypeInput = z.input<
+  typeof softDeleteManagedPopulationTypeInputSchema
 >;
-export type SetManagedPopulationTypeActiveValues = z.output<
-  typeof setManagedPopulationTypeActiveInputSchema
+export type SoftDeleteManagedPopulationTypeValues = z.output<
+  typeof softDeleteManagedPopulationTypeInputSchema
+>;
+export type RestoreManagedPopulationTypeInput = z.input<
+  typeof restoreManagedPopulationTypeInputSchema
+>;
+export type RestoreManagedPopulationTypeValues = z.output<
+  typeof restoreManagedPopulationTypeInputSchema
+>;
+export type HardDeleteManagedPopulationTypeInput = z.input<
+  typeof hardDeleteManagedPopulationTypeInputSchema
+>;
+export type HardDeleteManagedPopulationTypeValues = z.output<
+  typeof hardDeleteManagedPopulationTypeInputSchema
 >;
 export type PopulationResourceEntryInput = z.input<
   typeof populationResourceEntrySchema

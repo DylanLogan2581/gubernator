@@ -16,17 +16,23 @@ import type { Json } from "@/types/database";
 import { managedPopulationsQueryKeys } from "../queries/managedPopulationsQueryKeys";
 import {
   createManagedPopulationTypeInputSchema,
-  setManagedPopulationTypeActiveInputSchema,
+  hardDeleteManagedPopulationTypeInputSchema,
+  restoreManagedPopulationTypeInputSchema,
+  softDeleteManagedPopulationTypeInputSchema,
   updateManagedPopulationTypeInputSchema,
   type CreateManagedPopulationTypeInput,
-  type SetManagedPopulationTypeActiveInput,
+  type HardDeleteManagedPopulationTypeInput,
+  type RestoreManagedPopulationTypeInput,
+  type SoftDeleteManagedPopulationTypeInput,
   type UpdateManagedPopulationTypeInput,
 } from "../schemas/managedPopulationSchemas";
 
 import type {
+  HardDeleteManagedPopulationTypeResult,
   ManagedPopulationType,
   PopulationResourceEntry,
-  SetManagedPopulationTypeActiveResult,
+  RestoreManagedPopulationTypeResult,
+  SoftDeleteManagedPopulationTypeResult,
 } from "../types/managedPopulationTypes";
 import type { z } from "zod";
 
@@ -44,10 +50,20 @@ type UpdateManagedPopulationTypeMutationOptions = UseMutationOptions<
   AuthUiError | ManagedPopulationTypeMutationError,
   UpdateManagedPopulationTypeInput
 >;
-type SetManagedPopulationTypeActiveMutationOptions = UseMutationOptions<
-  SetManagedPopulationTypeActiveResult,
+type SoftDeleteManagedPopulationTypeMutationOptions = UseMutationOptions<
+  SoftDeleteManagedPopulationTypeResult,
   AuthUiError | ManagedPopulationTypeMutationError,
-  SetManagedPopulationTypeActiveInput
+  SoftDeleteManagedPopulationTypeInput
+>;
+type RestoreManagedPopulationTypeMutationOptions = UseMutationOptions<
+  RestoreManagedPopulationTypeResult,
+  AuthUiError | ManagedPopulationTypeMutationError,
+  RestoreManagedPopulationTypeInput
+>;
+type HardDeleteManagedPopulationTypeMutationOptions = UseMutationOptions<
+  HardDeleteManagedPopulationTypeResult,
+  AuthUiError | ManagedPopulationTypeMutationError,
+  HardDeleteManagedPopulationTypeInput
 >;
 
 // Explicit typed payloads prevent RejectExcessProperties conflicts in Supabase's strict overloads.
@@ -177,19 +193,19 @@ export function updateManagedPopulationTypeMutationOptions({
   });
 }
 
-export function setManagedPopulationTypeActiveMutationOptions({
+export function softDeleteManagedPopulationTypeMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
-}): SetManagedPopulationTypeActiveMutationOptions {
+}): SoftDeleteManagedPopulationTypeMutationOptions {
   return mutationOptions({
-    mutationFn: (input: SetManagedPopulationTypeActiveInput) =>
-      setManagedPopulationTypeActive(client, input),
+    mutationFn: (input: SoftDeleteManagedPopulationTypeInput) =>
+      softDeleteManagedPopulationType(client, input),
     mutationKey: [
       ...managedPopulationsQueryKeys.all,
-      "set-managed-population-type-active",
+      "soft-delete-managed-population-type",
     ],
     onSuccess: async (result): Promise<void> => {
       await Promise.all([
@@ -203,6 +219,65 @@ export function setManagedPopulationTypeActiveMutationOptions({
           queryKey: managedPopulationsQueryKeys.detail(
             result.managedPopulationTypeId,
           ),
+        }),
+      ]);
+    },
+  });
+}
+
+export function restoreManagedPopulationTypeMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): RestoreManagedPopulationTypeMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: RestoreManagedPopulationTypeInput) =>
+      restoreManagedPopulationType(client, input),
+    mutationKey: [
+      ...managedPopulationsQueryKeys.all,
+      "restore-managed-population-type",
+    ],
+    onSuccess: async (result): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: managedPopulationsQueryKeys.byWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: managedPopulationsQueryKeys.activeByWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: managedPopulationsQueryKeys.detail(
+            result.managedPopulationTypeId,
+          ),
+        }),
+      ]);
+    },
+  });
+}
+
+export function hardDeleteManagedPopulationTypeMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): HardDeleteManagedPopulationTypeMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: HardDeleteManagedPopulationTypeInput) =>
+      hardDeleteManagedPopulationType(client, input),
+    mutationKey: [
+      ...managedPopulationsQueryKeys.all,
+      "hard-delete-managed-population-type",
+    ],
+    onSuccess: async (result): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: managedPopulationsQueryKeys.byWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: managedPopulationsQueryKeys.activeByWorld(result.worldId),
         }),
       ]);
     },
@@ -317,23 +392,18 @@ async function updateManagedPopulationType(
   return toManagedPopulationType(data);
 }
 
-async function setManagedPopulationTypeActive(
+async function softDeleteManagedPopulationType(
   client: GubernatorSupabaseClient,
-  input: SetManagedPopulationTypeActiveInput,
-): Promise<SetManagedPopulationTypeActiveResult> {
-  const values = parseInput(setManagedPopulationTypeActiveInputSchema, input);
+  input: SoftDeleteManagedPopulationTypeInput,
+): Promise<SoftDeleteManagedPopulationTypeResult> {
+  const values = parseInput(softDeleteManagedPopulationTypeInputSchema, input);
 
   const { data, error } = await client
-    .from("managed_population_types")
-    .update({ is_active: values.isActive })
-    .eq("id", values.managedPopulationTypeId)
-    .eq("world_id", values.worldId)
-    .select("id,world_id,is_active")
-    .maybeSingle<{
-      readonly id: string;
-      readonly is_active: boolean;
-      readonly world_id: string;
-    }>();
+    .rpc("soft_delete_managed_population_type", {
+      p_mpt_id: values.managedPopulationTypeId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -342,15 +412,65 @@ async function setManagedPopulationTypeActive(
   if (data === null) {
     throw new ManagedPopulationTypeMutationError({
       code: "managed_population_type_not_found",
-      message: "Managed population type could not be updated.",
+      message: "Managed population type could not be trashed.",
     });
   }
 
-  return {
-    isActive: data.is_active,
-    managedPopulationTypeId: data.id,
-    worldId: data.world_id,
-  };
+  return { managedPopulationTypeId: data.id, worldId: data.world_id };
+}
+
+async function restoreManagedPopulationType(
+  client: GubernatorSupabaseClient,
+  input: RestoreManagedPopulationTypeInput,
+): Promise<RestoreManagedPopulationTypeResult> {
+  const values = parseInput(restoreManagedPopulationTypeInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("restore_managed_population_type", {
+      p_mpt_id: values.managedPopulationTypeId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new ManagedPopulationTypeMutationError({
+      code: "managed_population_type_not_found",
+      message: "Managed population type could not be restored.",
+    });
+  }
+
+  return { managedPopulationTypeId: data.id, worldId: data.world_id };
+}
+
+async function hardDeleteManagedPopulationType(
+  client: GubernatorSupabaseClient,
+  input: HardDeleteManagedPopulationTypeInput,
+): Promise<HardDeleteManagedPopulationTypeResult> {
+  const values = parseInput(hardDeleteManagedPopulationTypeInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("hard_delete_managed_population_type", {
+      p_mpt_id: values.managedPopulationTypeId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new ManagedPopulationTypeMutationError({
+      code: "managed_population_type_not_found",
+      message: "Managed population type could not be permanently deleted.",
+    });
+  }
+
+  return { managedPopulationTypeId: data.id, worldId: data.world_id };
 }
 
 function toPopulationResourceJson(
@@ -381,6 +501,7 @@ function toManagedPopulationType(
     cullingJobId: row.culling_job_id,
     cullingOutputsJson: row.culling_outputs_json.map(toPopulationResourceEntry),
     growthRate: row.growth_rate,
+    hasActiveReferences: false,
     husbandryJobId: row.husbandry_job_id,
     husbandryWorkersPerNAnimals: row.husbandry_workers_per_n_animals,
     id: row.id,

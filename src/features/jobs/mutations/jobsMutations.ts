@@ -16,18 +16,24 @@ import type { Json } from "@/types/database";
 import { jobsQueryKeys } from "../queries/jobsQueryKeys";
 import {
   createJobInputSchema,
-  setJobActiveInputSchema,
+  hardDeleteJobInputSchema,
+  restoreJobInputSchema,
+  softDeleteJobInputSchema,
   updateJobInputSchema,
   type CreateJobInput,
-  type SetJobActiveInput,
+  type HardDeleteJobInput,
+  type RestoreJobInput,
+  type SoftDeleteJobInput,
   type UpdateJobInput,
 } from "../schemas/jobSchemas";
 
 import type {
+  HardDeleteJobResult,
   JobDefinition,
   JobIoEntry,
   JobType,
-  SetJobActiveResult,
+  RestoreJobResult,
+  SoftDeleteJobResult,
 } from "../types/jobTypes";
 import type { z } from "zod";
 
@@ -43,10 +49,20 @@ type UpdateJobMutationOptions = UseMutationOptions<
   AuthUiError | JobMutationError,
   UpdateJobInput
 >;
-type SetJobActiveMutationOptions = UseMutationOptions<
-  SetJobActiveResult,
+type SoftDeleteJobMutationOptions = UseMutationOptions<
+  SoftDeleteJobResult,
   AuthUiError | JobMutationError,
-  SetJobActiveInput
+  SoftDeleteJobInput
+>;
+type RestoreJobMutationOptions = UseMutationOptions<
+  RestoreJobResult,
+  AuthUiError | JobMutationError,
+  RestoreJobInput
+>;
+type HardDeleteJobMutationOptions = UseMutationOptions<
+  HardDeleteJobResult,
+  AuthUiError | JobMutationError,
+  HardDeleteJobInput
 >;
 
 // Explicit typed insert/update payloads prevent RejectExcessProperties conflicts
@@ -162,16 +178,16 @@ export function updateJobMutationOptions({
   });
 }
 
-export function setJobActiveMutationOptions({
+export function softDeleteJobMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
-}): SetJobActiveMutationOptions {
+}): SoftDeleteJobMutationOptions {
   return mutationOptions({
-    mutationFn: (input: SetJobActiveInput) => setJobActive(client, input),
-    mutationKey: [...jobsQueryKeys.all, "set-job-active"],
+    mutationFn: (input: SoftDeleteJobInput) => softDeleteJob(client, input),
+    mutationKey: [...jobsQueryKeys.all, "soft-delete-job"],
     onSuccess: async (result): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -182,6 +198,55 @@ export function setJobActiveMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: jobsQueryKeys.detail(result.jobId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function restoreJobMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): RestoreJobMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: RestoreJobInput) => restoreJob(client, input),
+    mutationKey: [...jobsQueryKeys.all, "restore-job"],
+    onSuccess: async (result): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: jobsQueryKeys.byWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: jobsQueryKeys.activeByWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: jobsQueryKeys.detail(result.jobId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function hardDeleteJobMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): HardDeleteJobMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: HardDeleteJobInput) => hardDeleteJob(client, input),
+    mutationKey: [...jobsQueryKeys.all, "hard-delete-job"],
+    onSuccess: async (result): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: jobsQueryKeys.byWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: jobsQueryKeys.activeByWorld(result.worldId),
         }),
       ]);
     },
@@ -297,23 +362,18 @@ async function updateJob(
   return toJob(data);
 }
 
-async function setJobActive(
+async function softDeleteJob(
   client: GubernatorSupabaseClient,
-  input: SetJobActiveInput,
-): Promise<SetJobActiveResult> {
-  const values = parseInput(setJobActiveInputSchema, input);
+  input: SoftDeleteJobInput,
+): Promise<SoftDeleteJobResult> {
+  const values = parseInput(softDeleteJobInputSchema, input);
 
   const { data, error } = await client
-    .from("job_definitions")
-    .update({ is_active: values.isActive })
-    .eq("id", values.jobId)
-    .eq("world_id", values.worldId)
-    .select("id,world_id,is_active")
-    .maybeSingle<{
-      readonly id: string;
-      readonly is_active: boolean;
-      readonly world_id: string;
-    }>();
+    .rpc("soft_delete_job_definition", {
+      p_job_id: values.jobId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -322,15 +382,65 @@ async function setJobActive(
   if (data === null) {
     throw new JobMutationError({
       code: "job_not_found",
-      message: "Job could not be updated.",
+      message: "Job could not be trashed.",
     });
   }
 
-  return {
-    isActive: data.is_active,
-    jobId: data.id,
-    worldId: data.world_id,
-  };
+  return { jobId: data.id, worldId: data.world_id };
+}
+
+async function restoreJob(
+  client: GubernatorSupabaseClient,
+  input: RestoreJobInput,
+): Promise<RestoreJobResult> {
+  const values = parseInput(restoreJobInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("restore_job_definition", {
+      p_job_id: values.jobId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new JobMutationError({
+      code: "job_not_found",
+      message: "Job could not be restored.",
+    });
+  }
+
+  return { jobId: data.id, worldId: data.world_id };
+}
+
+async function hardDeleteJob(
+  client: GubernatorSupabaseClient,
+  input: HardDeleteJobInput,
+): Promise<HardDeleteJobResult> {
+  const values = parseInput(hardDeleteJobInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("hard_delete_job_definition", {
+      p_job_id: values.jobId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new JobMutationError({
+      code: "job_not_found",
+      message: "Job could not be permanently deleted.",
+    });
+  }
+
+  return { jobId: data.id, worldId: data.world_id };
 }
 
 // Converts camelCase IO entries to a JSON-compatible DB format.
@@ -360,6 +470,7 @@ function toJob(row: JobRow): JobDefinition {
   return {
     baseCapacity: row.base_capacity,
     createdAt: row.created_at,
+    hasActiveReferences: false,
     id: row.id,
     inputsJson: row.inputs_json.map(toJobIoEntry),
     isActive: row.is_active,

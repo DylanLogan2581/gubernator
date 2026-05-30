@@ -4,8 +4,10 @@
 export {
   DepositTypeMutationError,
   createDepositTypeMutationOptions,
+  hardDeleteDepositTypeMutationOptions,
   isDepositTypeMutationError,
-  setDepositTypeActiveMutationOptions,
+  restoreDepositTypeMutationOptions,
+  softDeleteDepositTypeMutationOptions,
   updateDepositTypeMutationOptions,
 } from "./mutations/depositsMutations";
 export {
@@ -16,7 +18,9 @@ export {
 export { depositsQueryKeys } from "./queries/depositsQueryKeys";
 export {
   createDepositTypeInputSchema,
-  setDepositTypeActiveInputSchema,
+  hardDeleteDepositTypeInputSchema,
+  restoreDepositTypeInputSchema,
+  softDeleteDepositTypeInputSchema,
   updateDepositTypeInputSchema,
   workerInputEntrySchema,
 } from "./schemas/depositSchemas";
@@ -26,8 +30,12 @@ export type { DepositTypeMutationIssue } from "./mutations/depositsMutations";
 export type {
   CreateDepositTypeInput,
   CreateDepositTypeValues,
-  SetDepositTypeActiveInput,
-  SetDepositTypeActiveValues,
+  HardDeleteDepositTypeInput,
+  HardDeleteDepositTypeValues,
+  RestoreDepositTypeInput,
+  RestoreDepositTypeValues,
+  SoftDeleteDepositTypeInput,
+  SoftDeleteDepositTypeValues,
   UpdateDepositTypeInput,
   UpdateDepositTypeValues,
   WorkerInputEntryInput,
@@ -35,7 +43,9 @@ export type {
 } from "./schemas/depositSchemas";
 export type {
   DepositType,
-  SetDepositTypeActiveResult,
+  HardDeleteDepositTypeResult,
+  RestoreDepositTypeResult,
+  SoftDeleteDepositTypeResult,
   WorkerInputEntry,
 } from "./types/depositTypes";
 export type { DepositTypeReferenceIssue } from "./utils/validateDepositTypeReferences";

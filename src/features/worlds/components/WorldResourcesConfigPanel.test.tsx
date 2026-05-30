@@ -168,7 +168,7 @@ describe("WorldResourcesConfigPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("hides the Delete button for system resources", async () => {
+  it("hides the Move to trash button for system resources", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -182,10 +182,10 @@ describe("WorldResourcesConfigPanel", () => {
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
     await screen.findByRole("heading", { name: "Edit resource" });
-    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Move to trash" })).toBeNull();
   });
 
-  it("soft-deletes a non-system resource after confirmation", async () => {
+  it("moves a non-system resource to trash", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -205,14 +205,11 @@ describe("WorldResourcesConfigPanel", () => {
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
     await screen.findByRole("heading", { name: "Edit resource" });
-    await user.click(screen.getByRole("button", { name: "Delete" }));
-
-    await screen.findByRole("dialog", { name: "Delete resource" });
-    await user.click(screen.getByRole("button", { name: "Delete resource" }));
+    await user.click(screen.getByRole("button", { name: "Move to trash" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
-        "Resource deleted.",
+        "Resource moved to trash.",
         undefined,
       );
     });

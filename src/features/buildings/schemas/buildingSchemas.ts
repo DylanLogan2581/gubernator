@@ -107,9 +107,18 @@ export const updateBlueprintInputSchema = z
     }
   });
 
-export const setBlueprintActiveInputSchema = z.strictObject({
+export const softDeleteBlueprintInputSchema = z.strictObject({
   blueprintId: blueprintIdSchema,
-  isActive: z.boolean(),
+  worldId: worldIdSchema,
+});
+
+export const restoreBlueprintInputSchema = z.strictObject({
+  blueprintId: blueprintIdSchema,
+  worldId: worldIdSchema,
+});
+
+export const hardDeleteBlueprintInputSchema = z.strictObject({
+  blueprintId: blueprintIdSchema,
   worldId: worldIdSchema,
 });
 
@@ -151,21 +160,31 @@ export const deleteTierInputSchema = z.strictObject({
 
 export type CreateBlueprintInput = z.input<typeof createBlueprintInputSchema>;
 export type CreateBlueprintValues = z.output<typeof createBlueprintInputSchema>;
-export type UpdateBlueprintInput = z.input<typeof updateBlueprintInputSchema>;
-export type UpdateBlueprintValues = z.output<typeof updateBlueprintInputSchema>;
-export type SetBlueprintActiveInput = z.input<
-  typeof setBlueprintActiveInputSchema
->;
-export type SetBlueprintActiveValues = z.output<
-  typeof setBlueprintActiveInputSchema
->;
 export type CreateTierInput = z.input<typeof createTierInputSchema>;
 export type CreateTierValues = z.output<typeof createTierInputSchema>;
-export type UpdateTierInput = z.input<typeof updateTierInputSchema>;
-export type UpdateTierValues = z.output<typeof updateTierInputSchema>;
 export type DeleteTierInput = z.input<typeof deleteTierInputSchema>;
 export type DeleteTierValues = z.output<typeof deleteTierInputSchema>;
+export type HardDeleteBlueprintInput = z.input<
+  typeof hardDeleteBlueprintInputSchema
+>;
+export type HardDeleteBlueprintValues = z.output<
+  typeof hardDeleteBlueprintInputSchema
+>;
+export type RestoreBlueprintInput = z.input<typeof restoreBlueprintInputSchema>;
+export type RestoreBlueprintValues = z.output<
+  typeof restoreBlueprintInputSchema
+>;
+export type SoftDeleteBlueprintInput = z.input<
+  typeof softDeleteBlueprintInputSchema
+>;
+export type SoftDeleteBlueprintValues = z.output<
+  typeof softDeleteBlueprintInputSchema
+>;
 export type TierCostEntryInput = z.input<typeof tierCostEntrySchema>;
 export type TierCostEntryValues = z.output<typeof tierCostEntrySchema>;
 export type TierEffectInput = z.input<typeof tierEffectSchema>;
 export type TierEffectValues = z.output<typeof tierEffectSchema>;
+export type UpdateBlueprintInput = z.input<typeof updateBlueprintInputSchema>;
+export type UpdateBlueprintValues = z.output<typeof updateBlueprintInputSchema>;
+export type UpdateTierInput = z.input<typeof updateTierInputSchema>;
+export type UpdateTierValues = z.output<typeof updateTierInputSchema>;

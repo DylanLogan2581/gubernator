@@ -68,9 +68,18 @@ export const updateDepositTypeInputSchema = z
     }
   });
 
-export const setDepositTypeActiveInputSchema = z.strictObject({
+export const softDeleteDepositTypeInputSchema = z.strictObject({
   depositTypeId: depositTypeIdSchema,
-  isActive: z.boolean(),
+  worldId: worldIdSchema,
+});
+
+export const restoreDepositTypeInputSchema = z.strictObject({
+  depositTypeId: depositTypeIdSchema,
+  worldId: worldIdSchema,
+});
+
+export const hardDeleteDepositTypeInputSchema = z.strictObject({
+  depositTypeId: depositTypeIdSchema,
   worldId: worldIdSchema,
 });
 
@@ -80,17 +89,29 @@ export type CreateDepositTypeInput = z.input<
 export type CreateDepositTypeValues = z.output<
   typeof createDepositTypeInputSchema
 >;
+export type HardDeleteDepositTypeInput = z.input<
+  typeof hardDeleteDepositTypeInputSchema
+>;
+export type HardDeleteDepositTypeValues = z.output<
+  typeof hardDeleteDepositTypeInputSchema
+>;
+export type RestoreDepositTypeInput = z.input<
+  typeof restoreDepositTypeInputSchema
+>;
+export type RestoreDepositTypeValues = z.output<
+  typeof restoreDepositTypeInputSchema
+>;
+export type SoftDeleteDepositTypeInput = z.input<
+  typeof softDeleteDepositTypeInputSchema
+>;
+export type SoftDeleteDepositTypeValues = z.output<
+  typeof softDeleteDepositTypeInputSchema
+>;
 export type UpdateDepositTypeInput = z.input<
   typeof updateDepositTypeInputSchema
 >;
 export type UpdateDepositTypeValues = z.output<
   typeof updateDepositTypeInputSchema
->;
-export type SetDepositTypeActiveInput = z.input<
-  typeof setDepositTypeActiveInputSchema
->;
-export type SetDepositTypeActiveValues = z.output<
-  typeof setDepositTypeActiveInputSchema
 >;
 export type WorkerInputEntryInput = z.input<typeof workerInputEntrySchema>;
 export type WorkerInputEntryValues = z.output<typeof workerInputEntrySchema>;

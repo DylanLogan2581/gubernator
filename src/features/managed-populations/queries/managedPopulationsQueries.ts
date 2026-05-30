@@ -58,13 +58,19 @@ type ManagedPopulationTypeRow = {
   readonly is_active: boolean;
   readonly maintenance_rules_json: readonly PopulationResourceEntryRow[];
   readonly name: string;
+  // Embedded FK references — job_definitions whose linked_managed_population_type_id = this id.
+  readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
 };
 
-const MANAGED_POPULATION_TYPE_SELECT =
-  "id,world_id,name,slug,husbandry_job_id,culling_job_id,husbandry_workers_per_n_animals,growth_rate,maintenance_rules_json,culling_outputs_json,is_active,created_at,updated_at";
+const MANAGED_POPULATION_TYPE_SELECT = [
+  "id,world_id,name,slug,husbandry_job_id,culling_job_id",
+  "husbandry_workers_per_n_animals,growth_rate",
+  "maintenance_rules_json,culling_outputs_json,is_active,created_at,updated_at",
+  "referencing_jobs:job_definitions!job_definitions_linked_managed_pop_type_fk(id)",
+].join(",");
 
 export function managedPopulationTypesByWorldQueryOptions(
   worldId: string,
@@ -173,6 +179,7 @@ function toManagedPopulationType(
     cullingJobId: row.culling_job_id,
     cullingOutputsJson: row.culling_outputs_json.map(toPopulationResourceEntry),
     growthRate: row.growth_rate,
+    hasActiveReferences: row.referencing_jobs.length > 0,
     husbandryJobId: row.husbandry_job_id,
     husbandryWorkersPerNAnimals: row.husbandry_workers_per_n_animals,
     id: row.id,

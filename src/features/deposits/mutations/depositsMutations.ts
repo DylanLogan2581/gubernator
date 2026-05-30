@@ -16,16 +16,22 @@ import type { Json } from "@/types/database";
 import { depositsQueryKeys } from "../queries/depositsQueryKeys";
 import {
   createDepositTypeInputSchema,
-  setDepositTypeActiveInputSchema,
+  hardDeleteDepositTypeInputSchema,
+  restoreDepositTypeInputSchema,
+  softDeleteDepositTypeInputSchema,
   updateDepositTypeInputSchema,
   type CreateDepositTypeInput,
-  type SetDepositTypeActiveInput,
+  type HardDeleteDepositTypeInput,
+  type RestoreDepositTypeInput,
+  type SoftDeleteDepositTypeInput,
   type UpdateDepositTypeInput,
 } from "../schemas/depositSchemas";
 
 import type {
   DepositType,
-  SetDepositTypeActiveResult,
+  HardDeleteDepositTypeResult,
+  RestoreDepositTypeResult,
+  SoftDeleteDepositTypeResult,
   WorkerInputEntry,
 } from "../types/depositTypes";
 import type { z } from "zod";
@@ -44,10 +50,20 @@ type UpdateDepositTypeMutationOptions = UseMutationOptions<
   AuthUiError | DepositTypeMutationError,
   UpdateDepositTypeInput
 >;
-type SetDepositTypeActiveMutationOptions = UseMutationOptions<
-  SetDepositTypeActiveResult,
+type SoftDeleteDepositTypeMutationOptions = UseMutationOptions<
+  SoftDeleteDepositTypeResult,
   AuthUiError | DepositTypeMutationError,
-  SetDepositTypeActiveInput
+  SoftDeleteDepositTypeInput
+>;
+type RestoreDepositTypeMutationOptions = UseMutationOptions<
+  RestoreDepositTypeResult,
+  AuthUiError | DepositTypeMutationError,
+  RestoreDepositTypeInput
+>;
+type HardDeleteDepositTypeMutationOptions = UseMutationOptions<
+  HardDeleteDepositTypeResult,
+  AuthUiError | DepositTypeMutationError,
+  HardDeleteDepositTypeInput
 >;
 
 // Explicit typed payloads prevent RejectExcessProperties conflicts in Supabase's strict overloads.
@@ -152,17 +168,17 @@ export function updateDepositTypeMutationOptions({
   });
 }
 
-export function setDepositTypeActiveMutationOptions({
+export function softDeleteDepositTypeMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
-}): SetDepositTypeActiveMutationOptions {
+}): SoftDeleteDepositTypeMutationOptions {
   return mutationOptions({
-    mutationFn: (input: SetDepositTypeActiveInput) =>
-      setDepositTypeActive(client, input),
-    mutationKey: [...depositsQueryKeys.all, "set-deposit-type-active"],
+    mutationFn: (input: SoftDeleteDepositTypeInput) =>
+      softDeleteDepositType(client, input),
+    mutationKey: [...depositsQueryKeys.all, "soft-delete-deposit-type"],
     onSuccess: async (result): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -173,6 +189,57 @@ export function setDepositTypeActiveMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: depositsQueryKeys.detail(result.depositTypeId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function restoreDepositTypeMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): RestoreDepositTypeMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: RestoreDepositTypeInput) =>
+      restoreDepositType(client, input),
+    mutationKey: [...depositsQueryKeys.all, "restore-deposit-type"],
+    onSuccess: async (result): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: depositsQueryKeys.byWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: depositsQueryKeys.activeByWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: depositsQueryKeys.detail(result.depositTypeId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function hardDeleteDepositTypeMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): HardDeleteDepositTypeMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: HardDeleteDepositTypeInput) =>
+      hardDeleteDepositType(client, input),
+    mutationKey: [...depositsQueryKeys.all, "hard-delete-deposit-type"],
+    onSuccess: async (result): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: depositsQueryKeys.byWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: depositsQueryKeys.activeByWorld(result.worldId),
         }),
       ]);
     },
@@ -267,23 +334,18 @@ async function updateDepositType(
   return toDepositType(data);
 }
 
-async function setDepositTypeActive(
+async function softDeleteDepositType(
   client: GubernatorSupabaseClient,
-  input: SetDepositTypeActiveInput,
-): Promise<SetDepositTypeActiveResult> {
-  const values = parseInput(setDepositTypeActiveInputSchema, input);
+  input: SoftDeleteDepositTypeInput,
+): Promise<SoftDeleteDepositTypeResult> {
+  const values = parseInput(softDeleteDepositTypeInputSchema, input);
 
   const { data, error } = await client
-    .from("deposit_types")
-    .update({ is_active: values.isActive })
-    .eq("id", values.depositTypeId)
-    .eq("world_id", values.worldId)
-    .select("id,world_id,is_active")
-    .maybeSingle<{
-      readonly id: string;
-      readonly is_active: boolean;
-      readonly world_id: string;
-    }>();
+    .rpc("soft_delete_deposit_type", {
+      p_deposit_type_id: values.depositTypeId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -292,15 +354,65 @@ async function setDepositTypeActive(
   if (data === null) {
     throw new DepositTypeMutationError({
       code: "deposit_type_not_found",
-      message: "Deposit type could not be updated.",
+      message: "Deposit type could not be trashed.",
     });
   }
 
-  return {
-    depositTypeId: data.id,
-    isActive: data.is_active,
-    worldId: data.world_id,
-  };
+  return { depositTypeId: data.id, worldId: data.world_id };
+}
+
+async function restoreDepositType(
+  client: GubernatorSupabaseClient,
+  input: RestoreDepositTypeInput,
+): Promise<RestoreDepositTypeResult> {
+  const values = parseInput(restoreDepositTypeInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("restore_deposit_type", {
+      p_deposit_type_id: values.depositTypeId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new DepositTypeMutationError({
+      code: "deposit_type_not_found",
+      message: "Deposit type could not be restored.",
+    });
+  }
+
+  return { depositTypeId: data.id, worldId: data.world_id };
+}
+
+async function hardDeleteDepositType(
+  client: GubernatorSupabaseClient,
+  input: HardDeleteDepositTypeInput,
+): Promise<HardDeleteDepositTypeResult> {
+  const values = parseInput(hardDeleteDepositTypeInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("hard_delete_deposit_type", {
+      p_deposit_type_id: values.depositTypeId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new DepositTypeMutationError({
+      code: "deposit_type_not_found",
+      message: "Deposit type could not be permanently deleted.",
+    });
+  }
+
+  return { depositTypeId: data.id, worldId: data.world_id };
 }
 
 function toWorkerInputsJson(entries: readonly WorkerInputEntry[]): Json {
@@ -322,6 +434,7 @@ function toWorkerInputEntry(row: WorkerInputEntryRow): WorkerInputEntry {
 function toDepositType(row: DepositTypeRow): DepositType {
   return {
     createdAt: row.created_at,
+    hasActiveReferences: false,
     id: row.id,
     isActive: row.is_active,
     jobId: row.job_id,

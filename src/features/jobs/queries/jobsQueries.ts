@@ -49,6 +49,13 @@ type JobIoEntryRow = {
 type JobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
+  // Embedded FK references — used to compute hasActiveReferences.
+  // deposit_types!deposit_types_job_id_fk: deposit type that has this job
+  // husbandry_mpt: mpt that designates this as husbandry job
+  // culling_mpt: mpt that designates this as culling job
+  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
+  readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly JobIoEntryRow[];
   readonly is_active: boolean;
@@ -63,8 +70,14 @@ type JobRow = {
   readonly world_id: string;
 };
 
-const JOB_SELECT =
-  "id,world_id,name,slug,job_type,base_capacity,trader_capacity_per_worker,linked_deposit_type_id,linked_managed_population_type_id,inputs_json,outputs_json,is_active,created_at,updated_at";
+const JOB_SELECT = [
+  "id,world_id,name,slug,job_type,base_capacity,trader_capacity_per_worker",
+  "linked_deposit_type_id,linked_managed_population_type_id",
+  "inputs_json,outputs_json,is_active,created_at,updated_at",
+  "deposit_types!deposit_types_job_id_fk(id)",
+  "husbandry_mpt:managed_population_types!managed_population_types_husbandry_job_fk(id)",
+  "culling_mpt:managed_population_types!managed_population_types_culling_job_fk(id)",
+].join(",");
 
 export function jobsByWorldQueryOptions(
   worldId: string,
@@ -204,6 +217,10 @@ function toJob(row: JobRow): JobDefinition {
   return {
     baseCapacity: row.base_capacity,
     createdAt: row.created_at,
+    hasActiveReferences:
+      row.deposit_types.length > 0 ||
+      row.husbandry_mpt.length > 0 ||
+      row.culling_mpt.length > 0,
     id: row.id,
     inputsJson: row.inputs_json.map(toJobIoEntry),
     isActive: row.is_active,

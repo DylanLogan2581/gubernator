@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
@@ -15,9 +15,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  activeResourcesByWorldQueryOptions,
   createResourceInputSchema,
   createResourceMutationOptions,
+  hardDeleteResourceMutationOptions,
+  resourcesByWorldQueryOptions,
+  restoreResourceMutationOptions,
   softDeleteResourceMutationOptions,
   updateResourceInputSchema,
   updateResourceMutationOptions,
@@ -41,7 +43,7 @@ export function WorldResourcesConfigPanel({
   worldId,
 }: WorldResourcesConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
-  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+  const resourcesQuery = useQuery(resourcesByWorldQueryOptions(worldId));
 
   if (resourcesQuery.isPending) {
     return (
@@ -73,7 +75,7 @@ export function WorldResourcesConfigPanel({
       canAdmin={canAdmin}
       isArchived={isArchived}
       queryClient={queryClient}
-      resources={resourcesQuery.data}
+      allResources={resourcesQuery.data}
       worldId={worldId}
     />
   );
@@ -83,23 +85,28 @@ function WorldResourcesConfigPanelContent({
   canAdmin,
   isArchived,
   queryClient,
-  resources,
+  allResources,
   worldId,
 }: {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly queryClient: QueryClient;
-  readonly resources: readonly Resource[];
+  readonly allResources: readonly Resource[];
   readonly worldId: string;
 }): JSX.Element {
   const createMutation = useMutation(
     createResourceMutationOptions({ queryClient }),
   );
   const [showForm, setShowForm] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [editingResourceId, setEditingResourceId] = useState<string | null>(
     null,
   );
   const canEdit = canAdmin && !isArchived;
+
+  const resources = showTrash
+    ? allResources.filter((r) => r.isDeleted)
+    : allResources.filter((r) => !r.isDeleted);
 
   return (
     <section
@@ -113,19 +120,35 @@ function WorldResourcesConfigPanelContent({
         >
           Resources
         </h2>
-        {canEdit && !showForm ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setShowForm(true);
-            }}
-          >
-            <Plus aria-hidden="true" />
-            Add resource
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {canEdit ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowTrash((v) => !v);
+                setEditingResourceId(null);
+                setShowForm(false);
+              }}
+            >
+              {showTrash ? "Hide trash" : "View trash"}
+            </Button>
+          ) : null}
+          {canEdit && !showForm && !showTrash ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowForm(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Add resource
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {resources.length > 0 ? (
@@ -134,17 +157,20 @@ function WorldResourcesConfigPanelContent({
           editingResourceId={editingResourceId}
           queryClient={queryClient}
           resources={resources}
+          showTrash={showTrash}
           worldId={worldId}
           onEditingChange={setEditingResourceId}
         />
       ) : !showForm ? (
         <EmptyState
-          title="No resources yet"
-          description="Add the first resource for this world."
+          title={showTrash ? "No trashed resources." : "No resources yet"}
+          description={
+            showTrash ? undefined : "Add the first resource for this world."
+          }
         />
       ) : null}
 
-      {canEdit && showForm ? (
+      {canEdit && showForm && !showTrash ? (
         <CreateResourceForm
           isPending={createMutation.isPending}
           worldId={worldId}
@@ -177,6 +203,7 @@ function ResourceList({
   editingResourceId,
   queryClient,
   resources,
+  showTrash,
   worldId,
   onEditingChange,
 }: {
@@ -185,12 +212,23 @@ function ResourceList({
   readonly onEditingChange: (id: string | null) => void;
   readonly queryClient: QueryClient;
   readonly resources: readonly Resource[];
+  readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
   return (
     <ul aria-label="Resources" className="grid gap-2">
-      {resources.map((resource) =>
-        editingResourceId === resource.id ? (
+      {resources.map((resource) => {
+        if (showTrash) {
+          return (
+            <TrashedResourceRow
+              key={resource.id}
+              queryClient={queryClient}
+              resource={resource}
+              worldId={worldId}
+            />
+          );
+        }
+        return editingResourceId === resource.id ? (
           <li key={resource.id}>
             <EditResourceForm
               queryClient={queryClient}
@@ -210,8 +248,8 @@ function ResourceList({
               onEditingChange(resource.id);
             }}
           />
-        ),
-      )}
+        );
+      })}
     </ul>
   );
 }
@@ -250,6 +288,96 @@ function ResourceRow({
   );
 }
 
+function TrashedResourceRow({
+  queryClient,
+  resource,
+  worldId,
+}: {
+  readonly queryClient: QueryClient;
+  readonly resource: Resource;
+  readonly worldId: string;
+}): JSX.Element {
+  const restoreMutation = useMutation(
+    restoreResourceMutationOptions({ queryClient }),
+  );
+  const hardDeleteMutation = useMutation(
+    hardDeleteResourceMutationOptions({ queryClient }),
+  );
+  const isPending = restoreMutation.isPending || hardDeleteMutation.isPending;
+
+  function handleRestore(): void {
+    restoreMutation.mutate(
+      { resourceId: resource.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to restore resource.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Resource restored.");
+        },
+      },
+    );
+  }
+
+  function handleHardDelete(): void {
+    hardDeleteMutation.mutate(
+      { resourceId: resource.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to delete resource.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Resource permanently deleted.");
+        },
+      },
+    );
+  }
+
+  return (
+    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 opacity-60">
+      <div className="grid gap-0.5">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{resource.name}</span>
+          {resource.isSystemResource ? (
+            <Badge variant="secondary">system</Badge>
+          ) : null}
+        </div>
+        <span className="text-xs text-muted-foreground">{resource.slug}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={handleRestore}
+        >
+          <RotateCcw aria-hidden="true" />
+          Restore
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          disabled={isPending}
+          onClick={handleHardDelete}
+        >
+          <Trash2 aria-hidden="true" />
+          Delete permanently
+        </Button>
+      </div>
+    </li>
+  );
+}
+
 type ResourceFieldErrors = {
   readonly baseStockpileCap?: string;
   readonly name?: string;
@@ -280,7 +408,6 @@ function EditResourceForm({
     String(resource.baseStockpileCap),
   );
   const [fieldErrors, setFieldErrors] = useState<ResourceFieldErrors>({});
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
@@ -329,185 +456,114 @@ function EditResourceForm({
     }
   }
 
-  function handleSoftDelete(): void {
-    softDeleteMutation.mutate(
-      { resourceId: resource.id, worldId },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to delete resource.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Resource deleted.");
-          onClose();
-        },
-      },
-    );
+  async function handleTrash(): Promise<void> {
+    try {
+      await softDeleteMutation.mutateAsync({
+        resourceId: resource.id,
+        worldId,
+      });
+      notifyMutationSuccess("Resource moved to trash.");
+      onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to move resource to trash.",
+      );
+    }
   }
 
   return (
-    <>
-      <form
-        aria-label="Edit resource"
-        className="grid gap-4 rounded-md border border-border bg-background p-4"
-        noValidate
-        onSubmit={(e) => {
-          void handleSubmit(e);
-        }}
-      >
-        <h3 className="text-sm font-medium">Edit resource</h3>
-        <div className="grid gap-3">
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Name</span>
-            <Input
-              aria-invalid={fieldErrors.name !== undefined}
-              disabled={isPending}
-              maxLength={resourceInputLimits.resourceNameMax}
-              value={name}
-              onChange={(e) => {
-                setName(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.name !== undefined ? (
-              <p className="text-xs text-destructive">{fieldErrors.name}</p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Slug</span>
-            <Input
-              aria-invalid={fieldErrors.slug !== undefined}
-              disabled={isPending}
-              maxLength={resourceInputLimits.resourceSlugMax}
-              value={slug}
-              onChange={(e) => {
-                setSlug(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.slug !== undefined ? (
-              <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Base stockpile cap</span>
-            <Input
-              aria-invalid={fieldErrors.baseStockpileCap !== undefined}
-              disabled={isPending}
-              inputMode="decimal"
-              placeholder="0"
-              value={baseStockpileCap}
-              onChange={(e) => {
-                setBaseStockpileCap(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.baseStockpileCap !== undefined ? (
-              <p className="text-xs text-destructive">
-                {fieldErrors.baseStockpileCap}
-              </p>
-            ) : null}
-          </label>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={isPending}>
-              Save
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-          </div>
-          {!resource.isSystemResource ? (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={isPending}
-              onClick={() => {
-                setShowDeleteDialog(true);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-              Delete
-            </Button>
+    <form
+      aria-label="Edit resource"
+      className="grid gap-4 rounded-md border border-border bg-background p-4"
+      noValidate
+      onSubmit={(e) => {
+        void handleSubmit(e);
+      }}
+    >
+      <h3 className="text-sm font-medium">Edit resource</h3>
+      <div className="grid gap-3">
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Name</span>
+          <Input
+            aria-invalid={fieldErrors.name !== undefined}
+            disabled={isPending}
+            maxLength={resourceInputLimits.resourceNameMax}
+            value={name}
+            onChange={(e) => {
+              setName(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.name !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
-        </div>
-      </form>
-      {showDeleteDialog ? (
-        <SoftDeleteResourceDialog
-          isPending={softDeleteMutation.isPending}
-          resourceName={resource.name}
-          onCancel={() => {
-            setShowDeleteDialog(false);
-          }}
-          onConfirm={handleSoftDelete}
-        />
-      ) : null}
-    </>
-  );
-}
-
-function SoftDeleteResourceDialog({
-  isPending,
-  resourceName,
-  onCancel,
-  onConfirm,
-}: {
-  readonly isPending: boolean;
-  readonly onCancel: () => void;
-  readonly onConfirm: () => void;
-  readonly resourceName: string;
-}): JSX.Element {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
-      <div
-        aria-labelledby="soft-delete-resource-title"
-        aria-modal="true"
-        className="grid w-full max-w-md gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="space-y-1">
-          <h3
-            id="soft-delete-resource-title"
-            className="text-lg font-semibold tracking-normal"
-          >
-            Delete resource
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete{" "}
-            <span className="font-medium">{resourceName}</span>? It will be
-            removed from the active world configuration. Historical logs that
-            reference it will continue to do so unaffected.
-          </p>
-        </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Slug</span>
+          <Input
+            aria-invalid={fieldErrors.slug !== undefined}
+            disabled={isPending}
+            maxLength={resourceInputLimits.resourceSlugMax}
+            value={slug}
+            onChange={(e) => {
+              setSlug(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.slug !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
+          ) : null}
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Base stockpile cap</span>
+          <Input
+            aria-invalid={fieldErrors.baseStockpileCap !== undefined}
+            disabled={isPending}
+            inputMode="decimal"
+            placeholder="0"
+            value={baseStockpileCap}
+            onChange={(e) => {
+              setBaseStockpileCap(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.baseStockpileCap !== undefined ? (
+            <p className="text-xs text-destructive">
+              {fieldErrors.baseStockpileCap}
+            </p>
+          ) : null}
+        </label>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={isPending}>
+            Save
+          </Button>
           <Button
             type="button"
             variant="outline"
+            size="sm"
             disabled={isPending}
-            onClick={onCancel}
+            onClick={onClose}
           >
             Cancel
           </Button>
+        </div>
+        {!resource.isSystemResource ? (
           <Button
             type="button"
             variant="destructive"
+            size="sm"
             disabled={isPending}
-            onClick={onConfirm}
+            onClick={() => {
+              void handleTrash();
+            }}
           >
             <Trash2 aria-hidden="true" />
-            {isPending ? "Deleting…" : "Delete resource"}
+            Move to trash
           </Button>
-        </div>
+        ) : null}
       </div>
-    </div>
+    </form>
   );
 }
 

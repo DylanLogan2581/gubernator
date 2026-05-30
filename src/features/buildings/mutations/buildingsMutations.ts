@@ -18,13 +18,17 @@ import {
   createBlueprintInputSchema,
   createTierInputSchema,
   deleteTierInputSchema,
-  setBlueprintActiveInputSchema,
+  hardDeleteBlueprintInputSchema,
+  restoreBlueprintInputSchema,
+  softDeleteBlueprintInputSchema,
   updateBlueprintInputSchema,
   updateTierInputSchema,
   type CreateBlueprintInput,
   type CreateTierInput,
   type DeleteTierInput,
-  type SetBlueprintActiveInput,
+  type HardDeleteBlueprintInput,
+  type RestoreBlueprintInput,
+  type SoftDeleteBlueprintInput,
   type UpdateBlueprintInput,
   type UpdateTierInput,
 } from "../schemas/buildingSchemas";
@@ -33,7 +37,9 @@ import type {
   BuildingBlueprint,
   BuildingBlueprintTier,
   DeleteTierResult,
-  SetBlueprintActiveResult,
+  HardDeleteBlueprintResult,
+  RestoreBlueprintResult,
+  SoftDeleteBlueprintResult,
   TierCostEntry,
   TierEffect,
 } from "../types/buildingTypes";
@@ -62,10 +68,20 @@ type UpdateBlueprintMutationOptions = UseMutationOptions<
   AuthUiError | BuildingMutationError,
   UpdateBlueprintInput
 >;
-type SetBlueprintActiveMutationOptions = UseMutationOptions<
-  SetBlueprintActiveResult,
+type SoftDeleteBlueprintMutationOptions = UseMutationOptions<
+  SoftDeleteBlueprintResult,
   AuthUiError | BuildingMutationError,
-  SetBlueprintActiveInput
+  SoftDeleteBlueprintInput
+>;
+type RestoreBlueprintMutationOptions = UseMutationOptions<
+  RestoreBlueprintResult,
+  AuthUiError | BuildingMutationError,
+  RestoreBlueprintInput
+>;
+type HardDeleteBlueprintMutationOptions = UseMutationOptions<
+  HardDeleteBlueprintResult,
+  AuthUiError | BuildingMutationError,
+  HardDeleteBlueprintInput
 >;
 type CreateTierMutationOptions = UseMutationOptions<
   BuildingBlueprintTier,
@@ -214,17 +230,17 @@ export function updateBlueprintMutationOptions({
   });
 }
 
-export function setBlueprintActiveMutationOptions({
+export function softDeleteBlueprintMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
-}): SetBlueprintActiveMutationOptions {
+}): SoftDeleteBlueprintMutationOptions {
   return mutationOptions({
-    mutationFn: (input: SetBlueprintActiveInput) =>
-      setBlueprintActive(client, input),
-    mutationKey: [...buildingsQueryKeys.all, "set-blueprint-active"],
+    mutationFn: (input: SoftDeleteBlueprintInput) =>
+      softDeleteBlueprint(client, input),
+    mutationKey: [...buildingsQueryKeys.all, "soft-delete-blueprint"],
     onSuccess: async (result): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -234,6 +250,49 @@ export function setBlueprintActiveMutationOptions({
           queryKey: buildingsQueryKeys.blueprintById(result.blueprintId),
         }),
       ]);
+    },
+  });
+}
+
+export function restoreBlueprintMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): RestoreBlueprintMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: RestoreBlueprintInput) =>
+      restoreBlueprint(client, input),
+    mutationKey: [...buildingsQueryKeys.all, "restore-blueprint"],
+    onSuccess: async (result): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: buildingsQueryKeys.blueprintsByWorld(result.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: buildingsQueryKeys.blueprintById(result.blueprintId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function hardDeleteBlueprintMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): HardDeleteBlueprintMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: HardDeleteBlueprintInput) =>
+      hardDeleteBlueprint(client, input),
+    mutationKey: [...buildingsQueryKeys.all, "hard-delete-blueprint"],
+    onSuccess: async (result): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: buildingsQueryKeys.blueprintsByWorld(result.worldId),
+      });
     },
   });
 }
@@ -393,23 +452,18 @@ async function updateBlueprint(
   return toBlueprint(data);
 }
 
-async function setBlueprintActive(
+async function softDeleteBlueprint(
   client: GubernatorSupabaseClient,
-  input: SetBlueprintActiveInput,
-): Promise<SetBlueprintActiveResult> {
-  const values = parseInput(setBlueprintActiveInputSchema, input);
+  input: SoftDeleteBlueprintInput,
+): Promise<SoftDeleteBlueprintResult> {
+  const values = parseInput(softDeleteBlueprintInputSchema, input);
 
   const { data, error } = await client
-    .from("building_blueprints")
-    .update({ is_active: values.isActive })
-    .eq("id", values.blueprintId)
-    .eq("world_id", values.worldId)
-    .select("id,world_id,is_active")
-    .maybeSingle<{
-      readonly id: string;
-      readonly is_active: boolean;
-      readonly world_id: string;
-    }>();
+    .rpc("soft_delete_building_blueprint", {
+      p_blueprint_id: values.blueprintId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -418,15 +472,65 @@ async function setBlueprintActive(
   if (data === null) {
     throw new BuildingMutationError({
       code: "building_blueprint_not_found",
-      message: "Blueprint could not be updated.",
+      message: "Blueprint could not be trashed.",
     });
   }
 
-  return {
-    blueprintId: data.id,
-    isActive: data.is_active,
-    worldId: data.world_id,
-  };
+  return { blueprintId: data.id, worldId: data.world_id };
+}
+
+async function restoreBlueprint(
+  client: GubernatorSupabaseClient,
+  input: RestoreBlueprintInput,
+): Promise<RestoreBlueprintResult> {
+  const values = parseInput(restoreBlueprintInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("restore_building_blueprint", {
+      p_blueprint_id: values.blueprintId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new BuildingMutationError({
+      code: "building_blueprint_not_found",
+      message: "Blueprint could not be restored.",
+    });
+  }
+
+  return { blueprintId: data.id, worldId: data.world_id };
+}
+
+async function hardDeleteBlueprint(
+  client: GubernatorSupabaseClient,
+  input: HardDeleteBlueprintInput,
+): Promise<HardDeleteBlueprintResult> {
+  const values = parseInput(hardDeleteBlueprintInputSchema, input);
+
+  const { data, error } = await client
+    .rpc("hard_delete_building_blueprint", {
+      p_blueprint_id: values.blueprintId,
+      p_world_id: values.worldId,
+    })
+    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new BuildingMutationError({
+      code: "building_blueprint_not_found",
+      message: "Blueprint could not be permanently deleted.",
+    });
+  }
+
+  return { blueprintId: data.id, worldId: data.world_id };
 }
 
 async function createTier(
