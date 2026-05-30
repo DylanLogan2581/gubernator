@@ -354,7 +354,6 @@ function JobRow({
           <span className="text-sm font-medium">{job.name}</span>
           <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
         </div>
-        <span className="text-xs text-muted-foreground">{job.slug}</span>
       </div>
       <div className="flex items-center gap-3">
         <JobCapacityDisplay job={job} />
@@ -427,7 +426,6 @@ function TrashedJobRow({
           <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
           <Badge variant="outline">trashed</Badge>
         </div>
-        <span className="text-xs text-muted-foreground">{job.slug}</span>
       </div>
       <div className="flex items-center gap-2">
         <Button
