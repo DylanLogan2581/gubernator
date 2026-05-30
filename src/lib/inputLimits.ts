@@ -55,6 +55,11 @@ export const depositInputLimits = {
   depositTypeSlugMax: 64,
 } as const;
 
+export const managedPopulationInputLimits = {
+  populationTypeNameMax: 64,
+  populationTypeSlugMax: 64,
+} as const;
+
 export const namingInputLimits = {
   namePoolSizeMax: 100,
   namePoolEntryMax: 64,
