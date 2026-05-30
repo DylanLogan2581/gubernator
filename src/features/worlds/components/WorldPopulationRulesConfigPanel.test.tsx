@@ -165,6 +165,184 @@ describe("WorldPopulationRulesConfigPanel", () => {
     expect(screen.getByText("60 turns")).toBeDefined();
   });
 
+  it("loads existing null maximum_fertility_age_turns as a blank input", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [createWorldRow({ maximum_fertility_age_turns: null })],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Population rules" });
+    const input = screen.getByRole("spinbutton", {
+      name: /Maximum fertility age/,
+    });
+    expect((input as HTMLInputElement).value).toBe("");
+  });
+
+  it("loads existing numeric maximum_fertility_age_turns into the input", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [createWorldRow({ maximum_fertility_age_turns: 30 })],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Population rules" });
+    const input = screen.getByRole("spinbutton", {
+      name: /Maximum fertility age/,
+    });
+    expect((input as HTMLInputElement).value).toBe("30");
+  });
+
+  it("submits null when maximum_fertility_age_turns input is cleared", async () => {
+    const user = userEvent.setup();
+
+    const updateSpy = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          select: vi.fn(() => ({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { id: WORLD_ID }, error: null }),
+          })),
+        })),
+      })),
+    }));
+
+    requireSupabaseClient.mockReturnValue({
+      from: vi.fn((table: string) => {
+        if (table === "worlds") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn((column: string, value: string) => {
+                const row = createWorldRow({
+                  maximum_fertility_age_turns: 18,
+                });
+                const data = column === "id" && value === WORLD_ID ? row : null;
+                return {
+                  maybeSingle: vi.fn().mockResolvedValue({ data, error: null }),
+                };
+              }),
+            })),
+            update: updateSpy,
+          };
+        }
+        throw new Error(`Unexpected table ${table}`);
+      }),
+    });
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Population rules" });
+
+    const input = screen.getByRole("spinbutton", {
+      name: /Maximum fertility age/,
+    });
+    fireEvent.change(input, { target: { value: "" } });
+
+    await user.click(screen.getByRole("button", { name: "Save rules" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalled();
+    });
+
+    const calls = updateSpy.mock.calls as unknown[][];
+    const payload = calls[0]?.[0] as Record<string, unknown>;
+    expect(payload?.["maximum_fertility_age_turns"]).toBeNull();
+  });
+
+  it("submits 25 when maximum_fertility_age_turns input is set to 25", async () => {
+    const user = userEvent.setup();
+
+    const updateSpy = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          select: vi.fn(() => ({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { id: WORLD_ID }, error: null }),
+          })),
+        })),
+      })),
+    }));
+
+    requireSupabaseClient.mockReturnValue({
+      from: vi.fn((table: string) => {
+        if (table === "worlds") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn((column: string, value: string) => {
+                const row = createWorldRow({
+                  maximum_fertility_age_turns: null,
+                });
+                const data = column === "id" && value === WORLD_ID ? row : null;
+                return {
+                  maybeSingle: vi.fn().mockResolvedValue({ data, error: null }),
+                };
+              }),
+            })),
+            update: updateSpy,
+          };
+        }
+        throw new Error(`Unexpected table ${table}`);
+      }),
+    });
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Population rules" });
+
+    const input = screen.getByRole("spinbutton", {
+      name: /Maximum fertility age/,
+    });
+    fireEvent.change(input, { target: { value: "25" } });
+
+    await user.click(screen.getByRole("button", { name: "Save rules" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalled();
+    });
+
+    const calls = updateSpy.mock.calls as unknown[][];
+    const payload = calls[0]?.[0] as Record<string, unknown>;
+    expect(payload?.["maximum_fertility_age_turns"]).toBe(25);
+  });
+
   it("displays probability fields as whole-number percentages in read-only summary", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

@@ -193,9 +193,9 @@ function WorldPopulationRulesConfigPanelContent({
                   }))
                 }
               />
-              <NullableIntRuleField
+              <NullableNumberRuleField
                 label="Maximum fertility age"
-                hint="Turns (integer ≥ 0); leave unset for no cap"
+                hint="Turns (integer ≥ 0); leave empty for no cap"
                 min={0}
                 value={draftRules.maximum_fertility_age_turns}
                 onChange={(value) =>
@@ -374,7 +374,7 @@ function PercentRuleField({
   );
 }
 
-function NullableIntRuleField({
+function NullableNumberRuleField({
   hint,
   label,
   min,
@@ -387,33 +387,21 @@ function NullableIntRuleField({
   readonly onChange: (value: number | null) => void;
   readonly value: number | null;
 }): JSX.Element {
-  const enabled = value !== null;
-
   return (
-    <div className="grid gap-1 text-sm">
+    <label className="grid gap-1 text-sm">
       <span className="font-medium">{label}</span>
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          className="h-4 w-4 rounded border-input accent-primary"
-          checked={enabled}
-          onChange={(event) => {
-            onChange(event.currentTarget.checked ? 18 : null);
-          }}
-        />
-        <span className="text-muted-foreground">Set a cap</span>
-      </label>
-      {enabled ? (
-        <Input
-          type="number"
-          min={min}
-          step={1}
-          value={value}
-          onChange={(event) => onChange(Number(event.currentTarget.value))}
-        />
-      ) : null}
+      <Input
+        type="number"
+        min={min}
+        step={1}
+        value={value ?? ""}
+        onChange={(event) => {
+          const raw = event.currentTarget.value;
+          onChange(raw === "" ? null : Number(raw));
+        }}
+      />
       <span className="text-xs text-muted-foreground">{hint}</span>
-    </div>
+    </label>
   );
 }
 
