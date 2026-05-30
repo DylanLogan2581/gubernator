@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Plus, Trash2, X } from "lucide-react";
-import { useState, type FormEvent, type JSX } from "react";
+import { useState, type FormEvent, type JSX, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -782,8 +782,7 @@ function InlineTierDraftForm({
   const [effects, setEffects] = useState<EffectRowState[]>([]);
   const [fieldErrors, setFieldErrors] = useState<TierFormErrors>({});
 
-  function handleAdd(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
+  function handleAdd(): void {
     setFieldErrors({});
 
     const constructionCostInputs = buildCostInputs(constructionCosts);
@@ -833,12 +832,18 @@ function InlineTierDraftForm({
     });
   }
 
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>): void {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAdd();
+    }
+  }
+
   return (
-    <form
+    <div
       aria-label="Add tier draft"
       className="grid gap-3 rounded-md border border-border bg-muted/30 p-3"
-      noValidate
-      onSubmit={handleAdd}
+      role="group"
     >
       <span className="text-sm font-medium">New tier</span>
       <label className="grid gap-1 text-sm">
@@ -852,6 +857,7 @@ function InlineTierDraftForm({
           onChange={(e) => {
             setTierNumber(e.currentTarget.value);
           }}
+          onKeyDown={handleKeyDown}
         />
         {fieldErrors.tierNumber !== undefined ? (
           <p className="text-xs text-destructive">{fieldErrors.tierNumber}</p>
@@ -868,6 +874,7 @@ function InlineTierDraftForm({
           onChange={(e) => {
             setWorkerTurns(e.currentTarget.value);
           }}
+          onKeyDown={handleKeyDown}
         />
         {fieldErrors.workerTurnsRequired !== undefined ? (
           <p className="text-xs text-destructive">
@@ -900,7 +907,7 @@ function InlineTierDraftForm({
         onChange={setEffects}
       />
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={disabled}>
+        <Button type="button" size="sm" disabled={disabled} onClick={handleAdd}>
           Add
         </Button>
         <Button
@@ -913,7 +920,7 @@ function InlineTierDraftForm({
           Cancel
         </Button>
       </div>
-    </form>
+    </div>
   );
 }
 
