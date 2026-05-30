@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 import { formatSettlementReadyTimestamp } from "../utils/settlementReadyTimestampFormatting";
 
 import { AutoReadyControl } from "./AutoReadyControl";
@@ -19,6 +21,7 @@ type SettlementReadinessRowProps = {
   readonly pendingSettlementId: string | null;
   readonly setAutoReady: (autoReadyEnabled: boolean) => void;
   readonly setReadiness: (isReady: boolean) => void;
+  readonly worldId: string;
 };
 
 export function SettlementReadinessRow({
@@ -30,11 +33,22 @@ export function SettlementReadinessRow({
   pendingSettlementId,
   setAutoReady,
   setReadiness,
+  worldId,
 }: SettlementReadinessRowProps): JSX.Element {
   return (
     <tr>
       <th scope="row" className="py-3 pr-4 font-medium text-foreground">
-        {item.name}
+        <Link
+          to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
+          params={{
+            nationId: item.nationId,
+            settlementId: item.id,
+            worldId,
+          }}
+          className="underline-offset-4 hover:underline"
+        >
+          {item.name}
+        </Link>
       </th>
       <td className="px-4 py-3">
         <ReadinessStateBadge item={item} />
