@@ -583,8 +583,10 @@ function EditJobForm({
     event.preventDefault();
     setFieldErrors({});
 
-    const inputsJson = inputRows.map(rowToEntry);
-    const outputsJson = outputRows.map(rowToEntry);
+    const inputsJson =
+      job.jobType === "construction" ? [] : inputRows.map(rowToEntry);
+    const outputsJson =
+      job.jobType === "construction" ? [] : outputRows.map(rowToEntry);
 
     // Reference validation before Zod to surface deleted-resource errors as
     // inline errors rather than generic "invalid" messages.
@@ -833,23 +835,27 @@ function EditJobForm({
           </label>
         ) : null}
 
-        <JobIoEditor
-          disabled={isPending}
-          fieldError={fieldErrors.inputsJson}
-          label="Inputs"
-          resources={resources}
-          rows={inputRows}
-          onChange={setInputRows}
-        />
+        {job.jobType !== "construction" ? (
+          <>
+            <JobIoEditor
+              disabled={isPending}
+              fieldError={fieldErrors.inputsJson}
+              label="Inputs"
+              resources={resources}
+              rows={inputRows}
+              onChange={setInputRows}
+            />
 
-        <JobIoEditor
-          disabled={isPending}
-          fieldError={fieldErrors.outputsJson}
-          label="Outputs"
-          resources={resources}
-          rows={outputRows}
-          onChange={setOutputRows}
-        />
+            <JobIoEditor
+              disabled={isPending}
+              fieldError={fieldErrors.outputsJson}
+              label="Outputs"
+              resources={resources}
+              rows={outputRows}
+              onChange={setOutputRows}
+            />
+          </>
+        ) : null}
       </div>
 
       <div className="flex items-center justify-between gap-2">
@@ -1084,12 +1090,16 @@ function CreateJobForm({
     if (selectedType === null) return;
     setFieldErrors({});
 
-    const isIoType =
-      selectedType === "standard" || selectedType === "construction";
-    const inputsJson = isIoType ? inputRows.map(rowToEntry) : undefined;
-    const outputsJson = isIoType ? outputRows.map(rowToEntry) : undefined;
+    const inputsJson =
+      selectedType === "standard" ? inputRows.map(rowToEntry) : undefined;
+    const outputsJson =
+      selectedType === "standard" ? outputRows.map(rowToEntry) : undefined;
 
-    if (isIoType && inputsJson !== undefined && outputsJson !== undefined) {
+    if (
+      selectedType === "standard" &&
+      inputsJson !== undefined &&
+      outputsJson !== undefined
+    ) {
       const refIssues = validateJobReferencesAgainstWorld(
         { inputsJson, outputsJson },
         resources,
@@ -1113,14 +1123,25 @@ function CreateJobForm({
 
     switch (selectedType) {
       case "standard":
-      case "construction":
         input = {
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
           inputsJson,
-          jobType: selectedType,
+          jobType: "standard",
           name,
           outputsJson,
+          slug,
+          worldId,
+        };
+        break;
+      case "construction":
+        input = {
+          baseCapacity:
+            baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
+          inputsJson: [],
+          jobType: "construction",
+          name,
+          outputsJson: [],
           slug,
           worldId,
         };
@@ -1301,7 +1322,7 @@ function CreateJobForm({
               </label>
             ) : null}
 
-            {selectedType === "standard" || selectedType === "construction" ? (
+            {selectedType === "standard" ? (
               <>
                 <JobIoEditor
                   disabled={isPending}
