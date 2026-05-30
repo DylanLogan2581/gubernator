@@ -4,7 +4,7 @@
 begin;
 
 select
-  plan (23);
+  plan (27);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -627,7 +627,7 @@ values
     0
   );
 
--- Duplicate husbandry_job_id must be rejected.
+-- Duplicate active husbandry_job_id must be rejected.
 select
   throws_ok (
     $test$
@@ -645,10 +645,10 @@ select
     $test$,
     '23505',
     null,
-    'duplicate husbandry_job_id rejected by unique constraint'
+    'duplicate active husbandry_job_id rejected by partial unique index'
   );
 
--- Duplicate culling_job_id must be rejected.
+-- Duplicate active culling_job_id must be rejected.
 select
   throws_ok (
     $test$
@@ -666,7 +666,91 @@ select
     $test$,
     '23505',
     null,
-    'duplicate culling_job_id rejected by unique constraint'
+    'duplicate active culling_job_id rejected by partial unique index'
+  );
+
+-- After trashing the constraint-herd, the same job_ids may be reused.
+update public.managed_population_types
+set
+  is_active = false
+where
+  husbandry_job_id = 'e3000000-0000-0000-0000-000000000020';
+
+select
+  lives_ok (
+    $test$
+    insert into public.managed_population_types (
+      world_id, name, slug, husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate
+    )
+    values (
+      'e2000000-0000-0000-0000-000000000001',
+      'Relinked Husbandry Herd', 'relinked-husbandry-herd',
+      'e3000000-0000-0000-0000-000000000020',
+      'e3000000-0000-0000-0000-000000000022',
+      1, 0
+    )
+    $test$,
+    'inactive record permits same husbandry_job_id for a new active record'
+  );
+
+select
+  lives_ok (
+    $test$
+    insert into public.managed_population_types (
+      world_id, name, slug, husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate
+    )
+    values (
+      'e2000000-0000-0000-0000-000000000001',
+      'Relinked Culling Herd', 'relinked-culling-herd',
+      'e3000000-0000-0000-0000-000000000023',
+      'e3000000-0000-0000-0000-000000000021',
+      1, 0
+    )
+    $test$,
+    'inactive record permits same culling_job_id for a new active record'
+  );
+
+-- With new active records present, further active records with the same job_ids must be rejected.
+select
+  throws_ok (
+    $test$
+    insert into public.managed_population_types (
+      world_id, name, slug, husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate
+    )
+    values (
+      'e2000000-0000-0000-0000-000000000001',
+      'Second Dup Husbandry', 'second-dup-husbandry',
+      'e3000000-0000-0000-0000-000000000020',
+      'e3000000-0000-0000-0000-000000000028',
+      1, 0
+    )
+    $test$,
+    '23505',
+    null,
+    'second active record with same husbandry_job_id rejected after relinking'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.managed_population_types (
+      world_id, name, slug, husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate
+    )
+    values (
+      'e2000000-0000-0000-0000-000000000001',
+      'Second Dup Culling', 'second-dup-culling',
+      'e3000000-0000-0000-0000-000000000027',
+      'e3000000-0000-0000-0000-000000000021',
+      1, 0
+    )
+    $test$,
+    '23505',
+    null,
+    'second active record with same culling_job_id rejected after relinking'
   );
 
 -- Same job used for both husbandry and culling must be rejected.
