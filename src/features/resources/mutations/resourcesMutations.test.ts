@@ -232,8 +232,8 @@ describe("updateResourceMutationOptions", () => {
 
 describe("softDeleteResourceMutationOptions", () => {
   it("rejects an invalid resourceId before touching the Supabase client", async () => {
-    const from = vi.fn();
-    const client = { from } as unknown as GubernatorSupabaseClient;
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
     const options = softDeleteResourceMutationOptions({ client, queryClient });
 
@@ -243,10 +243,10 @@ describe("softDeleteResourceMutationOptions", () => {
         worldId: WORLD_ID,
       }),
     ).rejects.toMatchObject({ code: "resource_input_invalid" });
-    expect(from).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("sets is_deleted to true, scoped by id and world, returns resourceId and worldId", async () => {
+  it("calls soft_delete_resource RPC and returns resourceId and worldId", async () => {
     const deleteRow: DeleteRow = { id: RESOURCE_ID, world_id: WORLD_ID };
     const { client, calls } = createSoftDeleteClient({
       data: deleteRow,
@@ -261,14 +261,14 @@ describe("softDeleteResourceMutationOptions", () => {
     });
 
     expect(result).toEqual({ resourceId: RESOURCE_ID, worldId: WORLD_ID });
-    expect(calls.from).toHaveBeenCalledWith("resources");
-    expect(calls.update).toHaveBeenCalledWith({ is_deleted: true });
-    expect(calls.eqId).toHaveBeenCalledWith("id", RESOURCE_ID);
-    expect(calls.eqWorld).toHaveBeenCalledWith("world_id", WORLD_ID);
+    expect(calls.rpc).toHaveBeenCalledWith("soft_delete_resource", {
+      p_resource_id: RESOURCE_ID,
+      p_world_id: WORLD_ID,
+    });
     expect(options.mutationKey).toEqual(["resources", "soft-delete-resource"]);
   });
 
-  it("raises resource_not_found when update returns no row", async () => {
+  it("raises resource_not_found when RPC returns no row", async () => {
     const { client } = createSoftDeleteClient({ data: null, error: null });
     const queryClient = createQueryClient();
     const options = softDeleteResourceMutationOptions({ client, queryClient });
@@ -371,21 +371,14 @@ function createUpdateClient(result: SupabaseResult<ResourceRow>): {
 function createSoftDeleteClient(result: SupabaseResult<DeleteRow>): {
   readonly client: GubernatorSupabaseClient;
   readonly calls: {
-    readonly eqId: ReturnType<typeof vi.fn>;
-    readonly eqWorld: ReturnType<typeof vi.fn>;
-    readonly from: ReturnType<typeof vi.fn>;
-    readonly update: ReturnType<typeof vi.fn>;
+    readonly rpc: ReturnType<typeof vi.fn>;
   };
 } {
   const maybeSingle = vi.fn().mockResolvedValue(result);
-  const select = vi.fn(() => ({ maybeSingle }));
-  const eqWorld = vi.fn(() => ({ select }));
-  const eqId = vi.fn(() => ({ eq: eqWorld }));
-  const update = vi.fn(() => ({ eq: eqId }));
-  const from = vi.fn(() => ({ update }));
+  const rpc = vi.fn(() => ({ maybeSingle }));
   return {
-    client: { from } as unknown as GubernatorSupabaseClient,
-    calls: { eqId, eqWorld, from, update },
+    client: { rpc } as unknown as GubernatorSupabaseClient,
+    calls: { rpc },
   };
 }
 
