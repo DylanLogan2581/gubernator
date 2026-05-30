@@ -153,11 +153,14 @@ function WorldManagedPopulationsConfigPanelContent({
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant={showTrash ? "secondary" : "ghost"}
+            size="icon-sm"
+            aria-label={showTrash ? "Hide trash" : "Show trash"}
+            aria-pressed={showTrash}
+            title={showTrash ? "Hide trash" : "Show trash"}
             onClick={onToggleTrash}
           >
-            {showTrash ? "Hide trash" : "View trash"}
+            <Trash2 aria-hidden="true" />
           </Button>
           {canEdit && !showCreateForm && !showTrash ? (
             <Button
@@ -287,6 +290,8 @@ function ManagedPopulationTypeList({
             cullingJobs={cullingJobs}
             husbandryJobs={husbandryJobs}
             populationType={populationType}
+            queryClient={queryClient}
+            worldId={worldId}
             onEdit={() => {
               onEditingChange(populationType.id);
             }}
@@ -302,6 +307,8 @@ function ManagedPopulationTypeRow({
   canEdit,
   cullingJobs,
   husbandryJobs,
+  queryClient,
+  worldId,
   onEdit,
 }: {
   readonly canEdit: boolean;
@@ -309,6 +316,8 @@ function ManagedPopulationTypeRow({
   readonly husbandryJobs: readonly JobDefinition[];
   readonly onEdit: () => void;
   readonly populationType: ManagedPopulationType;
+  readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): JSX.Element {
   const husbandryJob = husbandryJobs.find(
     (j) => j.id === populationType.husbandryJobId,
@@ -316,6 +325,27 @@ function ManagedPopulationTypeRow({
   const cullingJob = cullingJobs.find(
     (j) => j.id === populationType.cullingJobId,
   );
+  const softDeleteMutation = useMutation(
+    softDeleteManagedPopulationTypeMutationOptions({ queryClient }),
+  );
+
+  function handleTrash(): void {
+    softDeleteMutation.mutate(
+      { managedPopulationTypeId: populationType.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to move managed population type to trash.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Managed population type moved to trash.");
+        },
+      },
+    );
+  }
 
   return (
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
@@ -329,11 +359,26 @@ function ManagedPopulationTypeRow({
           {cullingJob !== undefined ? ` · ${cullingJob.name}` : null}
         </span>
       </div>
-      {canEdit ? (
-        <Button type="button" variant="outline" size="sm" onClick={onEdit}>
-          Edit
-        </Button>
-      ) : null}
+      <div className="flex items-center gap-3">
+        {canEdit ? (
+          <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+            Edit
+          </Button>
+        ) : null}
+        {canEdit ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Move ${populationType.name} to trash`}
+            title="Move to trash"
+            disabled={softDeleteMutation.isPending}
+            onClick={handleTrash}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
+        ) : null}
+      </div>
     </li>
   );
 }

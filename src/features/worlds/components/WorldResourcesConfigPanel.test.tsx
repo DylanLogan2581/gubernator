@@ -185,7 +185,7 @@ describe("WorldResourcesConfigPanel", () => {
     expect(screen.queryByRole("button", { name: "Move to trash" })).toBeNull();
   });
 
-  it("moves a non-system resource to trash", async () => {
+  it("moves a non-system resource to trash via the edit form", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -214,6 +214,96 @@ describe("WorldResourcesConfigPanel", () => {
       );
     });
     expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("moves a non-system resource to trash via the inline row button", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        resourceRows: [
+          createResourceRow({ is_system_resource: false, name: "Gold" }),
+        ],
+        rpcResult: {
+          data: { id: RESOURCE_ID, world_id: WORLD_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    await user.click(
+      screen.getByRole("button", { name: "Move Gold to trash" }),
+    );
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Resource moved to trash.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("hides the inline trash button for non-admin users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        resourceRows: [
+          createResourceRow({ is_system_resource: false, name: "Gold" }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Gold");
+    expect(
+      screen.queryByRole("button", { name: "Move Gold to trash" }),
+    ).toBeNull();
+  });
+
+  it("hides the inline trash button for system resources", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        resourceRows: [
+          createResourceRow({ is_system_resource: true, name: "Food" }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(
+      screen.queryByRole("button", { name: "Move Food to trash" }),
+    ).toBeNull();
+  });
+
+  it("shows trashed resources when trash view is toggled", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        resourceRows: [
+          createResourceRow({ is_deleted: false, name: "Active Resource" }),
+          createResourceRow({
+            id: "00000000-0000-0000-0000-000000000010",
+            is_deleted: true,
+            name: "Trashed Resource",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Active Resource");
+    expect(screen.queryByText("Trashed Resource")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+
+    expect(screen.getByText("Trashed Resource")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
   });
 });
 

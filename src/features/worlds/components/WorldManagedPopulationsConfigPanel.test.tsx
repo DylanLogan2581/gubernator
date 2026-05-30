@@ -156,7 +156,7 @@ describe("WorldManagedPopulationsConfigPanel", () => {
     await screen.findByText("Active Cattle");
     expect(screen.queryByText("Trashed Cattle")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "View trash" }));
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
 
     expect(screen.getByText("Trashed Cattle")).toBeDefined();
     expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
@@ -521,6 +521,55 @@ describe("WorldManagedPopulationsConfigPanel", () => {
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
   });
 
+  it("moves a managed population type to trash via the inline row button", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        husbandryJobRows: [],
+        cullingJobRows: [],
+        populationTypeRows: [createPopulationTypeRow({ name: "Cattle" })],
+        resourceRows: [],
+        rpcResult: {
+          data: { id: POPULATION_TYPE_ID, world_id: WORLD_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Cattle");
+    await user.click(
+      screen.getByRole("button", { name: "Move Cattle to trash" }),
+    );
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Managed population type moved to trash.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("hides the inline trash button for non-admin users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        husbandryJobRows: [],
+        cullingJobRows: [],
+        populationTypeRows: [createPopulationTypeRow({ name: "Cattle" })],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Cattle");
+    expect(
+      screen.queryByRole("button", { name: "Move Cattle to trash" }),
+    ).toBeNull();
+  });
+
   it("create form shows growth rate as a whole-percent input defaulting to 0", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
@@ -863,6 +912,7 @@ function createClient({
   populationTypeRows,
   resourceRows,
   insertResult = { data: createPopulationTypeRow(), error: null },
+  rpcResult = { data: null, error: null },
   updateResult = { data: createPopulationTypeRow(), error: null },
 }: {
   readonly cullingJobRows: readonly TestJobRow[];
@@ -873,12 +923,17 @@ function createClient({
   };
   readonly populationTypeRows: readonly TestPopulationTypeRow[];
   readonly resourceRows: readonly TestResourceRow[];
+  readonly rpcResult?: {
+    readonly data: { readonly id: string; readonly world_id: string } | null;
+    readonly error: { readonly message: string } | null;
+  };
   readonly updateResult?: {
     readonly data: TestPopulationTypeRow | null;
     readonly error: { readonly message: string } | null;
   };
 }): {
   readonly from: ReturnType<typeof vi.fn>;
+  readonly rpc: ReturnType<typeof vi.fn>;
 } {
   return {
     from: vi.fn((table: string) => {
@@ -897,6 +952,9 @@ function createClient({
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
+    rpc: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue(rpcResult),
+    })),
   };
 }
 
@@ -1005,12 +1063,10 @@ function createClientWithInsertSpy({
             const updateBuilder: Record<string, unknown> = {
               eq: vi.fn(() => updateBuilder),
               select: vi.fn(() => ({
-                maybeSingle: vi
-                  .fn()
-                  .mockResolvedValue({
-                    data: createPopulationTypeRow(),
-                    error: null,
-                  }),
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: createPopulationTypeRow(),
+                  error: null,
+                }),
               })),
             };
             return updateBuilder;
@@ -1055,12 +1111,10 @@ function createClientWithUpdateSpy({
         return {
           insert: vi.fn(() => ({
             select: vi.fn(() => ({
-              maybeSingle: vi
-                .fn()
-                .mockResolvedValue({
-                  data: createPopulationTypeRow(),
-                  error: null,
-                }),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: createPopulationTypeRow(),
+                error: null,
+              }),
             })),
           })),
           select: vi.fn(() => selectBuilder),
