@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PercentInput } from "@/components/shared/PercentInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -466,7 +467,7 @@ function CreateManagedPopulationTypeForm({
   const [cullingJobId, setCullingJobId] = useState("");
   const [husbandryWorkersPerNAnimals, setHusbandryWorkersPerNAnimals] =
     useState("1");
-  const [growthRate, setGrowthRate] = useState("0");
+  const [growthRate, setGrowthRate] = useState(0);
   const [maintenanceRules, setMaintenanceRules] = useState<
     PopulationResourceEntry[]
   >([]);
@@ -540,7 +541,7 @@ function CreateManagedPopulationTypeForm({
       cullingJobId,
       cullingOutputsJson:
         cullingOutputs.length > 0 ? cullingOutputs : undefined,
-      growthRate: growthRate !== "" ? parseFloat(growthRate) : 0,
+      growthRate,
       husbandryJobId,
       husbandryWorkersPerNAnimals:
         husbandryWorkersPerNAnimals !== ""
@@ -701,22 +702,19 @@ function CreateManagedPopulationTypeForm({
             </p>
           ) : null}
         </label>
-        <label className="grid gap-1 text-sm">
+        <div className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Growth rate</span>
-          <Input
+          <PercentInput
             aria-invalid={fieldErrors.growthRate !== undefined}
+            aria-label="Growth rate"
             disabled={isPending}
-            inputMode="decimal"
-            placeholder="0"
             value={growthRate}
-            onChange={(e) => {
-              setGrowthRate(e.currentTarget.value);
-            }}
+            onChange={setGrowthRate}
           />
           {fieldErrors.growthRate !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.growthRate}</p>
           ) : null}
-        </label>
+        </div>
         <PopulationResourceEditor
           disabled={isPending}
           entries={maintenanceRules}
@@ -783,9 +781,7 @@ function EditManagedPopulationTypeForm({
   const [cullingJobId, setCullingJobId] = useState(populationType.cullingJobId);
   const [husbandryWorkersPerNAnimals, setHusbandryWorkersPerNAnimals] =
     useState(String(populationType.husbandryWorkersPerNAnimals));
-  const [growthRate, setGrowthRate] = useState(
-    String(populationType.growthRate),
-  );
+  const [growthRate, setGrowthRate] = useState(populationType.growthRate);
   const [maintenanceRules, setMaintenanceRules] = useState<
     PopulationResourceEntry[]
   >([...populationType.maintenanceRulesJson]);
@@ -856,7 +852,7 @@ function EditManagedPopulationTypeForm({
     const updateInput: UpdateManagedPopulationTypeInput = {
       cullingJobId,
       cullingOutputsJson: cullingOutputs,
-      growthRate: growthRate !== "" ? parseFloat(growthRate) : undefined,
+      growthRate,
       husbandryJobId,
       husbandryWorkersPerNAnimals:
         husbandryWorkersPerNAnimals !== ""
@@ -1047,22 +1043,19 @@ function EditManagedPopulationTypeForm({
             </p>
           ) : null}
         </label>
-        <label className="grid gap-1 text-sm">
+        <div className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Growth rate</span>
-          <Input
+          <PercentInput
             aria-invalid={fieldErrors.growthRate !== undefined}
+            aria-label="Growth rate"
             disabled={isPending}
-            inputMode="decimal"
-            placeholder="0"
             value={growthRate}
-            onChange={(e) => {
-              setGrowthRate(e.currentTarget.value);
-            }}
+            onChange={setGrowthRate}
           />
           {fieldErrors.growthRate !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.growthRate}</p>
           ) : null}
-        </label>
+        </div>
         <PopulationResourceEditor
           disabled={isPending}
           entries={maintenanceRules}
