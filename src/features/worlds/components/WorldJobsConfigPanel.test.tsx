@@ -414,7 +414,7 @@ describe("WorldJobsConfigPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("creates a construction job with empty IO rows", async () => {
+  it("does not show IO editors when construction is selected in the create form", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -438,8 +438,10 @@ describe("WorldJobsConfigPanel", () => {
       "Build Wall",
     );
 
-    expect(screen.getByText("No inputs.")).toBeDefined();
-    expect(screen.getByText("No outputs.")).toBeDefined();
+    expect(screen.queryByText("Inputs")).toBeNull();
+    expect(screen.queryByText("Outputs")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add input" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add output" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Create" }));
 
@@ -772,6 +774,105 @@ describe("WorldJobsConfigPanel", () => {
       );
     });
     expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("does not show IO editors when editing a construction job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      job_type: "construction",
+      name: "Build Wall",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow()],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Build Wall");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(screen.queryByText("Inputs")).toBeNull();
+    expect(screen.queryByText("Outputs")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add input" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add output" })).toBeNull();
+  });
+
+  it("saves a construction job without IO fields", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      job_type: "construction",
+      name: "Build Wall",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Build Wall");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Job saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("does not show IO badges for a construction job in the row summary", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [
+          createJobRow({
+            job_type: "construction",
+            name: "Build Wall",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Build Wall");
+    const listItem = screen.getByRole("listitem");
+    expect(within(listItem).queryByText("Inputs")).toBeNull();
+    expect(within(listItem).queryByText("Outputs")).toBeNull();
+  });
+
+  it("shows IO editors when editing a standard job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({ job_type: "standard", name: "Farming" });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow({ name: "Grain" })],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(screen.getByRole("button", { name: "Add input" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Add output" })).toBeDefined();
   });
 
   it("shows inline error for a deleted resource in IO entries", async () => {
