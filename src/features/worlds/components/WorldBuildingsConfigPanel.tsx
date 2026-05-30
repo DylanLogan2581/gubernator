@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
@@ -17,17 +17,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   blueprintsByWorldQueryOptions,
+  buildCostInputs,
+  buildEffectInputs,
+  CostEditor,
   createBlueprintInputSchema,
   createBlueprintMutationOptions,
+  createTierInputSchema,
+  createTierMutationOptions,
+  EffectsEditor,
+  extractFieldErrors,
+  extractRefErrors,
   hardDeleteBlueprintMutationOptions,
   restoreBlueprintMutationOptions,
   softDeleteBlueprintMutationOptions,
   updateBlueprintInputSchema,
   updateBlueprintMutationOptions,
+  validateBlueprintTierReferencesAgainstWorld,
   type BuildingBlueprint,
   type CreateBlueprintInput,
+  type CostRowState,
+  type EffectRowState,
+  type TierCostEntryInput,
+  type TierEffectInput,
+  type TierFormErrors,
   type UpdateBlueprintInput,
 } from "@/features/buildings";
+import {
+  activeJobsByWorldQueryOptions,
+  type JobDefinition,
+} from "@/features/jobs";
+import {
+  activeResourcesByWorldQueryOptions,
+  type Resource,
+} from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -126,6 +148,15 @@ function BlueprintListPanel({
   );
 }
 
+type PendingTierDraft = {
+  readonly id: string;
+  readonly tierNumber: number;
+  readonly workerTurnsRequired?: number;
+  readonly constructionCostsJson?: TierCostEntryInput[];
+  readonly upkeepCostsJson?: TierCostEntryInput[];
+  readonly effectsJson?: TierEffectInput[];
+};
+
 function WorldBuildingsConfigPanelContent({
   blueprints,
   canAdmin,
@@ -143,14 +174,62 @@ function WorldBuildingsConfigPanelContent({
   readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
-  const createMutation = useMutation(
+  const createBlueprintMutation = useMutation(
     createBlueprintMutationOptions({ queryClient }),
+  );
+  const createTierMutation = useMutation(
+    createTierMutationOptions({ queryClient }),
   );
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingBlueprintId, setEditingBlueprintId] = useState<string | null>(
     null,
   );
+  const [isCreating, setIsCreating] = useState(false);
   const canEdit = canAdmin && !isArchived;
+
+  async function handleCreateWithTiers(
+    blueprintInput: CreateBlueprintInput,
+    pendingTiers: readonly PendingTierDraft[],
+  ): Promise<void> {
+    setIsCreating(true);
+    try {
+      const blueprint =
+        await createBlueprintMutation.mutateAsync(blueprintInput);
+      const failures: number[] = [];
+      for (const draft of pendingTiers) {
+        try {
+          await createTierMutation.mutateAsync({
+            blueprintId: blueprint.id,
+            constructionCostsJson: draft.constructionCostsJson,
+            effectsJson: draft.effectsJson,
+            tierNumber: draft.tierNumber,
+            upkeepCostsJson: draft.upkeepCostsJson,
+            workerTurnsRequired: draft.workerTurnsRequired,
+          });
+        } catch {
+          failures.push(draft.tierNumber);
+        }
+      }
+      if (failures.length > 0) {
+        toast.error(
+          `Blueprint created, but tier${failures.length > 1 ? "s" : ""} ${failures.join(", ")} failed — use "Manage tiers →" to add them.`,
+        );
+      } else {
+        notifyMutationSuccess(
+          pendingTiers.length > 0
+            ? "Blueprint and tiers created."
+            : "Blueprint created.",
+        );
+      }
+      setShowCreateForm(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create blueprint.",
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  }
 
   return (
     <section
@@ -210,25 +289,13 @@ function WorldBuildingsConfigPanelContent({
 
       {canEdit && showCreateForm && !showTrash ? (
         <CreateBlueprintForm
-          isPending={createMutation.isPending}
+          isPending={isCreating}
           worldId={worldId}
           onCancel={() => {
             setShowCreateForm(false);
           }}
-          onSubmit={(input) => {
-            createMutation.mutate(input, {
-              onError: (error) => {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to create blueprint.",
-                );
-              },
-              onSuccess: () => {
-                notifyMutationSuccess("Blueprint created.");
-                setShowCreateForm(false);
-              },
-            });
+          onSubmit={(input, pendingTiers) => {
+            void handleCreateWithTiers(input, pendingTiers);
           }}
         />
       ) : null}
@@ -429,7 +496,10 @@ function CreateBlueprintForm({
 }: {
   readonly isPending: boolean;
   readonly onCancel: () => void;
-  readonly onSubmit: (input: CreateBlueprintInput) => void;
+  readonly onSubmit: (
+    input: CreateBlueprintInput,
+    pendingTiers: readonly PendingTierDraft[],
+  ) => void;
   readonly worldId: string;
 }): JSX.Element {
   const [name, setName] = useState("");
@@ -439,6 +509,12 @@ function CreateBlueprintForm({
   const [gracePeriodTurns, setGracePeriodTurns] = useState("0");
   const [maxInstances, setMaxInstances] = useState("");
   const [fieldErrors, setFieldErrors] = useState<BlueprintFieldErrors>({});
+  const [pendingTiers, setPendingTiers] = useState<PendingTierDraft[]>([]);
+  const [showAddTierForm, setShowAddTierForm] = useState(false);
+
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+  const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
+  const tiersReady = resourcesQuery.isSuccess && jobsQuery.isSuccess;
 
   function handleNameChange(value: string): void {
     setName(value);
@@ -486,8 +562,13 @@ function CreateBlueprintForm({
       return;
     }
 
-    onSubmit(input);
+    onSubmit(input, pendingTiers);
   }
+
+  const nextTierNumber =
+    pendingTiers.length > 0
+      ? Math.max(...pendingTiers.map((t) => t.tierNumber)) + 1
+      : 1;
 
   return (
     <form
@@ -588,8 +669,79 @@ function CreateBlueprintForm({
           ) : null}
         </label>
       </div>
+
+      <div className="grid gap-2 border-t border-border pt-3">
+        <span className="text-sm font-medium">Initial tiers (optional)</span>
+
+        {pendingTiers.length > 0 ? (
+          <ul aria-label="Pending tiers" className="grid gap-2">
+            {pendingTiers.map((draft) => (
+              <li
+                key={draft.id}
+                className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2"
+              >
+                <span className="text-sm">
+                  Tier {draft.tierNumber}
+                  {draft.workerTurnsRequired !== undefined
+                    ? ` — ${String(draft.workerTurnsRequired)} worker turn${draft.workerTurnsRequired !== 1 ? "s" : ""}`
+                    : ""}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => {
+                    setPendingTiers((prev) =>
+                      prev.filter((t) => t.id !== draft.id),
+                    );
+                  }}
+                >
+                  <X aria-hidden="true" className="text-destructive" />
+                  <span className="sr-only">
+                    Remove tier {draft.tierNumber}
+                  </span>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {!showAddTierForm ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-fit"
+            disabled={isPending || !tiersReady}
+            onClick={() => {
+              setShowAddTierForm(true);
+            }}
+          >
+            <Plus aria-hidden="true" />
+            Add tier
+          </Button>
+        ) : null}
+
+        {showAddTierForm && tiersReady ? (
+          <InlineTierDraftForm
+            activeJobs={jobsQuery.data}
+            activeResources={resourcesQuery.data}
+            defaultTierNumber={nextTierNumber}
+            disabled={isPending}
+            onAdd={(draft) => {
+              setPendingTiers((prev) => [...prev, draft]);
+              setShowAddTierForm(false);
+            }}
+            onCancel={() => {
+              setShowAddTierForm(false);
+            }}
+          />
+        ) : null}
+      </div>
+
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button type="submit" size="sm" disabled={isPending || showAddTierForm}>
           Create
         </Button>
         <Button
@@ -597,6 +749,165 @@ function CreateBlueprintForm({
           variant="outline"
           size="sm"
           disabled={isPending}
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function InlineTierDraftForm({
+  activeJobs,
+  activeResources,
+  defaultTierNumber,
+  disabled,
+  onAdd,
+  onCancel,
+}: {
+  readonly activeJobs: readonly JobDefinition[];
+  readonly activeResources: readonly Resource[];
+  readonly defaultTierNumber: number;
+  readonly disabled: boolean;
+  readonly onAdd: (draft: PendingTierDraft) => void;
+  readonly onCancel: () => void;
+}): JSX.Element {
+  const [tierNumber, setTierNumber] = useState(String(defaultTierNumber));
+  const [workerTurns, setWorkerTurns] = useState("0");
+  const [constructionCosts, setConstructionCosts] = useState<CostRowState[]>(
+    [],
+  );
+  const [upkeepCosts, setUpkeepCosts] = useState<CostRowState[]>([]);
+  const [effects, setEffects] = useState<EffectRowState[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<TierFormErrors>({});
+
+  function handleAdd(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    setFieldErrors({});
+
+    const constructionCostInputs = buildCostInputs(constructionCosts);
+    const upkeepCostInputs = buildCostInputs(upkeepCosts);
+    const effectInputs = buildEffectInputs(effects);
+
+    const draftInput = {
+      constructionCostsJson:
+        constructionCostInputs.length > 0 ? constructionCostInputs : undefined,
+      effectsJson: effectInputs.length > 0 ? effectInputs : undefined,
+      tierNumber: tierNumber !== "" ? parseInt(tierNumber, 10) : 0,
+      upkeepCostsJson:
+        upkeepCostInputs.length > 0 ? upkeepCostInputs : undefined,
+      workerTurnsRequired:
+        workerTurns !== "" ? parseInt(workerTurns, 10) : undefined,
+    };
+
+    const parseResult = createTierInputSchema
+      .omit({ blueprintId: true })
+      .safeParse(draftInput);
+    if (!parseResult.success) {
+      setFieldErrors(extractFieldErrors(parseResult.error.issues));
+      return;
+    }
+
+    const refIssues = validateBlueprintTierReferencesAgainstWorld(
+      {
+        constructionCostsJson: constructionCostInputs,
+        effectsJson: effectInputs,
+        upkeepCostsJson: upkeepCostInputs,
+      },
+      activeResources,
+      activeJobs,
+    );
+    if (refIssues.length > 0) {
+      setFieldErrors(extractRefErrors(refIssues));
+      return;
+    }
+
+    onAdd({
+      constructionCostsJson: parseResult.data.constructionCostsJson,
+      effectsJson: parseResult.data.effectsJson,
+      id: crypto.randomUUID(),
+      tierNumber: parseResult.data.tierNumber,
+      upkeepCostsJson: parseResult.data.upkeepCostsJson,
+      workerTurnsRequired: parseResult.data.workerTurnsRequired,
+    });
+  }
+
+  return (
+    <form
+      aria-label="Add tier draft"
+      className="grid gap-3 rounded-md border border-border bg-muted/30 p-3"
+      noValidate
+      onSubmit={handleAdd}
+    >
+      <span className="text-sm font-medium">New tier</span>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Tier number</span>
+        <Input
+          aria-invalid={fieldErrors.tierNumber !== undefined}
+          disabled={disabled}
+          inputMode="numeric"
+          placeholder="1"
+          value={tierNumber}
+          onChange={(e) => {
+            setTierNumber(e.currentTarget.value);
+          }}
+        />
+        {fieldErrors.tierNumber !== undefined ? (
+          <p className="text-xs text-destructive">{fieldErrors.tierNumber}</p>
+        ) : null}
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Worker turns required</span>
+        <Input
+          aria-invalid={fieldErrors.workerTurnsRequired !== undefined}
+          disabled={disabled}
+          inputMode="numeric"
+          placeholder="0"
+          value={workerTurns}
+          onChange={(e) => {
+            setWorkerTurns(e.currentTarget.value);
+          }}
+        />
+        {fieldErrors.workerTurnsRequired !== undefined ? (
+          <p className="text-xs text-destructive">
+            {fieldErrors.workerTurnsRequired}
+          </p>
+        ) : null}
+      </label>
+      <CostEditor
+        activeResources={activeResources}
+        disabled={disabled}
+        error={fieldErrors.constructionCostsJson}
+        label="Construction costs"
+        rows={constructionCosts}
+        onChange={setConstructionCosts}
+      />
+      <CostEditor
+        activeResources={activeResources}
+        disabled={disabled}
+        error={fieldErrors.upkeepCostsJson}
+        label="Upkeep costs"
+        rows={upkeepCosts}
+        onChange={setUpkeepCosts}
+      />
+      <EffectsEditor
+        activeJobs={activeJobs}
+        activeResources={activeResources}
+        disabled={disabled}
+        error={fieldErrors.effectsJson}
+        rows={effects}
+        onChange={setEffects}
+      />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={disabled}>
+          Add
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
           onClick={onCancel}
         >
           Cancel
