@@ -301,22 +301,47 @@ export type Database = {
         Row: {
           created_at: string;
           id: string;
+          is_active: boolean;
+          job_id: string;
+          name: string;
+          output_units_per_worker: number;
+          slug: string;
           updated_at: string;
+          worker_inputs_json: Json;
           world_id: string;
         };
         Insert: {
           created_at?: string;
           id?: string;
+          is_active?: boolean;
+          job_id: string;
+          name: string;
+          output_units_per_worker: number;
+          slug: string;
           updated_at?: string;
+          worker_inputs_json?: Json;
           world_id: string;
         };
         Update: {
           created_at?: string;
           id?: string;
+          is_active?: boolean;
+          job_id?: string;
+          name?: string;
+          output_units_per_worker?: number;
+          slug?: string;
           updated_at?: string;
+          worker_inputs_json?: Json;
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "deposit_types_job_id_fk";
+            columns: ["job_id"];
+            isOneToOne: true;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "deposit_types_world_id_fkey";
             columns: ["world_id"];
@@ -1474,6 +1499,10 @@ export type Database = {
         Returns: boolean;
       };
       is_valid_tier_effects_array: {
+        Args: { arr: Json; p_world_id: string };
+        Returns: boolean;
+      };
+      is_valid_worker_inputs_array: {
         Args: { arr: Json; p_world_id: string };
         Returns: boolean;
       };
