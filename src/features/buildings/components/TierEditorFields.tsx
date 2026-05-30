@@ -3,10 +3,10 @@ import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
 import { sortByName } from "@/lib/sortUtils";
-import { cn } from "@/lib/utils";
 
 import type { CostRowState, EffectRowState } from "../utils/tierEditorUtils";
 
@@ -22,14 +22,6 @@ const EFFECT_TYPE_LABELS: Record<EffectTypeName, string> = {
   population_cap_increase: "Population cap increase",
   resource_storage_increase: "Resource storage increase",
 };
-
-const SELECT_CLASS = cn(
-  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base",
-  "transition-colors outline-none",
-  "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-  "disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50",
-  "md:text-sm dark:bg-input/30 dark:disabled:bg-input/80",
-);
 
 export function CostEditor({
   activeResources,
@@ -69,9 +61,9 @@ export function CostEditor({
           <label className="sr-only" htmlFor={`cost-resource-${row.id}`}>
             Resource
           </label>
-          <select
+          <NativeSelect
             aria-label="Resource"
-            className={SELECT_CLASS}
+            className="w-full"
             disabled={disabled}
             id={`cost-resource-${row.id}`}
             value={row.resourceId}
@@ -85,7 +77,7 @@ export function CostEditor({
                 {r.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <Input
             aria-label="Amount"
             className="w-24 shrink-0"
@@ -176,9 +168,9 @@ export function EffectsEditor({
             <div className="grid flex-1 gap-2">
               <label className="grid gap-1 text-sm">
                 <span className="text-muted-foreground">Effect type</span>
-                <select
+                <NativeSelect
                   aria-label="Effect type"
-                  className={SELECT_CLASS}
+                  className="w-full"
                   disabled={disabled}
                   value={row.effectType}
                   onChange={(e) => {
@@ -200,16 +192,16 @@ export function EffectsEditor({
                       {label}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
 
               {row.effectType === "job_capacity_increase" ? (
                 <>
                   <label className="grid gap-1 text-sm">
                     <span className="text-muted-foreground">Job</span>
-                    <select
+                    <NativeSelect
                       aria-label="Job"
-                      className={SELECT_CLASS}
+                      className="w-full"
                       disabled={disabled}
                       value={row.jobId}
                       onChange={(e) => {
@@ -222,7 +214,7 @@ export function EffectsEditor({
                           {j.name}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </label>
                   <label className="grid gap-1 text-sm">
                     <span className="text-muted-foreground">Amount</span>
@@ -245,9 +237,9 @@ export function EffectsEditor({
                 <>
                   <label className="grid gap-1 text-sm">
                     <span className="text-muted-foreground">Resource</span>
-                    <select
+                    <NativeSelect
                       aria-label="Effect resource"
-                      className={SELECT_CLASS}
+                      className="w-full"
                       disabled={disabled}
                       value={row.resourceId}
                       onChange={(e) => {
@@ -262,7 +254,7 @@ export function EffectsEditor({
                           {r.name}
                         </option>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </label>
                   <label className="grid gap-1 text-sm">
                     <span className="text-muted-foreground">Amount</span>

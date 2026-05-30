@@ -15,6 +15,7 @@ import { PercentInput } from "@/components/shared/PercentInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
 import {
   createManagedPopulationTypeInputSchema,
@@ -517,13 +518,13 @@ function PopulationTypeScalarFields({
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Husbandry job</span>
-        <select
+        <NativeSelect
           aria-invalid={
             fieldErrors.husbandryJobId !== undefined ||
             husbandryJobLinkError !== undefined ||
             jobCollisionError !== undefined
           }
-          className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+          className="w-full"
           disabled={isPending}
           value={husbandryJobId}
           onChange={(e) => {
@@ -536,7 +537,7 @@ function PopulationTypeScalarFields({
               {job.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {husbandryJobLinkError !== undefined ? (
           <p className="text-xs text-destructive">{husbandryJobLinkError}</p>
         ) : jobCollisionError !== undefined ? (
@@ -549,13 +550,13 @@ function PopulationTypeScalarFields({
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Culling job</span>
-        <select
+        <NativeSelect
           aria-invalid={
             fieldErrors.cullingJobId !== undefined ||
             cullingJobLinkError !== undefined ||
             jobCollisionError !== undefined
           }
-          className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+          className="w-full"
           disabled={isPending}
           value={cullingJobId}
           onChange={(e) => {
@@ -568,7 +569,7 @@ function PopulationTypeScalarFields({
               {job.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {cullingJobLinkError !== undefined ? (
           <p className="text-xs text-destructive">{cullingJobLinkError}</p>
         ) : jobCollisionError !== undefined ? (
@@ -1132,9 +1133,9 @@ function PopulationResourceEditor({
         <ul className="grid gap-2">
           {entries.map((entry, index) => (
             <li key={index} className="flex items-center gap-2">
-              <select
+              <NativeSelect
                 aria-label={`${label} entry ${String(index + 1)} resource`}
-                className="flex-1 min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 dark:bg-input/30 dark:disabled:bg-input/80"
+                className="flex-1"
                 disabled={disabled}
                 value={entry.resourceId}
                 onChange={(e) => {
@@ -1146,7 +1147,7 @@ function PopulationResourceEditor({
                     {r.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <Input
                 aria-label={`${label} entry ${String(index + 1)} amount per N animals`}
                 className="w-24 shrink-0"
