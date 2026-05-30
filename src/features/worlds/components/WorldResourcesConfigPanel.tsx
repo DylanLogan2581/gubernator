@@ -167,7 +167,7 @@ function WorldResourcesConfigPanelContent({
         />
       ) : !showForm ? (
         <EmptyState
-          title={showTrash ? "No trashed resources." : "No resources yet"}
+          title={showTrash ? "No resources in trash" : "No resources yet"}
           description={
             showTrash ? undefined : "Add the first resource for this world."
           }

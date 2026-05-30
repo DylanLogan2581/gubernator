@@ -52,7 +52,7 @@ describe("WorldBuildingsConfigPanel", () => {
 
     renderPanel({ canAdmin: false, isArchived: false });
 
-    expect(await screen.findByText("No blueprints yet")).toBeDefined();
+    expect(await screen.findByText("No buildings yet")).toBeDefined();
   });
 
   it("hides the Add blueprint button for non-admin users", async () => {
@@ -60,7 +60,7 @@ describe("WorldBuildingsConfigPanel", () => {
 
     renderPanel({ canAdmin: false, isArchived: false });
 
-    await screen.findByText("No blueprints yet");
+    await screen.findByText("No buildings yet");
     expect(screen.queryByRole("button", { name: "Add blueprint" })).toBeNull();
   });
 

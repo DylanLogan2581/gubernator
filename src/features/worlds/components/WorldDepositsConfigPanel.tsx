@@ -184,9 +184,7 @@ function WorldDepositsConfigPanelContent({
           onEditingChange={setEditingDepositTypeId}
         />
       ) : showTrash ? (
-        <p className="text-sm text-muted-foreground">
-          No trashed deposit types.
-        </p>
+        <EmptyState title="No deposit types in trash" />
       ) : !showCreateForm ? (
         <EmptyState
           title="No deposit types yet"

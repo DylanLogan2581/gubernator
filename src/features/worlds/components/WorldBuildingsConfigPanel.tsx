@@ -282,11 +282,11 @@ function WorldBuildingsConfigPanelContent({
           onEditingChange={setEditingBlueprintId}
         />
       ) : showTrash ? (
-        <p className="text-sm text-muted-foreground">No trashed blueprints.</p>
+        <EmptyState title="No buildings in trash" />
       ) : !showCreateForm ? (
         <EmptyState
-          title="No blueprints yet"
-          description="Add the first building blueprint for this world."
+          title="No buildings yet"
+          description="Add the first building for this world."
         />
       ) : null}
 
