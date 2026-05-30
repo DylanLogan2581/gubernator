@@ -427,23 +427,64 @@ export type Database = {
       managed_population_types: {
         Row: {
           created_at: string;
+          culling_job_id: string;
+          culling_outputs_json: Json;
+          growth_rate: number;
+          husbandry_job_id: string;
+          husbandry_workers_per_n_animals: number;
           id: string;
+          is_active: boolean;
+          maintenance_rules_json: Json;
+          name: string;
+          slug: string;
           updated_at: string;
           world_id: string;
         };
         Insert: {
           created_at?: string;
+          culling_job_id: string;
+          culling_outputs_json?: Json;
+          growth_rate?: number;
+          husbandry_job_id: string;
+          husbandry_workers_per_n_animals: number;
           id?: string;
+          is_active?: boolean;
+          maintenance_rules_json?: Json;
+          name: string;
+          slug: string;
           updated_at?: string;
           world_id: string;
         };
         Update: {
           created_at?: string;
+          culling_job_id?: string;
+          culling_outputs_json?: Json;
+          growth_rate?: number;
+          husbandry_job_id?: string;
+          husbandry_workers_per_n_animals?: number;
           id?: string;
+          is_active?: boolean;
+          maintenance_rules_json?: Json;
+          name?: string;
+          slug?: string;
           updated_at?: string;
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "managed_population_types_culling_job_fk";
+            columns: ["culling_job_id"];
+            isOneToOne: true;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "managed_population_types_husbandry_job_fk";
+            columns: ["husbandry_job_id"];
+            isOneToOne: true;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "managed_population_types_world_id_fkey";
             columns: ["world_id"];
@@ -1494,6 +1535,10 @@ export type Database = {
       };
       is_valid_naming_config: { Args: { config: Json }; Returns: boolean };
       is_valid_npc_flavor_config: { Args: { config: Json }; Returns: boolean };
+      is_valid_population_resource_array: {
+        Args: { arr: Json; p_world_id: string };
+        Returns: boolean;
+      };
       is_valid_resource_cost_array: {
         Args: { arr: Json; p_world_id: string };
         Returns: boolean;
