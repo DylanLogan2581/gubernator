@@ -122,6 +122,19 @@ function WorldResourcesConfigPanelContent({
           Resources
         </h2>
         <div className="flex items-center gap-2">
+          {canEdit && !showForm && !showTrash ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowForm(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Add resource
+            </Button>
+          ) : null}
           {canEdit ? (
             <Button
               type="button"
@@ -137,19 +150,6 @@ function WorldResourcesConfigPanelContent({
               }}
             >
               <Trash2 aria-hidden="true" />
-            </Button>
-          ) : null}
-          {canEdit && !showForm && !showTrash ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowForm(true);
-              }}
-            >
-              <Plus aria-hidden="true" />
-              Add resource
             </Button>
           ) : null}
         </div>
