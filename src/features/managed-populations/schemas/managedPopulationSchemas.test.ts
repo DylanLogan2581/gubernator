@@ -209,6 +209,21 @@ describe("createManagedPopulationTypeInputSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("rejects when husbandryJobId equals cullingJobId", () => {
+    const result = createManagedPopulationTypeInputSchema.safeParse({
+      ...VALID_CREATE_INPUT,
+      cullingJobId: HUSBANDRY_JOB_ID,
+      husbandryJobId: HUSBANDRY_JOB_ID,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.cullingJobId).toContain(
+        "Husbandry job and culling job must be different.",
+      );
+    }
+  });
 });
 
 describe("updateManagedPopulationTypeInputSchema", () => {
@@ -275,6 +290,32 @@ describe("updateManagedPopulationTypeInputSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("rejects when both job ids are provided and equal", () => {
+    const result = updateManagedPopulationTypeInputSchema.safeParse({
+      cullingJobId: HUSBANDRY_JOB_ID,
+      husbandryJobId: HUSBANDRY_JOB_ID,
+      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.cullingJobId).toContain(
+        "Husbandry job and culling job must be different.",
+      );
+    }
+  });
+
+  it("accepts when only one job id is provided", () => {
+    const result = updateManagedPopulationTypeInputSchema.safeParse({
+      husbandryJobId: HUSBANDRY_JOB_ID,
+      managedPopulationTypeId: MANAGED_POPULATION_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
   });
 });
 
