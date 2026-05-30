@@ -144,17 +144,6 @@ function WorldDepositsConfigPanelContent({
           Deposit Types
         </h2>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant={showTrash ? "secondary" : "ghost"}
-            size="icon-sm"
-            aria-label={showTrash ? "Hide trash" : "Show trash"}
-            aria-pressed={showTrash}
-            title={showTrash ? "Hide trash" : "Show trash"}
-            onClick={onToggleTrash}
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
           {canEdit && !showCreateForm && !showTrash ? (
             <Button
               type="button"
@@ -168,6 +157,17 @@ function WorldDepositsConfigPanelContent({
               Add deposit type
             </Button>
           ) : null}
+          <Button
+            type="button"
+            variant={showTrash ? "secondary" : "ghost"}
+            size="icon-sm"
+            aria-label={showTrash ? "Hide trash" : "Show trash"}
+            aria-pressed={showTrash}
+            title={showTrash ? "Hide trash" : "Show trash"}
+            onClick={onToggleTrash}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
         </div>
       </div>
 

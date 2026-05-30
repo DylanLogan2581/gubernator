@@ -165,17 +165,6 @@ function WorldJobsConfigPanelContent({
           Jobs
         </h2>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant={showTrash ? "secondary" : "ghost"}
-            size="icon-sm"
-            aria-label={showTrash ? "Hide trash" : "Show trash"}
-            aria-pressed={showTrash}
-            title={showTrash ? "Hide trash" : "Show trash"}
-            onClick={onToggleTrash}
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
           {canEdit && !showForm && !showTrash ? (
             <Button
               type="button"
@@ -189,6 +178,17 @@ function WorldJobsConfigPanelContent({
               Add job
             </Button>
           ) : null}
+          <Button
+            type="button"
+            variant={showTrash ? "secondary" : "ghost"}
+            size="icon-sm"
+            aria-label={showTrash ? "Hide trash" : "Show trash"}
+            aria-pressed={showTrash}
+            title={showTrash ? "Hide trash" : "Show trash"}
+            onClick={onToggleTrash}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
         </div>
       </div>
 
