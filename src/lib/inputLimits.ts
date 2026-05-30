@@ -44,6 +44,11 @@ export const jobInputLimits = {
   jobSlugMax: 64,
 } as const;
 
+export const buildingInputLimits = {
+  blueprintNameMax: 64,
+  blueprintSlugMax: 64,
+} as const;
+
 export const namingInputLimits = {
   namePoolSizeMax: 100,
   namePoolEntryMax: 64,
