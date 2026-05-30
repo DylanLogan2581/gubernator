@@ -4,7 +4,7 @@
 begin;
 
 select
-  plan (20);
+  plan (22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -509,7 +509,7 @@ values
     10
   );
 
--- Duplicate job_id must be rejected.
+-- Duplicate active job_id must be rejected.
 select
   throws_ok (
     $test$
@@ -524,7 +524,47 @@ select
   $test$,
     '23505',
     null,
-    'duplicate job_id rejected by unique constraint'
+    'duplicate active job_id rejected by partial unique index'
+  );
+
+-- After trashing the existing record, the same job_id may be reused for a new active record.
+update public.deposit_types
+set
+  is_active = false
+where
+  job_id = 'a3000000-0000-0000-0000-000000000020';
+
+select
+  lives_ok (
+    $test$
+    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
+    values (
+      'a2000000-0000-0000-0000-000000000001',
+      'Relinked Job Deposit',
+      'relinked-job-deposit',
+      'a3000000-0000-0000-0000-000000000020',
+      5
+    )
+  $test$,
+    'inactive record permits same job_id for a new active record'
+  );
+
+-- With a new active record present, a second active record with the same job_id must be rejected.
+select
+  throws_ok (
+    $test$
+    insert into public.deposit_types (world_id, name, slug, job_id, output_units_per_worker)
+    values (
+      'a2000000-0000-0000-0000-000000000001',
+      'Second Active Duplicate',
+      'second-active-duplicate',
+      'a3000000-0000-0000-0000-000000000020',
+      5
+    )
+  $test$,
+    '23505',
+    null,
+    'second active record with same job_id rejected after relinking'
   );
 
 -- output_units_per_worker = 0 must be rejected (check requires > 0).

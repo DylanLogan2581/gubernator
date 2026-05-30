@@ -38,6 +38,7 @@ import type { z } from "zod";
 
 type DepositTypeMutationErrorCode =
   | "deposit_type_input_invalid"
+  | "deposit_type_job_already_linked"
   | "deposit_type_not_found";
 
 type CreateDepositTypeMutationOptions = UseMutationOptions<
@@ -273,6 +274,12 @@ async function createDepositType(
     .maybeSingle<DepositTypeRow>();
 
   if (error !== null) {
+    if (isActiveJobIdConflict(error)) {
+      throw new DepositTypeMutationError({
+        code: "deposit_type_job_already_linked",
+        message: "This job is already linked to another active deposit type.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -321,6 +328,12 @@ async function updateDepositType(
     .maybeSingle<DepositTypeRow>();
 
   if (error !== null) {
+    if (isActiveJobIdConflict(error)) {
+      throw new DepositTypeMutationError({
+        code: "deposit_type_job_already_linked",
+        message: "This job is already linked to another active deposit type.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -460,5 +473,15 @@ function parseInput<TSchema extends z.ZodTypeAny>(
         issues,
         message: "Deposit type input is invalid.",
       }),
+  );
+}
+
+function isActiveJobIdConflict(error: {
+  code: string;
+  message: string;
+}): boolean {
+  return (
+    error.code === "23505" &&
+    error.message.includes("deposit_types_unique_active_job_id")
   );
 }

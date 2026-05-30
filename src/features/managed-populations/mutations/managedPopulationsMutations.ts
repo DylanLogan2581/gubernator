@@ -37,6 +37,8 @@ import type {
 import type { z } from "zod";
 
 type ManagedPopulationTypeMutationErrorCode =
+  | "managed_population_type_culling_job_already_linked"
+  | "managed_population_type_husbandry_job_already_linked"
   | "managed_population_type_input_invalid"
   | "managed_population_type_not_found";
 
@@ -319,6 +321,20 @@ async function createManagedPopulationType(
     .maybeSingle<ManagedPopulationTypeRow>();
 
   if (error !== null) {
+    if (isActiveHusbandryJobIdConflict(error)) {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_husbandry_job_already_linked",
+        message:
+          "This husbandry job is already linked to another active managed population type.",
+      });
+    }
+    if (isActiveCullingJobIdConflict(error)) {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_culling_job_already_linked",
+        message:
+          "This culling job is already linked to another active managed population type.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -379,6 +395,20 @@ async function updateManagedPopulationType(
     .maybeSingle<ManagedPopulationTypeRow>();
 
   if (error !== null) {
+    if (isActiveHusbandryJobIdConflict(error)) {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_husbandry_job_already_linked",
+        message:
+          "This husbandry job is already linked to another active managed population type.",
+      });
+    }
+    if (isActiveCullingJobIdConflict(error)) {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_culling_job_already_linked",
+        message:
+          "This culling job is already linked to another active managed population type.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -529,5 +559,29 @@ function parseInput<TSchema extends z.ZodTypeAny>(
         issues,
         message: "Managed population type input is invalid.",
       }),
+  );
+}
+
+function isActiveHusbandryJobIdConflict(error: {
+  code: string;
+  message: string;
+}): boolean {
+  return (
+    error.code === "23505" &&
+    error.message.includes(
+      "managed_population_types_unique_active_husbandry_job_id",
+    )
+  );
+}
+
+function isActiveCullingJobIdConflict(error: {
+  code: string;
+  message: string;
+}): boolean {
+  return (
+    error.code === "23505" &&
+    error.message.includes(
+      "managed_population_types_unique_active_culling_job_id",
+    )
   );
 }
