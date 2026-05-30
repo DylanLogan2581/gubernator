@@ -1,10 +1,17 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -35,6 +42,8 @@ const TABS = [
   { key: "population-rules", label: "Population Rules" },
 ] as const;
 
+type TabKey = (typeof TABS)[number]["key"];
+
 type WorldConfigurationPageProps = {
   readonly activeTab: string;
   readonly selectedBlueprintId?: string;
@@ -47,9 +56,20 @@ export function WorldConfigurationPage({
   worldId,
 }: WorldConfigurationPageProps): JSX.Element {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const accessContextQuery = useQuery(
     currentAccessContextQueryOptions(queryClient),
   );
+
+  const activeLabel = TABS.find((t) => t.key === activeTab)?.label ?? activeTab;
+
+  function handleTabSelect(key: TabKey): void {
+    void navigate({
+      to: "/worlds/$worldId/configuration",
+      params: { worldId },
+      search: { tab: key },
+    });
+  }
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
@@ -60,10 +80,31 @@ export function WorldConfigurationPage({
         </Link>
       </Button>
       <h1 className="text-2xl font-semibold tracking-normal">Configuration</h1>
+
+      {/* Mobile select — visible below md breakpoint */}
+      <div className="md:hidden">
+        <Select
+          value={activeTab}
+          onValueChange={(v) => handleTabSelect(v as TabKey)}
+        >
+          <SelectTrigger aria-label="Configuration section" className="w-full">
+            <SelectValue>{activeLabel}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {TABS.map(({ key, label }) => (
+              <SelectItem key={key} value={key}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Desktop tab strip — scrollable, visible from md up */}
       <div
         role="tablist"
         aria-label="Configuration sections"
-        className="flex flex-wrap gap-1 border-b border-border"
+        className="hidden overflow-x-auto border-b border-border [scrollbar-width:none] md:flex"
       >
         {TABS.map(({ key, label }) => (
           <Link
@@ -74,7 +115,7 @@ export function WorldConfigurationPage({
             params={{ worldId }}
             search={{ tab: key }}
             className={cn(
-              "rounded-t-sm px-3 py-2 text-sm font-medium transition-colors",
+              "shrink-0 rounded-t-sm px-3 py-2 text-sm font-medium transition-colors",
               activeTab === key
                 ? "border-b-2 border-primary text-foreground"
                 : "text-muted-foreground hover:text-foreground",
