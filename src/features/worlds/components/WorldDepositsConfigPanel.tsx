@@ -1,0 +1,879 @@
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
+import { Plus, Trash2 } from "lucide-react";
+import { useState, type FormEvent, type JSX } from "react";
+import { toast } from "sonner";
+
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { LoadingState } from "@/components/shared/LoadingState";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  createDepositTypeMutationOptions,
+  createDepositTypeInputSchema,
+  depositTypesByWorldQueryOptions,
+  setDepositTypeActiveMutationOptions,
+  updateDepositTypeInputSchema,
+  updateDepositTypeMutationOptions,
+  type CreateDepositTypeInput,
+  type DepositType,
+  type UpdateDepositTypeInput,
+  type WorkerInputEntry,
+} from "@/features/deposits";
+import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
+import {
+  activeResourcesByWorldQueryOptions,
+  type Resource,
+} from "@/features/resources";
+import { getErrorDescription } from "@/lib/errorUtils";
+import { depositInputLimits } from "@/lib/inputLimits";
+import { notifyMutationSuccess } from "@/lib/notify";
+
+type WorldDepositsConfigPanelProps = {
+  readonly canAdmin: boolean;
+  readonly isArchived: boolean;
+  readonly worldId: string;
+};
+
+export function WorldDepositsConfigPanel({
+  canAdmin,
+  isArchived,
+  worldId,
+}: WorldDepositsConfigPanelProps): JSX.Element {
+  const queryClient = useQueryClient();
+  const [showArchived, setShowArchived] = useState(false);
+  const depositTypesQuery = useQuery(depositTypesByWorldQueryOptions(worldId));
+
+  if (depositTypesQuery.isPending) {
+    return (
+      <section
+        aria-labelledby="world-deposits-title"
+        className="rounded-md border border-border bg-card p-5 text-card-foreground"
+      >
+        <LoadingState label="Loading deposit types…" />
+      </section>
+    );
+  }
+
+  if (depositTypesQuery.isError) {
+    return (
+      <section
+        aria-labelledby="world-deposits-title"
+        className="rounded-md border border-border bg-card p-5 text-card-foreground"
+      >
+        <ErrorState
+          title="Deposit types could not be loaded"
+          description={getErrorDescription(depositTypesQuery.error)}
+        />
+      </section>
+    );
+  }
+
+  const allDepositTypes = depositTypesQuery.data;
+  const visibleDepositTypes = showArchived
+    ? allDepositTypes
+    : allDepositTypes.filter((dt) => dt.isActive);
+
+  return (
+    <WorldDepositsConfigPanelContent
+      allDepositTypes={allDepositTypes}
+      canAdmin={canAdmin}
+      depositTypes={visibleDepositTypes}
+      isArchived={isArchived}
+      queryClient={queryClient}
+      showArchived={showArchived}
+      worldId={worldId}
+      onToggleArchived={() => {
+        setShowArchived((v) => !v);
+      }}
+    />
+  );
+}
+
+function WorldDepositsConfigPanelContent({
+  allDepositTypes,
+  canAdmin,
+  depositTypes,
+  isArchived,
+  queryClient,
+  showArchived,
+  worldId,
+  onToggleArchived,
+}: {
+  readonly allDepositTypes: readonly DepositType[];
+  readonly canAdmin: boolean;
+  readonly depositTypes: readonly DepositType[];
+  readonly isArchived: boolean;
+  readonly onToggleArchived: () => void;
+  readonly queryClient: QueryClient;
+  readonly showArchived: boolean;
+  readonly worldId: string;
+}): JSX.Element {
+  const createMutation = useMutation(
+    createDepositTypeMutationOptions({ queryClient }),
+  );
+  const depositJobsQuery = useQuery(jobsByTypeQueryOptions(worldId, "deposit"));
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingDepositTypeId, setEditingDepositTypeId] = useState<
+    string | null
+  >(null);
+  const canEdit = canAdmin && !isArchived;
+
+  const depositJobs = depositJobsQuery.data ?? [];
+
+  return (
+    <section
+      aria-labelledby="world-deposits-title"
+      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
+    >
+      <div className="flex items-center justify-between">
+        <h2
+          id="world-deposits-title"
+          className="text-lg font-semibold tracking-normal"
+        >
+          Deposit Types
+        </h2>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onToggleArchived}
+          >
+            {showArchived ? "Hide archived" : "Show archived"}
+          </Button>
+          {canEdit && !showCreateForm ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowCreateForm(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Add deposit type
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      {depositTypes.length > 0 ? (
+        <DepositTypeList
+          allDepositTypes={allDepositTypes}
+          canEdit={canEdit}
+          depositJobs={depositJobs}
+          depositTypes={depositTypes}
+          editingDepositTypeId={editingDepositTypeId}
+          queryClient={queryClient}
+          showArchived={showArchived}
+          worldId={worldId}
+          onEditingChange={setEditingDepositTypeId}
+        />
+      ) : !showCreateForm ? (
+        <EmptyState
+          title="No deposit types yet"
+          description="Add the first deposit type for this world."
+        />
+      ) : null}
+
+      {canEdit && showCreateForm ? (
+        <CreateDepositTypeForm
+          allDepositTypes={allDepositTypes}
+          depositJobs={depositJobs}
+          isPending={createMutation.isPending}
+          worldId={worldId}
+          onCancel={() => {
+            setShowCreateForm(false);
+          }}
+          onSubmit={(input) => {
+            createMutation.mutate(input, {
+              onError: (error) => {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to create deposit type.",
+                );
+              },
+              onSuccess: () => {
+                notifyMutationSuccess("Deposit type created.");
+                setShowCreateForm(false);
+              },
+            });
+          }}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function DepositTypeList({
+  allDepositTypes,
+  canEdit,
+  depositJobs,
+  depositTypes,
+  editingDepositTypeId,
+  queryClient,
+  showArchived,
+  worldId,
+  onEditingChange,
+}: {
+  readonly allDepositTypes: readonly DepositType[];
+  readonly canEdit: boolean;
+  readonly depositJobs: readonly JobDefinition[];
+  readonly depositTypes: readonly DepositType[];
+  readonly editingDepositTypeId: string | null;
+  readonly onEditingChange: (id: string | null) => void;
+  readonly queryClient: QueryClient;
+  readonly showArchived: boolean;
+  readonly worldId: string;
+}): JSX.Element {
+  return (
+    <ul aria-label="Deposit types" className="grid gap-2">
+      {depositTypes.map((depositType) =>
+        editingDepositTypeId === depositType.id ? (
+          <li key={depositType.id}>
+            <EditDepositTypeForm
+              allDepositTypes={allDepositTypes}
+              depositJobs={depositJobs}
+              depositType={depositType}
+              queryClient={queryClient}
+              worldId={worldId}
+              onClose={() => {
+                onEditingChange(null);
+              }}
+            />
+          </li>
+        ) : (
+          <DepositTypeRow
+            key={depositType.id}
+            canEdit={canEdit}
+            depositJobs={depositJobs}
+            depositType={depositType}
+            showArchived={showArchived}
+            onEdit={() => {
+              onEditingChange(depositType.id);
+            }}
+          />
+        ),
+      )}
+    </ul>
+  );
+}
+
+function DepositTypeRow({
+  depositType,
+  canEdit,
+  depositJobs,
+  showArchived,
+  onEdit,
+}: {
+  readonly depositType: DepositType;
+  readonly canEdit: boolean;
+  readonly depositJobs: readonly JobDefinition[];
+  readonly onEdit: () => void;
+  readonly showArchived: boolean;
+}): JSX.Element {
+  const linkedJob = depositJobs.find((j) => j.id === depositType.jobId);
+
+  return (
+    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+      <div className="grid gap-0.5">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{depositType.name}</span>
+          {showArchived && !depositType.isActive ? (
+            <Badge variant="outline">archived</Badge>
+          ) : null}
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {depositType.outputUnitsPerWorker.toLocaleString()} output/worker
+          {linkedJob !== undefined ? ` · ${linkedJob.name}` : null}
+        </span>
+      </div>
+      {canEdit ? (
+        <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+          Edit
+        </Button>
+      ) : null}
+    </li>
+  );
+}
+
+type DepositTypeFieldErrors = {
+  readonly jobId?: string;
+  readonly name?: string;
+  readonly outputUnitsPerWorker?: string;
+  readonly slug?: string;
+};
+
+function CreateDepositTypeForm({
+  allDepositTypes,
+  depositJobs,
+  isPending,
+  onCancel,
+  onSubmit,
+  worldId,
+}: {
+  readonly allDepositTypes: readonly DepositType[];
+  readonly depositJobs: readonly JobDefinition[];
+  readonly isPending: boolean;
+  readonly onCancel: () => void;
+  readonly onSubmit: (input: CreateDepositTypeInput) => void;
+  readonly worldId: string;
+}): JSX.Element {
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [jobId, setJobId] = useState("");
+  const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState("1");
+  const [workerInputs, setWorkerInputs] = useState<WorkerInputEntry[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<DepositTypeFieldErrors>({});
+  const [jobLinkError, setJobLinkError] = useState<string | undefined>(
+    undefined,
+  );
+
+  function handleNameChange(value: string): void {
+    setName(value);
+    if (!slugEdited) {
+      setSlug(toSlug(value));
+    }
+  }
+
+  function handleSlugChange(value: string): void {
+    setSlug(value);
+    setSlugEdited(value.length > 0);
+  }
+
+  function handleJobChange(selectedJobId: string): void {
+    setJobId(selectedJobId);
+    const conflict = allDepositTypes.find(
+      (dt) => dt.jobId === selectedJobId && selectedJobId !== "",
+    );
+    setJobLinkError(
+      conflict !== undefined
+        ? `This job is already linked to "${conflict.name}".`
+        : undefined,
+    );
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    setFieldErrors({});
+
+    if (jobLinkError !== undefined) return;
+
+    const input: CreateDepositTypeInput = {
+      jobId,
+      name,
+      outputUnitsPerWorker:
+        outputUnitsPerWorker !== "" ? parseInt(outputUnitsPerWorker, 10) : 0,
+      slug,
+      workerInputsJson: workerInputs.length > 0 ? workerInputs : undefined,
+      worldId,
+    };
+
+    const result = createDepositTypeInputSchema.safeParse(input);
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = String(issue.path[0]);
+        if (!(field in errors)) {
+          errors[field] = issue.message;
+        }
+      }
+      setFieldErrors({
+        jobId: errors.jobId,
+        name: errors.name,
+        outputUnitsPerWorker: errors.outputUnitsPerWorker,
+        slug: errors.slug,
+      });
+      return;
+    }
+
+    onSubmit(input);
+  }
+
+  const resources = resourcesQuery.data ?? [];
+
+  return (
+    <form
+      aria-label="Create deposit type"
+      className="grid gap-4 rounded-md border border-border bg-background p-4"
+      noValidate
+      onSubmit={handleSubmit}
+    >
+      <h3 className="text-sm font-medium">New deposit type</h3>
+      <div className="grid gap-3">
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Name</span>
+          <Input
+            aria-invalid={fieldErrors.name !== undefined}
+            disabled={isPending}
+            maxLength={depositInputLimits.depositTypeNameMax}
+            value={name}
+            onChange={(e) => {
+              handleNameChange(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.name !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.name}</p>
+          ) : null}
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Slug</span>
+          <Input
+            aria-invalid={fieldErrors.slug !== undefined}
+            disabled={isPending}
+            maxLength={depositInputLimits.depositTypeSlugMax}
+            value={slug}
+            onChange={(e) => {
+              handleSlugChange(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.slug !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
+          ) : null}
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Linked deposit job</span>
+          <select
+            aria-invalid={
+              fieldErrors.jobId !== undefined || jobLinkError !== undefined
+            }
+            className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+            disabled={isPending}
+            value={jobId}
+            onChange={(e) => {
+              handleJobChange(e.currentTarget.value);
+            }}
+          >
+            <option value="">Select a deposit job…</option>
+            {depositJobs.map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.name}
+              </option>
+            ))}
+          </select>
+          {jobLinkError !== undefined ? (
+            <p className="text-xs text-destructive">{jobLinkError}</p>
+          ) : fieldErrors.jobId !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
+          ) : null}
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Output units per worker</span>
+          <Input
+            aria-invalid={fieldErrors.outputUnitsPerWorker !== undefined}
+            disabled={isPending}
+            inputMode="numeric"
+            placeholder="1"
+            value={outputUnitsPerWorker}
+            onChange={(e) => {
+              setOutputUnitsPerWorker(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.outputUnitsPerWorker !== undefined ? (
+            <p className="text-xs text-destructive">
+              {fieldErrors.outputUnitsPerWorker}
+            </p>
+          ) : null}
+        </label>
+        <WorkerInputsEditor
+          disabled={isPending}
+          resources={resources}
+          workerInputs={workerInputs}
+          onChange={setWorkerInputs}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button
+          type="submit"
+          size="sm"
+          disabled={isPending || jobLinkError !== undefined}
+        >
+          Create
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function EditDepositTypeForm({
+  allDepositTypes,
+  depositJobs,
+  depositType,
+  onClose,
+  queryClient,
+  worldId,
+}: {
+  readonly allDepositTypes: readonly DepositType[];
+  readonly depositJobs: readonly JobDefinition[];
+  readonly depositType: DepositType;
+  readonly onClose: () => void;
+  readonly queryClient: QueryClient;
+  readonly worldId: string;
+}): JSX.Element {
+  const updateMutation = useMutation(
+    updateDepositTypeMutationOptions({ queryClient }),
+  );
+  const setActiveMutation = useMutation(
+    setDepositTypeActiveMutationOptions({ queryClient }),
+  );
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+
+  const [name, setName] = useState(depositType.name);
+  const [slug, setSlug] = useState(depositType.slug);
+  const [jobId, setJobId] = useState(depositType.jobId);
+  const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState(
+    String(depositType.outputUnitsPerWorker),
+  );
+  const [workerInputs, setWorkerInputs] = useState<WorkerInputEntry[]>([
+    ...depositType.workerInputsJson,
+  ]);
+  const [isActive, setIsActive] = useState(depositType.isActive);
+  const [fieldErrors, setFieldErrors] = useState<DepositTypeFieldErrors>({});
+  const [jobLinkError, setJobLinkError] = useState<string | undefined>(
+    undefined,
+  );
+
+  const isPending = updateMutation.isPending || setActiveMutation.isPending;
+
+  function handleJobChange(selectedJobId: string): void {
+    setJobId(selectedJobId);
+    const conflict = allDepositTypes.find(
+      (dt) =>
+        dt.jobId === selectedJobId &&
+        selectedJobId !== "" &&
+        dt.id !== depositType.id,
+    );
+    setJobLinkError(
+      conflict !== undefined
+        ? `This job is already linked to "${conflict.name}".`
+        : undefined,
+    );
+  }
+
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault();
+    setFieldErrors({});
+
+    if (jobLinkError !== undefined) return;
+
+    const updateInput: UpdateDepositTypeInput = {
+      depositTypeId: depositType.id,
+      jobId,
+      name,
+      outputUnitsPerWorker:
+        outputUnitsPerWorker !== ""
+          ? parseInt(outputUnitsPerWorker, 10)
+          : undefined,
+      slug,
+      workerInputsJson: workerInputs,
+      worldId,
+    };
+
+    const result = updateDepositTypeInputSchema.safeParse(updateInput);
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = String(issue.path[0]);
+        if (!(field in errors)) {
+          errors[field] = issue.message;
+        }
+      }
+      setFieldErrors({
+        jobId: errors.jobId,
+        name: errors.name,
+        outputUnitsPerWorker: errors.outputUnitsPerWorker,
+        slug: errors.slug,
+      });
+      return;
+    }
+
+    try {
+      await updateMutation.mutateAsync(updateInput);
+      if (isActive !== depositType.isActive) {
+        await setActiveMutation.mutateAsync({
+          depositTypeId: depositType.id,
+          isActive,
+          worldId,
+        });
+      }
+      notifyMutationSuccess("Deposit type saved.");
+      onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save deposit type.",
+      );
+    }
+  }
+
+  const resources = resourcesQuery.data ?? [];
+
+  return (
+    <form
+      aria-label="Edit deposit type"
+      className="grid gap-4 rounded-md border border-border bg-background p-4"
+      noValidate
+      onSubmit={(e) => {
+        void handleSubmit(e);
+      }}
+    >
+      <h3 className="text-sm font-medium">Edit deposit type</h3>
+      <div className="grid gap-3">
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Name</span>
+          <Input
+            aria-invalid={fieldErrors.name !== undefined}
+            disabled={isPending}
+            maxLength={depositInputLimits.depositTypeNameMax}
+            value={name}
+            onChange={(e) => {
+              setName(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.name !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.name}</p>
+          ) : null}
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Slug</span>
+          <Input
+            aria-invalid={fieldErrors.slug !== undefined}
+            disabled={isPending}
+            maxLength={depositInputLimits.depositTypeSlugMax}
+            value={slug}
+            onChange={(e) => {
+              setSlug(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.slug !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
+          ) : null}
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Linked deposit job</span>
+          <select
+            aria-invalid={
+              fieldErrors.jobId !== undefined || jobLinkError !== undefined
+            }
+            className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+            disabled={isPending}
+            value={jobId}
+            onChange={(e) => {
+              handleJobChange(e.currentTarget.value);
+            }}
+          >
+            <option value="">Select a deposit job…</option>
+            {depositJobs.map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.name}
+              </option>
+            ))}
+          </select>
+          {jobLinkError !== undefined ? (
+            <p className="text-xs text-destructive">{jobLinkError}</p>
+          ) : fieldErrors.jobId !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
+          ) : null}
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Output units per worker</span>
+          <Input
+            aria-invalid={fieldErrors.outputUnitsPerWorker !== undefined}
+            disabled={isPending}
+            inputMode="numeric"
+            placeholder="1"
+            value={outputUnitsPerWorker}
+            onChange={(e) => {
+              setOutputUnitsPerWorker(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.outputUnitsPerWorker !== undefined ? (
+            <p className="text-xs text-destructive">
+              {fieldErrors.outputUnitsPerWorker}
+            </p>
+          ) : null}
+        </label>
+        <WorkerInputsEditor
+          disabled={isPending}
+          resources={resources}
+          workerInputs={workerInputs}
+          onChange={setWorkerInputs}
+        />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isActive}
+            disabled={isPending}
+            onChange={(e) => {
+              setIsActive(e.currentTarget.checked);
+            }}
+          />
+          <span className="text-muted-foreground">Active</span>
+        </label>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          type="submit"
+          size="sm"
+          disabled={isPending || jobLinkError !== undefined}
+        >
+          Save
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function WorkerInputsEditor({
+  disabled,
+  resources,
+  workerInputs,
+  onChange,
+}: {
+  readonly disabled: boolean;
+  readonly resources: readonly Resource[];
+  readonly workerInputs: WorkerInputEntry[];
+  readonly onChange: (inputs: WorkerInputEntry[]) => void;
+}): JSX.Element {
+  const availableResources = resources.filter((r) => !r.isDeleted);
+
+  function handleAdd(): void {
+    if (availableResources.length === 0) return;
+    const usedIds = new Set(workerInputs.map((wi) => wi.resourceId));
+    const firstUnused = availableResources.find((r) => !usedIds.has(r.id));
+    if (firstUnused === undefined) return;
+    onChange([
+      ...workerInputs,
+      { amountPerWorker: 1, resourceId: firstUnused.id },
+    ]);
+  }
+
+  function handleRemove(index: number): void {
+    onChange(workerInputs.filter((_, i) => i !== index));
+  }
+
+  function handleResourceChange(index: number, resourceId: string): void {
+    onChange(
+      workerInputs.map((wi, i) => (i === index ? { ...wi, resourceId } : wi)),
+    );
+  }
+
+  function handleAmountChange(index: number, value: string): void {
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed) && parsed >= 0) {
+      onChange(
+        workerInputs.map((wi, i) =>
+          i === index ? { ...wi, amountPerWorker: parsed } : wi,
+        ),
+      );
+    }
+  }
+
+  return (
+    <fieldset className="grid gap-2">
+      <div className="flex items-center justify-between">
+        <legend className="text-sm text-muted-foreground">Worker inputs</legend>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={
+            disabled ||
+            availableResources.length === 0 ||
+            workerInputs.length >= availableResources.length
+          }
+          onClick={handleAdd}
+        >
+          <Plus aria-hidden="true" />
+          Add input
+        </Button>
+      </div>
+      {workerInputs.length > 0 ? (
+        <ul className="grid gap-2">
+          {workerInputs.map((wi, index) => (
+            <li key={index} className="flex items-center gap-2">
+              <select
+                aria-label={`Worker input ${String(index + 1)} resource`}
+                className="flex-1 min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 dark:bg-input/30 dark:disabled:bg-input/80"
+                disabled={disabled}
+                value={wi.resourceId}
+                onChange={(e) => {
+                  handleResourceChange(index, e.currentTarget.value);
+                }}
+              >
+                {availableResources.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+              <Input
+                aria-label={`Worker input ${String(index + 1)} amount per worker`}
+                className="w-24 shrink-0"
+                disabled={disabled}
+                inputMode="decimal"
+                placeholder="1"
+                value={String(wi.amountPerWorker)}
+                onChange={(e) => {
+                  handleAmountChange(index, e.currentTarget.value);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label={`Remove worker input ${String(index + 1)}`}
+                disabled={disabled}
+                onClick={() => {
+                  handleRemove(index);
+                }}
+              >
+                <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-muted-foreground">No worker inputs.</p>
+      )}
+    </fieldset>
+  );
+}
+
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, depositInputLimits.depositTypeSlugMax);
+}

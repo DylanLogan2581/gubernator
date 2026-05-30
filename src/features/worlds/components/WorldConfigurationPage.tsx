@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
 import { WorldBuildingsConfigPanel } from "./WorldBuildingsConfigPanel";
+import { WorldDepositsConfigPanel } from "./WorldDepositsConfigPanel";
 import { WorldJobsConfigPanel } from "./WorldJobsConfigPanel";
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
@@ -161,6 +162,16 @@ function WorldConfigurationContent({
         canAdmin={worldQuery.data.canAdmin}
         isArchived={worldQuery.data.header.isArchived}
         selectedBlueprintId={selectedBlueprintId}
+        worldId={worldId}
+      />
+    );
+  }
+
+  if (activeTab === "deposits") {
+    return (
+      <WorldDepositsConfigPanel
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
       />
     );
