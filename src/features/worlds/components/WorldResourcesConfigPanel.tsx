@@ -125,15 +125,18 @@ function WorldResourcesConfigPanelContent({
           {canEdit ? (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant={showTrash ? "secondary" : "ghost"}
+              size="icon-sm"
+              aria-label={showTrash ? "Hide trash" : "Show trash"}
+              aria-pressed={showTrash}
+              title={showTrash ? "Hide trash" : "Show trash"}
               onClick={() => {
                 setShowTrash((v) => !v);
                 setEditingResourceId(null);
                 setShowForm(false);
               }}
             >
-              {showTrash ? "Hide trash" : "View trash"}
+              <Trash2 aria-hidden="true" />
             </Button>
           ) : null}
           {canEdit && !showForm && !showTrash ? (
@@ -244,7 +247,9 @@ function ResourceList({
           <ResourceRow
             key={resource.id}
             canEdit={canEdit}
+            queryClient={queryClient}
             resource={resource}
+            worldId={worldId}
             onEdit={() => {
               onEditingChange(resource.id);
             }}
@@ -257,13 +262,43 @@ function ResourceList({
 
 function ResourceRow({
   canEdit,
+  queryClient,
   resource,
+  worldId,
   onEdit,
 }: {
   readonly canEdit: boolean;
   readonly onEdit: () => void;
+  readonly queryClient: QueryClient;
   readonly resource: Resource;
+  readonly worldId: string;
 }): JSX.Element {
+  const softDeleteMutation = useMutation(
+    softDeleteResourceMutationOptions({ queryClient }),
+  );
+
+  function handleTrash(): void {
+    softDeleteMutation.mutate(
+      { resourceId: resource.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to move resource to trash.",
+          );
+        },
+        onSuccess: (result) => {
+          const description = buildCleanupDescription(result.cleanupSummary);
+          notifyMutationSuccess(
+            "Resource moved to trash.",
+            description !== undefined ? { description } : undefined,
+          );
+        },
+      },
+    );
+  }
+
   return (
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
@@ -281,6 +316,19 @@ function ResourceRow({
         {canEdit ? (
           <Button type="button" variant="outline" size="sm" onClick={onEdit}>
             Edit
+          </Button>
+        ) : null}
+        {canEdit && !resource.isSystemResource ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Move ${resource.name} to trash`}
+            title="Move to trash"
+            disabled={softDeleteMutation.isPending}
+            onClick={handleTrash}
+          >
+            <Trash2 aria-hidden="true" />
           </Button>
         ) : null}
       </div>

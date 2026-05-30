@@ -121,7 +121,7 @@ describe("WorldDepositsConfigPanel", () => {
     await screen.findByText("Active Deposit");
     expect(screen.queryByText("Trashed Deposit")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "View trash" }));
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
 
     expect(screen.getByText("Trashed Deposit")).toBeDefined();
     expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
@@ -297,6 +297,53 @@ describe("WorldDepositsConfigPanel", () => {
     await screen.findByText("Iron Ore");
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
   });
+
+  it("moves a deposit type to trash via the inline row button", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [createDepositTypeRow({ name: "Iron Ore" })],
+        jobRows: [],
+        resourceRows: [],
+        rpcResult: {
+          data: { id: DEPOSIT_TYPE_ID, world_id: WORLD_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Iron Ore");
+    await user.click(
+      screen.getByRole("button", { name: "Move Iron Ore to trash" }),
+    );
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Deposit type moved to trash.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("hides the inline trash button for non-admin users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [createDepositTypeRow({ name: "Iron Ore" })],
+        jobRows: [],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Iron Ore");
+    expect(
+      screen.queryByRole("button", { name: "Move Iron Ore to trash" }),
+    ).toBeNull();
+  });
 });
 
 function renderPanel({
@@ -437,6 +484,7 @@ function createClient({
   insertResult = { data: createDepositTypeRow(), error: null },
   jobRows,
   resourceRows,
+  rpcResult = { data: null, error: null },
   updateResult = { data: createDepositTypeRow(), error: null },
 }: {
   readonly depositTypeRows: readonly TestDepositTypeRow[];
@@ -446,12 +494,17 @@ function createClient({
   };
   readonly jobRows: readonly TestJobRow[];
   readonly resourceRows: readonly TestResourceRow[];
+  readonly rpcResult?: {
+    readonly data: { readonly id: string; readonly world_id: string } | null;
+    readonly error: { readonly message: string } | null;
+  };
   readonly updateResult?: {
     readonly data: TestDepositTypeRow | null;
     readonly error: { readonly message: string } | null;
   };
 }): {
   readonly from: ReturnType<typeof vi.fn>;
+  readonly rpc: ReturnType<typeof vi.fn>;
 } {
   return {
     from: vi.fn((table: string) => {
@@ -470,6 +523,9 @@ function createClient({
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
+    rpc: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue(rpcResult),
+    })),
   };
 }
 

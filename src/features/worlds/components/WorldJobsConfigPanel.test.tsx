@@ -98,7 +98,7 @@ describe("WorldJobsConfigPanel", () => {
     await screen.findByText("Active Job");
     expect(screen.queryByText("Trashed Job")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "View trash" }));
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
 
     expect(screen.getByText("Trashed Job")).toBeDefined();
     expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
@@ -875,6 +875,49 @@ describe("WorldJobsConfigPanel", () => {
     expect(screen.getByRole("button", { name: "Add output" })).toBeDefined();
   });
 
+  it("moves a job to trash via the inline row button", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [createJobRow({ name: "Farming" })],
+        rpcResult: {
+          data: { id: JOB_ID, world_id: WORLD_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    await user.click(
+      screen.getByRole("button", { name: "Move Farming to trash" }),
+    );
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Job moved to trash.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("hides the inline trash button for non-admin users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [createJobRow({ name: "Farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(
+      screen.queryByRole("button", { name: "Move Farming to trash" }),
+    ).toBeNull();
+  });
+
   it("shows inline error for a deleted resource in IO entries", async () => {
     const user = userEvent.setup();
     const jobRow = createJobRow({
@@ -1095,6 +1138,7 @@ function createClient({
   jobRows,
   managedPopulationTypeRows = [],
   resourceRows = [],
+  rpcResult = { data: null, error: null },
   updateResult = { data: createJobRow(), error: null },
 }: {
   readonly depositTypeRows?: readonly TestDepositTypeRow[];
@@ -1105,12 +1149,17 @@ function createClient({
   readonly jobRows: readonly TestJobRow[];
   readonly managedPopulationTypeRows?: readonly TestManagedPopulationTypeRow[];
   readonly resourceRows?: readonly TestResourceRow[];
+  readonly rpcResult?: {
+    readonly data: { readonly id: string; readonly world_id: string } | null;
+    readonly error: { readonly message: string } | null;
+  };
   readonly updateResult?: {
     readonly data: TestJobRow | null;
     readonly error: { readonly message: string } | null;
   };
 }): {
   readonly from: ReturnType<typeof vi.fn>;
+  readonly rpc: ReturnType<typeof vi.fn>;
 } {
   return {
     from: vi.fn((table: string) => {
@@ -1128,6 +1177,9 @@ function createClient({
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
+    rpc: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue(rpcResult),
+    })),
   };
 }
 

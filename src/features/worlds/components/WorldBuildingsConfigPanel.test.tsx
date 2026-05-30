@@ -99,7 +99,7 @@ describe("WorldBuildingsConfigPanel", () => {
     await screen.findByText("Active Blueprint");
     expect(screen.queryByText("Trashed Blueprint")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "View trash" }));
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
 
     expect(screen.getByText("Trashed Blueprint")).toBeDefined();
     expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
@@ -182,6 +182,49 @@ describe("WorldBuildingsConfigPanel", () => {
 
     await screen.findByText("Farmhouse");
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+  });
+
+  it("moves a blueprint to trash via the inline row button", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [createBlueprintRow({ name: "Farmhouse" })],
+        rpcResult: {
+          data: { id: BLUEPRINT_ID, world_id: WORLD_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+    await user.click(
+      screen.getByRole("button", { name: "Move Farmhouse to trash" }),
+    );
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Blueprint moved to trash.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("hides the inline trash button for non-admin users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [createBlueprintRow({ name: "Farmhouse" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+    expect(
+      screen.queryByRole("button", { name: "Move Farmhouse to trash" }),
+    ).toBeNull();
   });
 
   // ── InlineTierDraftForm nested-form regression ───────────────────────────
@@ -444,6 +487,7 @@ function createClient({
   insertResult = { data: createBlueprintRow(), error: null },
   jobRows = [],
   resourceRows = [],
+  rpcResult = { data: null, error: null },
   tierInsertResult = { data: createTierRow(), error: null },
   updateResult = { data: createBlueprintRow(), error: null },
 }: {
@@ -455,6 +499,10 @@ function createClient({
   };
   readonly jobRows?: readonly TestJobRow[];
   readonly resourceRows?: readonly TestResourceRow[];
+  readonly rpcResult?: {
+    readonly data: { readonly id: string; readonly world_id: string } | null;
+    readonly error: { readonly message: string } | null;
+  };
   readonly tierInsertResult?: {
     readonly data: TestTierRow | null;
     readonly error: { readonly message: string } | null;
@@ -465,6 +513,7 @@ function createClient({
   };
 }): {
   readonly from: ReturnType<typeof vi.fn>;
+  readonly rpc: ReturnType<typeof vi.fn>;
 } {
   return {
     from: vi.fn((table: string) => {
@@ -493,6 +542,9 @@ function createClient({
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
+    rpc: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue(rpcResult),
+    })),
   };
 }
 

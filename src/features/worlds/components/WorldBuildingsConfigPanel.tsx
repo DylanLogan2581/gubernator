@@ -246,11 +246,14 @@ function WorldBuildingsConfigPanelContent({
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant={showTrash ? "secondary" : "ghost"}
+            size="icon-sm"
+            aria-label={showTrash ? "Hide trash" : "Show trash"}
+            aria-pressed={showTrash}
+            title={showTrash ? "Hide trash" : "Show trash"}
             onClick={onToggleTrash}
           >
-            {showTrash ? "Hide trash" : "View trash"}
+            <Trash2 aria-hidden="true" />
           </Button>
           {canEdit && !showCreateForm && !showTrash ? (
             <Button
@@ -349,6 +352,7 @@ function BlueprintList({
             key={blueprint.id}
             blueprint={blueprint}
             canEdit={canEdit}
+            queryClient={queryClient}
             worldId={worldId}
             onEdit={() => {
               onEditingChange(blueprint.id);
@@ -363,20 +367,44 @@ function BlueprintList({
 function BlueprintRow({
   blueprint,
   canEdit,
+  queryClient,
   worldId,
   onEdit,
 }: {
   readonly blueprint: BuildingBlueprint;
   readonly canEdit: boolean;
   readonly onEdit: () => void;
+  readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
+  const softDeleteMutation = useMutation(
+    softDeleteBlueprintMutationOptions({ queryClient }),
+  );
+
+  function handleTrash(): void {
+    softDeleteMutation.mutate(
+      { blueprintId: blueprint.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to move blueprint to trash.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Blueprint moved to trash.");
+        },
+      },
+    );
+  }
+
   return (
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <span className="text-sm font-medium">{blueprint.name}</span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <Link
           to="/worlds/$worldId/configuration"
           params={{ worldId }}
@@ -388,6 +416,19 @@ function BlueprintRow({
         {canEdit ? (
           <Button type="button" variant="outline" size="sm" onClick={onEdit}>
             Edit
+          </Button>
+        ) : null}
+        {canEdit ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Move ${blueprint.name} to trash`}
+            title="Move to trash"
+            disabled={softDeleteMutation.isPending}
+            onClick={handleTrash}
+          >
+            <Trash2 aria-hidden="true" />
           </Button>
         ) : null}
       </div>

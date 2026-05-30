@@ -146,11 +146,14 @@ function WorldDepositsConfigPanelContent({
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant={showTrash ? "secondary" : "ghost"}
+            size="icon-sm"
+            aria-label={showTrash ? "Hide trash" : "Show trash"}
+            aria-pressed={showTrash}
+            title={showTrash ? "Hide trash" : "Show trash"}
             onClick={onToggleTrash}
           >
-            {showTrash ? "Hide trash" : "View trash"}
+            <Trash2 aria-hidden="true" />
           </Button>
           {canEdit && !showCreateForm && !showTrash ? (
             <Button
@@ -274,6 +277,8 @@ function DepositTypeList({
             canEdit={canEdit}
             depositJobs={depositJobs}
             depositType={depositType}
+            queryClient={queryClient}
+            worldId={worldId}
             onEdit={() => {
               onEditingChange(depositType.id);
             }}
@@ -288,14 +293,39 @@ function DepositTypeRow({
   depositType,
   canEdit,
   depositJobs,
+  queryClient,
+  worldId,
   onEdit,
 }: {
   readonly depositType: DepositType;
   readonly canEdit: boolean;
   readonly depositJobs: readonly JobDefinition[];
   readonly onEdit: () => void;
+  readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): JSX.Element {
   const linkedJob = depositJobs.find((j) => j.id === depositType.jobId);
+  const softDeleteMutation = useMutation(
+    softDeleteDepositTypeMutationOptions({ queryClient }),
+  );
+
+  function handleTrash(): void {
+    softDeleteMutation.mutate(
+      { depositTypeId: depositType.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to move deposit type to trash.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Deposit type moved to trash.");
+        },
+      },
+    );
+  }
 
   return (
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
@@ -306,11 +336,26 @@ function DepositTypeRow({
           {linkedJob !== undefined ? ` · ${linkedJob.name}` : null}
         </span>
       </div>
-      {canEdit ? (
-        <Button type="button" variant="outline" size="sm" onClick={onEdit}>
-          Edit
-        </Button>
-      ) : null}
+      <div className="flex items-center gap-3">
+        {canEdit ? (
+          <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+            Edit
+          </Button>
+        ) : null}
+        {canEdit ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Move ${depositType.name} to trash`}
+            title="Move to trash"
+            disabled={softDeleteMutation.isPending}
+            onClick={handleTrash}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
+        ) : null}
+      </div>
     </li>
   );
 }
