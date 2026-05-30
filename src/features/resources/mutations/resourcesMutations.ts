@@ -231,11 +231,10 @@ async function softDeleteResource(
   const values = parseInput(softDeleteResourceInputSchema, input);
 
   const { data, error } = await client
-    .from("resources")
-    .update({ is_deleted: true })
-    .eq("id", values.resourceId)
-    .eq("world_id", values.worldId)
-    .select("id,world_id")
+    .rpc("soft_delete_resource", {
+      p_resource_id: values.resourceId,
+      p_world_id: values.worldId,
+    })
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {

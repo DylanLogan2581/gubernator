@@ -1726,6 +1726,27 @@ export type Database = {
           ready_set_at: string;
         }[];
       };
+      soft_delete_resource: {
+        Args: { p_resource_id: string; p_world_id: string };
+        Returns: {
+          base_stockpile_cap: number;
+          created_at: string;
+          id: string;
+          is_deleted: boolean;
+          is_system_resource: boolean;
+          last_cleanup_summary_json: Json | null;
+          name: string;
+          slug: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "resources";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       unlink_user_from_citizen: {
         Args: { p_citizen_id: string };
         Returns: {
