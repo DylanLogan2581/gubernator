@@ -29,7 +29,11 @@ type ResourceRow = {
   readonly world_id: string;
 };
 
-type DeleteRow = { readonly id: string; readonly world_id: string };
+type DeleteRow = {
+  readonly id: string;
+  readonly last_cleanup_summary_json: Json;
+  readonly world_id: string;
+};
 
 describe("createResourceMutationOptions", () => {
   it("rejects a blank name before touching the Supabase client", async () => {
@@ -246,8 +250,12 @@ describe("softDeleteResourceMutationOptions", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("calls soft_delete_resource RPC and returns resourceId and worldId", async () => {
-    const deleteRow: DeleteRow = { id: RESOURCE_ID, world_id: WORLD_ID };
+  it("calls soft_delete_resource RPC and returns resourceId, worldId, and cleanupSummary", async () => {
+    const deleteRow: DeleteRow = {
+      id: RESOURCE_ID,
+      last_cleanup_summary_json: null,
+      world_id: WORLD_ID,
+    };
     const { client, calls } = createSoftDeleteClient({
       data: deleteRow,
       error: null,
@@ -260,12 +268,89 @@ describe("softDeleteResourceMutationOptions", () => {
       worldId: WORLD_ID,
     });
 
-    expect(result).toEqual({ resourceId: RESOURCE_ID, worldId: WORLD_ID });
+    expect(result).toMatchObject({
+      resourceId: RESOURCE_ID,
+      worldId: WORLD_ID,
+    });
     expect(calls.rpc).toHaveBeenCalledWith("soft_delete_resource", {
       p_resource_id: RESOURCE_ID,
       p_world_id: WORLD_ID,
     });
     expect(options.mutationKey).toEqual(["resources", "soft-delete-resource"]);
+  });
+
+  it("parses cleanup summary with non-zero counts when references exist", async () => {
+    const deleteRow: DeleteRow = {
+      id: RESOURCE_ID,
+      last_cleanup_summary_json: {
+        building_tier_construction_costs_cleaned: 0,
+        building_tier_effects_cleaned: 1,
+        building_tier_upkeep_costs_cleaned: 0,
+        cleaned_at: "2026-05-30T00:00:00.000Z",
+        deposit_types_worker_inputs_cleaned: 2,
+        job_definitions_inputs_cleaned: 3,
+        job_definitions_outputs_cleaned: 0,
+        managed_population_culling_outputs_cleaned: 0,
+        managed_population_maintenance_cleaned: 0,
+      },
+      world_id: WORLD_ID,
+    };
+    const { client } = createSoftDeleteClient({ data: deleteRow, error: null });
+    const queryClient = createQueryClient();
+    const options = softDeleteResourceMutationOptions({ client, queryClient });
+
+    const result = await executeMutation(queryClient, options, {
+      resourceId: RESOURCE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result).toMatchObject({
+      cleanupSummary: {
+        buildingTierEffectsCleaned: 1,
+        depositTypesWorkerInputsCleaned: 2,
+        jobDefinitionsInputsCleaned: 3,
+        jobDefinitionsOutputsCleaned: 0,
+      },
+    });
+  });
+
+  it("returns all-zero cleanup summary when no references exist", async () => {
+    const deleteRow: DeleteRow = {
+      id: RESOURCE_ID,
+      last_cleanup_summary_json: {
+        building_tier_construction_costs_cleaned: 0,
+        building_tier_effects_cleaned: 0,
+        building_tier_upkeep_costs_cleaned: 0,
+        cleaned_at: "2026-05-30T00:00:00.000Z",
+        deposit_types_worker_inputs_cleaned: 0,
+        job_definitions_inputs_cleaned: 0,
+        job_definitions_outputs_cleaned: 0,
+        managed_population_culling_outputs_cleaned: 0,
+        managed_population_maintenance_cleaned: 0,
+      },
+      world_id: WORLD_ID,
+    };
+    const { client } = createSoftDeleteClient({ data: deleteRow, error: null });
+    const queryClient = createQueryClient();
+    const options = softDeleteResourceMutationOptions({ client, queryClient });
+
+    const result = await executeMutation(queryClient, options, {
+      resourceId: RESOURCE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result).toMatchObject({
+      cleanupSummary: {
+        buildingTierConstructionCostsCleaned: 0,
+        buildingTierEffectsCleaned: 0,
+        buildingTierUpkeepCostsCleaned: 0,
+        depositTypesWorkerInputsCleaned: 0,
+        jobDefinitionsInputsCleaned: 0,
+        jobDefinitionsOutputsCleaned: 0,
+        managedPopulationCullingOutputsCleaned: 0,
+        managedPopulationMaintenanceCleaned: 0,
+      },
+    });
   });
 
   it("raises resource_not_found when RPC returns no row", async () => {

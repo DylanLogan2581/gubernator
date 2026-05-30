@@ -37,6 +37,7 @@ export type {
 export type {
   HardDeleteResourceResult,
   Resource,
+  ResourceCleanupSummary,
   RestoreResourceResult,
   SoftDeleteResourceResult,
 } from "./types/resourceTypes";

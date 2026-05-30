@@ -13,7 +13,19 @@ export type Resource = {
   readonly worldId: string;
 };
 
+export type ResourceCleanupSummary = {
+  readonly buildingTierConstructionCostsCleaned: number;
+  readonly buildingTierEffectsCleaned: number;
+  readonly buildingTierUpkeepCostsCleaned: number;
+  readonly depositTypesWorkerInputsCleaned: number;
+  readonly jobDefinitionsInputsCleaned: number;
+  readonly jobDefinitionsOutputsCleaned: number;
+  readonly managedPopulationCullingOutputsCleaned: number;
+  readonly managedPopulationMaintenanceCleaned: number;
+};
+
 export type SoftDeleteResourceResult = {
+  readonly cleanupSummary: ResourceCleanupSummary;
   readonly resourceId: string;
   readonly worldId: string;
 };
