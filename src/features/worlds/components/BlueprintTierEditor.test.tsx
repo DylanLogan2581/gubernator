@@ -462,6 +462,9 @@ type TestResourceRow = {
 type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
+  readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly never[];
   readonly is_active: boolean;
@@ -531,6 +534,9 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
   return {
     base_capacity: null,
     created_at: "2026-01-01T00:00:00.000Z",
+    culling_mpt: [],
+    deposit_types: [],
+    husbandry_mpt: [],
     id: JOB_ID,
     inputs_json: [],
     is_active: true,

@@ -78,7 +78,7 @@ describe("WorldJobsConfigPanel", () => {
     expect(within(listItem).getByText("farming")).toBeDefined();
   });
 
-  it("shows archived jobs and badge when toggle is active", async () => {
+  it("shows trashed jobs when trash view is toggled", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -87,22 +87,21 @@ describe("WorldJobsConfigPanel", () => {
           createJobRow({
             id: "00000000-0000-0000-0000-000000000003",
             is_active: false,
-            name: "Archived Job",
+            name: "Trashed Job",
           }),
         ],
       }),
     );
 
-    renderPanel({ canAdmin: false, isArchived: false });
+    renderPanel({ canAdmin: true, isArchived: false });
 
     await screen.findByText("Active Job");
-    expect(screen.queryByText("Archived Job")).toBeNull();
+    expect(screen.queryByText("Trashed Job")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Show archived" }));
+    await user.click(screen.getByRole("button", { name: "View trash" }));
 
-    expect(screen.getByText("Archived Job")).toBeDefined();
-    expect(screen.getByText("archived")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Hide archived" })).toBeDefined();
+    expect(screen.getByText("Trashed Job")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
   });
 
   it("filters jobs by type", async () => {
@@ -720,6 +719,9 @@ function createQueryClient(): QueryClient {
 type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
+  readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly {
     amount_per_worker: number;
@@ -747,6 +749,7 @@ type TestDepositTypeRow = {
   readonly job_id: string;
   readonly name: string;
   readonly output_units_per_worker: number;
+  readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly slug: string;
   readonly updated_at: string;
   readonly worker_inputs_json: readonly unknown[];
@@ -764,6 +767,7 @@ type TestManagedPopulationTypeRow = {
   readonly is_active: boolean;
   readonly maintenance_rules_json: readonly unknown[];
   readonly name: string;
+  readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -786,6 +790,9 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
   return {
     base_capacity: null,
     created_at: "2026-01-01T00:00:00.000Z",
+    culling_mpt: [],
+    deposit_types: [],
+    husbandry_mpt: [],
     id: JOB_ID,
     inputs_json: [],
     is_active: true,
@@ -812,6 +819,7 @@ function createDepositTypeRow(
     job_id: JOB_ID,
     name: "Test Deposit Type",
     output_units_per_worker: 1,
+    referencing_jobs: [],
     slug: "test-deposit-type",
     updated_at: "2026-01-01T00:00:00.000Z",
     worker_inputs_json: [],
@@ -834,6 +842,7 @@ function createManagedPopulationTypeRow(
     is_active: true,
     maintenance_rules_json: [],
     name: "Test Population",
+    referencing_jobs: [],
     slug: "test-population",
     updated_at: "2026-01-01T00:00:00.000Z",
     world_id: WORLD_ID,

@@ -17,3 +17,13 @@ export type SoftDeleteResourceResult = {
   readonly resourceId: string;
   readonly worldId: string;
 };
+
+export type RestoreResourceResult = {
+  readonly resourceId: string;
+  readonly worldId: string;
+};
+
+export type HardDeleteResourceResult = {
+  readonly resourceId: string;
+  readonly worldId: string;
+};

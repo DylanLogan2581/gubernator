@@ -4,8 +4,10 @@
 export {
   JobMutationError,
   createJobMutationOptions,
+  hardDeleteJobMutationOptions,
   isJobMutationError,
-  setJobActiveMutationOptions,
+  restoreJobMutationOptions,
+  softDeleteJobMutationOptions,
   updateJobMutationOptions,
 } from "./mutations/jobsMutations";
 export {
@@ -17,8 +19,10 @@ export {
 export { jobsQueryKeys } from "./queries/jobsQueryKeys";
 export {
   createJobInputSchema,
+  hardDeleteJobInputSchema,
   jobIoEntrySchema,
-  setJobActiveInputSchema,
+  restoreJobInputSchema,
+  softDeleteJobInputSchema,
   updateJobInputSchema,
 } from "./schemas/jobSchemas";
 export { validateJobReferencesAgainstWorld } from "./utils/validateJobReferences";
@@ -27,17 +31,23 @@ export type { JobMutationIssue } from "./mutations/jobsMutations";
 export type {
   CreateJobInput,
   CreateJobValues,
+  HardDeleteJobInput,
+  HardDeleteJobValues,
   JobIoEntryInput,
   JobIoEntryValues,
-  SetJobActiveInput,
-  SetJobActiveValues,
+  RestoreJobInput,
+  RestoreJobValues,
+  SoftDeleteJobInput,
+  SoftDeleteJobValues,
   UpdateJobInput,
   UpdateJobValues,
 } from "./schemas/jobSchemas";
 export type {
+  HardDeleteJobResult,
   JobDefinition,
   JobIoEntry,
   JobType,
-  SetJobActiveResult,
+  RestoreJobResult,
+  SoftDeleteJobResult,
 } from "./types/jobTypes";
 export type { JobReferenceIssue } from "./utils/validateJobReferences";

@@ -18,8 +18,10 @@ import { activeDepositTypesByWorldQueryOptions } from "@/features/deposits";
 import {
   createJobInputSchema,
   createJobMutationOptions,
+  hardDeleteJobMutationOptions,
   jobsByWorldQueryOptions,
-  setJobActiveMutationOptions,
+  restoreJobMutationOptions,
+  softDeleteJobMutationOptions,
   updateJobInputSchema,
   updateJobMutationOptions,
   validateJobReferencesAgainstWorld,
@@ -78,7 +80,7 @@ export function WorldJobsConfigPanel({
   worldId,
 }: WorldJobsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
-  const [showArchived, setShowArchived] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
 
   if (jobsQuery.isPending) {
@@ -107,8 +109,8 @@ export function WorldJobsConfigPanel({
   }
 
   const allJobs = jobsQuery.data;
-  const visibleJobs = showArchived
-    ? allJobs
+  const visibleJobs = showTrash
+    ? allJobs.filter((job) => !job.isActive)
     : allJobs.filter((job) => job.isActive);
 
   return (
@@ -117,10 +119,10 @@ export function WorldJobsConfigPanel({
       isArchived={isArchived}
       jobs={visibleJobs}
       queryClient={queryClient}
-      showArchived={showArchived}
+      showTrash={showTrash}
       worldId={worldId}
-      onToggleArchived={() => {
-        setShowArchived((v) => !v);
+      onToggleTrash={() => {
+        setShowTrash((v) => !v);
       }}
     />
   );
@@ -131,16 +133,16 @@ function WorldJobsConfigPanelContent({
   isArchived,
   jobs,
   queryClient,
-  showArchived,
+  showTrash,
   worldId,
-  onToggleArchived,
+  onToggleTrash,
 }: {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly jobs: readonly JobDefinition[];
-  readonly onToggleArchived: () => void;
+  readonly onToggleTrash: () => void;
   readonly queryClient: QueryClient;
-  readonly showArchived: boolean;
+  readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
   const createMutation = useMutation(createJobMutationOptions({ queryClient }));
@@ -171,11 +173,11 @@ function WorldJobsConfigPanelContent({
             type="button"
             variant="outline"
             size="sm"
-            onClick={onToggleArchived}
+            onClick={onToggleTrash}
           >
-            {showArchived ? "Hide archived" : "Show archived"}
+            {showTrash ? "Hide trash" : "View trash"}
           </Button>
-          {canEdit && !showForm ? (
+          {canEdit && !showForm && !showTrash ? (
             <Button
               type="button"
               variant="outline"
@@ -235,10 +237,12 @@ function WorldJobsConfigPanelContent({
           editingJobId={editingJobId}
           jobs={filteredJobs}
           queryClient={queryClient}
-          showArchived={showArchived}
+          showTrash={showTrash}
           worldId={worldId}
           onEditingChange={setEditingJobId}
         />
+      ) : showTrash ? (
+        <p className="text-sm text-muted-foreground">No trashed jobs.</p>
       ) : typeFilter !== "all" ? (
         <p className="text-sm text-muted-foreground">
           No {JOB_TYPE_LABELS[typeFilter].toLowerCase()} jobs.
@@ -250,7 +254,7 @@ function WorldJobsConfigPanelContent({
         />
       ) : null}
 
-      {canEdit && showForm ? (
+      {canEdit && showForm && !showTrash ? (
         <CreateJobForm
           isPending={createMutation.isPending}
           worldId={worldId}
@@ -283,7 +287,7 @@ function JobList({
   editingJobId,
   jobs,
   queryClient,
-  showArchived,
+  showTrash,
   worldId,
   onEditingChange,
 }: {
@@ -292,13 +296,23 @@ function JobList({
   readonly jobs: readonly JobDefinition[];
   readonly onEditingChange: (id: string | null) => void;
   readonly queryClient: QueryClient;
-  readonly showArchived: boolean;
+  readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
   return (
     <ul aria-label="Jobs" className="grid gap-2">
-      {jobs.map((job) =>
-        editingJobId === job.id ? (
+      {jobs.map((job) => {
+        if (showTrash) {
+          return (
+            <TrashedJobRow
+              key={job.id}
+              job={job}
+              queryClient={queryClient}
+              worldId={worldId}
+            />
+          );
+        }
+        return editingJobId === job.id ? (
           <li key={job.id}>
             <EditJobForm
               job={job}
@@ -314,13 +328,12 @@ function JobList({
             key={job.id}
             canEdit={canEdit}
             job={job}
-            showArchived={showArchived}
             onEdit={() => {
               onEditingChange(job.id);
             }}
           />
-        ),
-      )}
+        );
+      })}
     </ul>
   );
 }
@@ -328,13 +341,11 @@ function JobList({
 function JobRow({
   canEdit,
   job,
-  showArchived,
   onEdit,
 }: {
   readonly canEdit: boolean;
   readonly job: JobDefinition;
   readonly onEdit: () => void;
-  readonly showArchived: boolean;
 }): JSX.Element {
   return (
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
@@ -342,9 +353,6 @@ function JobRow({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{job.name}</span>
           <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
-          {showArchived && !job.isActive ? (
-            <Badge variant="outline">archived</Badge>
-          ) : null}
         </div>
         <span className="text-xs text-muted-foreground">{job.slug}</span>
       </div>
@@ -355,6 +363,99 @@ function JobRow({
             Edit
           </Button>
         ) : null}
+      </div>
+    </li>
+  );
+}
+
+function TrashedJobRow({
+  job,
+  queryClient,
+  worldId,
+}: {
+  readonly job: JobDefinition;
+  readonly queryClient: QueryClient;
+  readonly worldId: string;
+}): JSX.Element {
+  const restoreMutation = useMutation(
+    restoreJobMutationOptions({ queryClient }),
+  );
+  const hardDeleteMutation = useMutation(
+    hardDeleteJobMutationOptions({ queryClient }),
+  );
+  const isPending = restoreMutation.isPending || hardDeleteMutation.isPending;
+
+  function handleRestore(): void {
+    restoreMutation.mutate(
+      { jobId: job.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error ? error.message : "Failed to restore job.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Job restored.");
+        },
+      },
+    );
+  }
+
+  function handleHardDelete(): void {
+    hardDeleteMutation.mutate(
+      { jobId: job.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to permanently delete job.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Job permanently deleted.");
+        },
+      },
+    );
+  }
+
+  return (
+    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 opacity-60">
+      <div className="grid gap-0.5">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{job.name}</span>
+          <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
+          <Badge variant="outline">trashed</Badge>
+        </div>
+        <span className="text-xs text-muted-foreground">{job.slug}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={handleRestore}
+        >
+          Restore
+        </Button>
+        {job.hasActiveReferences ? (
+          <span title="Cannot permanently delete: this job is still referenced by deposit types or managed population types.">
+            <Button type="button" variant="destructive" size="sm" disabled>
+              Delete permanently
+            </Button>
+          </span>
+        ) : (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={isPending}
+            onClick={handleHardDelete}
+          >
+            Delete permanently
+          </Button>
+        )}
       </div>
     </li>
   );
@@ -434,8 +535,8 @@ function EditJobForm({
   readonly worldId: string;
 }): JSX.Element {
   const updateMutation = useMutation(updateJobMutationOptions({ queryClient }));
-  const setActiveMutation = useMutation(
-    setJobActiveMutationOptions({ queryClient }),
+  const softDeleteMutation = useMutation(
+    softDeleteJobMutationOptions({ queryClient }),
   );
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const depositTypesQuery = useQuery(
@@ -447,7 +548,6 @@ function EditJobForm({
 
   const [name, setName] = useState(job.name);
   const [slug, setSlug] = useState(job.slug);
-  const [isActive, setIsActive] = useState(job.isActive);
   const [baseCapacity, setBaseCapacity] = useState(
     job.baseCapacity !== null ? String(job.baseCapacity) : "",
   );
@@ -469,7 +569,7 @@ function EditJobForm({
   );
   const [fieldErrors, setFieldErrors] = useState<EditJobFieldErrors>({});
 
-  const isPending = updateMutation.isPending || setActiveMutation.isPending;
+  const isPending = updateMutation.isPending || softDeleteMutation.isPending;
   const resources = resourcesQuery.data ?? [];
   const activeDepositTypes = depositTypesQuery.data ?? [];
   const allManagedPopTypes = managedPopTypesQuery.data ?? [];
@@ -587,18 +687,23 @@ function EditJobForm({
 
     try {
       await updateMutation.mutateAsync(updateInput);
-      if (isActive !== job.isActive) {
-        await setActiveMutation.mutateAsync({
-          isActive,
-          jobId: job.id,
-          worldId,
-        });
-      }
       notifyMutationSuccess("Job saved.");
       onClose();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save job.",
+      );
+    }
+  }
+
+  async function handleTrash(): Promise<void> {
+    try {
+      await softDeleteMutation.mutateAsync({ jobId: job.id, worldId });
+      notifyMutationSuccess("Job moved to trash.");
+      onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to move job to trash.",
       );
     }
   }
@@ -751,32 +856,34 @@ function EditJobForm({
           rows={outputRows}
           onChange={setOutputRows}
         />
-
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={isActive}
-            disabled={isPending}
-            onChange={(e) => {
-              setIsActive(e.currentTarget.checked);
-            }}
-          />
-          <span className="text-muted-foreground">Active</span>
-        </label>
       </div>
 
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
-          Save
-        </Button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={isPending}>
+            Save
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+        </div>
         <Button
           type="button"
           variant="outline"
           size="sm"
           disabled={isPending}
-          onClick={onClose}
+          onClick={() => {
+            void handleTrash();
+          }}
         >
-          Cancel
+          <Trash2 aria-hidden="true" />
+          Move to trash
         </Button>
       </div>
     </form>

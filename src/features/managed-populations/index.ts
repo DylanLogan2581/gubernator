@@ -5,8 +5,10 @@
 export {
   ManagedPopulationTypeMutationError,
   createManagedPopulationTypeMutationOptions,
+  hardDeleteManagedPopulationTypeMutationOptions,
   isManagedPopulationTypeMutationError,
-  setManagedPopulationTypeActiveMutationOptions,
+  restoreManagedPopulationTypeMutationOptions,
+  softDeleteManagedPopulationTypeMutationOptions,
   updateManagedPopulationTypeMutationOptions,
 } from "./mutations/managedPopulationsMutations";
 export {
@@ -17,8 +19,10 @@ export {
 export { managedPopulationsQueryKeys } from "./queries/managedPopulationsQueryKeys";
 export {
   createManagedPopulationTypeInputSchema,
+  hardDeleteManagedPopulationTypeInputSchema,
   populationResourceEntrySchema,
-  setManagedPopulationTypeActiveInputSchema,
+  restoreManagedPopulationTypeInputSchema,
+  softDeleteManagedPopulationTypeInputSchema,
   updateManagedPopulationTypeInputSchema,
 } from "./schemas/managedPopulationSchemas";
 export { validateManagedPopulationTypeReferencesAgainstWorld } from "./utils/validateManagedPopulationTypeReferences";
@@ -27,16 +31,22 @@ export type { ManagedPopulationTypeMutationIssue } from "./mutations/managedPopu
 export type {
   CreateManagedPopulationTypeInput,
   CreateManagedPopulationTypeValues,
+  HardDeleteManagedPopulationTypeInput,
+  HardDeleteManagedPopulationTypeValues,
   PopulationResourceEntryInput,
   PopulationResourceEntryValues,
-  SetManagedPopulationTypeActiveInput,
-  SetManagedPopulationTypeActiveValues,
+  RestoreManagedPopulationTypeInput,
+  RestoreManagedPopulationTypeValues,
+  SoftDeleteManagedPopulationTypeInput,
+  SoftDeleteManagedPopulationTypeValues,
   UpdateManagedPopulationTypeInput,
   UpdateManagedPopulationTypeValues,
 } from "./schemas/managedPopulationSchemas";
 export type {
+  HardDeleteManagedPopulationTypeResult,
   ManagedPopulationType,
   PopulationResourceEntry,
-  SetManagedPopulationTypeActiveResult,
+  RestoreManagedPopulationTypeResult,
+  SoftDeleteManagedPopulationTypeResult,
 } from "./types/managedPopulationTypes";
 export type { ManagedPopulationTypeReferenceIssue } from "./utils/validateManagedPopulationTypeReferences";

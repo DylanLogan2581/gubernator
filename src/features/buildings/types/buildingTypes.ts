@@ -49,9 +49,18 @@ export type BuildingBlueprintTier = {
   readonly workerTurnsRequired: number;
 };
 
-export type SetBlueprintActiveResult = {
+export type SoftDeleteBlueprintResult = {
   readonly blueprintId: string;
-  readonly isActive: boolean;
+  readonly worldId: string;
+};
+
+export type RestoreBlueprintResult = {
+  readonly blueprintId: string;
+  readonly worldId: string;
+};
+
+export type HardDeleteBlueprintResult = {
+  readonly blueprintId: string;
   readonly worldId: string;
 };
 

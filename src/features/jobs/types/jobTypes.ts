@@ -15,6 +15,7 @@ export type JobIoEntry = {
 export type JobDefinition = {
   readonly baseCapacity: number | null;
   readonly createdAt: string;
+  readonly hasActiveReferences: boolean;
   readonly id: string;
   readonly inputsJson: readonly JobIoEntry[];
   readonly isActive: boolean;
@@ -29,8 +30,17 @@ export type JobDefinition = {
   readonly worldId: string;
 };
 
-export type SetJobActiveResult = {
-  readonly isActive: boolean;
+export type SoftDeleteJobResult = {
+  readonly jobId: string;
+  readonly worldId: string;
+};
+
+export type RestoreJobResult = {
+  readonly jobId: string;
+  readonly worldId: string;
+};
+
+export type HardDeleteJobResult = {
   readonly jobId: string;
   readonly worldId: string;
 };

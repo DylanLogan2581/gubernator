@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
@@ -19,7 +19,9 @@ import {
   blueprintsByWorldQueryOptions,
   createBlueprintInputSchema,
   createBlueprintMutationOptions,
-  setBlueprintActiveMutationOptions,
+  hardDeleteBlueprintMutationOptions,
+  restoreBlueprintMutationOptions,
+  softDeleteBlueprintMutationOptions,
   updateBlueprintInputSchema,
   updateBlueprintMutationOptions,
   type BuildingBlueprint,
@@ -76,7 +78,7 @@ function BlueprintListPanel({
   readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
-  const [showArchived, setShowArchived] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
 
   if (blueprintsQuery.isPending) {
@@ -105,8 +107,8 @@ function BlueprintListPanel({
   }
 
   const allBlueprints = blueprintsQuery.data;
-  const visibleBlueprints = showArchived
-    ? allBlueprints
+  const visibleBlueprints = showTrash
+    ? allBlueprints.filter((bp) => !bp.isActive)
     : allBlueprints.filter((bp) => bp.isActive);
 
   return (
@@ -115,10 +117,10 @@ function BlueprintListPanel({
       canAdmin={canAdmin}
       isArchived={isArchived}
       queryClient={queryClient}
-      showArchived={showArchived}
+      showTrash={showTrash}
       worldId={worldId}
-      onToggleArchived={() => {
-        setShowArchived((v) => !v);
+      onToggleTrash={() => {
+        setShowTrash((v) => !v);
       }}
     />
   );
@@ -129,16 +131,16 @@ function WorldBuildingsConfigPanelContent({
   canAdmin,
   isArchived,
   queryClient,
-  showArchived,
+  showTrash,
   worldId,
-  onToggleArchived,
+  onToggleTrash,
 }: {
   readonly blueprints: readonly BuildingBlueprint[];
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
-  readonly onToggleArchived: () => void;
+  readonly onToggleTrash: () => void;
   readonly queryClient: QueryClient;
-  readonly showArchived: boolean;
+  readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
   const createMutation = useMutation(
@@ -167,11 +169,11 @@ function WorldBuildingsConfigPanelContent({
             type="button"
             variant="outline"
             size="sm"
-            onClick={onToggleArchived}
+            onClick={onToggleTrash}
           >
-            {showArchived ? "Hide archived" : "Show archived"}
+            {showTrash ? "Hide trash" : "View trash"}
           </Button>
-          {canEdit && !showCreateForm ? (
+          {canEdit && !showCreateForm && !showTrash ? (
             <Button
               type="button"
               variant="outline"
@@ -193,10 +195,12 @@ function WorldBuildingsConfigPanelContent({
           canEdit={canEdit}
           editingBlueprintId={editingBlueprintId}
           queryClient={queryClient}
-          showArchived={showArchived}
+          showTrash={showTrash}
           worldId={worldId}
           onEditingChange={setEditingBlueprintId}
         />
+      ) : showTrash ? (
+        <p className="text-sm text-muted-foreground">No trashed blueprints.</p>
       ) : !showCreateForm ? (
         <EmptyState
           title="No blueprints yet"
@@ -204,7 +208,7 @@ function WorldBuildingsConfigPanelContent({
         />
       ) : null}
 
-      {canEdit && showCreateForm ? (
+      {canEdit && showCreateForm && !showTrash ? (
         <CreateBlueprintForm
           isPending={createMutation.isPending}
           worldId={worldId}
@@ -237,7 +241,7 @@ function BlueprintList({
   canEdit,
   editingBlueprintId,
   queryClient,
-  showArchived,
+  showTrash,
   worldId,
   onEditingChange,
 }: {
@@ -246,13 +250,23 @@ function BlueprintList({
   readonly editingBlueprintId: string | null;
   readonly onEditingChange: (id: string | null) => void;
   readonly queryClient: QueryClient;
-  readonly showArchived: boolean;
+  readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
   return (
     <ul aria-label="Blueprints" className="grid gap-2">
-      {blueprints.map((blueprint) =>
-        editingBlueprintId === blueprint.id ? (
+      {blueprints.map((blueprint) => {
+        if (showTrash) {
+          return (
+            <TrashedBlueprintRow
+              key={blueprint.id}
+              blueprint={blueprint}
+              queryClient={queryClient}
+              worldId={worldId}
+            />
+          );
+        }
+        return editingBlueprintId === blueprint.id ? (
           <li key={blueprint.id}>
             <EditBlueprintForm
               blueprint={blueprint}
@@ -268,14 +282,13 @@ function BlueprintList({
             key={blueprint.id}
             blueprint={blueprint}
             canEdit={canEdit}
-            showArchived={showArchived}
             worldId={worldId}
             onEdit={() => {
               onEditingChange(blueprint.id);
             }}
           />
-        ),
-      )}
+        );
+      })}
     </ul>
   );
 }
@@ -283,25 +296,18 @@ function BlueprintList({
 function BlueprintRow({
   blueprint,
   canEdit,
-  showArchived,
   worldId,
   onEdit,
 }: {
   readonly blueprint: BuildingBlueprint;
   readonly canEdit: boolean;
   readonly onEdit: () => void;
-  readonly showArchived: boolean;
   readonly worldId: string;
 }): JSX.Element {
   return (
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{blueprint.name}</span>
-          {showArchived && !blueprint.isActive ? (
-            <Badge variant="outline">archived</Badge>
-          ) : null}
-        </div>
+        <span className="text-sm font-medium">{blueprint.name}</span>
         <span className="text-xs text-muted-foreground">{blueprint.slug}</span>
       </div>
       <div className="flex items-center gap-2">
@@ -318,6 +324,92 @@ function BlueprintRow({
             Edit
           </Button>
         ) : null}
+      </div>
+    </li>
+  );
+}
+
+function TrashedBlueprintRow({
+  blueprint,
+  queryClient,
+  worldId,
+}: {
+  readonly blueprint: BuildingBlueprint;
+  readonly queryClient: QueryClient;
+  readonly worldId: string;
+}): JSX.Element {
+  const restoreMutation = useMutation(
+    restoreBlueprintMutationOptions({ queryClient }),
+  );
+  const hardDeleteMutation = useMutation(
+    hardDeleteBlueprintMutationOptions({ queryClient }),
+  );
+  const isPending = restoreMutation.isPending || hardDeleteMutation.isPending;
+
+  function handleRestore(): void {
+    restoreMutation.mutate(
+      { blueprintId: blueprint.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to restore blueprint.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Blueprint restored.");
+        },
+      },
+    );
+  }
+
+  function handleHardDelete(): void {
+    hardDeleteMutation.mutate(
+      { blueprintId: blueprint.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to permanently delete blueprint.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Blueprint permanently deleted.");
+        },
+      },
+    );
+  }
+
+  return (
+    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 opacity-60">
+      <div className="grid gap-0.5">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{blueprint.name}</span>
+          <Badge variant="outline">trashed</Badge>
+        </div>
+        <span className="text-xs text-muted-foreground">{blueprint.slug}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={handleRestore}
+        >
+          Restore
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          disabled={isPending}
+          onClick={handleHardDelete}
+        >
+          Delete permanently
+        </Button>
       </div>
     </li>
   );
@@ -530,8 +622,8 @@ function EditBlueprintForm({
   const updateMutation = useMutation(
     updateBlueprintMutationOptions({ queryClient }),
   );
-  const setActiveMutation = useMutation(
-    setBlueprintActiveMutationOptions({ queryClient }),
+  const softDeleteMutation = useMutation(
+    softDeleteBlueprintMutationOptions({ queryClient }),
   );
 
   const [name, setName] = useState(blueprint.name);
@@ -545,10 +637,9 @@ function EditBlueprintForm({
       ? String(blueprint.maxInstancesPerSettlement)
       : "",
   );
-  const [isActive, setIsActive] = useState(blueprint.isActive);
   const [fieldErrors, setFieldErrors] = useState<BlueprintFieldErrors>({});
 
-  const isPending = updateMutation.isPending || setActiveMutation.isPending;
+  const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -589,18 +680,28 @@ function EditBlueprintForm({
 
     try {
       await updateMutation.mutateAsync(updateInput);
-      if (isActive !== blueprint.isActive) {
-        await setActiveMutation.mutateAsync({
-          blueprintId: blueprint.id,
-          isActive,
-          worldId,
-        });
-      }
       notifyMutationSuccess("Blueprint saved.");
       onClose();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save blueprint.",
+      );
+    }
+  }
+
+  async function handleTrash(): Promise<void> {
+    try {
+      await softDeleteMutation.mutateAsync({
+        blueprintId: blueprint.id,
+        worldId,
+      });
+      notifyMutationSuccess("Blueprint moved to trash.");
+      onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to move blueprint to trash.",
       );
     }
   }
@@ -705,30 +806,33 @@ function EditBlueprintForm({
             </p>
           ) : null}
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={isActive}
-            disabled={isPending}
-            onChange={(e) => {
-              setIsActive(e.currentTarget.checked);
-            }}
-          />
-          <span className="text-muted-foreground">Active</span>
-        </label>
       </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
-          Save
-        </Button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={isPending}>
+            Save
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+        </div>
         <Button
           type="button"
           variant="outline"
           size="sm"
           disabled={isPending}
-          onClick={onClose}
+          onClick={() => {
+            void handleTrash();
+          }}
         >
-          Cancel
+          <Trash2 aria-hidden="true" />
+          Move to trash
         </Button>
       </div>
     </form>

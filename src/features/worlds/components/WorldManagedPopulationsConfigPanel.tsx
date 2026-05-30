@@ -18,8 +18,10 @@ import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
 import {
   createManagedPopulationTypeInputSchema,
   createManagedPopulationTypeMutationOptions,
+  hardDeleteManagedPopulationTypeMutationOptions,
   managedPopulationTypesByWorldQueryOptions,
-  setManagedPopulationTypeActiveMutationOptions,
+  restoreManagedPopulationTypeMutationOptions,
+  softDeleteManagedPopulationTypeMutationOptions,
   updateManagedPopulationTypeInputSchema,
   updateManagedPopulationTypeMutationOptions,
   type CreateManagedPopulationTypeInput,
@@ -47,7 +49,7 @@ export function WorldManagedPopulationsConfigPanel({
   worldId,
 }: WorldManagedPopulationsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
-  const [showArchived, setShowArchived] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const populationTypesQuery = useQuery(
     managedPopulationTypesByWorldQueryOptions(worldId),
   );
@@ -78,8 +80,8 @@ export function WorldManagedPopulationsConfigPanel({
   }
 
   const allPopulationTypes = populationTypesQuery.data;
-  const visiblePopulationTypes = showArchived
-    ? allPopulationTypes
+  const visiblePopulationTypes = showTrash
+    ? allPopulationTypes.filter((pt) => !pt.isActive)
     : allPopulationTypes.filter((pt) => pt.isActive);
 
   return (
@@ -89,10 +91,10 @@ export function WorldManagedPopulationsConfigPanel({
       isArchived={isArchived}
       populationTypes={visiblePopulationTypes}
       queryClient={queryClient}
-      showArchived={showArchived}
+      showTrash={showTrash}
       worldId={worldId}
-      onToggleArchived={() => {
-        setShowArchived((v) => !v);
+      onToggleTrash={() => {
+        setShowTrash((v) => !v);
       }}
     />
   );
@@ -104,17 +106,17 @@ function WorldManagedPopulationsConfigPanelContent({
   isArchived,
   populationTypes,
   queryClient,
-  showArchived,
+  showTrash,
   worldId,
-  onToggleArchived,
+  onToggleTrash,
 }: {
   readonly allPopulationTypes: readonly ManagedPopulationType[];
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
-  readonly onToggleArchived: () => void;
+  readonly onToggleTrash: () => void;
   readonly populationTypes: readonly ManagedPopulationType[];
   readonly queryClient: QueryClient;
-  readonly showArchived: boolean;
+  readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
   const createMutation = useMutation(
@@ -150,11 +152,11 @@ function WorldManagedPopulationsConfigPanelContent({
             type="button"
             variant="outline"
             size="sm"
-            onClick={onToggleArchived}
+            onClick={onToggleTrash}
           >
-            {showArchived ? "Hide archived" : "Show archived"}
+            {showTrash ? "Hide trash" : "View trash"}
           </Button>
-          {canEdit && !showCreateForm ? (
+          {canEdit && !showCreateForm && !showTrash ? (
             <Button
               type="button"
               variant="outline"
@@ -179,10 +181,14 @@ function WorldManagedPopulationsConfigPanelContent({
           husbandryJobs={husbandryJobs}
           populationTypes={populationTypes}
           queryClient={queryClient}
-          showArchived={showArchived}
+          showTrash={showTrash}
           worldId={worldId}
           onEditingChange={setEditingPopulationTypeId}
         />
+      ) : showTrash ? (
+        <p className="text-sm text-muted-foreground">
+          No trashed managed population types.
+        </p>
       ) : !showCreateForm ? (
         <EmptyState
           title="No managed population types yet"
@@ -190,7 +196,7 @@ function WorldManagedPopulationsConfigPanelContent({
         />
       ) : null}
 
-      {canEdit && showCreateForm ? (
+      {canEdit && showCreateForm && !showTrash ? (
         <CreateManagedPopulationTypeForm
           allPopulationTypes={allPopulationTypes}
           cullingJobs={cullingJobs}
@@ -229,7 +235,7 @@ function ManagedPopulationTypeList({
   husbandryJobs,
   populationTypes,
   queryClient,
-  showArchived,
+  showTrash,
   worldId,
   onEditingChange,
 }: {
@@ -241,13 +247,23 @@ function ManagedPopulationTypeList({
   readonly onEditingChange: (id: string | null) => void;
   readonly populationTypes: readonly ManagedPopulationType[];
   readonly queryClient: QueryClient;
-  readonly showArchived: boolean;
+  readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
   return (
     <ul aria-label="Managed population types" className="grid gap-2">
-      {populationTypes.map((populationType) =>
-        editingPopulationTypeId === populationType.id ? (
+      {populationTypes.map((populationType) => {
+        if (showTrash) {
+          return (
+            <TrashedManagedPopulationTypeRow
+              key={populationType.id}
+              populationType={populationType}
+              queryClient={queryClient}
+              worldId={worldId}
+            />
+          );
+        }
+        return editingPopulationTypeId === populationType.id ? (
           <li key={populationType.id}>
             <EditManagedPopulationTypeForm
               allPopulationTypes={allPopulationTypes}
@@ -268,13 +284,12 @@ function ManagedPopulationTypeList({
             cullingJobs={cullingJobs}
             husbandryJobs={husbandryJobs}
             populationType={populationType}
-            showArchived={showArchived}
             onEdit={() => {
               onEditingChange(populationType.id);
             }}
           />
-        ),
-      )}
+        );
+      })}
     </ul>
   );
 }
@@ -284,7 +299,6 @@ function ManagedPopulationTypeRow({
   canEdit,
   cullingJobs,
   husbandryJobs,
-  showArchived,
   onEdit,
 }: {
   readonly canEdit: boolean;
@@ -292,7 +306,6 @@ function ManagedPopulationTypeRow({
   readonly husbandryJobs: readonly JobDefinition[];
   readonly onEdit: () => void;
   readonly populationType: ManagedPopulationType;
-  readonly showArchived: boolean;
 }): JSX.Element {
   const husbandryJob = husbandryJobs.find(
     (j) => j.id === populationType.husbandryJobId,
@@ -304,12 +317,7 @@ function ManagedPopulationTypeRow({
   return (
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{populationType.name}</span>
-          {showArchived && !populationType.isActive ? (
-            <Badge variant="outline">archived</Badge>
-          ) : null}
-        </div>
+        <span className="text-sm font-medium">{populationType.name}</span>
         <span className="text-xs text-muted-foreground">
           {(populationType.growthRate * 100).toFixed(1)}% growth ·{" "}
           {populationType.husbandryWorkersPerNAnimals.toLocaleString()}{" "}
@@ -323,6 +331,102 @@ function ManagedPopulationTypeRow({
           Edit
         </Button>
       ) : null}
+    </li>
+  );
+}
+
+function TrashedManagedPopulationTypeRow({
+  populationType,
+  queryClient,
+  worldId,
+}: {
+  readonly populationType: ManagedPopulationType;
+  readonly queryClient: QueryClient;
+  readonly worldId: string;
+}): JSX.Element {
+  const restoreMutation = useMutation(
+    restoreManagedPopulationTypeMutationOptions({ queryClient }),
+  );
+  const hardDeleteMutation = useMutation(
+    hardDeleteManagedPopulationTypeMutationOptions({ queryClient }),
+  );
+  const isPending = restoreMutation.isPending || hardDeleteMutation.isPending;
+
+  function handleRestore(): void {
+    restoreMutation.mutate(
+      { managedPopulationTypeId: populationType.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to restore managed population type.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Managed population type restored.");
+        },
+      },
+    );
+  }
+
+  function handleHardDelete(): void {
+    hardDeleteMutation.mutate(
+      { managedPopulationTypeId: populationType.id, worldId },
+      {
+        onError: (error) => {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to permanently delete managed population type.",
+          );
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Managed population type permanently deleted.");
+        },
+      },
+    );
+  }
+
+  return (
+    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 opacity-60">
+      <div className="grid gap-0.5">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{populationType.name}</span>
+          <Badge variant="outline">trashed</Badge>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {(populationType.growthRate * 100).toFixed(1)}% growth
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          onClick={handleRestore}
+        >
+          Restore
+        </Button>
+        {populationType.hasActiveReferences ? (
+          <span title="Cannot permanently delete: this population type is referenced by active job configurations.">
+            <Button type="button" variant="destructive" size="sm" disabled>
+              Delete permanently
+            </Button>
+          </span>
+        ) : (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={isPending}
+            onClick={handleHardDelete}
+          >
+            Delete permanently
+          </Button>
+        )}
+      </div>
     </li>
   );
 }
@@ -666,8 +770,8 @@ function EditManagedPopulationTypeForm({
   const updateMutation = useMutation(
     updateManagedPopulationTypeMutationOptions({ queryClient }),
   );
-  const setActiveMutation = useMutation(
-    setManagedPopulationTypeActiveMutationOptions({ queryClient }),
+  const softDeleteMutation = useMutation(
+    softDeleteManagedPopulationTypeMutationOptions({ queryClient }),
   );
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
 
@@ -688,7 +792,6 @@ function EditManagedPopulationTypeForm({
   const [cullingOutputs, setCullingOutputs] = useState<
     PopulationResourceEntry[]
   >([...populationType.cullingOutputsJson]);
-  const [isActive, setIsActive] = useState(populationType.isActive);
   const [fieldErrors, setFieldErrors] =
     useState<ManagedPopulationTypeFieldErrors>({});
   const [husbandryJobLinkError, setHusbandryJobLinkError] = useState<
@@ -698,7 +801,7 @@ function EditManagedPopulationTypeForm({
     string | undefined
   >(undefined);
 
-  const isPending = updateMutation.isPending || setActiveMutation.isPending;
+  const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
   function handleHusbandryJobChange(selectedId: string): void {
     setHusbandryJobId(selectedId);
@@ -789,13 +892,6 @@ function EditManagedPopulationTypeForm({
 
     try {
       await updateMutation.mutateAsync(updateInput);
-      if (isActive !== populationType.isActive) {
-        await setActiveMutation.mutateAsync({
-          isActive,
-          managedPopulationTypeId: populationType.id,
-          worldId,
-        });
-      }
       notifyMutationSuccess("Managed population type saved.");
       onClose();
     } catch (error) {
@@ -803,6 +899,23 @@ function EditManagedPopulationTypeForm({
         error instanceof Error
           ? error.message
           : "Failed to save managed population type.",
+      );
+    }
+  }
+
+  async function handleTrash(): Promise<void> {
+    try {
+      await softDeleteMutation.mutateAsync({
+        managedPopulationTypeId: populationType.id,
+        worldId,
+      });
+      notifyMutationSuccess("Managed population type moved to trash.");
+      onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to move managed population type to trash.",
       );
     }
   }
@@ -964,30 +1077,33 @@ function EditManagedPopulationTypeForm({
           resources={resources}
           onChange={setCullingOutputs}
         />
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={isActive}
-            disabled={isPending}
-            onChange={(e) => {
-              setIsActive(e.currentTarget.checked);
-            }}
-          />
-          <span className="text-muted-foreground">Active</span>
-        </label>
       </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending || hasJobError}>
-          Save
-        </Button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={isPending || hasJobError}>
+            Save
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+        </div>
         <Button
           type="button"
           variant="outline"
           size="sm"
           disabled={isPending}
-          onClick={onClose}
+          onClick={() => {
+            void handleTrash();
+          }}
         >
-          Cancel
+          <Trash2 aria-hidden="true" />
+          Move to trash
         </Button>
       </div>
     </form>

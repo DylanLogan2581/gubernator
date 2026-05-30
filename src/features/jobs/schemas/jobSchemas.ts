@@ -114,17 +114,30 @@ export const updateJobInputSchema = z
     }
   });
 
-export const setJobActiveInputSchema = z.strictObject({
-  isActive: z.boolean(),
+export const softDeleteJobInputSchema = z.strictObject({
+  jobId: jobIdSchema,
+  worldId: worldIdSchema,
+});
+
+export const restoreJobInputSchema = z.strictObject({
+  jobId: jobIdSchema,
+  worldId: worldIdSchema,
+});
+
+export const hardDeleteJobInputSchema = z.strictObject({
   jobId: jobIdSchema,
   worldId: worldIdSchema,
 });
 
 export type CreateJobInput = z.input<typeof createJobInputSchema>;
 export type CreateJobValues = z.output<typeof createJobInputSchema>;
+export type HardDeleteJobInput = z.input<typeof hardDeleteJobInputSchema>;
+export type HardDeleteJobValues = z.output<typeof hardDeleteJobInputSchema>;
 export type JobIoEntryInput = z.input<typeof jobIoEntrySchema>;
 export type JobIoEntryValues = z.output<typeof jobIoEntrySchema>;
-export type SetJobActiveInput = z.input<typeof setJobActiveInputSchema>;
-export type SetJobActiveValues = z.output<typeof setJobActiveInputSchema>;
+export type RestoreJobInput = z.input<typeof restoreJobInputSchema>;
+export type RestoreJobValues = z.output<typeof restoreJobInputSchema>;
+export type SoftDeleteJobInput = z.input<typeof softDeleteJobInputSchema>;
+export type SoftDeleteJobValues = z.output<typeof softDeleteJobInputSchema>;
 export type UpdateJobInput = z.input<typeof updateJobInputSchema>;
 export type UpdateJobValues = z.output<typeof updateJobInputSchema>;

@@ -1519,6 +1519,41 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      hard_delete_building_blueprint: {
+        Args: { p_blueprint_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
+      hard_delete_deposit_type: {
+        Args: { p_deposit_type_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
+      hard_delete_job_definition: {
+        Args: { p_job_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
+      hard_delete_managed_population_type: {
+        Args: { p_mpt_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
+      hard_delete_resource: {
+        Args: { p_resource_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
@@ -1672,6 +1707,118 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      restore_building_blueprint: {
+        Args: { p_blueprint_id: string; p_world_id: string };
+        Returns: {
+          created_at: string;
+          description: string | null;
+          grace_period_turns: number;
+          id: string;
+          is_active: boolean;
+          max_instances_per_settlement: number | null;
+          name: string;
+          slug: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "building_blueprints";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      restore_deposit_type: {
+        Args: { p_deposit_type_id: string; p_world_id: string };
+        Returns: {
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          job_id: string;
+          name: string;
+          output_units_per_worker: number;
+          slug: string;
+          updated_at: string;
+          worker_inputs_json: Json;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "deposit_types";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      restore_job_definition: {
+        Args: { p_job_id: string; p_world_id: string };
+        Returns: {
+          base_capacity: number | null;
+          created_at: string;
+          id: string;
+          inputs_json: Json;
+          is_active: boolean;
+          job_type: string;
+          linked_deposit_type_id: string | null;
+          linked_managed_population_type_id: string | null;
+          name: string;
+          outputs_json: Json;
+          slug: string;
+          trader_capacity_per_worker: number | null;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "job_definitions";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      restore_managed_population_type: {
+        Args: { p_mpt_id: string; p_world_id: string };
+        Returns: {
+          created_at: string;
+          culling_job_id: string;
+          culling_outputs_json: Json;
+          growth_rate: number;
+          husbandry_job_id: string;
+          husbandry_workers_per_n_animals: number;
+          id: string;
+          is_active: boolean;
+          maintenance_rules_json: Json;
+          name: string;
+          slug: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "managed_population_types";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      restore_resource: {
+        Args: { p_resource_id: string; p_world_id: string };
+        Returns: {
+          base_stockpile_cap: number;
+          created_at: string;
+          id: string;
+          is_deleted: boolean;
+          is_system_resource: boolean;
+          last_cleanup_summary_json: Json | null;
+          name: string;
+          slug: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "resources";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       revoke_citizen_role: {
         Args: { p_citizen_id: string };
         Returns: {
@@ -1725,6 +1872,97 @@ export type Database = {
           last_ready_at: string;
           ready_set_at: string;
         }[];
+      };
+      soft_delete_building_blueprint: {
+        Args: { p_blueprint_id: string; p_world_id: string };
+        Returns: {
+          created_at: string;
+          description: string | null;
+          grace_period_turns: number;
+          id: string;
+          is_active: boolean;
+          max_instances_per_settlement: number | null;
+          name: string;
+          slug: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "building_blueprints";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      soft_delete_deposit_type: {
+        Args: { p_deposit_type_id: string; p_world_id: string };
+        Returns: {
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          job_id: string;
+          name: string;
+          output_units_per_worker: number;
+          slug: string;
+          updated_at: string;
+          worker_inputs_json: Json;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "deposit_types";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      soft_delete_job_definition: {
+        Args: { p_job_id: string; p_world_id: string };
+        Returns: {
+          base_capacity: number | null;
+          created_at: string;
+          id: string;
+          inputs_json: Json;
+          is_active: boolean;
+          job_type: string;
+          linked_deposit_type_id: string | null;
+          linked_managed_population_type_id: string | null;
+          name: string;
+          outputs_json: Json;
+          slug: string;
+          trader_capacity_per_worker: number | null;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "job_definitions";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      soft_delete_managed_population_type: {
+        Args: { p_mpt_id: string; p_world_id: string };
+        Returns: {
+          created_at: string;
+          culling_job_id: string;
+          culling_outputs_json: Json;
+          growth_rate: number;
+          husbandry_job_id: string;
+          husbandry_workers_per_n_animals: number;
+          id: string;
+          is_active: boolean;
+          maintenance_rules_json: Json;
+          name: string;
+          slug: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "managed_population_types";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       soft_delete_resource: {
         Args: { p_resource_id: string; p_world_id: string };

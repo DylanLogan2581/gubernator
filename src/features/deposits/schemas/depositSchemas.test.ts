@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   createDepositTypeInputSchema,
-  setDepositTypeActiveInputSchema,
+  hardDeleteDepositTypeInputSchema,
+  restoreDepositTypeInputSchema,
+  softDeleteDepositTypeInputSchema,
   updateDepositTypeInputSchema,
   workerInputEntrySchema,
 } from "./depositSchemas";
@@ -302,41 +304,19 @@ describe("updateDepositTypeInputSchema", () => {
   });
 });
 
-describe("setDepositTypeActiveInputSchema", () => {
-  it("accepts a valid set-active request", () => {
-    const result = setDepositTypeActiveInputSchema.safeParse({
+describe("softDeleteDepositTypeInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = softDeleteDepositTypeInputSchema.safeParse({
       depositTypeId: DEPOSIT_TYPE_ID,
-      isActive: true,
       worldId: WORLD_ID,
     });
 
     expect(result.success).toBe(true);
-  });
-
-  it("accepts isActive: false", () => {
-    const result = setDepositTypeActiveInputSchema.safeParse({
-      depositTypeId: DEPOSIT_TYPE_ID,
-      isActive: false,
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it("rejects a non-boolean isActive", () => {
-    const result = setDepositTypeActiveInputSchema.safeParse({
-      depositTypeId: DEPOSIT_TYPE_ID,
-      isActive: "true",
-      worldId: WORLD_ID,
-    });
-
-    expect(result.success).toBe(false);
   });
 
   it("rejects an invalid depositTypeId", () => {
-    const result = setDepositTypeActiveInputSchema.safeParse({
+    const result = softDeleteDepositTypeInputSchema.safeParse({
       depositTypeId: "not-a-uuid",
-      isActive: true,
       worldId: WORLD_ID,
     });
 
@@ -344,10 +324,49 @@ describe("setDepositTypeActiveInputSchema", () => {
   });
 
   it("rejects unknown fields", () => {
-    const result = setDepositTypeActiveInputSchema.safeParse({
+    const result = softDeleteDepositTypeInputSchema.safeParse({
       depositTypeId: DEPOSIT_TYPE_ID,
       extra: "field",
-      isActive: true,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("restoreDepositTypeInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = restoreDepositTypeInputSchema.safeParse({
+      depositTypeId: DEPOSIT_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid depositTypeId", () => {
+    const result = restoreDepositTypeInputSchema.safeParse({
+      depositTypeId: "not-a-uuid",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("hardDeleteDepositTypeInputSchema", () => {
+  it("accepts a valid request", () => {
+    const result = hardDeleteDepositTypeInputSchema.safeParse({
+      depositTypeId: DEPOSIT_TYPE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid depositTypeId", () => {
+    const result = hardDeleteDepositTypeInputSchema.safeParse({
+      depositTypeId: "not-a-uuid",
       worldId: WORLD_ID,
     });
 

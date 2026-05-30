@@ -8,6 +8,7 @@ export type ManagedPopulationType = {
   readonly cullingJobId: string;
   readonly cullingOutputsJson: readonly PopulationResourceEntry[];
   readonly growthRate: number;
+  readonly hasActiveReferences: boolean;
   readonly husbandryJobId: string;
   readonly husbandryWorkersPerNAnimals: number;
   readonly id: string;
@@ -19,8 +20,17 @@ export type ManagedPopulationType = {
   readonly worldId: string;
 };
 
-export type SetManagedPopulationTypeActiveResult = {
-  readonly isActive: boolean;
+export type SoftDeleteManagedPopulationTypeResult = {
+  readonly managedPopulationTypeId: string;
+  readonly worldId: string;
+};
+
+export type RestoreManagedPopulationTypeResult = {
+  readonly managedPopulationTypeId: string;
+  readonly worldId: string;
+};
+
+export type HardDeleteManagedPopulationTypeResult = {
   readonly managedPopulationTypeId: string;
   readonly worldId: string;
 };

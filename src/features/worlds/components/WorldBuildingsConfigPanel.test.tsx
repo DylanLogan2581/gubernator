@@ -79,7 +79,7 @@ describe("WorldBuildingsConfigPanel", () => {
     expect(screen.getByText("farmhouse")).toBeDefined();
   });
 
-  it("shows archived blueprints and badge when toggle is active", async () => {
+  it("shows trashed blueprints when trash view is toggled", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -88,7 +88,7 @@ describe("WorldBuildingsConfigPanel", () => {
           createBlueprintRow({
             id: "00000000-0000-0000-0000-000000000003",
             is_active: false,
-            name: "Archived Blueprint",
+            name: "Trashed Blueprint",
           }),
         ],
       }),
@@ -97,13 +97,12 @@ describe("WorldBuildingsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Active Blueprint");
-    expect(screen.queryByText("Archived Blueprint")).toBeNull();
+    expect(screen.queryByText("Trashed Blueprint")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Show archived" }));
+    await user.click(screen.getByRole("button", { name: "View trash" }));
 
-    expect(screen.getByText("Archived Blueprint")).toBeDefined();
-    expect(screen.getByText("archived")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Hide archived" })).toBeDefined();
+    expect(screen.getByText("Trashed Blueprint")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
   });
 
   it("emits a success toast after creating a blueprint", async () => {
