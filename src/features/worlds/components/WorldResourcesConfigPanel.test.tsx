@@ -129,6 +129,95 @@ describe("WorldResourcesConfigPanel", () => {
     await screen.findByText("No resources yet");
     expect(screen.queryByRole("button", { name: "Add resource" })).toBeNull();
   });
+
+  it("saves updated resource name", async () => {
+    const user = userEvent.setup();
+    const resourceRow = createResourceRow({
+      is_system_resource: false,
+      name: "Gold",
+      slug: "gold",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        resourceRows: [resourceRow],
+        updateResult: {
+          data: { ...resourceRow, name: "Silver" },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit resource" });
+    const nameInput = screen.getByRole("textbox", { name: "Name" });
+    await user.clear(nameInput);
+    await user.type(nameInput, "Silver");
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Resource saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("hides the Delete button for system resources", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        resourceRows: [createResourceRow({ is_system_resource: true })],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Food");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit resource" });
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+  });
+
+  it("soft-deletes a non-system resource after confirmation", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        resourceRows: [
+          createResourceRow({ is_system_resource: false, name: "Gold" }),
+        ],
+        rpcResult: {
+          data: { id: RESOURCE_ID, world_id: WORLD_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit resource" });
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    await screen.findByRole("dialog", { name: "Delete resource" });
+    await user.click(screen.getByRole("button", { name: "Delete resource" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Resource deleted.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
 });
 
 function renderPanel({
@@ -191,28 +280,50 @@ function createResourceRow(
 function createClient({
   insertResult = { data: createResourceRow(), error: null },
   resourceRows,
+  rpcResult = { data: null, error: null },
+  updateResult = { data: createResourceRow(), error: null },
 }: {
   readonly insertResult?: {
     readonly data: TestResourceRow | null;
     readonly error: { readonly message: string } | null;
   };
   readonly resourceRows: readonly TestResourceRow[];
+  readonly rpcResult?: {
+    readonly data: { readonly id: string; readonly world_id: string } | null;
+    readonly error: { readonly message: string } | null;
+  };
+  readonly updateResult?: {
+    readonly data: TestResourceRow | null;
+    readonly error: { readonly message: string } | null;
+  };
 }): {
   readonly from: ReturnType<typeof vi.fn>;
+  readonly rpc: ReturnType<typeof vi.fn>;
 } {
   return {
     from: vi.fn((table: string) => {
       if (table === "resources") {
-        return createResourcesQueryBuilder(resourceRows, insertResult);
+        return createResourcesQueryBuilder(
+          resourceRows,
+          insertResult,
+          updateResult,
+        );
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
+    rpc: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue(rpcResult),
+    })),
   };
 }
 
 function createResourcesQueryBuilder(
   rows: readonly TestResourceRow[],
   insertResult: {
+    readonly data: TestResourceRow | null;
+    readonly error: { readonly message: string } | null;
+  },
+  updateResult: {
     readonly data: TestResourceRow | null;
     readonly error: { readonly message: string } | null;
   },
@@ -223,6 +334,13 @@ function createResourcesQueryBuilder(
     returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
   };
 
+  const updateBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => updateBuilder),
+    select: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue(updateResult),
+    })),
+  };
+
   return {
     insert: vi.fn(() => ({
       select: vi.fn(() => ({
@@ -230,5 +348,6 @@ function createResourcesQueryBuilder(
       })),
     })),
     select: vi.fn(() => selectBuilder),
+    update: vi.fn(() => updateBuilder),
   };
 }
