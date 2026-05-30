@@ -28,6 +28,10 @@ vi.mock("sonner", () => ({
 
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 const JOB_ID = "00000000-0000-0000-0000-000000000002";
+const RESOURCE_ID = "00000000-0000-0000-0000-000000000003";
+const DEPOSIT_TYPE_ID = "00000000-0000-0000-0000-000000000004";
+const MANAGED_POP_TYPE_ID = "00000000-0000-0000-0000-000000000005";
+const CULLING_JOB_ID = "00000000-0000-0000-0000-000000000006";
 
 describe("WorldJobsConfigPanel", () => {
   beforeEach(() => {
@@ -364,6 +368,327 @@ describe("WorldJobsConfigPanel", () => {
     });
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  // ── Edit form ────────────────────────────────────────────────────────────
+
+  it("hides the Edit button for non-admin users", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [createJobRow({ name: "Farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+  });
+
+  it("opens the edit form when Edit is clicked", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [createJobRow({ name: "Farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Edit job" }),
+    ).toBeDefined();
+  });
+
+  it("emits a success toast after saving an edited job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({ job_type: "standard", name: "Farming" });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+    const nameInput = screen.getByRole("textbox", { name: "Name" });
+    await user.clear(nameInput);
+    await user.type(nameInput, "Updated Farming");
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Job saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("adds an input row in the edit form", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({ job_type: "standard", name: "Farming" });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow({ name: "Grain" })],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(screen.queryByText("Inputs entry 1 resource")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Add input" }));
+
+    expect(
+      screen.getByRole("combobox", { name: "Inputs entry 1 resource" }),
+    ).toBeDefined();
+  });
+
+  it("removes an output row in the edit form", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      job_type: "standard",
+      name: "Farming",
+      outputs_json: [{ amount_per_worker: 2, resource_id: RESOURCE_ID }],
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow()],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(
+      screen.getByRole("combobox", { name: "Outputs entry 1 resource" }),
+    ).toBeDefined();
+
+    await user.click(
+      screen.getByRole("button", { name: "Remove output entry 1" }),
+    );
+
+    expect(
+      screen.queryByRole("combobox", { name: "Outputs entry 1 resource" }),
+    ).toBeNull();
+  });
+
+  it("shows a validation error when an input row has an invalid amount", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      job_type: "standard",
+      name: "Farming",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow({ name: "Grain" })],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    await user.click(screen.getByRole("button", { name: "Add input" }));
+
+    const amountInput = screen.getByRole("textbox", {
+      name: "Inputs entry 1 amount per worker",
+    });
+    await user.clear(amountInput);
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).not.toHaveBeenCalled();
+    });
+    expect(screen.queryByText("Job saved.")).toBeNull();
+  });
+
+  it("links a deposit type when editing a deposit job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({ job_type: "deposit", name: "Iron Mining" });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [
+          createDepositTypeRow({ id: DEPOSIT_TYPE_ID, name: "Iron Ore" }),
+        ],
+        jobRows: [jobRow],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Iron Mining");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    const depositSelect = screen.getByRole("combobox", {
+      name: "Linked deposit type",
+    });
+    await user.selectOptions(depositSelect, DEPOSIT_TYPE_ID);
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Job saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("links a managed population type when editing a husbandry job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      id: JOB_ID,
+      job_type: "husbandry",
+      name: "Sheep Herding",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        managedPopulationTypeRows: [
+          createManagedPopulationTypeRow({
+            husbandry_job_id: JOB_ID,
+            id: MANAGED_POP_TYPE_ID,
+            name: "Sheep",
+          }),
+        ],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Sheep Herding");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    const popTypeSelect = screen.getByRole("combobox", {
+      name: "Linked managed population type",
+    });
+    await user.selectOptions(popTypeSelect, MANAGED_POP_TYPE_ID);
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Job saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("links a managed population type when editing a culling job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      id: JOB_ID,
+      job_type: "culling",
+      name: "Wolf Culling",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        managedPopulationTypeRows: [
+          createManagedPopulationTypeRow({
+            culling_job_id: JOB_ID,
+            id: MANAGED_POP_TYPE_ID,
+            name: "Wolf",
+          }),
+        ],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Wolf Culling");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    const popTypeSelect = screen.getByRole("combobox", {
+      name: "Linked managed population type",
+    });
+    await user.selectOptions(popTypeSelect, MANAGED_POP_TYPE_ID);
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Job saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("shows inline error for a deleted resource in IO entries", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      inputs_json: [
+        {
+          amount_per_worker: 1,
+          resource_id: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+        },
+      ],
+      job_type: "standard",
+      name: "Farming",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        // No resources returned — simulates deleted resource
+        jobRows: [jobRow],
+        resourceRows: [],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(
+      screen.getByText(
+        "This resource has been deleted. Remove this row or select a different resource.",
+      ),
+    ).toBeDefined();
+  });
 });
 
 function renderPanel({
@@ -396,15 +721,63 @@ type TestJobRow = {
   readonly base_capacity: number | null;
   readonly created_at: string;
   readonly id: string;
-  readonly inputs_json: readonly unknown[];
+  readonly inputs_json: readonly {
+    amount_per_worker: number;
+    resource_id: string;
+  }[];
   readonly is_active: boolean;
   readonly job_type: string;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
   readonly name: string;
-  readonly outputs_json: readonly unknown[];
+  readonly outputs_json: readonly {
+    amount_per_worker: number;
+    resource_id: string;
+  }[];
   readonly slug: string;
   readonly trader_capacity_per_worker: number | null;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+type TestDepositTypeRow = {
+  readonly created_at: string;
+  readonly id: string;
+  readonly is_active: boolean;
+  readonly job_id: string;
+  readonly name: string;
+  readonly output_units_per_worker: number;
+  readonly slug: string;
+  readonly updated_at: string;
+  readonly worker_inputs_json: readonly unknown[];
+  readonly world_id: string;
+};
+
+type TestManagedPopulationTypeRow = {
+  readonly created_at: string;
+  readonly culling_job_id: string;
+  readonly culling_outputs_json: readonly unknown[];
+  readonly growth_rate: number;
+  readonly husbandry_job_id: string;
+  readonly husbandry_workers_per_n_animals: number;
+  readonly id: string;
+  readonly is_active: boolean;
+  readonly maintenance_rules_json: readonly unknown[];
+  readonly name: string;
+  readonly slug: string;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+type TestResourceRow = {
+  readonly base_stockpile_cap: number;
+  readonly created_at: string;
+  readonly id: string;
+  readonly is_deleted: boolean;
+  readonly is_system_resource: boolean;
+  readonly last_cleanup_summary_json: null;
+  readonly name: string;
+  readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
 };
@@ -429,22 +802,99 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
   };
 }
 
+function createDepositTypeRow(
+  overrides: Partial<TestDepositTypeRow> = {},
+): TestDepositTypeRow {
+  return {
+    created_at: "2026-01-01T00:00:00.000Z",
+    id: DEPOSIT_TYPE_ID,
+    is_active: true,
+    job_id: JOB_ID,
+    name: "Test Deposit Type",
+    output_units_per_worker: 1,
+    slug: "test-deposit-type",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    worker_inputs_json: [],
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
+
+function createManagedPopulationTypeRow(
+  overrides: Partial<TestManagedPopulationTypeRow> = {},
+): TestManagedPopulationTypeRow {
+  return {
+    created_at: "2026-01-01T00:00:00.000Z",
+    culling_job_id: CULLING_JOB_ID,
+    culling_outputs_json: [],
+    growth_rate: 0.05,
+    husbandry_job_id: JOB_ID,
+    husbandry_workers_per_n_animals: 10,
+    id: MANAGED_POP_TYPE_ID,
+    is_active: true,
+    maintenance_rules_json: [],
+    name: "Test Population",
+    slug: "test-population",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
+
+function createResourceRow(
+  overrides: Partial<TestResourceRow> = {},
+): TestResourceRow {
+  return {
+    base_stockpile_cap: 1000,
+    created_at: "2026-01-01T00:00:00.000Z",
+    id: RESOURCE_ID,
+    is_deleted: false,
+    is_system_resource: false,
+    last_cleanup_summary_json: null,
+    name: "Iron",
+    slug: "iron",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
+
 function createClient({
+  depositTypeRows = [],
   insertResult = { data: createJobRow(), error: null },
   jobRows,
+  managedPopulationTypeRows = [],
+  resourceRows = [],
+  updateResult = { data: createJobRow(), error: null },
 }: {
+  readonly depositTypeRows?: readonly TestDepositTypeRow[];
   readonly insertResult?: {
     readonly data: TestJobRow | null;
     readonly error: { readonly message: string } | null;
   };
   readonly jobRows: readonly TestJobRow[];
+  readonly managedPopulationTypeRows?: readonly TestManagedPopulationTypeRow[];
+  readonly resourceRows?: readonly TestResourceRow[];
+  readonly updateResult?: {
+    readonly data: TestJobRow | null;
+    readonly error: { readonly message: string } | null;
+  };
 }): {
   readonly from: ReturnType<typeof vi.fn>;
 } {
   return {
     from: vi.fn((table: string) => {
       if (table === "job_definitions") {
-        return createJobsQueryBuilder(jobRows, insertResult);
+        return createJobsQueryBuilder(jobRows, insertResult, updateResult);
+      }
+      if (table === "resources") {
+        return createSimpleQueryBuilder(resourceRows);
+      }
+      if (table === "deposit_types") {
+        return createSimpleQueryBuilder(depositTypeRows);
+      }
+      if (table === "managed_population_types") {
+        return createSimpleQueryBuilder(managedPopulationTypeRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -457,11 +907,22 @@ function createJobsQueryBuilder(
     readonly data: TestJobRow | null;
     readonly error: { readonly message: string } | null;
   },
+  updateResult: {
+    readonly data: TestJobRow | null;
+    readonly error: { readonly message: string } | null;
+  },
 ): unknown {
   const selectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => selectBuilder),
     order: vi.fn(() => selectBuilder),
     returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+  };
+
+  const updateBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => updateBuilder),
+    select: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue(updateResult),
+    })),
   };
 
   return {
@@ -470,6 +931,19 @@ function createJobsQueryBuilder(
         maybeSingle: vi.fn().mockResolvedValue(insertResult),
       })),
     })),
+    select: vi.fn(() => selectBuilder),
+    update: vi.fn(() => updateBuilder),
+  };
+}
+
+function createSimpleQueryBuilder(rows: readonly unknown[]): unknown {
+  const selectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => selectBuilder),
+    order: vi.fn(() => selectBuilder),
+    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+  };
+
+  return {
     select: vi.fn(() => selectBuilder),
   };
 }
