@@ -36,6 +36,7 @@ vi.mock("@tanstack/react-router", () => ({
           );
     return <a href={href}>{children}</a>;
   },
+  useNavigate: () => vi.fn(),
 }));
 
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
@@ -100,6 +101,21 @@ describe("WorldConfigurationPage", () => {
         { timeout: 5000 },
       ),
     ).toBeDefined();
+  });
+
+  it("renders the mobile select with the active tab label as its value", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow()],
+      }),
+    );
+
+    renderPage({ activeTab: "calendar", worldId: WORLD_ID });
+
+    expect(
+      await screen.findByRole("combobox", { name: "Configuration section" }),
+    ).toHaveTextContent("Calendar");
   });
 
   it("renders a back navigation link to the world page", async () => {
