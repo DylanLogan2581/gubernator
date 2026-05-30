@@ -441,6 +441,178 @@ type ManagedPopulationTypeFieldErrors = {
   readonly slug?: string;
 };
 
+function PopulationTypeScalarFields({
+  cullingJobId,
+  cullingJobLinkError,
+  cullingJobs,
+  fieldErrors,
+  growthRate,
+  husbandryJobId,
+  husbandryJobLinkError,
+  husbandryJobs,
+  husbandryWorkersPerNAnimals,
+  isPending,
+  jobCollisionError,
+  name,
+  slug,
+  onCullingJobChange,
+  onGrowthRateChange,
+  onHusbandryJobChange,
+  onHusbandryWorkersPerNAnimalsChange,
+  onNameChange,
+  onSlugChange,
+}: {
+  readonly cullingJobId: string;
+  readonly cullingJobLinkError: string | undefined;
+  readonly cullingJobs: readonly JobDefinition[];
+  readonly fieldErrors: ManagedPopulationTypeFieldErrors;
+  readonly growthRate: number;
+  readonly husbandryJobId: string;
+  readonly husbandryJobLinkError: string | undefined;
+  readonly husbandryJobs: readonly JobDefinition[];
+  readonly husbandryWorkersPerNAnimals: string;
+  readonly isPending: boolean;
+  readonly jobCollisionError: string | undefined;
+  readonly name: string;
+  readonly slug: string;
+  readonly onCullingJobChange: (value: string) => void;
+  readonly onGrowthRateChange: (value: number) => void;
+  readonly onHusbandryJobChange: (value: string) => void;
+  readonly onHusbandryWorkersPerNAnimalsChange: (value: string) => void;
+  readonly onNameChange: (value: string) => void;
+  readonly onSlugChange: (value: string) => void;
+}): JSX.Element {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Name</span>
+        <Input
+          aria-invalid={fieldErrors.name !== undefined}
+          disabled={isPending}
+          maxLength={managedPopulationInputLimits.populationTypeNameMax}
+          value={name}
+          onChange={(e) => {
+            onNameChange(e.currentTarget.value);
+          }}
+        />
+        {fieldErrors.name !== undefined ? (
+          <p className="text-xs text-destructive">{fieldErrors.name}</p>
+        ) : null}
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Slug</span>
+        <Input
+          aria-invalid={fieldErrors.slug !== undefined}
+          disabled={isPending}
+          maxLength={managedPopulationInputLimits.populationTypeSlugMax}
+          value={slug}
+          onChange={(e) => {
+            onSlugChange(e.currentTarget.value);
+          }}
+        />
+        {fieldErrors.slug !== undefined ? (
+          <p className="text-xs text-destructive">{fieldErrors.slug}</p>
+        ) : null}
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Husbandry job</span>
+        <select
+          aria-invalid={
+            fieldErrors.husbandryJobId !== undefined ||
+            husbandryJobLinkError !== undefined ||
+            jobCollisionError !== undefined
+          }
+          className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+          disabled={isPending}
+          value={husbandryJobId}
+          onChange={(e) => {
+            onHusbandryJobChange(e.currentTarget.value);
+          }}
+        >
+          <option value="">Select a husbandry job…</option>
+          {husbandryJobs.map((job) => (
+            <option key={job.id} value={job.id}>
+              {job.name}
+            </option>
+          ))}
+        </select>
+        {husbandryJobLinkError !== undefined ? (
+          <p className="text-xs text-destructive">{husbandryJobLinkError}</p>
+        ) : jobCollisionError !== undefined ? (
+          <p className="text-xs text-destructive">{jobCollisionError}</p>
+        ) : fieldErrors.husbandryJobId !== undefined ? (
+          <p className="text-xs text-destructive">
+            {fieldErrors.husbandryJobId}
+          </p>
+        ) : null}
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Culling job</span>
+        <select
+          aria-invalid={
+            fieldErrors.cullingJobId !== undefined ||
+            cullingJobLinkError !== undefined ||
+            jobCollisionError !== undefined
+          }
+          className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+          disabled={isPending}
+          value={cullingJobId}
+          onChange={(e) => {
+            onCullingJobChange(e.currentTarget.value);
+          }}
+        >
+          <option value="">Select a culling job…</option>
+          {cullingJobs.map((job) => (
+            <option key={job.id} value={job.id}>
+              {job.name}
+            </option>
+          ))}
+        </select>
+        {cullingJobLinkError !== undefined ? (
+          <p className="text-xs text-destructive">{cullingJobLinkError}</p>
+        ) : jobCollisionError !== undefined ? (
+          <p className="text-xs text-destructive">{jobCollisionError}</p>
+        ) : fieldErrors.cullingJobId !== undefined ? (
+          <p className="text-xs text-destructive">{fieldErrors.cullingJobId}</p>
+        ) : null}
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">
+          Husbandry workers per N animals
+        </span>
+        <Input
+          aria-invalid={fieldErrors.husbandryWorkersPerNAnimals !== undefined}
+          disabled={isPending}
+          inputMode="numeric"
+          placeholder="1"
+          value={husbandryWorkersPerNAnimals}
+          onChange={(e) => {
+            onHusbandryWorkersPerNAnimalsChange(e.currentTarget.value);
+          }}
+        />
+        {fieldErrors.husbandryWorkersPerNAnimals !== undefined ? (
+          <p className="text-xs text-destructive">
+            {fieldErrors.husbandryWorkersPerNAnimals}
+          </p>
+        ) : null}
+      </label>
+      <div className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Growth rate</span>
+        <PercentInput
+          aria-invalid={fieldErrors.growthRate !== undefined}
+          aria-label="Growth rate"
+          disabled={isPending}
+          value={growthRate}
+          onChange={onGrowthRateChange}
+        />
+        {fieldErrors.growthRate !== undefined ? (
+          <p className="text-xs text-destructive">{fieldErrors.growthRate}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function CreateManagedPopulationTypeForm({
   allPopulationTypes,
   cullingJobs,
@@ -588,133 +760,27 @@ function CreateManagedPopulationTypeForm({
     >
       <h3 className="text-sm font-medium">New managed population type</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Name</span>
-          <Input
-            aria-invalid={fieldErrors.name !== undefined}
-            disabled={isPending}
-            maxLength={managedPopulationInputLimits.populationTypeNameMax}
-            value={name}
-            onChange={(e) => {
-              handleNameChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.name !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.name}</p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Slug</span>
-          <Input
-            aria-invalid={fieldErrors.slug !== undefined}
-            disabled={isPending}
-            maxLength={managedPopulationInputLimits.populationTypeSlugMax}
-            value={slug}
-            onChange={(e) => {
-              handleSlugChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.slug !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Husbandry job</span>
-          <select
-            aria-invalid={
-              fieldErrors.husbandryJobId !== undefined ||
-              husbandryJobLinkError !== undefined ||
-              jobCollisionError !== undefined
-            }
-            className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
-            disabled={isPending}
-            value={husbandryJobId}
-            onChange={(e) => {
-              handleHusbandryJobChange(e.currentTarget.value);
-            }}
-          >
-            <option value="">Select a husbandry job…</option>
-            {husbandryJobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.name}
-              </option>
-            ))}
-          </select>
-          {husbandryJobLinkError !== undefined ? (
-            <p className="text-xs text-destructive">{husbandryJobLinkError}</p>
-          ) : jobCollisionError !== undefined ? (
-            <p className="text-xs text-destructive">{jobCollisionError}</p>
-          ) : fieldErrors.husbandryJobId !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.husbandryJobId}
-            </p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Culling job</span>
-          <select
-            aria-invalid={
-              fieldErrors.cullingJobId !== undefined ||
-              cullingJobLinkError !== undefined ||
-              jobCollisionError !== undefined
-            }
-            className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
-            disabled={isPending}
-            value={cullingJobId}
-            onChange={(e) => {
-              handleCullingJobChange(e.currentTarget.value);
-            }}
-          >
-            <option value="">Select a culling job…</option>
-            {cullingJobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.name}
-              </option>
-            ))}
-          </select>
-          {cullingJobLinkError !== undefined ? (
-            <p className="text-xs text-destructive">{cullingJobLinkError}</p>
-          ) : jobCollisionError !== undefined ? (
-            <p className="text-xs text-destructive">{jobCollisionError}</p>
-          ) : fieldErrors.cullingJobId !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.cullingJobId}
-            </p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">
-            Husbandry workers per N animals
-          </span>
-          <Input
-            aria-invalid={fieldErrors.husbandryWorkersPerNAnimals !== undefined}
-            disabled={isPending}
-            inputMode="numeric"
-            placeholder="1"
-            value={husbandryWorkersPerNAnimals}
-            onChange={(e) => {
-              setHusbandryWorkersPerNAnimals(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.husbandryWorkersPerNAnimals !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.husbandryWorkersPerNAnimals}
-            </p>
-          ) : null}
-        </label>
-        <div className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Growth rate</span>
-          <PercentInput
-            aria-invalid={fieldErrors.growthRate !== undefined}
-            aria-label="Growth rate"
-            disabled={isPending}
-            value={growthRate}
-            onChange={setGrowthRate}
-          />
-          {fieldErrors.growthRate !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.growthRate}</p>
-          ) : null}
-        </div>
+        <PopulationTypeScalarFields
+          cullingJobId={cullingJobId}
+          cullingJobLinkError={cullingJobLinkError}
+          cullingJobs={cullingJobs}
+          fieldErrors={fieldErrors}
+          growthRate={growthRate}
+          husbandryJobId={husbandryJobId}
+          husbandryJobLinkError={husbandryJobLinkError}
+          husbandryJobs={husbandryJobs}
+          husbandryWorkersPerNAnimals={husbandryWorkersPerNAnimals}
+          isPending={isPending}
+          jobCollisionError={jobCollisionError}
+          name={name}
+          slug={slug}
+          onCullingJobChange={handleCullingJobChange}
+          onGrowthRateChange={setGrowthRate}
+          onHusbandryJobChange={handleHusbandryJobChange}
+          onHusbandryWorkersPerNAnimalsChange={setHusbandryWorkersPerNAnimals}
+          onNameChange={handleNameChange}
+          onSlugChange={handleSlugChange}
+        />
         <PopulationResourceEditor
           disabled={isPending}
           entries={maintenanceRules}
@@ -929,133 +995,27 @@ function EditManagedPopulationTypeForm({
     >
       <h3 className="text-sm font-medium">Edit managed population type</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Name</span>
-          <Input
-            aria-invalid={fieldErrors.name !== undefined}
-            disabled={isPending}
-            maxLength={managedPopulationInputLimits.populationTypeNameMax}
-            value={name}
-            onChange={(e) => {
-              setName(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.name !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.name}</p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Slug</span>
-          <Input
-            aria-invalid={fieldErrors.slug !== undefined}
-            disabled={isPending}
-            maxLength={managedPopulationInputLimits.populationTypeSlugMax}
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.slug !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Husbandry job</span>
-          <select
-            aria-invalid={
-              fieldErrors.husbandryJobId !== undefined ||
-              husbandryJobLinkError !== undefined ||
-              jobCollisionError !== undefined
-            }
-            className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
-            disabled={isPending}
-            value={husbandryJobId}
-            onChange={(e) => {
-              handleHusbandryJobChange(e.currentTarget.value);
-            }}
-          >
-            <option value="">Select a husbandry job…</option>
-            {husbandryJobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.name}
-              </option>
-            ))}
-          </select>
-          {husbandryJobLinkError !== undefined ? (
-            <p className="text-xs text-destructive">{husbandryJobLinkError}</p>
-          ) : jobCollisionError !== undefined ? (
-            <p className="text-xs text-destructive">{jobCollisionError}</p>
-          ) : fieldErrors.husbandryJobId !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.husbandryJobId}
-            </p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Culling job</span>
-          <select
-            aria-invalid={
-              fieldErrors.cullingJobId !== undefined ||
-              cullingJobLinkError !== undefined ||
-              jobCollisionError !== undefined
-            }
-            className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
-            disabled={isPending}
-            value={cullingJobId}
-            onChange={(e) => {
-              handleCullingJobChange(e.currentTarget.value);
-            }}
-          >
-            <option value="">Select a culling job…</option>
-            {cullingJobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.name}
-              </option>
-            ))}
-          </select>
-          {cullingJobLinkError !== undefined ? (
-            <p className="text-xs text-destructive">{cullingJobLinkError}</p>
-          ) : jobCollisionError !== undefined ? (
-            <p className="text-xs text-destructive">{jobCollisionError}</p>
-          ) : fieldErrors.cullingJobId !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.cullingJobId}
-            </p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">
-            Husbandry workers per N animals
-          </span>
-          <Input
-            aria-invalid={fieldErrors.husbandryWorkersPerNAnimals !== undefined}
-            disabled={isPending}
-            inputMode="numeric"
-            placeholder="1"
-            value={husbandryWorkersPerNAnimals}
-            onChange={(e) => {
-              setHusbandryWorkersPerNAnimals(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.husbandryWorkersPerNAnimals !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.husbandryWorkersPerNAnimals}
-            </p>
-          ) : null}
-        </label>
-        <div className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Growth rate</span>
-          <PercentInput
-            aria-invalid={fieldErrors.growthRate !== undefined}
-            aria-label="Growth rate"
-            disabled={isPending}
-            value={growthRate}
-            onChange={setGrowthRate}
-          />
-          {fieldErrors.growthRate !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.growthRate}</p>
-          ) : null}
-        </div>
+        <PopulationTypeScalarFields
+          cullingJobId={cullingJobId}
+          cullingJobLinkError={cullingJobLinkError}
+          cullingJobs={cullingJobs}
+          fieldErrors={fieldErrors}
+          growthRate={growthRate}
+          husbandryJobId={husbandryJobId}
+          husbandryJobLinkError={husbandryJobLinkError}
+          husbandryJobs={husbandryJobs}
+          husbandryWorkersPerNAnimals={husbandryWorkersPerNAnimals}
+          isPending={isPending}
+          jobCollisionError={jobCollisionError}
+          name={name}
+          slug={slug}
+          onCullingJobChange={handleCullingJobChange}
+          onGrowthRateChange={setGrowthRate}
+          onHusbandryJobChange={handleHusbandryJobChange}
+          onHusbandryWorkersPerNAnimalsChange={setHusbandryWorkersPerNAnimals}
+          onNameChange={setName}
+          onSlugChange={setSlug}
+        />
         <PopulationResourceEditor
           disabled={isPending}
           entries={maintenanceRules}
