@@ -264,7 +264,9 @@ describe("WorldJobsConfigPanel", () => {
     );
 
     expect(
-      screen.getByText("Create a deposit type first to link to this job."),
+      screen.getByText(
+        "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
+      ),
     ).toBeDefined();
 
     await user.click(screen.getByRole("button", { name: "Create" }));
@@ -308,7 +310,7 @@ describe("WorldJobsConfigPanel", () => {
 
     expect(
       screen.getByText(
-        "Create a managed population type first to link to this job.",
+        "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
     ).toBeDefined();
 
@@ -353,7 +355,7 @@ describe("WorldJobsConfigPanel", () => {
 
     expect(
       screen.getByText(
-        "Create a managed population type first to link to this job.",
+        "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
     ).toBeDefined();
 
