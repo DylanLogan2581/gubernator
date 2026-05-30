@@ -30,6 +30,7 @@ import {
 import type {
   HardDeleteResourceResult,
   Resource,
+  ResourceCleanupSummary,
   RestoreResourceResult,
   SoftDeleteResourceResult,
 } from "../types/resourceTypes";
@@ -301,7 +302,11 @@ async function softDeleteResource(
       p_resource_id: values.resourceId,
       p_world_id: values.worldId,
     })
-    .maybeSingle<{ readonly id: string; readonly world_id: string }>();
+    .maybeSingle<{
+      readonly id: string;
+      readonly last_cleanup_summary_json: Json;
+      readonly world_id: string;
+    }>();
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
@@ -314,7 +319,42 @@ async function softDeleteResource(
     });
   }
 
-  return { resourceId: data.id, worldId: data.world_id };
+  return {
+    cleanupSummary: parseCleanupSummary(data.last_cleanup_summary_json),
+    resourceId: data.id,
+    worldId: data.world_id,
+  };
+}
+
+function parseCleanupSummary(json: Json): ResourceCleanupSummary {
+  const obj =
+    json !== null && typeof json === "object" && !Array.isArray(json)
+      ? (json as Record<string, Json>)
+      : {};
+  return {
+    buildingTierConstructionCostsCleaned: toInt(
+      obj["building_tier_construction_costs_cleaned"],
+    ),
+    buildingTierEffectsCleaned: toInt(obj["building_tier_effects_cleaned"]),
+    buildingTierUpkeepCostsCleaned: toInt(
+      obj["building_tier_upkeep_costs_cleaned"],
+    ),
+    depositTypesWorkerInputsCleaned: toInt(
+      obj["deposit_types_worker_inputs_cleaned"],
+    ),
+    jobDefinitionsInputsCleaned: toInt(obj["job_definitions_inputs_cleaned"]),
+    jobDefinitionsOutputsCleaned: toInt(obj["job_definitions_outputs_cleaned"]),
+    managedPopulationCullingOutputsCleaned: toInt(
+      obj["managed_population_culling_outputs_cleaned"],
+    ),
+    managedPopulationMaintenanceCleaned: toInt(
+      obj["managed_population_maintenance_cleaned"],
+    ),
+  };
+}
+
+function toInt(value: Json | undefined): number {
+  return typeof value === "number" ? value : 0;
 }
 
 async function restoreResource(
