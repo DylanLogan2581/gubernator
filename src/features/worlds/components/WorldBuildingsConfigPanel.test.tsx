@@ -183,6 +183,142 @@ describe("WorldBuildingsConfigPanel", () => {
     await screen.findByText("Farmhouse");
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
   });
+
+  // ── InlineTierDraftForm nested-form regression ───────────────────────────
+
+  it("clicking Add on tier draft adds draft to pending list without submitting the blueprint form", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [],
+        resourceRows: [],
+        jobRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Buildings" });
+    await user.click(screen.getByRole("button", { name: "Add blueprint" }));
+
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farmhouse");
+    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
+    await user.type(screen.getByRole("textbox", { name: "Slug" }), "farmhouse");
+
+    await user.click(screen.getByRole("button", { name: "Add tier" }));
+
+    await screen.findByText("New tier");
+
+    const tierNumberInput = screen.getByRole("textbox", {
+      name: "Tier number",
+    });
+    await user.clear(tierNumberInput);
+    await user.type(tierNumberInput, "1");
+
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(await screen.findByText(/Tier 1/)).toBeDefined();
+    expect(screen.queryByText("New tier")).toBeNull();
+
+    expect(toastSuccess).not.toHaveBeenCalled();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("clicking Add on tier draft does not submit the outer blueprint form", async () => {
+    const user = userEvent.setup();
+    const insertSpy = vi.fn(() => ({
+      select: vi.fn(() => ({
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: createBlueprintRow(), error: null }),
+      })),
+    }));
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [],
+        resourceRows: [],
+        jobRows: [],
+        blueprintInsertSpy: insertSpy,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Buildings" });
+    await user.click(screen.getByRole("button", { name: "Add blueprint" }));
+
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farmhouse");
+    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
+    await user.type(screen.getByRole("textbox", { name: "Slug" }), "farmhouse");
+
+    await user.click(screen.getByRole("button", { name: "Add tier" }));
+
+    await screen.findByText("New tier");
+
+    const tierNumberInput = screen.getByRole("textbox", {
+      name: "Tier number",
+    });
+    await user.clear(tierNumberInput);
+    await user.type(tierNumberInput, "1");
+
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(await screen.findByText(/Tier 1/)).toBeDefined();
+
+    expect(insertSpy).not.toHaveBeenCalled();
+  });
+
+  it("creates a blueprint with a pending tier after clicking Add then Create", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [],
+        resourceRows: [],
+        jobRows: [],
+        insertResult: {
+          data: createBlueprintRow({ name: "Farmhouse" }),
+          error: null,
+        },
+        tierInsertResult: {
+          data: createTierRow(),
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Buildings" });
+    await user.click(screen.getByRole("button", { name: "Add blueprint" }));
+
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farmhouse");
+    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
+    await user.type(screen.getByRole("textbox", { name: "Slug" }), "farmhouse");
+
+    await user.click(screen.getByRole("button", { name: "Add tier" }));
+
+    await screen.findByText("New tier");
+
+    const tierNumberInput = screen.getByRole("textbox", {
+      name: "Tier number",
+    });
+    await user.clear(tierNumberInput);
+    await user.type(tierNumberInput, "1");
+
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(await screen.findByText(/Tier 1/)).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Blueprint and tiers created.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
 });
 
 function renderPanel({
@@ -224,6 +360,51 @@ type TestBlueprintRow = {
   readonly world_id: string;
 };
 
+type TestTierRow = {
+  readonly building_blueprint_id: string;
+  readonly construction_costs_json: readonly unknown[];
+  readonly created_at: string;
+  readonly effects_json: readonly unknown[];
+  readonly id: string;
+  readonly tier_number: number;
+  readonly updated_at: string;
+  readonly upkeep_costs_json: readonly unknown[];
+  readonly worker_turns_required: number;
+};
+
+type TestResourceRow = {
+  readonly base_stockpile_cap: number;
+  readonly created_at: string;
+  readonly id: string;
+  readonly is_deleted: boolean;
+  readonly is_system_resource: boolean;
+  readonly last_cleanup_summary_json: null;
+  readonly name: string;
+  readonly slug: string;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+type TestJobRow = {
+  readonly base_capacity: number | null;
+  readonly created_at: string;
+  readonly culling_mpt: readonly unknown[];
+  readonly deposit_types: readonly unknown[];
+  readonly husbandry_mpt: readonly unknown[];
+  readonly id: string;
+  readonly inputs_json: readonly unknown[];
+  readonly is_active: boolean;
+  readonly job_type: string;
+  readonly linked_deposit_type_id: string | null;
+  readonly linked_managed_population_type_id: string | null;
+  readonly name: string;
+  readonly outputs_json: readonly unknown[];
+  readonly slug: string;
+  readonly trader_capacity_per_worker: number | null;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
 function createBlueprintRow(
   overrides: Partial<TestBlueprintRow> = {},
 ): TestBlueprintRow {
@@ -242,14 +423,40 @@ function createBlueprintRow(
   };
 }
 
+function createTierRow(overrides: Partial<TestTierRow> = {}): TestTierRow {
+  return {
+    building_blueprint_id: BLUEPRINT_ID,
+    construction_costs_json: [],
+    created_at: "2026-01-01T00:00:00.000Z",
+    effects_json: [],
+    id: "00000000-0000-0000-0000-000000000010",
+    tier_number: 1,
+    updated_at: "2026-01-01T00:00:00.000Z",
+    upkeep_costs_json: [],
+    worker_turns_required: 0,
+    ...overrides,
+  };
+}
+
 function createClient({
+  blueprintInsertSpy,
   blueprintRows,
   insertResult = { data: createBlueprintRow(), error: null },
+  jobRows = [],
+  resourceRows = [],
+  tierInsertResult = { data: createTierRow(), error: null },
   updateResult = { data: createBlueprintRow(), error: null },
 }: {
+  readonly blueprintInsertSpy?: ReturnType<typeof vi.fn>;
   readonly blueprintRows: readonly TestBlueprintRow[];
   readonly insertResult?: {
     readonly data: TestBlueprintRow | null;
+    readonly error: { readonly message: string } | null;
+  };
+  readonly jobRows?: readonly TestJobRow[];
+  readonly resourceRows?: readonly TestResourceRow[];
+  readonly tierInsertResult?: {
+    readonly data: TestTierRow | null;
     readonly error: { readonly message: string } | null;
   };
   readonly updateResult?: {
@@ -266,7 +473,23 @@ function createClient({
           blueprintRows,
           insertResult,
           updateResult,
+          blueprintInsertSpy,
         );
+      }
+      if (table === "building_blueprint_tiers") {
+        return {
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              maybeSingle: vi.fn().mockResolvedValue(tierInsertResult),
+            })),
+          })),
+        };
+      }
+      if (table === "resources") {
+        return createSimpleQueryBuilder(resourceRows);
+      }
+      if (table === "job_definitions") {
+        return createSimpleQueryBuilder(jobRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -283,6 +506,7 @@ function createBlueprintsQueryBuilder(
     readonly data: TestBlueprintRow | null;
     readonly error: { readonly message: string } | null;
   },
+  insertSpy?: ReturnType<typeof vi.fn>,
 ): unknown {
   const selectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => selectBuilder),
@@ -297,13 +521,26 @@ function createBlueprintsQueryBuilder(
     })),
   };
 
-  return {
-    insert: vi.fn(() => ({
-      select: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue(insertResult),
-      })),
+  const defaultInsert = vi.fn(() => ({
+    select: vi.fn(() => ({
+      maybeSingle: vi.fn().mockResolvedValue(insertResult),
     })),
+  }));
+
+  return {
+    insert: insertSpy ?? defaultInsert,
     select: vi.fn(() => selectBuilder),
     update: vi.fn(() => updateBuilder),
   };
+}
+
+function createSimpleQueryBuilder(rows: readonly unknown[]): unknown {
+  const builder: Record<string, unknown> = {
+    eq: vi.fn(() => builder),
+    is: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    select: vi.fn(() => builder),
+  };
+  return builder;
 }
