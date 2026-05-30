@@ -26,8 +26,11 @@ export type TierEffect =
 
 export type BuildingBlueprint = {
   readonly createdAt: string;
+  readonly description: string | null;
+  readonly gracePeriodTurns: number;
   readonly id: string;
   readonly isActive: boolean;
+  readonly maxInstancesPerSettlement: number | null;
   readonly name: string;
   readonly slug: string;
   readonly updatedAt: string;
