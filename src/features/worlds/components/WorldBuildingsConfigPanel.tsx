@@ -31,6 +31,8 @@ import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 
+import { BlueprintTierEditor } from "./BlueprintTierEditor";
+
 type WorldBuildingsConfigPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
@@ -41,9 +43,38 @@ type WorldBuildingsConfigPanelProps = {
 export function WorldBuildingsConfigPanel({
   canAdmin,
   isArchived,
-  selectedBlueprintId: _selectedBlueprintId,
+  selectedBlueprintId,
   worldId,
 }: WorldBuildingsConfigPanelProps): JSX.Element {
+  if (selectedBlueprintId !== undefined) {
+    return (
+      <BlueprintTierEditor
+        blueprintId={selectedBlueprintId}
+        canAdmin={canAdmin}
+        isArchived={isArchived}
+        worldId={worldId}
+      />
+    );
+  }
+
+  return (
+    <BlueprintListPanel
+      canAdmin={canAdmin}
+      isArchived={isArchived}
+      worldId={worldId}
+    />
+  );
+}
+
+function BlueprintListPanel({
+  canAdmin,
+  isArchived,
+  worldId,
+}: {
+  readonly canAdmin: boolean;
+  readonly isArchived: boolean;
+  readonly worldId: string;
+}): JSX.Element {
   const queryClient = useQueryClient();
   const [showArchived, setShowArchived] = useState(false);
   const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
