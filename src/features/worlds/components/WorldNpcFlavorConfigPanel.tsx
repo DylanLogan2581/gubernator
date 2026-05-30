@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import { saveWorldNpcFlavorConfigMutationOptions } from "../mutations/worldNpcFlavorConfigMutations";
+import { NPC_FLAVOR_SAMPLES, pickNextSample } from "../npcFlavorSamples";
 import { worldNpcFlavorConfigQueryOptions } from "../queries/worldNpcFlavorConfigQueries";
 
 import type { WorldNpcFlavorConfig } from "../schemas/worldNpcFlavorConfigSchemas";
@@ -183,6 +184,18 @@ function WorldNpcFlavorConfigPanelContent({
                 onChange={(traits) =>
                   setDraftConfig((current) => ({ ...current, traits }))
                 }
+                onGenerateExample={() => {
+                  const sample = pickNextSample(
+                    draftConfig.traits,
+                    NPC_FLAVOR_SAMPLES.traits,
+                  );
+                  if (sample !== null) {
+                    setDraftConfig((current) => ({
+                      ...current,
+                      traits: [...current.traits, sample],
+                    }));
+                  }
+                }}
               />
             </Tabs.Content>
             <Tabs.Content value="contradictions" className="mt-3">
@@ -192,6 +205,18 @@ function WorldNpcFlavorConfigPanelContent({
                 onChange={(contradictions) =>
                   setDraftConfig((current) => ({ ...current, contradictions }))
                 }
+                onGenerateExample={() => {
+                  const sample = pickNextSample(
+                    draftConfig.contradictions,
+                    NPC_FLAVOR_SAMPLES.contradictions,
+                  );
+                  if (sample !== null) {
+                    setDraftConfig((current) => ({
+                      ...current,
+                      contradictions: [...current.contradictions, sample],
+                    }));
+                  }
+                }}
               />
             </Tabs.Content>
             <Tabs.Content value="goals" className="mt-3">
@@ -201,6 +226,18 @@ function WorldNpcFlavorConfigPanelContent({
                 onChange={(goals) =>
                   setDraftConfig((current) => ({ ...current, goals }))
                 }
+                onGenerateExample={() => {
+                  const sample = pickNextSample(
+                    draftConfig.goals,
+                    NPC_FLAVOR_SAMPLES.goals,
+                  );
+                  if (sample !== null) {
+                    setDraftConfig((current) => ({
+                      ...current,
+                      goals: [...current.goals, sample],
+                    }));
+                  }
+                }}
               />
             </Tabs.Content>
             <Tabs.Content value="flaws" className="mt-3">
@@ -210,6 +247,18 @@ function WorldNpcFlavorConfigPanelContent({
                 onChange={(flaws) =>
                   setDraftConfig((current) => ({ ...current, flaws }))
                 }
+                onGenerateExample={() => {
+                  const sample = pickNextSample(
+                    draftConfig.flaws,
+                    NPC_FLAVOR_SAMPLES.flaws,
+                  );
+                  if (sample !== null) {
+                    setDraftConfig((current) => ({
+                      ...current,
+                      flaws: [...current.flaws, sample],
+                    }));
+                  }
+                }}
               />
             </Tabs.Content>
           </Tabs.Root>

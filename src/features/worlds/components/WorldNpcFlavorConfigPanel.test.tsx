@@ -8,6 +8,8 @@ import {
   type AccessContext,
 } from "@/features/permissions";
 
+import { NPC_FLAVOR_SAMPLES } from "../npcFlavorSamples";
+
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 
 import type { WorldNpcFlavorConfig } from "../schemas/worldNpcFlavorConfigSchemas";
@@ -101,6 +103,110 @@ describe("WorldNpcFlavorConfigPanel", () => {
       );
     });
     expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("generate example button is hidden for read-only viewers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "reader-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: false,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+    expect(
+      screen.queryByRole("button", { name: "Generate example" }),
+    ).toBeNull();
+  });
+
+  it("clicking generate example appends a sample entry to the active pool draft", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+    await user.click(screen.getByRole("button", { name: "Generate example" }));
+
+    const firstTraitSample = NPC_FLAVOR_SAMPLES.traits[0];
+    expect(screen.getByDisplayValue(firstTraitSample)).toBeDefined();
+  });
+
+  it("clicking generate example on goals tab appends to goals pool, not traits", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+    await user.click(screen.getByRole("tab", { name: /goals/i }));
+    await user.click(screen.getByRole("button", { name: "Generate example" }));
+
+    const firstGoalSample = NPC_FLAVOR_SAMPLES.goals[0];
+    expect(screen.getByDisplayValue(firstGoalSample)).toBeDefined();
+    expect(screen.queryByDisplayValue(NPC_FLAVOR_SAMPLES.traits[0])).toBeNull();
+  });
+
+  it("repeat clicks do not add duplicate entries already in the draft", async () => {
+    const user = userEvent.setup();
+    const allTraitSamples = [...NPC_FLAVOR_SAMPLES.traits];
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [
+          createWorldRow({
+            npc_flavor_config_json: {
+              contradictions: [],
+              flaws: [],
+              goals: [],
+              traits: allTraitSamples,
+            },
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+    const initialCount = screen.getAllByRole("textbox").length;
+    await user.click(screen.getByRole("button", { name: "Generate example" }));
+
+    expect(screen.getAllByRole("textbox").length).toBe(initialCount);
   });
 
   it("renders read-only summary without save controls for non-admin users", async () => {
