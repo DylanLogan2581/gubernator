@@ -241,11 +241,11 @@ function WorldJobsConfigPanelContent({
           onEditingChange={setEditingJobId}
         />
       ) : showTrash ? (
-        <p className="text-sm text-muted-foreground">No trashed jobs.</p>
+        <EmptyState title="No jobs in trash" />
       ) : typeFilter !== "all" ? (
-        <p className="text-sm text-muted-foreground">
-          No {JOB_TYPE_LABELS[typeFilter].toLowerCase()} jobs.
-        </p>
+        <EmptyState
+          title={`No ${JOB_TYPE_LABELS[typeFilter].toLowerCase()} jobs`}
+        />
       ) : !showForm ? (
         <EmptyState
           title="No jobs yet"
