@@ -89,6 +89,51 @@ describe("BlueprintTierEditor", () => {
     expect(screen.queryByRole("button", { name: "Add tier" })).toBeNull();
   });
 
+  it("defaults tier number to 1 when blueprint has no tiers", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({ tierRows: [] }));
+
+    renderEditor({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("No tiers yet");
+    await user.click(screen.getByRole("button", { name: "Add tier" }));
+
+    await screen.findByRole("heading", { name: "New tier" });
+    const tierNumberInput = screen.getByPlaceholderText("1");
+    expect((tierNumberInput as HTMLInputElement).value).toBe("1");
+  });
+
+  it("defaults tier number to max existing + 1 when blueprint has tiers", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        tierRows: [
+          createTierRow({
+            id: "00000000-0000-0000-0000-000000000010",
+            tier_number: 1,
+          }),
+          createTierRow({
+            id: "00000000-0000-0000-0000-000000000011",
+            tier_number: 2,
+          }),
+          createTierRow({
+            id: "00000000-0000-0000-0000-000000000012",
+            tier_number: 3,
+          }),
+        ],
+      }),
+    );
+
+    renderEditor({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Tier 1");
+    await user.click(screen.getByRole("button", { name: "Add tier" }));
+
+    await screen.findByRole("heading", { name: "New tier" });
+    const tierNumberInput = screen.getByPlaceholderText("1");
+    expect((tierNumberInput as HTMLInputElement).value).toBe("4");
+  });
+
   it("creates a tier with population_cap_increase effect (happy path)", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
