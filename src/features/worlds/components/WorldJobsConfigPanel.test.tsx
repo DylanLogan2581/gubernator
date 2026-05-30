@@ -75,7 +75,7 @@ describe("WorldJobsConfigPanel", () => {
     await screen.findByText("Farming");
     const listItem = screen.getByRole("listitem");
     expect(within(listItem).getByText("Standard")).toBeDefined();
-    expect(within(listItem).getByText("farming")).toBeDefined();
+    expect(within(listItem).queryByText("farming")).toBeNull();
   });
 
   it("shows trashed jobs when trash view is toggled", async () => {

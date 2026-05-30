@@ -308,7 +308,6 @@ function BlueprintRow({
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <span className="text-sm font-medium">{blueprint.name}</span>
-        <span className="text-xs text-muted-foreground">{blueprint.slug}</span>
       </div>
       <div className="flex items-center gap-2">
         <Link
@@ -389,7 +388,6 @@ function TrashedBlueprintRow({
           <span className="text-sm font-medium">{blueprint.name}</span>
           <Badge variant="outline">trashed</Badge>
         </div>
-        <span className="text-xs text-muted-foreground">{blueprint.slug}</span>
       </div>
       <div className="flex items-center gap-2">
         <Button

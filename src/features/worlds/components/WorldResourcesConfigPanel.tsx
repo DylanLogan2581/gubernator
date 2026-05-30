@@ -272,7 +272,6 @@ function ResourceRow({
             <Badge variant="secondary">system</Badge>
           ) : null}
         </div>
-        <span className="text-xs text-muted-foreground">{resource.slug}</span>
       </div>
       <div className="flex items-center gap-3">
         <span className="tabular-nums text-sm text-muted-foreground">
@@ -350,7 +349,6 @@ function TrashedResourceRow({
             <Badge variant="secondary">system</Badge>
           ) : null}
         </div>
-        <span className="text-xs text-muted-foreground">{resource.slug}</span>
       </div>
       <div className="flex items-center gap-2">
         <Button

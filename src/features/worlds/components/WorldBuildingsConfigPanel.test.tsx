@@ -64,7 +64,7 @@ describe("WorldBuildingsConfigPanel", () => {
     expect(screen.queryByRole("button", { name: "Add blueprint" })).toBeNull();
   });
 
-  it("shows blueprint list with slug", async () => {
+  it("shows blueprint list", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         blueprintRows: [
@@ -76,7 +76,7 @@ describe("WorldBuildingsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Farmhouse");
-    expect(screen.getByText("farmhouse")).toBeDefined();
+    expect(screen.queryByText("farmhouse")).toBeNull();
   });
 
   it("shows trashed blueprints when trash view is toggled", async () => {
