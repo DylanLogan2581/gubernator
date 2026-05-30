@@ -15,6 +15,7 @@ import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 import { WorldBuildingsConfigPanel } from "./WorldBuildingsConfigPanel";
 import { WorldDepositsConfigPanel } from "./WorldDepositsConfigPanel";
 import { WorldJobsConfigPanel } from "./WorldJobsConfigPanel";
+import { WorldManagedPopulationsConfigPanel } from "./WorldManagedPopulationsConfigPanel";
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
@@ -170,6 +171,16 @@ function WorldConfigurationContent({
   if (activeTab === "deposits") {
     return (
       <WorldDepositsConfigPanel
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+    );
+  }
+
+  if (activeTab === "managed-populations") {
+    return (
+      <WorldManagedPopulationsConfigPanel
         canAdmin={worldQuery.data.canAdmin}
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
