@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ClipboardList, Plus, Sparkles, X } from "lucide-react";
+import { ClipboardList, Plus, X } from "lucide-react";
 import {
   useEffect,
   useRef,
@@ -19,14 +19,12 @@ type PoolEditorProps = {
   readonly entries: readonly string[];
   readonly label: string;
   readonly onChange: (entries: string[]) => void;
-  readonly onGenerateExample?: () => void;
 };
 
 export function PoolEditor({
   entries,
   label,
   onChange,
-  onGenerateExample,
 }: PoolEditorProps): JSX.Element {
   const [pendingFocusIndex, setPendingFocusIndex] = useState<number | null>(
     null,
@@ -193,17 +191,6 @@ export function PoolEditor({
           <Plus aria-hidden="true" />
           Add entry
         </Button>
-        {onGenerateExample !== undefined ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onGenerateExample}
-          >
-            <Sparkles aria-hidden="true" />
-            Generate example
-          </Button>
-        ) : null}
         <Button
           type="button"
           variant="outline"

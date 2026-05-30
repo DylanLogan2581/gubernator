@@ -8,8 +8,6 @@ import {
   type AccessContext,
 } from "@/features/permissions";
 
-import { NPC_FLAVOR_SAMPLES } from "../npcFlavorSamples";
-
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 
 import type { WorldNpcFlavorConfig } from "../schemas/worldNpcFlavorConfigSchemas";
@@ -105,7 +103,7 @@ describe("WorldNpcFlavorConfigPanel", () => {
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 
-  it("generate example button is hidden for read-only viewers", async () => {
+  it("generate example output button is hidden for read-only viewers", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ worldRows: [createWorldRow()] }),
     );
@@ -122,11 +120,11 @@ describe("WorldNpcFlavorConfigPanel", () => {
 
     await screen.findByRole("heading", { name: "NPC flavor pools" });
     expect(
-      screen.queryByRole("button", { name: "Generate example" }),
+      screen.queryByRole("button", { name: "Generate example output" }),
     ).toBeNull();
   });
 
-  it("clicking generate example appends a sample entry to the active pool draft", async () => {
+  it("clicking generate example output renders a read-only preview sentence", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({ worldRows: [createWorldRow()] }),
@@ -143,70 +141,14 @@ describe("WorldNpcFlavorConfigPanel", () => {
     });
 
     await screen.findByRole("heading", { name: "NPC flavor pools" });
-    await user.click(screen.getByRole("button", { name: "Generate example" }));
+    const initialTextboxCount = screen.getAllByRole("textbox").length;
 
-    const firstTraitSample = NPC_FLAVOR_SAMPLES.traits[0];
-    expect(screen.getByDisplayValue(firstTraitSample)).toBeDefined();
-  });
-
-  it("clicking generate example on goals tab appends to goals pool, not traits", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(
-      createClient({ worldRows: [createWorldRow()] }),
+    await user.click(
+      screen.getByRole("button", { name: "Generate example output" }),
     );
 
-    renderPanel({
-      accessContext: createAccessContext({
-        isSuperAdmin: false,
-        userId: "user-1",
-        worldAdminWorldIds: [],
-      }),
-      canAdmin: true,
-      isArchived: false,
-    });
-
-    await screen.findByRole("heading", { name: "NPC flavor pools" });
-    await user.click(screen.getByRole("tab", { name: /goals/i }));
-    await user.click(screen.getByRole("button", { name: "Generate example" }));
-
-    const firstGoalSample = NPC_FLAVOR_SAMPLES.goals[0];
-    expect(screen.getByDisplayValue(firstGoalSample)).toBeDefined();
-    expect(screen.queryByDisplayValue(NPC_FLAVOR_SAMPLES.traits[0])).toBeNull();
-  });
-
-  it("repeat clicks do not add duplicate entries already in the draft", async () => {
-    const user = userEvent.setup();
-    const allTraitSamples = [...NPC_FLAVOR_SAMPLES.traits];
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        worldRows: [
-          createWorldRow({
-            npc_flavor_config_json: {
-              contradictions: [],
-              flaws: [],
-              goals: [],
-              traits: allTraitSamples,
-            },
-          }),
-        ],
-      }),
-    );
-
-    renderPanel({
-      accessContext: createAccessContext({
-        isSuperAdmin: false,
-        userId: "user-1",
-        worldAdminWorldIds: [],
-      }),
-      canAdmin: true,
-      isArchived: false,
-    });
-
-    await screen.findByRole("heading", { name: "NPC flavor pools" });
-    const initialCount = screen.getAllByRole("textbox").length;
-    await user.click(screen.getByRole("button", { name: "Generate example" }));
-
-    expect(screen.getAllByRole("textbox").length).toBe(initialCount);
+    expect(screen.getByText(/^A .+ who is curious/)).toBeDefined();
+    expect(screen.getAllByRole("textbox").length).toBe(initialTextboxCount);
   });
 
   it("renders read-only summary without save controls for non-admin users", async () => {
@@ -264,12 +206,14 @@ function createQueryClient(): QueryClient {
 function createClient({
   updateResult = { data: { id: WORLD_ID }, error: null },
   worldRows,
+  jobRows = [],
 }: {
   readonly updateResult?: {
     readonly data: { readonly id: string } | null;
     readonly error: { readonly message: string } | null;
   };
   readonly worldRows: readonly TestWorldRow[];
+  readonly jobRows?: readonly unknown[];
 }): {
   readonly from: ReturnType<typeof vi.fn>;
 } {
@@ -277,6 +221,9 @@ function createClient({
     from: vi.fn((table: string) => {
       if (table === "worlds") {
         return createWorldsQueryBuilder(worldRows, updateResult);
+      }
+      if (table === "job_definitions") {
+        return createJobsQueryBuilder(jobRows);
       }
 
       throw new Error(`Unexpected table ${table}`);
@@ -343,5 +290,17 @@ function createWorldsQueryBuilder(
         })),
       })),
     })),
+  };
+}
+
+function createJobsQueryBuilder(rows: readonly unknown[]): unknown {
+  const selectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => selectBuilder),
+    order: vi.fn(() => selectBuilder),
+    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+  };
+
+  return {
+    select: vi.fn(() => selectBuilder),
   };
 }

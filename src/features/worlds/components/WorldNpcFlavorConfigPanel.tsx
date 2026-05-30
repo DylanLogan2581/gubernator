@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { RotateCcw, Save } from "lucide-react";
+import { Save, Sparkles } from "lucide-react";
 import { Tabs } from "radix-ui";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
@@ -13,10 +13,11 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { Button } from "@/components/ui/button";
+import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { createSeededRng } from "@/lib/seededRng";
 
 import { saveWorldNpcFlavorConfigMutationOptions } from "../mutations/worldNpcFlavorConfigMutations";
-import { NPC_FLAVOR_SAMPLES, pickNextSample } from "../npcFlavorSamples";
 import { worldNpcFlavorConfigQueryOptions } from "../queries/worldNpcFlavorConfigQueries";
 
 import type { WorldNpcFlavorConfig } from "../schemas/worldNpcFlavorConfigSchemas";
@@ -97,8 +98,11 @@ function WorldNpcFlavorConfigPanelContent({
       queryClient,
     }),
   );
+  const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
   const [draftConfig, setDraftConfig] =
     useState<WorldNpcFlavorConfig>(initialConfig);
+  const [exampleOutput, setExampleOutput] = useState<string | null>(null);
+  const [previewSeed, setPreviewSeed] = useState<number>(0);
 
   const canEdit = canAdmin && !isArchived;
 
@@ -117,8 +121,24 @@ function WorldNpcFlavorConfigPanelContent({
     );
   }
 
-  function resetDraftConfig(): void {
-    setDraftConfig(initialConfig);
+  function handleGenerateExample(): void {
+    const rng = createSeededRng(previewSeed);
+    setPreviewSeed((current) => current + 1);
+
+    const jobs = jobsQuery.data ?? [];
+    const jobName =
+      jobs.length > 0
+        ? (jobs[Math.floor(rng() * jobs.length)]?.name ?? "Unassigned")
+        : "Unassigned";
+
+    const trait = pickFromPool(draftConfig.traits, rng);
+    const contradiction = pickFromPool(draftConfig.contradictions, rng);
+    const goal = pickFromPool(draftConfig.goals, rng);
+    const flaw = pickFromPool(draftConfig.flaws, rng);
+
+    setExampleOutput(
+      buildExampleSentence(jobName, trait, contradiction, goal, flaw),
+    );
   }
 
   return (
@@ -184,18 +204,6 @@ function WorldNpcFlavorConfigPanelContent({
                 onChange={(traits) =>
                   setDraftConfig((current) => ({ ...current, traits }))
                 }
-                onGenerateExample={() => {
-                  const sample = pickNextSample(
-                    draftConfig.traits,
-                    NPC_FLAVOR_SAMPLES.traits,
-                  );
-                  if (sample !== null) {
-                    setDraftConfig((current) => ({
-                      ...current,
-                      traits: [...current.traits, sample],
-                    }));
-                  }
-                }}
               />
             </Tabs.Content>
             <Tabs.Content value="contradictions" className="mt-3">
@@ -205,18 +213,6 @@ function WorldNpcFlavorConfigPanelContent({
                 onChange={(contradictions) =>
                   setDraftConfig((current) => ({ ...current, contradictions }))
                 }
-                onGenerateExample={() => {
-                  const sample = pickNextSample(
-                    draftConfig.contradictions,
-                    NPC_FLAVOR_SAMPLES.contradictions,
-                  );
-                  if (sample !== null) {
-                    setDraftConfig((current) => ({
-                      ...current,
-                      contradictions: [...current.contradictions, sample],
-                    }));
-                  }
-                }}
               />
             </Tabs.Content>
             <Tabs.Content value="goals" className="mt-3">
@@ -226,18 +222,6 @@ function WorldNpcFlavorConfigPanelContent({
                 onChange={(goals) =>
                   setDraftConfig((current) => ({ ...current, goals }))
                 }
-                onGenerateExample={() => {
-                  const sample = pickNextSample(
-                    draftConfig.goals,
-                    NPC_FLAVOR_SAMPLES.goals,
-                  );
-                  if (sample !== null) {
-                    setDraftConfig((current) => ({
-                      ...current,
-                      goals: [...current.goals, sample],
-                    }));
-                  }
-                }}
               />
             </Tabs.Content>
             <Tabs.Content value="flaws" className="mt-3">
@@ -247,36 +231,30 @@ function WorldNpcFlavorConfigPanelContent({
                 onChange={(flaws) =>
                   setDraftConfig((current) => ({ ...current, flaws }))
                 }
-                onGenerateExample={() => {
-                  const sample = pickNextSample(
-                    draftConfig.flaws,
-                    NPC_FLAVOR_SAMPLES.flaws,
-                  );
-                  if (sample !== null) {
-                    setDraftConfig((current) => ({
-                      ...current,
-                      flaws: [...current.flaws, sample],
-                    }));
-                  }
-                }}
               />
             </Tabs.Content>
           </Tabs.Root>
 
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={saveMutation.isPending}>
-              <Save aria-hidden="true" />
-              Save pools
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={resetDraftConfig}
-              disabled={saveMutation.isPending}
-            >
-              <RotateCcw aria-hidden="true" />
-              Reset
-            </Button>
+          <div className="grid gap-3">
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={saveMutation.isPending}>
+                <Save aria-hidden="true" />
+                Save pools
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGenerateExample}
+              >
+                <Sparkles aria-hidden="true" />
+                Generate example output
+              </Button>
+            </div>
+            {exampleOutput !== null ? (
+              <p className="text-sm italic text-muted-foreground">
+                {exampleOutput}
+              </p>
+            ) : null}
           </div>
         </form>
       ) : (
@@ -284,6 +262,37 @@ function WorldNpcFlavorConfigPanelContent({
       )}
     </section>
   );
+}
+
+function pickFromPool(pool: readonly string[], rng: () => number): string {
+  if (pool.length === 0) return "";
+  return pool[Math.floor(rng() * pool.length)] ?? "";
+}
+
+function buildExampleSentence(
+  job: string,
+  trait: string,
+  contradiction: string,
+  goal: string,
+  flaw: string,
+): string {
+  const descParts: string[] = [];
+  if (trait !== "") descParts.push(`who is ${trait}`);
+  if (contradiction !== "") descParts.push(`but secretly ${contradiction}`);
+
+  let result = `A ${job}`;
+  if (descParts.length > 0) result += ` ${descParts.join(", ")}`;
+  result += ".";
+
+  if (goal !== "" && flaw !== "") {
+    result += ` They want ${goal} but are prevented by ${flaw}.`;
+  } else if (goal !== "") {
+    result += ` They want ${goal}.`;
+  } else if (flaw !== "") {
+    result += ` They are prevented by ${flaw}.`;
+  }
+
+  return result;
 }
 
 function NpcFlavorTab({
