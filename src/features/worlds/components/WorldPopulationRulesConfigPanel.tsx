@@ -9,6 +9,7 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PercentInput } from "@/components/shared/PercentInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -156,16 +157,13 @@ function WorldPopulationRulesConfigPanelContent({
           onSubmit={handleSubmit}
         >
           <fieldset className="grid gap-3">
-            <legend className="text-sm font-medium">
+            <legend className="text-base font-semibold">
               Partnership and fertility
             </legend>
             <div className="grid gap-3 sm:grid-cols-2">
-              <NumberRuleField
+              <PercentRuleField
                 label="Partnership seek chance"
-                hint="Probability [0–1]"
-                min={0}
-                max={1}
-                step={0.01}
+                hint="Probability (0–100%)"
                 value={draftRules.partnership_seek_chance}
                 onChange={(value) =>
                   setDraftRules((r) => ({
@@ -174,12 +172,9 @@ function WorldPopulationRulesConfigPanelContent({
                   }))
                 }
               />
-              <NumberRuleField
+              <PercentRuleField
                 label="Fertility chance"
-                hint="Probability [0–1]"
-                min={0}
-                max={1}
-                step={0.01}
+                hint="Probability (0–100%)"
                 value={draftRules.fertility_chance}
                 onChange={(value) =>
                   setDraftRules((r) => ({ ...r, fertility_chance: value }))
@@ -214,7 +209,7 @@ function WorldPopulationRulesConfigPanelContent({
           </fieldset>
 
           <fieldset className="grid gap-3">
-            <legend className="text-sm font-medium">Lifecycle</legend>
+            <legend className="text-base font-semibold">Lifecycle</legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <NumberRuleField
                 label="Mourning period"
@@ -244,7 +239,7 @@ function WorldPopulationRulesConfigPanelContent({
           </fieldset>
 
           <fieldset className="grid gap-3">
-            <legend className="text-sm font-medium">
+            <legend className="text-base font-semibold">
               Resource consumption
             </legend>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -359,6 +354,26 @@ function NumberRuleField({
   );
 }
 
+function PercentRuleField({
+  hint,
+  label,
+  onChange,
+  value,
+}: {
+  readonly hint: string;
+  readonly label: string;
+  readonly onChange: (value: number) => void;
+  readonly value: number;
+}): JSX.Element {
+  return (
+    <label className="grid gap-1 text-sm">
+      <span className="font-medium">{label}</span>
+      <PercentInput value={value} onChange={onChange} />
+      <span className="text-xs text-muted-foreground">{hint}</span>
+    </label>
+  );
+}
+
 function NullableIntRuleField({
   hint,
   label,
@@ -411,11 +426,11 @@ function PopulationRulesReadOnlySummary({
     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       <ReadoutItem
         label="Partnership seek chance"
-        value={String(rules.partnership_seek_chance)}
+        value={`${String(Math.round(rules.partnership_seek_chance * 100))}%`}
       />
       <ReadoutItem
         label="Fertility chance"
-        value={String(rules.fertility_chance)}
+        value={`${String(Math.round(rules.fertility_chance * 100))}%`}
       />
       <ReadoutItem
         label="Minimum partnership age"
