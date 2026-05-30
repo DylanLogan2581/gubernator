@@ -58,8 +58,11 @@ export type Database = {
       building_blueprints: {
         Row: {
           created_at: string;
+          description: string | null;
+          grace_period_turns: number;
           id: string;
           is_active: boolean;
+          max_instances_per_settlement: number | null;
           name: string;
           slug: string;
           updated_at: string;
@@ -67,8 +70,11 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          description?: string | null;
+          grace_period_turns?: number;
           id?: string;
           is_active?: boolean;
+          max_instances_per_settlement?: number | null;
           name: string;
           slug: string;
           updated_at?: string;
@@ -76,8 +82,11 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          description?: string | null;
+          grace_period_turns?: number;
           id?: string;
           is_active?: boolean;
+          max_instances_per_settlement?: number | null;
           name?: string;
           slug?: string;
           updated_at?: string;
@@ -1460,6 +1469,14 @@ export type Database = {
       };
       is_valid_naming_config: { Args: { config: Json }; Returns: boolean };
       is_valid_npc_flavor_config: { Args: { config: Json }; Returns: boolean };
+      is_valid_resource_cost_array: {
+        Args: { arr: Json; p_world_id: string };
+        Returns: boolean;
+      };
+      is_valid_tier_effects_array: {
+        Args: { arr: Json; p_world_id: string };
+        Returns: boolean;
+      };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
       link_user_to_citizen: {
         Args: { p_citizen_id: string; p_user_id: string };

@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
+import { WorldBuildingsConfigPanel } from "./WorldBuildingsConfigPanel";
 import { WorldJobsConfigPanel } from "./WorldJobsConfigPanel";
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
@@ -34,11 +35,13 @@ const TABS = [
 
 type WorldConfigurationPageProps = {
   readonly activeTab: string;
+  readonly selectedBlueprintId?: string;
   readonly worldId: string;
 };
 
 export function WorldConfigurationPage({
   activeTab,
+  selectedBlueprintId,
   worldId,
 }: WorldConfigurationPageProps): JSX.Element {
   const queryClient = useQueryClient();
@@ -95,6 +98,7 @@ export function WorldConfigurationPage({
           <WorldConfigurationContent
             accessContext={accessContextQuery.data}
             activeTab={activeTab}
+            selectedBlueprintId={selectedBlueprintId}
             worldId={worldId}
           />
         )}
@@ -106,10 +110,12 @@ export function WorldConfigurationPage({
 function WorldConfigurationContent({
   accessContext,
   activeTab,
+  selectedBlueprintId,
   worldId,
 }: {
   readonly accessContext: Parameters<typeof worldRouteAccessQueryOptions>[1];
   readonly activeTab: string;
+  readonly selectedBlueprintId?: string;
   readonly worldId: string;
 }): JSX.Element | null {
   const worldQuery = useQuery(
@@ -144,6 +150,17 @@ function WorldConfigurationContent({
       <WorldJobsConfigPanel
         canAdmin={worldQuery.data.canAdmin}
         isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+    );
+  }
+
+  if (activeTab === "buildings") {
+    return (
+      <WorldBuildingsConfigPanel
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        selectedBlueprintId={selectedBlueprintId}
         worldId={worldId}
       />
     );

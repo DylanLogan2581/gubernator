@@ -84,12 +84,18 @@ type DeleteTierMutationOptions = UseMutationOptions<
 >;
 
 type BlueprintInsertPayload = {
+  description?: string;
+  grace_period_turns?: number;
+  max_instances_per_settlement?: number;
   name: string;
   slug: string;
   world_id: string;
 };
 
 type BlueprintUpdatePayload = {
+  description?: string | null;
+  grace_period_turns?: number;
+  max_instances_per_settlement?: number | null;
   name?: string;
   slug?: string;
 };
@@ -112,8 +118,11 @@ type TierUpdatePayload = {
 
 type BlueprintRow = {
   readonly created_at: string;
+  readonly description: string | null;
+  readonly grace_period_turns: number;
   readonly id: string;
   readonly is_active: boolean;
+  readonly max_instances_per_settlement: number | null;
   readonly name: string;
   readonly slug: string;
   readonly updated_at: string;
@@ -159,7 +168,7 @@ type TierRow = {
 };
 
 const BLUEPRINT_SELECT =
-  "id,world_id,name,slug,is_active,created_at,updated_at";
+  "id,world_id,name,slug,description,grace_period_turns,max_instances_per_settlement,is_active,created_at,updated_at";
 
 const TIER_SELECT =
   "id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json,created_at,updated_at";
@@ -305,6 +314,17 @@ async function createBlueprint(
     world_id: values.worldId,
   };
 
+  if (values.description !== undefined) {
+    insertPayload.description = values.description;
+  }
+  if (values.gracePeriodTurns !== undefined) {
+    insertPayload.grace_period_turns = values.gracePeriodTurns;
+  }
+  if (values.maxInstancesPerSettlement !== undefined) {
+    insertPayload.max_instances_per_settlement =
+      values.maxInstancesPerSettlement;
+  }
+
   const { data, error } = await client
     .from("building_blueprints")
     .insert(insertPayload)
@@ -338,6 +358,17 @@ async function updateBlueprint(
   }
   if (values.slug !== undefined) {
     updatePayload.slug = values.slug.trim();
+  }
+  if (values.description !== undefined) {
+    updatePayload.description =
+      values.description.length > 0 ? values.description : null;
+  }
+  if (values.gracePeriodTurns !== undefined) {
+    updatePayload.grace_period_turns = values.gracePeriodTurns;
+  }
+  if (values.maxInstancesPerSettlement !== undefined) {
+    updatePayload.max_instances_per_settlement =
+      values.maxInstancesPerSettlement;
   }
 
   const { data, error } = await client
@@ -548,8 +579,11 @@ function toEffectJson(effects: readonly TierEffect[]): Json {
 function toBlueprint(row: BlueprintRow): BuildingBlueprint {
   return {
     createdAt: row.created_at,
+    description: row.description,
+    gracePeriodTurns: row.grace_period_turns,
     id: row.id,
     isActive: row.is_active,
+    maxInstancesPerSettlement: row.max_instances_per_settlement,
     name: row.name,
     slug: row.slug,
     updatedAt: row.updated_at,

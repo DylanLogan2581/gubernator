@@ -18,6 +18,21 @@ const blueprintSlugSchema = z
   .max(buildingInputLimits.blueprintSlugMax, "Blueprint slug is too long.")
   .refine((v): boolean => v.trim().length > 0, "Blueprint slug is required.");
 
+const blueprintDescriptionSchema = z
+  .string()
+  .max(buildingInputLimits.blueprintDescriptionMax, "Description is too long.")
+  .optional();
+
+const gracePeriodTurnsSchema = z
+  .int()
+  .min(0, "Grace period must be non-negative.")
+  .optional();
+
+const maxInstancesPerSettlementSchema = z
+  .int()
+  .min(1, "Max instances must be at least 1.")
+  .optional();
+
 const tierNumberSchema = z.int().min(1, "Tier number must be at least 1.");
 
 const workerTurnsRequiredSchema = z
@@ -58,6 +73,9 @@ const tierCostArraySchema = z.array(tierCostEntrySchema);
 const tierEffectArraySchema = z.array(tierEffectSchema);
 
 export const createBlueprintInputSchema = z.strictObject({
+  description: blueprintDescriptionSchema,
+  gracePeriodTurns: gracePeriodTurnsSchema,
+  maxInstancesPerSettlement: maxInstancesPerSettlementSchema,
   name: blueprintNameSchema,
   slug: blueprintSlugSchema,
   worldId: worldIdSchema,
@@ -66,12 +84,21 @@ export const createBlueprintInputSchema = z.strictObject({
 export const updateBlueprintInputSchema = z
   .strictObject({
     blueprintId: blueprintIdSchema,
+    description: blueprintDescriptionSchema,
+    gracePeriodTurns: gracePeriodTurnsSchema,
+    maxInstancesPerSettlement: maxInstancesPerSettlementSchema,
     name: blueprintNameSchema.optional(),
     slug: blueprintSlugSchema.optional(),
     worldId: worldIdSchema,
   })
   .superRefine((value, ctx): void => {
-    if (value.name === undefined && value.slug === undefined) {
+    if (
+      value.name === undefined &&
+      value.slug === undefined &&
+      value.description === undefined &&
+      value.gracePeriodTurns === undefined &&
+      value.maxInstancesPerSettlement === undefined
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "At least one field must be provided.",

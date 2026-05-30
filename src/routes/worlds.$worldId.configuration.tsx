@@ -28,21 +28,30 @@ type ConfigurationTab = (typeof CONFIGURATION_TABS)[number];
 const DEFAULT_TAB: ConfigurationTab = "resources";
 
 const configurationSearchSchema = z.object({
+  blueprint: z.string().optional(),
   tab: z.enum(CONFIGURATION_TABS).optional(),
 });
 
 function parseConfigurationSearch(search: unknown): {
+  readonly blueprint?: string;
   readonly tab: ConfigurationTab;
 } {
   const result = configurationSearchSchema.safeParse(search);
   const tab = result.success ? (result.data.tab ?? DEFAULT_TAB) : DEFAULT_TAB;
-  return { tab };
+  const blueprint = result.success ? result.data.blueprint : undefined;
+  return { blueprint, tab };
 }
 
 function WorldConfigurationRoute(): JSX.Element {
   const { worldId } = Route.useParams();
-  const { tab } = Route.useSearch();
-  return <WorldConfigurationPage activeTab={tab} worldId={worldId} />;
+  const { blueprint, tab } = Route.useSearch();
+  return (
+    <WorldConfigurationPage
+      activeTab={tab}
+      selectedBlueprintId={blueprint}
+      worldId={worldId}
+    />
+  );
 }
 
 export const Route = createFileRoute("/worlds/$worldId/configuration")({

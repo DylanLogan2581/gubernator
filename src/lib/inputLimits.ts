@@ -45,6 +45,7 @@ export const jobInputLimits = {
 } as const;
 
 export const buildingInputLimits = {
+  blueprintDescriptionMax: 500,
   blueprintNameMax: 64,
   blueprintSlugMax: 64,
 } as const;
