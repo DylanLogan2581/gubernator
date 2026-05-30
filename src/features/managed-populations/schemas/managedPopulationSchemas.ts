@@ -45,17 +45,27 @@ export const populationResourceEntrySchema = z.strictObject({
 
 const populationResourceArraySchema = z.array(populationResourceEntrySchema);
 
-export const createManagedPopulationTypeInputSchema = z.strictObject({
-  cullingJobId: jobIdSchema,
-  cullingOutputsJson: populationResourceArraySchema.optional(),
-  growthRate: growthRateSchema,
-  husbandryJobId: jobIdSchema,
-  husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema,
-  maintenanceRulesJson: populationResourceArraySchema.optional(),
-  name: populationTypeNameSchema,
-  slug: populationTypeSlugSchema,
-  worldId: worldIdSchema,
-});
+export const createManagedPopulationTypeInputSchema = z
+  .strictObject({
+    cullingJobId: jobIdSchema,
+    cullingOutputsJson: populationResourceArraySchema.optional(),
+    growthRate: growthRateSchema,
+    husbandryJobId: jobIdSchema,
+    husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema,
+    maintenanceRulesJson: populationResourceArraySchema.optional(),
+    name: populationTypeNameSchema,
+    slug: populationTypeSlugSchema,
+    worldId: worldIdSchema,
+  })
+  .superRefine((value, ctx): void => {
+    if (value.husbandryJobId === value.cullingJobId) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Husbandry job and culling job must be different.",
+        path: ["cullingJobId"],
+      });
+    }
+  });
 
 export const updateManagedPopulationTypeInputSchema = z
   .strictObject({
@@ -85,6 +95,18 @@ export const updateManagedPopulationTypeInputSchema = z
         code: "custom",
         message: "At least one field must be provided.",
         path: ["name"],
+      });
+    }
+
+    if (
+      value.husbandryJobId !== undefined &&
+      value.cullingJobId !== undefined &&
+      value.husbandryJobId === value.cullingJobId
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Husbandry job and culling job must be different.",
+        path: ["cullingJobId"],
       });
     }
   });
