@@ -14,6 +14,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { activeDepositTypesByWorldQueryOptions } from "@/features/deposits";
 import {
   createJobInputSchema,
@@ -44,12 +45,6 @@ import { jobInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
 import { cn } from "@/lib/utils";
-
-const SELECT_CLASS =
-  "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80";
-
-const IO_ROW_SELECT_CLASS =
-  "flex-1 min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 dark:disabled:bg-input/80";
 
 const JOB_TYPES: readonly { label: string; value: JobType }[] = [
   { label: "Standard", value: "standard" },
@@ -797,8 +792,8 @@ function EditJobForm({
         {job.jobType === "deposit" ? (
           <label className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Linked deposit type</span>
-            <select
-              className={SELECT_CLASS}
+            <NativeSelect
+              className="w-full"
               disabled={isPending}
               value={linkedDepositTypeId}
               onChange={(e) => {
@@ -811,7 +806,7 @@ function EditJobForm({
                   {dt.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         ) : null}
 
@@ -820,8 +815,8 @@ function EditJobForm({
             <span className="text-muted-foreground">
               Linked managed population type
             </span>
-            <select
-              className={SELECT_CLASS}
+            <NativeSelect
+              className="w-full"
               disabled={isPending}
               value={linkedManagedPopulationTypeId}
               onChange={(e) => {
@@ -834,7 +829,7 @@ function EditJobForm({
                   {mpt.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
         ) : null}
 
@@ -966,10 +961,10 @@ function JobIoEditor({
             return (
               <li key={index} className="grid gap-1">
                 <div className="flex items-center gap-2">
-                  <select
+                  <NativeSelect
                     aria-invalid={isDeletedResource}
                     aria-label={`${label} entry ${String(index + 1)} resource`}
-                    className={IO_ROW_SELECT_CLASS}
+                    className="flex-1"
                     disabled={disabled}
                     value={isDeletedResource ? "" : row.resourceId}
                     onChange={(e) => {
@@ -986,7 +981,7 @@ function JobIoEditor({
                         {r.name}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                   <Input
                     aria-label={`${label} entry ${String(index + 1)} amount per worker`}
                     className="w-24 shrink-0"

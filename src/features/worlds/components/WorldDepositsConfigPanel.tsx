@@ -14,6 +14,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   createDepositTypeMutationOptions,
   createDepositTypeInputSchema,
@@ -549,11 +550,11 @@ function CreateDepositTypeForm({
         </label>
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Linked deposit job</span>
-          <select
+          <NativeSelect
             aria-invalid={
               fieldErrors.jobId !== undefined || jobLinkError !== undefined
             }
-            className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+            className="w-full"
             disabled={isPending}
             value={jobId}
             onChange={(e) => {
@@ -566,7 +567,7 @@ function CreateDepositTypeForm({
                 {job.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           {jobLinkError !== undefined ? (
             <p className="text-xs text-destructive">{jobLinkError}</p>
           ) : fieldErrors.jobId !== undefined ? (
@@ -786,11 +787,11 @@ function EditDepositTypeForm({
         </label>
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Linked deposit job</span>
-          <select
+          <NativeSelect
             aria-invalid={
               fieldErrors.jobId !== undefined || jobLinkError !== undefined
             }
-            className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80"
+            className="w-full"
             disabled={isPending}
             value={jobId}
             onChange={(e) => {
@@ -803,7 +804,7 @@ function EditDepositTypeForm({
                 {job.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           {jobLinkError !== undefined ? (
             <p className="text-xs text-destructive">{jobLinkError}</p>
           ) : fieldErrors.jobId !== undefined ? (
@@ -939,9 +940,9 @@ function WorkerInputsEditor({
         <ul className="grid gap-2">
           {workerInputs.map((wi, index) => (
             <li key={index} className="flex items-center gap-2">
-              <select
+              <NativeSelect
                 aria-label={`Worker input ${String(index + 1)} resource`}
-                className="flex-1 min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 dark:bg-input/30 dark:disabled:bg-input/80"
+                className="flex-1"
                 disabled={disabled}
                 value={wi.resourceId}
                 onChange={(e) => {
@@ -953,7 +954,7 @@ function WorkerInputsEditor({
                     {r.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <Input
                 aria-label={`Worker input ${String(index + 1)} amount per worker`}
                 className="w-24 shrink-0"
