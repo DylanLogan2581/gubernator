@@ -4,14 +4,15 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Plus, RotateCcw, Save, X } from "lucide-react";
+import { RotateCcw, Save } from "lucide-react";
+import { Tabs } from "radix-ui";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PoolEditor } from "@/components/shared/PoolEditor";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import { saveWorldNpcFlavorConfigMutationOptions } from "../mutations/worldNpcFlavorConfigMutations";
@@ -152,34 +153,66 @@ function WorldNpcFlavorConfigPanelContent({
           noValidate
           onSubmit={handleSubmit}
         >
-          <PoolEditor
-            label="Traits"
-            entries={draftConfig.traits}
-            onChange={(traits) =>
-              setDraftConfig((current) => ({ ...current, traits }))
-            }
-          />
-          <PoolEditor
-            label="Contradictions"
-            entries={draftConfig.contradictions}
-            onChange={(contradictions) =>
-              setDraftConfig((current) => ({ ...current, contradictions }))
-            }
-          />
-          <PoolEditor
-            label="Goals"
-            entries={draftConfig.goals}
-            onChange={(goals) =>
-              setDraftConfig((current) => ({ ...current, goals }))
-            }
-          />
-          <PoolEditor
-            label="Flaws"
-            entries={draftConfig.flaws}
-            onChange={(flaws) =>
-              setDraftConfig((current) => ({ ...current, flaws }))
-            }
-          />
+          <Tabs.Root defaultValue="traits">
+            <Tabs.List className="flex gap-1 rounded-md border border-border bg-muted p-1">
+              <NpcFlavorTab
+                value="traits"
+                label="Traits"
+                count={draftConfig.traits.length}
+              />
+              <NpcFlavorTab
+                value="contradictions"
+                label="Contradictions"
+                count={draftConfig.contradictions.length}
+              />
+              <NpcFlavorTab
+                value="goals"
+                label="Goals"
+                count={draftConfig.goals.length}
+              />
+              <NpcFlavorTab
+                value="flaws"
+                label="Flaws"
+                count={draftConfig.flaws.length}
+              />
+            </Tabs.List>
+            <Tabs.Content value="traits" className="mt-3">
+              <PoolEditor
+                label="Traits"
+                entries={draftConfig.traits}
+                onChange={(traits) =>
+                  setDraftConfig((current) => ({ ...current, traits }))
+                }
+              />
+            </Tabs.Content>
+            <Tabs.Content value="contradictions" className="mt-3">
+              <PoolEditor
+                label="Contradictions"
+                entries={draftConfig.contradictions}
+                onChange={(contradictions) =>
+                  setDraftConfig((current) => ({ ...current, contradictions }))
+                }
+              />
+            </Tabs.Content>
+            <Tabs.Content value="goals" className="mt-3">
+              <PoolEditor
+                label="Goals"
+                entries={draftConfig.goals}
+                onChange={(goals) =>
+                  setDraftConfig((current) => ({ ...current, goals }))
+                }
+              />
+            </Tabs.Content>
+            <Tabs.Content value="flaws" className="mt-3">
+              <PoolEditor
+                label="Flaws"
+                entries={draftConfig.flaws}
+                onChange={(flaws) =>
+                  setDraftConfig((current) => ({ ...current, flaws }))
+                }
+              />
+            </Tabs.Content>
+          </Tabs.Root>
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={saveMutation.isPending}>
@@ -204,60 +237,25 @@ function WorldNpcFlavorConfigPanelContent({
   );
 }
 
-function PoolEditor({
-  entries,
+function NpcFlavorTab({
+  count,
   label,
-  onChange,
+  value,
 }: {
-  readonly entries: readonly string[];
+  readonly count: number;
   readonly label: string;
-  readonly onChange: (entries: string[]) => void;
+  readonly value: string;
 }): JSX.Element {
   return (
-    <fieldset className="grid gap-2">
-      <legend className="text-sm font-medium">{label}</legend>
-      {entries.length === 0 ? (
-        <p className="text-sm italic text-muted-foreground">No entries yet.</p>
-      ) : (
-        <ul className="grid gap-1.5">
-          {entries.map((entry, index) => (
-            <li key={index} className="flex gap-2">
-              <Input
-                value={entry}
-                onChange={(event) => {
-                  const next = [...entries];
-                  next[index] = event.currentTarget.value;
-                  onChange(next);
-                }}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Remove entry ${String(index + 1)}`}
-                onClick={() => {
-                  const next = entries.filter((_, i) => i !== index);
-                  onChange(next);
-                }}
-              >
-                <X aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onChange([...entries, ""])}
-        >
-          <Plus aria-hidden="true" />
-          Add entry
-        </Button>
-      </div>
-    </fieldset>
+    <Tabs.Trigger
+      value={value}
+      className="flex-1 rounded px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:text-foreground"
+    >
+      {label}
+      {count > 0 ? (
+        <span className="ml-1 opacity-60">({String(count)})</span>
+      ) : null}
+    </Tabs.Trigger>
   );
 }
 
