@@ -6,7 +6,7 @@
 begin;
 
 select
-  plan (15);
+  plan (19);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -118,7 +118,7 @@ select
   format('husbandry-%s', n),
   'husbandry'
 from
-  generate_series(1, 16) as n;
+  generate_series(1, 19) as n;
 
 insert into
   public.job_definitions (id, world_id, name, slug, job_type)
@@ -132,7 +132,7 @@ select
   format('culling-%s', n),
   'culling'
 from
-  generate_series(1, 16) as n;
+  generate_series(1, 19) as n;
 
 -- ===========================================================================
 -- MAINTENANCE_RULES_JSON SHAPE VALIDATION
@@ -338,6 +338,94 @@ select
     '23514',
     null,
     'culling_outputs_json element referencing soft-deleted resource is rejected'
+  );
+
+-- element missing resource_id
+select
+  throws_ok (
+    $test$
+    insert into public.managed_population_types (
+      world_id, name, slug, husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+    )
+    values (
+      'f2000000-0000-0000-0000-000000000001',
+      'Test', 'co4',
+      'f4000000-0000-0000-0000-000000000033',
+      'f4000000-0000-0000-0000-000000000034',
+      1, 0,
+      '[{"amount_per_n_animals": 1}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'culling_outputs_json element missing resource_id is rejected'
+  );
+
+-- amount_per_n_animals is a string, not a number
+select
+  throws_ok (
+    $test$
+    insert into public.managed_population_types (
+      world_id, name, slug, husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+    )
+    values (
+      'f2000000-0000-0000-0000-000000000001',
+      'Test', 'co5',
+      'f4000000-0000-0000-0000-000000000035',
+      'f4000000-0000-0000-0000-000000000036',
+      1, 0,
+      '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": "ten"}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'culling_outputs_json element with string amount_per_n_animals is rejected'
+  );
+
+-- extra key present
+select
+  throws_ok (
+    $test$
+    insert into public.managed_population_types (
+      world_id, name, slug, husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+    )
+    values (
+      'f2000000-0000-0000-0000-000000000001',
+      'Test', 'co6',
+      'f4000000-0000-0000-0000-000000000037',
+      'f4000000-0000-0000-0000-000000000038',
+      1, 0,
+      '[{"resource_id": "f3000000-0000-0000-0000-000000000001", "amount_per_n_animals": 1, "extra": true}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'culling_outputs_json element with extra key is rejected'
+  );
+
+-- resource_id does not exist in any world
+select
+  throws_ok (
+    $test$
+    insert into public.managed_population_types (
+      world_id, name, slug, husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate, culling_outputs_json
+    )
+    values (
+      'f2000000-0000-0000-0000-000000000001',
+      'Test', 'co7',
+      'f4000000-0000-0000-0000-000000000039',
+      'f4000000-0000-0000-0000-000000000040',
+      1, 0,
+      '[{"resource_id": "00000000-0000-0000-0000-000000000000", "amount_per_n_animals": 1}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'culling_outputs_json element with unknown resource_id is rejected'
   );
 
 -- ===========================================================================
