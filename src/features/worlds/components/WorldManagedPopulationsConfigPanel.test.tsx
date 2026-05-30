@@ -520,6 +520,220 @@ describe("WorldManagedPopulationsConfigPanel", () => {
     await screen.findByText("Cattle");
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
   });
+
+  it("create form shows growth rate as a whole-percent input defaulting to 0", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        husbandryJobRows: [
+          createJobRow({
+            id: HUSBANDRY_JOB_ID,
+            name: "Cattle Husbandry",
+            job_type: "husbandry",
+          }),
+        ],
+        cullingJobRows: [
+          createJobRow({
+            id: CULLING_JOB_ID,
+            name: "Cattle Culling",
+            job_type: "culling",
+          }),
+        ],
+        populationTypeRows: [],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Managed Population Types" });
+    await user.click(
+      screen.getByRole("button", { name: "Add population type" }),
+    );
+
+    const growthRateInput = await screen.findByRole("spinbutton", {
+      name: "Growth rate",
+    });
+    expect(growthRateInput).toHaveValue(0);
+  });
+
+  it("create form submits a 0–1 decimal when the user enters a whole percent", async () => {
+    const user = userEvent.setup();
+    const populationTypeRow = createPopulationTypeRow({ name: "Cattle" });
+    const insertMock = vi.fn(() => ({
+      select: vi.fn(() => ({
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: populationTypeRow, error: null }),
+      })),
+    }));
+    requireSupabaseClient.mockReturnValue(
+      createClientWithInsertSpy({
+        husbandryJobRows: [
+          createJobRow({
+            id: HUSBANDRY_JOB_ID,
+            name: "Cattle Husbandry",
+            job_type: "husbandry",
+          }),
+        ],
+        cullingJobRows: [
+          createJobRow({
+            id: CULLING_JOB_ID,
+            name: "Cattle Culling",
+            job_type: "culling",
+          }),
+        ],
+        populationTypeRows: [],
+        resourceRows: [],
+        insertMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Managed Population Types" });
+    await user.click(
+      screen.getByRole("button", { name: "Add population type" }),
+    );
+
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "Cattle");
+    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
+    await user.type(screen.getByRole("textbox", { name: "Slug" }), "cattle");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Husbandry job" }),
+      HUSBANDRY_JOB_ID,
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Culling job" }),
+      CULLING_JOB_ID,
+    );
+
+    const growthRateInput = screen.getByRole("spinbutton", {
+      name: "Growth rate",
+    });
+    await user.clear(growthRateInput);
+    await user.type(growthRateInput, "5");
+
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    await waitFor(() => {
+      expect(insertMock).toHaveBeenCalled();
+    });
+
+    const calls = insertMock.mock.calls as unknown as Array<
+      [Record<string, unknown>]
+    >;
+    expect(calls[0]?.[0]?.growth_rate).toBeCloseTo(0.05);
+  });
+
+  it("edit form displays growth_rate 0.05 as 5 in the percent input", async () => {
+    const user = userEvent.setup();
+    const populationTypeRow = createPopulationTypeRow({
+      husbandry_job_id: HUSBANDRY_JOB_ID,
+      culling_job_id: CULLING_JOB_ID,
+      name: "Cattle",
+      growth_rate: 0.05,
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        husbandryJobRows: [
+          createJobRow({
+            id: HUSBANDRY_JOB_ID,
+            name: "Cattle Husbandry",
+            job_type: "husbandry",
+          }),
+        ],
+        cullingJobRows: [
+          createJobRow({
+            id: CULLING_JOB_ID,
+            name: "Cattle Culling",
+            job_type: "culling",
+          }),
+        ],
+        populationTypeRows: [populationTypeRow],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Cattle");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", {
+      name: "Edit managed population type",
+    });
+
+    expect(screen.getByRole("spinbutton", { name: "Growth rate" })).toHaveValue(
+      5,
+    );
+  });
+
+  it("edit form submits a 0–1 decimal when the user enters a whole percent", async () => {
+    const user = userEvent.setup();
+    const populationTypeRow = createPopulationTypeRow({
+      husbandry_job_id: HUSBANDRY_JOB_ID,
+      culling_job_id: CULLING_JOB_ID,
+      name: "Cattle",
+      growth_rate: 0.05,
+    });
+    const updateBuilder: Record<string, unknown> = {
+      eq: vi.fn(() => updateBuilder),
+      select: vi.fn(() => ({
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: populationTypeRow, error: null }),
+      })),
+    };
+    const updateMock = vi.fn(() => updateBuilder);
+    requireSupabaseClient.mockReturnValue(
+      createClientWithUpdateSpy({
+        husbandryJobRows: [
+          createJobRow({
+            id: HUSBANDRY_JOB_ID,
+            name: "Cattle Husbandry",
+            job_type: "husbandry",
+          }),
+        ],
+        cullingJobRows: [
+          createJobRow({
+            id: CULLING_JOB_ID,
+            name: "Cattle Culling",
+            job_type: "culling",
+          }),
+        ],
+        populationTypeRows: [populationTypeRow],
+        resourceRows: [],
+        updateMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Cattle");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", {
+      name: "Edit managed population type",
+    });
+
+    const growthRateInput = screen.getByRole("spinbutton", {
+      name: "Growth rate",
+    });
+    await user.clear(growthRateInput);
+    await user.type(growthRateInput, "10");
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(updateMock).toHaveBeenCalled();
+    });
+
+    const updateCalls = updateMock.mock.calls as unknown as Array<
+      [Record<string, unknown>]
+    >;
+    expect(updateCalls[0]?.[0]?.growth_rate).toBeCloseTo(0.1);
+  });
 });
 
 function renderPanel({
@@ -757,5 +971,109 @@ function createResourcesQueryBuilder(
 
   return {
     select: vi.fn(() => selectBuilder),
+  };
+}
+
+function createClientWithInsertSpy({
+  husbandryJobRows,
+  cullingJobRows,
+  populationTypeRows,
+  resourceRows,
+  insertMock,
+}: {
+  readonly cullingJobRows: readonly TestJobRow[];
+  readonly husbandryJobRows: readonly TestJobRow[];
+  readonly insertMock: ReturnType<typeof vi.fn>;
+  readonly populationTypeRows: readonly TestPopulationTypeRow[];
+  readonly resourceRows: readonly TestResourceRow[];
+}): { readonly from: ReturnType<typeof vi.fn> } {
+  const selectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => selectBuilder),
+    order: vi.fn(() => selectBuilder),
+    returns: vi
+      .fn()
+      .mockResolvedValue({ data: populationTypeRows, error: null }),
+  };
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "managed_population_types") {
+        return {
+          insert: insertMock,
+          select: vi.fn(() => selectBuilder),
+          update: vi.fn(() => {
+            const updateBuilder: Record<string, unknown> = {
+              eq: vi.fn(() => updateBuilder),
+              select: vi.fn(() => ({
+                maybeSingle: vi
+                  .fn()
+                  .mockResolvedValue({
+                    data: createPopulationTypeRow(),
+                    error: null,
+                  }),
+              })),
+            };
+            return updateBuilder;
+          }),
+        };
+      }
+      if (table === "job_definitions") {
+        return createJobsQueryBuilder(husbandryJobRows, cullingJobRows);
+      }
+      if (table === "resources") {
+        return createResourcesQueryBuilder(resourceRows);
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+  };
+}
+
+function createClientWithUpdateSpy({
+  husbandryJobRows,
+  cullingJobRows,
+  populationTypeRows,
+  resourceRows,
+  updateMock,
+}: {
+  readonly cullingJobRows: readonly TestJobRow[];
+  readonly husbandryJobRows: readonly TestJobRow[];
+  readonly populationTypeRows: readonly TestPopulationTypeRow[];
+  readonly resourceRows: readonly TestResourceRow[];
+  readonly updateMock: ReturnType<typeof vi.fn>;
+}): { readonly from: ReturnType<typeof vi.fn> } {
+  const selectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => selectBuilder),
+    order: vi.fn(() => selectBuilder),
+    returns: vi
+      .fn()
+      .mockResolvedValue({ data: populationTypeRows, error: null }),
+  };
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "managed_population_types") {
+        return {
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({
+                  data: createPopulationTypeRow(),
+                  error: null,
+                }),
+            })),
+          })),
+          select: vi.fn(() => selectBuilder),
+          update: updateMock,
+        };
+      }
+      if (table === "job_definitions") {
+        return createJobsQueryBuilder(husbandryJobRows, cullingJobRows);
+      }
+      if (table === "resources") {
+        return createResourcesQueryBuilder(resourceRows);
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
   };
 }
