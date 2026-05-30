@@ -390,7 +390,7 @@ function TrashedResourceRow({
   }
 
   return (
-    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 opacity-60">
+    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{resource.name}</span>
