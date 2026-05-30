@@ -50,6 +50,11 @@ export const buildingInputLimits = {
   blueprintSlugMax: 64,
 } as const;
 
+export const depositInputLimits = {
+  depositTypeNameMax: 64,
+  depositTypeSlugMax: 64,
+} as const;
+
 export const namingInputLimits = {
   namePoolSizeMax: 100,
   namePoolEntryMax: 64,
