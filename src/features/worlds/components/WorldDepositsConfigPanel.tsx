@@ -36,6 +36,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { sortByName } from "@/lib/sortUtils";
 
 type WorldDepositsConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -560,7 +561,7 @@ function CreateDepositTypeForm({
             }}
           >
             <option value="">Select a deposit job…</option>
-            {depositJobs.map((job) => (
+            {sortByName(depositJobs).map((job) => (
               <option key={job.id} value={job.id}>
                 {job.name}
               </option>
@@ -797,7 +798,7 @@ function EditDepositTypeForm({
             }}
           >
             <option value="">Select a deposit job…</option>
-            {depositJobs.map((job) => (
+            {sortByName(depositJobs).map((job) => (
               <option key={job.id} value={job.id}>
                 {job.name}
               </option>
@@ -947,7 +948,7 @@ function WorkerInputsEditor({
                   handleResourceChange(index, e.currentTarget.value);
                 }}
               >
-                {availableResources.map((r) => (
+                {sortByName(availableResources).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
                   </option>

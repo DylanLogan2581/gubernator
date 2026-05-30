@@ -37,6 +37,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { sortByName } from "@/lib/sortUtils";
 
 type WorldManagedPopulationsConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -530,7 +531,7 @@ function PopulationTypeScalarFields({
           }}
         >
           <option value="">Select a husbandry job…</option>
-          {husbandryJobs.map((job) => (
+          {sortByName(husbandryJobs).map((job) => (
             <option key={job.id} value={job.id}>
               {job.name}
             </option>
@@ -562,7 +563,7 @@ function PopulationTypeScalarFields({
           }}
         >
           <option value="">Select a culling job…</option>
-          {cullingJobs.map((job) => (
+          {sortByName(cullingJobs).map((job) => (
             <option key={job.id} value={job.id}>
               {job.name}
             </option>
@@ -1140,7 +1141,7 @@ function PopulationResourceEditor({
                   handleResourceChange(index, e.currentTarget.value);
                 }}
               >
-                {availableResources.map((r) => (
+                {sortByName(availableResources).map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
                   </option>

@@ -42,6 +42,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { sortByName } from "@/lib/sortUtils";
 import { cn } from "@/lib/utils";
 
 const SELECT_CLASS =
@@ -980,7 +981,7 @@ function JobIoEditor({
                         Deleted resource
                       </option>
                     ) : null}
-                    {resources.map((r) => (
+                    {sortByName(resources).map((r) => (
                       <option key={r.id} value={r.id}>
                         {r.name}
                       </option>

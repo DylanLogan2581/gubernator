@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
+import { sortByName } from "@/lib/sortUtils";
 import { cn } from "@/lib/utils";
 
 import type { CostRowState, EffectRowState } from "../utils/tierEditorUtils";
@@ -79,7 +80,7 @@ export function CostEditor({
             }}
           >
             <option value="">Select resource</option>
-            {activeResources.map((r) => (
+            {sortByName(activeResources).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
               </option>
@@ -216,7 +217,7 @@ export function EffectsEditor({
                       }}
                     >
                       <option value="">Select job</option>
-                      {activeJobs.map((j) => (
+                      {sortByName(activeJobs).map((j) => (
                         <option key={j.id} value={j.id}>
                           {j.name}
                         </option>
@@ -256,7 +257,7 @@ export function EffectsEditor({
                       }}
                     >
                       <option value="">Select resource</option>
-                      {activeResources.map((r) => (
+                      {sortByName(activeResources).map((r) => (
                         <option key={r.id} value={r.id}>
                           {r.name}
                         </option>
