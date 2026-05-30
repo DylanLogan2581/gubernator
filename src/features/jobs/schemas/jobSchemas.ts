@@ -39,44 +39,45 @@ const commonCreateFields = {
   worldId: worldIdSchema,
 };
 
-// Discriminated union — each job type enforces its required type-specific field.
-// standard/construction: base_capacity
-// trader:               trader_capacity_per_worker
-// deposit:              linked_deposit_type_id
-// husbandry/culling:    linked_managed_population_type_id
+// Discriminated union — each job type permits its type-specific field.
+// Type-specific fields are optional on creation; linkage is completed in the
+// edit form (issue #13) once deposit-type and managed-population-type features
+// are available.
 export const createJobInputSchema = z.discriminatedUnion("jobType", [
   z.strictObject({
-    baseCapacity: baseCapacitySchema,
+    baseCapacity: baseCapacitySchema.nullish(),
     jobType: z.literal("standard"),
     ...commonCreateFields,
   }),
   z.strictObject({
-    baseCapacity: baseCapacitySchema,
+    baseCapacity: baseCapacitySchema.nullish(),
     jobType: z.literal("construction"),
     ...commonCreateFields,
   }),
   z.strictObject({
     jobType: z.literal("trader"),
-    traderCapacityPerWorker: traderCapacityPerWorkerSchema,
+    traderCapacityPerWorker: traderCapacityPerWorkerSchema.nullish(),
     ...commonCreateFields,
   }),
   z.strictObject({
     jobType: z.literal("deposit"),
-    linkedDepositTypeId: z.guid("Deposit type id must be a valid UUID."),
+    linkedDepositTypeId: z
+      .guid("Deposit type id must be a valid UUID.")
+      .nullish(),
     ...commonCreateFields,
   }),
   z.strictObject({
     jobType: z.literal("husbandry"),
-    linkedManagedPopulationTypeId: z.guid(
-      "Managed population type id must be a valid UUID.",
-    ),
+    linkedManagedPopulationTypeId: z
+      .guid("Managed population type id must be a valid UUID.")
+      .nullish(),
     ...commonCreateFields,
   }),
   z.strictObject({
     jobType: z.literal("culling"),
-    linkedManagedPopulationTypeId: z.guid(
-      "Managed population type id must be a valid UUID.",
-    ),
+    linkedManagedPopulationTypeId: z
+      .guid("Managed population type id must be a valid UUID.")
+      .nullish(),
     ...commonCreateFields,
   }),
 ]);

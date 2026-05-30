@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
+import { WorldJobsConfigPanel } from "./WorldJobsConfigPanel";
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
@@ -131,6 +132,16 @@ function WorldConfigurationContent({
   if (activeTab === "resources") {
     return (
       <WorldResourcesConfigPanel
+        canAdmin={worldQuery.data.canAdmin}
+        isArchived={worldQuery.data.header.isArchived}
+        worldId={worldId}
+      />
+    );
+  }
+
+  if (activeTab === "jobs") {
+    return (
+      <WorldJobsConfigPanel
         canAdmin={worldQuery.data.canAdmin}
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}

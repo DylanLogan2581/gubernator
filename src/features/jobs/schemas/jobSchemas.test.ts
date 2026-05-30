@@ -179,8 +179,8 @@ describe("createJobInputSchema — discrimination", () => {
   });
 });
 
-describe("createJobInputSchema — type-specific required fields", () => {
-  it("rejects a standard job missing baseCapacity", () => {
+describe("createJobInputSchema — type-specific optional fields", () => {
+  it("accepts a standard job without baseCapacity", () => {
     const result = createJobInputSchema.safeParse({
       jobType: "standard",
       name: "Farm Worker",
@@ -188,10 +188,10 @@ describe("createJobInputSchema — type-specific required fields", () => {
       worldId: WORLD_ID,
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects a construction job missing baseCapacity", () => {
+  it("accepts a construction job without baseCapacity", () => {
     const result = createJobInputSchema.safeParse({
       jobType: "construction",
       name: "Builder",
@@ -199,10 +199,10 @@ describe("createJobInputSchema — type-specific required fields", () => {
       worldId: WORLD_ID,
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects a trader job missing traderCapacityPerWorker", () => {
+  it("accepts a trader job without traderCapacityPerWorker", () => {
     const result = createJobInputSchema.safeParse({
       jobType: "trader",
       name: "Merchant",
@@ -210,10 +210,10 @@ describe("createJobInputSchema — type-specific required fields", () => {
       worldId: WORLD_ID,
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects a deposit job missing linkedDepositTypeId", () => {
+  it("accepts a deposit job without linkedDepositTypeId", () => {
     const result = createJobInputSchema.safeParse({
       jobType: "deposit",
       name: "Miner",
@@ -221,10 +221,10 @@ describe("createJobInputSchema — type-specific required fields", () => {
       worldId: WORLD_ID,
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects a husbandry job missing linkedManagedPopulationTypeId", () => {
+  it("accepts a husbandry job without linkedManagedPopulationTypeId", () => {
     const result = createJobInputSchema.safeParse({
       jobType: "husbandry",
       name: "Herdsman",
@@ -232,10 +232,10 @@ describe("createJobInputSchema — type-specific required fields", () => {
       worldId: WORLD_ID,
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects a culling job missing linkedManagedPopulationTypeId", () => {
+  it("accepts a culling job without linkedManagedPopulationTypeId", () => {
     const result = createJobInputSchema.safeParse({
       jobType: "culling",
       name: "Hunter",
@@ -243,7 +243,7 @@ describe("createJobInputSchema — type-specific required fields", () => {
       worldId: WORLD_ID,
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects a standard job with a non-integer baseCapacity", () => {
