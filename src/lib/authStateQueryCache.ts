@@ -3,6 +3,7 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 export const authStateQueryCacheKeys = {
   authAll: ["auth"] as const,
+  buildingsAll: ["buildings"] as const,
   calendarAll: ["calendar"] as const,
   citizensAll: ["citizens"] as const,
   currentAppUser: () =>
@@ -22,6 +23,7 @@ export const authStateQueryCacheKeys = {
 
 const authDependentQueryKeys = [
   authStateQueryCacheKeys.currentAppUser(),
+  authStateQueryCacheKeys.buildingsAll,
   authStateQueryCacheKeys.calendarAll,
   authStateQueryCacheKeys.citizensAll,
   authStateQueryCacheKeys.jobsAll,
