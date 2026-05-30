@@ -277,6 +277,7 @@ function BlueprintTierEditorContent({
           activeResources={activeResources}
           blueprintId={blueprint.id}
           isPending={createMutation.isPending}
+          tiers={tiers}
           onCancel={() => {
             setShowCreateForm(false);
           }}
@@ -378,6 +379,7 @@ function CreateTierForm({
   activeResources,
   blueprintId,
   isPending,
+  tiers,
   onCancel,
   onSubmit,
 }: {
@@ -385,10 +387,13 @@ function CreateTierForm({
   readonly activeResources: readonly Resource[];
   readonly blueprintId: string;
   readonly isPending: boolean;
+  readonly tiers: readonly BuildingBlueprintTier[];
   readonly onCancel: () => void;
   readonly onSubmit: (input: CreateTierInput) => void;
 }): JSX.Element {
-  const [tierNumber, setTierNumber] = useState("1");
+  const nextTierNumber =
+    tiers.length > 0 ? Math.max(...tiers.map((t) => t.tierNumber)) + 1 : 1;
+  const [tierNumber, setTierNumber] = useState(String(nextTierNumber));
   const [workerTurns, setWorkerTurns] = useState("0");
   const [constructionCosts, setConstructionCosts] = useState<CostRowState[]>(
     [],
