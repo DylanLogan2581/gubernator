@@ -5,13 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { BuildingsConfigPanel } from "@/features/buildings";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { DepositsConfigPanel } from "@/features/deposits";
@@ -61,8 +55,6 @@ export function WorldConfigurationPage({
     currentAccessContextQueryOptions(queryClient),
   );
 
-  const activeLabel = TABS.find((t) => t.key === activeTab)?.label ?? activeTab;
-
   function handleTabSelect(key: TabKey): void {
     void navigate({
       to: "/worlds/$worldId/configuration",
@@ -83,21 +75,18 @@ export function WorldConfigurationPage({
 
       {/* Mobile select — visible below md breakpoint */}
       <div className="md:hidden">
-        <Select
+        <NativeSelect
+          aria-label="Configuration section"
+          className="w-full"
           value={activeTab}
-          onValueChange={(v) => handleTabSelect(v as TabKey)}
+          onChange={(e) => handleTabSelect(e.target.value as TabKey)}
         >
-          <SelectTrigger aria-label="Configuration section" className="w-full">
-            <SelectValue>{activeLabel}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {TABS.map(({ key, label }) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {TABS.map(({ key, label }) => (
+            <option key={key} value={key}>
+              {label}
+            </option>
+          ))}
+        </NativeSelect>
       </div>
 
       {/* Desktop tab strip — scrollable, visible from md up */}
