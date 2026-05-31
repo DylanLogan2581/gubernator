@@ -170,7 +170,7 @@ function WorldNamingConfigPanelContent({
           {showEmptyPoolWarning ? (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+              className="flex items-start gap-2 rounded-md border border-warning-foreground/20 bg-warning px-4 py-3 text-sm text-warning-foreground"
             >
               <AlertTriangle
                 aria-hidden="true"
