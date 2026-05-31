@@ -1,3 +1,8 @@
+import {
+  checkResourceIdsInWorld,
+  type ReferenceIssue,
+} from "@/lib/validateReferenceHelpers";
+
 type MinimalEntity = { readonly id: string };
 
 type TierCostRef = { readonly resourceId: string };
@@ -29,10 +34,7 @@ type TierReferencePayload = {
   readonly upkeepCostsJson?: readonly TierCostRef[];
 };
 
-export type BuildingReferenceIssue = {
-  readonly field: string;
-  readonly message: string;
-};
+export type BuildingReferenceIssue = ReferenceIssue;
 
 // Pre-flight reference check for tier create/update payloads.
 // Returns UI-friendly issues when referenced entities are absent from the
@@ -47,43 +49,40 @@ export function validateBlueprintTierReferencesAgainstWorld(
   const activeResourceIds = new Set(activeResources.map((r) => r.id));
   const activeJobIds = new Set(activeJobs.map((j) => j.id));
 
-  for (const entry of payload.constructionCostsJson ?? []) {
-    if (!activeResourceIds.has(entry.resourceId)) {
-      issues.push({
-        field: "constructionCostsJson",
-        message: `Resource ${entry.resourceId} is not an active resource in this world.`,
-      });
-    }
-  }
+  checkResourceIdsInWorld(
+    "constructionCostsJson",
+    payload.constructionCostsJson ?? [],
+    activeResourceIds,
+    issues,
+  );
+  checkResourceIdsInWorld(
+    "upkeepCostsJson",
+    payload.upkeepCostsJson ?? [],
+    activeResourceIds,
+    issues,
+  );
 
-  for (const entry of payload.upkeepCostsJson ?? []) {
-    if (!activeResourceIds.has(entry.resourceId)) {
-      issues.push({
-        field: "upkeepCostsJson",
-        message: `Resource ${entry.resourceId} is not an active resource in this world.`,
-      });
-    }
-  }
+  const resourceEffects = (payload.effectsJson ?? []).filter(
+    (e): e is Extract<TierEffectRef, { readonly resourceId: string }> =>
+      e.type === "passive_resource_production" ||
+      e.type === "resource_storage_increase",
+  );
+  checkResourceIdsInWorld(
+    "effectsJson",
+    resourceEffects,
+    activeResourceIds,
+    issues,
+  );
 
   for (const effect of payload.effectsJson ?? []) {
     if (
-      effect.type === "passive_resource_production" ||
-      effect.type === "resource_storage_increase"
+      effect.type === "job_capacity_increase" &&
+      !activeJobIds.has(effect.jobId)
     ) {
-      if (!activeResourceIds.has(effect.resourceId)) {
-        issues.push({
-          field: "effectsJson",
-          message: `Resource ${effect.resourceId} is not an active resource in this world.`,
-        });
-      }
-    }
-    if (effect.type === "job_capacity_increase") {
-      if (!activeJobIds.has(effect.jobId)) {
-        issues.push({
-          field: "effectsJson",
-          message: `Job ${effect.jobId} is not an active job in this world.`,
-        });
-      }
+      issues.push({
+        field: "effectsJson",
+        message: `Job ${effect.jobId} is not an active job in this world.`,
+      });
     }
   }
 
