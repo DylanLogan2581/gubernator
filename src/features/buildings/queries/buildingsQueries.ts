@@ -1,10 +1,11 @@
-import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
+import { type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
 import {
   BLUEPRINT_SELECT,
@@ -61,9 +62,9 @@ export function blueprintsByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): BlueprintsByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getBlueprintsByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getBlueprintsByWorld(c, worldId),
     queryKey: buildingsQueryKeys.blueprintsByWorld(worldId),
   });
 }
@@ -72,9 +73,9 @@ export function tiersByBlueprintQueryOptions(
   blueprintId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): TiersByBlueprintQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getTiersByBlueprint(client, blueprintId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getTiersByBlueprint(c, blueprintId),
     queryKey: buildingsQueryKeys.tiersByBlueprint(blueprintId),
   });
 }
@@ -83,9 +84,9 @@ export function blueprintByIdQueryOptions(
   blueprintId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): BlueprintDetailQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getBlueprintById(client, blueprintId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getBlueprintById(c, blueprintId),
     queryKey: buildingsQueryKeys.blueprintById(blueprintId),
   });
 }
@@ -94,9 +95,9 @@ export function tierByIdQueryOptions(
   tierId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): TierDetailQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getTierById(client, tierId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getTierById(c, tierId),
     queryKey: buildingsQueryKeys.tierById(tierId),
   });
 }

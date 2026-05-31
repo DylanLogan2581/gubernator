@@ -1,10 +1,11 @@
-import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
+import { type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
 import {
   MANAGED_POPULATION_TYPE_SELECT,
@@ -48,9 +49,9 @@ export function managedPopulationTypesByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): ManagedPopulationTypesByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getManagedPopulationTypesByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getManagedPopulationTypesByWorld(c, worldId),
     queryKey: managedPopulationsQueryKeys.byWorld(worldId),
   });
 }
@@ -59,9 +60,9 @@ export function activeManagedPopulationTypesByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): ActiveManagedPopulationTypesByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getActiveManagedPopulationTypesByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getActiveManagedPopulationTypesByWorld(c, worldId),
     queryKey: managedPopulationsQueryKeys.activeByWorld(worldId),
   });
 }
@@ -70,10 +71,9 @@ export function managedPopulationTypeByIdQueryOptions(
   managedPopulationTypeId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): ManagedPopulationTypeDetailQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () =>
-      getManagedPopulationTypeById(client, managedPopulationTypeId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getManagedPopulationTypeById(c, managedPopulationTypeId),
     queryKey: managedPopulationsQueryKeys.detail(managedPopulationTypeId),
   });
 }

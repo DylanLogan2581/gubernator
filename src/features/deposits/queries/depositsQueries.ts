@@ -1,10 +1,11 @@
-import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
+import { type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
 import {
   DEPOSIT_TYPE_SELECT,
@@ -44,9 +45,9 @@ export function depositTypesByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): DepositTypesByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getDepositTypesByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getDepositTypesByWorld(c, worldId),
     queryKey: depositsQueryKeys.byWorld(worldId),
   });
 }
@@ -55,9 +56,9 @@ export function activeDepositTypesByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): ActiveDepositTypesByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getActiveDepositTypesByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getActiveDepositTypesByWorld(c, worldId),
     queryKey: depositsQueryKeys.activeByWorld(worldId),
   });
 }
@@ -66,9 +67,9 @@ export function depositTypeByIdQueryOptions(
   depositTypeId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): DepositTypeDetailQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getDepositTypeById(client, depositTypeId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getDepositTypeById(c, depositTypeId),
     queryKey: depositsQueryKeys.detail(depositTypeId),
   });
 }

@@ -1,10 +1,11 @@
-import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
+import { type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
 import { RESOURCE_SELECT, toResource, type ResourceRow } from "./resourceRow";
 import { resourcesQueryKeys } from "./resourcesQueryKeys";
@@ -40,9 +41,9 @@ export function resourcesByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): ResourcesByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getResourcesByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getResourcesByWorld(c, worldId),
     queryKey: resourcesQueryKeys.byWorld(worldId),
   });
 }
@@ -51,9 +52,9 @@ export function activeResourcesByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): ActiveResourcesByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getActiveResourcesByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getActiveResourcesByWorld(c, worldId),
     queryKey: resourcesQueryKeys.activeByWorld(worldId),
   });
 }
@@ -62,9 +63,9 @@ export function resourceByIdQueryOptions(
   resourceId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): ResourceDetailQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getResourceById(client, resourceId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getResourceById(c, resourceId),
     queryKey: resourcesQueryKeys.detail(resourceId),
   });
 }
