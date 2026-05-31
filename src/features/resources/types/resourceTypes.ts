@@ -4,7 +4,7 @@ export type Resource = {
   readonly baseStockpileCap: number;
   readonly createdAt: string;
   readonly id: string;
-  readonly isDeleted: boolean;
+  readonly isTrashed: boolean;
   readonly isSystemResource: boolean;
   readonly lastCleanupSummaryJson: Json;
   readonly name: string;

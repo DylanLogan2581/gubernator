@@ -81,8 +81,8 @@ export function WorldDepositsConfigPanel({
 
   const allDepositTypes = depositTypesQuery.data;
   const visibleDepositTypes = showTrash
-    ? allDepositTypes.filter((dt) => !dt.isActive)
-    : allDepositTypes.filter((dt) => dt.isActive);
+    ? allDepositTypes.filter((dt) => dt.isTrashed)
+    : allDepositTypes.filter((dt) => !dt.isTrashed);
 
   return (
     <WorldDepositsConfigPanelContent
@@ -926,7 +926,7 @@ function WorkerInputsEditor({
   readonly workerInputs: WorkerInputEntry[];
   readonly onChange: (inputs: WorkerInputEntry[]) => void;
 }): JSX.Element {
-  const availableResources = resources.filter((r) => !r.isDeleted);
+  const availableResources = resources.filter((r) => !r.isTrashed);
 
   function handleAdd(): void {
     if (availableResources.length === 0) return;

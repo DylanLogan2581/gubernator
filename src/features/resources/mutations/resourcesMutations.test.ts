@@ -20,7 +20,7 @@ type ResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly id: string;
-  readonly is_deleted: boolean;
+  readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: Json;
   readonly name: string;
@@ -399,7 +399,7 @@ function createResourceRow(overrides: Partial<ResourceRow> = {}): ResourceRow {
     base_stockpile_cap: 0,
     created_at: "2026-05-01T00:00:00.000Z",
     id: RESOURCE_ID,
-    is_deleted: false,
+    is_trashed: false,
     is_system_resource: false,
     last_cleanup_summary_json: null,
     name: "Iron Ore",

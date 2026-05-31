@@ -285,10 +285,10 @@ describe("WorldResourcesConfigPanel", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         resourceRows: [
-          createResourceRow({ is_deleted: false, name: "Active Resource" }),
+          createResourceRow({ is_trashed: false, name: "Active Resource" }),
           createResourceRow({
             id: "00000000-0000-0000-0000-000000000010",
-            is_deleted: true,
+            is_trashed: true,
             name: "Trashed Resource",
           }),
         ],
@@ -337,7 +337,7 @@ type TestResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly id: string;
-  readonly is_deleted: boolean;
+  readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: null;
   readonly name: string;
@@ -353,7 +353,7 @@ function createResourceRow(
     base_stockpile_cap: 0,
     created_at: "2026-01-01T00:00:00.000Z",
     id: RESOURCE_ID,
-    is_deleted: false,
+    is_trashed: false,
     is_system_resource: false,
     last_cleanup_summary_json: null,
     name: "Food",

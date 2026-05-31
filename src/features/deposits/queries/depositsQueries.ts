@@ -43,7 +43,7 @@ type WorkerInputEntryRow = {
 type DepositTypeRow = {
   readonly created_at: string;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_id: string;
   // Embedded FK references — job_definitions whose linked_deposit_type_id = this id.
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
@@ -56,7 +56,7 @@ type DepositTypeRow = {
 };
 
 const DEPOSIT_TYPE_SELECT = [
-  "id,world_id,name,slug,job_id,output_units_per_worker,worker_inputs_json,is_active,created_at,updated_at",
+  "id,world_id,name,slug,job_id,output_units_per_worker,worker_inputs_json,is_trashed,created_at,updated_at",
   "referencing_jobs:job_definitions!job_definitions_linked_deposit_type_fk(id)",
 ].join(",");
 
@@ -120,7 +120,7 @@ async function getActiveDepositTypesByWorld(
     .from("deposit_types")
     .select(DEPOSIT_TYPE_SELECT)
     .eq("world_id", worldId)
-    .eq("is_active", true)
+    .eq("is_trashed", false)
     .order("name", { ascending: true })
     .order("id", { ascending: true })
     .returns<DepositTypeRow[]>();
@@ -161,7 +161,7 @@ function toDepositType(row: DepositTypeRow): DepositType {
     createdAt: row.created_at,
     hasActiveReferences: row.referencing_jobs.length > 0,
     id: row.id,
-    isActive: row.is_active,
+    isTrashed: row.is_trashed,
     jobId: row.job_id,
     name: row.name,
     outputUnitsPerWorker: row.output_units_per_worker,

@@ -104,10 +104,10 @@ describe("WorldDepositsConfigPanel", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         depositTypeRows: [
-          createDepositTypeRow({ is_active: true, name: "Active Deposit" }),
+          createDepositTypeRow({ is_trashed: false, name: "Active Deposit" }),
           createDepositTypeRow({
             id: "00000000-0000-0000-0000-000000000010",
-            is_active: false,
+            is_trashed: true,
             name: "Trashed Deposit",
           }),
         ],
@@ -375,7 +375,7 @@ function createQueryClient(): QueryClient {
 type TestDepositTypeRow = {
   readonly created_at: string;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_id: string;
   readonly name: string;
   readonly output_units_per_worker: number;
@@ -394,7 +394,7 @@ type TestJobRow = {
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly unknown[];
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_type: string;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
@@ -410,7 +410,7 @@ type TestResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly id: string;
-  readonly is_deleted: boolean;
+  readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: null;
   readonly name: string;
@@ -425,7 +425,7 @@ function createDepositTypeRow(
   return {
     created_at: "2026-01-01T00:00:00.000Z",
     id: DEPOSIT_TYPE_ID,
-    is_active: true,
+    is_trashed: false,
     job_id: JOB_ID,
     name: "Test Deposit",
     output_units_per_worker: 1,
@@ -447,7 +447,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     husbandry_mpt: [],
     id: JOB_ID,
     inputs_json: [],
-    is_active: true,
+    is_trashed: false,
     job_type: "deposit",
     linked_deposit_type_id: null,
     linked_managed_population_type_id: null,
@@ -468,7 +468,7 @@ function createResourceRow(
     base_stockpile_cap: 1000,
     created_at: "2026-01-01T00:00:00.000Z",
     id: RESOURCE_ID,
-    is_deleted: false,
+    is_trashed: false,
     is_system_resource: false,
     last_cleanup_summary_json: null,
     name: "Iron",

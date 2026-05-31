@@ -18,7 +18,7 @@ export type JobDefinition = {
   readonly hasActiveReferences: boolean;
   readonly id: string;
   readonly inputsJson: readonly JobIoEntry[];
-  readonly isActive: boolean;
+  readonly isTrashed: boolean;
   readonly jobType: JobType;
   readonly linkedDepositTypeId: string | null;
   readonly linkedManagedPopulationTypeId: string | null;

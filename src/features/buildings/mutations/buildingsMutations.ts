@@ -138,7 +138,7 @@ type BlueprintRow = {
   readonly description: string | null;
   readonly grace_period_turns: number;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly max_instances_per_settlement: number | null;
   readonly name: string;
   readonly slug: string;
@@ -185,7 +185,7 @@ type TierRow = {
 };
 
 const BLUEPRINT_SELECT =
-  "id,world_id,name,slug,description,grace_period_turns,max_instances_per_settlement,is_active,created_at,updated_at";
+  "id,world_id,name,slug,description,grace_period_turns,max_instances_per_settlement,is_trashed,created_at,updated_at";
 
 const TIER_SELECT =
   "id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json,created_at,updated_at";
@@ -705,7 +705,7 @@ function toBlueprint(row: BlueprintRow): BuildingBlueprint {
     description: row.description,
     gracePeriodTurns: row.grace_period_turns,
     id: row.id,
-    isActive: row.is_active,
+    isTrashed: row.is_trashed,
     maxInstancesPerSettlement: row.max_instances_per_settlement,
     name: row.name,
     slug: row.slug,

@@ -245,7 +245,7 @@ select
   ok (
     not (
       select
-        is_deleted
+        is_trashed
       from
         public.resources
       where
@@ -287,7 +287,7 @@ select
   ok (
     not (
       select
-        is_deleted
+        is_trashed
       from
         public.resources
       where
@@ -310,14 +310,14 @@ select
   ok (
     (
       select
-        is_deleted
+        is_trashed
       from
         public.soft_delete_resource (
           'd3000000-0000-0000-0000-000000000001',
           'd2000000-0000-0000-0000-000000000001'
         )
     ),
-    'soft_delete_resource returns the resource row with is_deleted = true'
+    'soft_delete_resource returns the resource row with is_trashed = true'
   );
 
 reset role;

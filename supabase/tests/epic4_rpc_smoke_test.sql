@@ -56,7 +56,7 @@ values
   );
 
 insert into
-  public.resources (id, world_id, name, slug, is_deleted)
+  public.resources (id, world_id, name, slug, is_trashed)
 values
   (
     'ab200000-0000-0000-0000-000000000002',
@@ -89,7 +89,7 @@ values
 
 update public.job_definitions
 set
-  is_active = false
+  is_trashed = true
 where
   id = 'ab300000-0000-0000-0000-000000000002';
 
@@ -130,14 +130,14 @@ values
   );
 
 insert into
-  public.building_blueprints (id, world_id, name, slug, is_active)
+  public.building_blueprints (id, world_id, name, slug, is_trashed)
 values
   (
     'ab400000-0000-0000-0000-000000000002',
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Forge Trashed',
     'smoke-forge-trashed',
-    false
+    true
   );
 
 -- Deposit types: one active, one pre-trashed.
@@ -168,7 +168,7 @@ insert into
     slug,
     job_id,
     output_units_per_worker,
-    is_active
+    is_trashed
   )
 values
   (
@@ -178,7 +178,7 @@ values
     'smoke-coal-trashed',
     'ab300000-0000-0000-0000-000000000003',
     1,
-    false
+    true
   );
 
 -- Managed population types: one active, one pre-trashed.
@@ -212,7 +212,7 @@ insert into
     husbandry_job_id,
     culling_job_id,
     husbandry_workers_per_n_animals,
-    is_active
+    is_trashed
   )
 values
   (
@@ -223,7 +223,7 @@ values
     'ab300000-0000-0000-0000-000000000004',
     'ab300000-0000-0000-0000-000000000005',
     10,
-    false
+    true
   );
 
 -- ===========================================================================

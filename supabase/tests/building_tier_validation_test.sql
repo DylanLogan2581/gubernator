@@ -77,7 +77,7 @@ values
 
 -- Old Stone: soft-deleted resource in world 1
 insert into
-  public.resources (id, world_id, name, slug, is_deleted)
+  public.resources (id, world_id, name, slug, is_trashed)
 values
   (
     'c3000000-0000-0000-0000-000000000003',
@@ -109,7 +109,7 @@ insert into
     slug,
     job_type,
     base_capacity,
-    is_active
+    is_trashed
   )
 values
   (
@@ -119,7 +119,7 @@ values
     'retired-farming',
     'standard',
     5,
-    false
+    true
   );
 
 -- Foreign Trade: active job in world 2 (cross-world rejection tests)

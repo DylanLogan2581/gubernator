@@ -99,14 +99,13 @@ where
 
 -- Building blueprint and tier referencing both resource and job.
 insert into
-  public.building_blueprints (id, world_id, name, slug, is_active)
+  public.building_blueprints (id, world_id, name, slug)
 values
   (
     'f5000000-0000-0000-0000-000000000001',
     'f2000000-0000-0000-0000-000000000001',
     'Forge',
-    'forge',
-    true
+    'forge'
   );
 
 insert into
@@ -167,17 +166,17 @@ select
     'direct delete on a referenced resource is rejected'
   );
 
--- Flipping is_deleted on a referenced resource is rejected.
+-- Flipping is_trashed on a referenced resource is rejected.
 select
   throws_ok (
     $test$
     update public.resources
-    set is_deleted = true
+    set is_trashed = true
     where id = 'f3000000-0000-0000-0000-000000000001'
     $test$,
     '23001',
     null,
-    'flipping is_deleted=true on a referenced resource is rejected'
+    'flipping is_trashed=true on a referenced resource is rejected'
   );
 
 -- Renames on a referenced resource are still allowed.
@@ -215,17 +214,17 @@ select
     'direct delete on a job referenced by a tier effect is rejected'
   );
 
--- Direct UPDATE flipping is_active=false on a referenced job is rejected.
+-- Direct UPDATE flipping is_trashed=true on a referenced job is rejected.
 select
   throws_ok (
     $test$
     update public.job_definitions
-    set is_active = false
+    set is_trashed = true
     where id = 'f4000000-0000-0000-0000-000000000001'
     $test$,
     '23001',
     null,
-    'flipping is_active=false on a referenced job is rejected'
+    'flipping is_trashed=true on a referenced job is rejected'
   );
 
 -- Renames on a referenced job are still allowed.

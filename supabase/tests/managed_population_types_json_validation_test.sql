@@ -76,7 +76,7 @@ values
 
 -- Old Hay: soft-deleted resource in world 1
 insert into
-  public.resources (id, world_id, name, slug, is_deleted)
+  public.resources (id, world_id, name, slug, is_trashed)
 values
   (
     'f3000000-0000-0000-0000-000000000003',
