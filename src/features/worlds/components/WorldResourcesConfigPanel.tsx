@@ -602,7 +602,7 @@ function EditResourceForm({
         {!resource.isSystemResource ? (
           <Button
             type="button"
-            variant="destructive"
+            variant="outline"
             size="sm"
             disabled={isPending}
             onClick={() => {
