@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (26);
+  plan (30);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -562,6 +562,78 @@ select
     '23514',
     null,
     'non-husbandry/culling job with linked_managed_population_type_id rejected by check constraint'
+  );
+
+-- base_capacity = 0 rejected
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (world_id, name, slug, job_type, base_capacity)
+    values (
+      'a2000000-0000-0000-0000-000000000001',
+      'Zero Cap Job',
+      'zero-cap-job',
+      'standard',
+      0
+    )
+  $test$,
+    '23514',
+    null,
+    'base_capacity of zero rejected by check constraint'
+  );
+
+-- base_capacity negative rejected
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (world_id, name, slug, job_type, base_capacity)
+    values (
+      'a2000000-0000-0000-0000-000000000001',
+      'Negative Cap Job',
+      'negative-cap-job',
+      'standard',
+      -1
+    )
+  $test$,
+    '23514',
+    null,
+    'negative base_capacity rejected by check constraint'
+  );
+
+-- trader_capacity_per_worker = 0 rejected
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (world_id, name, slug, job_type, trader_capacity_per_worker)
+    values (
+      'a2000000-0000-0000-0000-000000000001',
+      'Zero Trader Cap Job',
+      'zero-trader-cap-job',
+      'trader',
+      0
+    )
+  $test$,
+    '23514',
+    null,
+    'trader_capacity_per_worker of zero rejected by check constraint'
+  );
+
+-- trader_capacity_per_worker negative rejected
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (world_id, name, slug, job_type, trader_capacity_per_worker)
+    values (
+      'a2000000-0000-0000-0000-000000000001',
+      'Negative Trader Cap Job',
+      'negative-trader-cap-job',
+      'trader',
+      -5
+    )
+  $test$,
+    '23514',
+    null,
+    'negative trader_capacity_per_worker rejected by check constraint'
   );
 
 select
