@@ -1,3 +1,4 @@
+export { ResourcesConfigPanel } from "./components/ResourcesConfigPanel";
 export {
   ResourceMutationError,
   createResourceMutationOptions,

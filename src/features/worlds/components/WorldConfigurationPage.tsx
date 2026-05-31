@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
+import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,6 @@ import { WorldManagedPopulationsConfigPanel } from "./WorldManagedPopulationsCon
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
-import { WorldResourcesConfigPanel } from "./WorldResourcesConfigPanel";
 
 import type { JSX, ReactNode } from "react";
 
@@ -178,7 +178,7 @@ function WorldConfigurationContent({
   if (activeTab === "resources") {
     return (
       <ConfigPanelShell>
-        <WorldResourcesConfigPanel
+        <ResourcesConfigPanel
           canAdmin={worldQuery.data.canAdmin}
           isArchived={worldQuery.data.header.isArchived}
           worldId={worldId}
