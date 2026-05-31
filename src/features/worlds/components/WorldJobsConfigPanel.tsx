@@ -1265,9 +1265,7 @@ function CreateJobForm({
       <h3 className="text-sm font-medium">New job</h3>
       <div className="grid gap-3">
         <fieldset>
-          <legend className="mb-2 text-sm text-muted-foreground">
-            Job type
-          </legend>
+          <legend className="mb-2 text-base font-semibold">Job type</legend>
           <div className="flex flex-wrap gap-3">
             {JOB_TYPES.map(({ label, value }) => (
               <label key={value} className="flex items-center gap-1.5 text-sm">
