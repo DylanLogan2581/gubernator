@@ -74,6 +74,17 @@ export const hardDeleteResourceInputSchema = z.strictObject({
   worldId: worldIdSchema,
 });
 
+export const cleanupSummarySchema = z.object({
+  building_tier_construction_costs_cleaned: z.number().int().nonnegative(),
+  building_tier_effects_cleaned: z.number().int().nonnegative(),
+  building_tier_upkeep_costs_cleaned: z.number().int().nonnegative(),
+  deposit_types_worker_inputs_cleaned: z.number().int().nonnegative(),
+  job_definitions_inputs_cleaned: z.number().int().nonnegative(),
+  job_definitions_outputs_cleaned: z.number().int().nonnegative(),
+  managed_population_culling_outputs_cleaned: z.number().int().nonnegative(),
+  managed_population_maintenance_cleaned: z.number().int().nonnegative(),
+});
+
 export type CreateResourceInput = z.input<typeof createResourceInputSchema>;
 export type CreateResourceValues = z.output<typeof createResourceInputSchema>;
 export type UpdateResourceInput = z.input<typeof updateResourceInputSchema>;

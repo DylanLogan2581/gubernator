@@ -12,6 +12,7 @@ import {
 } from "../queries/resourceRow";
 import { resourcesQueryKeys } from "../queries/resourcesQueryKeys";
 import {
+  cleanupSummarySchema,
   createResourceInputSchema,
   hardDeleteResourceInputSchema,
   restoreResourceInputSchema,
@@ -223,34 +224,33 @@ async function softDeleteResource(
 }
 
 function parseCleanupSummary(json: Json): ResourceCleanupSummary {
-  const obj =
-    json !== null && typeof json === "object" && !Array.isArray(json)
-      ? (json as Record<string, Json>)
-      : {};
+  const result = cleanupSummarySchema.safeParse(json);
+  if (!result.success) {
+    return {
+      buildingTierConstructionCostsCleaned: 0,
+      buildingTierEffectsCleaned: 0,
+      buildingTierUpkeepCostsCleaned: 0,
+      depositTypesWorkerInputsCleaned: 0,
+      jobDefinitionsInputsCleaned: 0,
+      jobDefinitionsOutputsCleaned: 0,
+      managedPopulationCullingOutputsCleaned: 0,
+      managedPopulationMaintenanceCleaned: 0,
+    };
+  }
+  const { data } = result;
   return {
-    buildingTierConstructionCostsCleaned: toInt(
-      obj["building_tier_construction_costs_cleaned"],
-    ),
-    buildingTierEffectsCleaned: toInt(obj["building_tier_effects_cleaned"]),
-    buildingTierUpkeepCostsCleaned: toInt(
-      obj["building_tier_upkeep_costs_cleaned"],
-    ),
-    depositTypesWorkerInputsCleaned: toInt(
-      obj["deposit_types_worker_inputs_cleaned"],
-    ),
-    jobDefinitionsInputsCleaned: toInt(obj["job_definitions_inputs_cleaned"]),
-    jobDefinitionsOutputsCleaned: toInt(obj["job_definitions_outputs_cleaned"]),
-    managedPopulationCullingOutputsCleaned: toInt(
-      obj["managed_population_culling_outputs_cleaned"],
-    ),
-    managedPopulationMaintenanceCleaned: toInt(
-      obj["managed_population_maintenance_cleaned"],
-    ),
+    buildingTierConstructionCostsCleaned:
+      data.building_tier_construction_costs_cleaned,
+    buildingTierEffectsCleaned: data.building_tier_effects_cleaned,
+    buildingTierUpkeepCostsCleaned: data.building_tier_upkeep_costs_cleaned,
+    depositTypesWorkerInputsCleaned: data.deposit_types_worker_inputs_cleaned,
+    jobDefinitionsInputsCleaned: data.job_definitions_inputs_cleaned,
+    jobDefinitionsOutputsCleaned: data.job_definitions_outputs_cleaned,
+    managedPopulationCullingOutputsCleaned:
+      data.managed_population_culling_outputs_cleaned,
+    managedPopulationMaintenanceCleaned:
+      data.managed_population_maintenance_cleaned,
   };
-}
-
-function toInt(value: Json | undefined): number {
-  return typeof value === "number" ? value : 0;
 }
 
 async function restoreResource(
