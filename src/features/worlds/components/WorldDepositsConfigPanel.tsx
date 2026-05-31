@@ -38,6 +38,7 @@ import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { toSlug } from "@/lib/slugify";
 import { sortByName } from "@/lib/sortUtils";
 
 type WorldDepositsConfigPanelProps = {
@@ -493,7 +494,9 @@ function CreateDepositTypeForm({
   function handleNameChange(value: string): void {
     setName(value);
     if (!slugEdited) {
-      setSlug(toSlug(value));
+      setSlug(
+        toSlug(value, { maxLength: depositInputLimits.depositTypeSlugMax }),
+      );
     }
   }
 
@@ -974,12 +977,4 @@ function EditDepositTypeForm({
       </div>
     </form>
   );
-}
-
-function toSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, depositInputLimits.depositTypeSlugMax);
 }
