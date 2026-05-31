@@ -71,7 +71,7 @@ type ResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly id: string;
-  readonly is_deleted: boolean;
+  readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: Json;
   readonly name: string;
@@ -81,7 +81,7 @@ type ResourceRow = {
 };
 
 const RESOURCE_SELECT =
-  "id,world_id,name,slug,base_stockpile_cap,is_system_resource,is_deleted,last_cleanup_summary_json,created_at,updated_at";
+  "id,world_id,name,slug,base_stockpile_cap,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at";
 
 export type ResourceMutationIssue = MutationIssue;
 
@@ -451,7 +451,7 @@ function toResource(row: ResourceRow): Resource {
     baseStockpileCap: row.base_stockpile_cap,
     createdAt: row.created_at,
     id: row.id,
-    isDeleted: row.is_deleted,
+    isTrashed: row.is_trashed,
     isSystemResource: row.is_system_resource,
     lastCleanupSummaryJson: row.last_cleanup_summary_json,
     name: row.name,

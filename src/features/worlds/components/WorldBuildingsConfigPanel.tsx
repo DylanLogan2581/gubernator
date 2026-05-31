@@ -130,8 +130,8 @@ function BlueprintListPanel({
 
   const allBlueprints = blueprintsQuery.data;
   const visibleBlueprints = showTrash
-    ? allBlueprints.filter((bp) => !bp.isActive)
-    : allBlueprints.filter((bp) => bp.isActive);
+    ? allBlueprints.filter((bp) => bp.isTrashed)
+    : allBlueprints.filter((bp) => !bp.isTrashed);
 
   return (
     <WorldBuildingsConfigPanelContent

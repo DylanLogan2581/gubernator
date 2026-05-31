@@ -75,7 +75,7 @@ values
 
 -- Old Stone: soft-deleted resource in world 1
 insert into
-  public.resources (id, world_id, name, slug, is_deleted)
+  public.resources (id, world_id, name, slug, is_trashed)
 values
   (
     'b3000000-0000-0000-0000-000000000003',

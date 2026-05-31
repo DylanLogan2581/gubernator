@@ -106,8 +106,8 @@ function WorldResourcesConfigPanelContent({
   const canEdit = canAdmin && !isArchived;
 
   const resources = showTrash
-    ? allResources.filter((r) => r.isDeleted)
-    : allResources.filter((r) => !r.isDeleted);
+    ? allResources.filter((r) => r.isTrashed)
+    : allResources.filter((r) => !r.isTrashed);
 
   return (
     <section

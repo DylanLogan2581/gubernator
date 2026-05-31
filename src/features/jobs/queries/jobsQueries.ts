@@ -58,7 +58,7 @@ type JobRow = {
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly JobIoEntryRow[];
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_type: string;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
@@ -73,7 +73,7 @@ type JobRow = {
 const JOB_SELECT = [
   "id,world_id,name,slug,job_type,base_capacity,trader_capacity_per_worker",
   "linked_deposit_type_id,linked_managed_population_type_id",
-  "inputs_json,outputs_json,is_active,created_at,updated_at",
+  "inputs_json,outputs_json,is_trashed,created_at,updated_at",
   "deposit_types!deposit_types_job_id_fk(id)",
   "husbandry_mpt:managed_population_types!managed_population_types_husbandry_job_fk(id)",
   "culling_mpt:managed_population_types!managed_population_types_culling_job_fk(id)",
@@ -151,7 +151,7 @@ async function getActiveJobsByWorld(
     .from("job_definitions")
     .select(JOB_SELECT)
     .eq("world_id", worldId)
-    .eq("is_active", true)
+    .eq("is_trashed", false)
     .order("name", { ascending: true })
     .order("id", { ascending: true })
     .returns<JobRow[]>();
@@ -223,7 +223,7 @@ function toJob(row: JobRow): JobDefinition {
       row.culling_mpt.length > 0,
     id: row.id,
     inputsJson: row.inputs_json.map(toJobIoEntry),
-    isActive: row.is_active,
+    isTrashed: row.is_trashed,
     jobType: row.job_type as JobType,
     linkedDepositTypeId: row.linked_deposit_type_id,
     linkedManagedPopulationTypeId: row.linked_managed_population_type_id,

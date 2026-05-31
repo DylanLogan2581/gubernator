@@ -45,7 +45,7 @@ values
 
 -- Resource: soft-deleted so hard_delete is allowed.
 insert into
-  public.resources (id, world_id, name, slug, is_deleted)
+  public.resources (id, world_id, name, slug, is_trashed)
 values
   (
     'ed200000-0000-0000-0000-000000000001',
@@ -97,20 +97,20 @@ values
 -- Mark the standard job as trashed.
 update public.job_definitions
 set
-  is_active = false
+  is_trashed = true
 where
   id = 'ed300000-0000-0000-0000-000000000004';
 
 -- Building blueprint: soft-deleted so hard_delete is allowed.
 insert into
-  public.building_blueprints (id, world_id, name, slug, is_active)
+  public.building_blueprints (id, world_id, name, slug, is_trashed)
 values
   (
     'ed400000-0000-0000-0000-000000000001',
     'ed100000-0000-0000-0000-000000000001',
     'HD Forge',
     'hd-forge',
-    false
+    true
   );
 
 -- Deposit type: soft-deleted so hard_delete is allowed.
@@ -122,7 +122,7 @@ insert into
     slug,
     job_id,
     output_units_per_worker,
-    is_active
+    is_trashed
   )
 values
   (
@@ -132,7 +132,7 @@ values
     'hd-coal-seam',
     'ed300000-0000-0000-0000-000000000001',
     3,
-    false
+    true
   );
 
 -- Managed population type: soft-deleted so hard_delete is allowed.
@@ -145,7 +145,7 @@ insert into
     husbandry_job_id,
     culling_job_id,
     husbandry_workers_per_n_animals,
-    is_active
+    is_trashed
   )
 values
   (
@@ -156,7 +156,7 @@ values
     'ed300000-0000-0000-0000-000000000002',
     'ed300000-0000-0000-0000-000000000003',
     10,
-    false
+    true
   );
 
 -- ===========================================================================

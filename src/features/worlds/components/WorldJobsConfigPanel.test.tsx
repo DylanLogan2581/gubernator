@@ -83,10 +83,10 @@ describe("WorldJobsConfigPanel", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         jobRows: [
-          createJobRow({ is_active: true, name: "Active Job" }),
+          createJobRow({ is_trashed: false, name: "Active Job" }),
           createJobRow({
             id: "00000000-0000-0000-0000-000000000003",
-            is_active: false,
+            is_trashed: true,
             name: "Trashed Job",
           }),
         ],
@@ -991,7 +991,7 @@ type TestJobRow = {
     amount_per_worker: number;
     resource_id: string;
   }[];
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_type: string;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
@@ -1009,7 +1009,7 @@ type TestJobRow = {
 type TestDepositTypeRow = {
   readonly created_at: string;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_id: string;
   readonly name: string;
   readonly output_units_per_worker: number;
@@ -1028,7 +1028,7 @@ type TestManagedPopulationTypeRow = {
   readonly husbandry_job_id: string;
   readonly husbandry_workers_per_n_animals: number;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly maintenance_rules_json: readonly unknown[];
   readonly name: string;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
@@ -1041,7 +1041,7 @@ type TestResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly id: string;
-  readonly is_deleted: boolean;
+  readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: null;
   readonly name: string;
@@ -1059,7 +1059,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     husbandry_mpt: [],
     id: JOB_ID,
     inputs_json: [],
-    is_active: true,
+    is_trashed: false,
     job_type: "standard",
     linked_deposit_type_id: null,
     linked_managed_population_type_id: null,
@@ -1079,7 +1079,7 @@ function createDepositTypeRow(
   return {
     created_at: "2026-01-01T00:00:00.000Z",
     id: DEPOSIT_TYPE_ID,
-    is_active: true,
+    is_trashed: false,
     job_id: JOB_ID,
     name: "Test Deposit Type",
     output_units_per_worker: 1,
@@ -1103,7 +1103,7 @@ function createManagedPopulationTypeRow(
     husbandry_job_id: JOB_ID,
     husbandry_workers_per_n_animals: 10,
     id: MANAGED_POP_TYPE_ID,
-    is_active: true,
+    is_trashed: false,
     maintenance_rules_json: [],
     name: "Test Population",
     referencing_jobs: [],
@@ -1121,7 +1121,7 @@ function createResourceRow(
     base_stockpile_cap: 1000,
     created_at: "2026-01-01T00:00:00.000Z",
     id: RESOURCE_ID,
-    is_deleted: false,
+    is_trashed: false,
     is_system_resource: false,
     last_cleanup_summary_json: null,
     name: "Iron",

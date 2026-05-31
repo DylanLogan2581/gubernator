@@ -530,7 +530,7 @@ select
 -- After trashing the existing record, the same job_id may be reused for a new active record.
 update public.deposit_types
 set
-  is_active = false
+  is_trashed = true
 where
   job_id = 'a3000000-0000-0000-0000-000000000020';
 

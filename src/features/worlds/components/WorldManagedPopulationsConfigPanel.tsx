@@ -84,8 +84,8 @@ export function WorldManagedPopulationsConfigPanel({
 
   const allPopulationTypes = populationTypesQuery.data;
   const visiblePopulationTypes = showTrash
-    ? allPopulationTypes.filter((pt) => !pt.isActive)
-    : allPopulationTypes.filter((pt) => pt.isActive);
+    ? allPopulationTypes.filter((pt) => pt.isTrashed)
+    : allPopulationTypes.filter((pt) => !pt.isTrashed);
 
   return (
     <WorldManagedPopulationsConfigPanelContent
@@ -1123,7 +1123,7 @@ function PopulationResourceEditor({
   readonly resources: readonly Resource[];
   readonly onChange: (entries: PopulationResourceEntry[]) => void;
 }): JSX.Element {
-  const availableResources = resources.filter((r) => !r.isDeleted);
+  const availableResources = resources.filter((r) => !r.isTrashed);
 
   function handleAdd(): void {
     if (availableResources.length === 0) return;

@@ -451,7 +451,7 @@ type TestBlueprintRow = {
   readonly description: string | null;
   readonly grace_period_turns: number;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly max_instances_per_settlement: number | null;
   readonly name: string;
   readonly slug: string;
@@ -495,7 +495,7 @@ type TestResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly id: string;
-  readonly is_deleted: boolean;
+  readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: null;
   readonly name: string;
@@ -512,7 +512,7 @@ type TestJobRow = {
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly never[];
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_type: string;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
@@ -532,7 +532,7 @@ function createBlueprintRow(
     description: null,
     grace_period_turns: 0,
     id: BLUEPRINT_ID,
-    is_active: true,
+    is_trashed: false,
     max_instances_per_settlement: null,
     name: "Farmhouse",
     slug: "farmhouse",
@@ -564,7 +564,7 @@ function createResourceRow(
     base_stockpile_cap: 100,
     created_at: "2026-01-01T00:00:00.000Z",
     id: RESOURCE_ID,
-    is_deleted: false,
+    is_trashed: false,
     is_system_resource: false,
     last_cleanup_summary_json: null,
     name: "Wood",
@@ -584,7 +584,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     husbandry_mpt: [],
     id: JOB_ID,
     inputs_json: [],
-    is_active: true,
+    is_trashed: false,
     job_type: "standard",
     linked_deposit_type_id: null,
     linked_managed_population_type_id: null,

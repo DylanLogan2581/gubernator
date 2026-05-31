@@ -140,10 +140,10 @@ describe("WorldManagedPopulationsConfigPanel", () => {
         husbandryJobRows: [],
         cullingJobRows: [],
         populationTypeRows: [
-          createPopulationTypeRow({ is_active: true, name: "Active Cattle" }),
+          createPopulationTypeRow({ is_trashed: false, name: "Active Cattle" }),
           createPopulationTypeRow({
             id: "00000000-0000-0000-0000-000000000010",
-            is_active: false,
+            is_trashed: true,
             name: "Trashed Cattle",
           }),
         ],
@@ -819,7 +819,7 @@ type TestPopulationTypeRow = {
   readonly husbandry_job_id: string;
   readonly husbandry_workers_per_n_animals: number;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly maintenance_rules_json: readonly unknown[];
   readonly name: string;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
@@ -836,7 +836,7 @@ type TestJobRow = {
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly id: string;
   readonly inputs_json: readonly unknown[];
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_type: string;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
@@ -852,7 +852,7 @@ type TestResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly id: string;
-  readonly is_deleted: boolean;
+  readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: null;
   readonly name: string;
@@ -872,7 +872,7 @@ function createPopulationTypeRow(
     husbandry_job_id: HUSBANDRY_JOB_ID,
     husbandry_workers_per_n_animals: 2,
     id: POPULATION_TYPE_ID,
-    is_active: true,
+    is_trashed: false,
     maintenance_rules_json: [],
     name: "Test Population",
     referencing_jobs: [],
@@ -892,7 +892,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     husbandry_mpt: [],
     id: HUSBANDRY_JOB_ID,
     inputs_json: [],
-    is_active: true,
+    is_trashed: false,
     job_type: "husbandry",
     linked_deposit_type_id: null,
     linked_managed_population_type_id: null,

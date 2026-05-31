@@ -106,8 +106,8 @@ export function WorldJobsConfigPanel({
 
   const allJobs = jobsQuery.data;
   const visibleJobs = showTrash
-    ? allJobs.filter((job) => !job.isActive)
-    : allJobs.filter((job) => job.isActive);
+    ? allJobs.filter((job) => job.isTrashed)
+    : allJobs.filter((job) => !job.isTrashed);
 
   return (
     <WorldJobsConfigPanelContent

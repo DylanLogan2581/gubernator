@@ -7,7 +7,7 @@ export type DepositType = {
   readonly createdAt: string;
   readonly hasActiveReferences: boolean;
   readonly id: string;
-  readonly isActive: boolean;
+  readonly isTrashed: boolean;
   readonly jobId: string;
   readonly name: string;
   readonly outputUnitsPerWorker: number;

@@ -672,7 +672,7 @@ select
 -- After trashing the constraint-herd, the same job_ids may be reused.
 update public.managed_population_types
 set
-  is_active = false
+  is_trashed = true
 where
   husbandry_job_id = 'e3000000-0000-0000-0000-000000000020';
 

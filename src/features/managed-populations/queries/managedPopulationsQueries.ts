@@ -55,7 +55,7 @@ type ManagedPopulationTypeRow = {
   readonly husbandry_job_id: string;
   readonly husbandry_workers_per_n_animals: number;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly maintenance_rules_json: readonly PopulationResourceEntryRow[];
   readonly name: string;
   // Embedded FK references — job_definitions whose linked_managed_population_type_id = this id.
@@ -68,7 +68,7 @@ type ManagedPopulationTypeRow = {
 const MANAGED_POPULATION_TYPE_SELECT = [
   "id,world_id,name,slug,husbandry_job_id,culling_job_id",
   "husbandry_workers_per_n_animals,growth_rate",
-  "maintenance_rules_json,culling_outputs_json,is_active,created_at,updated_at",
+  "maintenance_rules_json,culling_outputs_json,is_trashed,created_at,updated_at",
   "referencing_jobs:job_definitions!job_definitions_linked_managed_pop_type_fk(id)",
 ].join(",");
 
@@ -133,7 +133,7 @@ async function getActiveManagedPopulationTypesByWorld(
     .from("managed_population_types")
     .select(MANAGED_POPULATION_TYPE_SELECT)
     .eq("world_id", worldId)
-    .eq("is_active", true)
+    .eq("is_trashed", false)
     .order("name", { ascending: true })
     .order("id", { ascending: true })
     .returns<ManagedPopulationTypeRow[]>();
@@ -183,7 +183,7 @@ function toManagedPopulationType(
     husbandryJobId: row.husbandry_job_id,
     husbandryWorkersPerNAnimals: row.husbandry_workers_per_n_animals,
     id: row.id,
-    isActive: row.is_active,
+    isTrashed: row.is_trashed,
     maintenanceRulesJson: row.maintenance_rules_json.map(
       toPopulationResourceEntry,
     ),

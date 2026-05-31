@@ -84,10 +84,10 @@ describe("WorldBuildingsConfigPanel", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         blueprintRows: [
-          createBlueprintRow({ is_active: true, name: "Active Blueprint" }),
+          createBlueprintRow({ is_trashed: false, name: "Active Blueprint" }),
           createBlueprintRow({
             id: "00000000-0000-0000-0000-000000000003",
-            is_active: false,
+            is_trashed: true,
             name: "Trashed Blueprint",
           }),
         ],
@@ -395,7 +395,7 @@ type TestBlueprintRow = {
   readonly description: string | null;
   readonly grace_period_turns: number;
   readonly id: string;
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly max_instances_per_settlement: number | null;
   readonly name: string;
   readonly slug: string;
@@ -419,7 +419,7 @@ type TestResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly id: string;
-  readonly is_deleted: boolean;
+  readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
   readonly last_cleanup_summary_json: null;
   readonly name: string;
@@ -436,7 +436,7 @@ type TestJobRow = {
   readonly husbandry_mpt: readonly unknown[];
   readonly id: string;
   readonly inputs_json: readonly unknown[];
-  readonly is_active: boolean;
+  readonly is_trashed: boolean;
   readonly job_type: string;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
@@ -456,7 +456,7 @@ function createBlueprintRow(
     description: null,
     grace_period_turns: 0,
     id: BLUEPRINT_ID,
-    is_active: true,
+    is_trashed: false,
     max_instances_per_settlement: null,
     name: "Test Blueprint",
     slug: "test-blueprint",
