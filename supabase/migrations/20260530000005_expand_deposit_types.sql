@@ -3,6 +3,19 @@
 -- the full Epic 4 schema: name, slug, is_active, output_units_per_worker,
 -- worker_inputs_json, and a one-to-one link to a deposit-typed job_definition.
 -- ---------------------------------------------------------------------------
+-- SAFE-EMPTY CONTRACT
+-- Several columns below are NOT NULL without a DEFAULT.  This is intentional
+-- and safe *only* because public.deposit_types is a stub with no insert RPCs:
+-- it contained nothing except system columns (id, world_id, created_at,
+-- updated_at) when this migration runs.  Valid temporary defaults are
+-- impossible:
+--   • name / slug  — DEFAULT '' would violate the char_length >= 1 check.
+--   • job_id       — any synthetic UUID would fail the FK to job_definitions
+--                    (checked at transaction end even with DEFERRABLE).
+--   • output_units_per_worker — DEFAULT 0 violates the > 0 check.
+-- If this migration is ever applied to a non-empty table it will fail loudly
+-- rather than silently corrupt data; that outcome is intentional.
+-- ---------------------------------------------------------------------------
 alter table public.deposit_types
 add column name text not null,
 add column slug text not null,
