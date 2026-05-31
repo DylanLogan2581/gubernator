@@ -6,6 +6,21 @@
 -- Enforces distinct one-to-one links to husbandry and culling job_definitions
 -- via UNIQUE constraints and a collision CHECK.
 -- ---------------------------------------------------------------------------
+-- SAFE-EMPTY CONTRACT
+-- Several columns below are NOT NULL without a DEFAULT.  This is intentional
+-- and safe *only* because public.managed_population_types is a stub with no
+-- insert RPCs: it contained nothing except system columns (id, world_id,
+-- created_at, updated_at) when this migration runs.  Valid temporary defaults
+-- are impossible:
+--   • name / slug              — DEFAULT '' would violate char_length >= 1 check.
+--   • husbandry_job_id /
+--     culling_job_id           — any synthetic UUID would fail the FK to
+--                                job_definitions (checked at txn end even with
+--                                DEFERRABLE) and the distinct-jobs CHECK.
+--   • husbandry_workers_per_n_animals — DEFAULT 0 violates the > 0 check.
+-- If this migration is ever applied to a non-empty table it will fail loudly
+-- rather than silently corrupt data; that outcome is intentional.
+-- ---------------------------------------------------------------------------
 alter table public.managed_population_types
 add column name text not null,
 add column slug text not null,
