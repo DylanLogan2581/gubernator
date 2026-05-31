@@ -1,3 +1,8 @@
+import {
+  checkResourceIdsInWorld,
+  type ReferenceIssue,
+} from "@/lib/validateReferenceHelpers";
+
 type MinimalEntity = { readonly id: string };
 
 type JobIoRef = { readonly resourceId: string };
@@ -9,10 +14,7 @@ type JobReferencePayload = {
   readonly outputsJson?: readonly JobIoRef[];
 };
 
-export type JobReferenceIssue = {
-  readonly field: string;
-  readonly message: string;
-};
+export type JobReferenceIssue = ReferenceIssue;
 
 // Pre-flight reference check for job create/update payloads.
 // Returns UI-friendly issues when referenced entities are absent from the
@@ -27,23 +29,18 @@ export function validateJobReferencesAgainstWorld(
   const activeResourceIds = new Set(activeResources.map((r) => r.id));
   const linkedTypeIds = new Set(linkedTypes.map((t) => t.id));
 
-  for (const entry of payload.inputsJson ?? []) {
-    if (!activeResourceIds.has(entry.resourceId)) {
-      issues.push({
-        field: "inputsJson",
-        message: `Resource ${entry.resourceId} is not an active resource in this world.`,
-      });
-    }
-  }
-
-  for (const entry of payload.outputsJson ?? []) {
-    if (!activeResourceIds.has(entry.resourceId)) {
-      issues.push({
-        field: "outputsJson",
-        message: `Resource ${entry.resourceId} is not an active resource in this world.`,
-      });
-    }
-  }
+  checkResourceIdsInWorld(
+    "inputsJson",
+    payload.inputsJson ?? [],
+    activeResourceIds,
+    issues,
+  );
+  checkResourceIdsInWorld(
+    "outputsJson",
+    payload.outputsJson ?? [],
+    activeResourceIds,
+    issues,
+  );
 
   if (
     payload.linkedDepositTypeId !== null &&
