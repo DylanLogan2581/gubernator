@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WorldResourcesConfigPanel } from "./WorldResourcesConfigPanel";
+import { ResourcesConfigPanel } from "./ResourcesConfigPanel";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -29,7 +29,7 @@ vi.mock("sonner", () => ({
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000002";
 
-describe("WorldResourcesConfigPanel", () => {
+describe("ResourcesConfigPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
@@ -316,7 +316,7 @@ function renderPanel({
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <WorldResourcesConfigPanel
+      <ResourcesConfigPanel
         canAdmin={canAdmin}
         isArchived={isArchived}
         worldId={WORLD_ID}

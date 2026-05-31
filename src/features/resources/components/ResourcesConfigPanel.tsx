@@ -14,36 +14,39 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  createResourceInputSchema,
-  createResourceMutationOptions,
-  hardDeleteResourceMutationOptions,
-  resourcesByWorldQueryOptions,
-  restoreResourceMutationOptions,
-  softDeleteResourceMutationOptions,
-  updateResourceInputSchema,
-  updateResourceMutationOptions,
-  type CreateResourceInput,
-  type Resource,
-  type ResourceCleanupSummary,
-  type UpdateResourceInput,
-} from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 
-type WorldResourcesConfigPanelProps = {
+import {
+  createResourceMutationOptions,
+  hardDeleteResourceMutationOptions,
+  restoreResourceMutationOptions,
+  softDeleteResourceMutationOptions,
+  updateResourceMutationOptions,
+} from "../mutations/resourcesMutations";
+import { resourcesByWorldQueryOptions } from "../queries/resourcesQueries";
+import {
+  createResourceInputSchema,
+  updateResourceInputSchema,
+  type CreateResourceInput,
+  type UpdateResourceInput,
+} from "../schemas/resourceSchemas";
+
+import type { Resource, ResourceCleanupSummary } from "../types/resourceTypes";
+
+type ResourcesConfigPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly worldId: string;
 };
 
-export function WorldResourcesConfigPanel({
+export function ResourcesConfigPanel({
   canAdmin,
   isArchived,
   worldId,
-}: WorldResourcesConfigPanelProps): JSX.Element {
+}: ResourcesConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const resourcesQuery = useQuery(resourcesByWorldQueryOptions(worldId));
 
@@ -61,7 +64,7 @@ export function WorldResourcesConfigPanel({
   }
 
   return (
-    <WorldResourcesConfigPanelContent
+    <ResourcesConfigPanelContent
       canAdmin={canAdmin}
       isArchived={isArchived}
       queryClient={queryClient}
@@ -71,7 +74,7 @@ export function WorldResourcesConfigPanel({
   );
 }
 
-function WorldResourcesConfigPanelContent({
+function ResourcesConfigPanelContent({
   canAdmin,
   isArchived,
   queryClient,
