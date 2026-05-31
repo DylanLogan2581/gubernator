@@ -17,7 +17,6 @@ function config(overrides: Partial<WorldNamingConfig> = {}): WorldNamingConfig {
     convention: "random",
     female_names: FEMALE_NAMES,
     male_names: MALE_NAMES,
-    manual_only: false,
     ...overrides,
   };
 }
@@ -256,6 +255,21 @@ describe("generateNpcName — inherited family name convention", () => {
     );
     expect(name).toContain("Ironwood");
     expect(name).not.toContain("Silverleaf");
+  });
+});
+
+describe("generateNpcName — manual convention", () => {
+  it("returns only a given name with no surname", () => {
+    const name = generateNpcName(
+      input({
+        config: config({ convention: "manual" }),
+        parentAName: "Erik Ironwood",
+        parentBName: "Astrid Silverleaf",
+        sex: "male",
+      }),
+    );
+    expect(MALE_NAMES).toContain(name);
+    expect(name).not.toContain(" ");
   });
 });
 

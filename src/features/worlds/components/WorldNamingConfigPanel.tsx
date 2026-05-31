@@ -96,7 +96,7 @@ function WorldNamingConfigPanelContent({
   const canEdit = canAdmin && !isArchived;
 
   const showEmptyPoolWarning =
-    !draftConfig.manual_only &&
+    draftConfig.convention !== "manual" &&
     (draftConfig.male_names.length === 0 ||
       draftConfig.female_names.length === 0);
 
@@ -164,7 +164,7 @@ function WorldNamingConfigPanelContent({
                 />
                 <span>
                   One or more name pools are empty. Random NPC names may be
-                  blank unless <strong>manual only</strong> is enabled.
+                  blank unless <strong>manual only</strong> is selected.
                 </span>
               </div>
             ) : null}
@@ -212,24 +212,6 @@ function WorldNamingConfigPanelContent({
             </div>
           </fieldset>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-input accent-primary"
-              checked={draftConfig.manual_only}
-              onChange={(event) =>
-                setDraftConfig((c) => ({
-                  ...c,
-                  manual_only: event.currentTarget.checked,
-                }))
-              }
-            />
-            <span className="font-medium">Manual only</span>
-            <span className="text-xs text-muted-foreground">
-              — disable automatic name generation; names must be set manually
-            </span>
-          </label>
-
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={saveMutation.isPending}>
               <Save aria-hidden="true" />
@@ -267,6 +249,12 @@ function ConventionLabel({
       return <span>Matronymic — family name derived from mother</span>;
     case "inherited family name":
       return <span>Inherited family name — surname passed from parents</span>;
+    case "manual":
+      return (
+        <span>
+          Manual only — names must be set manually; no automatic generation
+        </span>
+      );
   }
 }
 
@@ -294,10 +282,6 @@ function NamingConfigReadOnlySummary({
         }
       />
       <ReadoutItem label="Convention" value={config.convention} />
-      <ReadoutItem
-        label="Manual only"
-        value={config.manual_only ? "Yes" : "No"}
-      />
     </dl>
   );
 }

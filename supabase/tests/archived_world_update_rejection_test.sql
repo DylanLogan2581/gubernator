@@ -98,8 +98,7 @@ select
       set naming_config_json = '{
         "male_names": ["A"],
         "female_names": ["B"],
-        "convention": "random",
-        "manual_only": false
+        "convention": "random"
       }'::jsonb
       where id = '93000000-0000-0000-0000-000000000001'
       returning id
@@ -148,8 +147,7 @@ select
     set naming_config_json = '{
       "male_names": ["A"],
       "female_names": ["B"],
-      "convention": "random",
-      "manual_only": false
+      "convention": "random"
     }'::jsonb
     where id = '93000000-0000-0000-0000-000000000002'
   $test$,

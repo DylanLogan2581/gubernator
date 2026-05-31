@@ -122,8 +122,7 @@ select
     set naming_config_json = '{
       "male_names": ["Aldric"],
       "female_names": ["Mira"],
-      "convention": "random",
-      "manual_only": false
+      "convention": "random"
     }'::jsonb
     where id = 'a1000000-0000-0000-0000-000000000001'
   $test$,

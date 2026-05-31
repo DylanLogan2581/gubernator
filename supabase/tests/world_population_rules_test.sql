@@ -16,7 +16,7 @@
 begin;
 
 select
-  plan (20);
+  plan (21);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -278,12 +278,12 @@ select
   throws_ok (
     $test$
     update public.worlds
-    set naming_config_json = '{"male_names": [], "female_names": [], "convention": "random"}'::jsonb
+    set naming_config_json = '{"female_names": [], "convention": "random"}'::jsonb
     where id = '91000000-0000-0000-0000-000000000001'
   $test$,
     '23514',
     null,
-    'CHECK constraint rejects naming_config_json missing manual_only key'
+    'CHECK constraint rejects naming_config_json missing male_names key'
   );
 
 -- ===========================================================================
@@ -296,8 +296,7 @@ select
     set naming_config_json = '{
       "male_names": [],
       "female_names": [],
-      "convention": "unknown_convention",
-      "manual_only": false
+      "convention": "unknown_convention"
     }'::jsonb
     where id = '91000000-0000-0000-0000-000000000001'
   $test$,
@@ -316,8 +315,7 @@ select
     set naming_config_json = '{
       "male_names": ["Aldric", "Brennan"],
       "female_names": ["Elowen", "Mira"],
-      "convention": "random",
-      "manual_only": false
+      "convention": "random"
     }'::jsonb
     where id = '91000000-0000-0000-0000-000000000001'
   $test$,
@@ -328,7 +326,7 @@ select
   lives_ok (
     $test$
     update public.worlds
-    set naming_config_json = '{"male_names":[],"female_names":[],"convention":"patronymic","manual_only":false}'::jsonb
+    set naming_config_json = '{"male_names":[],"female_names":[],"convention":"patronymic"}'::jsonb
     where id = '91000000-0000-0000-0000-000000000001'
   $test$,
     'valid naming_config_json update succeeds with convention: patronymic'
@@ -338,7 +336,7 @@ select
   lives_ok (
     $test$
     update public.worlds
-    set naming_config_json = '{"male_names":[],"female_names":[],"convention":"matronymic","manual_only":false}'::jsonb
+    set naming_config_json = '{"male_names":[],"female_names":[],"convention":"matronymic"}'::jsonb
     where id = '91000000-0000-0000-0000-000000000001'
   $test$,
     'valid naming_config_json update succeeds with convention: matronymic'
@@ -348,10 +346,20 @@ select
   lives_ok (
     $test$
     update public.worlds
-    set naming_config_json = '{"male_names":[],"female_names":[],"convention":"inherited family name","manual_only":false}'::jsonb
+    set naming_config_json = '{"male_names":[],"female_names":[],"convention":"inherited family name"}'::jsonb
     where id = '91000000-0000-0000-0000-000000000001'
   $test$,
     'valid naming_config_json update succeeds with convention: inherited family name'
+  );
+
+select
+  lives_ok (
+    $test$
+    update public.worlds
+    set naming_config_json = '{"male_names":[],"female_names":[],"convention":"manual"}'::jsonb
+    where id = '91000000-0000-0000-0000-000000000001'
+  $test$,
+    'valid naming_config_json update succeeds with convention: manual'
   );
 
 select
