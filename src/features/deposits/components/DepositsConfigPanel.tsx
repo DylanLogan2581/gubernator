@@ -20,19 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import {
-  createDepositTypeMutationOptions,
-  createDepositTypeInputSchema,
-  depositTypesByWorldQueryOptions,
-  hardDeleteDepositTypeMutationOptions,
-  restoreDepositTypeMutationOptions,
-  softDeleteDepositTypeMutationOptions,
-  updateDepositTypeInputSchema,
-  updateDepositTypeMutationOptions,
-  type CreateDepositTypeInput,
-  type DepositType,
-  type UpdateDepositTypeInput,
-} from "@/features/deposits";
 import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -41,17 +28,34 @@ import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 import { sortByName } from "@/lib/sortUtils";
 
-type WorldDepositsConfigPanelProps = {
+import {
+  createDepositTypeMutationOptions,
+  hardDeleteDepositTypeMutationOptions,
+  restoreDepositTypeMutationOptions,
+  softDeleteDepositTypeMutationOptions,
+  updateDepositTypeMutationOptions,
+} from "../mutations/depositsMutations";
+import { depositTypesByWorldQueryOptions } from "../queries/depositsQueries";
+import {
+  createDepositTypeInputSchema,
+  updateDepositTypeInputSchema,
+  type CreateDepositTypeInput,
+  type UpdateDepositTypeInput,
+} from "../schemas/depositSchemas";
+
+import type { DepositType } from "../types/depositTypes";
+
+type DepositsConfigPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly worldId: string;
 };
 
-export function WorldDepositsConfigPanel({
+export function DepositsConfigPanel({
   canAdmin,
   isArchived,
   worldId,
-}: WorldDepositsConfigPanelProps): JSX.Element {
+}: DepositsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const [showTrash, setShowTrash] = useState(false);
   const depositTypesQuery = useQuery(depositTypesByWorldQueryOptions(worldId));
@@ -75,7 +79,7 @@ export function WorldDepositsConfigPanel({
     : allDepositTypes.filter((dt) => !dt.isTrashed);
 
   return (
-    <WorldDepositsConfigPanelContent
+    <DepositsConfigPanelContent
       allDepositTypes={allDepositTypes}
       canAdmin={canAdmin}
       depositTypes={visibleDepositTypes}
@@ -90,7 +94,7 @@ export function WorldDepositsConfigPanel({
   );
 }
 
-function WorldDepositsConfigPanelContent({
+function DepositsConfigPanelContent({
   allDepositTypes,
   canAdmin,
   depositTypes,

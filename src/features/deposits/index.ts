@@ -1,6 +1,7 @@
 // Deposits feature — deposit types for world configuration.
 // Deposit instances live in Epic 5; this module covers type-level data only.
 
+export { DepositsConfigPanel } from "./components/DepositsConfigPanel";
 export {
   DepositTypeMutationError,
   createDepositTypeMutationOptions,
