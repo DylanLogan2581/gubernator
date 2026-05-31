@@ -1,18 +1,15 @@
-import {
-  mutationOptions,
-  type QueryClient,
-  type UseMutationOptions,
-} from "@tanstack/react-query";
-
-import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError } from "@/features/auth";
+import { buildTrashLifecycleMutations } from "@/lib/buildTrashLifecycleMutations";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
-import {
-  requireSupabaseClient,
-  type GubernatorSupabaseClient,
-} from "@/lib/supabase";
+import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import type { Json } from "@/types/database";
 
+import {
+  DEPOSIT_TYPE_SELECT,
+  toDepositType,
+  type DepositTypeRow,
+} from "../queries/depositRow";
 import { depositsQueryKeys } from "../queries/depositsQueryKeys";
 import {
   createDepositTypeInputSchema,
@@ -42,32 +39,6 @@ type DepositTypeMutationErrorCode =
   | "deposit_type_not_authorized"
   | "deposit_type_not_found";
 
-type CreateDepositTypeMutationOptions = UseMutationOptions<
-  DepositType,
-  AuthUiError | DepositTypeMutationError,
-  CreateDepositTypeInput
->;
-type UpdateDepositTypeMutationOptions = UseMutationOptions<
-  DepositType,
-  AuthUiError | DepositTypeMutationError,
-  UpdateDepositTypeInput
->;
-type SoftDeleteDepositTypeMutationOptions = UseMutationOptions<
-  SoftDeleteDepositTypeResult,
-  AuthUiError | DepositTypeMutationError,
-  SoftDeleteDepositTypeInput
->;
-type RestoreDepositTypeMutationOptions = UseMutationOptions<
-  RestoreDepositTypeResult,
-  AuthUiError | DepositTypeMutationError,
-  RestoreDepositTypeInput
->;
-type HardDeleteDepositTypeMutationOptions = UseMutationOptions<
-  HardDeleteDepositTypeResult,
-  AuthUiError | DepositTypeMutationError,
-  HardDeleteDepositTypeInput
->;
-
 // Explicit typed payloads prevent RejectExcessProperties conflicts in Supabase's strict overloads.
 type DepositTypeInsertPayload = {
   job_id: string;
@@ -86,30 +57,6 @@ type DepositTypeUpdatePayload = {
   worker_inputs_json?: Json;
 };
 
-type WorkerInputEntryRow = {
-  readonly amount_per_worker: number;
-  readonly resource_id: string;
-};
-
-type DepositTypeRow = {
-  readonly created_at: string;
-  readonly id: string;
-  readonly is_trashed: boolean;
-  readonly job_id: string;
-  readonly name: string;
-  readonly output_units_per_worker: number;
-  readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
-  readonly slug: string;
-  readonly updated_at: string;
-  readonly worker_inputs_json: readonly WorkerInputEntryRow[];
-  readonly world_id: string;
-};
-
-const DEPOSIT_TYPE_SELECT = [
-  "id,world_id,name,slug,job_id,output_units_per_worker,worker_inputs_json,is_trashed,created_at,updated_at",
-  "referencing_jobs:job_definitions!job_definitions_linked_deposit_type_fk(id)",
-].join(",");
-
 export type DepositTypeMutationIssue = MutationIssue;
 
 export const {
@@ -122,134 +69,50 @@ export type DepositTypeMutationError = InstanceType<
   typeof DepositTypeMutationError
 >;
 
-export function createDepositTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): CreateDepositTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: CreateDepositTypeInput) =>
-      createDepositType(client, input),
-    mutationKey: [...depositsQueryKeys.all, "create-deposit-type"],
-    onSuccess: async (depositType): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.byWorld(depositType.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.activeByWorld(depositType.worldId),
-        }),
-      ]);
-    },
-  });
-}
+const depositTypeMutations = buildTrashLifecycleMutations<
+  DepositType,
+  CreateDepositTypeInput,
+  UpdateDepositTypeInput,
+  SoftDeleteDepositTypeInput,
+  SoftDeleteDepositTypeResult,
+  RestoreDepositTypeInput,
+  RestoreDepositTypeResult,
+  HardDeleteDepositTypeInput,
+  HardDeleteDepositTypeResult
+>({
+  actionNames: {
+    create: "create-deposit-type",
+    hardDelete: "hard-delete-deposit-type",
+    restore: "restore-deposit-type",
+    softDelete: "soft-delete-deposit-type",
+    update: "update-deposit-type",
+  },
+  getDetailId: {
+    restore: (result) => result.depositTypeId,
+    softDelete: (result) => result.depositTypeId,
+  },
+  mutationFns: {
+    create: createDepositType,
+    hardDelete: hardDeleteDepositType,
+    restore: restoreDepositType,
+    softDelete: softDeleteDepositType,
+    update: updateDepositType,
+  },
+  queryKeys: {
+    activeByWorld: depositsQueryKeys.activeByWorld,
+    all: depositsQueryKeys.all,
+    byWorld: depositsQueryKeys.byWorld,
+    detail: depositsQueryKeys.detail,
+  },
+});
 
-export function updateDepositTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): UpdateDepositTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: UpdateDepositTypeInput) =>
-      updateDepositType(client, input),
-    mutationKey: [...depositsQueryKeys.all, "update-deposit-type"],
-    onSuccess: async (depositType): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.byWorld(depositType.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.activeByWorld(depositType.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.detail(depositType.id),
-        }),
-      ]);
-    },
-  });
-}
-
-export function softDeleteDepositTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): SoftDeleteDepositTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: SoftDeleteDepositTypeInput) =>
-      softDeleteDepositType(client, input),
-    mutationKey: [...depositsQueryKeys.all, "soft-delete-deposit-type"],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.activeByWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.detail(result.depositTypeId),
-        }),
-      ]);
-    },
-  });
-}
-
-export function restoreDepositTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): RestoreDepositTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: RestoreDepositTypeInput) =>
-      restoreDepositType(client, input),
-    mutationKey: [...depositsQueryKeys.all, "restore-deposit-type"],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.activeByWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.detail(result.depositTypeId),
-        }),
-      ]);
-    },
-  });
-}
-
-export function hardDeleteDepositTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): HardDeleteDepositTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: HardDeleteDepositTypeInput) =>
-      hardDeleteDepositType(client, input),
-    mutationKey: [...depositsQueryKeys.all, "hard-delete-deposit-type"],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: depositsQueryKeys.activeByWorld(result.worldId),
-        }),
-      ]);
-    },
-  });
-}
+export const createDepositTypeMutationOptions = depositTypeMutations.create;
+export const updateDepositTypeMutationOptions = depositTypeMutations.update;
+export const softDeleteDepositTypeMutationOptions =
+  depositTypeMutations.softDelete;
+export const restoreDepositTypeMutationOptions = depositTypeMutations.restore;
+export const hardDeleteDepositTypeMutationOptions =
+  depositTypeMutations.hardDelete;
 
 async function createDepositType(
   client: GubernatorSupabaseClient,
@@ -457,29 +320,6 @@ function toWorkerInputsJson(entries: readonly WorkerInputEntry[]): Json {
       resource_id: e.resourceId,
     }),
   );
-}
-
-function toWorkerInputEntry(row: WorkerInputEntryRow): WorkerInputEntry {
-  return {
-    amountPerWorker: row.amount_per_worker,
-    resourceId: row.resource_id,
-  };
-}
-
-function toDepositType(row: DepositTypeRow): DepositType {
-  return {
-    createdAt: row.created_at,
-    hasActiveReferences: row.referencing_jobs.length > 0,
-    id: row.id,
-    isTrashed: row.is_trashed,
-    jobId: row.job_id,
-    name: row.name,
-    outputUnitsPerWorker: row.output_units_per_worker,
-    slug: row.slug,
-    updatedAt: row.updated_at,
-    workerInputsJson: row.worker_inputs_json.map(toWorkerInputEntry),
-    worldId: row.world_id,
-  };
 }
 
 function parseInput<TSchema extends z.ZodTypeAny>(

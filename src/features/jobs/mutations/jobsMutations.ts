@@ -1,18 +1,11 @@
-import {
-  mutationOptions,
-  type QueryClient,
-  type UseMutationOptions,
-} from "@tanstack/react-query";
-
-import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError } from "@/features/auth";
+import { buildTrashLifecycleMutations } from "@/lib/buildTrashLifecycleMutations";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
-import {
-  requireSupabaseClient,
-  type GubernatorSupabaseClient,
-} from "@/lib/supabase";
+import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import type { Json } from "@/types/database";
 
+import { JOB_SELECT, toJob, type JobRow } from "../queries/jobRow";
 import { jobsQueryKeys } from "../queries/jobsQueryKeys";
 import {
   createJobInputSchema,
@@ -26,7 +19,6 @@ import {
   type SoftDeleteJobInput,
   type UpdateJobInput,
 } from "../schemas/jobSchemas";
-import { parseJobType } from "../utils/parseJobType";
 
 import type {
   HardDeleteJobResult,
@@ -41,32 +33,6 @@ type JobMutationErrorCode =
   | "job_input_invalid"
   | "job_not_authorized"
   | "job_not_found";
-
-type CreateJobMutationOptions = UseMutationOptions<
-  JobDefinition,
-  AuthUiError | JobMutationError,
-  CreateJobInput
->;
-type UpdateJobMutationOptions = UseMutationOptions<
-  JobDefinition,
-  AuthUiError | JobMutationError,
-  UpdateJobInput
->;
-type SoftDeleteJobMutationOptions = UseMutationOptions<
-  SoftDeleteJobResult,
-  AuthUiError | JobMutationError,
-  SoftDeleteJobInput
->;
-type RestoreJobMutationOptions = UseMutationOptions<
-  RestoreJobResult,
-  AuthUiError | JobMutationError,
-  RestoreJobInput
->;
-type HardDeleteJobMutationOptions = UseMutationOptions<
-  HardDeleteJobResult,
-  AuthUiError | JobMutationError,
-  HardDeleteJobInput
->;
 
 // Explicit typed insert/update payloads prevent RejectExcessProperties conflicts
 // in Supabase's strict overloads.
@@ -94,176 +60,66 @@ type JobUpdatePayload = {
   trader_capacity_per_worker?: number | null;
 };
 
-type JobIoEntryRow = {
-  readonly amount_per_worker: number;
-  readonly notes?: string;
-  readonly resource_id: string;
-};
-
-type JobRow = {
-  readonly base_capacity: number | null;
-  readonly created_at: string;
-  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
-  readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
-  readonly id: string;
-  readonly inputs_json: readonly JobIoEntryRow[];
-  readonly is_trashed: boolean;
-  readonly job_type: string;
-  readonly linked_deposit_type_id: string | null;
-  readonly linked_managed_population_type_id: string | null;
-  readonly name: string;
-  readonly outputs_json: readonly JobIoEntryRow[];
-  readonly slug: string;
-  readonly trader_capacity_per_worker: number | null;
-  readonly updated_at: string;
-  readonly world_id: string;
-};
-
-const JOB_SELECT = [
-  "id,world_id,name,slug,job_type,base_capacity,trader_capacity_per_worker",
-  "linked_deposit_type_id,linked_managed_population_type_id",
-  "inputs_json,outputs_json,is_trashed,created_at,updated_at",
-  "deposit_types!deposit_types_job_id_fk(id)",
-  "husbandry_mpt:managed_population_types!managed_population_types_husbandry_job_fk(id)",
-  "culling_mpt:managed_population_types!managed_population_types_culling_job_fk(id)",
-].join(",");
-
 export type JobMutationIssue = MutationIssue;
 
 export const { ErrorClass: JobMutationError, isError: isJobMutationError } =
   createMutationError<JobMutationErrorCode>("JobMutationError");
 export type JobMutationError = InstanceType<typeof JobMutationError>;
 
-export function createJobMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): CreateJobMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: CreateJobInput) => createJob(client, input),
-    mutationKey: [...jobsQueryKeys.all, "create-job"],
-    onSuccess: async (job): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.byWorld(job.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.activeByWorld(job.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.byType(job.worldId, job.jobType),
-        }),
-      ]);
+const jobMutations = buildTrashLifecycleMutations<
+  JobDefinition,
+  CreateJobInput,
+  UpdateJobInput,
+  SoftDeleteJobInput,
+  SoftDeleteJobResult,
+  RestoreJobInput,
+  RestoreJobResult,
+  HardDeleteJobInput,
+  HardDeleteJobResult
+>({
+  actionNames: {
+    create: "create-job",
+    hardDelete: "hard-delete-job",
+    restore: "restore-job",
+    softDelete: "soft-delete-job",
+    update: "update-job",
+  },
+  extraOnSuccess: {
+    create: async (queryClient, job) => {
+      await queryClient.invalidateQueries({
+        queryKey: jobsQueryKeys.byType(job.worldId, job.jobType),
+      });
     },
-  });
-}
+    update: async (queryClient, job) => {
+      await queryClient.invalidateQueries({
+        queryKey: jobsQueryKeys.byType(job.worldId, job.jobType),
+      });
+    },
+  },
+  getDetailId: {
+    restore: (result) => result.jobId,
+    softDelete: (result) => result.jobId,
+  },
+  mutationFns: {
+    create: createJob,
+    hardDelete: hardDeleteJob,
+    restore: restoreJob,
+    softDelete: softDeleteJob,
+    update: updateJob,
+  },
+  queryKeys: {
+    activeByWorld: jobsQueryKeys.activeByWorld,
+    all: jobsQueryKeys.all,
+    byWorld: jobsQueryKeys.byWorld,
+    detail: jobsQueryKeys.detail,
+  },
+});
 
-export function updateJobMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): UpdateJobMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: UpdateJobInput) => updateJob(client, input),
-    mutationKey: [...jobsQueryKeys.all, "update-job"],
-    onSuccess: async (job): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.byWorld(job.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.activeByWorld(job.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.byType(job.worldId, job.jobType),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.detail(job.id),
-        }),
-      ]);
-    },
-  });
-}
-
-export function softDeleteJobMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): SoftDeleteJobMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: SoftDeleteJobInput) => softDeleteJob(client, input),
-    mutationKey: [...jobsQueryKeys.all, "soft-delete-job"],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.activeByWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.detail(result.jobId),
-        }),
-      ]);
-    },
-  });
-}
-
-export function restoreJobMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): RestoreJobMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: RestoreJobInput) => restoreJob(client, input),
-    mutationKey: [...jobsQueryKeys.all, "restore-job"],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.activeByWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.detail(result.jobId),
-        }),
-      ]);
-    },
-  });
-}
-
-export function hardDeleteJobMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): HardDeleteJobMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: HardDeleteJobInput) => hardDeleteJob(client, input),
-    mutationKey: [...jobsQueryKeys.all, "hard-delete-job"],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: jobsQueryKeys.activeByWorld(result.worldId),
-        }),
-      ]);
-    },
-  });
-}
+export const createJobMutationOptions = jobMutations.create;
+export const updateJobMutationOptions = jobMutations.update;
+export const softDeleteJobMutationOptions = jobMutations.softDelete;
+export const restoreJobMutationOptions = jobMutations.restore;
+export const hardDeleteJobMutationOptions = jobMutations.hardDelete;
 
 async function createJob(
   client: GubernatorSupabaseClient,
@@ -482,41 +338,6 @@ function toIoJson(entries: readonly JobIoEntry[]): Json {
       resource_id: e.resourceId,
     }),
   );
-}
-
-function toJobIoEntry(row: JobIoEntryRow): JobIoEntry {
-  const entry: { amountPerWorker: number; notes?: string; resourceId: string } =
-    {
-      amountPerWorker: row.amount_per_worker,
-      resourceId: row.resource_id,
-    };
-  if (row.notes !== undefined) {
-    entry.notes = row.notes;
-  }
-  return entry;
-}
-
-function toJob(row: JobRow): JobDefinition {
-  return {
-    baseCapacity: row.base_capacity,
-    createdAt: row.created_at,
-    hasActiveReferences:
-      row.deposit_types.length > 0 ||
-      row.husbandry_mpt.length > 0 ||
-      row.culling_mpt.length > 0,
-    id: row.id,
-    inputsJson: row.inputs_json.map(toJobIoEntry),
-    isTrashed: row.is_trashed,
-    jobType: parseJobType(row.job_type),
-    linkedDepositTypeId: row.linked_deposit_type_id,
-    linkedManagedPopulationTypeId: row.linked_managed_population_type_id,
-    name: row.name,
-    outputsJson: row.outputs_json.map(toJobIoEntry),
-    slug: row.slug,
-    traderCapacityPerWorker: row.trader_capacity_per_worker,
-    updatedAt: row.updated_at,
-    worldId: row.world_id,
-  };
 }
 
 function parseInput<TSchema extends z.ZodTypeAny>(

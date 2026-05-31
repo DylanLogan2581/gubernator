@@ -1,18 +1,15 @@
-import {
-  mutationOptions,
-  type QueryClient,
-  type UseMutationOptions,
-} from "@tanstack/react-query";
-
-import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError } from "@/features/auth";
+import { buildTrashLifecycleMutations } from "@/lib/buildTrashLifecycleMutations";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
-import {
-  requireSupabaseClient,
-  type GubernatorSupabaseClient,
-} from "@/lib/supabase";
+import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import type { Json } from "@/types/database";
 
+import {
+  MANAGED_POPULATION_TYPE_SELECT,
+  toManagedPopulationType,
+  type ManagedPopulationTypeRow,
+} from "../queries/managedPopulationRow";
 import { managedPopulationsQueryKeys } from "../queries/managedPopulationsQueryKeys";
 import {
   createManagedPopulationTypeInputSchema,
@@ -43,32 +40,6 @@ type ManagedPopulationTypeMutationErrorCode =
   | "managed_population_type_not_authorized"
   | "managed_population_type_not_found";
 
-type CreateManagedPopulationTypeMutationOptions = UseMutationOptions<
-  ManagedPopulationType,
-  AuthUiError | ManagedPopulationTypeMutationError,
-  CreateManagedPopulationTypeInput
->;
-type UpdateManagedPopulationTypeMutationOptions = UseMutationOptions<
-  ManagedPopulationType,
-  AuthUiError | ManagedPopulationTypeMutationError,
-  UpdateManagedPopulationTypeInput
->;
-type SoftDeleteManagedPopulationTypeMutationOptions = UseMutationOptions<
-  SoftDeleteManagedPopulationTypeResult,
-  AuthUiError | ManagedPopulationTypeMutationError,
-  SoftDeleteManagedPopulationTypeInput
->;
-type RestoreManagedPopulationTypeMutationOptions = UseMutationOptions<
-  RestoreManagedPopulationTypeResult,
-  AuthUiError | ManagedPopulationTypeMutationError,
-  RestoreManagedPopulationTypeInput
->;
-type HardDeleteManagedPopulationTypeMutationOptions = UseMutationOptions<
-  HardDeleteManagedPopulationTypeResult,
-  AuthUiError | ManagedPopulationTypeMutationError,
-  HardDeleteManagedPopulationTypeInput
->;
-
 // Explicit typed payloads prevent RejectExcessProperties conflicts in Supabase's strict overloads.
 type ManagedPopulationTypeInsertPayload = {
   culling_job_id: string;
@@ -93,35 +64,6 @@ type ManagedPopulationTypeUpdatePayload = {
   slug?: string;
 };
 
-type PopulationResourceEntryRow = {
-  readonly amount_per_n_animals: number;
-  readonly resource_id: string;
-};
-
-type ManagedPopulationTypeRow = {
-  readonly created_at: string;
-  readonly culling_job_id: string;
-  readonly culling_outputs_json: readonly PopulationResourceEntryRow[];
-  readonly growth_rate: number;
-  readonly husbandry_job_id: string;
-  readonly husbandry_workers_per_n_animals: number;
-  readonly id: string;
-  readonly is_trashed: boolean;
-  readonly maintenance_rules_json: readonly PopulationResourceEntryRow[];
-  readonly name: string;
-  readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
-  readonly slug: string;
-  readonly updated_at: string;
-  readonly world_id: string;
-};
-
-const MANAGED_POPULATION_TYPE_SELECT = [
-  "id,world_id,name,slug,husbandry_job_id,culling_job_id",
-  "husbandry_workers_per_n_animals,growth_rate",
-  "maintenance_rules_json,culling_outputs_json,is_trashed,created_at,updated_at",
-  "referencing_jobs:job_definitions!job_definitions_linked_managed_pop_type_fk(id)",
-].join(",");
-
 export type ManagedPopulationTypeMutationIssue = MutationIssue;
 
 export const {
@@ -134,163 +76,53 @@ export type ManagedPopulationTypeMutationError = InstanceType<
   typeof ManagedPopulationTypeMutationError
 >;
 
-export function createManagedPopulationTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): CreateManagedPopulationTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: CreateManagedPopulationTypeInput) =>
-      createManagedPopulationType(client, input),
-    mutationKey: [
-      ...managedPopulationsQueryKeys.all,
-      "create-managed-population-type",
-    ],
-    onSuccess: async (managedPopulationType): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.byWorld(
-            managedPopulationType.worldId,
-          ),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.activeByWorld(
-            managedPopulationType.worldId,
-          ),
-        }),
-      ]);
-    },
-  });
-}
+const managedPopulationTypeMutations = buildTrashLifecycleMutations<
+  ManagedPopulationType,
+  CreateManagedPopulationTypeInput,
+  UpdateManagedPopulationTypeInput,
+  SoftDeleteManagedPopulationTypeInput,
+  SoftDeleteManagedPopulationTypeResult,
+  RestoreManagedPopulationTypeInput,
+  RestoreManagedPopulationTypeResult,
+  HardDeleteManagedPopulationTypeInput,
+  HardDeleteManagedPopulationTypeResult
+>({
+  actionNames: {
+    create: "create-managed-population-type",
+    hardDelete: "hard-delete-managed-population-type",
+    restore: "restore-managed-population-type",
+    softDelete: "soft-delete-managed-population-type",
+    update: "update-managed-population-type",
+  },
+  getDetailId: {
+    restore: (result) => result.managedPopulationTypeId,
+    softDelete: (result) => result.managedPopulationTypeId,
+  },
+  mutationFns: {
+    create: createManagedPopulationType,
+    hardDelete: hardDeleteManagedPopulationType,
+    restore: restoreManagedPopulationType,
+    softDelete: softDeleteManagedPopulationType,
+    update: updateManagedPopulationType,
+  },
+  queryKeys: {
+    activeByWorld: managedPopulationsQueryKeys.activeByWorld,
+    all: managedPopulationsQueryKeys.all,
+    byWorld: managedPopulationsQueryKeys.byWorld,
+    detail: managedPopulationsQueryKeys.detail,
+  },
+});
 
-export function updateManagedPopulationTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): UpdateManagedPopulationTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: UpdateManagedPopulationTypeInput) =>
-      updateManagedPopulationType(client, input),
-    mutationKey: [
-      ...managedPopulationsQueryKeys.all,
-      "update-managed-population-type",
-    ],
-    onSuccess: async (managedPopulationType): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.byWorld(
-            managedPopulationType.worldId,
-          ),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.activeByWorld(
-            managedPopulationType.worldId,
-          ),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.detail(
-            managedPopulationType.id,
-          ),
-        }),
-      ]);
-    },
-  });
-}
-
-export function softDeleteManagedPopulationTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): SoftDeleteManagedPopulationTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: SoftDeleteManagedPopulationTypeInput) =>
-      softDeleteManagedPopulationType(client, input),
-    mutationKey: [
-      ...managedPopulationsQueryKeys.all,
-      "soft-delete-managed-population-type",
-    ],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.activeByWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.detail(
-            result.managedPopulationTypeId,
-          ),
-        }),
-      ]);
-    },
-  });
-}
-
-export function restoreManagedPopulationTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): RestoreManagedPopulationTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: RestoreManagedPopulationTypeInput) =>
-      restoreManagedPopulationType(client, input),
-    mutationKey: [
-      ...managedPopulationsQueryKeys.all,
-      "restore-managed-population-type",
-    ],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.activeByWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.detail(
-            result.managedPopulationTypeId,
-          ),
-        }),
-      ]);
-    },
-  });
-}
-
-export function hardDeleteManagedPopulationTypeMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): HardDeleteManagedPopulationTypeMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: HardDeleteManagedPopulationTypeInput) =>
-      hardDeleteManagedPopulationType(client, input),
-    mutationKey: [
-      ...managedPopulationsQueryKeys.all,
-      "hard-delete-managed-population-type",
-    ],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.byWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: managedPopulationsQueryKeys.activeByWorld(result.worldId),
-        }),
-      ]);
-    },
-  });
-}
+export const createManagedPopulationTypeMutationOptions =
+  managedPopulationTypeMutations.create;
+export const updateManagedPopulationTypeMutationOptions =
+  managedPopulationTypeMutations.update;
+export const softDeleteManagedPopulationTypeMutationOptions =
+  managedPopulationTypeMutations.softDelete;
+export const restoreManagedPopulationTypeMutationOptions =
+  managedPopulationTypeMutations.restore;
+export const hardDeleteManagedPopulationTypeMutationOptions =
+  managedPopulationTypeMutations.hardDelete;
 
 async function createManagedPopulationType(
   client: GubernatorSupabaseClient,
@@ -536,38 +368,6 @@ function toPopulationResourceJson(
       resource_id: e.resourceId,
     }),
   );
-}
-
-function toPopulationResourceEntry(
-  row: PopulationResourceEntryRow,
-): PopulationResourceEntry {
-  return {
-    amountPerNAnimals: row.amount_per_n_animals,
-    resourceId: row.resource_id,
-  };
-}
-
-function toManagedPopulationType(
-  row: ManagedPopulationTypeRow,
-): ManagedPopulationType {
-  return {
-    createdAt: row.created_at,
-    cullingJobId: row.culling_job_id,
-    cullingOutputsJson: row.culling_outputs_json.map(toPopulationResourceEntry),
-    growthRate: row.growth_rate,
-    hasActiveReferences: row.referencing_jobs.length > 0,
-    husbandryJobId: row.husbandry_job_id,
-    husbandryWorkersPerNAnimals: row.husbandry_workers_per_n_animals,
-    id: row.id,
-    isTrashed: row.is_trashed,
-    maintenanceRulesJson: row.maintenance_rules_json.map(
-      toPopulationResourceEntry,
-    ),
-    name: row.name,
-    slug: row.slug,
-    updatedAt: row.updated_at,
-    worldId: row.world_id,
-  };
 }
 
 function parseInput<TSchema extends z.ZodTypeAny>(

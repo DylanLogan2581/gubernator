@@ -4,7 +4,8 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 
-import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError } from "@/features/auth";
+import { buildTrashLifecycleMutations } from "@/lib/buildTrashLifecycleMutations";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -13,6 +14,14 @@ import {
 } from "@/lib/supabase";
 import type { Json } from "@/types/database";
 
+import {
+  BLUEPRINT_SELECT,
+  TIER_SELECT,
+  toBlueprint,
+  toTier,
+  type BlueprintRow,
+  type TierRow,
+} from "../queries/buildingRow";
 import { buildingsQueryKeys } from "../queries/buildingsQueryKeys";
 import {
   createBlueprintInputSchema,
@@ -59,44 +68,19 @@ export const {
 } = createMutationError<BuildingMutationErrorCode>("BuildingMutationError");
 export type BuildingMutationError = InstanceType<typeof BuildingMutationError>;
 
-type CreateBlueprintMutationOptions = UseMutationOptions<
-  BuildingBlueprint,
-  AuthUiError | BuildingMutationError,
-  CreateBlueprintInput
->;
-type UpdateBlueprintMutationOptions = UseMutationOptions<
-  BuildingBlueprint,
-  AuthUiError | BuildingMutationError,
-  UpdateBlueprintInput
->;
-type SoftDeleteBlueprintMutationOptions = UseMutationOptions<
-  SoftDeleteBlueprintResult,
-  AuthUiError | BuildingMutationError,
-  SoftDeleteBlueprintInput
->;
-type RestoreBlueprintMutationOptions = UseMutationOptions<
-  RestoreBlueprintResult,
-  AuthUiError | BuildingMutationError,
-  RestoreBlueprintInput
->;
-type HardDeleteBlueprintMutationOptions = UseMutationOptions<
-  HardDeleteBlueprintResult,
-  AuthUiError | BuildingMutationError,
-  HardDeleteBlueprintInput
->;
 type CreateTierMutationOptions = UseMutationOptions<
   BuildingBlueprintTier,
-  AuthUiError | BuildingMutationError,
+  Error,
   CreateTierInput
 >;
 type UpdateTierMutationOptions = UseMutationOptions<
   BuildingBlueprintTier,
-  AuthUiError | BuildingMutationError,
+  Error,
   UpdateTierInput
 >;
 type DeleteTierMutationOptions = UseMutationOptions<
   DeleteTierResult,
-  AuthUiError | BuildingMutationError,
+  Error,
   DeleteTierInput
 >;
 
@@ -133,170 +117,47 @@ type TierUpdatePayload = {
   worker_turns_required?: number;
 };
 
-type BlueprintRow = {
-  readonly created_at: string;
-  readonly description: string | null;
-  readonly grace_period_turns: number;
-  readonly id: string;
-  readonly is_trashed: boolean;
-  readonly max_instances_per_settlement: number | null;
-  readonly name: string;
-  readonly slug: string;
-  readonly updated_at: string;
-  readonly world_id: string;
-};
+const blueprintMutations = buildTrashLifecycleMutations<
+  BuildingBlueprint,
+  CreateBlueprintInput,
+  UpdateBlueprintInput,
+  SoftDeleteBlueprintInput,
+  SoftDeleteBlueprintResult,
+  RestoreBlueprintInput,
+  RestoreBlueprintResult,
+  HardDeleteBlueprintInput,
+  HardDeleteBlueprintResult
+>({
+  actionNames: {
+    create: "create-blueprint",
+    hardDelete: "hard-delete-blueprint",
+    restore: "restore-blueprint",
+    softDelete: "soft-delete-blueprint",
+    update: "update-blueprint",
+  },
+  getDetailId: {
+    restore: (result) => result.blueprintId,
+    softDelete: (result) => result.blueprintId,
+  },
+  mutationFns: {
+    create: createBlueprint,
+    hardDelete: hardDeleteBlueprint,
+    restore: restoreBlueprint,
+    softDelete: softDeleteBlueprint,
+    update: updateBlueprint,
+  },
+  queryKeys: {
+    all: buildingsQueryKeys.all,
+    byWorld: buildingsQueryKeys.blueprintsByWorld,
+    detail: buildingsQueryKeys.blueprintById,
+  },
+});
 
-type TierCostEntryRow = {
-  readonly amount: number;
-  readonly resource_id: string;
-};
-
-type TierEffectRow =
-  | {
-      readonly amount: number;
-      readonly job_id: string;
-      readonly type: "job_capacity_increase";
-    }
-  | {
-      readonly amount: number;
-      readonly resource_id: string;
-      readonly type: "passive_resource_production";
-    }
-  | {
-      readonly amount: number;
-      readonly resource_id: string;
-      readonly type: "resource_storage_increase";
-    }
-  | {
-      readonly amount: number;
-      readonly type: "population_cap_increase";
-    };
-
-type TierRow = {
-  readonly building_blueprint_id: string;
-  readonly construction_costs_json: readonly TierCostEntryRow[];
-  readonly created_at: string;
-  readonly effects_json: readonly TierEffectRow[];
-  readonly id: string;
-  readonly tier_number: number;
-  readonly updated_at: string;
-  readonly upkeep_costs_json: readonly TierCostEntryRow[];
-  readonly worker_turns_required: number;
-};
-
-const BLUEPRINT_SELECT =
-  "id,world_id,name,slug,description,grace_period_turns,max_instances_per_settlement,is_trashed,created_at,updated_at";
-
-const TIER_SELECT =
-  "id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json,created_at,updated_at";
-
-export function createBlueprintMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): CreateBlueprintMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: CreateBlueprintInput) => createBlueprint(client, input),
-    mutationKey: [...buildingsQueryKeys.all, "create-blueprint"],
-    onSuccess: async (blueprint): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: buildingsQueryKeys.blueprintsByWorld(blueprint.worldId),
-      });
-    },
-  });
-}
-
-export function updateBlueprintMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): UpdateBlueprintMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: UpdateBlueprintInput) => updateBlueprint(client, input),
-    mutationKey: [...buildingsQueryKeys.all, "update-blueprint"],
-    onSuccess: async (blueprint): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: buildingsQueryKeys.blueprintsByWorld(blueprint.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: buildingsQueryKeys.blueprintById(blueprint.id),
-        }),
-      ]);
-    },
-  });
-}
-
-export function softDeleteBlueprintMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): SoftDeleteBlueprintMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: SoftDeleteBlueprintInput) =>
-      softDeleteBlueprint(client, input),
-    mutationKey: [...buildingsQueryKeys.all, "soft-delete-blueprint"],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: buildingsQueryKeys.blueprintsByWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: buildingsQueryKeys.blueprintById(result.blueprintId),
-        }),
-      ]);
-    },
-  });
-}
-
-export function restoreBlueprintMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): RestoreBlueprintMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: RestoreBlueprintInput) =>
-      restoreBlueprint(client, input),
-    mutationKey: [...buildingsQueryKeys.all, "restore-blueprint"],
-    onSuccess: async (result): Promise<void> => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: buildingsQueryKeys.blueprintsByWorld(result.worldId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: buildingsQueryKeys.blueprintById(result.blueprintId),
-        }),
-      ]);
-    },
-  });
-}
-
-export function hardDeleteBlueprintMutationOptions({
-  client = requireSupabaseClient(),
-  queryClient,
-}: {
-  readonly client?: GubernatorSupabaseClient;
-  readonly queryClient: QueryClient;
-}): HardDeleteBlueprintMutationOptions {
-  return mutationOptions({
-    mutationFn: (input: HardDeleteBlueprintInput) =>
-      hardDeleteBlueprint(client, input),
-    mutationKey: [...buildingsQueryKeys.all, "hard-delete-blueprint"],
-    onSuccess: async (result): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: buildingsQueryKeys.blueprintsByWorld(result.worldId),
-      });
-    },
-  });
-}
+export const createBlueprintMutationOptions = blueprintMutations.create;
+export const updateBlueprintMutationOptions = blueprintMutations.update;
+export const softDeleteBlueprintMutationOptions = blueprintMutations.softDelete;
+export const restoreBlueprintMutationOptions = blueprintMutations.restore;
+export const hardDeleteBlueprintMutationOptions = blueprintMutations.hardDelete;
 
 export function createTierMutationOptions({
   client = requireSupabaseClient(),
@@ -697,70 +558,6 @@ function toEffectJson(effects: readonly TierEffect[]): Json {
         return { amount: e.amount, type: e.type };
     }
   });
-}
-
-function toBlueprint(row: BlueprintRow): BuildingBlueprint {
-  return {
-    createdAt: row.created_at,
-    description: row.description,
-    gracePeriodTurns: row.grace_period_turns,
-    id: row.id,
-    isTrashed: row.is_trashed,
-    maxInstancesPerSettlement: row.max_instances_per_settlement,
-    name: row.name,
-    slug: row.slug,
-    updatedAt: row.updated_at,
-    worldId: row.world_id,
-  };
-}
-
-function toCostEntry(row: TierCostEntryRow): TierCostEntry {
-  return {
-    amount: row.amount,
-    resourceId: row.resource_id,
-  };
-}
-
-function toTierEffect(row: TierEffectRow): TierEffect {
-  switch (row.type) {
-    case "job_capacity_increase":
-      return {
-        amount: row.amount,
-        jobId: row.job_id,
-        type: "job_capacity_increase",
-      };
-    case "passive_resource_production":
-      return {
-        amount: row.amount,
-        resourceId: row.resource_id,
-        type: "passive_resource_production",
-      };
-    case "resource_storage_increase":
-      return {
-        amount: row.amount,
-        resourceId: row.resource_id,
-        type: "resource_storage_increase",
-      };
-    case "population_cap_increase":
-      return {
-        amount: row.amount,
-        type: "population_cap_increase",
-      };
-  }
-}
-
-function toTier(row: TierRow): BuildingBlueprintTier {
-  return {
-    buildingBlueprintId: row.building_blueprint_id,
-    constructionCostsJson: row.construction_costs_json.map(toCostEntry),
-    createdAt: row.created_at,
-    effectsJson: row.effects_json.map(toTierEffect),
-    id: row.id,
-    tierNumber: row.tier_number,
-    updatedAt: row.updated_at,
-    upkeepCostsJson: row.upkeep_costs_json.map(toCostEntry),
-    workerTurnsRequired: row.worker_turns_required,
-  };
 }
 
 function parseInput<TSchema extends z.ZodTypeAny>(

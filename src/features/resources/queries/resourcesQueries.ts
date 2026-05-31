@@ -5,8 +5,8 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
-import type { Json } from "@/types/database";
 
+import { RESOURCE_SELECT, toResource, type ResourceRow } from "./resourceRow";
 import { resourcesQueryKeys } from "./resourcesQueryKeys";
 
 import type { Resource } from "../types/resourceTypes";
@@ -35,22 +35,6 @@ type ResourceDetailQueryOptions = UseQueryOptions<
   Resource | null,
   ResourceDetailQueryKey
 >;
-
-type ResourceRow = {
-  readonly base_stockpile_cap: number;
-  readonly created_at: string;
-  readonly id: string;
-  readonly is_trashed: boolean;
-  readonly is_system_resource: boolean;
-  readonly last_cleanup_summary_json: Json;
-  readonly name: string;
-  readonly slug: string;
-  readonly updated_at: string;
-  readonly world_id: string;
-};
-
-const RESOURCE_SELECT =
-  "id,world_id,name,slug,base_stockpile_cap,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at";
 
 export function resourcesByWorldQueryOptions(
   worldId: string,
@@ -139,19 +123,4 @@ async function getResourceById(
   }
 
   return data === null ? null : toResource(data);
-}
-
-function toResource(row: ResourceRow): Resource {
-  return {
-    baseStockpileCap: row.base_stockpile_cap,
-    createdAt: row.created_at,
-    id: row.id,
-    isTrashed: row.is_trashed,
-    isSystemResource: row.is_system_resource,
-    lastCleanupSummaryJson: row.last_cleanup_summary_json,
-    name: row.name,
-    slug: row.slug,
-    updatedAt: row.updated_at,
-    worldId: row.world_id,
-  };
 }
