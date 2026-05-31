@@ -24,6 +24,8 @@ export type TierEffect =
       readonly type: "population_cap_increase";
     };
 
+export type EffectTypeName = TierEffect["type"];
+
 export type BuildingBlueprint = {
   readonly createdAt: string;
   readonly description: string | null;

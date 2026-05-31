@@ -4,7 +4,11 @@ import type {
   TierCostEntryInput,
   TierEffectInput,
 } from "../schemas/buildingSchemas";
-import type { TierCostEntry, TierEffect } from "../types/buildingTypes";
+import type {
+  EffectTypeName,
+  TierCostEntry,
+  TierEffect,
+} from "../types/buildingTypes";
 
 export type CostRowState = {
   id: string;
@@ -14,7 +18,7 @@ export type CostRowState = {
 
 export type EffectRowState = {
   id: string;
-  effectType: string;
+  effectType: EffectTypeName | "";
   jobId: string;
   resourceId: string;
   amount: string;
@@ -44,22 +48,33 @@ export function buildEffectInputs(
   const result: TierEffectInput[] = [];
   for (const r of rows) {
     const amount = r.amount !== "" ? parseFloat(r.amount) : 0;
-    if (r.effectType === "job_capacity_increase") {
-      result.push({ amount, jobId: r.jobId, type: "job_capacity_increase" });
-    } else if (r.effectType === "passive_resource_production") {
-      result.push({
-        amount,
-        resourceId: r.resourceId,
-        type: "passive_resource_production",
-      });
-    } else if (r.effectType === "resource_storage_increase") {
-      result.push({
-        amount,
-        resourceId: r.resourceId,
-        type: "resource_storage_increase",
-      });
-    } else if (r.effectType === "population_cap_increase") {
-      result.push({ amount, type: "population_cap_increase" });
+    switch (r.effectType) {
+      case "job_capacity_increase":
+        result.push({ amount, jobId: r.jobId, type: "job_capacity_increase" });
+        break;
+      case "passive_resource_production":
+        result.push({
+          amount,
+          resourceId: r.resourceId,
+          type: "passive_resource_production",
+        });
+        break;
+      case "resource_storage_increase":
+        result.push({
+          amount,
+          resourceId: r.resourceId,
+          type: "resource_storage_increase",
+        });
+        break;
+      case "population_cap_increase":
+        result.push({ amount, type: "population_cap_increase" });
+        break;
+      case "":
+        break;
+      default: {
+        const _exhaustive: never = r.effectType;
+        throw new Error(`Unknown effect type: ${String(_exhaustive)}`);
+      }
     }
   }
   return result;
