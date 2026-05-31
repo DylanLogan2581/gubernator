@@ -77,6 +77,7 @@ export type {
   BuildingBlueprint,
   BuildingBlueprintTier,
   DeleteTierResult,
+  EffectTypeName,
   HardDeleteBlueprintResult,
   RestoreBlueprintResult,
   SoftDeleteBlueprintResult,

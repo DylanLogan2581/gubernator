@@ -9,13 +9,8 @@ import { type Resource } from "@/features/resources";
 import { sortByName } from "@/lib/sortUtils";
 import { generateLocalId } from "@/lib/uid";
 
+import type { EffectTypeName } from "../types/buildingTypes";
 import type { CostRowState, EffectRowState } from "../utils/tierEditorUtils";
-
-type EffectTypeName =
-  | "job_capacity_increase"
-  | "passive_resource_production"
-  | "population_cap_increase"
-  | "resource_storage_increase";
 
 const EFFECT_TYPE_LABELS: Record<EffectTypeName, string> = {
   job_capacity_increase: "Job capacity increase",
@@ -173,7 +168,7 @@ export function EffectsEditor({
                   value={row.effectType}
                   onChange={(e) => {
                     updateRow(row.id, {
-                      effectType: e.currentTarget.value,
+                      effectType: e.currentTarget.value as EffectTypeName | "",
                       jobId: "",
                       resourceId: "",
                     });
