@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WorldBuildingsConfigPanel } from "./WorldBuildingsConfigPanel";
+import { BuildingsConfigPanel } from "./BuildingsConfigPanel";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -40,7 +40,7 @@ vi.mock("@tanstack/react-router", () => ({
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 const BLUEPRINT_ID = "00000000-0000-0000-0000-000000000002";
 
-describe("WorldBuildingsConfigPanel", () => {
+describe("BuildingsConfigPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
@@ -373,7 +373,7 @@ function renderPanel({
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <WorldBuildingsConfigPanel
+      <BuildingsConfigPanel
         canAdmin={canAdmin}
         isArchived={isArchived}
         worldId={WORLD_ID}

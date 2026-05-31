@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BuildingsConfigPanel } from "@/features/buildings";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { JobsConfigPanel } from "@/features/jobs";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
@@ -21,7 +22,6 @@ import { cn } from "@/lib/utils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
-import { WorldBuildingsConfigPanel } from "./WorldBuildingsConfigPanel";
 import { WorldDepositsConfigPanel } from "./WorldDepositsConfigPanel";
 import { WorldManagedPopulationsConfigPanel } from "./WorldManagedPopulationsConfigPanel";
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
@@ -202,7 +202,7 @@ function WorldConfigurationContent({
   if (activeTab === "buildings") {
     return (
       <ConfigPanelShell>
-        <WorldBuildingsConfigPanel
+        <BuildingsConfigPanel
           canAdmin={worldQuery.data.canAdmin}
           isArchived={worldQuery.data.header.isArchived}
           selectedBlueprintId={selectedBlueprintId}
