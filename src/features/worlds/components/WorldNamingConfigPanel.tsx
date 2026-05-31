@@ -200,7 +200,9 @@ function WorldNamingConfigPanelContent({
           />
 
           <fieldset className="grid gap-2">
-            <legend className="text-sm font-medium">Naming convention</legend>
+            <legend className="text-base font-semibold">
+              Naming convention
+            </legend>
             <div className="grid gap-1.5">
               {NAME_CONVENTIONS.map((convention) => (
                 <label
