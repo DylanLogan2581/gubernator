@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
+import { JobsConfigPanel } from "@/features/jobs";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -22,7 +23,6 @@ import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
 import { WorldBuildingsConfigPanel } from "./WorldBuildingsConfigPanel";
 import { WorldDepositsConfigPanel } from "./WorldDepositsConfigPanel";
-import { WorldJobsConfigPanel } from "./WorldJobsConfigPanel";
 import { WorldManagedPopulationsConfigPanel } from "./WorldManagedPopulationsConfigPanel";
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
@@ -190,7 +190,7 @@ function WorldConfigurationContent({
   if (activeTab === "jobs") {
     return (
       <ConfigPanelShell>
-        <WorldJobsConfigPanel
+        <JobsConfigPanel
           canAdmin={worldQuery.data.canAdmin}
           isArchived={worldQuery.data.header.isArchived}
           worldId={worldId}
