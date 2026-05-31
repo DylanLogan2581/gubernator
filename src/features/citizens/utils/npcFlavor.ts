@@ -78,10 +78,12 @@ export function roleLabelForAssignment(
   if (assignment === null) {
     return null;
   }
-  return assignmentTypeRoleLabel(assignment.assignmentType);
+  return roleLabelForAssignmentType(assignment.assignmentType);
 }
 
-function assignmentTypeRoleLabel(type: CitizenAssignmentType): string {
+export function roleLabelForAssignmentType(
+  type: CitizenAssignmentType,
+): string {
   switch (type) {
     case "construction_project":
       return "Builder";

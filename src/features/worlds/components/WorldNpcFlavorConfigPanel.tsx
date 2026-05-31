@@ -14,7 +14,11 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
-import { activeJobsByWorldQueryOptions } from "@/features/jobs";
+import {
+  generateNpcFlavor,
+  renderNpcFlavorLine,
+  roleLabelForAssignmentType,
+} from "@/features/citizens";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 
@@ -87,7 +91,6 @@ function WorldNpcFlavorConfigPanelContent({
       queryClient,
     }),
   );
-  const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
   const [draftConfig, setDraftConfig] =
     useState<WorldNpcFlavorConfig>(initialConfig);
   const [exampleOutput, setExampleOutput] = useState<string | null>(null);
@@ -120,21 +123,9 @@ function WorldNpcFlavorConfigPanelContent({
   function handleGenerateExample(): void {
     const rng = createSeededRng(previewSeed);
     setPreviewSeed((current) => current + 1);
-
-    const jobs = jobsQuery.data ?? [];
-    const jobName =
-      jobs.length > 0
-        ? (jobs[Math.floor(rng() * jobs.length)]?.name ?? "Unassigned")
-        : "Unassigned";
-
-    const trait = pickFromPool(draftConfig.traits, rng);
-    const contradiction = pickFromPool(draftConfig.contradictions, rng);
-    const goal = pickFromPool(draftConfig.goals, rng);
-    const flaw = pickFromPool(draftConfig.flaws, rng);
-
-    setExampleOutput(
-      buildExampleSentence(jobName, trait, contradiction, goal, flaw),
-    );
+    const flavor = generateNpcFlavor(draftConfig, rng);
+    const roleLabel = roleLabelForAssignmentType("standard_job");
+    setExampleOutput(renderNpcFlavorLine(flavor, roleLabel));
   }
 
   return (
@@ -255,37 +246,6 @@ function WorldNpcFlavorConfigPanelContent({
       )}
     </div>
   );
-}
-
-function pickFromPool(pool: readonly string[], rng: () => number): string {
-  if (pool.length === 0) return "";
-  return pool[Math.floor(rng() * pool.length)] ?? "";
-}
-
-function buildExampleSentence(
-  job: string,
-  trait: string,
-  contradiction: string,
-  goal: string,
-  flaw: string,
-): string {
-  const descParts: string[] = [];
-  if (trait !== "") descParts.push(`who is ${trait}`);
-  if (contradiction !== "") descParts.push(`but secretly ${contradiction}`);
-
-  let result = `A ${job}`;
-  if (descParts.length > 0) result += ` ${descParts.join(", ")}`;
-  result += ".";
-
-  if (goal !== "" && flaw !== "") {
-    result += ` They want ${goal} but are prevented by ${flaw}.`;
-  } else if (goal !== "") {
-    result += ` They want ${goal}.`;
-  } else if (flaw !== "") {
-    result += ` They are prevented by ${flaw}.`;
-  }
-
-  return result;
 }
 
 function NpcFlavorTab({
