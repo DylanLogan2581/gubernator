@@ -325,6 +325,63 @@ describe("WorldNamingConfigPanel", () => {
     await screen.findByRole("heading", { name: "Naming rules" });
     expect(screen.queryByRole("alert")).toBeNull();
   });
+
+  it("does not reserve warning space when both pools have entries", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Naming rules" });
+    const form = screen.getByRole("form", {
+      name: "World naming configuration",
+    });
+    expect(form.firstElementChild?.tagName).toBe("FIELDSET");
+  });
+
+  it("keeps the male pool fieldset position stable when toggling convention with an empty pool", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [
+          createWorldRow({
+            naming_config_json: createNamingConfig({ male_names: [] }),
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Naming rules" });
+    const form = screen.getByRole("form", {
+      name: "World naming configuration",
+    });
+    const firstChildBefore = form.firstElementChild;
+    expect(screen.getByRole("alert")).toBeDefined();
+
+    await user.click(screen.getByRole("radio", { name: /Manual only/i }));
+
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(form.firstElementChild).toBe(firstChildBefore);
+  });
 });
 
 function renderPanel({
