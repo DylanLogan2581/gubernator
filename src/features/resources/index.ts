@@ -22,7 +22,10 @@ export {
   updateResourceInputSchema,
 } from "./schemas/resourceSchemas";
 
+export { validateResourceReferencesAgainstWorld } from "./utils/validateResourceReferences";
+
 export type { ResourceMutationIssue } from "./mutations/resourcesMutations";
+export type { ResourceReferenceIssue } from "./utils/validateResourceReferences";
 export type {
   CreateResourceInput,
   CreateResourceValues,
