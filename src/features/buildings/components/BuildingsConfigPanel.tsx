@@ -17,33 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  blueprintsByWorldQueryOptions,
-  buildCostInputs,
-  buildEffectInputs,
-  CostEditor,
-  createBlueprintInputSchema,
-  createBlueprintMutationOptions,
-  createTierInputSchema,
-  createTierMutationOptions,
-  EffectsEditor,
-  extractFieldErrors,
-  extractRefErrors,
-  hardDeleteBlueprintMutationOptions,
-  restoreBlueprintMutationOptions,
-  softDeleteBlueprintMutationOptions,
-  updateBlueprintInputSchema,
-  updateBlueprintMutationOptions,
-  validateBlueprintTierReferencesAgainstWorld,
-  type BuildingBlueprint,
-  type CreateBlueprintInput,
-  type CostRowState,
-  type EffectRowState,
-  type TierCostEntryInput,
-  type TierEffectInput,
-  type TierFormErrors,
-  type UpdateBlueprintInput,
-} from "@/features/buildings";
-import {
   activeJobsByWorldQueryOptions,
   type JobDefinition,
 } from "@/features/jobs";
@@ -57,21 +30,53 @@ import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 import { generateLocalId } from "@/lib/uid";
 
-import { BlueprintTierEditor } from "./BlueprintTierEditor";
+import {
+  createBlueprintMutationOptions,
+  createTierMutationOptions,
+  hardDeleteBlueprintMutationOptions,
+  restoreBlueprintMutationOptions,
+  softDeleteBlueprintMutationOptions,
+  updateBlueprintMutationOptions,
+} from "../mutations/buildingsMutations";
+import { blueprintsByWorldQueryOptions } from "../queries/buildingsQueries";
+import {
+  createBlueprintInputSchema,
+  createTierInputSchema,
+  updateBlueprintInputSchema,
+  type CreateBlueprintInput,
+  type TierCostEntryInput,
+  type TierEffectInput,
+  type UpdateBlueprintInput,
+} from "../schemas/buildingSchemas";
+import {
+  buildCostInputs,
+  buildEffectInputs,
+  extractFieldErrors,
+  extractRefErrors,
+  type CostRowState,
+  type EffectRowState,
+  type TierFormErrors,
+} from "../utils/tierEditorUtils";
+import { validateBlueprintTierReferencesAgainstWorld } from "../utils/validateBuildingReferences";
 
-type WorldBuildingsConfigPanelProps = {
+import { BlueprintTierEditor } from "./BlueprintTierEditor";
+import { CostEditor, EffectsEditor } from "./TierEditorFields";
+
+import type { BuildingBlueprint } from "../types/buildingTypes";
+
+type BuildingsConfigPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly selectedBlueprintId?: string;
   readonly worldId: string;
 };
 
-export function WorldBuildingsConfigPanel({
+export function BuildingsConfigPanel({
   canAdmin,
   isArchived,
   selectedBlueprintId,
   worldId,
-}: WorldBuildingsConfigPanelProps): JSX.Element {
+}: BuildingsConfigPanelProps): JSX.Element {
   if (selectedBlueprintId !== undefined) {
     return (
       <BlueprintTierEditor
@@ -124,7 +129,7 @@ function BlueprintListPanel({
     : allBlueprints.filter((bp) => !bp.isTrashed);
 
   return (
-    <WorldBuildingsConfigPanelContent
+    <BuildingsConfigPanelContent
       blueprints={visibleBlueprints}
       canAdmin={canAdmin}
       isArchived={isArchived}
@@ -147,7 +152,7 @@ type PendingTierDraft = {
   readonly effectsJson?: TierEffectInput[];
 };
 
-function WorldBuildingsConfigPanelContent({
+function BuildingsConfigPanelContent({
   blueprints,
   canAdmin,
   isArchived,
@@ -225,7 +230,7 @@ function WorldBuildingsConfigPanelContent({
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h2
-          id="world-buildings-title"
+          id="buildings-title"
           className="text-lg font-semibold tracking-normal"
         >
           Buildings

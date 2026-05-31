@@ -15,33 +15,6 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  blueprintByIdQueryOptions,
-  buildCostInputs,
-  buildEffectInputs,
-  CostEditor,
-  createTierInputSchema,
-  createTierMutationOptions,
-  deleteTierMutationOptions,
-  EffectsEditor,
-  extractFieldErrors,
-  extractRefErrors,
-  tierCostsToState,
-  tierEffectsToState,
-  tiersByBlueprintQueryOptions,
-  updateTierInputSchema,
-  updateTierMutationOptions,
-  validateBlueprintTierReferencesAgainstWorld,
-  type BuildingBlueprint,
-  type BuildingBlueprintTier,
-  type CostRowState,
-  type CreateTierInput,
-  type EffectRowState,
-  type TierCostEntry,
-  type TierEffect,
-  type TierFormErrors,
-  type UpdateTierInput,
-} from "@/features/buildings";
-import {
   activeJobsByWorldQueryOptions,
   type JobDefinition,
 } from "@/features/jobs";
@@ -51,6 +24,43 @@ import {
 } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
+
+import {
+  createTierMutationOptions,
+  deleteTierMutationOptions,
+  updateTierMutationOptions,
+} from "../mutations/buildingsMutations";
+import {
+  blueprintByIdQueryOptions,
+  tiersByBlueprintQueryOptions,
+} from "../queries/buildingsQueries";
+import {
+  createTierInputSchema,
+  updateTierInputSchema,
+  type CreateTierInput,
+  type UpdateTierInput,
+} from "../schemas/buildingSchemas";
+import {
+  buildCostInputs,
+  buildEffectInputs,
+  extractFieldErrors,
+  extractRefErrors,
+  tierCostsToState,
+  tierEffectsToState,
+  type CostRowState,
+  type EffectRowState,
+  type TierFormErrors,
+} from "../utils/tierEditorUtils";
+import { validateBlueprintTierReferencesAgainstWorld } from "../utils/validateBuildingReferences";
+
+import { CostEditor, EffectsEditor } from "./TierEditorFields";
+
+import type {
+  BuildingBlueprint,
+  BuildingBlueprintTier,
+  TierCostEntry,
+  TierEffect,
+} from "../types/buildingTypes";
 
 type BlueprintTierEditorProps = {
   readonly blueprintId: string;

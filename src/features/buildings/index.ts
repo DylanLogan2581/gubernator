@@ -1,6 +1,8 @@
 // Buildings feature — define building blueprints and their tier costs/effects for worlds.
 // Implemented in Epic 4.
 
+export { BlueprintTierEditor } from "./components/BlueprintTierEditor";
+export { BuildingsConfigPanel } from "./components/BuildingsConfigPanel";
 export { CostEditor, EffectsEditor } from "./components/TierEditorFields";
 export {
   buildCostInputs,
