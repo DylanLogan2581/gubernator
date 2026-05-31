@@ -192,9 +192,7 @@ function WorldManagedPopulationsConfigPanelContent({
           onEditingChange={setEditingPopulationTypeId}
         />
       ) : showTrash ? (
-        <p className="text-sm text-muted-foreground">
-          No trashed managed population types.
-        </p>
+        <EmptyState title="No managed population types in trash" />
       ) : !showCreateForm ? (
         <EmptyState
           title="No managed population types yet"
