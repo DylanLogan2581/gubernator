@@ -140,6 +140,10 @@ create table public.job_definitions (
       and base_capacity is null
     )
   ),
+  constraint job_definitions_base_capacity_positive_check check (
+    base_capacity is null
+    or base_capacity > 0
+  ),
   -- trader_capacity_per_worker must be present for trader and absent otherwise
   constraint job_definitions_trader_capacity_check check (
     (
@@ -150,6 +154,10 @@ create table public.job_definitions (
       job_type <> 'trader'
       and trader_capacity_per_worker is null
     )
+  ),
+  constraint job_definitions_trader_capacity_positive_check check (
+    trader_capacity_per_worker is null
+    or trader_capacity_per_worker > 0
   ),
   -- linked_deposit_type_id only permitted when job_type = 'deposit'
   constraint job_definitions_linked_deposit_check check (
