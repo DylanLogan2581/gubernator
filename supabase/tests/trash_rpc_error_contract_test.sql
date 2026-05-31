@@ -152,7 +152,8 @@ values
 
 -- ===========================================================================
 -- P0002 (no_data_found) — world owner calls with a non-existent entity ID.
--- Not-found check fires before the auth check in every RPC.
+-- Auth check fires first (passes for world owner), then row-exists check
+-- raises P0002.
 -- ===========================================================================
 set
   local role authenticated;
