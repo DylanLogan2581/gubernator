@@ -4,6 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
@@ -500,6 +501,7 @@ function PopulationTypeScalarFields({
   jobCollisionError,
   name,
   slug,
+  worldId,
   onCullingJobChange,
   onGrowthRateChange,
   onHusbandryJobChange,
@@ -520,6 +522,7 @@ function PopulationTypeScalarFields({
   readonly jobCollisionError: string | undefined;
   readonly name: string;
   readonly slug: string;
+  readonly worldId: string;
   readonly onCullingJobChange: (value: string) => void;
   readonly onGrowthRateChange: (value: number) => void;
   readonly onHusbandryJobChange: (value: string) => void;
@@ -559,68 +562,112 @@ function PopulationTypeScalarFields({
           <p className="text-xs text-destructive">{fieldErrors.slug}</p>
         ) : null}
       </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Husbandry job</span>
-        <NativeSelect
-          aria-invalid={
-            fieldErrors.husbandryJobId !== undefined ||
-            husbandryJobLinkError !== undefined ||
-            jobCollisionError !== undefined
-          }
-          className="w-full"
-          disabled={isPending}
-          value={husbandryJobId}
-          onChange={(e) => {
-            onHusbandryJobChange(e.currentTarget.value);
-          }}
-        >
-          <option value="">Select a husbandry job…</option>
-          {sortByName(husbandryJobs).map((job) => (
-            <option key={job.id} value={job.id}>
-              {job.name}
-            </option>
-          ))}
-        </NativeSelect>
-        {husbandryJobLinkError !== undefined ? (
-          <p className="text-xs text-destructive">{husbandryJobLinkError}</p>
-        ) : jobCollisionError !== undefined ? (
-          <p className="text-xs text-destructive">{jobCollisionError}</p>
-        ) : fieldErrors.husbandryJobId !== undefined ? (
-          <p className="text-xs text-destructive">
-            {fieldErrors.husbandryJobId}
-          </p>
-        ) : null}
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Culling job</span>
-        <NativeSelect
-          aria-invalid={
-            fieldErrors.cullingJobId !== undefined ||
-            cullingJobLinkError !== undefined ||
-            jobCollisionError !== undefined
-          }
-          className="w-full"
-          disabled={isPending}
-          value={cullingJobId}
-          onChange={(e) => {
-            onCullingJobChange(e.currentTarget.value);
-          }}
-        >
-          <option value="">Select a culling job…</option>
-          {sortByName(cullingJobs).map((job) => (
-            <option key={job.id} value={job.id}>
-              {job.name}
-            </option>
-          ))}
-        </NativeSelect>
-        {cullingJobLinkError !== undefined ? (
-          <p className="text-xs text-destructive">{cullingJobLinkError}</p>
-        ) : jobCollisionError !== undefined ? (
-          <p className="text-xs text-destructive">{jobCollisionError}</p>
-        ) : fieldErrors.cullingJobId !== undefined ? (
-          <p className="text-xs text-destructive">{fieldErrors.cullingJobId}</p>
-        ) : null}
-      </label>
+      {husbandryJobs.length === 0 ? (
+        <div className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Husbandry job</span>
+          <EmptyState
+            title="No husbandry jobs yet"
+            description="Create one to assign to this population type."
+            action={
+              <Button asChild size="sm" variant="outline">
+                <Link
+                  to="/worlds/$worldId/configuration"
+                  params={{ worldId }}
+                  search={{ tab: "jobs" }}
+                >
+                  Create husbandry job
+                </Link>
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Husbandry job</span>
+          <NativeSelect
+            aria-invalid={
+              fieldErrors.husbandryJobId !== undefined ||
+              husbandryJobLinkError !== undefined ||
+              jobCollisionError !== undefined
+            }
+            className="w-full"
+            disabled={isPending}
+            value={husbandryJobId}
+            onChange={(e) => {
+              onHusbandryJobChange(e.currentTarget.value);
+            }}
+          >
+            <option value="">Select a husbandry job…</option>
+            {sortByName(husbandryJobs).map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.name}
+              </option>
+            ))}
+          </NativeSelect>
+          {husbandryJobLinkError !== undefined ? (
+            <p className="text-xs text-destructive">{husbandryJobLinkError}</p>
+          ) : jobCollisionError !== undefined ? (
+            <p className="text-xs text-destructive">{jobCollisionError}</p>
+          ) : fieldErrors.husbandryJobId !== undefined ? (
+            <p className="text-xs text-destructive">
+              {fieldErrors.husbandryJobId}
+            </p>
+          ) : null}
+        </label>
+      )}
+      {cullingJobs.length === 0 ? (
+        <div className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Culling job</span>
+          <EmptyState
+            title="No culling jobs yet"
+            description="Create one to assign to this population type."
+            action={
+              <Button asChild size="sm" variant="outline">
+                <Link
+                  to="/worlds/$worldId/configuration"
+                  params={{ worldId }}
+                  search={{ tab: "jobs" }}
+                >
+                  Create culling job
+                </Link>
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Culling job</span>
+          <NativeSelect
+            aria-invalid={
+              fieldErrors.cullingJobId !== undefined ||
+              cullingJobLinkError !== undefined ||
+              jobCollisionError !== undefined
+            }
+            className="w-full"
+            disabled={isPending}
+            value={cullingJobId}
+            onChange={(e) => {
+              onCullingJobChange(e.currentTarget.value);
+            }}
+          >
+            <option value="">Select a culling job…</option>
+            {sortByName(cullingJobs).map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.name}
+              </option>
+            ))}
+          </NativeSelect>
+          {cullingJobLinkError !== undefined ? (
+            <p className="text-xs text-destructive">{cullingJobLinkError}</p>
+          ) : jobCollisionError !== undefined ? (
+            <p className="text-xs text-destructive">{jobCollisionError}</p>
+          ) : fieldErrors.cullingJobId !== undefined ? (
+            <p className="text-xs text-destructive">
+              {fieldErrors.cullingJobId}
+            </p>
+          ) : null}
+        </label>
+      )}
       <label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">
           Husbandry workers per N animals
@@ -819,6 +866,7 @@ function CreateManagedPopulationTypeForm({
           jobCollisionError={jobCollisionError}
           name={name}
           slug={slug}
+          worldId={worldId}
           onCullingJobChange={handleCullingJobChange}
           onGrowthRateChange={setGrowthRate}
           onHusbandryJobChange={handleHusbandryJobChange}
@@ -1054,6 +1102,7 @@ function EditManagedPopulationTypeForm({
           jobCollisionError={jobCollisionError}
           name={name}
           slug={slug}
+          worldId={worldId}
           onCullingJobChange={handleCullingJobChange}
           onGrowthRateChange={setGrowthRate}
           onHusbandryJobChange={handleHusbandryJobChange}

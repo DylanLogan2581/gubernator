@@ -1,9 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { WorldDepositsConfigPanel } from "./WorldDepositsConfigPanel";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => <a className={className}>{children}</a>,
+}));
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -80,6 +91,48 @@ describe("WorldDepositsConfigPanel", () => {
 
     await screen.findByText("Iron Ore");
     expect(screen.getByText(/5 output\/worker/)).toBeDefined();
+  });
+
+  it("shows empty state with create link when no deposit jobs exist in create form", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ depositTypeRows: [], jobRows: [], resourceRows: [] }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Deposit Types" });
+    await user.click(screen.getByRole("button", { name: "Add deposit type" }));
+
+    await screen.findByRole("heading", { name: "New deposit type" });
+    expect(screen.getByText("No deposit jobs yet")).toBeDefined();
+    expect(screen.getByText("Create deposit job")).toBeDefined();
+    expect(
+      screen.queryByRole("combobox", { name: "Linked deposit job" }),
+    ).toBeNull();
+  });
+
+  it("shows empty state with create link when no deposit jobs exist in edit form", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [createDepositTypeRow({ name: "Iron Ore" })],
+        jobRows: [],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Iron Ore");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit deposit type" });
+    expect(screen.getByText("No deposit jobs yet")).toBeDefined();
+    expect(screen.getByText("Create deposit job")).toBeDefined();
+    expect(
+      screen.queryByRole("combobox", { name: "Linked deposit job" }),
+    ).toBeNull();
   });
 
   it("shows linked job name in the row", async () => {

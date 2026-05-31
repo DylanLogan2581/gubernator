@@ -4,6 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
@@ -591,32 +592,53 @@ function CreateDepositTypeForm({
             <p className="text-xs text-destructive">{fieldErrors.slug}</p>
           ) : null}
         </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Linked deposit job</span>
-          <NativeSelect
-            aria-invalid={
-              fieldErrors.jobId !== undefined || jobLinkError !== undefined
-            }
-            className="w-full"
-            disabled={isPending}
-            value={jobId}
-            onChange={(e) => {
-              handleJobChange(e.currentTarget.value);
-            }}
-          >
-            <option value="">Select a deposit job…</option>
-            {sortByName(depositJobs).map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.name}
-              </option>
-            ))}
-          </NativeSelect>
-          {jobLinkError !== undefined ? (
-            <p className="text-xs text-destructive">{jobLinkError}</p>
-          ) : fieldErrors.jobId !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
-          ) : null}
-        </label>
+        {depositJobs.length === 0 ? (
+          <div className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Linked deposit job</span>
+            <EmptyState
+              title="No deposit jobs yet"
+              description="Create one to assign to this deposit type."
+              action={
+                <Button asChild size="sm" variant="outline">
+                  <Link
+                    to="/worlds/$worldId/configuration"
+                    params={{ worldId }}
+                    search={{ tab: "jobs" }}
+                  >
+                    Create deposit job
+                  </Link>
+                </Button>
+              }
+            />
+          </div>
+        ) : (
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Linked deposit job</span>
+            <NativeSelect
+              aria-invalid={
+                fieldErrors.jobId !== undefined || jobLinkError !== undefined
+              }
+              className="w-full"
+              disabled={isPending}
+              value={jobId}
+              onChange={(e) => {
+                handleJobChange(e.currentTarget.value);
+              }}
+            >
+              <option value="">Select a deposit job…</option>
+              {sortByName(depositJobs).map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.name}
+                </option>
+              ))}
+            </NativeSelect>
+            {jobLinkError !== undefined ? (
+              <p className="text-xs text-destructive">{jobLinkError}</p>
+            ) : fieldErrors.jobId !== undefined ? (
+              <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
+            ) : null}
+          </label>
+        )}
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Output units per worker</span>
           <Input
@@ -828,32 +850,53 @@ function EditDepositTypeForm({
             <p className="text-xs text-destructive">{fieldErrors.slug}</p>
           ) : null}
         </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Linked deposit job</span>
-          <NativeSelect
-            aria-invalid={
-              fieldErrors.jobId !== undefined || jobLinkError !== undefined
-            }
-            className="w-full"
-            disabled={isPending}
-            value={jobId}
-            onChange={(e) => {
-              handleJobChange(e.currentTarget.value);
-            }}
-          >
-            <option value="">Select a deposit job…</option>
-            {sortByName(depositJobs).map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.name}
-              </option>
-            ))}
-          </NativeSelect>
-          {jobLinkError !== undefined ? (
-            <p className="text-xs text-destructive">{jobLinkError}</p>
-          ) : fieldErrors.jobId !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
-          ) : null}
-        </label>
+        {depositJobs.length === 0 ? (
+          <div className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Linked deposit job</span>
+            <EmptyState
+              title="No deposit jobs yet"
+              description="Create one to assign to this deposit type."
+              action={
+                <Button asChild size="sm" variant="outline">
+                  <Link
+                    to="/worlds/$worldId/configuration"
+                    params={{ worldId }}
+                    search={{ tab: "jobs" }}
+                  >
+                    Create deposit job
+                  </Link>
+                </Button>
+              }
+            />
+          </div>
+        ) : (
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Linked deposit job</span>
+            <NativeSelect
+              aria-invalid={
+                fieldErrors.jobId !== undefined || jobLinkError !== undefined
+              }
+              className="w-full"
+              disabled={isPending}
+              value={jobId}
+              onChange={(e) => {
+                handleJobChange(e.currentTarget.value);
+              }}
+            >
+              <option value="">Select a deposit job…</option>
+              {sortByName(depositJobs).map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.name}
+                </option>
+              ))}
+            </NativeSelect>
+            {jobLinkError !== undefined ? (
+              <p className="text-xs text-destructive">{jobLinkError}</p>
+            ) : fieldErrors.jobId !== undefined ? (
+              <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
+            ) : null}
+          </label>
+        )}
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Output units per worker</span>
           <Input
