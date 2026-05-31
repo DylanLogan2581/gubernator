@@ -101,16 +101,14 @@ export function WorldConfigurationPage({
       </div>
 
       {/* Desktop tab strip — scrollable, visible from md up */}
-      <div
-        role="tablist"
+      <nav
         aria-label="Configuration sections"
         className="hidden overflow-x-auto border-b border-border [scrollbar-width:none] md:flex"
       >
         {TABS.map(({ key, label }) => (
           <Link
             key={key}
-            role="tab"
-            aria-selected={activeTab === key}
+            aria-current={activeTab === key ? "page" : undefined}
             to="/worlds/$worldId/configuration"
             params={{ worldId }}
             search={{ tab: key }}
@@ -124,9 +122,8 @@ export function WorldConfigurationPage({
             {label}
           </Link>
         ))}
-      </div>
+      </nav>
       <section
-        role="tabpanel"
         aria-label={`${activeTab} configuration`}
         className="min-h-[200px]"
       >

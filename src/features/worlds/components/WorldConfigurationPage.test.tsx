@@ -22,10 +22,12 @@ vi.mock("@tanstack/react-router", () => ({
     children,
     params,
     to,
+    ...rest
   }: {
     readonly children: ReactNode;
     readonly params?: Readonly<Record<string, string>>;
     readonly to: string;
+    readonly [key: string]: unknown;
   }) => {
     const href =
       params === undefined
@@ -34,7 +36,11 @@ vi.mock("@tanstack/react-router", () => ({
             (path, [name, value]) => path.replace(`$${name}`, value),
             to,
           );
-    return <a href={href}>{children}</a>;
+    return (
+      <a href={href} {...(rest)}>
+        {children}
+      </a>
+    );
   },
   useNavigate: () => vi.fn(),
 }));
@@ -116,6 +122,29 @@ describe("WorldConfigurationPage", () => {
     expect(
       await screen.findByRole("combobox", { name: "Configuration section" }),
     ).toHaveTextContent("Calendar");
+  });
+
+  it("marks the active tab link with aria-current=page in the nav strip", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow()],
+      }),
+    );
+
+    renderPage({ activeTab: "calendar", worldId: WORLD_ID });
+
+    const nav = await screen.findByRole("navigation", {
+      name: "Configuration sections",
+    });
+    const calendarLink = Array.from(nav.querySelectorAll("a")).find(
+      (a) => a.textContent === "Calendar",
+    );
+    const resourcesLink = Array.from(nav.querySelectorAll("a")).find(
+      (a) => a.textContent === "Resources",
+    );
+    expect(calendarLink).toHaveAttribute("aria-current", "page");
+    expect(resourcesLink).not.toHaveAttribute("aria-current");
   });
 
   it("renders a back navigation link to the world page", async () => {
