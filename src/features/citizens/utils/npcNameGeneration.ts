@@ -38,6 +38,7 @@ function resolveSurname(
 ): string {
   switch (convention) {
     case "random":
+    case "manual":
       return "";
     case "patronymic":
       return firstWord(parentAName ?? "");

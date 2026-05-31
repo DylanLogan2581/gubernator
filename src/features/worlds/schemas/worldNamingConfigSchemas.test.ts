@@ -8,7 +8,6 @@ const validConfig = {
   convention: "random" as const,
   female_names: ["Alice"],
   male_names: ["Bob"],
-  manual_only: false,
 };
 
 describe("worldNamingConfigSchema", () => {
@@ -34,6 +33,7 @@ describe("worldNamingConfigSchema", () => {
       "patronymic",
       "matronymic",
       "inherited family name",
+      "manual",
     ] as const) {
       const result = worldNamingConfigSchema.safeParse({
         ...validConfig,
@@ -125,24 +125,6 @@ describe("worldNamingConfigSchema", () => {
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
       male_names: [""],
-    });
-
-    expect(result.success).toBe(false);
-  });
-
-  it("accepts manual_only = true", () => {
-    const result = worldNamingConfigSchema.safeParse({
-      ...validConfig,
-      manual_only: true,
-    });
-
-    expect(result.success).toBe(true);
-  });
-
-  it("rejects a non-boolean manual_only", () => {
-    const result = worldNamingConfigSchema.safeParse({
-      ...validConfig,
-      manual_only: "yes",
     });
 
     expect(result.success).toBe(false);

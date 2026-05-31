@@ -127,7 +127,7 @@ describe("WorldNamingConfigPanel", () => {
     ).toBeNull();
   });
 
-  it("shows empty pool warning when manual_only is false and male pool is empty", async () => {
+  it("shows empty pool warning when convention is not manual and male pool is empty", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         worldRows: [
@@ -152,7 +152,7 @@ describe("WorldNamingConfigPanel", () => {
     expect(screen.getByRole("alert")).toBeDefined();
   });
 
-  it("shows empty pool warning when manual_only is false and female pool is empty", async () => {
+  it("shows empty pool warning when convention is not manual and female pool is empty", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         worldRows: [
@@ -177,15 +177,15 @@ describe("WorldNamingConfigPanel", () => {
     expect(screen.getByRole("alert")).toBeDefined();
   });
 
-  it("does not show empty pool warning when manual_only is true", async () => {
+  it("does not show empty pool warning when convention is manual", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         worldRows: [
           createWorldRow({
             naming_config_json: createNamingConfig({
-              male_names: [],
+              convention: "manual",
               female_names: [],
-              manual_only: true,
+              male_names: [],
             }),
           }),
         ],
@@ -203,6 +203,60 @@ describe("WorldNamingConfigPanel", () => {
     });
 
     await screen.findByRole("heading", { name: "Naming rules" });
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("renders Manual only as a radio option, not a checkbox", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Naming rules" });
+
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.getByRole("radio", { name: /Manual only/i })).toBeDefined();
+  });
+
+  it("selecting Manual only suppresses the empty pool warning", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [
+          createWorldRow({
+            naming_config_json: createNamingConfig({
+              female_names: [],
+              male_names: [],
+            }),
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Naming rules" });
+    expect(screen.getByRole("alert")).toBeDefined();
+
+    await user.click(screen.getByRole("radio", { name: /Manual only/i }));
+
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
@@ -306,7 +360,6 @@ function createNamingConfig(
     convention: "random",
     female_names: ["Alice"],
     male_names: ["Bob"],
-    manual_only: false,
     ...overrides,
   };
 }

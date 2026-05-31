@@ -7,6 +7,7 @@ export const NAME_CONVENTIONS = [
   "patronymic",
   "matronymic",
   "inherited family name",
+  "manual",
 ] as const;
 
 export type NameConvention = (typeof NAME_CONVENTIONS)[number];
@@ -30,7 +31,6 @@ export const worldNamingConfigSchema = z.object({
   convention: nameConventionSchema,
   female_names: namePoolSchema,
   male_names: namePoolSchema,
-  manual_only: z.boolean(),
 });
 
 export type WorldNamingConfig = z.infer<typeof worldNamingConfigSchema>;
