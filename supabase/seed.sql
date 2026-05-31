@@ -240,13 +240,102 @@ set
   updated_at = now();
 
 -- Per-world settings overrides preserved by tests.
+-- Worlds 101/103/104/105 share an expanded "default" flavor pool so the NPC
+-- preview renders with broad variety. World 102 keeps its distinct Linnford
+-- Concord flavor — also expanded — so the override path stays exercised.
 update public.worlds
 set
   npc_flavor_config_json = '{
-    "traits": ["bookish", "stoic", "needling"],
-    "contradictions": ["secretly funds their rivals", "writes sonnets they will never publish"],
-    "goals": ["map every uncharted coast", "found a free school"],
-    "flaws": ["overconfidence in their own ledger work", "hoards favors"]
+    "traits": [
+      "earnest", "wry", "patient", "haunted", "boisterous",
+      "stoic", "tender", "shrewd", "blunt", "watchful",
+      "scrappy", "courtly", "weary", "fervent", "soft-spoken"
+    ],
+    "contradictions": [
+      "mourns a friend they betrayed",
+      "loves their rival",
+      "writes letters to a god they no longer trust",
+      "keeps a child''s portrait they have never named",
+      "holds a vow they cannot remember swearing",
+      "shelters the family of a soldier they killed",
+      "owes a debt to the very people they hunt",
+      "hides a wound that should have killed them"
+    ],
+    "goals": [
+      "a seat on the council",
+      "to restore their family''s name",
+      "to walk the south road one more time",
+      "to read the unburned half of the library",
+      "to outlive every captain they ever served",
+      "to apprentice a child of the lower ward",
+      "to see the long winter season end",
+      "to pay back the gold lender of Mistfall",
+      "to bring back the standing stones their grandfather raised",
+      "to die at home and not on the road"
+    ],
+    "flaws": [
+      "pride",
+      "envy",
+      "an addiction to risk",
+      "a slow drinking habit kept quiet at court",
+      "an inability to forgive the dead",
+      "a temper that comes out in writing",
+      "a need to be the cleverest voice in the room",
+      "miserliness with their own household",
+      "a tendency to read every silence as betrayal",
+      "the certainty that they alone can hold the line"
+    ]
+  }'::jsonb
+where
+  id in (
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000103',
+    '00000000-0000-0000-0000-000000000104',
+    '00000000-0000-0000-0000-000000000105'
+  );
+
+update public.worlds
+set
+  npc_flavor_config_json = '{
+    "traits": [
+      "bookish", "stoic", "needling", "exacting", "ironic",
+      "self-deprecating", "patrician", "wry", "ardent", "cool-headed",
+      "fastidious", "diplomatic", "incisive", "softly furious", "literary"
+    ],
+    "contradictions": [
+      "secretly funds their rivals",
+      "writes sonnets they will never publish",
+      "keeps a forbidden correspondence with a city across the salt",
+      "rereads a confession they never sent",
+      "tutors the heir of a house they helped exile",
+      "endows a charity in the name of a man they ruined",
+      "argues both sides of every motion in private",
+      "votes against their own family''s interests when nobody is watching"
+    ],
+    "goals": [
+      "map every uncharted coast",
+      "found a free school",
+      "rewrite the Concord''s water charter",
+      "compile a definitive lexicon of the river dialects",
+      "earn a seat on the Inner Canal Bench",
+      "annex the abandoned canal lock at Mossvale",
+      "translate the southern philosophers in their lifetime",
+      "abolish the toll on the river''s lower mouths",
+      "secure a printing press for the public library",
+      "die at their desk with the last page complete"
+    ],
+    "flaws": [
+      "overconfidence in their own ledger work",
+      "hoards favors",
+      "a horror of being misquoted",
+      "an unwillingness to delegate even trivial work",
+      "a tendency to lecture instead of listen",
+      "a fondness for arguments they already plan to lose",
+      "a habit of forgetting names beneath their own rank",
+      "a pedantic streak that surfaces under stress",
+      "a quiet contempt for the unread",
+      "a private dread of being thought provincial"
+    ]
   }'::jsonb
 where
   id = '00000000-0000-0000-0000-000000000102';
@@ -1221,33 +1310,89 @@ declare
     'Talonmere', 'Frostgale', 'Burnhollow'
   ];
 
-  -- Default NPC flavor pool — matches the values returned by
-  -- public.default_npc_flavor_config() so bulk NPCs in worlds 101/103/104/105
-  -- pull from the same pool the UI surfaces.
+  -- Default NPC flavor pool — mirrors the expanded npc_flavor_config_json
+  -- override applied above to worlds 101/103/104/105, so bulk NPCs in those
+  -- worlds pull from the same pool the UI surfaces.
   v_default_traits constant text[] := array[
-    'earnest', 'wry', 'patient', 'haunted', 'boisterous'
+    'earnest', 'wry', 'patient', 'haunted', 'boisterous',
+    'stoic', 'tender', 'shrewd', 'blunt', 'watchful',
+    'scrappy', 'courtly', 'weary', 'fervent', 'soft-spoken'
   ];
   v_default_contradictions constant text[] := array[
-    'mourns a friend they betrayed', 'loves their rival'
+    'mourns a friend they betrayed',
+    'loves their rival',
+    'writes letters to a god they no longer trust',
+    'keeps a child''s portrait they have never named',
+    'holds a vow they cannot remember swearing',
+    'shelters the family of a soldier they killed',
+    'owes a debt to the very people they hunt',
+    'hides a wound that should have killed them'
   ];
   v_default_goals constant text[] := array[
-    'a seat on the council', 'to restore their family''s name'
+    'a seat on the council',
+    'to restore their family''s name',
+    'to walk the south road one more time',
+    'to read the unburned half of the library',
+    'to outlive every captain they ever served',
+    'to apprentice a child of the lower ward',
+    'to see the long winter season end',
+    'to pay back the gold lender of Mistfall',
+    'to bring back the standing stones their grandfather raised',
+    'to die at home and not on the road'
   ];
   v_default_flaws constant text[] := array[
-    'pride', 'envy', 'an addiction to risk'
+    'pride',
+    'envy',
+    'an addiction to risk',
+    'a slow drinking habit kept quiet at court',
+    'an inability to forgive the dead',
+    'a temper that comes out in writing',
+    'a need to be the cleverest voice in the room',
+    'miserliness with their own household',
+    'a tendency to read every silence as betrayal',
+    'the certainty that they alone can hold the line'
   ];
 
-  -- World 102 override pool — mirrors the npc_flavor_config_json override
-  -- above so the Linnford Concord''s NPCs sit inside their custom pool.
-  v_w102_traits constant text[] := array['bookish', 'stoic', 'needling'];
+  -- World 102 override pool — mirrors the expanded npc_flavor_config_json
+  -- override above so the Linnford Concord''s NPCs sit inside their custom pool.
+  v_w102_traits constant text[] := array[
+    'bookish', 'stoic', 'needling', 'exacting', 'ironic',
+    'self-deprecating', 'patrician', 'wry', 'ardent', 'cool-headed',
+    'fastidious', 'diplomatic', 'incisive', 'softly furious', 'literary'
+  ];
   v_w102_contradictions constant text[] := array[
-    'secretly funds their rivals', 'writes sonnets they will never publish'
+    'secretly funds their rivals',
+    'writes sonnets they will never publish',
+    'keeps a forbidden correspondence with a city across the salt',
+    'rereads a confession they never sent',
+    'tutors the heir of a house they helped exile',
+    'endows a charity in the name of a man they ruined',
+    'argues both sides of every motion in private',
+    'votes against their own family''s interests when nobody is watching'
   ];
   v_w102_goals constant text[] := array[
-    'map every uncharted coast', 'found a free school'
+    'map every uncharted coast',
+    'found a free school',
+    'rewrite the Concord''s water charter',
+    'compile a definitive lexicon of the river dialects',
+    'earn a seat on the Inner Canal Bench',
+    'annex the abandoned canal lock at Mossvale',
+    'translate the southern philosophers in their lifetime',
+    'abolish the toll on the river''s lower mouths',
+    'secure a printing press for the public library',
+    'die at their desk with the last page complete'
   ];
   v_w102_flaws constant text[] := array[
-    'overconfidence in their own ledger work', 'hoards favors'
+    'overconfidence in their own ledger work',
+    'hoards favors',
+    'a horror of being misquoted',
+    'an unwillingness to delegate even trivial work',
+    'a tendency to lecture instead of listen',
+    'a fondness for arguments they already plan to lose',
+    'a habit of forgetting names beneath their own rank',
+    'a pedantic streak that surfaces under stress',
+    'a quiet contempt for the unread',
+    'a private dread of being thought provincial'
   ];
 
   v_world_idx integer;
@@ -1546,5 +1691,572 @@ begin
         end loop;
       end loop;
     end loop;
+  end loop;
+end$$;
+
+-- ---------------------------------------------------------------------------
+-- Epic 4 world-settings pack: every seeded world receives the same canonical
+-- pack of non-system resources, jobs (covering every job_type), deposit types,
+-- managed population types, and building blueprints with at least one
+-- populated tier each. Per-world UUIDs are derived deterministically so the
+-- pack is idempotent across `supabase db reset`.
+--
+-- Deterministic UUID scheme (third UUID group reserved for Epic 4 entities):
+--   resources   '00000000-0000-0000-0004-' || lpad(W*100  + R, 12, '0')
+--   jobs        '00000000-0000-0000-0005-' || lpad(W*100  + J, 12, '0')
+--   blueprints  '00000000-0000-0000-0006-' || lpad(W*100  + B, 12, '0')
+--   tiers       '00000000-0000-0000-0007-' || lpad(W*1000 + B*10 + T, 12, '0')
+--   deposits    '00000000-0000-0000-0008-' || lpad(W*100  + D, 12, '0')
+--   pops        '00000000-0000-0000-0009-' || lpad(W*100  + P, 12, '0')
+-- where W is the 1-based world index (1..5) and the other counters are
+-- 1-based slots within that world.
+--
+-- Ordering inside the DO block:
+--   1. resources                              (referenced by everything below)
+--   2. job_definitions                        (deposit/managed-pop FKs are
+--      DEFERRABLE INITIALLY DEFERRED, so jobs may set linked_* before the
+--      target rows exist; the constraint is validated at end of the DO block)
+--   3. deposit_types                          (FK target for jobs.linked_deposit_type_id)
+--   4. managed_population_types               (FK target for jobs.linked_managed_population_type_id)
+--   5. building_blueprints                    (parents of tiers below)
+--   6. building_blueprint_tiers               (validates JSON references at
+--      INSERT via a BEFORE trigger; needs resources + jobs to exist live)
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_world_ids constant uuid[] := array[
+    '00000000-0000-0000-0000-000000000101'::uuid,
+    '00000000-0000-0000-0000-000000000102'::uuid,
+    '00000000-0000-0000-0000-000000000103'::uuid,
+    '00000000-0000-0000-0000-000000000104'::uuid,
+    '00000000-0000-0000-0000-000000000105'::uuid
+  ];
+
+  v_world_idx integer;
+  v_world_id uuid;
+
+  -- Resources (11 per world)
+  v_res_grain uuid;
+  v_res_salted_pork uuid;
+  v_res_smoked_mutton uuid;
+  v_res_honey uuid;
+  v_res_beer uuid;
+  v_res_linen_cloth uuid;
+  v_res_wool uuid;
+  v_res_hardwood_logs uuid;
+  v_res_stone_block uuid;
+  v_res_iron_ore uuid;
+  v_res_copper_ingot uuid;
+
+  -- Jobs (15 per world; one or more of every job_type)
+  v_job_grain_farmer uuid;
+  v_job_cloth_weaver uuid;
+  v_job_brewer uuid;
+  v_job_stone_mason uuid;
+  v_job_caravan_trader uuid;
+  v_job_iron_miner uuid;
+  v_job_copper_miner uuid;
+  v_job_stone_quarryman uuid;
+  v_job_lumberjack uuid;
+  v_job_shepherd uuid;
+  v_job_beekeeper uuid;
+  v_job_swineherd uuid;
+  v_job_mutton_butcher uuid;
+  v_job_honey_gatherer uuid;
+  v_job_pork_butcher uuid;
+
+  -- Deposit types (4 per world)
+  v_dep_iron_vein uuid;
+  v_dep_copper_vein uuid;
+  v_dep_stone_quarry uuid;
+  v_dep_hardwood_grove uuid;
+
+  -- Managed population types (3 per world)
+  v_pop_sheep_herd uuid;
+  v_pop_bee_colony uuid;
+  v_pop_pig_herd uuid;
+
+  -- Blueprints (5 per world) and their tiers
+  v_bp_farmstead uuid;
+  v_bp_storehouse uuid;
+  v_bp_workshop uuid;
+  v_bp_longhouse uuid;
+  v_bp_smithy uuid;
+  v_tier_farmstead_1 uuid;
+  v_tier_storehouse_1 uuid;
+  v_tier_workshop_1 uuid;
+  v_tier_longhouse_1 uuid;
+  v_tier_smithy_1 uuid;
+  v_tier_smithy_2 uuid;
+begin
+  for v_world_idx in 1..5 loop
+    v_world_id := v_world_ids[v_world_idx];
+
+    -- Per-world deterministic UUIDs ------------------------------------------
+    v_res_grain         := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  1)::text, 12, '0'))::uuid;
+    v_res_salted_pork   := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  2)::text, 12, '0'))::uuid;
+    v_res_smoked_mutton := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  3)::text, 12, '0'))::uuid;
+    v_res_honey         := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  4)::text, 12, '0'))::uuid;
+    v_res_beer          := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  5)::text, 12, '0'))::uuid;
+    v_res_linen_cloth   := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  6)::text, 12, '0'))::uuid;
+    v_res_wool          := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  7)::text, 12, '0'))::uuid;
+    v_res_hardwood_logs := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  8)::text, 12, '0'))::uuid;
+    v_res_stone_block   := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 +  9)::text, 12, '0'))::uuid;
+    v_res_iron_ore      := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 + 10)::text, 12, '0'))::uuid;
+    v_res_copper_ingot  := ('00000000-0000-0000-0004-' || lpad((v_world_idx * 100 + 11)::text, 12, '0'))::uuid;
+
+    v_job_grain_farmer    := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  1)::text, 12, '0'))::uuid;
+    v_job_cloth_weaver    := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  2)::text, 12, '0'))::uuid;
+    v_job_brewer          := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  3)::text, 12, '0'))::uuid;
+    v_job_stone_mason     := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  4)::text, 12, '0'))::uuid;
+    v_job_caravan_trader  := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  5)::text, 12, '0'))::uuid;
+    v_job_iron_miner      := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  6)::text, 12, '0'))::uuid;
+    v_job_copper_miner    := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  7)::text, 12, '0'))::uuid;
+    v_job_stone_quarryman := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  8)::text, 12, '0'))::uuid;
+    v_job_lumberjack      := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 +  9)::text, 12, '0'))::uuid;
+    v_job_shepherd        := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 + 10)::text, 12, '0'))::uuid;
+    v_job_beekeeper       := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 + 11)::text, 12, '0'))::uuid;
+    v_job_swineherd       := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 + 12)::text, 12, '0'))::uuid;
+    v_job_mutton_butcher  := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 + 13)::text, 12, '0'))::uuid;
+    v_job_honey_gatherer  := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 + 14)::text, 12, '0'))::uuid;
+    v_job_pork_butcher    := ('00000000-0000-0000-0005-' || lpad((v_world_idx * 100 + 15)::text, 12, '0'))::uuid;
+
+    v_dep_iron_vein      := ('00000000-0000-0000-0008-' || lpad((v_world_idx * 100 + 1)::text, 12, '0'))::uuid;
+    v_dep_copper_vein    := ('00000000-0000-0000-0008-' || lpad((v_world_idx * 100 + 2)::text, 12, '0'))::uuid;
+    v_dep_stone_quarry   := ('00000000-0000-0000-0008-' || lpad((v_world_idx * 100 + 3)::text, 12, '0'))::uuid;
+    v_dep_hardwood_grove := ('00000000-0000-0000-0008-' || lpad((v_world_idx * 100 + 4)::text, 12, '0'))::uuid;
+
+    v_pop_sheep_herd := ('00000000-0000-0000-0009-' || lpad((v_world_idx * 100 + 1)::text, 12, '0'))::uuid;
+    v_pop_bee_colony := ('00000000-0000-0000-0009-' || lpad((v_world_idx * 100 + 2)::text, 12, '0'))::uuid;
+    v_pop_pig_herd   := ('00000000-0000-0000-0009-' || lpad((v_world_idx * 100 + 3)::text, 12, '0'))::uuid;
+
+    v_bp_farmstead  := ('00000000-0000-0000-0006-' || lpad((v_world_idx * 100 + 1)::text, 12, '0'))::uuid;
+    v_bp_storehouse := ('00000000-0000-0000-0006-' || lpad((v_world_idx * 100 + 2)::text, 12, '0'))::uuid;
+    v_bp_workshop   := ('00000000-0000-0000-0006-' || lpad((v_world_idx * 100 + 3)::text, 12, '0'))::uuid;
+    v_bp_longhouse  := ('00000000-0000-0000-0006-' || lpad((v_world_idx * 100 + 4)::text, 12, '0'))::uuid;
+    v_bp_smithy     := ('00000000-0000-0000-0006-' || lpad((v_world_idx * 100 + 5)::text, 12, '0'))::uuid;
+
+    v_tier_farmstead_1  := ('00000000-0000-0000-0007-' || lpad((v_world_idx * 1000 + 1 * 10 + 1)::text, 12, '0'))::uuid;
+    v_tier_storehouse_1 := ('00000000-0000-0000-0007-' || lpad((v_world_idx * 1000 + 2 * 10 + 1)::text, 12, '0'))::uuid;
+    v_tier_workshop_1   := ('00000000-0000-0000-0007-' || lpad((v_world_idx * 1000 + 3 * 10 + 1)::text, 12, '0'))::uuid;
+    v_tier_longhouse_1  := ('00000000-0000-0000-0007-' || lpad((v_world_idx * 1000 + 4 * 10 + 1)::text, 12, '0'))::uuid;
+    v_tier_smithy_1     := ('00000000-0000-0000-0007-' || lpad((v_world_idx * 1000 + 5 * 10 + 1)::text, 12, '0'))::uuid;
+    v_tier_smithy_2     := ('00000000-0000-0000-0007-' || lpad((v_world_idx * 1000 + 5 * 10 + 2)::text, 12, '0'))::uuid;
+
+    -- 1. Resources --------------------------------------------------------
+    insert into public.resources (id, world_id, name, slug, base_stockpile_cap)
+    values
+      (v_res_grain,         v_world_id, 'Grain',         'grain',          1000),
+      (v_res_salted_pork,   v_world_id, 'Salted Pork',   'salted-pork',     500),
+      (v_res_smoked_mutton, v_world_id, 'Smoked Mutton', 'smoked-mutton',   500),
+      (v_res_honey,         v_world_id, 'Honey',         'honey',           200),
+      (v_res_beer,          v_world_id, 'Beer',          'beer',            300),
+      (v_res_linen_cloth,   v_world_id, 'Linen Cloth',   'linen-cloth',     300),
+      (v_res_wool,          v_world_id, 'Wool',          'wool',            400),
+      (v_res_hardwood_logs, v_world_id, 'Hardwood Logs', 'hardwood-logs',   800),
+      (v_res_stone_block,   v_world_id, 'Stone Block',   'stone-block',    1000),
+      (v_res_iron_ore,      v_world_id, 'Iron Ore',      'iron-ore',        600),
+      (v_res_copper_ingot,  v_world_id, 'Copper Ingot',  'copper-ingot',    400)
+    on conflict (world_id, slug) do update
+    set
+      name = excluded.name,
+      base_stockpile_cap = excluded.base_stockpile_cap,
+      is_trashed = false,
+      updated_at = now();
+
+    -- 2. Jobs -------------------------------------------------------------
+    -- Standard producers/consumers that exercise inputs and outputs.
+    insert into public.job_definitions (
+      id, world_id, name, slug, job_type, base_capacity,
+      inputs_json, outputs_json
+    )
+    values
+      (
+        v_job_grain_farmer, v_world_id, 'Grain Farmer', 'grain-farmer',
+        'standard', 8,
+        '[]'::jsonb,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 2)
+        )
+      ),
+      (
+        v_job_cloth_weaver, v_world_id, 'Cloth Weaver', 'cloth-weaver',
+        'standard', 6,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_wool::text, 'amount_per_worker', 2)
+        ),
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 1)
+        )
+      ),
+      (
+        v_job_brewer, v_world_id, 'Brewer', 'brewer',
+        'standard', 5,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 2),
+          jsonb_build_object('resource_id', v_res_honey::text, 'amount_per_worker', 0.5)
+        ),
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_beer::text, 'amount_per_worker', 1)
+        )
+      ),
+      (
+        v_job_stone_mason, v_world_id, 'Stone Mason', 'stone-mason',
+        'construction', 4,
+        '[]'::jsonb,
+        '[]'::jsonb
+      )
+    on conflict (world_id, slug) do update
+    set
+      name = excluded.name,
+      job_type = excluded.job_type,
+      base_capacity = excluded.base_capacity,
+      inputs_json = excluded.inputs_json,
+      outputs_json = excluded.outputs_json,
+      is_trashed = false,
+      updated_at = now();
+
+    -- Trader. trader_capacity_per_worker is required for trader.
+    insert into public.job_definitions (
+      id, world_id, name, slug, job_type, trader_capacity_per_worker,
+      inputs_json, outputs_json
+    )
+    values
+      (
+        v_job_caravan_trader, v_world_id, 'Caravan Trader', 'caravan-trader',
+        'trader', 3,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 1)
+        ),
+        '[]'::jsonb
+      )
+    on conflict (world_id, slug) do update
+    set
+      name = excluded.name,
+      job_type = excluded.job_type,
+      trader_capacity_per_worker = excluded.trader_capacity_per_worker,
+      inputs_json = excluded.inputs_json,
+      outputs_json = excluded.outputs_json,
+      is_trashed = false,
+      updated_at = now();
+
+    -- Deposit jobs. linked_deposit_type_id resolves via DEFERRABLE INITIALLY
+    -- DEFERRED FK at the end of this DO block once the deposit_types rows
+    -- below have been inserted.
+    insert into public.job_definitions (
+      id, world_id, name, slug, job_type, linked_deposit_type_id,
+      inputs_json, outputs_json
+    )
+    values
+      (
+        v_job_iron_miner, v_world_id, 'Iron Miner', 'iron-miner',
+        'deposit', v_dep_iron_vein,
+        '[]'::jsonb, '[]'::jsonb
+      ),
+      (
+        v_job_copper_miner, v_world_id, 'Copper Miner', 'copper-miner',
+        'deposit', v_dep_copper_vein,
+        '[]'::jsonb,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_copper_ingot::text, 'amount_per_worker', 1)
+        )
+      ),
+      (
+        v_job_stone_quarryman, v_world_id, 'Stone Quarryman', 'stone-quarryman',
+        'deposit', v_dep_stone_quarry,
+        '[]'::jsonb, '[]'::jsonb
+      ),
+      (
+        v_job_lumberjack, v_world_id, 'Lumberjack', 'lumberjack',
+        'deposit', v_dep_hardwood_grove,
+        '[]'::jsonb, '[]'::jsonb
+      )
+    on conflict (world_id, slug) do update
+    set
+      name = excluded.name,
+      job_type = excluded.job_type,
+      linked_deposit_type_id = excluded.linked_deposit_type_id,
+      inputs_json = excluded.inputs_json,
+      outputs_json = excluded.outputs_json,
+      is_trashed = false,
+      updated_at = now();
+
+    -- Husbandry and culling jobs. linked_managed_population_type_id resolves
+    -- via DEFERRABLE INITIALLY DEFERRED FK once managed_population_types are
+    -- inserted below.
+    insert into public.job_definitions (
+      id, world_id, name, slug, job_type, linked_managed_population_type_id,
+      inputs_json, outputs_json
+    )
+    values
+      (
+        v_job_shepherd, v_world_id, 'Shepherd', 'shepherd',
+        'husbandry', v_pop_sheep_herd,
+        '[]'::jsonb, '[]'::jsonb
+      ),
+      (
+        v_job_beekeeper, v_world_id, 'Beekeeper', 'beekeeper',
+        'husbandry', v_pop_bee_colony,
+        '[]'::jsonb, '[]'::jsonb
+      ),
+      (
+        v_job_swineherd, v_world_id, 'Swineherd', 'swineherd',
+        'husbandry', v_pop_pig_herd,
+        '[]'::jsonb, '[]'::jsonb
+      ),
+      (
+        v_job_mutton_butcher, v_world_id, 'Mutton Butcher', 'mutton-butcher',
+        'culling', v_pop_sheep_herd,
+        '[]'::jsonb, '[]'::jsonb
+      ),
+      (
+        v_job_honey_gatherer, v_world_id, 'Honey Gatherer', 'honey-gatherer',
+        'culling', v_pop_bee_colony,
+        '[]'::jsonb, '[]'::jsonb
+      ),
+      (
+        v_job_pork_butcher, v_world_id, 'Pork Butcher', 'pork-butcher',
+        'culling', v_pop_pig_herd,
+        '[]'::jsonb, '[]'::jsonb
+      )
+    on conflict (world_id, slug) do update
+    set
+      name = excluded.name,
+      job_type = excluded.job_type,
+      linked_managed_population_type_id = excluded.linked_managed_population_type_id,
+      inputs_json = excluded.inputs_json,
+      outputs_json = excluded.outputs_json,
+      is_trashed = false,
+      updated_at = now();
+
+    -- 3. Deposit types ----------------------------------------------------
+    insert into public.deposit_types (
+      id, world_id, name, slug, job_id,
+      output_units_per_worker, worker_inputs_json
+    )
+    values
+      (
+        v_dep_iron_vein, v_world_id, 'Iron Vein', 'iron-vein', v_job_iron_miner,
+        5,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_linen_cloth::text, 'amount_per_worker', 0.5)
+        )
+      ),
+      (
+        v_dep_copper_vein, v_world_id, 'Copper Vein', 'copper-vein', v_job_copper_miner,
+        4,
+        '[]'::jsonb
+      ),
+      (
+        v_dep_stone_quarry, v_world_id, 'Stone Quarry', 'stone-quarry', v_job_stone_quarryman,
+        8,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount_per_worker', 0.5)
+        )
+      ),
+      (
+        v_dep_hardwood_grove, v_world_id, 'Hardwood Grove', 'hardwood-grove', v_job_lumberjack,
+        6,
+        '[]'::jsonb
+      )
+    on conflict (world_id, slug) do update
+    set
+      name = excluded.name,
+      job_id = excluded.job_id,
+      output_units_per_worker = excluded.output_units_per_worker,
+      worker_inputs_json = excluded.worker_inputs_json,
+      is_trashed = false,
+      updated_at = now();
+
+    -- 4. Managed population types -----------------------------------------
+    insert into public.managed_population_types (
+      id, world_id, name, slug,
+      husbandry_job_id, culling_job_id,
+      husbandry_workers_per_n_animals, growth_rate,
+      maintenance_rules_json, culling_outputs_json
+    )
+    values
+      (
+        v_pop_sheep_herd, v_world_id, 'Sheep Herd', 'sheep-herd',
+        v_job_shepherd, v_job_mutton_butcher,
+        10, 0.1,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_n_animals', 0.5)
+        ),
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_wool::text, 'amount_per_n_animals', 1),
+          jsonb_build_object('resource_id', v_res_smoked_mutton::text, 'amount_per_n_animals', 0.5)
+        )
+      ),
+      (
+        v_pop_bee_colony, v_world_id, 'Bee Colony', 'bee-colony',
+        v_job_beekeeper, v_job_honey_gatherer,
+        20, 0.05,
+        '[]'::jsonb,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_honey::text, 'amount_per_n_animals', 2)
+        )
+      ),
+      (
+        v_pop_pig_herd, v_world_id, 'Pig Herd', 'pig-herd',
+        v_job_swineherd, v_job_pork_butcher,
+        8, 0.15,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_n_animals', 1)
+        ),
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_salted_pork::text, 'amount_per_n_animals', 2)
+        )
+      )
+    on conflict (world_id, slug) do update
+    set
+      name = excluded.name,
+      husbandry_job_id = excluded.husbandry_job_id,
+      culling_job_id = excluded.culling_job_id,
+      husbandry_workers_per_n_animals = excluded.husbandry_workers_per_n_animals,
+      growth_rate = excluded.growth_rate,
+      maintenance_rules_json = excluded.maintenance_rules_json,
+      culling_outputs_json = excluded.culling_outputs_json,
+      is_trashed = false,
+      updated_at = now();
+
+    -- 5. Building blueprints ----------------------------------------------
+    insert into public.building_blueprints (
+      id, world_id, name, slug, description,
+      grace_period_turns, max_instances_per_settlement
+    )
+    values
+      (
+        v_bp_farmstead, v_world_id, 'Farmstead', 'farmstead',
+        'A walled farm complex anchoring the grain rotation around each settlement.',
+        0, null
+      ),
+      (
+        v_bp_storehouse, v_world_id, 'Storehouse', 'storehouse',
+        'Roofed storage adding stockpile capacity for grain and salted goods.',
+        1, 3
+      ),
+      (
+        v_bp_workshop, v_world_id, 'Weaver''s Workshop', 'weavers-workshop',
+        'A purpose-built workshop where weavers raise the settlement''s cloth output.',
+        0, 4
+      ),
+      (
+        v_bp_longhouse, v_world_id, 'Longhouse', 'longhouse',
+        'A communal hall that raises the settlement''s sustainable population.',
+        2, 6
+      ),
+      (
+        v_bp_smithy, v_world_id, 'Smithy', 'smithy',
+        'A two-tier smithy that expands iron storage and bolsters the mason corps.',
+        1, 2
+      )
+    on conflict (world_id, slug) do update
+    set
+      name = excluded.name,
+      description = excluded.description,
+      grace_period_turns = excluded.grace_period_turns,
+      max_instances_per_settlement = excluded.max_instances_per_settlement,
+      is_trashed = false,
+      updated_at = now();
+
+    -- 6. Building blueprint tiers ----------------------------------------
+    -- Validation BEFORE trigger checks resource_id / job_id references at
+    -- INSERT time, so resources and jobs must already be live (above).
+    insert into public.building_blueprint_tiers (
+      id, building_blueprint_id, tier_number, worker_turns_required,
+      construction_costs_json, upkeep_costs_json, effects_json
+    )
+    values
+      (
+        v_tier_farmstead_1, v_bp_farmstead, 1, 6,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_stone_block::text,   'amount', 10),
+          jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount',  5)
+        ),
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_grain::text, 'amount', 1)
+        ),
+        jsonb_build_array(
+          jsonb_build_object('type', 'passive_resource_production',
+                             'resource_id', v_res_grain::text, 'amount', 2),
+          jsonb_build_object('type', 'job_capacity_increase',
+                             'job_id', v_job_grain_farmer::text, 'amount', 2)
+        )
+      ),
+      (
+        v_tier_storehouse_1, v_bp_storehouse, 1, 4,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 20)
+        ),
+        '[]'::jsonb,
+        jsonb_build_array(
+          jsonb_build_object('type', 'resource_storage_increase',
+                             'resource_id', v_res_grain::text,       'amount', 500),
+          jsonb_build_object('type', 'resource_storage_increase',
+                             'resource_id', v_res_salted_pork::text, 'amount', 250)
+        )
+      ),
+      (
+        v_tier_workshop_1, v_bp_workshop, 1, 5,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount', 8),
+          jsonb_build_object('resource_id', v_res_stone_block::text,   'amount', 4)
+        ),
+        '[]'::jsonb,
+        jsonb_build_array(
+          jsonb_build_object('type', 'job_capacity_increase',
+                             'job_id', v_job_cloth_weaver::text, 'amount', 3)
+        )
+      ),
+      (
+        v_tier_longhouse_1, v_bp_longhouse, 1, 8,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_hardwood_logs::text, 'amount', 15),
+          jsonb_build_object('resource_id', v_res_stone_block::text,   'amount', 10)
+        ),
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_grain::text, 'amount', 2)
+        ),
+        jsonb_build_array(
+          jsonb_build_object('type', 'population_cap_increase', 'amount', 5)
+        )
+      ),
+      (
+        v_tier_smithy_1, v_bp_smithy, 1, 7,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_iron_ore::text,    'amount', 4),
+          jsonb_build_object('resource_id', v_res_stone_block::text, 'amount', 6)
+        ),
+        '[]'::jsonb,
+        jsonb_build_array(
+          jsonb_build_object('type', 'resource_storage_increase',
+                             'resource_id', v_res_iron_ore::text, 'amount', 100),
+          jsonb_build_object('type', 'job_capacity_increase',
+                             'job_id', v_job_stone_mason::text, 'amount', 1)
+        )
+      ),
+      (
+        v_tier_smithy_2, v_bp_smithy, 2, 12,
+        jsonb_build_array(
+          jsonb_build_object('resource_id', v_res_iron_ore::text,      'amount',  8),
+          jsonb_build_object('resource_id', v_res_stone_block::text,   'amount', 12),
+          jsonb_build_object('resource_id', v_res_copper_ingot::text,  'amount',  4)
+        ),
+        '[]'::jsonb,
+        jsonb_build_array(
+          jsonb_build_object('type', 'resource_storage_increase',
+                             'resource_id', v_res_iron_ore::text, 'amount', 250),
+          jsonb_build_object('type', 'job_capacity_increase',
+                             'job_id', v_job_stone_mason::text, 'amount', 2)
+        )
+      )
+    on conflict (building_blueprint_id, tier_number) do update
+    set
+      worker_turns_required = excluded.worker_turns_required,
+      construction_costs_json = excluded.construction_costs_json,
+      upkeep_costs_json = excluded.upkeep_costs_json,
+      effects_json = excluded.effects_json,
+      updated_at = now();
   end loop;
 end$$;

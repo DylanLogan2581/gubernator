@@ -162,7 +162,7 @@ where
   and world_id = '00000000-0000-0000-0000-000000000101';
 
 select
-  plan (40);
+  plan (50);
 
 -- ===========================================================================
 -- Existing Epic 2 assertions: world calendar, nation, settlement readiness.
@@ -807,6 +807,315 @@ select
     ),
     2,
     'world 103 has exactly two system resources (Food and Fresh Water)'
+  );
+
+-- ===========================================================================
+-- Epic 4 settings pack assertions: every seeded world receives the same
+-- canonical pack of non-system resources, jobs covering every job_type,
+-- deposit types, managed population types, and building blueprints with at
+-- least one populated tier each. Per-world counts use ≥ N so the pack can
+-- grow without forcing this test to keep step.
+-- ===========================================================================
+select
+  cmp_ok (
+    (
+      select
+        min(c)::integer
+      from
+        (
+          select
+            count(*) filter (
+              where
+                not is_system_resource
+            ) as c
+          from
+            public.resources
+          where
+            world_id in (
+              '00000000-0000-0000-0000-000000000101',
+              '00000000-0000-0000-0000-000000000102',
+              '00000000-0000-0000-0000-000000000103',
+              '00000000-0000-0000-0000-000000000104',
+              '00000000-0000-0000-0000-000000000105'
+            )
+          group by
+            world_id
+        ) as per_world
+    ),
+    '>=',
+    8,
+    'every seeded world has at least eight non-system resources'
+  );
+
+select
+  is (
+    (
+      select
+        count(distinct world_id)::integer
+      from
+        public.job_definitions
+      where
+        world_id in (
+          '00000000-0000-0000-0000-000000000101',
+          '00000000-0000-0000-0000-000000000102',
+          '00000000-0000-0000-0000-000000000103',
+          '00000000-0000-0000-0000-000000000104',
+          '00000000-0000-0000-0000-000000000105'
+        )
+        and world_id in (
+          select
+            world_id
+          from
+            public.job_definitions
+          where
+            job_type = 'standard'
+          intersect
+          select
+            world_id
+          from
+            public.job_definitions
+          where
+            job_type = 'construction'
+          intersect
+          select
+            world_id
+          from
+            public.job_definitions
+          where
+            job_type = 'deposit'
+          intersect
+          select
+            world_id
+          from
+            public.job_definitions
+          where
+            job_type = 'husbandry'
+          intersect
+          select
+            world_id
+          from
+            public.job_definitions
+          where
+            job_type = 'culling'
+          intersect
+          select
+            world_id
+          from
+            public.job_definitions
+          where
+            job_type = 'trader'
+        )
+    ),
+    5,
+    'every seeded world has at least one job of every job_type'
+  );
+
+select
+  cmp_ok (
+    (
+      select
+        min(c)::integer
+      from
+        (
+          select
+            count(*) as c
+          from
+            public.building_blueprints
+          where
+            world_id in (
+              '00000000-0000-0000-0000-000000000101',
+              '00000000-0000-0000-0000-000000000102',
+              '00000000-0000-0000-0000-000000000103',
+              '00000000-0000-0000-0000-000000000104',
+              '00000000-0000-0000-0000-000000000105'
+            )
+          group by
+            world_id
+        ) as per_world
+    ),
+    '>=',
+    4,
+    'every seeded world has at least four building blueprints'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.building_blueprints bb
+      where
+        bb.world_id in (
+          '00000000-0000-0000-0000-000000000101',
+          '00000000-0000-0000-0000-000000000102',
+          '00000000-0000-0000-0000-000000000103',
+          '00000000-0000-0000-0000-000000000104',
+          '00000000-0000-0000-0000-000000000105'
+        )
+        and not exists (
+          select
+            1
+          from
+            public.building_blueprint_tiers bbt
+          where
+            bbt.building_blueprint_id = bb.id
+        )
+    ),
+    0,
+    'every seeded blueprint has at least one populated tier'
+  );
+
+select
+  cmp_ok (
+    (
+      select
+        min(c)::integer
+      from
+        (
+          select
+            count(*) as c
+          from
+            public.deposit_types
+          where
+            world_id in (
+              '00000000-0000-0000-0000-000000000101',
+              '00000000-0000-0000-0000-000000000102',
+              '00000000-0000-0000-0000-000000000103',
+              '00000000-0000-0000-0000-000000000104',
+              '00000000-0000-0000-0000-000000000105'
+            )
+          group by
+            world_id
+        ) as per_world
+    ),
+    '>=',
+    3,
+    'every seeded world has at least three deposit types'
+  );
+
+select
+  cmp_ok (
+    (
+      select
+        min(c)::integer
+      from
+        (
+          select
+            count(*) as c
+          from
+            public.managed_population_types
+          where
+            world_id in (
+              '00000000-0000-0000-0000-000000000101',
+              '00000000-0000-0000-0000-000000000102',
+              '00000000-0000-0000-0000-000000000103',
+              '00000000-0000-0000-0000-000000000104',
+              '00000000-0000-0000-0000-000000000105'
+            )
+          group by
+            world_id
+        ) as per_world
+    ),
+    '>=',
+    3,
+    'every seeded world has at least three managed population types'
+  );
+
+-- ===========================================================================
+-- NPC flavor pool expansion: every seeded world's npc_flavor_config_json
+-- carries the expanded pools required by the Epic 4 settings seed.
+-- ===========================================================================
+select
+  cmp_ok (
+    (
+      select
+        min(
+          jsonb_array_length(npc_flavor_config_json -> 'traits')
+        )::integer
+      from
+        public.worlds
+      where
+        id in (
+          '00000000-0000-0000-0000-000000000101',
+          '00000000-0000-0000-0000-000000000102',
+          '00000000-0000-0000-0000-000000000103',
+          '00000000-0000-0000-0000-000000000104',
+          '00000000-0000-0000-0000-000000000105'
+        )
+    ),
+    '>=',
+    15,
+    'every seeded world has at least 15 NPC flavor traits'
+  );
+
+select
+  cmp_ok (
+    (
+      select
+        min(
+          jsonb_array_length(npc_flavor_config_json -> 'contradictions')
+        )::integer
+      from
+        public.worlds
+      where
+        id in (
+          '00000000-0000-0000-0000-000000000101',
+          '00000000-0000-0000-0000-000000000102',
+          '00000000-0000-0000-0000-000000000103',
+          '00000000-0000-0000-0000-000000000104',
+          '00000000-0000-0000-0000-000000000105'
+        )
+    ),
+    '>=',
+    8,
+    'every seeded world has at least 8 NPC flavor contradictions'
+  );
+
+select
+  cmp_ok (
+    (
+      select
+        min(
+          jsonb_array_length(npc_flavor_config_json -> 'goals')
+        )::integer
+      from
+        public.worlds
+      where
+        id in (
+          '00000000-0000-0000-0000-000000000101',
+          '00000000-0000-0000-0000-000000000102',
+          '00000000-0000-0000-0000-000000000103',
+          '00000000-0000-0000-0000-000000000104',
+          '00000000-0000-0000-0000-000000000105'
+        )
+    ),
+    '>=',
+    10,
+    'every seeded world has at least 10 NPC flavor goals'
+  );
+
+select
+  cmp_ok (
+    (
+      select
+        min(
+          jsonb_array_length(npc_flavor_config_json -> 'flaws')
+        )::integer
+      from
+        public.worlds
+      where
+        id in (
+          '00000000-0000-0000-0000-000000000101',
+          '00000000-0000-0000-0000-000000000102',
+          '00000000-0000-0000-0000-000000000103',
+          '00000000-0000-0000-0000-000000000104',
+          '00000000-0000-0000-0000-000000000105'
+        )
+    ),
+    '>=',
+    10,
+    'every seeded world has at least 10 NPC flavor flaws'
   );
 
 select
