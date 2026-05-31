@@ -84,14 +84,7 @@ export function BlueprintTierEditor({
     jobsQuery.isError;
 
   if (isLoading) {
-    return (
-      <section
-        aria-labelledby="blueprint-tiers-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading tiers…" />
-      </section>
-    );
+    return <LoadingState label="Loading tiers…" />;
   }
 
   if (isError) {
@@ -101,15 +94,10 @@ export function BlueprintTierEditor({
       resourcesQuery.error ??
       jobsQuery.error;
     return (
-      <section
-        aria-labelledby="blueprint-tiers-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Tiers could not be loaded"
-          description={getErrorDescription(firstError)}
-        />
-      </section>
+      <ErrorState
+        title="Tiers could not be loaded"
+        description={getErrorDescription(firstError)}
+      />
     );
   }
 
@@ -117,15 +105,10 @@ export function BlueprintTierEditor({
 
   if (blueprint === null) {
     return (
-      <section
-        aria-labelledby="blueprint-tiers-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Blueprint not found"
-          description="The blueprint could not be found."
-        />
-      </section>
+      <ErrorState
+        title="Blueprint not found"
+        description="The blueprint could not be found."
+      />
     );
   }
 
@@ -178,10 +161,7 @@ function BlueprintTierEditorContent({
   const sortedTiers = [...tiers].sort((a, b) => a.tierNumber - b.tierNumber);
 
   return (
-    <section
-      aria-labelledby="blueprint-tiers-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex items-start justify-between gap-2">
         <div className="grid gap-0.5">
           <Link
@@ -315,7 +295,7 @@ function BlueprintTierEditorContent({
           }}
         />
       ) : null}
-    </section>
+    </div>
   );
 }
 

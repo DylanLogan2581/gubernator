@@ -57,27 +57,15 @@ export function WorldDepositsConfigPanel({
   const depositTypesQuery = useQuery(depositTypesByWorldQueryOptions(worldId));
 
   if (depositTypesQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-deposits-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading deposit types…" />
-      </section>
-    );
+    return <LoadingState label="Loading deposit types…" />;
   }
 
   if (depositTypesQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-deposits-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Deposit types could not be loaded"
-          description={getErrorDescription(depositTypesQuery.error)}
-        />
-      </section>
+      <ErrorState
+        title="Deposit types could not be loaded"
+        description={getErrorDescription(depositTypesQuery.error)}
+      />
     );
   }
 
@@ -134,10 +122,7 @@ function WorldDepositsConfigPanelContent({
   const depositJobs = depositJobsQuery.data ?? [];
 
   return (
-    <section
-      aria-labelledby="world-deposits-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h2
           id="world-deposits-title"
@@ -220,7 +205,7 @@ function WorldDepositsConfigPanelContent({
           }}
         />
       ) : null}
-    </section>
+    </div>
   );
 }
 

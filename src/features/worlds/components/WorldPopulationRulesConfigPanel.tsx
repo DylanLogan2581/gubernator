@@ -37,31 +37,19 @@ export function WorldPopulationRulesConfigPanel({
   const rulesQuery = useQuery(worldPopulationRulesQueryOptions(worldId));
 
   if (rulesQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-population-rules-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading population rules…" />
-      </section>
-    );
+    return <LoadingState label="Loading population rules…" />;
   }
 
   if (rulesQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-population-rules-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Population rules could not be loaded"
-          description={
-            rulesQuery.error instanceof Error
-              ? rulesQuery.error.message
-              : "Try refreshing the page."
-          }
-        />
-      </section>
+      <ErrorState
+        title="Population rules could not be loaded"
+        description={
+          rulesQuery.error instanceof Error
+            ? rulesQuery.error.message
+            : "Try refreshing the page."
+        }
+      />
     );
   }
 
@@ -124,10 +112,7 @@ function WorldPopulationRulesConfigPanelContent({
   }
 
   return (
-    <section
-      aria-labelledby="world-population-rules-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h2
@@ -317,7 +302,7 @@ function WorldPopulationRulesConfigPanelContent({
       ) : (
         <PopulationRulesReadOnlySummary rules={draftRules} />
       )}
-    </section>
+    </div>
   );
 }
 
