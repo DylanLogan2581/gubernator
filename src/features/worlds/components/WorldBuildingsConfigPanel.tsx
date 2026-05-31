@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Trash2, X } from "lucide-react";
+import { Layers, Plus, Trash2, X } from "lucide-react";
 import { useState, type FormEvent, type JSX, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
@@ -405,14 +405,16 @@ function BlueprintRow({
         <span className="text-sm font-medium">{blueprint.name}</span>
       </div>
       <div className="flex items-center gap-3">
-        <Link
-          to="/worlds/$worldId/configuration"
-          params={{ worldId }}
-          search={{ blueprint: blueprint.id, tab: "buildings" }}
-          className="text-xs text-primary hover:underline"
-        >
-          Manage tiers →
-        </Link>
+        <Button asChild variant="outline" size="sm">
+          <Link
+            to="/worlds/$worldId/configuration"
+            params={{ worldId }}
+            search={{ blueprint: blueprint.id, tab: "buildings" }}
+          >
+            <Layers aria-hidden="true" />
+            Manage tiers
+          </Link>
+        </Button>
         {canEdit ? (
           <Button type="button" variant="outline" size="sm" onClick={onEdit}>
             Edit
