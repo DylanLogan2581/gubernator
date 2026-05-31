@@ -31,6 +31,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { toSlug } from "@/lib/slugify";
 
 type WorldResourcesConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -644,7 +645,9 @@ function CreateResourceForm({
   function handleNameChange(value: string): void {
     setName(value);
     if (!slugEdited) {
-      setSlug(toSlug(value));
+      setSlug(
+        toSlug(value, { maxLength: resourceInputLimits.resourceSlugMax }),
+      );
     }
   }
 
@@ -820,12 +823,4 @@ function buildCleanupDescription(
 
   if (parts.length === 0) return undefined;
   return `Removed ${parts.join(", ")}.`;
-}
-
-function toSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, resourceInputLimits.resourceSlugMax);
 }

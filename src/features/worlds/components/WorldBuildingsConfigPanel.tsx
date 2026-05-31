@@ -53,6 +53,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { toSlug } from "@/lib/slugify";
 import { generateLocalId } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
@@ -563,7 +564,9 @@ function CreateBlueprintForm({
   function handleNameChange(value: string): void {
     setName(value);
     if (!slugEdited) {
-      setSlug(toSlug(value));
+      setSlug(
+        toSlug(value, { maxLength: buildingInputLimits.blueprintSlugMax }),
+      );
     }
   }
 
@@ -1208,12 +1211,4 @@ function EditBlueprintForm({
       </div>
     </form>
   );
-}
-
-function toSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, buildingInputLimits.blueprintSlugMax);
 }
