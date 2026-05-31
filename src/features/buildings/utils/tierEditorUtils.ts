@@ -1,3 +1,5 @@
+import { generateLocalId } from "@/lib/uid";
+
 import type {
   TierCostEntryInput,
   TierEffectInput,
@@ -68,7 +70,7 @@ export function tierCostsToState(
 ): CostRowState[] {
   return costs.map((c) => ({
     amount: String(c.amount),
-    id: crypto.randomUUID(),
+    id: generateLocalId(),
     resourceId: c.resourceId,
   }));
 }
@@ -77,7 +79,7 @@ export function tierEffectsToState(
   effects: readonly TierEffect[],
 ): EffectRowState[] {
   return effects.map((e) => {
-    const base = { amount: String(e.amount), id: crypto.randomUUID() };
+    const base = { amount: String(e.amount), id: generateLocalId() };
     switch (e.type) {
       case "job_capacity_increase":
         return {

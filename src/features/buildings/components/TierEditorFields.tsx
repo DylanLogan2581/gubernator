@@ -7,6 +7,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
 import { sortByName } from "@/lib/sortUtils";
+import { generateLocalId } from "@/lib/uid";
 
 import type { CostRowState, EffectRowState } from "../utils/tierEditorUtils";
 
@@ -39,10 +40,7 @@ export function CostEditor({
   readonly onChange: (rows: CostRowState[]) => void;
 }): JSX.Element {
   function addRow(): void {
-    onChange([
-      ...rows,
-      { amount: "", id: crypto.randomUUID(), resourceId: "" },
-    ]);
+    onChange([...rows, { amount: "", id: generateLocalId(), resourceId: "" }]);
   }
 
   function removeRow(id: string): void {
@@ -141,7 +139,7 @@ export function EffectsEditor({
       {
         amount: "",
         effectType: "",
-        id: crypto.randomUUID(),
+        id: generateLocalId(),
         jobId: "",
         resourceId: "",
       },

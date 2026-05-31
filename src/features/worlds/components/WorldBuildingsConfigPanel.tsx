@@ -53,6 +53,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { generateLocalId } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
 import { BlueprintTierEditor } from "./BlueprintTierEditor";
@@ -879,7 +880,7 @@ function InlineTierDraftForm({
     onAdd({
       constructionCostsJson: parseResult.data.constructionCostsJson,
       effectsJson: parseResult.data.effectsJson,
-      id: crypto.randomUUID(),
+      id: generateLocalId(),
       tierNumber: parseResult.data.tierNumber,
       upkeepCostsJson: parseResult.data.upkeepCostsJson,
       workerTurnsRequired: parseResult.data.workerTurnsRequired,
