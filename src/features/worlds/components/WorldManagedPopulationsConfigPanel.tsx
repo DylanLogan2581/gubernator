@@ -13,6 +13,10 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PercentInput } from "@/components/shared/PercentInput";
+import {
+  ResourceAmountListEditor,
+  type ResourceAmountEntry,
+} from "@/components/shared/ResourceAmountListEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,13 +33,9 @@ import {
   updateManagedPopulationTypeMutationOptions,
   type CreateManagedPopulationTypeInput,
   type ManagedPopulationType,
-  type PopulationResourceEntry,
   type UpdateManagedPopulationTypeInput,
 } from "@/features/managed-populations";
-import {
-  activeResourcesByWorldQueryOptions,
-  type Resource,
-} from "@/features/resources";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -733,11 +733,11 @@ function CreateManagedPopulationTypeForm({
     useState("1");
   const [growthRate, setGrowthRate] = useState(0);
   const [maintenanceRules, setMaintenanceRules] = useState<
-    PopulationResourceEntry[]
+    ResourceAmountEntry[]
   >([]);
-  const [cullingOutputs, setCullingOutputs] = useState<
-    PopulationResourceEntry[]
-  >([]);
+  const [cullingOutputs, setCullingOutputs] = useState<ResourceAmountEntry[]>(
+    [],
+  );
   const [fieldErrors, setFieldErrors] =
     useState<ManagedPopulationTypeFieldErrors>({});
   const [husbandryJobLinkError, setHusbandryJobLinkError] = useState<
@@ -804,7 +804,12 @@ function CreateManagedPopulationTypeForm({
     const input: CreateManagedPopulationTypeInput = {
       cullingJobId,
       cullingOutputsJson:
-        cullingOutputs.length > 0 ? cullingOutputs : undefined,
+        cullingOutputs.length > 0
+          ? cullingOutputs.map((e) => ({
+              amountPerNAnimals: parseFloat(e.amount),
+              resourceId: e.resourceId,
+            }))
+          : undefined,
       growthRate,
       husbandryJobId,
       husbandryWorkersPerNAnimals:
@@ -812,7 +817,12 @@ function CreateManagedPopulationTypeForm({
           ? parseInt(husbandryWorkersPerNAnimals, 10)
           : 0,
       maintenanceRulesJson:
-        maintenanceRules.length > 0 ? maintenanceRules : undefined,
+        maintenanceRules.length > 0
+          ? maintenanceRules.map((e) => ({
+              amountPerNAnimals: parseFloat(e.amount),
+              resourceId: e.resourceId,
+            }))
+          : undefined,
       name,
       slug,
       worldId,
@@ -874,14 +884,18 @@ function CreateManagedPopulationTypeForm({
           onNameChange={handleNameChange}
           onSlugChange={handleSlugChange}
         />
-        <PopulationResourceEditor
+        <ResourceAmountListEditor
+          addLabel="Add entry"
+          amountLabel="amount per N animals"
           disabled={isPending}
           entries={maintenanceRules}
           label="Maintenance rules"
           resources={resources}
           onChange={setMaintenanceRules}
         />
-        <PopulationResourceEditor
+        <ResourceAmountListEditor
+          addLabel="Add entry"
+          amountLabel="amount per N animals"
           disabled={isPending}
           entries={cullingOutputs}
           label="Culling outputs"
@@ -942,11 +956,19 @@ function EditManagedPopulationTypeForm({
     useState(String(populationType.husbandryWorkersPerNAnimals));
   const [growthRate, setGrowthRate] = useState(populationType.growthRate);
   const [maintenanceRules, setMaintenanceRules] = useState<
-    PopulationResourceEntry[]
-  >([...populationType.maintenanceRulesJson]);
-  const [cullingOutputs, setCullingOutputs] = useState<
-    PopulationResourceEntry[]
-  >([...populationType.cullingOutputsJson]);
+    ResourceAmountEntry[]
+  >(
+    populationType.maintenanceRulesJson.map((e) => ({
+      amount: String(e.amountPerNAnimals),
+      resourceId: e.resourceId,
+    })),
+  );
+  const [cullingOutputs, setCullingOutputs] = useState<ResourceAmountEntry[]>(
+    populationType.cullingOutputsJson.map((e) => ({
+      amount: String(e.amountPerNAnimals),
+      resourceId: e.resourceId,
+    })),
+  );
   const [fieldErrors, setFieldErrors] =
     useState<ManagedPopulationTypeFieldErrors>({});
   const [husbandryJobLinkError, setHusbandryJobLinkError] = useState<
@@ -1010,14 +1032,20 @@ function EditManagedPopulationTypeForm({
 
     const updateInput: UpdateManagedPopulationTypeInput = {
       cullingJobId,
-      cullingOutputsJson: cullingOutputs,
+      cullingOutputsJson: cullingOutputs.map((e) => ({
+        amountPerNAnimals: parseFloat(e.amount),
+        resourceId: e.resourceId,
+      })),
       growthRate,
       husbandryJobId,
       husbandryWorkersPerNAnimals:
         husbandryWorkersPerNAnimals !== ""
           ? parseInt(husbandryWorkersPerNAnimals, 10)
           : undefined,
-      maintenanceRulesJson: maintenanceRules,
+      maintenanceRulesJson: maintenanceRules.map((e) => ({
+        amountPerNAnimals: parseFloat(e.amount),
+        resourceId: e.resourceId,
+      })),
       managedPopulationTypeId: populationType.id,
       name,
       slug,
@@ -1110,14 +1138,18 @@ function EditManagedPopulationTypeForm({
           onNameChange={setName}
           onSlugChange={setSlug}
         />
-        <PopulationResourceEditor
+        <ResourceAmountListEditor
+          addLabel="Add entry"
+          amountLabel="amount per N animals"
           disabled={isPending}
           entries={maintenanceRules}
           label="Maintenance rules"
           resources={resources}
           onChange={setMaintenanceRules}
         />
-        <PopulationResourceEditor
+        <ResourceAmountListEditor
+          addLabel="Add entry"
+          amountLabel="amount per N animals"
           disabled={isPending}
           entries={cullingOutputs}
           label="Culling outputs"
@@ -1154,122 +1186,6 @@ function EditManagedPopulationTypeForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function PopulationResourceEditor({
-  disabled,
-  entries,
-  label,
-  resources,
-  onChange,
-}: {
-  readonly disabled: boolean;
-  readonly entries: PopulationResourceEntry[];
-  readonly label: string;
-  readonly resources: readonly Resource[];
-  readonly onChange: (entries: PopulationResourceEntry[]) => void;
-}): JSX.Element {
-  const availableResources = resources.filter((r) => !r.isTrashed);
-
-  function handleAdd(): void {
-    if (availableResources.length === 0) return;
-    const usedIds = new Set(entries.map((e) => e.resourceId));
-    const firstUnused = availableResources.find((r) => !usedIds.has(r.id));
-    if (firstUnused === undefined) return;
-    onChange([
-      ...entries,
-      { amountPerNAnimals: 1, resourceId: firstUnused.id },
-    ]);
-  }
-
-  function handleRemove(index: number): void {
-    onChange(entries.filter((_, i) => i !== index));
-  }
-
-  function handleResourceChange(index: number, resourceId: string): void {
-    onChange(entries.map((e, i) => (i === index ? { ...e, resourceId } : e)));
-  }
-
-  function handleAmountChange(index: number, value: string): void {
-    const parsed = parseFloat(value);
-    if (!isNaN(parsed) && parsed >= 0) {
-      onChange(
-        entries.map((e, i) =>
-          i === index ? { ...e, amountPerNAnimals: parsed } : e,
-        ),
-      );
-    }
-  }
-
-  return (
-    <fieldset className="grid gap-2">
-      <div className="flex items-center justify-between">
-        <legend className="text-sm text-muted-foreground">{label}</legend>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={
-            disabled ||
-            availableResources.length === 0 ||
-            entries.length >= availableResources.length
-          }
-          onClick={handleAdd}
-        >
-          <Plus aria-hidden="true" />
-          Add entry
-        </Button>
-      </div>
-      {entries.length > 0 ? (
-        <ul className="grid gap-2">
-          {entries.map((entry, index) => (
-            <li key={index} className="flex items-center gap-2">
-              <NativeSelect
-                aria-label={`${label} entry ${String(index + 1)} resource`}
-                className="flex-1"
-                disabled={disabled}
-                value={entry.resourceId}
-                onChange={(e) => {
-                  handleResourceChange(index, e.currentTarget.value);
-                }}
-              >
-                {sortByName(availableResources).map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </NativeSelect>
-              <Input
-                aria-label={`${label} entry ${String(index + 1)} amount per N animals`}
-                className="w-24 shrink-0"
-                disabled={disabled}
-                inputMode="decimal"
-                placeholder="1"
-                value={String(entry.amountPerNAnimals)}
-                onChange={(e) => {
-                  handleAmountChange(index, e.currentTarget.value);
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                aria-label={`Remove ${label} entry ${String(index + 1)}`}
-                disabled={disabled}
-                onClick={() => {
-                  handleRemove(index);
-                }}
-              >
-                <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-xs text-muted-foreground">No entries.</p>
-      )}
-    </fieldset>
   );
 }
 
