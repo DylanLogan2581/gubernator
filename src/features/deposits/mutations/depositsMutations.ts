@@ -39,6 +39,7 @@ import type { z } from "zod";
 type DepositTypeMutationErrorCode =
   | "deposit_type_input_invalid"
   | "deposit_type_job_already_linked"
+  | "deposit_type_not_authorized"
   | "deposit_type_not_found";
 
 type CreateDepositTypeMutationOptions = UseMutationOptions<
@@ -361,6 +362,12 @@ async function softDeleteDepositType(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new DepositTypeMutationError({
+        code: "deposit_type_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -388,6 +395,12 @@ async function restoreDepositType(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new DepositTypeMutationError({
+        code: "deposit_type_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -415,6 +428,12 @@ async function hardDeleteDepositType(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new DepositTypeMutationError({
+        code: "deposit_type_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 

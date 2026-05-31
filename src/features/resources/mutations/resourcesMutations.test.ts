@@ -366,7 +366,7 @@ describe("softDeleteResourceMutationOptions", () => {
     ).rejects.toMatchObject({ code: "resource_not_found" });
   });
 
-  it("normalizes Supabase errors", async () => {
+  it("maps 42501 to resource_not_authorized", async () => {
     const { client } = createSoftDeleteClient({
       data: null,
       error: { code: "42501", message: "permission denied" },
@@ -379,7 +379,7 @@ describe("softDeleteResourceMutationOptions", () => {
         resourceId: RESOURCE_ID,
         worldId: WORLD_ID,
       }),
-    ).rejects.toBeInstanceOf(AuthUiError);
+    ).rejects.toMatchObject({ code: "resource_not_authorized" });
   });
 });
 

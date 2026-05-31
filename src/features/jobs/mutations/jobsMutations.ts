@@ -37,7 +37,10 @@ import type {
 } from "../types/jobTypes";
 import type { z } from "zod";
 
-type JobMutationErrorCode = "job_input_invalid" | "job_not_found";
+type JobMutationErrorCode =
+  | "job_input_invalid"
+  | "job_not_authorized"
+  | "job_not_found";
 
 type CreateJobMutationOptions = UseMutationOptions<
   JobDefinition,
@@ -376,6 +379,12 @@ async function softDeleteJob(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new JobMutationError({
+        code: "job_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -403,6 +412,12 @@ async function restoreJob(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new JobMutationError({
+        code: "job_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -430,6 +445,12 @@ async function hardDeleteJob(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new JobMutationError({
+        code: "job_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 

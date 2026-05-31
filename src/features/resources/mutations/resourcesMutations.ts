@@ -38,6 +38,7 @@ import type { z } from "zod";
 
 type ResourceMutationErrorCode =
   | "resource_input_invalid"
+  | "resource_not_authorized"
   | "resource_not_found";
 
 type CreateResourceMutationOptions = UseMutationOptions<
@@ -309,6 +310,12 @@ async function softDeleteResource(
     }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new ResourceMutationError({
+        code: "resource_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -371,6 +378,12 @@ async function restoreResource(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new ResourceMutationError({
+        code: "resource_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -398,6 +411,12 @@ async function hardDeleteResource(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new ResourceMutationError({
+        code: "resource_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
