@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { BuildingsConfigPanel } from "@/features/buildings";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
+import { DepositsConfigPanel } from "@/features/deposits";
 import { JobsConfigPanel } from "@/features/jobs";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import { ResourcesConfigPanel } from "@/features/resources";
@@ -22,7 +23,6 @@ import { cn } from "@/lib/utils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
-import { WorldDepositsConfigPanel } from "./WorldDepositsConfigPanel";
 import { WorldManagedPopulationsConfigPanel } from "./WorldManagedPopulationsConfigPanel";
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
@@ -215,7 +215,7 @@ function WorldConfigurationContent({
   if (activeTab === "deposits") {
     return (
       <ConfigPanelShell>
-        <WorldDepositsConfigPanel
+        <DepositsConfigPanel
           canAdmin={worldQuery.data.canAdmin}
           isArchived={worldQuery.data.header.isArchived}
           worldId={worldId}

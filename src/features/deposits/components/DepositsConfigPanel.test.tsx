@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WorldDepositsConfigPanel } from "./WorldDepositsConfigPanel";
+import { DepositsConfigPanel } from "./DepositsConfigPanel";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -43,7 +43,7 @@ const JOB_ID = "00000000-0000-0000-0000-000000000003";
 const JOB_ID_2 = "00000000-0000-0000-0000-000000000004";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000005";
 
-describe("WorldDepositsConfigPanel", () => {
+describe("DepositsConfigPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
@@ -408,7 +408,7 @@ function renderPanel({
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <WorldDepositsConfigPanel
+      <DepositsConfigPanel
         canAdmin={canAdmin}
         isArchived={isArchived}
         worldId={WORLD_ID}
