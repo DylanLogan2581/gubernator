@@ -218,7 +218,7 @@ values
 -- ===========================================================================
 -- SYSTEM-RESOURCE REJECTION
 -- The 'Food' system resource is seeded automatically for the world above.
--- The RPC must return empty and leave is_deleted = false.
+-- The RPC must raise restrict_violation (23001) and leave is_deleted = false.
 -- ===========================================================================
 set
   local role authenticated;
@@ -227,26 +227,18 @@ set
   local "request.jwt.claims" = '{"sub":"d1000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.soft_delete_resource (
-          (
-            select
-              id
-            from
-              public.resources
-            where
-              world_id = 'd2000000-0000-0000-0000-000000000001'
-              and slug = 'food'
-          ),
-          'd2000000-0000-0000-0000-000000000001'
-        )
-    ),
-    0,
-    'soft_delete_resource returns no rows for a system resource'
+  throws_ok (
+    $test$
+      select public.soft_delete_resource (
+        (select id from public.resources
+          where world_id = 'd2000000-0000-0000-0000-000000000001'
+            and slug = 'food'),
+        'd2000000-0000-0000-0000-000000000001'
+      )
+    $test$,
+    '23001',
+    null,
+    'soft_delete_resource raises restrict_violation for a system resource'
   );
 
 select
@@ -267,7 +259,7 @@ reset role;
 
 -- ===========================================================================
 -- UNAUTHORISED CALLER
--- An outsider (no world access) must get an empty result and no mutation.
+-- An outsider (no world access) must get insufficient_privilege (42501).
 -- ===========================================================================
 set
   local role authenticated;
@@ -276,17 +268,15 @@ set
   local "request.jwt.claims" = '{"sub":"d1000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.soft_delete_resource (
-          'd3000000-0000-0000-0000-000000000001',
-          'd2000000-0000-0000-0000-000000000001'
-        )
-    ),
-    0,
+  throws_ok (
+    $test$
+      select public.soft_delete_resource (
+        'd3000000-0000-0000-0000-000000000001',
+        'd2000000-0000-0000-0000-000000000001'
+      )
+    $test$,
+    '42501',
+    null,
     'outsider cannot soft-delete a resource'
   );
 

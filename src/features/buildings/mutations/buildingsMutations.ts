@@ -46,6 +46,7 @@ import type {
 import type { z } from "zod";
 
 type BuildingMutationErrorCode =
+  | "building_blueprint_not_authorized"
   | "building_blueprint_not_found"
   | "building_input_invalid"
   | "building_tier_not_found";
@@ -466,6 +467,12 @@ async function softDeleteBlueprint(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new BuildingMutationError({
+        code: "building_blueprint_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -493,6 +500,12 @@ async function restoreBlueprint(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new BuildingMutationError({
+        code: "building_blueprint_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -520,6 +533,12 @@ async function hardDeleteBlueprint(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new BuildingMutationError({
+        code: "building_blueprint_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 

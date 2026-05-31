@@ -40,6 +40,7 @@ type ManagedPopulationTypeMutationErrorCode =
   | "managed_population_type_culling_job_already_linked"
   | "managed_population_type_husbandry_job_already_linked"
   | "managed_population_type_input_invalid"
+  | "managed_population_type_not_authorized"
   | "managed_population_type_not_found";
 
 type CreateManagedPopulationTypeMutationOptions = UseMutationOptions<
@@ -436,6 +437,12 @@ async function softDeleteManagedPopulationType(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -463,6 +470,12 @@ async function restoreManagedPopulationType(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
@@ -490,6 +503,12 @@ async function hardDeleteManagedPopulationType(
     .maybeSingle<{ readonly id: string; readonly world_id: string }>();
 
   if (error !== null) {
+    if (error.code === "42501") {
+      throw new ManagedPopulationTypeMutationError({
+        code: "managed_population_type_not_authorized",
+        message: "Insufficient privileges.",
+      });
+    }
     throw normalizeSupabaseError(error);
   }
 
