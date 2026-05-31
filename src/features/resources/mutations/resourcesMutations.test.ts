@@ -269,6 +269,16 @@ describe("softDeleteResourceMutationOptions", () => {
     });
 
     expect(result).toMatchObject({
+      cleanupSummary: {
+        buildingTierConstructionCostsCleaned: 0,
+        buildingTierEffectsCleaned: 0,
+        buildingTierUpkeepCostsCleaned: 0,
+        depositTypesWorkerInputsCleaned: 0,
+        jobDefinitionsInputsCleaned: 0,
+        jobDefinitionsOutputsCleaned: 0,
+        managedPopulationCullingOutputsCleaned: 0,
+        managedPopulationMaintenanceCleaned: 0,
+      },
       resourceId: RESOURCE_ID,
       worldId: WORLD_ID,
     });
@@ -277,6 +287,35 @@ describe("softDeleteResourceMutationOptions", () => {
       p_world_id: WORLD_ID,
     });
     expect(options.mutationKey).toEqual(["resources", "soft-delete-resource"]);
+  });
+
+  it("returns all-zero cleanup summary for a malformed JSON payload", async () => {
+    const deleteRow: DeleteRow = {
+      id: RESOURCE_ID,
+      last_cleanup_summary_json: ["not", "an", "object"],
+      world_id: WORLD_ID,
+    };
+    const { client } = createSoftDeleteClient({ data: deleteRow, error: null });
+    const queryClient = createQueryClient();
+    const options = softDeleteResourceMutationOptions({ client, queryClient });
+
+    const result = await executeMutation(queryClient, options, {
+      resourceId: RESOURCE_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result).toMatchObject({
+      cleanupSummary: {
+        buildingTierConstructionCostsCleaned: 0,
+        buildingTierEffectsCleaned: 0,
+        buildingTierUpkeepCostsCleaned: 0,
+        depositTypesWorkerInputsCleaned: 0,
+        jobDefinitionsInputsCleaned: 0,
+        jobDefinitionsOutputsCleaned: 0,
+        managedPopulationCullingOutputsCleaned: 0,
+        managedPopulationMaintenanceCleaned: 0,
+      },
+    });
   });
 
   it("parses cleanup summary with non-zero counts when references exist", async () => {

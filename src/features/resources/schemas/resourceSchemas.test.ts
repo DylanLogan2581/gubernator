@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  cleanupSummarySchema,
   createResourceInputSchema,
   softDeleteResourceInputSchema,
   updateResourceInputSchema,
@@ -284,5 +285,83 @@ describe("softDeleteResourceInputSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("cleanupSummarySchema", () => {
+  const WELL_FORMED = {
+    building_tier_construction_costs_cleaned: 1,
+    building_tier_effects_cleaned: 2,
+    building_tier_upkeep_costs_cleaned: 3,
+    deposit_types_worker_inputs_cleaned: 4,
+    job_definitions_inputs_cleaned: 5,
+    job_definitions_outputs_cleaned: 6,
+    managed_population_culling_outputs_cleaned: 7,
+    managed_population_maintenance_cleaned: 8,
+  };
+
+  it("accepts a well-formed payload", () => {
+    const result = cleanupSummarySchema.safeParse(WELL_FORMED);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual(WELL_FORMED);
+    }
+  });
+
+  it("strips unknown fields such as cleaned_at", () => {
+    const result = cleanupSummarySchema.safeParse({
+      ...WELL_FORMED,
+      cleaned_at: "2026-05-30T00:00:00.000Z",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toHaveProperty("cleaned_at");
+      expect(result.data.building_tier_effects_cleaned).toBe(2);
+    }
+  });
+
+  it("rejects a payload missing required fields", () => {
+    const result = cleanupSummarySchema.safeParse({
+      building_tier_effects_cleaned: 1,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload with a non-integer field", () => {
+    const result = cleanupSummarySchema.safeParse({
+      ...WELL_FORMED,
+      building_tier_effects_cleaned: 1.5,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload with a negative field", () => {
+    const result = cleanupSummarySchema.safeParse({
+      ...WELL_FORMED,
+      job_definitions_inputs_cleaned: -1,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload with a string field value", () => {
+    const result = cleanupSummarySchema.safeParse({
+      ...WELL_FORMED,
+      building_tier_construction_costs_cleaned: "not-a-number",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects null", () => {
+    expect(cleanupSummarySchema.safeParse(null).success).toBe(false);
+  });
+
+  it("rejects an array", () => {
+    expect(cleanupSummarySchema.safeParse([]).success).toBe(false);
   });
 });
