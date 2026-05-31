@@ -22,19 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
-import {
-  createManagedPopulationTypeInputSchema,
-  createManagedPopulationTypeMutationOptions,
-  hardDeleteManagedPopulationTypeMutationOptions,
-  managedPopulationTypesByWorldQueryOptions,
-  restoreManagedPopulationTypeMutationOptions,
-  softDeleteManagedPopulationTypeMutationOptions,
-  updateManagedPopulationTypeInputSchema,
-  updateManagedPopulationTypeMutationOptions,
-  type CreateManagedPopulationTypeInput,
-  type ManagedPopulationType,
-  type UpdateManagedPopulationTypeInput,
-} from "@/features/managed-populations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
@@ -42,17 +29,34 @@ import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 import { sortByName } from "@/lib/sortUtils";
 
-type WorldManagedPopulationsConfigPanelProps = {
+import {
+  createManagedPopulationTypeMutationOptions,
+  hardDeleteManagedPopulationTypeMutationOptions,
+  restoreManagedPopulationTypeMutationOptions,
+  softDeleteManagedPopulationTypeMutationOptions,
+  updateManagedPopulationTypeMutationOptions,
+} from "../mutations/managedPopulationsMutations";
+import { managedPopulationTypesByWorldQueryOptions } from "../queries/managedPopulationsQueries";
+import {
+  createManagedPopulationTypeInputSchema,
+  updateManagedPopulationTypeInputSchema,
+  type CreateManagedPopulationTypeInput,
+  type UpdateManagedPopulationTypeInput,
+} from "../schemas/managedPopulationSchemas";
+
+import type { ManagedPopulationType } from "../types/managedPopulationTypes";
+
+type ManagedPopulationsConfigPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly worldId: string;
 };
 
-export function WorldManagedPopulationsConfigPanel({
+export function ManagedPopulationsConfigPanel({
   canAdmin,
   isArchived,
   worldId,
-}: WorldManagedPopulationsConfigPanelProps): JSX.Element {
+}: ManagedPopulationsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const [showTrash, setShowTrash] = useState(false);
   const populationTypesQuery = useQuery(
@@ -78,7 +82,7 @@ export function WorldManagedPopulationsConfigPanel({
     : allPopulationTypes.filter((pt) => !pt.isTrashed);
 
   return (
-    <WorldManagedPopulationsConfigPanelContent
+    <ManagedPopulationsConfigPanelContent
       allPopulationTypes={allPopulationTypes}
       canAdmin={canAdmin}
       isArchived={isArchived}
@@ -93,7 +97,7 @@ export function WorldManagedPopulationsConfigPanel({
   );
 }
 
-function WorldManagedPopulationsConfigPanelContent({
+function ManagedPopulationsConfigPanelContent({
   allPopulationTypes,
   canAdmin,
   isArchived,

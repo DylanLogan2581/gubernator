@@ -2,6 +2,7 @@
 // configuration. Population instances live in Epic 5; this module covers
 // type-level data only.
 
+export { ManagedPopulationsConfigPanel } from "./components/ManagedPopulationsConfigPanel";
 export {
   ManagedPopulationTypeMutationError,
   createManagedPopulationTypeMutationOptions,
