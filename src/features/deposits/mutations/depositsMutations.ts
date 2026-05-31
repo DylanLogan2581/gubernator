@@ -98,14 +98,17 @@ type DepositTypeRow = {
   readonly job_id: string;
   readonly name: string;
   readonly output_units_per_worker: number;
+  readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly slug: string;
   readonly updated_at: string;
   readonly worker_inputs_json: readonly WorkerInputEntryRow[];
   readonly world_id: string;
 };
 
-const DEPOSIT_TYPE_SELECT =
-  "id,world_id,name,slug,job_id,output_units_per_worker,worker_inputs_json,is_trashed,created_at,updated_at";
+const DEPOSIT_TYPE_SELECT = [
+  "id,world_id,name,slug,job_id,output_units_per_worker,worker_inputs_json,is_trashed,created_at,updated_at",
+  "referencing_jobs:job_definitions!job_definitions_linked_deposit_type_fk(id)",
+].join(",");
 
 export type DepositTypeMutationIssue = MutationIssue;
 
@@ -466,7 +469,7 @@ function toWorkerInputEntry(row: WorkerInputEntryRow): WorkerInputEntry {
 function toDepositType(row: DepositTypeRow): DepositType {
   return {
     createdAt: row.created_at,
-    hasActiveReferences: false,
+    hasActiveReferences: row.referencing_jobs.length > 0,
     id: row.id,
     isTrashed: row.is_trashed,
     jobId: row.job_id,
