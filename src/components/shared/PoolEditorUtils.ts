@@ -15,3 +15,12 @@ export function parseBulkPaste(
   }
   return result;
 }
+
+export function sanitizePoolEntries(entries: readonly string[]): string[] {
+  const result: string[] = [];
+  for (const entry of entries) {
+    const trimmed = entry.trim();
+    if (trimmed !== "") result.push(trimmed);
+  }
+  return result;
+}

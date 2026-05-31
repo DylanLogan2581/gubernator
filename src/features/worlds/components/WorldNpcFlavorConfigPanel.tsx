@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
+import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -96,8 +97,15 @@ function WorldNpcFlavorConfigPanelContent({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    const sanitizedConfig: WorldNpcFlavorConfig = {
+      contradictions: sanitizePoolEntries(draftConfig.contradictions),
+      flaws: sanitizePoolEntries(draftConfig.flaws),
+      goals: sanitizePoolEntries(draftConfig.goals),
+      traits: sanitizePoolEntries(draftConfig.traits),
+    };
+    setDraftConfig(sanitizedConfig);
     saveMutation.mutate(
-      { config: draftConfig, worldId },
+      { config: sanitizedConfig, worldId },
       {
         onError: (error) => {
           toast.error(getNpcFlavorErrorDescription(error));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseBulkPaste } from "./PoolEditorUtils";
+import { parseBulkPaste, sanitizePoolEntries } from "./PoolEditorUtils";
 
 describe("parseBulkPaste", () => {
   it("splits text into trimmed lines", () => {
@@ -36,5 +36,38 @@ describe("parseBulkPaste", () => {
 
   it("returns empty array for blank input", () => {
     expect(parseBulkPaste("   \n  \n", ["alpha"])).toEqual([]);
+  });
+});
+
+describe("sanitizePoolEntries", () => {
+  it("trims surrounding whitespace from entries", () => {
+    expect(sanitizePoolEntries(["  alpha", "beta  ", "  gamma  "])).toEqual([
+      "alpha",
+      "beta",
+      "gamma",
+    ]);
+  });
+
+  it("drops empty and whitespace-only entries", () => {
+    expect(sanitizePoolEntries(["alpha", "", "beta", "   "])).toEqual([
+      "alpha",
+      "beta",
+    ]);
+  });
+
+  it("preserves order of remaining entries", () => {
+    expect(sanitizePoolEntries(["gamma", "", "alpha", "beta"])).toEqual([
+      "gamma",
+      "alpha",
+      "beta",
+    ]);
+  });
+
+  it("returns empty array when all entries are blank", () => {
+    expect(sanitizePoolEntries(["", "   ", "\t"])).toEqual([]);
+  });
+
+  it("returns empty array for empty input", () => {
+    expect(sanitizePoolEntries([])).toEqual([]);
   });
 });

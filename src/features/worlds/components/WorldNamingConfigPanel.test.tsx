@@ -260,6 +260,53 @@ describe("WorldNamingConfigPanel", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("drops blank-on-add rows from name pools when saving", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Naming rules" });
+
+    expect(screen.getAllByRole("textbox")).toHaveLength(2);
+
+    const [maleAddEntryButton] = screen.getAllByRole("button", {
+      name: "Add entry",
+    });
+    if (maleAddEntryButton === undefined) {
+      throw new Error("expected at least one Add entry button");
+    }
+    await user.click(maleAddEntryButton);
+
+    expect(screen.getAllByRole("textbox")).toHaveLength(3);
+    expect(screen.getAllByDisplayValue("")).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Save naming rules" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Naming configuration saved.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+
+    expect(screen.getAllByRole("textbox")).toHaveLength(2);
+    expect(screen.queryAllByDisplayValue("")).toHaveLength(0);
+    expect(screen.getByDisplayValue("Bob")).toBeDefined();
+    expect(screen.getByDisplayValue("Alice")).toBeDefined();
+  });
+
   it("does not show empty pool warning when both pools have entries", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ worldRows: [createWorldRow()] }),
