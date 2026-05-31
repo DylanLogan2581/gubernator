@@ -161,18 +161,6 @@ where
   user_id = '00000000-0000-0000-0000-000000000003'
   and world_id = '00000000-0000-0000-0000-000000000101';
 
--- Worlds 102/103: remove any citizens created locally that are not part of the
--- canonical seed, so the minimal-topology count assertions stay hermetic.
-delete from public.citizens
-where
-  world_id = '00000000-0000-0000-0000-000000000102'
-  and id <> '00000000-0000-0000-0000-000000000451';
-
-delete from public.citizens
-where
-  world_id = '00000000-0000-0000-0000-000000000103'
-  and id <> '00000000-0000-0000-0000-000000000461';
-
 select
   plan (40);
 
@@ -205,11 +193,11 @@ select
         and world_id = '00000000-0000-0000-0000-000000000101'
     ),
     1,
-    'local seed includes a nation for the local development world'
+    'local seed includes the canonical nation under Verdant Reach'
   );
 
 select
-  is (
+  cmp_ok (
     (
       select
         count(*)::integer
@@ -218,8 +206,9 @@ select
       where
         nation_id = '00000000-0000-0000-0000-000000000201'
     ),
+    '>=',
     3,
-    'local seed includes settlements under the seeded nation'
+    'local seed includes the canonical settlements under the seeded nation'
   );
 
 select
@@ -311,7 +300,7 @@ select
 -- ===========================================================================
 -- World 101 — full topology.
 select
-  is (
+  cmp_ok (
     (
       select
         count(*)::integer
@@ -320,8 +309,9 @@ select
       where
         world_id = '00000000-0000-0000-0000-000000000101'
     ),
+    '>=',
     11,
-    'world 101 seeds all expected citizens (3 PCs + 8 NPCs incl. family + deceased)'
+    'world 101 seeds the canonical citizens plus the bulk expansion'
   );
 
 select
@@ -336,11 +326,11 @@ select
         and citizen_type = 'player_character'
     ),
     3,
-    'world 101 seeds three player characters'
+    'world 101 seeds exactly three player characters'
   );
 
 select
-  is (
+  cmp_ok (
     (
       select
         count(*)::integer
@@ -350,8 +340,9 @@ select
         world_id = '00000000-0000-0000-0000-000000000101'
         and citizen_type = 'npc'
     ),
+    '>=',
     8,
-    'world 101 seeds eight NPCs'
+    'world 101 seeds at least the canonical NPC roster'
   );
 
 select
@@ -396,33 +387,35 @@ select
     'seeded NPC family parent/child pair is detected as close kin'
   );
 
--- World 102 and 103 minimal-topology presence.
+-- Worlds 102 and 103 expanded topology — assert the canonical NPC still
+-- exists and the world has at least one citizen, allowing the bulk expansion
+-- to add more without flapping these tests.
 select
-  is (
-    (
+  ok (
+    exists (
       select
-        count(*)::integer
+        1
       from
         public.citizens
       where
-        world_id = '00000000-0000-0000-0000-000000000102'
+        id = '00000000-0000-0000-0000-000000000451'
+        and world_id = '00000000-0000-0000-0000-000000000102'
     ),
-    1,
-    'world 102 seeds exactly one citizen (single NPC)'
+    'world 102 still seeds the canonical Vellan Pace NPC'
   );
 
 select
-  is (
-    (
+  ok (
+    exists (
       select
-        count(*)::integer
+        1
       from
         public.citizens
       where
-        world_id = '00000000-0000-0000-0000-000000000103'
+        id = '00000000-0000-0000-0000-000000000461'
+        and world_id = '00000000-0000-0000-0000-000000000103'
     ),
-    1,
-    'world 103 seeds exactly one citizen (single NPC)'
+    'world 103 still seeds the canonical Ivor Greyfell NPC'
   );
 
 select
@@ -464,7 +457,7 @@ select
         world_id = '00000000-0000-0000-0000-000000000101'
         and user_id = '00000000-0000-0000-0000-000000000002'
     ),
-    'world 101 has a local_test_user co-admin row in world_admins'
+    'world 101 has the aria_hearthwatch co-admin row in world_admins'
   );
 
 -- ---------------------------------------------------------------------------
@@ -481,13 +474,13 @@ set
 select
   ok (
     public.is_settlement_manager_of ('00000000-0000-0000-0000-000000000301'),
-    'local_test_user PC is settlement_manager of Hearthwatch'
+    'aria_hearthwatch PC is settlement_manager of Hearthwatch'
   );
 
 select
   ok (
     not public.is_nation_manager_of ('00000000-0000-0000-0000-000000000201'),
-    'local_test_user PC is not nation_manager of Ashvale'
+    'aria_hearthwatch PC is not nation_manager of Ashvale'
   );
 
 reset role;
@@ -501,13 +494,13 @@ set
 select
   ok (
     public.is_nation_manager_of ('00000000-0000-0000-0000-000000000201'),
-    'local_other_user PC is nation_manager of Ashvale'
+    'halden_reyne PC is nation_manager of Ashvale'
   );
 
 select
   ok (
     not public.is_settlement_manager_of ('00000000-0000-0000-0000-000000000301'),
-    'local_other_user PC is not settlement_manager of Hearthwatch'
+    'halden_reyne PC is not settlement_manager of Hearthwatch'
   );
 
 reset role;
@@ -527,7 +520,7 @@ select
         and world_id = '00000000-0000-0000-0000-000000000101'
     ),
     '00000000-0000-0000-0000-000000000401'::uuid,
-    'active PC for local_test_user resolves to the Hearthwatch PC'
+    'active PC for aria_hearthwatch resolves to the Hearthwatch PC'
   );
 
 select
@@ -542,7 +535,7 @@ select
         and world_id = '00000000-0000-0000-0000-000000000101'
     ),
     '00000000-0000-0000-0000-000000000402'::uuid,
-    'active PC for local_other_user resolves to the Mistfall PC'
+    'active PC for halden_reyne resolves to the Mistfall PC'
   );
 
 -- ---------------------------------------------------------------------------
@@ -699,7 +692,7 @@ select
         )
     ),
     1,
-    'local seeded world can be advanced through the privileged RPC by its admin'
+    'seeded world can be advanced through the privileged RPC by its admin'
   );
 
 select
@@ -713,7 +706,7 @@ select
         id = '00000000-0000-0000-0000-000000000101'
     ),
     1,
-    'local seeded world advances exactly one turn'
+    'seeded world advances exactly one turn'
   );
 
 select
