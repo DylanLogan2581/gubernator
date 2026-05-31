@@ -199,9 +199,9 @@ resolve without an explicit import map.
 - Local Supabase auth uses the local API URL and anon key from `supabase status`; never document or commit service-role keys, third-party secrets, or production credentials.
 - Run `npx supabase db reset` to apply `supabase/migrations` and reload `supabase/seed.sql`.
 - Seeded local users:
-  - `superadmin@gubernator.local` / `password123`: active super admin, owner of `Local Development World`, explicit world admin for that world.
-  - `test@gubernator.local` / `password123`: active normal user, owner of `Test User World`.
-  - `other@gubernator.local` / `password123`: active normal user, owner of `Restricted Development World`.
+  - `superadmin@gubernator.local` / `password123`: active super admin, owner of `Verdant Reach`, explicit world admin for that world.
+  - `test@gubernator.local` / `password123`: active normal user, owner of `Linnford Concord` and `Hollowmere Coast`.
+  - `other@gubernator.local` / `password123`: active normal user, owner of `Greyfell March` and `Stormhold Vale`.
 - Seeded worlds are private. Super admin should see/manage all seeded worlds; each normal user should see/manage only their own private world unless an explicit access rule grants more access; anonymous users should not read application user, world, or world admin rows through RLS.
 - Protected routes such as `/worlds` and `/worlds/$worldId` require an authenticated Supabase session at the route boundary and redirect unauthenticated visitors to `/sign-in` with a normalized return path.
 - World access is layered: route guards handle session presence, Supabase RLS restricts raw database visibility, and app access context maps visible worlds into access/manage/admin UI capabilities.

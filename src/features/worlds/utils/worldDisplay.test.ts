@@ -44,7 +44,7 @@ describe("toAccessibleWorld", () => {
       nextTurnNumber: 4,
       ownerId: "user-2",
       planningTurnNumber: 3,
-      slug: "local-development-world-world1",
+      slug: "verdant-reach-world1",
     });
   });
 
@@ -149,7 +149,7 @@ function createWorldRow(
     current_turn_number: 3,
     id: "world-1",
     incest_prevention_depth: 4,
-    name: "Local Development World",
+    name: "Verdant Reach",
     owner_id: "user-2",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
