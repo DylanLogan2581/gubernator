@@ -12,6 +12,7 @@ import {
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
+import { generateLocalId } from "@/lib/uid";
 
 import { createNpcMutationOptions } from "../../mutations/citizensMutations";
 import { citizensHaveCloseKinship } from "../../queries/citizenKinshipQueries";
@@ -55,7 +56,7 @@ export function CreateNpcDialog({
   const [kinshipError, setKinshipError] = useState<string | undefined>(
     undefined,
   );
-  const [seed, setSeed] = useState(() => crypto.randomUUID());
+  const [seed, setSeed] = useState(() => generateLocalId());
   const [userFlavor, setUserFlavor] = useState<NpcFlavor | null>(null);
   const citizensQuery = useQuery(
     citizensInSettlementQueryOptions(settlementId),
@@ -73,7 +74,7 @@ export function CreateNpcDialog({
   const flavor = userFlavor ?? generatedFlavor;
 
   function handleRegenerate(): void {
-    setSeed(crypto.randomUUID());
+    setSeed(generateLocalId());
     setUserFlavor(null);
   }
 
@@ -106,7 +107,7 @@ export function CreateNpcDialog({
     const parentB = parentChoices.find((c) => c.id === fields.parentBCitizenId);
     const name = generateNpcName({
       config: namingConfig,
-      rng: createSeededRng(crypto.randomUUID()),
+      rng: createSeededRng(generateLocalId()),
       sex: fields.sex !== "" ? fields.sex : null,
       parentAName: parentA?.name ?? null,
       parentBName: parentB?.name ?? null,
