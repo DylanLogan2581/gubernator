@@ -3,6 +3,7 @@ import { buildTrashLifecycleMutations } from "@/lib/buildTrashLifecycleMutations
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
+import { toSnakeCaseEntries } from "@/lib/toSnakeCaseEntries";
 import type { Json } from "@/types/database";
 
 import { JOB_SELECT, toJob, type JobRow } from "../queries/jobRow";
@@ -329,15 +330,12 @@ async function hardDeleteJob(
   return { jobId: data.id, worldId: data.world_id };
 }
 
-// Converts camelCase IO entries to a JSON-compatible DB format.
 function toIoJson(entries: readonly JobIoEntry[]): Json {
-  return entries.map(
-    (e): Record<string, Json | undefined> => ({
-      amount_per_worker: e.amountPerWorker,
-      ...(e.notes !== undefined ? { notes: e.notes } : {}),
-      resource_id: e.resourceId,
-    }),
-  );
+  return toSnakeCaseEntries(entries, {
+    amountPerWorker: "amount_per_worker",
+    notes: "notes",
+    resourceId: "resource_id",
+  });
 }
 
 function parseInput<TSchema extends z.ZodTypeAny>(
