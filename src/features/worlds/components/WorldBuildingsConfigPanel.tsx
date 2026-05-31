@@ -15,6 +15,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   blueprintsByWorldQueryOptions,
   buildCostInputs,
@@ -55,7 +56,6 @@ import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 import { generateLocalId } from "@/lib/uid";
-import { cn } from "@/lib/utils";
 
 import { BlueprintTierEditor } from "./BlueprintTierEditor";
 
@@ -658,12 +658,8 @@ function CreateBlueprintForm({
         </label>
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Description</span>
-          <textarea
+          <Textarea
             aria-invalid={fieldErrors.description !== undefined}
-            className={cn(
-              "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-              "min-h-[80px] resize-y",
-            )}
             disabled={isPending}
             maxLength={buildingInputLimits.blueprintDescriptionMax}
             value={description}
@@ -1123,12 +1119,8 @@ function EditBlueprintForm({
         </label>
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Description</span>
-          <textarea
+          <Textarea
             aria-invalid={fieldErrors.description !== undefined}
-            className={cn(
-              "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-              "min-h-[80px] resize-y",
-            )}
             disabled={isPending}
             maxLength={buildingInputLimits.blueprintDescriptionMax}
             value={description}
