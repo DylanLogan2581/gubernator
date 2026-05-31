@@ -25,6 +25,7 @@ export {
   softDeleteJobInputSchema,
   updateJobInputSchema,
 } from "./schemas/jobSchemas";
+export { parseJobType } from "./utils/parseJobType";
 export { validateJobReferencesAgainstWorld } from "./utils/validateJobReferences";
 
 export type { JobMutationIssue } from "./mutations/jobsMutations";
