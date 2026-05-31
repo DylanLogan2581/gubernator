@@ -45,27 +45,15 @@ export function WorldCalendarConfigPanel({
   const calendarQuery = useQuery(worldCalendarConfigQueryOptions(worldId));
 
   if (calendarQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-calendar-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading calendar…" />
-      </section>
-    );
+    return <LoadingState label="Loading calendar…" />;
   }
 
   if (calendarQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-calendar-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Calendar could not be loaded"
-          description={getCalendarErrorDescription(calendarQuery.error)}
-        />
-      </section>
+      <ErrorState
+        title="Calendar could not be loaded"
+        description={getCalendarErrorDescription(calendarQuery.error)}
+      />
     );
   }
 
@@ -143,10 +131,7 @@ function WorldCalendarConfigPanelContent({
   }
 
   return (
-    <section
-      aria-labelledby="world-calendar-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h2
@@ -203,6 +188,6 @@ function WorldCalendarConfigPanelContent({
       ) : (
         <CalendarReadOnlySummary config={draftConfig} />
       )}
-    </section>
+    </div>
   );
 }

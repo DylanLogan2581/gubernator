@@ -40,27 +40,15 @@ export function WorldNpcFlavorConfigPanel({
   const configQuery = useQuery(worldNpcFlavorConfigQueryOptions(worldId));
 
   if (configQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-npc-flavor-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading NPC flavor pools…" />
-      </section>
-    );
+    return <LoadingState label="Loading NPC flavor pools…" />;
   }
 
   if (configQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-npc-flavor-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="NPC flavor pools could not be loaded"
-          description={getNpcFlavorErrorDescription(configQuery.error)}
-        />
-      </section>
+      <ErrorState
+        title="NPC flavor pools could not be loaded"
+        description={getNpcFlavorErrorDescription(configQuery.error)}
+      />
     );
   }
 
@@ -142,10 +130,7 @@ function WorldNpcFlavorConfigPanelContent({
   }
 
   return (
-    <section
-      aria-labelledby="world-npc-flavor-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h2
@@ -260,7 +245,7 @@ function WorldNpcFlavorConfigPanelContent({
       ) : (
         <NpcFlavorPoolReadOnlySummary config={draftConfig} />
       )}
-    </section>
+    </div>
   );
 }
 

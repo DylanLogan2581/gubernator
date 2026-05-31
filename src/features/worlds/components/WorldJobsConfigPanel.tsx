@@ -81,27 +81,15 @@ export function WorldJobsConfigPanel({
   const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
 
   if (jobsQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-jobs-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading jobs…" />
-      </section>
-    );
+    return <LoadingState label="Loading jobs…" />;
   }
 
   if (jobsQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-jobs-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Jobs could not be loaded"
-          description={getErrorDescription(jobsQuery.error)}
-        />
-      </section>
+      <ErrorState
+        title="Jobs could not be loaded"
+        description={getErrorDescription(jobsQuery.error)}
+      />
     );
   }
 
@@ -154,10 +142,7 @@ function WorldJobsConfigPanelContent({
       : jobs.filter((job) => job.jobType === typeFilter);
 
   return (
-    <section
-      aria-labelledby="world-jobs-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h2
           id="world-jobs-title"
@@ -278,7 +263,7 @@ function WorldJobsConfigPanelContent({
           }}
         />
       ) : null}
-    </section>
+    </div>
   );
 }
 

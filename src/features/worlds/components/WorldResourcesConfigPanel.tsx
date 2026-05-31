@@ -48,27 +48,15 @@ export function WorldResourcesConfigPanel({
   const resourcesQuery = useQuery(resourcesByWorldQueryOptions(worldId));
 
   if (resourcesQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-resources-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading resources…" />
-      </section>
-    );
+    return <LoadingState label="Loading resources…" />;
   }
 
   if (resourcesQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-resources-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Resources could not be loaded"
-          description={getErrorDescription(resourcesQuery.error)}
-        />
-      </section>
+      <ErrorState
+        title="Resources could not be loaded"
+        description={getErrorDescription(resourcesQuery.error)}
+      />
     );
   }
 
@@ -111,10 +99,7 @@ function WorldResourcesConfigPanelContent({
     : allResources.filter((r) => !r.isTrashed);
 
   return (
-    <section
-      aria-labelledby="world-resources-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h2
           id="world-resources-title"
@@ -199,7 +184,7 @@ function WorldResourcesConfigPanelContent({
           }}
         />
       ) : null}
-    </section>
+    </div>
   );
 }
 

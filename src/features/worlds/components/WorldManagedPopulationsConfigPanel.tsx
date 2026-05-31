@@ -60,27 +60,15 @@ export function WorldManagedPopulationsConfigPanel({
   );
 
   if (populationTypesQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-managed-populations-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading managed population types…" />
-      </section>
-    );
+    return <LoadingState label="Loading managed population types…" />;
   }
 
   if (populationTypesQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-managed-populations-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Managed population types could not be loaded"
-          description={getErrorDescription(populationTypesQuery.error)}
-        />
-      </section>
+      <ErrorState
+        title="Managed population types could not be loaded"
+        description={getErrorDescription(populationTypesQuery.error)}
+      />
     );
   }
 
@@ -141,10 +129,7 @@ function WorldManagedPopulationsConfigPanelContent({
   const cullingJobs = cullingJobsQuery.data ?? [];
 
   return (
-    <section
-      aria-labelledby="world-managed-populations-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h2
           id="world-managed-populations-title"
@@ -229,7 +214,7 @@ function WorldManagedPopulationsConfigPanelContent({
           }}
         />
       ) : null}
-    </section>
+    </div>
   );
 }
 

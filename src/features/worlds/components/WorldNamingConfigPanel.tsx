@@ -40,31 +40,19 @@ export function WorldNamingConfigPanel({
   const configQuery = useQuery(worldNamingConfigQueryOptions(worldId));
 
   if (configQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-naming-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading naming configuration…" />
-      </section>
-    );
+    return <LoadingState label="Loading naming configuration…" />;
   }
 
   if (configQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-naming-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Naming configuration could not be loaded"
-          description={
-            configQuery.error instanceof Error
-              ? configQuery.error.message
-              : "Try refreshing the page."
-          }
-        />
-      </section>
+      <ErrorState
+        title="Naming configuration could not be loaded"
+        description={
+          configQuery.error instanceof Error
+            ? configQuery.error.message
+            : "Try refreshing the page."
+        }
+      />
     );
   }
 
@@ -135,10 +123,7 @@ function WorldNamingConfigPanelContent({
   }
 
   return (
-    <section
-      aria-labelledby="world-naming-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h2
@@ -264,7 +249,7 @@ function WorldNamingConfigPanelContent({
       ) : (
         <NamingConfigReadOnlySummary config={draftConfig} />
       )}
-    </section>
+    </div>
   );
 }
 

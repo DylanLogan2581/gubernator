@@ -28,7 +28,7 @@ import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
 import { WorldResourcesConfigPanel } from "./WorldResourcesConfigPanel";
 
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 const TABS = [
   { key: "resources", label: "Resources" },
@@ -177,98 +177,128 @@ function WorldConfigurationContent({
 
   if (activeTab === "resources") {
     return (
-      <WorldResourcesConfigPanel
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldResourcesConfigPanel
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   if (activeTab === "jobs") {
     return (
-      <WorldJobsConfigPanel
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldJobsConfigPanel
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   if (activeTab === "buildings") {
     return (
-      <WorldBuildingsConfigPanel
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        selectedBlueprintId={selectedBlueprintId}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldBuildingsConfigPanel
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          selectedBlueprintId={selectedBlueprintId}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   if (activeTab === "deposits") {
     return (
-      <WorldDepositsConfigPanel
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldDepositsConfigPanel
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   if (activeTab === "managed-populations") {
     return (
-      <WorldManagedPopulationsConfigPanel
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldManagedPopulationsConfigPanel
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   if (activeTab === "calendar") {
     return (
-      <WorldCalendarConfigPanel
-        accessContext={accessContext}
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldCalendarConfigPanel
+          accessContext={accessContext}
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   if (activeTab === "naming") {
     return (
-      <WorldNamingConfigPanel
-        accessContext={accessContext}
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldNamingConfigPanel
+          accessContext={accessContext}
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   if (activeTab === "npc-flavor") {
     return (
-      <WorldNpcFlavorConfigPanel
-        accessContext={accessContext}
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldNpcFlavorConfigPanel
+          accessContext={accessContext}
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   if (activeTab === "population-rules") {
     return (
-      <WorldPopulationRulesConfigPanel
-        accessContext={accessContext}
-        canAdmin={worldQuery.data.canAdmin}
-        isArchived={worldQuery.data.header.isArchived}
-        worldId={worldId}
-      />
+      <ConfigPanelShell>
+        <WorldPopulationRulesConfigPanel
+          accessContext={accessContext}
+          canAdmin={worldQuery.data.canAdmin}
+          isArchived={worldQuery.data.header.isArchived}
+          worldId={worldId}
+        />
+      </ConfigPanelShell>
     );
   }
 
   return null;
+}
+
+function ConfigPanelShell({
+  children,
+}: {
+  readonly children: ReactNode;
+}): JSX.Element {
+  return (
+    <section className="rounded-md border border-border bg-card p-5 text-card-foreground">
+      {children}
+    </section>
+  );
 }

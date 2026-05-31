@@ -106,27 +106,15 @@ function BlueprintListPanel({
   const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
 
   if (blueprintsQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-buildings-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading blueprints…" />
-      </section>
-    );
+    return <LoadingState label="Loading blueprints…" />;
   }
 
   if (blueprintsQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-buildings-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="Blueprints could not be loaded"
-          description={getErrorDescription(blueprintsQuery.error)}
-        />
-      </section>
+      <ErrorState
+        title="Blueprints could not be loaded"
+        description={getErrorDescription(blueprintsQuery.error)}
+      />
     );
   }
 
@@ -234,10 +222,7 @@ function WorldBuildingsConfigPanelContent({
   }
 
   return (
-    <section
-      aria-labelledby="world-buildings-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h2
           id="world-buildings-title"
@@ -304,7 +289,7 @@ function WorldBuildingsConfigPanelContent({
           }}
         />
       ) : null}
-    </section>
+    </div>
   );
 }
 
