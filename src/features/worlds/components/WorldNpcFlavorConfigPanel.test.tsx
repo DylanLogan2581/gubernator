@@ -124,10 +124,21 @@ describe("WorldNpcFlavorConfigPanel", () => {
     ).toBeNull();
   });
 
-  it("clicking generate example output renders a read-only preview sentence", async () => {
+  it("clicking generate example output renders the canonical flavor line with two traits", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldRows: [createWorldRow()] }),
+      createClient({
+        worldRows: [
+          createWorldRow({
+            npc_flavor_config_json: {
+              contradictions: ["stoic but theatrical"],
+              flaws: ["impatient"],
+              goals: ["reclaim a lost relic"],
+              traits: ["curious", "earnest"],
+            },
+          }),
+        ],
+      }),
     );
 
     renderPanel({
@@ -147,8 +158,52 @@ describe("WorldNpcFlavorConfigPanel", () => {
       screen.getByRole("button", { name: "Generate example output" }),
     );
 
-    expect(screen.getByText(/^A .+ who is curious/)).toBeDefined();
+    const preview = screen.getByText(
+      /^A Worker who is (curious|earnest), (curious|earnest), but secretly stoic but theatrical\. They want reclaim a lost relic but are prevented by impatient\.$/,
+    );
+    expect(preview.textContent).toContain("curious");
+    expect(preview.textContent).toContain("earnest");
     expect(screen.getAllByRole("textbox").length).toBe(initialTextboxCount);
+  });
+
+  it("falls back to canonical placeholders when all pools are empty", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [
+          createWorldRow({
+            npc_flavor_config_json: {
+              contradictions: [],
+              flaws: [],
+              goals: [],
+              traits: [],
+            },
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+
+    await user.click(
+      screen.getByRole("button", { name: "Generate example output" }),
+    );
+
+    expect(
+      screen.getByText(
+        "A Worker who is mysterious, unreadable, but secretly keeps their secrets close. They want something they have yet to name but are prevented by something they will not admit.",
+      ),
+    ).toBeDefined();
   });
 
   it("renders read-only summary without save controls for non-admin users", async () => {
@@ -206,14 +261,12 @@ function createQueryClient(): QueryClient {
 function createClient({
   updateResult = { data: { id: WORLD_ID }, error: null },
   worldRows,
-  jobRows = [],
 }: {
   readonly updateResult?: {
     readonly data: { readonly id: string } | null;
     readonly error: { readonly message: string } | null;
   };
   readonly worldRows: readonly TestWorldRow[];
-  readonly jobRows?: readonly unknown[];
 }): {
   readonly from: ReturnType<typeof vi.fn>;
 } {
@@ -221,9 +274,6 @@ function createClient({
     from: vi.fn((table: string) => {
       if (table === "worlds") {
         return createWorldsQueryBuilder(worldRows, updateResult);
-      }
-      if (table === "job_definitions") {
-        return createJobsQueryBuilder(jobRows);
       }
 
       throw new Error(`Unexpected table ${table}`);
@@ -290,17 +340,5 @@ function createWorldsQueryBuilder(
         })),
       })),
     })),
-  };
-}
-
-function createJobsQueryBuilder(rows: readonly unknown[]): unknown {
-  const selectBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => selectBuilder),
-    order: vi.fn(() => selectBuilder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-  };
-
-  return {
-    select: vi.fn(() => selectBuilder),
   };
 }
