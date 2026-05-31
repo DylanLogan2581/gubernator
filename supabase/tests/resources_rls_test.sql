@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (22);
+  plan (26);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -471,6 +471,96 @@ select
         and is_system_resource = true
     ),
     'seed trigger inserts Fresh Water system resource on new world insert'
+  );
+
+-- ===========================================================================
+-- SECURITY DEFINER: seed_world_system_resources must run as SECURITY DEFINER
+-- so worlds created by a role that does not satisfy
+-- resources_insert_world_admin still receive their Food and Fresh Water
+-- seed rows.
+-- ===========================================================================
+select
+  is (
+    (
+      select
+        prosecdef
+      from
+        pg_proc
+      where
+        proname = 'seed_world_system_resources'
+        and pronamespace = 'public'::regnamespace
+    ),
+    true,
+    'seed_world_system_resources is SECURITY DEFINER'
+  );
+
+-- Simulate a non-owner-driven world creation path (e.g. service-driven world
+-- creation): disable worlds RLS and grant INSERT to authenticated so an
+-- authenticated non-admin can insert the world row. Resources RLS stays
+-- enabled, so the seed trigger only succeeds if it runs as SECURITY DEFINER
+-- (the function owner bypasses RLS) rather than as the invoking non-admin
+-- role, which would fail the resources_insert_world_admin policy.
+alter table public.worlds disable row level security;
+
+grant insert on public.worlds to authenticated;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"a1000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    insert into public.worlds (id, name, owner_id, visibility, status)
+    values (
+      'a2000000-0000-0000-0000-0000000000aa',
+      'Res Non-Owner Insert World',
+      'a1000000-0000-0000-0000-000000000001',
+      'private',
+      'active'
+    )
+  $test$,
+    'seed trigger does not block world insert from a non-admin role'
+  );
+
+reset role;
+
+revoke insert on public.worlds
+from
+  authenticated;
+
+alter table public.worlds enable row level security;
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.resources
+      where
+        world_id = 'a2000000-0000-0000-0000-0000000000aa'
+        and slug = 'food'
+        and is_system_resource = true
+    ),
+    'seed trigger seeds Food when world is inserted by a non-owner role'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.resources
+      where
+        world_id = 'a2000000-0000-0000-0000-0000000000aa'
+        and slug = 'fresh-water'
+        and is_system_resource = true
+    ),
+    'seed trigger seeds Fresh Water when world is inserted by a non-owner role'
   );
 
 select
