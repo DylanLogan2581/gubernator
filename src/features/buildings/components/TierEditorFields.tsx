@@ -54,8 +54,8 @@ export function CostEditor({
   }
 
   return (
-    <div className="grid gap-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
+    <fieldset className="grid gap-2">
+      <legend className="text-sm text-muted-foreground">{label}</legend>
       {rows.map((row) => (
         <div key={row.id} className="flex items-center gap-2">
           <label className="sr-only" htmlFor={`cost-resource-${row.id}`}>
@@ -116,7 +116,7 @@ export function CostEditor({
         <Plus aria-hidden="true" />
         Add cost
       </Button>
-    </div>
+    </fieldset>
   );
 }
 
@@ -157,8 +157,8 @@ export function EffectsEditor({
   }
 
   return (
-    <div className="grid gap-2">
-      <span className="text-sm text-muted-foreground">Effects</span>
+    <fieldset className="grid gap-2">
+      <legend className="text-sm text-muted-foreground">Effects</legend>
       {rows.map((row) => (
         <div
           key={row.id}
@@ -317,6 +317,6 @@ export function EffectsEditor({
         <Plus aria-hidden="true" />
         Add effect
       </Button>
-    </div>
+    </fieldset>
   );
 }
