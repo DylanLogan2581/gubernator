@@ -338,7 +338,7 @@ export type Database = {
           {
             foreignKeyName: "deposit_types_job_id_fk";
             columns: ["job_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "job_definitions";
             referencedColumns: ["id"];
           },
@@ -474,14 +474,14 @@ export type Database = {
           {
             foreignKeyName: "managed_population_types_culling_job_fk";
             columns: ["culling_job_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "job_definitions";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "managed_population_types_husbandry_job_fk";
             columns: ["husbandry_job_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "job_definitions";
             referencedColumns: ["id"];
           },
