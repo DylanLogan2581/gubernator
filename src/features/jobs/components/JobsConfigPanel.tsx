@@ -21,22 +21,6 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeDepositTypesByWorldQueryOptions } from "@/features/deposits";
 import {
-  createJobInputSchema,
-  createJobMutationOptions,
-  hardDeleteJobMutationOptions,
-  jobsByWorldQueryOptions,
-  restoreJobMutationOptions,
-  softDeleteJobMutationOptions,
-  updateJobInputSchema,
-  updateJobMutationOptions,
-  validateJobReferencesAgainstWorld,
-  type CreateJobInput,
-  type JobDefinition,
-  type JobIoEntry,
-  type JobType,
-  type UpdateJobInput,
-} from "@/features/jobs";
-import {
   activeManagedPopulationTypesByWorldQueryOptions,
   type ManagedPopulationType,
 } from "@/features/managed-populations";
@@ -46,6 +30,24 @@ import { jobInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 import { cn } from "@/lib/utils";
+
+import {
+  createJobMutationOptions,
+  hardDeleteJobMutationOptions,
+  restoreJobMutationOptions,
+  softDeleteJobMutationOptions,
+  updateJobMutationOptions,
+} from "../mutations/jobsMutations";
+import { jobsByWorldQueryOptions } from "../queries/jobsQueries";
+import {
+  createJobInputSchema,
+  updateJobInputSchema,
+  type CreateJobInput,
+  type UpdateJobInput,
+} from "../schemas/jobSchemas";
+import { validateJobReferencesAgainstWorld } from "../utils/validateJobReferences";
+
+import type { JobDefinition, JobIoEntry, JobType } from "../types/jobTypes";
 
 const JOB_TYPES: readonly { label: string; value: JobType }[] = [
   { label: "Standard", value: "standard" },
@@ -65,17 +67,17 @@ const JOB_TYPE_LABELS: Record<JobType, string> = {
   trader: "Trader",
 };
 
-type WorldJobsConfigPanelProps = {
+type JobsConfigPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly worldId: string;
 };
 
-export function WorldJobsConfigPanel({
+export function JobsConfigPanel({
   canAdmin,
   isArchived,
   worldId,
-}: WorldJobsConfigPanelProps): JSX.Element {
+}: JobsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const [showTrash, setShowTrash] = useState(false);
   const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
@@ -99,7 +101,7 @@ export function WorldJobsConfigPanel({
     : allJobs.filter((job) => !job.isTrashed);
 
   return (
-    <WorldJobsConfigPanelContent
+    <JobsConfigPanelContent
       canAdmin={canAdmin}
       isArchived={isArchived}
       jobs={visibleJobs}
@@ -113,7 +115,7 @@ export function WorldJobsConfigPanel({
   );
 }
 
-function WorldJobsConfigPanelContent({
+function JobsConfigPanelContent({
   canAdmin,
   isArchived,
   jobs,

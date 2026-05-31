@@ -1,6 +1,7 @@
 // Jobs feature — define job types and their input/output rules for worlds.
 // Implemented in Epic 4.
 
+export { JobsConfigPanel } from "./components/JobsConfigPanel";
 export {
   JobMutationError,
   createJobMutationOptions,

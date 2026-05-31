@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WorldJobsConfigPanel } from "./WorldJobsConfigPanel";
+import { JobsConfigPanel } from "./JobsConfigPanel";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -33,7 +33,7 @@ const DEPOSIT_TYPE_ID = "00000000-0000-0000-0000-000000000004";
 const MANAGED_POP_TYPE_ID = "00000000-0000-0000-0000-000000000005";
 const CULLING_JOB_ID = "00000000-0000-0000-0000-000000000006";
 
-describe("WorldJobsConfigPanel", () => {
+describe("JobsConfigPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
@@ -963,7 +963,7 @@ function renderPanel({
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <WorldJobsConfigPanel
+      <JobsConfigPanel
         canAdmin={canAdmin}
         isArchived={isArchived}
         worldId={WORLD_ID}
