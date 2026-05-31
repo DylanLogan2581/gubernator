@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
@@ -165,6 +165,8 @@ function BlueprintTierEditorContent({
   const canEdit = canAdmin && !isArchived;
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
+  const [deletingTier, setDeletingTier] =
+    useState<BuildingBlueprintTier | null>(null);
 
   const createMutation = useMutation(
     createTierMutationOptions({ queryClient }),
@@ -239,21 +241,7 @@ function BlueprintTierEditorContent({
                   isDeleting={deleteMutation.isPending}
                   tier={tier}
                   onDelete={() => {
-                    deleteMutation.mutate(
-                      { tierId: tier.id },
-                      {
-                        onError: (error) => {
-                          toast.error(
-                            error instanceof Error
-                              ? error.message
-                              : "Failed to delete tier.",
-                          );
-                        },
-                        onSuccess: () => {
-                          notifyMutationSuccess("Tier deleted.");
-                        },
-                      },
-                    );
+                    setDeletingTier(tier);
                   }}
                   onEdit={() => {
                     setShowCreateForm(false);
@@ -268,6 +256,35 @@ function BlueprintTierEditorContent({
         <EmptyState
           title="No tiers yet"
           description="Add the first tier for this blueprint."
+        />
+      ) : null}
+
+      {deletingTier !== null ? (
+        <TierDeleteConfirmDialog
+          isPending={deleteMutation.isPending}
+          tier={deletingTier}
+          onCancel={() => {
+            setDeletingTier(null);
+            deleteMutation.reset();
+          }}
+          onConfirm={() => {
+            deleteMutation.mutate(
+              { tierId: deletingTier.id },
+              {
+                onError: (error) => {
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to delete tier.",
+                  );
+                },
+                onSuccess: () => {
+                  setDeletingTier(null);
+                  notifyMutationSuccess("Tier deleted.");
+                },
+              },
+            );
+          }}
         />
       ) : null}
 
@@ -369,6 +386,62 @@ function TierRow({
             </Button>
           </div>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function TierDeleteConfirmDialog({
+  isPending,
+  tier,
+  onCancel,
+  onConfirm,
+}: {
+  readonly isPending: boolean;
+  readonly tier: BuildingBlueprintTier;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}): JSX.Element {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
+      <div
+        aria-labelledby="tier-delete-confirm-title"
+        aria-modal="true"
+        className="grid w-full max-w-md gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
+        role="dialog"
+      >
+        <div className="space-y-1">
+          <h3
+            id="tier-delete-confirm-title"
+            className="text-lg font-semibold tracking-normal"
+          >
+            Delete tier
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete{" "}
+            <span className="font-medium">Tier {tier.tierNumber}</span>? This
+            action cannot be undone.
+          </p>
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending}
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={isPending}
+            onClick={onConfirm}
+          >
+            <Trash2 aria-hidden="true" />
+            {isPending ? "Deleting…" : "Delete tier"}
+          </Button>
+        </div>
       </div>
     </div>
   );

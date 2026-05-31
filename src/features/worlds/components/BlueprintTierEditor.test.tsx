@@ -415,6 +415,68 @@ describe("BlueprintTierEditor", () => {
     });
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  it("shows confirmation dialog when delete is clicked and does not immediately delete", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ tierRows: [createTierRow()] }),
+    );
+
+    renderEditor({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Tier 1");
+    await user.click(screen.getByRole("button", { name: "Delete tier 1" }));
+
+    expect(await screen.findByRole("dialog")).toBeDefined();
+    expect(screen.getByText(/cannot be undone/)).toBeDefined();
+    expect(toastSuccess).not.toHaveBeenCalled();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("closes confirmation dialog without deleting when cancel is clicked", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ tierRows: [createTierRow()] }),
+    );
+
+    renderEditor({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Tier 1");
+    await user.click(screen.getByRole("button", { name: "Delete tier 1" }));
+
+    await screen.findByRole("dialog");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(toastSuccess).not.toHaveBeenCalled();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("deletes tier and shows success toast when confirmed", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        tierRows: [createTierRow()],
+        tierDeleteResult: {
+          data: { building_blueprint_id: BLUEPRINT_ID, id: TIER_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderEditor({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Tier 1");
+    await user.click(screen.getByRole("button", { name: "Delete tier 1" }));
+
+    await screen.findByRole("dialog");
+    await user.click(screen.getByRole("button", { name: "Delete tier" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith("Tier deleted.", undefined);
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
 });
 
 function renderEditor({
