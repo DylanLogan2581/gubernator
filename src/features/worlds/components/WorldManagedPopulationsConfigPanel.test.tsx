@@ -1,9 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { WorldManagedPopulationsConfigPanel } from "./WorldManagedPopulationsConfigPanel";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => <a className={className}>{children}</a>,
+}));
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -131,6 +142,35 @@ describe("WorldManagedPopulationsConfigPanel", () => {
     await screen.findByText("Cattle");
     expect(await screen.findByText(/Cattle Husbandry/)).toBeDefined();
     expect(await screen.findByText(/Cattle Culling/)).toBeDefined();
+  });
+
+  it("shows empty state with create link when no husbandry or culling jobs exist in create form", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        husbandryJobRows: [],
+        cullingJobRows: [],
+        populationTypeRows: [],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Managed Population Types" });
+    await user.click(
+      screen.getByRole("button", { name: "Add population type" }),
+    );
+
+    await screen.findByRole("heading", { name: "New managed population type" });
+    expect(screen.getByText("No husbandry jobs yet")).toBeDefined();
+    expect(screen.getByText("Create husbandry job")).toBeDefined();
+    expect(screen.getByText("No culling jobs yet")).toBeDefined();
+    expect(screen.getByText("Create culling job")).toBeDefined();
+    expect(
+      screen.queryByRole("combobox", { name: "Husbandry job" }),
+    ).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Culling job" })).toBeNull();
   });
 
   it("shows trashed population types when trash view is toggled", async () => {
