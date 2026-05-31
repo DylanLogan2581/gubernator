@@ -6,6 +6,8 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import { parseJobType } from "../utils/parseJobType";
+
 import { jobsQueryKeys } from "./jobsQueryKeys";
 
 import type { JobDefinition, JobIoEntry, JobType } from "../types/jobTypes";
@@ -224,7 +226,7 @@ function toJob(row: JobRow): JobDefinition {
     id: row.id,
     inputsJson: row.inputs_json.map(toJobIoEntry),
     isTrashed: row.is_trashed,
-    jobType: row.job_type as JobType,
+    jobType: parseJobType(row.job_type),
     linkedDepositTypeId: row.linked_deposit_type_id,
     linkedManagedPopulationTypeId: row.linked_managed_population_type_id,
     name: row.name,
