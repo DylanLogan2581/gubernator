@@ -781,19 +781,30 @@ function CreateBlueprintForm({
         ) : null}
       </div>
 
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending || showAddTierForm}>
-          Create
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={onCancel}
-        >
-          Cancel
-        </Button>
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isPending || showAddTierForm}
+          >
+            Create
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+        </div>
+        {showAddTierForm ? (
+          <p className="text-sm text-muted-foreground">
+            Finish or cancel the tier draft first.
+          </p>
+        ) : null}
       </div>
     </form>
   );
