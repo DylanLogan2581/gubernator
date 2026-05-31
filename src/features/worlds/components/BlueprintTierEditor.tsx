@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
@@ -381,7 +381,7 @@ function TierRow({
               disabled={isDeleting}
               onClick={onDelete}
             >
-              <X aria-hidden="true" className="text-destructive" />
+              <Trash2 aria-hidden="true" className="text-destructive" />
               <span className="sr-only">Delete tier {tier.tierNumber}</span>
             </Button>
           </div>
