@@ -167,21 +167,23 @@ function WorldNamingConfigPanelContent({
           noValidate
           onSubmit={handleSubmit}
         >
-          {showEmptyPoolWarning ? (
-            <div
-              role="alert"
-              className="flex items-start gap-2 rounded-md border border-warning-foreground/20 bg-warning px-4 py-3 text-sm text-warning-foreground"
-            >
-              <AlertTriangle
-                aria-hidden="true"
-                className="mt-0.5 h-4 w-4 shrink-0"
-              />
-              <span>
-                One or more name pools are empty. Random NPC names may be blank
-                unless <strong>manual only</strong> is enabled.
-              </span>
-            </div>
-          ) : null}
+          <div className="min-h-[52px]">
+            {showEmptyPoolWarning ? (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-warning-foreground/20 bg-warning px-4 py-3 text-sm text-warning-foreground"
+              >
+                <AlertTriangle
+                  aria-hidden="true"
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                />
+                <span>
+                  One or more name pools are empty. Random NPC names may be
+                  blank unless <strong>manual only</strong> is enabled.
+                </span>
+              </div>
+            ) : null}
+          </div>
 
           <PoolEditor
             label="Male name pool"
