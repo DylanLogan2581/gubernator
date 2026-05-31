@@ -1,10 +1,11 @@
-import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
+import { type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
 import { JOB_SELECT, toJob, type JobRow } from "./jobRow";
 import { jobsQueryKeys } from "./jobsQueryKeys";
@@ -45,9 +46,9 @@ export function jobsByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): JobsByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getJobsByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getJobsByWorld(c, worldId),
     queryKey: jobsQueryKeys.byWorld(worldId),
   });
 }
@@ -56,9 +57,9 @@ export function activeJobsByWorldQueryOptions(
   worldId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): ActiveJobsByWorldQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getActiveJobsByWorld(client, worldId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getActiveJobsByWorld(c, worldId),
     queryKey: jobsQueryKeys.activeByWorld(worldId),
   });
 }
@@ -68,9 +69,9 @@ export function jobsByTypeQueryOptions(
   jobType: JobType,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): JobsByTypeQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getJobsByType(client, worldId, jobType),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getJobsByType(c, worldId, jobType),
     queryKey: jobsQueryKeys.byType(worldId, jobType),
   });
 }
@@ -79,9 +80,9 @@ export function jobByIdQueryOptions(
   jobId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): JobDetailQueryOptions {
-  // eslint-disable-next-line @tanstack/query/exhaustive-deps
-  return queryOptions({
-    queryFn: () => getJobById(client, jobId),
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getJobById(c, jobId),
     queryKey: jobsQueryKeys.detail(jobId),
   });
 }
