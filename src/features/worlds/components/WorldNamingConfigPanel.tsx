@@ -10,6 +10,7 @@ import { useState, type FormEvent, type JSX } from "react";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
+import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -102,8 +103,14 @@ function WorldNamingConfigPanelContent({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    const sanitizedConfig: WorldNamingConfig = {
+      ...draftConfig,
+      female_names: sanitizePoolEntries(draftConfig.female_names),
+      male_names: sanitizePoolEntries(draftConfig.male_names),
+    };
+    setDraftConfig(sanitizedConfig);
     saveMutation.mutate(
-      { config: draftConfig, worldId },
+      { config: sanitizedConfig, worldId },
       {
         onError: (error) => {
           notifyMutationError(
