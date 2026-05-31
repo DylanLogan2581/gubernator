@@ -12,6 +12,7 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { toSnakeCaseEntries } from "@/lib/toSnakeCaseEntries";
 import type { Json } from "@/types/database";
 
 import {
@@ -537,12 +538,10 @@ async function deleteTier(
 }
 
 function toCostJson(entries: readonly TierCostEntry[]): Json {
-  return entries.map(
-    (e): Record<string, Json> => ({
-      amount: e.amount,
-      resource_id: e.resourceId,
-    }),
-  );
+  return toSnakeCaseEntries(entries, {
+    amount: "amount",
+    resourceId: "resource_id",
+  });
 }
 
 function toEffectJson(effects: readonly TierEffect[]): Json {

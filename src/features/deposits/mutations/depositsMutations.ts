@@ -3,6 +3,7 @@ import { buildTrashLifecycleMutations } from "@/lib/buildTrashLifecycleMutations
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
+import { toSnakeCaseEntries } from "@/lib/toSnakeCaseEntries";
 import type { Json } from "@/types/database";
 
 import {
@@ -314,12 +315,10 @@ async function hardDeleteDepositType(
 }
 
 function toWorkerInputsJson(entries: readonly WorkerInputEntry[]): Json {
-  return entries.map(
-    (e): Record<string, Json> => ({
-      amount_per_worker: e.amountPerWorker,
-      resource_id: e.resourceId,
-    }),
-  );
+  return toSnakeCaseEntries(entries, {
+    amountPerWorker: "amount_per_worker",
+    resourceId: "resource_id",
+  });
 }
 
 function parseInput<TSchema extends z.ZodTypeAny>(
