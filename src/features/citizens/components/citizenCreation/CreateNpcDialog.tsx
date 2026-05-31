@@ -3,6 +3,7 @@ import { Save, Shuffle, UserPlus, Wand2, X } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { DialogShell } from "@/components/shared/DialogShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -197,7 +198,7 @@ export function CreateNpcDialog({
   const fieldError = kinshipError;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
+    <DialogShell>
       <form
         aria-labelledby={titleId}
         aria-modal="true"
@@ -404,7 +405,7 @@ export function CreateNpcDialog({
           </Button>
         </div>
       </form>
-    </div>
+    </DialogShell>
   );
 }
 
