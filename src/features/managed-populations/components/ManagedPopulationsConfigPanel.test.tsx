@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WorldManagedPopulationsConfigPanel } from "./WorldManagedPopulationsConfigPanel";
+import { ManagedPopulationsConfigPanel } from "./ManagedPopulationsConfigPanel";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -44,7 +44,7 @@ const CULLING_JOB_ID = "00000000-0000-0000-0000-000000000004";
 const HUSBANDRY_JOB_ID_2 = "00000000-0000-0000-0000-000000000005";
 const CULLING_JOB_ID_2 = "00000000-0000-0000-0000-000000000006";
 
-describe("WorldManagedPopulationsConfigPanel", () => {
+describe("ManagedPopulationsConfigPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
@@ -834,7 +834,7 @@ function renderPanel({
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <WorldManagedPopulationsConfigPanel
+      <ManagedPopulationsConfigPanel
         canAdmin={canAdmin}
         isArchived={isArchived}
         worldId={WORLD_ID}
