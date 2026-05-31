@@ -12,6 +12,10 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  ResourceAmountListEditor,
+  type ResourceAmountEntry,
+} from "@/components/shared/ResourceAmountListEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,13 +32,9 @@ import {
   type CreateDepositTypeInput,
   type DepositType,
   type UpdateDepositTypeInput,
-  type WorkerInputEntry,
 } from "@/features/deposits";
 import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
-import {
-  activeResourcesByWorldQueryOptions,
-  type Resource,
-} from "@/features/resources";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -484,7 +484,7 @@ function CreateDepositTypeForm({
   const [slugEdited, setSlugEdited] = useState(false);
   const [jobId, setJobId] = useState("");
   const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState("1");
-  const [workerInputs, setWorkerInputs] = useState<WorkerInputEntry[]>([]);
+  const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>([]);
   const [fieldErrors, setFieldErrors] = useState<DepositTypeFieldErrors>({});
   const [jobLinkError, setJobLinkError] = useState<string | undefined>(
     undefined,
@@ -526,7 +526,13 @@ function CreateDepositTypeForm({
       outputUnitsPerWorker:
         outputUnitsPerWorker !== "" ? parseInt(outputUnitsPerWorker, 10) : 0,
       slug,
-      workerInputsJson: workerInputs.length > 0 ? workerInputs : undefined,
+      workerInputsJson:
+        workerInputs.length > 0
+          ? workerInputs.map((e) => ({
+              amountPerWorker: parseFloat(e.amount),
+              resourceId: e.resourceId,
+            }))
+          : undefined,
       worldId,
     };
 
@@ -657,10 +663,13 @@ function CreateDepositTypeForm({
             </p>
           ) : null}
         </label>
-        <WorkerInputsEditor
+        <ResourceAmountListEditor
+          addLabel="Add input"
+          amountLabel="amount per worker"
           disabled={isPending}
+          entries={workerInputs}
+          label="Worker inputs"
           resources={resources}
-          workerInputs={workerInputs}
           onChange={setWorkerInputs}
         />
       </div>
@@ -715,9 +724,12 @@ function EditDepositTypeForm({
   const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState(
     String(depositType.outputUnitsPerWorker),
   );
-  const [workerInputs, setWorkerInputs] = useState<WorkerInputEntry[]>([
-    ...depositType.workerInputsJson,
-  ]);
+  const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>(
+    depositType.workerInputsJson.map((e) => ({
+      amount: String(e.amountPerWorker),
+      resourceId: e.resourceId,
+    })),
+  );
   const [fieldErrors, setFieldErrors] = useState<DepositTypeFieldErrors>({});
   const [jobLinkError, setJobLinkError] = useState<string | undefined>(
     undefined,
@@ -757,7 +769,10 @@ function EditDepositTypeForm({
           ? parseInt(outputUnitsPerWorker, 10)
           : undefined,
       slug,
-      workerInputsJson: workerInputs,
+      workerInputsJson: workerInputs.map((e) => ({
+        amountPerWorker: parseFloat(e.amount),
+        resourceId: e.resourceId,
+      })),
       worldId,
     };
 
@@ -915,10 +930,13 @@ function EditDepositTypeForm({
             </p>
           ) : null}
         </label>
-        <WorkerInputsEditor
+        <ResourceAmountListEditor
+          addLabel="Add input"
+          amountLabel="amount per worker"
           disabled={isPending}
+          entries={workerInputs}
+          label="Worker inputs"
           resources={resources}
-          workerInputs={workerInputs}
           onChange={setWorkerInputs}
         />
       </div>
@@ -955,122 +973,6 @@ function EditDepositTypeForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function WorkerInputsEditor({
-  disabled,
-  resources,
-  workerInputs,
-  onChange,
-}: {
-  readonly disabled: boolean;
-  readonly resources: readonly Resource[];
-  readonly workerInputs: WorkerInputEntry[];
-  readonly onChange: (inputs: WorkerInputEntry[]) => void;
-}): JSX.Element {
-  const availableResources = resources.filter((r) => !r.isTrashed);
-
-  function handleAdd(): void {
-    if (availableResources.length === 0) return;
-    const usedIds = new Set(workerInputs.map((wi) => wi.resourceId));
-    const firstUnused = availableResources.find((r) => !usedIds.has(r.id));
-    if (firstUnused === undefined) return;
-    onChange([
-      ...workerInputs,
-      { amountPerWorker: 1, resourceId: firstUnused.id },
-    ]);
-  }
-
-  function handleRemove(index: number): void {
-    onChange(workerInputs.filter((_, i) => i !== index));
-  }
-
-  function handleResourceChange(index: number, resourceId: string): void {
-    onChange(
-      workerInputs.map((wi, i) => (i === index ? { ...wi, resourceId } : wi)),
-    );
-  }
-
-  function handleAmountChange(index: number, value: string): void {
-    const parsed = parseFloat(value);
-    if (!isNaN(parsed) && parsed >= 0) {
-      onChange(
-        workerInputs.map((wi, i) =>
-          i === index ? { ...wi, amountPerWorker: parsed } : wi,
-        ),
-      );
-    }
-  }
-
-  return (
-    <fieldset className="grid gap-2">
-      <div className="flex items-center justify-between">
-        <legend className="text-sm text-muted-foreground">Worker inputs</legend>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={
-            disabled ||
-            availableResources.length === 0 ||
-            workerInputs.length >= availableResources.length
-          }
-          onClick={handleAdd}
-        >
-          <Plus aria-hidden="true" />
-          Add input
-        </Button>
-      </div>
-      {workerInputs.length > 0 ? (
-        <ul className="grid gap-2">
-          {workerInputs.map((wi, index) => (
-            <li key={index} className="flex items-center gap-2">
-              <NativeSelect
-                aria-label={`Worker input ${String(index + 1)} resource`}
-                className="flex-1"
-                disabled={disabled}
-                value={wi.resourceId}
-                onChange={(e) => {
-                  handleResourceChange(index, e.currentTarget.value);
-                }}
-              >
-                {sortByName(availableResources).map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </NativeSelect>
-              <Input
-                aria-label={`Worker input ${String(index + 1)} amount per worker`}
-                className="w-24 shrink-0"
-                disabled={disabled}
-                inputMode="decimal"
-                placeholder="1"
-                value={String(wi.amountPerWorker)}
-                onChange={(e) => {
-                  handleAmountChange(index, e.currentTarget.value);
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                aria-label={`Remove worker input ${String(index + 1)}`}
-                disabled={disabled}
-                onClick={() => {
-                  handleRemove(index);
-                }}
-              >
-                <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-xs text-muted-foreground">No worker inputs.</p>
-      )}
-    </fieldset>
   );
 }
 

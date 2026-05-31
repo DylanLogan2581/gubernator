@@ -608,7 +608,7 @@ describe("WorldJobsConfigPanel", () => {
     ).toBeDefined();
 
     await user.click(
-      screen.getByRole("button", { name: "Remove output entry 1" }),
+      screen.getByRole("button", { name: "Remove Outputs entry 1" }),
     );
 
     expect(

@@ -11,6 +11,10 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  ResourceAmountListEditor,
+  type ResourceAmountEntry,
+} from "@/components/shared/ResourceAmountListEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,14 +40,10 @@ import {
   activeManagedPopulationTypesByWorldQueryOptions,
   type ManagedPopulationType,
 } from "@/features/managed-populations";
-import {
-  activeResourcesByWorldQueryOptions,
-  type Resource,
-} from "@/features/resources";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
-import { sortByName } from "@/lib/sortUtils";
 import { cn } from "@/lib/utils";
 
 const JOB_TYPES: readonly { label: string; value: JobType }[] = [
@@ -526,28 +526,24 @@ function JobCapacityDisplay({
 
 // Row type for the IO editor — uses raw string amounts to allow intermediate
 // invalid states that Zod catches on submit.
-type IoRow = {
-  amountRaw: string;
-  notes: string;
-  resourceId: string;
-};
-
-function entryToRow(entry: JobIoEntry): IoRow {
+function entryToRow(entry: JobIoEntry): ResourceAmountEntry {
   return {
-    amountRaw: String(entry.amountPerWorker),
+    amount: String(entry.amountPerWorker),
     notes: entry.notes ?? "",
     resourceId: entry.resourceId,
   };
 }
 
-function rowToEntry(row: IoRow): {
+function rowToEntry(row: ResourceAmountEntry): {
   amountPerWorker: number;
   notes?: string;
   resourceId: string;
 } {
   return {
-    amountPerWorker: parseFloat(row.amountRaw),
-    ...(row.notes.trim() !== "" ? { notes: row.notes.trim() } : {}),
+    amountPerWorker: parseFloat(row.amount),
+    ...(row.notes !== undefined && row.notes.trim() !== ""
+      ? { notes: row.notes.trim() }
+      : {}),
     resourceId: row.resourceId,
   };
 }
@@ -599,10 +595,10 @@ function EditJobForm({
   );
   const [linkedManagedPopulationTypeId, setLinkedManagedPopulationTypeId] =
     useState(job.linkedManagedPopulationTypeId ?? "");
-  const [inputRows, setInputRows] = useState<IoRow[]>(() =>
+  const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>(() =>
     job.inputsJson.map(entryToRow),
   );
-  const [outputRows, setOutputRows] = useState<IoRow[]>(() =>
+  const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>(() =>
     job.outputsJson.map(entryToRow),
   );
   const [fieldErrors, setFieldErrors] = useState<EditJobFieldErrors>({});
@@ -881,21 +877,27 @@ function EditJobForm({
 
         {job.jobType !== "construction" ? (
           <>
-            <JobIoEditor
+            <ResourceAmountListEditor
+              addLabel="Add input"
+              amountLabel="amount per worker"
               disabled={isPending}
+              entries={inputRows}
               fieldError={fieldErrors.inputsJson}
               label="Inputs"
               resources={resources}
-              rows={inputRows}
+              showNotes={true}
               onChange={setInputRows}
             />
 
-            <JobIoEditor
+            <ResourceAmountListEditor
+              addLabel="Add output"
+              amountLabel="amount per worker"
               disabled={isPending}
+              entries={outputRows}
               fieldError={fieldErrors.outputsJson}
               label="Outputs"
               resources={resources}
-              rows={outputRows}
+              showNotes={true}
               onChange={setOutputRows}
             />
           </>
@@ -934,157 +936,6 @@ function EditJobForm({
   );
 }
 
-function JobIoEditor({
-  disabled,
-  fieldError,
-  label,
-  onChange,
-  resources,
-  rows,
-}: {
-  readonly disabled: boolean;
-  readonly fieldError?: string;
-  readonly label: string;
-  readonly onChange: (rows: IoRow[]) => void;
-  readonly resources: readonly Resource[];
-  readonly rows: IoRow[];
-}): JSX.Element {
-  const addLabel = label === "Inputs" ? "Add input" : "Add output";
-
-  function handleAdd(): void {
-    if (resources.length === 0) return;
-    const usedIds = new Set(rows.map((r) => r.resourceId));
-    const firstUnused = resources.find((r) => !usedIds.has(r.id));
-    if (firstUnused === undefined) return;
-    onChange([
-      ...rows,
-      { amountRaw: "1", notes: "", resourceId: firstUnused.id },
-    ]);
-  }
-
-  function handleRemove(index: number): void {
-    onChange(rows.filter((_, i) => i !== index));
-  }
-
-  function handleResourceChange(index: number, resourceId: string): void {
-    onChange(rows.map((r, i) => (i === index ? { ...r, resourceId } : r)));
-  }
-
-  function handleAmountChange(index: number, value: string): void {
-    onChange(
-      rows.map((r, i) => (i === index ? { ...r, amountRaw: value } : r)),
-    );
-  }
-
-  function handleNotesChange(index: number, value: string): void {
-    onChange(rows.map((r, i) => (i === index ? { ...r, notes: value } : r)));
-  }
-
-  return (
-    <fieldset className="grid gap-2">
-      <div className="flex items-center justify-between">
-        <legend className="text-sm text-muted-foreground">{label}</legend>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={
-            disabled ||
-            resources.length === 0 ||
-            rows.length >= resources.length
-          }
-          onClick={handleAdd}
-        >
-          <Plus aria-hidden="true" />
-          {addLabel}
-        </Button>
-      </div>
-      {fieldError !== undefined ? (
-        <p className="text-xs text-destructive">{fieldError}</p>
-      ) : null}
-      {rows.length > 0 ? (
-        <ul className="grid gap-2">
-          {rows.map((row, index) => {
-            const isDeletedResource = !resources.some(
-              (r) => r.id === row.resourceId,
-            );
-            return (
-              <li key={index} className="grid gap-1">
-                <div className="flex items-center gap-2">
-                  <NativeSelect
-                    aria-invalid={isDeletedResource}
-                    aria-label={`${label} entry ${String(index + 1)} resource`}
-                    className="flex-1"
-                    disabled={disabled}
-                    value={isDeletedResource ? "" : row.resourceId}
-                    onChange={(e) => {
-                      handleResourceChange(index, e.currentTarget.value);
-                    }}
-                  >
-                    {isDeletedResource ? (
-                      <option value="" disabled>
-                        Deleted resource
-                      </option>
-                    ) : null}
-                    {sortByName(resources).map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                  <Input
-                    aria-label={`${label} entry ${String(index + 1)} amount per worker`}
-                    className="w-24 shrink-0"
-                    disabled={disabled}
-                    inputMode="decimal"
-                    placeholder="1"
-                    value={row.amountRaw}
-                    onChange={(e) => {
-                      handleAmountChange(index, e.currentTarget.value);
-                    }}
-                  />
-                  <Input
-                    aria-label={`${label} entry ${String(index + 1)} notes`}
-                    className="flex-1 min-w-0"
-                    disabled={disabled}
-                    placeholder="Notes (optional)"
-                    value={row.notes}
-                    onChange={(e) => {
-                      handleNotesChange(index, e.currentTarget.value);
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    aria-label={`Remove ${addLabel.slice(4)} entry ${String(index + 1)}`}
-                    disabled={disabled}
-                    onClick={() => {
-                      handleRemove(index);
-                    }}
-                  >
-                    <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-                {isDeletedResource ? (
-                  <p className="text-xs text-destructive">
-                    This resource has been deleted. Remove this row or select a
-                    different resource.
-                  </p>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          No {label.toLowerCase()}.
-        </p>
-      )}
-    </fieldset>
-  );
-}
-
 type FieldErrors = {
   readonly baseCapacity?: string;
   readonly inputsJson?: string;
@@ -1113,8 +964,8 @@ function CreateJobForm({
   const [slugEdited, setSlugEdited] = useState(false);
   const [baseCapacity, setBaseCapacity] = useState("");
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
-  const [inputRows, setInputRows] = useState<IoRow[]>([]);
-  const [outputRows, setOutputRows] = useState<IoRow[]>([]);
+  const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>([]);
+  const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>([]);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   function handleNameChange(value: string): void {
@@ -1366,20 +1217,26 @@ function CreateJobForm({
 
             {selectedType === "standard" ? (
               <>
-                <JobIoEditor
+                <ResourceAmountListEditor
+                  addLabel="Add input"
+                  amountLabel="amount per worker"
                   disabled={isPending}
+                  entries={inputRows}
                   fieldError={fieldErrors.inputsJson}
                   label="Inputs"
                   resources={resources}
-                  rows={inputRows}
+                  showNotes={true}
                   onChange={setInputRows}
                 />
-                <JobIoEditor
+                <ResourceAmountListEditor
+                  addLabel="Add output"
+                  amountLabel="amount per worker"
                   disabled={isPending}
+                  entries={outputRows}
                   fieldError={fieldErrors.outputsJson}
                   label="Outputs"
                   resources={resources}
-                  rows={outputRows}
+                  showNotes={true}
                   onChange={setOutputRows}
                 />
               </>
