@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { RotateCcw, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -105,10 +105,6 @@ function WorldPopulationRulesConfigPanelContent({
         },
       },
     );
-  }
-
-  function resetDraftRules(): void {
-    setDraftRules(initialRules);
   }
 
   return (
@@ -287,15 +283,6 @@ function WorldPopulationRulesConfigPanelContent({
             <Button type="submit" disabled={saveMutation.isPending}>
               <Save aria-hidden="true" />
               Save rules
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={resetDraftRules}
-              disabled={saveMutation.isPending}
-            >
-              <RotateCcw aria-hidden="true" />
-              Reset
             </Button>
           </div>
         </form>
