@@ -2354,6 +2354,19 @@ export type Database = {
           updated_count: number;
         }[];
       };
+      replace_trade_route: {
+        Args: {
+          p_new_payload: Json;
+          p_old_id: string;
+          p_proposing_citizen_id: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          new_route_id: string;
+          old_route_id: string;
+          origin_settlement_id: string;
+        }[];
+      };
       respond_to_bilateral: {
         Args: {
           p_from_nation_id: string;
