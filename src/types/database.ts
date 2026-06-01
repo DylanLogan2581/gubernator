@@ -2312,6 +2312,19 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      reject_trade_route_side: {
+        Args: {
+          p_rejector_citizen_id: string;
+          p_route_id: string;
+          p_side: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+          status: string;
+        }[];
+      };
       remove_deposit_instance: {
         Args: { p_deposit_instance_id: string };
         Returns: {

@@ -42,3 +42,10 @@ export type ApproveTradeRouteSideResult = {
   readonly status: TradeRouteStatus;
   readonly tradeRouteId: string;
 };
+
+export type RejectTradeRouteSideResult = {
+  readonly destinationSettlementId: string;
+  readonly originSettlementId: string;
+  readonly status: TradeRouteStatus;
+  readonly tradeRouteId: string;
+};
