@@ -1769,6 +1769,15 @@ export type Database = {
           unassigned_citizen_count: number;
         }[];
       };
+      cancel_trade_route: {
+        Args: { p_route_id: string };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+          status: string;
+        }[];
+      };
       citizen_role_scope_matches: {
         Args: {
           p_citizen_settlement_id: string;
