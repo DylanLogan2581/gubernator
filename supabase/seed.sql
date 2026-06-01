@@ -1918,25 +1918,18 @@ begin
 
     -- Trader. trader_capacity_per_worker is required for trader.
     insert into public.job_definitions (
-      id, world_id, name, slug, job_type, trader_capacity_per_worker,
-      inputs_json, outputs_json
+      id, world_id, name, slug, job_type, trader_capacity_per_worker
     )
     values
       (
         v_job_caravan_trader, v_world_id, 'Caravan Trader', 'caravan-trader',
-        'trader', 3,
-        jsonb_build_array(
-          jsonb_build_object('resource_id', v_res_grain::text, 'amount_per_worker', 1)
-        ),
-        '[]'::jsonb
+        'trader', 3
       )
     on conflict (world_id, slug) do update
     set
       name = excluded.name,
       job_type = excluded.job_type,
       trader_capacity_per_worker = excluded.trader_capacity_per_worker,
-      inputs_json = excluded.inputs_json,
-      outputs_json = excluded.outputs_json,
       is_trashed = false,
       updated_at = now();
 
@@ -1956,10 +1949,7 @@ begin
       (
         v_job_copper_miner, v_world_id, 'Copper Miner', 'copper-miner',
         'deposit', v_dep_copper_vein,
-        '[]'::jsonb,
-        jsonb_build_array(
-          jsonb_build_object('resource_id', v_res_copper_ingot::text, 'amount_per_worker', 1)
-        )
+        '[]'::jsonb, '[]'::jsonb
       ),
       (
         v_job_stone_quarryman, v_world_id, 'Stone Quarryman', 'stone-quarryman',

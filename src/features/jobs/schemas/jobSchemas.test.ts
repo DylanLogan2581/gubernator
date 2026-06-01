@@ -274,6 +274,112 @@ describe("createJobInputSchema — type-specific optional fields", () => {
   });
 });
 
+describe("createJobInputSchema — inputs/outputs are standard-only", () => {
+  it("rejects inputsJson on a construction job", () => {
+    const result = createJobInputSchema.safeParse({
+      baseCapacity: 5,
+      inputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+      jobType: "construction",
+      name: "Builder",
+      slug: "builder",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects outputsJson on a construction job", () => {
+    const result = createJobInputSchema.safeParse({
+      baseCapacity: 5,
+      jobType: "construction",
+      name: "Builder",
+      outputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+      slug: "builder",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects inputsJson on a trader job", () => {
+    const result = createJobInputSchema.safeParse({
+      inputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+      jobType: "trader",
+      name: "Merchant",
+      slug: "merchant",
+      traderCapacityPerWorker: 3,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects outputsJson on a trader job", () => {
+    const result = createJobInputSchema.safeParse({
+      jobType: "trader",
+      name: "Merchant",
+      outputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+      slug: "merchant",
+      traderCapacityPerWorker: 3,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects inputsJson on a deposit job", () => {
+    const result = createJobInputSchema.safeParse({
+      inputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+      jobType: "deposit",
+      linkedDepositTypeId: DEPOSIT_TYPE_ID,
+      name: "Miner",
+      slug: "miner",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects outputsJson on a deposit job", () => {
+    const result = createJobInputSchema.safeParse({
+      jobType: "deposit",
+      linkedDepositTypeId: DEPOSIT_TYPE_ID,
+      name: "Miner",
+      outputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+      slug: "miner",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects inputsJson on a husbandry job", () => {
+    const result = createJobInputSchema.safeParse({
+      inputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+      jobType: "husbandry",
+      linkedManagedPopulationTypeId: MANAGED_POP_TYPE_ID,
+      name: "Herdsman",
+      slug: "herdsman",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects outputsJson on a culling job", () => {
+    const result = createJobInputSchema.safeParse({
+      jobType: "culling",
+      linkedManagedPopulationTypeId: MANAGED_POP_TYPE_ID,
+      name: "Hunter",
+      outputsJson: [{ amountPerWorker: 1, resourceId: RESOURCE_ID }],
+      slug: "hunter",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("createJobInputSchema — common field validation", () => {
   it("rejects a blank name", () => {
     const result = createJobInputSchema.safeParse({
