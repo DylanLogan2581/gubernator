@@ -76,6 +76,7 @@ export function SettlementReadinessTable({
               isArchived={isArchived}
               item={item}
               key={item.id}
+              worldId={worldId}
               pendingAutoReadySettlementId={
                 setAutoReadyMutation.isPending
                   ? setAutoReadyMutation.variables.settlementId

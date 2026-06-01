@@ -51,15 +51,15 @@ This applies all migrations in `supabase/migrations` in order and seeds the data
 
 The local seed creates deterministic auth users and private worlds for super-admin, owner, and denied-access checks:
 
-| User                          | Password      | Behavior                                                                                               |
-| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| `superadmin@gubernator.local` | `password123` | Active super admin user. Owns `Local Development World` and has an explicit `world_admins` row for it. |
-| `test@gubernator.local`       | `password123` | Active normal user. Owns `Test User World`.                                                            |
-| `other@gubernator.local`      | `password123` | Active normal user. Owns `Restricted Development World`.                                               |
+| User                          | Password      | Behavior                                                                                         |
+| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------ |
+| `superadmin@gubernator.local` | `password123` | Active super admin user. Owns `Verdant Reach` and has an explicit `world_admins` row for it.     |
+| `test@gubernator.local`       | `password123` | Active normal user. Owns `Linnford Concord` and `Hollowmere Coast`; co-admin of `Verdant Reach`. |
+| `other@gubernator.local`      | `password123` | Active normal user. Owns `Greyfell March` and `Stormhold Vale`.                                  |
 
 These credentials are deterministic local seed data only. Do not use them in hosted Supabase projects or production data.
 
-The seeded worlds are private. Super admin can see and manage all seeded worlds; each normal user can see and manage only their own private world unless an explicit access rule grants more access.
+The seeded worlds are private. Super admin can see and manage all seeded worlds; each normal user can see and manage their owned worlds plus any world they are an explicit `world_admins` co-admin of, unless an additional access rule grants more access.
 
 ### 4. Start the dev server
 

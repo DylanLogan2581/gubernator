@@ -3,6 +3,7 @@ import { Save, UserPlus, X } from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { DialogShell } from "@/components/shared/DialogShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { availableUsersQueryOptions } from "@/features/auth";
@@ -138,7 +139,7 @@ export function CreatePlayerCharacterDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
+    <DialogShell>
       <form
         aria-labelledby={titleId}
         aria-modal="true"
@@ -269,7 +270,7 @@ export function CreatePlayerCharacterDialog({
           </Button>
         </div>
       </form>
-    </div>
+    </DialogShell>
   );
 }
 

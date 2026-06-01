@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { CancelledError, QueryClient } from "@tanstack/react-query";
 import {
   createMemoryHistory,
   createRouter,
@@ -223,6 +223,47 @@ describe("app shell auth controls", () => {
       ).toBeNull();
     });
     expect(queryClient.getQueriesData({ queryKey: ["worlds"] })).toEqual([]);
+  });
+});
+
+describe("root error boundary", () => {
+  beforeEach(() => {
+    requireSupabaseClient.mockReset();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: "user-1" } } },
+          error: null,
+        }),
+      }),
+    );
+  });
+
+  it("retries navigation silently when beforeLoad throws CancelledError", async () => {
+    const queryClient = createTestQueryClient();
+    const realEnsureQueryData = queryClient.ensureQueryData.bind(queryClient);
+
+    vi.spyOn(queryClient, "ensureQueryData")
+      .mockImplementation(realEnsureQueryData)
+      .mockRejectedValueOnce(new CancelledError());
+
+    renderAt("/worlds", queryClient);
+
+    await screen.findByRole("link", { name: "Worlds" });
+    expect(screen.queryByText("Something went wrong")).toBeNull();
+  });
+
+  it("renders an error state for non-CancelledError errors from beforeLoad", async () => {
+    const queryClient = createTestQueryClient();
+
+    vi.spyOn(queryClient, "ensureQueryData").mockRejectedValue(
+      new Error("Unexpected auth failure"),
+    );
+
+    renderAt("/worlds", queryClient);
+
+    expect(await screen.findByText("Something went wrong")).toBeDefined();
+    expect(screen.queryByRole("link", { name: "Worlds" })).toBeNull();
   });
 });
 

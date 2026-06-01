@@ -1,14 +1,19 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
-import { Save, UserPlus, Wand2, X } from "lucide-react";
+import { Save, Shuffle, UserPlus, Wand2, X } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { DialogShell } from "@/components/shared/DialogShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
+import {
+  worldNamingConfigQueryOptions,
+  worldNpcFlavorConfigQueryOptions,
+} from "@/features/worlds";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
+import { generateLocalId } from "@/lib/uid";
 
 import { createNpcMutationOptions } from "../../mutations/citizensMutations";
 import { citizensHaveCloseKinship } from "../../queries/citizenKinshipQueries";
@@ -21,6 +26,10 @@ import {
   validateParentPairing,
 } from "../../utils/citizenCreationUtils";
 import { emptyNpcFlavor, generateNpcFlavor } from "../../utils/npcFlavor";
+import {
+  generateNpcName,
+  relevantPoolIsEmpty,
+} from "../../utils/npcNameGeneration";
 
 import type { Citizen } from "../../types/citizenTypes";
 import type { NpcFlavor } from "../../utils/npcFlavor";
@@ -48,12 +57,13 @@ export function CreateNpcDialog({
   const [kinshipError, setKinshipError] = useState<string | undefined>(
     undefined,
   );
-  const [seed, setSeed] = useState(() => crypto.randomUUID());
+  const [seed, setSeed] = useState(() => generateLocalId());
   const [userFlavor, setUserFlavor] = useState<NpcFlavor | null>(null);
   const citizensQuery = useQuery(
     citizensInSettlementQueryOptions(settlementId),
   );
   const flavorConfigQuery = useQuery(worldNpcFlavorConfigQueryOptions(worldId));
+  const namingConfigQuery = useQuery(worldNamingConfigQueryOptions(worldId));
   const mutation = useMutation(createNpcMutationOptions({ queryClient }));
 
   const generatedFlavor = useMemo(() => {
@@ -65,7 +75,7 @@ export function CreateNpcDialog({
   const flavor = userFlavor ?? generatedFlavor;
 
   function handleRegenerate(): void {
-    setSeed(crypto.randomUUID());
+    setSeed(generateLocalId());
     setUserFlavor(null);
   }
 
@@ -76,6 +86,37 @@ export function CreateNpcDialog({
   const parentChoices = (citizensQuery.data ?? []).filter(
     (citizen) => citizen.status === "alive",
   );
+
+  const namingConfig = namingConfigQuery.data;
+
+  const nameGenerationHint: string | null = (() => {
+    if (namingConfig === undefined) return null;
+    if (relevantPoolIsEmpty(namingConfig, fields.sex)) {
+      return "Name pool is empty. Add names in world naming settings.";
+    }
+    return null;
+  })();
+
+  const nameGenerationDisabled =
+    mutation.isPending ||
+    namingConfig === undefined ||
+    nameGenerationHint !== null;
+
+  function handleGenerateName(): void {
+    if (namingConfig === undefined) return;
+    const parentA = parentChoices.find((c) => c.id === fields.parentACitizenId);
+    const parentB = parentChoices.find((c) => c.id === fields.parentBCitizenId);
+    const name = generateNpcName({
+      config: namingConfig,
+      rng: createSeededRng(generateLocalId()),
+      sex: fields.sex !== "" ? fields.sex : null,
+      parentAName: parentA?.name ?? null,
+      parentBName: parentB?.name ?? null,
+    });
+    if (name !== "") {
+      setFields((current) => ({ ...current, name }));
+    }
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -157,7 +198,7 @@ export function CreateNpcDialog({
   const fieldError = kinshipError;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
+    <DialogShell>
       <form
         aria-labelledby={titleId}
         aria-modal="true"
@@ -187,32 +228,56 @@ export function CreateNpcDialog({
           </Button>
         </div>
 
-        <label className="grid gap-1 text-sm" htmlFor={nameId}>
-          <span className="text-muted-foreground">Name</span>
-          <Input
-            id={nameId}
-            disabled={mutation.isPending}
-            maxLength={textInputLimits.citizenNameMax}
-            required
-            value={fields.name}
-            onChange={(event) => {
-              const value = event.currentTarget.value;
-              setFields((current) => ({ ...current, name: value }));
-            }}
-          />
-        </label>
+        <div className="grid gap-1 text-sm">
+          <label className="text-muted-foreground" htmlFor={nameId}>
+            Name
+          </label>
+          <div className="flex gap-2">
+            <Input
+              id={nameId}
+              disabled={mutation.isPending}
+              maxLength={textInputLimits.citizenNameMax}
+              required
+              value={fields.name}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setFields((current) => ({ ...current, name: value }));
+              }}
+            />
+            <Button
+              aria-label="Generate name from world naming pools"
+              disabled={nameGenerationDisabled}
+              onClick={handleGenerateName}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Shuffle aria-hidden="true" />
+              Generate
+            </Button>
+          </div>
+          {nameGenerationHint !== null ? (
+            <p className="text-xs text-muted-foreground">
+              {nameGenerationHint}
+            </p>
+          ) : null}
+        </div>
 
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Sex</span>
-          <Input
+          <select
+            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
             disabled={mutation.isPending}
-            placeholder="Optional"
             value={fields.sex}
             onChange={(event) => {
               const value = event.currentTarget.value;
               setFields((current) => ({ ...current, sex: value }));
             }}
-          />
+          >
+            <option value=""></option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
         </label>
 
         <ParentField
@@ -340,7 +405,7 @@ export function CreateNpcDialog({
           </Button>
         </div>
       </form>
-    </div>
+    </DialogShell>
   );
 }
 
