@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -45,11 +45,20 @@ describe("ResourcesConfigPanel", () => {
     await screen.findByRole("heading", { name: "Resources" });
     await user.click(screen.getByRole("button", { name: "Add resource" }));
 
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Gold");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "gold");
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create resource",
+    });
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Gold",
+    );
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Slug" }),
+      "gold",
+    );
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -68,7 +77,11 @@ describe("ResourcesConfigPanel", () => {
 
     await screen.findByRole("heading", { name: "Resources" });
     await user.click(screen.getByRole("button", { name: "Add resource" }));
-    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create resource",
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     expect(await screen.findByText("Resource name is required.")).toBeDefined();
     expect(screen.getByText("Resource slug is required.")).toBeDefined();
@@ -84,13 +97,19 @@ describe("ResourcesConfigPanel", () => {
     await screen.findByRole("heading", { name: "Resources" });
     await user.click(screen.getByRole("button", { name: "Add resource" }));
 
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Gold");
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create resource",
+    });
     await user.type(
-      screen.getByRole("textbox", { name: "Base stockpile cap" }),
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Gold",
+    );
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Base stockpile cap" }),
       "not-a-number",
     );
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     expect(
       await screen.findByText(

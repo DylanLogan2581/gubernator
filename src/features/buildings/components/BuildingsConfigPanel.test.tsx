@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -122,11 +122,20 @@ describe("BuildingsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Buildings" });
     await user.click(screen.getByRole("button", { name: "Add blueprint" }));
 
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farmhouse");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "farmhouse");
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create blueprint",
+    });
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Farmhouse",
+    );
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Slug" }),
+      "farmhouse",
+    );
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(

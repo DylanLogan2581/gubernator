@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -104,11 +104,13 @@ describe("DepositsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Deposit Types" });
     await user.click(screen.getByRole("button", { name: "Add deposit type" }));
 
-    await screen.findByRole("heading", { name: "New deposit type" });
-    expect(screen.getByText("No deposit jobs yet")).toBeDefined();
-    expect(screen.getByText("Create deposit job")).toBeDefined();
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create deposit type",
+    });
+    expect(within(dialog).getByText("No deposit jobs yet")).toBeDefined();
+    expect(within(dialog).getByText("Create deposit job")).toBeDefined();
     expect(
-      screen.queryByRole("combobox", { name: "Linked deposit job" }),
+      within(dialog).queryByRole("combobox", { name: "Linked deposit job" }),
     ).toBeNull();
   });
 
@@ -199,16 +201,25 @@ describe("DepositsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Deposit Types" });
     await user.click(screen.getByRole("button", { name: "Add deposit type" }));
 
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Coal Seam");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "coal-seam");
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create deposit type",
+    });
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Coal Seam",
+    );
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Slug" }),
+      "coal-seam",
+    );
 
-    const jobSelect = screen.getByRole("combobox", {
+    const jobSelect = within(dialog).getByRole("combobox", {
       name: "Linked deposit job",
     });
     await user.selectOptions(jobSelect, JOB_ID);
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -281,17 +292,21 @@ describe("DepositsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Deposit Types" });
     await user.click(screen.getByRole("button", { name: "Add deposit type" }));
 
-    await screen.findByRole("heading", { name: "New deposit type" });
-    const jobSelect = screen.getByRole("combobox", {
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create deposit type",
+    });
+    const jobSelect = within(dialog).getByRole("combobox", {
       name: "Linked deposit job",
     });
     await user.selectOptions(jobSelect, JOB_ID);
 
     expect(
-      screen.getByText('This job is already linked to "Iron Ore".'),
+      within(dialog).getByText('This job is already linked to "Iron Ore".'),
     ).toBeDefined();
 
-    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+    expect(
+      within(dialog).getByRole("button", { name: "Create" }),
+    ).toBeDisabled();
   });
 
   it("shows inline error in edit form when job is already linked to a different deposit type", async () => {

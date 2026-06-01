@@ -147,12 +147,19 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Standard" }));
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farming");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "farming");
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(within(dialog).getByRole("radio", { name: "Standard" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Farming",
+    );
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Slug" }),
+      "farming",
+    );
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -180,18 +187,21 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Construction" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(
+      within(dialog).getByRole("radio", { name: "Construction" }),
+    );
     await user.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      within(dialog).getByRole("textbox", { name: "Name" }),
       "Build Wall",
     );
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
     await user.type(
-      screen.getByRole("textbox", { name: "Slug" }),
+      within(dialog).getByRole("textbox", { name: "Slug" }),
       "build-wall",
     );
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -219,12 +229,19 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Trader" }));
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Silk Road");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "silk-road");
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(within(dialog).getByRole("radio", { name: "Trader" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Silk Road",
+    );
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Slug" }),
+      "silk-road",
+    );
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -252,24 +269,25 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Deposit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(within(dialog).getByRole("radio", { name: "Deposit" }));
     await user.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      within(dialog).getByRole("textbox", { name: "Name" }),
       "Iron Mining",
     );
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
     await user.type(
-      screen.getByRole("textbox", { name: "Slug" }),
+      within(dialog).getByRole("textbox", { name: "Slug" }),
       "iron-mining",
     );
 
     expect(
-      screen.getByText(
+      within(dialog).getByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
     ).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -297,24 +315,25 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Husbandry" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(within(dialog).getByRole("radio", { name: "Husbandry" }));
     await user.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      within(dialog).getByRole("textbox", { name: "Name" }),
       "Sheep Herding",
     );
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
     await user.type(
-      screen.getByRole("textbox", { name: "Slug" }),
+      within(dialog).getByRole("textbox", { name: "Slug" }),
       "sheep-herding",
     );
 
     expect(
-      screen.getByText(
+      within(dialog).getByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
     ).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -342,24 +361,25 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Culling" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(within(dialog).getByRole("radio", { name: "Culling" }));
     await user.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      within(dialog).getByRole("textbox", { name: "Name" }),
       "Wolf Culling",
     );
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
     await user.type(
-      screen.getByRole("textbox", { name: "Slug" }),
+      within(dialog).getByRole("textbox", { name: "Slug" }),
       "wolf-culling",
     );
 
     expect(
-      screen.getByText(
+      within(dialog).getByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
     ).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -390,20 +410,28 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Standard" }));
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farming");
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(within(dialog).getByRole("radio", { name: "Standard" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Farming",
+    );
 
-    await user.click(screen.getByRole("button", { name: "Add input" }));
+    await user.click(within(dialog).getByRole("button", { name: "Add input" }));
     expect(
-      screen.getByRole("combobox", { name: "Inputs entry 1 resource" }),
+      within(dialog).getByRole("combobox", { name: "Inputs entry 1 resource" }),
     ).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Add output" }));
+    await user.click(
+      within(dialog).getByRole("button", { name: "Add output" }),
+    );
     expect(
-      screen.getByRole("combobox", { name: "Outputs entry 1 resource" }),
+      within(dialog).getByRole("combobox", {
+        name: "Outputs entry 1 resource",
+      }),
     ).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -432,18 +460,25 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Construction" }));
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(
+      within(dialog).getByRole("radio", { name: "Construction" }),
+    );
     await user.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      within(dialog).getByRole("textbox", { name: "Name" }),
       "Build Wall",
     );
 
-    expect(screen.queryByText("Inputs")).toBeNull();
-    expect(screen.queryByText("Outputs")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Add input" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Add output" })).toBeNull();
+    expect(within(dialog).queryByText("Inputs")).toBeNull();
+    expect(within(dialog).queryByText("Outputs")).toBeNull();
+    expect(
+      within(dialog).queryByRole("button", { name: "Add input" }),
+    ).toBeNull();
+    expect(
+      within(dialog).queryByRole("button", { name: "Add output" }),
+    ).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -472,17 +507,21 @@ describe("JobsConfigPanel", () => {
     await screen.findByRole("heading", { name: "Jobs" });
     await user.click(screen.getByRole("button", { name: "Add job" }));
 
-    await user.click(screen.getByRole("radio", { name: "Standard" }));
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Farming");
+    const dialog = await screen.findByRole("dialog", { name: "Create job" });
+    await user.click(within(dialog).getByRole("radio", { name: "Standard" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Farming",
+    );
 
-    await user.click(screen.getByRole("button", { name: "Add input" }));
+    await user.click(within(dialog).getByRole("button", { name: "Add input" }));
 
-    const amountInput = screen.getByRole("textbox", {
+    const amountInput = within(dialog).getByRole("textbox", {
       name: "Inputs entry 1 amount per worker",
     });
     await user.clear(amountInput);
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).not.toHaveBeenCalled();
