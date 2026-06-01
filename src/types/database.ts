@@ -2138,6 +2138,17 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      get_settlement_construction_project_counts: {
+        Args: { p_settlement_id: string };
+        Returns: {
+          building_blueprint_id: string;
+          construction_project_id: string;
+          current_count: number;
+          queue_position: number;
+          status: string;
+          target_tier_id: string;
+        }[];
+      };
       get_settlement_standard_job_counts: {
         Args: { p_settlement_id: string };
         Returns: {
@@ -2550,6 +2561,19 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      set_bulk_construction_assignment: {
+        Args: {
+          p_construction_project_id: string;
+          p_removal_strategy: string;
+          p_target_count: number;
+        };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
       };
       set_bulk_standard_job_assignment: {
         Args: {
