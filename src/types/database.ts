@@ -894,6 +894,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "notifications_trade_route_fkey";
+            columns: ["trade_route_id"];
+            isOneToOne: false;
+            referencedRelation: "trade_routes";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "notifications_transition_world_fkey";
             columns: ["generated_in_transition_id", "world_id"];
             isOneToOne: false;
@@ -1196,6 +1203,110 @@ export type Database = {
             columns: ["ready_set_by_citizen_id"];
             isOneToOne: false;
             referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      trade_routes: {
+        Row: {
+          created_at: string;
+          destination_approval_status: string;
+          destination_approved_by_citizen_id: string | null;
+          destination_settlement_id: string;
+          id: string;
+          origin_approval_status: string;
+          origin_approved_by_citizen_id: string | null;
+          origin_settlement_id: string;
+          pause_reason_last_transition: string | null;
+          proposed_by_citizen_id: string;
+          quantity_per_transition: number;
+          replacement_for_trade_route_id: string | null;
+          resource_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          destination_approval_status?: string;
+          destination_approved_by_citizen_id?: string | null;
+          destination_settlement_id: string;
+          id?: string;
+          origin_approval_status?: string;
+          origin_approved_by_citizen_id?: string | null;
+          origin_settlement_id: string;
+          pause_reason_last_transition?: string | null;
+          proposed_by_citizen_id: string;
+          quantity_per_transition: number;
+          replacement_for_trade_route_id?: string | null;
+          resource_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          destination_approval_status?: string;
+          destination_approved_by_citizen_id?: string | null;
+          destination_settlement_id?: string;
+          id?: string;
+          origin_approval_status?: string;
+          origin_approved_by_citizen_id?: string | null;
+          origin_settlement_id?: string;
+          pause_reason_last_transition?: string | null;
+          proposed_by_citizen_id?: string;
+          quantity_per_transition?: number;
+          replacement_for_trade_route_id?: string | null;
+          resource_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "trade_routes_destination_approved_by_citizen_id_fkey";
+            columns: ["destination_approved_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_destination_settlement_id_fkey";
+            columns: ["destination_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_origin_approved_by_citizen_id_fkey";
+            columns: ["origin_approved_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_origin_settlement_id_fkey";
+            columns: ["origin_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_proposed_by_citizen_id_fkey";
+            columns: ["proposed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_replacement_for_trade_route_id_fkey";
+            columns: ["replacement_for_trade_route_id"];
+            isOneToOne: false;
+            referencedRelation: "trade_routes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
             referencedColumns: ["id"];
           },
         ];
