@@ -1824,6 +1824,32 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      create_construction_project: {
+        Args: {
+          p_blueprint_id: string;
+          p_settlement_id: string;
+          p_target_tier_id: string;
+        };
+        Returns: {
+          activated_on_turn_number: number | null;
+          building_blueprint_id: string;
+          completed_in_transition_id: string | null;
+          created_at: string;
+          id: string;
+          progress_worker_turns: number;
+          queue_position: number;
+          settlement_id: string;
+          status: string;
+          target_tier_id: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "construction_projects";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       create_npc: {
         Args: {
           p_born_on_turn_number?: number;
