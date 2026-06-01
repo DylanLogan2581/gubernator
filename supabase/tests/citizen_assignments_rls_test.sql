@@ -100,6 +100,65 @@ values
     'alive'
   );
 
+-- job_definitions fixture: used for standard_job assignment tests.
+insert into
+  public.job_definitions (id, world_id, name, slug, job_type, base_capacity)
+values
+  (
+    'd6000000-0000-0000-0000-000000000001',
+    'd2000000-0000-0000-0000-000000000001',
+    'Assignments Test Job',
+    'assignments-test-job',
+    'standard',
+    10
+  );
+
+-- building_blueprint + tier + construction_project fixtures: used for the
+-- world-admin construction_project assignment test.
+insert into
+  public.building_blueprints (id, world_id, name, slug)
+values
+  (
+    'd7000000-0000-0000-0000-000000000001',
+    'd2000000-0000-0000-0000-000000000001',
+    'Assignments Blueprint',
+    'assignments-blueprint'
+  );
+
+insert into
+  public.building_blueprint_tiers (
+    id,
+    building_blueprint_id,
+    tier_number,
+    worker_turns_required
+  )
+values
+  (
+    'd8000000-0000-0000-0000-000000000001',
+    'd7000000-0000-0000-0000-000000000001',
+    1,
+    0
+  );
+
+insert into
+  public.construction_projects (
+    id,
+    settlement_id,
+    building_blueprint_id,
+    target_tier_id,
+    status,
+    queue_position
+  )
+values
+  (
+    'd9000000-0000-0000-0000-000000000001',
+    'd4000000-0000-0000-0000-000000000001',
+    'd7000000-0000-0000-0000-000000000001',
+    'd8000000-0000-0000-0000-000000000001',
+    'queued',
+    1
+  );
+
 -- ===========================================================================
 -- TARGET SHAPE: each assignment_type requires its dedicated target column.
 -- These run as the migration owner so they exercise the table constraint,
@@ -125,7 +184,11 @@ select
     insert into public.citizen_assignments (
       citizen_id, assignment_type, job_id, construction_project_id, assigned_on_turn_number
     ) values (
-      'd5000000-0000-0000-0000-000000000001', 'standard_job', 1, 1, 1
+      'd5000000-0000-0000-0000-000000000001',
+      'standard_job',
+      'd6000000-0000-0000-0000-000000000001',
+      'd9000000-0000-0000-0000-000000000001',
+      1
     )
   $test$,
     '23514',
@@ -212,7 +275,10 @@ select
     insert into public.citizen_assignments (
       citizen_id, assignment_type, job_id, assigned_on_turn_number
     ) values (
-      'd5000000-0000-0000-0000-000000000001', 'standard_job', 1, 1
+      'd5000000-0000-0000-0000-000000000001',
+      'standard_job',
+      'd6000000-0000-0000-0000-000000000001',
+      1
     )
   $test$,
     'standard_job with only job_id is a valid assignment shape'
@@ -246,7 +312,10 @@ select
     insert into public.citizen_assignments (
       citizen_id, assignment_type, job_id, assigned_on_turn_number
     ) values (
-      'd5000000-0000-0000-0000-000000000002', 'standard_job', 2, 1
+      'd5000000-0000-0000-0000-000000000002',
+      'standard_job',
+      'd6000000-0000-0000-0000-000000000001',
+      1
     )
   $test$,
     '42501',
@@ -286,7 +355,10 @@ select
     insert into public.citizen_assignments (
       citizen_id, assignment_type, construction_project_id, assigned_on_turn_number
     ) values (
-      'd5000000-0000-0000-0000-000000000002', 'construction_project', 99, 1
+      'd5000000-0000-0000-0000-000000000002',
+      'construction_project',
+      'd9000000-0000-0000-0000-000000000001',
+      1
     )
   $test$,
     'world admin can insert a construction_project assignment'

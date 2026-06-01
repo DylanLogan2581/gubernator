@@ -107,36 +107,39 @@ export type Database = {
           assigned_on_turn_number: number;
           assignment_type: string;
           citizen_id: string;
-          construction_project_id: number | null;
+          construction_project_id: string | null;
           created_at: string;
-          deposit_instance_id: number | null;
-          job_id: number | null;
-          managed_population_instance_id: number | null;
-          trade_route_id: number | null;
+          deposit_instance_id: string | null;
+          job_id: string | null;
+          managed_population_instance_id: string | null;
+          trade_route_end: string | null;
+          trade_route_id: string | null;
           updated_at: string;
         };
         Insert: {
           assigned_on_turn_number: number;
           assignment_type: string;
           citizen_id: string;
-          construction_project_id?: number | null;
+          construction_project_id?: string | null;
           created_at?: string;
-          deposit_instance_id?: number | null;
-          job_id?: number | null;
-          managed_population_instance_id?: number | null;
-          trade_route_id?: number | null;
+          deposit_instance_id?: string | null;
+          job_id?: string | null;
+          managed_population_instance_id?: string | null;
+          trade_route_end?: string | null;
+          trade_route_id?: string | null;
           updated_at?: string;
         };
         Update: {
           assigned_on_turn_number?: number;
           assignment_type?: string;
           citizen_id?: string;
-          construction_project_id?: number | null;
+          construction_project_id?: string | null;
           created_at?: string;
-          deposit_instance_id?: number | null;
-          job_id?: number | null;
-          managed_population_instance_id?: number | null;
-          trade_route_id?: number | null;
+          deposit_instance_id?: string | null;
+          job_id?: string | null;
+          managed_population_instance_id?: string | null;
+          trade_route_end?: string | null;
+          trade_route_id?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -145,6 +148,41 @@ export type Database = {
             columns: ["citizen_id"];
             isOneToOne: true;
             referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_construction_project_id_fkey";
+            columns: ["construction_project_id"];
+            isOneToOne: false;
+            referencedRelation: "construction_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_deposit_instance_id_fkey";
+            columns: ["deposit_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_managed_population_instance_id_fkey";
+            columns: ["managed_population_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_trade_route_id_fkey";
+            columns: ["trade_route_id"];
+            isOneToOne: false;
+            referencedRelation: "trade_routes";
             referencedColumns: ["id"];
           },
         ];

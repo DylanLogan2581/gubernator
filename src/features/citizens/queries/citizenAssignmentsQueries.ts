@@ -35,12 +35,13 @@ type CitizenAssignmentRow = {
   readonly assigned_on_turn_number: number;
   readonly assignment_type: CitizenAssignmentType;
   readonly citizen_id: string;
-  readonly construction_project_id: number | null;
+  readonly construction_project_id: string | null;
   readonly created_at: string;
-  readonly deposit_instance_id: number | null;
-  readonly job_id: number | null;
-  readonly managed_population_instance_id: number | null;
-  readonly trade_route_id: number | null;
+  readonly deposit_instance_id: string | null;
+  readonly job_id: string | null;
+  readonly managed_population_instance_id: string | null;
+  readonly trade_route_end: string | null;
+  readonly trade_route_id: string | null;
   readonly updated_at: string;
 };
 
@@ -51,7 +52,7 @@ type CitizenAssignmentInSettlementRow = CitizenAssignmentRow & {
 };
 
 const CITIZEN_ASSIGNMENT_SELECT =
-  "citizen_id,assignment_type,job_id,construction_project_id,deposit_instance_id,managed_population_instance_id,trade_route_id,assigned_on_turn_number,created_at,updated_at";
+  "citizen_id,assignment_type,job_id,construction_project_id,deposit_instance_id,managed_population_instance_id,trade_route_id,trade_route_end,assigned_on_turn_number,created_at,updated_at";
 
 const CITIZEN_ASSIGNMENT_IN_SETTLEMENT_SELECT = `${CITIZEN_ASSIGNMENT_SELECT},citizens!inner(settlement_id)`;
 
@@ -124,6 +125,7 @@ export function toCitizenAssignment(
     depositInstanceId: row.deposit_instance_id,
     jobId: row.job_id,
     managedPopulationInstanceId: row.managed_population_instance_id,
+    tradeRouteEnd: row.trade_route_end,
     tradeRouteId: row.trade_route_id,
     updatedAt: row.updated_at,
   };
