@@ -20,17 +20,24 @@ export {
   isRejectTradeRouteSideMutationError,
   rejectTradeRouteSideMutationOptions,
 } from "./mutations/rejectTradeRouteSideMutations";
+export {
+  ReplaceTradeRouteMutationError,
+  isReplaceTradeRouteMutationError,
+  replaceTradeRouteMutationOptions,
+} from "./mutations/replaceTradeRouteMutations";
 export { tradeRoutesQueryKeys } from "./queries/tradeRoutesQueryKeys";
 export { tradeRoutesForSettlementQueryOptions } from "./queries/tradeRoutesQueries";
 export { approveTradeRouteSideInputSchema } from "./schemas/approveTradeRouteSideSchemas";
 export { cancelTradeRouteInputSchema } from "./schemas/cancelTradeRouteSchemas";
 export { proposeTradeRouteInputSchema } from "./schemas/proposeTradeRouteSchemas";
 export { rejectTradeRouteSideInputSchema } from "./schemas/rejectTradeRouteSideSchemas";
+export { replaceTradeRouteInputSchema } from "./schemas/replaceTradeRouteSchemas";
 
 export type { ApproveTradeRouteSideMutationIssue } from "./mutations/approveTradeRouteSideMutations";
 export type { CancelTradeRouteMutationIssue } from "./mutations/cancelTradeRouteMutations";
 export type { ProposeTradeRouteMutationIssue } from "./mutations/proposeTradeRouteMutations";
 export type { RejectTradeRouteSideMutationIssue } from "./mutations/rejectTradeRouteSideMutations";
+export type { ReplaceTradeRouteMutationIssue } from "./mutations/replaceTradeRouteMutations";
 export type {
   ApproveTradeRouteSideInput,
   ApproveTradeRouteSideValues,
@@ -48,10 +55,15 @@ export type {
   RejectTradeRouteSideValues,
 } from "./schemas/rejectTradeRouteSideSchemas";
 export type {
+  ReplaceTradeRouteInput,
+  ReplaceTradeRouteValues,
+} from "./schemas/replaceTradeRouteSchemas";
+export type {
   ApproveTradeRouteSideResult,
   CancelTradeRouteResult,
   ProposeTradeRouteResult,
   RejectTradeRouteSideResult,
+  ReplaceTradeRouteResult,
   TradeRoute,
   TradeRouteApprovalStatus,
   TradeRouteStatus,

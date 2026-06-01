@@ -56,3 +56,10 @@ export type CancelTradeRouteResult = {
   readonly status: TradeRouteStatus;
   readonly tradeRouteId: string;
 };
+
+export type ReplaceTradeRouteResult = {
+  readonly destinationSettlementId: string;
+  readonly newTradeRouteId: string;
+  readonly oldTradeRouteId: string;
+  readonly originSettlementId: string;
+};
