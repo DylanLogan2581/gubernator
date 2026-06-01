@@ -368,6 +368,102 @@ export type Database = {
           },
         ];
       };
+      deposit_instance_resources: {
+        Row: {
+          created_at: string;
+          deposit_instance_id: string;
+          id: string;
+          initial_quantity: number;
+          remaining_quantity: number;
+          resource_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          deposit_instance_id: string;
+          id?: string;
+          initial_quantity: number;
+          remaining_quantity: number;
+          resource_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          deposit_instance_id?: string;
+          id?: string;
+          initial_quantity?: number;
+          remaining_quantity?: number;
+          resource_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deposit_instance_resources_deposit_instance_id_fkey";
+            columns: ["deposit_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "deposit_instance_resources_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      deposit_instances: {
+        Row: {
+          created_at: string;
+          deposit_type_id: string;
+          discovered_by_event_id: string | null;
+          id: string;
+          max_workers: number | null;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          deposit_type_id: string;
+          discovered_by_event_id?: string | null;
+          id?: string;
+          max_workers?: number | null;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          deposit_type_id?: string;
+          discovered_by_event_id?: string | null;
+          id?: string;
+          max_workers?: number | null;
+          name?: string;
+          settlement_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deposit_instances_deposit_type_id_fkey";
+            columns: ["deposit_type_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "deposit_instances_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deposit_types: {
         Row: {
           created_at: string;
