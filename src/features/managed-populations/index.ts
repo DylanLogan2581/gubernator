@@ -8,6 +8,11 @@ export {
   isCreateManagedPopulationInstanceMutationError,
 } from "./mutations/createManagedPopulationInstanceMutations";
 export {
+  SetConfiguredCullQuantityMutationError,
+  isSetConfiguredCullQuantityMutationError,
+  setConfiguredCullQuantityMutationOptions,
+} from "./mutations/setConfiguredCullQuantityMutations";
+export {
   ManagedPopulationTypeMutationError,
   createManagedPopulationTypeMutationOptions,
   hardDeleteManagedPopulationTypeMutationOptions,
@@ -24,6 +29,7 @@ export {
 } from "./queries/managedPopulationsQueries";
 export { managedPopulationsQueryKeys } from "./queries/managedPopulationsQueryKeys";
 export { createManagedPopulationInstanceInputSchema } from "./schemas/createManagedPopulationInstanceSchemas";
+export { setConfiguredCullQuantityInputSchema } from "./schemas/setConfiguredCullQuantitySchemas";
 export {
   createManagedPopulationTypeInputSchema,
   hardDeleteManagedPopulationTypeInputSchema,
@@ -35,11 +41,16 @@ export {
 export { validateManagedPopulationTypeReferencesAgainstWorld } from "./utils/validateManagedPopulationTypeReferences";
 
 export type { CreateManagedPopulationInstanceMutationIssue } from "./mutations/createManagedPopulationInstanceMutations";
+export type { SetConfiguredCullQuantityMutationIssue } from "./mutations/setConfiguredCullQuantityMutations";
 export type { ManagedPopulationTypeMutationIssue } from "./mutations/managedPopulationsMutations";
 export type {
   CreateManagedPopulationInstanceInput,
   CreateManagedPopulationInstanceValues,
 } from "./schemas/createManagedPopulationInstanceSchemas";
+export type {
+  SetConfiguredCullQuantityInput,
+  SetConfiguredCullQuantityValues,
+} from "./schemas/setConfiguredCullQuantitySchemas";
 export type {
   CreateManagedPopulationTypeInput,
   CreateManagedPopulationTypeValues,
@@ -58,6 +69,7 @@ export type {
   CreateManagedPopulationInstanceResult,
   ManagedPopulationInstance,
   ManagedPopulationInstanceStatus,
+  SetConfiguredCullQuantityResult,
 } from "./types/managedPopulationInstanceTypes";
 export type {
   HardDeleteManagedPopulationTypeResult,

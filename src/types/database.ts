@@ -2471,6 +2471,13 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      set_configured_cull_quantity: {
+        Args: { p_instance_id: string; p_quantity: number };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
+      };
       set_deposit_instance_max_workers: {
         Args: {
           p_deposit_instance_id: string;
