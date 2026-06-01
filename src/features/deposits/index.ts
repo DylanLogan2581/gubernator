@@ -8,6 +8,11 @@ export {
   isCreateDepositInstanceMutationError,
 } from "./mutations/createDepositInstanceMutations";
 export {
+  SetDepositInstanceMaxWorkersMutationError,
+  isSetDepositInstanceMaxWorkersMutationError,
+  setDepositInstanceMaxWorkersMutationOptions,
+} from "./mutations/setDepositInstanceMaxWorkersMutations";
+export {
   DepositTypeMutationError,
   createDepositTypeMutationOptions,
   hardDeleteDepositTypeMutationOptions,
@@ -27,6 +32,7 @@ export {
   createDepositInstanceInputSchema,
   depositInstanceResourceEntrySchema,
 } from "./schemas/createDepositInstanceSchemas";
+export { setDepositInstanceMaxWorkersInputSchema } from "./schemas/setDepositInstanceMaxWorkersSchemas";
 export {
   createDepositTypeInputSchema,
   hardDeleteDepositTypeInputSchema,
@@ -39,12 +45,17 @@ export { validateDepositTypeReferencesAgainstWorld } from "./utils/validateDepos
 
 export type { CreateDepositInstanceMutationIssue } from "./mutations/createDepositInstanceMutations";
 export type { DepositTypeMutationIssue } from "./mutations/depositsMutations";
+export type { SetDepositInstanceMaxWorkersMutationIssue } from "./mutations/setDepositInstanceMaxWorkersMutations";
 export type {
   CreateDepositInstanceInput,
   CreateDepositInstanceValues,
   DepositInstanceResourceEntryInput,
   DepositInstanceResourceEntryValues,
 } from "./schemas/createDepositInstanceSchemas";
+export type {
+  SetDepositInstanceMaxWorkersInput,
+  SetDepositInstanceMaxWorkersValues,
+} from "./schemas/setDepositInstanceMaxWorkersSchemas";
 export type {
   CreateDepositTypeInput,
   CreateDepositTypeValues,
@@ -64,6 +75,7 @@ export type {
   DepositInstance,
   DepositInstanceResource,
   DepositInstanceStatus,
+  SetDepositInstanceMaxWorkersResult,
 } from "./types/depositInstanceTypes";
 export type {
   DepositType,

@@ -2438,6 +2438,17 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      set_deposit_instance_max_workers: {
+        Args: {
+          p_deposit_instance_id: string;
+          p_max_workers: number;
+          p_removal_strategy: string;
+        };
+        Returns: {
+          max_workers: number;
+          unassigned_citizen_ids: string[];
+        }[];
+      };
       set_settlement_auto_ready: {
         Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
         Returns: {
