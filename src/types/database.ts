@@ -297,6 +297,77 @@ export type Database = {
           },
         ];
       };
+      construction_projects: {
+        Row: {
+          activated_on_turn_number: number | null;
+          building_blueprint_id: string;
+          completed_in_transition_id: string | null;
+          created_at: string;
+          id: string;
+          progress_worker_turns: number;
+          queue_position: number;
+          settlement_id: string;
+          status: string;
+          target_tier_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          activated_on_turn_number?: number | null;
+          building_blueprint_id: string;
+          completed_in_transition_id?: string | null;
+          created_at?: string;
+          id?: string;
+          progress_worker_turns?: number;
+          queue_position: number;
+          settlement_id: string;
+          status: string;
+          target_tier_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          activated_on_turn_number?: number | null;
+          building_blueprint_id?: string;
+          completed_in_transition_id?: string | null;
+          created_at?: string;
+          id?: string;
+          progress_worker_turns?: number;
+          queue_position?: number;
+          settlement_id?: string;
+          status?: string;
+          target_tier_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "construction_projects_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_projects_completed_in_transition_id_fkey";
+            columns: ["completed_in_transition_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_projects_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_projects_target_tier_id_fkey";
+            columns: ["target_tier_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprint_tiers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deposit_types: {
         Row: {
           created_at: string;
