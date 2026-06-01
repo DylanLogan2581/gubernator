@@ -5,10 +5,14 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
 import { settlementsQueryKeys } from "./settlementsQueryKeys";
 
-import type { SettlementWithNation } from "../types/settlementTypes";
+import type {
+  SettlementSummary,
+  SettlementWithNation,
+} from "../types/settlementTypes";
 
 type SettlementDetailQueryKey = ReturnType<typeof settlementsQueryKeys.detail>;
 type SettlementDetailQueryOptions = UseQueryOptions<
@@ -63,6 +67,64 @@ async function getSettlementById(
   }
 
   return data === null ? null : toSettlementWithNation(data);
+}
+
+type SettlementSummaryRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly nation_id: string;
+  readonly nations: { readonly name: string };
+};
+
+const SETTLEMENT_SUMMARY_SELECT = "id,nation_id,name,nations!inner(name)";
+
+type SettlementsByWorldQueryKey = ReturnType<
+  typeof settlementsQueryKeys.byWorld
+>;
+type SettlementsByWorldQueryOptions = UseQueryOptions<
+  readonly SettlementSummary[],
+  AuthUiError,
+  readonly SettlementSummary[],
+  SettlementsByWorldQueryKey
+>;
+
+export function settlementsByWorldQueryOptions(
+  worldId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SettlementsByWorldQueryOptions {
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getSettlementsByWorld(c, worldId),
+    queryKey: settlementsQueryKeys.byWorld(worldId),
+  });
+}
+
+async function getSettlementsByWorld(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+): Promise<readonly SettlementSummary[]> {
+  const { data, error } = await client
+    .from("settlements")
+    .select(SETTLEMENT_SUMMARY_SELECT)
+    .eq("nations.world_id", worldId)
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .returns<SettlementSummaryRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toSettlementSummary);
+}
+
+function toSettlementSummary(row: SettlementSummaryRow): SettlementSummary {
+  return {
+    id: row.id,
+    name: row.name,
+    nationId: row.nation_id,
+    nationName: row.nations.name,
+  };
 }
 
 function toSettlementWithNation(

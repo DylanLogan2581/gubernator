@@ -18,3 +18,10 @@ export type SettlementNationSummary = {
 export type SettlementWithNation = Settlement & {
   readonly nation: SettlementNationSummary;
 };
+
+export type SettlementSummary = {
+  readonly id: string;
+  readonly name: string;
+  readonly nationId: string;
+  readonly nationName: string;
+};
