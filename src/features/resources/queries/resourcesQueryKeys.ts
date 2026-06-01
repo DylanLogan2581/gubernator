@@ -8,4 +8,10 @@ export const resourcesQueryKeys = {
     [...resourcesQueryKeys.all, "by-world", worldId] as const,
   detail: (resourceId: string) =>
     [...resourcesQueryKeys.all, "detail", resourceId] as const,
+  stockpilesBySettlement: (settlementId: string) =>
+    [
+      ...resourcesQueryKeys.all,
+      "stockpiles-by-settlement",
+      settlementId,
+    ] as const,
 } as const;

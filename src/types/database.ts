@@ -1662,7 +1662,32 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      settlement_stockpiles_view: {
+        Row: {
+          effective_cap: number | null;
+          is_system_resource: boolean | null;
+          quantity: number | null;
+          resource_id: string | null;
+          resource_name: string | null;
+          settlement_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_resource_stockpiles_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_resource_stockpiles_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Functions: {
       advance_world_turn_if_current: {
@@ -2358,6 +2383,18 @@ export type Database = {
           is_ready_current_turn: boolean;
           last_ready_at: string;
           ready_set_at: string;
+        }[];
+      };
+      set_settlement_stockpile_quantity: {
+        Args: {
+          p_quantity: number;
+          p_resource_id: string;
+          p_settlement_id: string;
+        };
+        Returns: {
+          quantity: number;
+          resource_id: string;
+          settlement_id: string;
         }[];
       };
       settlement_job_capacity: {
