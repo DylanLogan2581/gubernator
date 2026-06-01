@@ -48,6 +48,12 @@ export const citizensQueryKeys = {
     [...citizensQueryKeys.all, "settlement-job-counts", settlementId] as const,
   settlementList: (settlementId: string) =>
     [...citizensQueryKeys.all, "settlement-list", settlementId] as const,
+  settlementTargetAssignments: (settlementId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "settlement-target-assignments",
+      settlementId,
+    ] as const,
   unpairedAliveInWorld: (worldId: string) =>
     [...citizensQueryKeys.all, "unpaired-alive-in-world", worldId] as const,
 } as const;

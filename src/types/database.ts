@@ -2607,6 +2607,19 @@ export type Database = {
           unassigned_citizen_ids: string[];
         }[];
       };
+      set_per_target_assignment: {
+        Args: {
+          p_assignment_type: string;
+          p_citizen_ids: string[];
+          p_settlement_id: string;
+          p_target_id: string;
+          p_trade_route_end?: string;
+        };
+        Returns: {
+          assigned_count: number;
+          replaced_count: number;
+        }[];
+      };
       set_settlement_auto_ready: {
         Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
         Returns: {
