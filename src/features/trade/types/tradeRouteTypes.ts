@@ -49,3 +49,10 @@ export type RejectTradeRouteSideResult = {
   readonly status: TradeRouteStatus;
   readonly tradeRouteId: string;
 };
+
+export type CancelTradeRouteResult = {
+  readonly destinationSettlementId: string;
+  readonly originSettlementId: string;
+  readonly status: TradeRouteStatus;
+  readonly tradeRouteId: string;
+};
