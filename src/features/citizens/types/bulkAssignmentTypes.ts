@@ -13,3 +13,19 @@ export type BulkStandardJobAssignmentResult = {
   readonly before: number;
   readonly removedCitizenIds: readonly string[];
 };
+
+export type SettlementConstructionProjectCount = {
+  readonly constructionProjectId: string;
+  readonly status: string;
+  readonly queuePosition: number;
+  readonly currentCount: number;
+  readonly buildingBlueprintId: string;
+  readonly targetTierId: string;
+};
+
+export type BulkConstructionAssignmentResult = {
+  readonly after: number;
+  readonly addedCitizenIds: readonly string[];
+  readonly before: number;
+  readonly removedCitizenIds: readonly string[];
+};

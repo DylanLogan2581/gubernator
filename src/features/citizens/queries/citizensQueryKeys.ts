@@ -38,6 +38,12 @@ export const citizensQueryKeys = {
       "settlement-aggregate-stats",
       settlementId,
     ] as const,
+  settlementConstructionProjectCounts: (settlementId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "settlement-construction-project-counts",
+      settlementId,
+    ] as const,
   settlementJobCounts: (settlementId: string) =>
     [...citizensQueryKeys.all, "settlement-job-counts", settlementId] as const,
   settlementList: (settlementId: string) =>
