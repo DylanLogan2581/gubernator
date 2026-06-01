@@ -1857,6 +1857,32 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      create_deposit_instance: {
+        Args: {
+          p_deposit_type_id: string;
+          p_max_workers: number;
+          p_name: string;
+          p_resources: Json;
+          p_settlement_id: string;
+        };
+        Returns: {
+          created_at: string;
+          deposit_type_id: string;
+          discovered_by_event_id: string | null;
+          id: string;
+          max_workers: number | null;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "deposit_instances";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       create_npc: {
         Args: {
           p_born_on_turn_number?: number;
