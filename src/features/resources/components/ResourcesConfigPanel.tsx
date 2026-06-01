@@ -309,15 +309,23 @@ function ResourceRow({
             Edit
           </Button>
         ) : null}
-        {canEdit && !resource.isSystemResource ? (
+        {canEdit ? (
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label={`Move ${resource.name} to trash`}
-            title="Move to trash"
-            disabled={softDeleteMutation.isPending}
-            onClick={handleTrash}
+            aria-label={
+              resource.isSystemResource
+                ? `${resource.name} is a system resource and cannot be deleted`
+                : `Move ${resource.name} to trash`
+            }
+            title={
+              resource.isSystemResource
+                ? "System resources cannot be deleted"
+                : "Move to trash"
+            }
+            disabled={resource.isSystemResource || softDeleteMutation.isPending}
+            onClick={resource.isSystemResource ? undefined : handleTrash}
           >
             <Trash2 aria-hidden="true" />
           </Button>
@@ -582,20 +590,27 @@ function EditResourceForm({
             Cancel
           </Button>
         </div>
-        {!resource.isSystemResource ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={() => {
-              void handleTrash();
-            }}
-          >
-            <Trash2 aria-hidden="true" />
-            Move to trash
-          </Button>
-        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={resource.isSystemResource || isPending}
+          title={
+            resource.isSystemResource
+              ? "System resources cannot be deleted"
+              : undefined
+          }
+          onClick={
+            resource.isSystemResource
+              ? undefined
+              : () => {
+                  void handleTrash();
+                }
+          }
+        >
+          <Trash2 aria-hidden="true" />
+          Move to trash
+        </Button>
       </div>
     </form>
   );

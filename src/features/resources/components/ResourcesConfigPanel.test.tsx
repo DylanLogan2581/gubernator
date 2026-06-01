@@ -184,7 +184,7 @@ describe("ResourcesConfigPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("hides the Move to trash button for system resources", async () => {
+  it("shows the Move to trash button as disabled for system resources in the edit form", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -198,7 +198,9 @@ describe("ResourcesConfigPanel", () => {
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
     await screen.findByRole("heading", { name: "Edit resource" });
-    expect(screen.queryByRole("button", { name: "Move to trash" })).toBeNull();
+    const trashBtn = screen.getByRole("button", { name: "Move to trash" });
+    expect(trashBtn).toBeDefined();
+    expect((trashBtn as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("moves a non-system resource to trash via the edit form", async () => {
@@ -279,7 +281,7 @@ describe("ResourcesConfigPanel", () => {
     ).toBeNull();
   });
 
-  it("hides the inline trash button for system resources", async () => {
+  it("shows the inline trash button as disabled for system resources", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         resourceRows: [
@@ -291,9 +293,11 @@ describe("ResourcesConfigPanel", () => {
     renderPanel({ canAdmin: true, isArchived: false });
 
     await screen.findByText("Food");
-    expect(
-      screen.queryByRole("button", { name: "Move Food to trash" }),
-    ).toBeNull();
+    const trashBtn = screen.getByRole("button", {
+      name: "Food is a system resource and cannot be deleted",
+    });
+    expect(trashBtn).toBeDefined();
+    expect((trashBtn as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("shows trashed resources when trash view is toggled", async () => {
