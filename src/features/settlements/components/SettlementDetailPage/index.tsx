@@ -9,12 +9,14 @@ import {
 } from "@/features/buildings";
 import { CitizensPanel } from "@/features/citizens";
 import { SettlementDepositsPanel } from "@/features/deposits";
+import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
   type AccessContext,
 } from "@/features/permissions";
 import { SettlementStockpilesPanel } from "@/features/resources";
+import { SettlementTradeRoutesPanel } from "@/features/trade";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -306,6 +308,23 @@ function SettlementDetailLoaded({
         canAdmin={worldAccess.canAdmin}
         canManage={worldAccess.canManage}
         isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementManagedPopulationsPanel
+        canAdmin={worldAccess.canAdmin}
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementTradeRoutesPanel
+        canAdmin={worldAccess.canAdmin}
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        nationId={settlement.nationId}
         settlementId={settlement.id}
         worldId={worldId}
       />
