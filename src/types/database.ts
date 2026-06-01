@@ -799,6 +799,48 @@ export type Database = {
           },
         ];
       };
+      settlement_resource_stockpiles: {
+        Row: {
+          created_at: string;
+          id: string;
+          quantity: number;
+          resource_id: string;
+          settlement_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          quantity?: number;
+          resource_id: string;
+          settlement_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          quantity?: number;
+          resource_id?: string;
+          settlement_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_resource_stockpiles_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_resource_stockpiles_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlements: {
         Row: {
           auto_ready_enabled: boolean;
