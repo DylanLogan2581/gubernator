@@ -153,11 +153,8 @@ describe("JobsConfigPanel", () => {
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Farming",
     );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "farming",
-    );
+
+    expect(within(dialog).getByText("slug: farming")).toBeDefined();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -195,11 +192,6 @@ describe("JobsConfigPanel", () => {
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Build Wall",
     );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "build-wall",
-    );
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -235,11 +227,6 @@ describe("JobsConfigPanel", () => {
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Silk Road",
     );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "silk-road",
-    );
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -274,11 +261,6 @@ describe("JobsConfigPanel", () => {
     await user.type(
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Iron Mining",
-    );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "iron-mining",
     );
 
     expect(
@@ -321,11 +303,6 @@ describe("JobsConfigPanel", () => {
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Sheep Herding",
     );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "sheep-herding",
-    );
 
     expect(
       within(dialog).getByText(
@@ -366,11 +343,6 @@ describe("JobsConfigPanel", () => {
     await user.type(
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Wolf Culling",
-    );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "wolf-culling",
     );
 
     expect(

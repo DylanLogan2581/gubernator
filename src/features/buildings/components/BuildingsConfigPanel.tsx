@@ -19,6 +19,7 @@ import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { SlugHint } from "@/components/shared/SlugHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -545,8 +546,6 @@ function CreateBlueprintForm({
   readonly worldId: string;
 }): JSX.Element {
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
   const [description, setDescription] = useState("");
   const [gracePeriodTurns, setGracePeriodTurns] = useState("0");
   const [maxInstances, setMaxInstances] = useState("");
@@ -558,19 +557,9 @@ function CreateBlueprintForm({
   const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
   const tiersReady = resourcesQuery.isSuccess && jobsQuery.isSuccess;
 
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!slugEdited) {
-      setSlug(
-        toSlug(value, { maxLength: buildingInputLimits.blueprintSlugMax }),
-      );
-    }
-  }
-
-  function handleSlugChange(value: string): void {
-    setSlug(value);
-    setSlugEdited(value.length > 0);
-  }
+  const derivedSlug = toSlug(name, {
+    maxLength: buildingInputLimits.blueprintSlugMax,
+  });
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -583,7 +572,7 @@ function CreateBlueprintForm({
       maxInstancesPerSettlement:
         maxInstances !== "" ? parseInt(maxInstances, 10) : undefined,
       name,
-      slug,
+      slug: derivedSlug,
       worldId,
     };
 
@@ -646,31 +635,18 @@ function CreateBlueprintForm({
             <span className="text-muted-foreground">Name</span>
             <Input
               aria-invalid={fieldErrors.name !== undefined}
+              aria-label="Name"
               disabled={isPending}
               maxLength={buildingInputLimits.blueprintNameMax}
               value={name}
               onChange={(e) => {
-                handleNameChange(e.currentTarget.value);
+                setName(e.currentTarget.value);
               }}
             />
             {fieldErrors.name !== undefined ? (
               <p className="text-xs text-destructive">{fieldErrors.name}</p>
             ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Slug</span>
-            <Input
-              aria-invalid={fieldErrors.slug !== undefined}
-              disabled={isPending}
-              maxLength={buildingInputLimits.blueprintSlugMax}
-              value={slug}
-              onChange={(e) => {
-                handleSlugChange(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.slug !== undefined ? (
-              <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-            ) : null}
+            <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
           </label>
           <label className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Description</span>
@@ -1011,6 +987,11 @@ function EditBlueprintForm({
   const [name, setName] = useState(blueprint.name);
   const [slug, setSlug] = useState(blueprint.slug);
   const [description, setDescription] = useState(blueprint.description ?? "");
+
+  function handleNameChange(value: string): void {
+    setName(value);
+    setSlug(toSlug(value, { maxLength: buildingInputLimits.blueprintSlugMax }));
+  }
   const [gracePeriodTurns, setGracePeriodTurns] = useState(
     String(blueprint.gracePeriodTurns),
   );
@@ -1103,31 +1084,18 @@ function EditBlueprintForm({
           <span className="text-muted-foreground">Name</span>
           <Input
             aria-invalid={fieldErrors.name !== undefined}
+            aria-label="Name"
             disabled={isPending}
             maxLength={buildingInputLimits.blueprintNameMax}
             value={name}
             onChange={(e) => {
-              setName(e.currentTarget.value);
+              handleNameChange(e.currentTarget.value);
             }}
           />
           {fieldErrors.name !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Slug</span>
-          <Input
-            aria-invalid={fieldErrors.slug !== undefined}
-            disabled={isPending}
-            maxLength={buildingInputLimits.blueprintSlugMax}
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.slug !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-          ) : null}
+          <SlugHint slug={slug} error={fieldErrors.slug} />
         </label>
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Description</span>

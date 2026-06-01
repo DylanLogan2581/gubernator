@@ -16,6 +16,7 @@ import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
 } from "@/components/shared/ResourceAmountListEditor";
+import { SlugHint } from "@/components/shared/SlugHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -571,6 +572,12 @@ function EditJobForm({
 
   const [name, setName] = useState(job.name);
   const [slug, setSlug] = useState(job.slug);
+
+  function handleNameChange(value: string): void {
+    setName(value);
+    setSlug(toSlug(value, { maxLength: jobInputLimits.jobSlugMax }));
+  }
+
   const [baseCapacity, setBaseCapacity] = useState(
     job.baseCapacity !== null ? String(job.baseCapacity) : "",
   );
@@ -748,32 +755,18 @@ function EditJobForm({
           <span className="text-muted-foreground">Name</span>
           <Input
             aria-invalid={fieldErrors.name !== undefined}
+            aria-label="Name"
             disabled={isPending}
             maxLength={jobInputLimits.jobNameMax}
             value={name}
             onChange={(e) => {
-              setName(e.currentTarget.value);
+              handleNameChange(e.currentTarget.value);
             }}
           />
           {fieldErrors.name !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
-        </label>
-
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Slug</span>
-          <Input
-            aria-invalid={fieldErrors.slug !== undefined}
-            disabled={isPending}
-            maxLength={jobInputLimits.jobSlugMax}
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.slug !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-          ) : null}
+          <SlugHint slug={slug} error={fieldErrors.slug} />
         </label>
 
         {job.jobType === "standard" || job.jobType === "construction" ? (
@@ -949,25 +942,13 @@ function CreateJobForm({
   const resources = resourcesQuery.data ?? [];
   const [selectedType, setSelectedType] = useState<JobType | null>(null);
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
   const [baseCapacity, setBaseCapacity] = useState("");
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>([]);
   const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>([]);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!slugEdited) {
-      setSlug(toSlug(value, { maxLength: jobInputLimits.jobSlugMax }));
-    }
-  }
-
-  function handleSlugChange(value: string): void {
-    setSlug(value);
-    setSlugEdited(value.length > 0);
-  }
+  const derivedSlug = toSlug(name, { maxLength: jobInputLimits.jobSlugMax });
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -1014,7 +995,7 @@ function CreateJobForm({
           jobType: "standard",
           name,
           outputsJson,
-          slug,
+          slug: derivedSlug,
           worldId,
         };
         break;
@@ -1024,7 +1005,7 @@ function CreateJobForm({
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
           jobType: "construction",
           name,
-          slug,
+          slug: derivedSlug,
           worldId,
         };
         break;
@@ -1032,7 +1013,7 @@ function CreateJobForm({
         input = {
           jobType: "trader",
           name,
-          slug,
+          slug: derivedSlug,
           traderCapacityPerWorker:
             traderCapacityPerWorker !== ""
               ? parseInt(traderCapacityPerWorker, 10)
@@ -1045,7 +1026,7 @@ function CreateJobForm({
           jobType: "deposit",
           linkedDepositTypeId: undefined,
           name,
-          slug,
+          slug: derivedSlug,
           worldId,
         };
         break;
@@ -1055,7 +1036,7 @@ function CreateJobForm({
           jobType: selectedType,
           linkedManagedPopulationTypeId: undefined,
           name,
-          slug,
+          slug: derivedSlug,
           worldId,
         };
         break;
@@ -1151,31 +1132,18 @@ function CreateJobForm({
                 <span className="text-muted-foreground">Name</span>
                 <Input
                   aria-invalid={fieldErrors.name !== undefined}
+                  aria-label="Name"
                   disabled={isPending}
                   maxLength={jobInputLimits.jobNameMax}
                   value={name}
                   onChange={(e) => {
-                    handleNameChange(e.currentTarget.value);
+                    setName(e.currentTarget.value);
                   }}
                 />
                 {fieldErrors.name !== undefined ? (
                   <p className="text-xs text-destructive">{fieldErrors.name}</p>
                 ) : null}
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Slug</span>
-                <Input
-                  aria-invalid={fieldErrors.slug !== undefined}
-                  disabled={isPending}
-                  maxLength={jobInputLimits.jobSlugMax}
-                  value={slug}
-                  onChange={(e) => {
-                    handleSlugChange(e.currentTarget.value);
-                  }}
-                />
-                {fieldErrors.slug !== undefined ? (
-                  <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-                ) : null}
+                <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
               </label>
 
               {selectedType === "standard" ||

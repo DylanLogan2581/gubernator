@@ -18,6 +18,7 @@ import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
 } from "@/components/shared/ResourceAmountListEditor";
+import { SlugHint } from "@/components/shared/SlugHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -498,7 +499,6 @@ function PopulationTypeScalarFields({
   onHusbandryJobChange,
   onHusbandryWorkersPerNAnimalsChange,
   onNameChange,
-  onSlugChange,
 }: {
   readonly cullingJobId: string;
   readonly cullingJobLinkError: string | undefined;
@@ -519,7 +519,6 @@ function PopulationTypeScalarFields({
   readonly onHusbandryJobChange: (value: string) => void;
   readonly onHusbandryWorkersPerNAnimalsChange: (value: string) => void;
   readonly onNameChange: (value: string) => void;
-  readonly onSlugChange: (value: string) => void;
 }): JSX.Element {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -527,6 +526,7 @@ function PopulationTypeScalarFields({
         <span className="text-muted-foreground">Name</span>
         <Input
           aria-invalid={fieldErrors.name !== undefined}
+          aria-label="Name"
           disabled={isPending}
           maxLength={managedPopulationInputLimits.populationTypeNameMax}
           value={name}
@@ -537,21 +537,7 @@ function PopulationTypeScalarFields({
         {fieldErrors.name !== undefined ? (
           <p className="text-xs text-destructive">{fieldErrors.name}</p>
         ) : null}
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Slug</span>
-        <Input
-          aria-invalid={fieldErrors.slug !== undefined}
-          disabled={isPending}
-          maxLength={managedPopulationInputLimits.populationTypeSlugMax}
-          value={slug}
-          onChange={(e) => {
-            onSlugChange(e.currentTarget.value);
-          }}
-        />
-        {fieldErrors.slug !== undefined ? (
-          <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-        ) : null}
+        <SlugHint slug={slug} error={fieldErrors.slug} />
       </label>
       {husbandryJobs.length === 0 ? (
         <div className="grid gap-1 text-sm">
@@ -716,8 +702,6 @@ function CreateManagedPopulationTypeForm({
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
 
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
   const [husbandryJobId, setHusbandryJobId] = useState("");
   const [cullingJobId, setCullingJobId] = useState("");
   const [husbandryWorkersPerNAnimals, setHusbandryWorkersPerNAnimals] =
@@ -738,21 +722,9 @@ function CreateManagedPopulationTypeForm({
     string | undefined
   >(undefined);
 
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!slugEdited) {
-      setSlug(
-        toSlug(value, {
-          maxLength: managedPopulationInputLimits.populationTypeSlugMax,
-        }),
-      );
-    }
-  }
-
-  function handleSlugChange(value: string): void {
-    setSlug(value);
-    setSlugEdited(value.length > 0);
-  }
+  const derivedSlug = toSlug(name, {
+    maxLength: managedPopulationInputLimits.populationTypeSlugMax,
+  });
 
   function handleHusbandryJobChange(selectedId: string): void {
     setHusbandryJobId(selectedId);
@@ -819,7 +791,7 @@ function CreateManagedPopulationTypeForm({
             }))
           : undefined,
       name,
-      slug,
+      slug: derivedSlug,
       worldId,
     };
 
@@ -889,14 +861,13 @@ function CreateManagedPopulationTypeForm({
             isPending={isPending}
             jobCollisionError={jobCollisionError}
             name={name}
-            slug={slug}
+            slug={derivedSlug}
             worldId={worldId}
             onCullingJobChange={handleCullingJobChange}
             onGrowthRateChange={setGrowthRate}
             onHusbandryJobChange={handleHusbandryJobChange}
             onHusbandryWorkersPerNAnimalsChange={setHusbandryWorkersPerNAnimals}
-            onNameChange={handleNameChange}
-            onSlugChange={handleSlugChange}
+            onNameChange={setName}
           />
           <ResourceAmountListEditor
             addLabel="Add entry"
@@ -962,6 +933,16 @@ function EditManagedPopulationTypeForm({
 
   const [name, setName] = useState(populationType.name);
   const [slug, setSlug] = useState(populationType.slug);
+
+  function handleNameChange(value: string): void {
+    setName(value);
+    setSlug(
+      toSlug(value, {
+        maxLength: managedPopulationInputLimits.populationTypeSlugMax,
+      }),
+    );
+  }
+
   const [husbandryJobId, setHusbandryJobId] = useState(
     populationType.husbandryJobId,
   );
@@ -1149,8 +1130,7 @@ function EditManagedPopulationTypeForm({
           onGrowthRateChange={setGrowthRate}
           onHusbandryJobChange={handleHusbandryJobChange}
           onHusbandryWorkersPerNAnimalsChange={setHusbandryWorkersPerNAnimals}
-          onNameChange={setName}
-          onSlugChange={setSlug}
+          onNameChange={handleNameChange}
         />
         <ResourceAmountListEditor
           addLabel="Add entry"
