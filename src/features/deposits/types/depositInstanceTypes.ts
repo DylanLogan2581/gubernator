@@ -34,3 +34,8 @@ export type SetDepositInstanceMaxWorkersResult = {
   readonly maxWorkers: number | null;
   readonly unassignedCitizenIds: readonly string[];
 };
+
+export type RemoveDepositInstanceResult = {
+  readonly depositInstanceId: string;
+  readonly settlementId: string;
+};

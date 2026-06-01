@@ -2259,6 +2259,13 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      remove_deposit_instance: {
+        Args: { p_deposit_instance_id: string };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
+      };
       reorder_construction_projects: {
         Args: { p_positions: Json; p_settlement_id: string };
         Returns: {
