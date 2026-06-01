@@ -591,6 +591,57 @@ export type Database = {
           },
         ];
       };
+      managed_population_instances: {
+        Row: {
+          configured_cull_quantity: number;
+          created_at: string;
+          current_count: number;
+          id: string;
+          managed_population_type_id: string;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          configured_cull_quantity?: number;
+          created_at?: string;
+          current_count: number;
+          id?: string;
+          managed_population_type_id: string;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at?: string;
+        };
+        Update: {
+          configured_cull_quantity?: number;
+          created_at?: string;
+          current_count?: number;
+          id?: string;
+          managed_population_type_id?: string;
+          name?: string;
+          settlement_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "managed_population_instances_managed_population_type_id_fkey";
+            columns: ["managed_population_type_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "managed_population_instances_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       managed_population_types: {
         Row: {
           created_at: string;
