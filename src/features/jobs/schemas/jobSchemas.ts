@@ -32,9 +32,7 @@ export const jobIoEntrySchema = z.strictObject({
 const jobIoArraySchema = z.array(jobIoEntrySchema);
 
 const commonCreateFields = {
-  inputsJson: jobIoArraySchema.optional(),
   name: jobNameSchema,
-  outputsJson: jobIoArraySchema.optional(),
   slug: jobSlugSchema,
   worldId: worldIdSchema,
 };
@@ -43,10 +41,14 @@ const commonCreateFields = {
 // Type-specific fields are optional on creation; linkage is completed in the
 // edit form (issue #13) once deposit-type and managed-population-type features
 // are available.
+// inputs_json / outputs_json are exclusive to the standard variant — the DB
+// enforces this with a CHECK constraint; the schema mirrors the same rule.
 export const createJobInputSchema = z.discriminatedUnion("jobType", [
   z.strictObject({
     baseCapacity: baseCapacitySchema.nullish(),
+    inputsJson: jobIoArraySchema.optional(),
     jobType: z.literal("standard"),
+    outputsJson: jobIoArraySchema.optional(),
     ...commonCreateFields,
   }),
   z.strictObject({

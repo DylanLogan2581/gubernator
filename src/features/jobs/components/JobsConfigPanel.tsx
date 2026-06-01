@@ -613,9 +613,9 @@ function EditJobForm({
     setFieldErrors({});
 
     const inputsJson =
-      job.jobType === "construction" ? [] : inputRows.map(rowToEntry);
+      job.jobType === "standard" ? inputRows.map(rowToEntry) : [];
     const outputsJson =
-      job.jobType === "construction" ? [] : outputRows.map(rowToEntry);
+      job.jobType === "standard" ? outputRows.map(rowToEntry) : [];
 
     // Reference validation before Zod to surface deleted-resource errors as
     // inline errors rather than generic "invalid" messages.
@@ -864,7 +864,7 @@ function EditJobForm({
           </label>
         ) : null}
 
-        {job.jobType !== "construction" ? (
+        {job.jobType === "standard" ? (
           <>
             <ResourceAmountListEditor
               addLabel="Add input"
@@ -1022,10 +1022,8 @@ function CreateJobForm({
         input = {
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
-          inputsJson: [],
           jobType: "construction",
           name,
-          outputsJson: [],
           slug,
           worldId,
         };

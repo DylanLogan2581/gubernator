@@ -892,6 +892,117 @@ describe("JobsConfigPanel", () => {
     expect(within(listItem).queryByText("Outputs")).toBeNull();
   });
 
+  it("does not show IO editors when editing a trader job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      job_type: "trader",
+      name: "Silk Road",
+      trader_capacity_per_worker: 3,
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow()],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Silk Road");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(screen.queryByText("Inputs")).toBeNull();
+    expect(screen.queryByText("Outputs")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add input" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add output" })).toBeNull();
+  });
+
+  it("does not show IO editors when editing a deposit job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      job_type: "deposit",
+      name: "Iron Mining",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow()],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Iron Mining");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(screen.queryByText("Inputs")).toBeNull();
+    expect(screen.queryByText("Outputs")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add input" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add output" })).toBeNull();
+  });
+
+  it("does not show IO editors when editing a husbandry job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      id: JOB_ID,
+      job_type: "husbandry",
+      name: "Sheep Herding",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow()],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Sheep Herding");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(screen.queryByText("Inputs")).toBeNull();
+    expect(screen.queryByText("Outputs")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add input" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add output" })).toBeNull();
+  });
+
+  it("does not show IO editors when editing a culling job", async () => {
+    const user = userEvent.setup();
+    const jobRow = createJobRow({
+      id: JOB_ID,
+      job_type: "culling",
+      name: "Wolf Culling",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [jobRow],
+        resourceRows: [createResourceRow()],
+        updateResult: { data: jobRow, error: null },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Wolf Culling");
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    await screen.findByRole("heading", { name: "Edit job" });
+
+    expect(screen.queryByText("Inputs")).toBeNull();
+    expect(screen.queryByText("Outputs")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add input" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add output" })).toBeNull();
+  });
+
   it("shows IO editors when editing a standard job", async () => {
     const user = userEvent.setup();
     const jobRow = createJobRow({ job_type: "standard", name: "Farming" });

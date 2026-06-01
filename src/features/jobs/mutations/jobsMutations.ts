@@ -129,10 +129,14 @@ async function createJob(
   const values = parseInput(createJobInputSchema, input);
 
   const insertPayload: JobInsertPayload = {
-    inputs_json: toIoJson(values.inputsJson ?? []),
+    inputs_json: toIoJson(
+      values.jobType === "standard" ? (values.inputsJson ?? []) : [],
+    ),
     job_type: values.jobType,
     name: values.name.trim(),
-    outputs_json: toIoJson(values.outputsJson ?? []),
+    outputs_json: toIoJson(
+      values.jobType === "standard" ? (values.outputsJson ?? []) : [],
+    ),
     slug: values.slug.trim(),
     world_id: values.worldId,
   };

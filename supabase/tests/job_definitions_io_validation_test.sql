@@ -5,7 +5,7 @@
 begin;
 
 select
-  plan (18);
+  plan (27);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -381,6 +381,151 @@ select
     )
     $test$,
     'job_definitions with multiple IO entries is accepted'
+  );
+
+-- ===========================================================================
+-- STANDARD-ONLY CONSTRAINT — non-standard jobs must have empty IO arrays
+-- ===========================================================================
+-- inputs_json non-empty on a construction job
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, inputs_json)
+    values (
+      'b5000000-0000-0000-0000-000000000001',
+      'b2000000-0000-0000-0000-000000000001',
+      'Construction IO', 'construction-io', 'construction', 3,
+      '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 1}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'non-empty inputs_json on a construction job is rejected'
+  );
+
+-- outputs_json non-empty on a construction job
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity, outputs_json)
+    values (
+      'b5000000-0000-0000-0000-000000000002',
+      'b2000000-0000-0000-0000-000000000001',
+      'Construction IO Out', 'construction-io-out', 'construction', 3,
+      '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 1}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'non-empty outputs_json on a construction job is rejected'
+  );
+
+-- inputs_json non-empty on a trader job
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type, trader_capacity_per_worker, inputs_json)
+    values (
+      'b5000000-0000-0000-0000-000000000003',
+      'b2000000-0000-0000-0000-000000000001',
+      'Trader IO', 'trader-io', 'trader', 2,
+      '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 1}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'non-empty inputs_json on a trader job is rejected'
+  );
+
+-- outputs_json non-empty on a trader job
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type, trader_capacity_per_worker, outputs_json)
+    values (
+      'b5000000-0000-0000-0000-000000000004',
+      'b2000000-0000-0000-0000-000000000001',
+      'Trader IO Out', 'trader-io-out', 'trader', 2,
+      '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 1}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'non-empty outputs_json on a trader job is rejected'
+  );
+
+-- inputs_json non-empty on a deposit job
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type, inputs_json)
+    values (
+      'b5000000-0000-0000-0000-000000000005',
+      'b2000000-0000-0000-0000-000000000001',
+      'Deposit IO', 'deposit-io', 'deposit',
+      '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 1}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'non-empty inputs_json on a deposit job is rejected'
+  );
+
+-- outputs_json non-empty on a deposit job
+select
+  throws_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type, outputs_json)
+    values (
+      'b5000000-0000-0000-0000-000000000006',
+      'b2000000-0000-0000-0000-000000000001',
+      'Deposit IO Out', 'deposit-io-out', 'deposit',
+      '[{"resource_id": "b3000000-0000-0000-0000-000000000001", "amount_per_worker": 1}]'
+    )
+    $test$,
+    '23514',
+    null,
+    'non-empty outputs_json on a deposit job is rejected'
+  );
+
+-- Non-standard jobs with empty arrays are still accepted
+select
+  lives_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type, base_capacity)
+    values (
+      'b5000000-0000-0000-0000-000000000007',
+      'b2000000-0000-0000-0000-000000000001',
+      'Construction OK', 'construction-ok', 'construction', 4
+    )
+    $test$,
+    'construction job with default empty IO arrays is accepted'
+  );
+
+select
+  lives_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type, trader_capacity_per_worker)
+    values (
+      'b5000000-0000-0000-0000-000000000008',
+      'b2000000-0000-0000-0000-000000000001',
+      'Trader OK', 'trader-ok', 'trader', 2
+    )
+    $test$,
+    'trader job with default empty IO arrays is accepted'
+  );
+
+select
+  lives_ok (
+    $test$
+    insert into public.job_definitions (id, world_id, name, slug, job_type)
+    values (
+      'b5000000-0000-0000-0000-000000000009',
+      'b2000000-0000-0000-0000-000000000001',
+      'Deposit OK', 'deposit-ok', 'deposit'
+    )
+    $test$,
+    'deposit job with default empty IO arrays is accepted'
   );
 
 select
