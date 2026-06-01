@@ -30,3 +30,7 @@ export type CancelConstructionProjectResult = {
   readonly projectId: string;
   readonly unassignedCitizenCount: number;
 };
+
+export type ReorderConstructionProjectsResult = {
+  readonly updatedCount: number;
+};
