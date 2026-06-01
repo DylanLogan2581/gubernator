@@ -2256,6 +2256,20 @@ export type Database = {
         Args: { p_nation_id: string };
         Returns: boolean;
       };
+      propose_trade_route: {
+        Args: {
+          p_destination: string;
+          p_origin: string;
+          p_proposed_by_citizen_id: string;
+          p_quantity: number;
+          p_resource_id: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+        }[];
+      };
       reassign_partner: {
         Args: {
           p_change_reason: string;
