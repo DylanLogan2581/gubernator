@@ -40,6 +40,11 @@ export {
   isConstructionProjectMutationError,
 } from "./mutations/createConstructionProjectMutations";
 export {
+  ReorderConstructionProjectsMutationError,
+  isReorderConstructionProjectsMutationError,
+  reorderConstructionProjectsMutationOptions,
+} from "./mutations/reorderConstructionProjectsMutations";
+export {
   blueprintByIdQueryOptions,
   blueprintsByWorldQueryOptions,
   tierByIdQueryOptions,
@@ -61,11 +66,13 @@ export {
 } from "./schemas/buildingSchemas";
 export { cancelConstructionProjectInputSchema } from "./schemas/cancelConstructionProjectSchemas";
 export { createConstructionProjectInputSchema } from "./schemas/createConstructionProjectSchemas";
+export { reorderConstructionProjectsInputSchema } from "./schemas/reorderConstructionProjectsSchemas";
 export { validateBlueprintTierReferencesAgainstWorld } from "./utils/validateBuildingReferences";
 
 export type { BuildingMutationIssue } from "./mutations/buildingsMutations";
 export type { CancelConstructionProjectMutationIssue } from "./mutations/cancelConstructionProjectMutations";
 export type { ConstructionProjectMutationIssue } from "./mutations/createConstructionProjectMutations";
+export type { ReorderConstructionProjectsMutationIssue } from "./mutations/reorderConstructionProjectsMutations";
 export type {
   CreateBlueprintInput,
   CreateBlueprintValues,
@@ -97,6 +104,11 @@ export type {
   CreateConstructionProjectValues,
 } from "./schemas/createConstructionProjectSchemas";
 export type {
+  PositionEntry,
+  ReorderConstructionProjectsInput,
+  ReorderConstructionProjectsValues,
+} from "./schemas/reorderConstructionProjectsSchemas";
+export type {
   BuildingBlueprint,
   BuildingBlueprintTier,
   DeleteTierResult,
@@ -112,5 +124,6 @@ export type {
   ConstructionProject,
   ConstructionProjectStatus,
   CreateConstructionProjectResult,
+  ReorderConstructionProjectsResult,
 } from "./types/constructionProjectTypes";
 export type { BuildingReferenceIssue } from "./utils/validateBuildingReferences";

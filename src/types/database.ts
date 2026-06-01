@@ -2227,6 +2227,12 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      reorder_construction_projects: {
+        Args: { p_positions: Json; p_settlement_id: string };
+        Returns: {
+          updated_count: number;
+        }[];
+      };
       respond_to_bilateral: {
         Args: {
           p_from_nation_id: string;
