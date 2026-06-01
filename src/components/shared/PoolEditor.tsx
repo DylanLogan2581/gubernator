@@ -2,6 +2,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ClipboardList, Plus, X } from "lucide-react";
 import {
   useEffect,
+  useId,
   useRef,
   useState,
   type JSX,
@@ -11,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { DialogShell } from "./DialogShell";
 import { parseBulkPaste } from "./PoolEditorUtils";
 
 const VIRTUALIZE_THRESHOLD = 50;
@@ -32,6 +34,7 @@ export function PoolEditor({
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const dialogTitleId = useId();
 
   const shouldVirtualize = entries.length >= VIRTUALIZE_THRESHOLD;
 
@@ -195,8 +198,7 @@ export function PoolEditor({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setBulkOpen(!bulkOpen)}
-          aria-expanded={bulkOpen}
+          onClick={() => setBulkOpen(true)}
         >
           <ClipboardList aria-hidden="true" />
           Bulk import
@@ -204,36 +206,60 @@ export function PoolEditor({
       </div>
 
       {bulkOpen ? (
-        <div className="grid gap-2">
-          <textarea
-            aria-label="Bulk import entries — one per line"
-            className="h-32 w-full min-w-0 resize-y rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm placeholder:text-muted-foreground transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-            placeholder="Paste one entry per line…"
-            value={bulkText}
-            onChange={(event) => setBulkText(event.currentTarget.value)}
-          />
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleBulkApply}
-              disabled={bulkText.trim() === ""}
-            >
-              Apply
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setBulkText("");
-                setBulkOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
+        <DialogShell>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={dialogTitleId}
+            className="grid w-full max-w-lg gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h3 id={dialogTitleId} className="text-lg font-semibold">
+                Bulk import — {label}
+              </h3>
+              <Button
+                aria-label="Cancel bulk import"
+                onClick={() => {
+                  setBulkText("");
+                  setBulkOpen(false);
+                }}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <X aria-hidden="true" />
+              </Button>
+            </div>
+            <textarea
+              aria-label="Bulk import entries — one per line"
+              className="h-32 w-full min-w-0 resize-y rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm placeholder:text-muted-foreground transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              placeholder="Paste one entry per line…"
+              value={bulkText}
+              onChange={(event) => setBulkText(event.currentTarget.value)}
+            />
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleBulkApply}
+                disabled={bulkText.trim() === ""}
+              >
+                Apply
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setBulkText("");
+                  setBulkOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
-        </div>
+        </DialogShell>
       ) : null}
     </fieldset>
   );
