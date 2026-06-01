@@ -1,6 +1,7 @@
 import { useId, useState, type JSX } from "react";
 
 import { BulkJobsTab } from "./BulkJobsTab";
+import { PerTargetJobsTab } from "./PerTargetJobsTab";
 
 type Tab = "bulk" | "per-target";
 
@@ -94,16 +95,10 @@ export function SettlementAssignmentBoard({
         id={perTargetPanelId}
         role="tabpanel"
       >
-        {activeTab === "per-target" ? <PerTargetJobsStub /> : null}
+        {activeTab === "per-target" ? (
+          <PerTargetJobsTab canEdit={canEdit} settlementId={settlementId} />
+        ) : null}
       </div>
     </section>
-  );
-}
-
-function PerTargetJobsStub(): JSX.Element {
-  return (
-    <p className="py-4 text-sm text-muted-foreground">
-      Per-target job assignments are not yet available.
-    </p>
   );
 }

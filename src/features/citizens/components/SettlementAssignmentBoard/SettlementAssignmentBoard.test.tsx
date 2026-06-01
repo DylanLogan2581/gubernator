@@ -20,6 +20,10 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// ---------------------------------------------------------------------------
+// Bulk-tab fixture types
+// ---------------------------------------------------------------------------
+
 type AggregateRowFixture = {
   readonly citizen_assignments: ReadonlyArray<{
     readonly assignment_type:
@@ -84,6 +88,120 @@ type MutationResultFixture = {
   readonly removed_citizen_ids: string[];
 };
 
+// ---------------------------------------------------------------------------
+// Per-target fixture types
+// ---------------------------------------------------------------------------
+
+type CitizenRowFixture = {
+  readonly born_on_turn_number: number | null;
+  readonly citizen_type: "npc" | "player_character";
+  readonly created_at: string;
+  readonly death_cause: null;
+  readonly id: string;
+  readonly name: string;
+  readonly npc_flaw: null;
+  readonly npc_goal: null;
+  readonly npc_secret_contradiction: null;
+  readonly npc_trait_1: null;
+  readonly npc_trait_2: null;
+  readonly parent_a_citizen_id: null;
+  readonly parent_b_citizen_id: null;
+  readonly personality_text: null;
+  readonly profile_photo_url: null;
+  readonly role_nation_id: null;
+  readonly role_settlement_id: null;
+  readonly role_type: "none";
+  readonly settlement_id: string;
+  readonly sex: null;
+  readonly skills_text: null;
+  readonly status: "alive" | "dead";
+  readonly updated_at: string;
+  readonly user_id: null;
+  readonly world_id: string;
+};
+
+type CitizenAssignmentRowFixture = {
+  readonly assigned_on_turn_number: number;
+  readonly assignment_type: "culling" | "deposit" | "husbandry" | "trade_route";
+  readonly citizen_id: string;
+  readonly citizens: { readonly settlement_id: string };
+  readonly construction_project_id: null;
+  readonly created_at: string;
+  readonly deposit_instance_id: string | null;
+  readonly job_id: null;
+  readonly managed_population_instance_id: string | null;
+  readonly trade_route_end: string | null;
+  readonly trade_route_id: string | null;
+  readonly updated_at: string;
+};
+
+type DepositInstanceRowFixture = {
+  readonly created_at: string;
+  readonly deposit_instance_resources: readonly [];
+  readonly deposit_type_id: string;
+  readonly deposit_types: { readonly name: string };
+  readonly discovered_by_event_id: null;
+  readonly id: string;
+  readonly max_workers: number | null;
+  readonly name: string;
+  readonly settlement_id: string;
+  readonly status: "active" | "depleted" | "removed";
+  readonly updated_at: string;
+};
+
+type PopulationInstanceRowFixture = {
+  readonly configured_cull_quantity: number;
+  readonly created_at: string;
+  readonly current_count: number;
+  readonly id: string;
+  readonly managed_population_type_id: string;
+  readonly managed_population_types: {
+    readonly culling_job: { readonly name: string };
+    readonly husbandry_job: { readonly name: string };
+    readonly name: string;
+  };
+  readonly name: string;
+  readonly settlement_id: string;
+  readonly status: "active" | "extinct";
+  readonly updated_at: string;
+};
+
+type TradeRouteRowFixture = {
+  readonly created_at: string;
+  readonly destination_approval_status: "approved" | "pending" | "rejected";
+  readonly destination_approved_by_citizen_id: null;
+  readonly destination_settlement: {
+    readonly name: string;
+    readonly nation: { readonly name: string };
+  };
+  readonly destination_settlement_id: string;
+  readonly id: string;
+  readonly origin_approval_status: "approved" | "pending" | "rejected";
+  readonly origin_approved_by_citizen_id: null;
+  readonly origin_settlement: {
+    readonly name: string;
+    readonly nation: { readonly name: string };
+  };
+  readonly origin_settlement_id: string;
+  readonly pause_reason_last_transition: null;
+  readonly proposed_by_citizen_id: string;
+  readonly quantity_per_transition: number;
+  readonly replacement_for_trade_route_id: null;
+  readonly resource: { readonly name: string };
+  readonly resource_id: string;
+  readonly status: "active" | "cancelled" | "paused" | "proposed" | "replaced";
+  readonly updated_at: string;
+};
+
+type PerTargetMutationResultFixture = {
+  readonly assigned_count: number;
+  readonly replaced_count: number;
+};
+
+// ---------------------------------------------------------------------------
+// Bulk-tab factory functions
+// ---------------------------------------------------------------------------
+
 function createAggregateRow(
   overrides: Partial<AggregateRowFixture> = {},
 ): AggregateRowFixture {
@@ -145,52 +263,139 @@ function createConstructionProjectRow(
   };
 }
 
-function createClient(config: {
-  readonly aggregates?: readonly AggregateRowFixture[];
-  readonly jobCounts?: readonly JobCountRowFixture[];
-  readonly projectCounts?: readonly ProjectCountRowFixture[];
-  readonly constructionProjects?: readonly ConstructionProjectRowFixture[];
-  readonly jobMutationResult?: MutationResultFixture;
-  readonly constructionMutationResult?: MutationResultFixture;
-}): unknown {
-  const defaultMutationResult: MutationResultFixture = {
-    after: 1,
-    added_citizen_ids: [],
-    before: 0,
-    removed_citizen_ids: [],
-  };
+// ---------------------------------------------------------------------------
+// Per-target factory functions
+// ---------------------------------------------------------------------------
 
+function createCitizenRow(
+  overrides: Partial<CitizenRowFixture> = {},
+): CitizenRowFixture {
   return {
-    from: vi.fn((table: string) => {
-      if (table === "citizens") {
-        return createAggregateBuilder(config.aggregates ?? []);
-      }
-      if (table === "construction_projects") {
-        return createFromBuilder(config.constructionProjects ?? []);
-      }
-      throw new Error(`Unexpected table: ${table}`);
-    }),
-    rpc: vi.fn((name: string) => {
-      if (name === "get_settlement_standard_job_counts") {
-        return createRpcBuilder(config.jobCounts ?? []);
-      }
-      if (name === "get_settlement_construction_project_counts") {
-        return createRpcBuilder(config.projectCounts ?? []);
-      }
-      if (name === "set_bulk_standard_job_assignment") {
-        return createMaybeSingleBuilder(
-          config.jobMutationResult ?? defaultMutationResult,
-        );
-      }
-      if (name === "set_bulk_construction_assignment") {
-        return createMaybeSingleBuilder(
-          config.constructionMutationResult ?? defaultMutationResult,
-        );
-      }
-      throw new Error(`Unexpected RPC: ${name}`);
-    }),
+    born_on_turn_number: null,
+    citizen_type: "npc",
+    created_at: "2026-01-01T00:00:00Z",
+    death_cause: null,
+    id: "citizen-1",
+    name: "Alice",
+    npc_flaw: null,
+    npc_goal: null,
+    npc_secret_contradiction: null,
+    npc_trait_1: null,
+    npc_trait_2: null,
+    parent_a_citizen_id: null,
+    parent_b_citizen_id: null,
+    personality_text: null,
+    profile_photo_url: null,
+    role_nation_id: null,
+    role_settlement_id: null,
+    role_type: "none",
+    settlement_id: "settlement-1",
+    sex: null,
+    skills_text: null,
+    status: "alive",
+    updated_at: "2026-01-01T00:00:00Z",
+    user_id: null,
+    world_id: "world-1",
+    ...overrides,
   };
 }
+
+function createCitizenAssignmentRow(
+  overrides: Partial<CitizenAssignmentRowFixture> = {},
+): CitizenAssignmentRowFixture {
+  return {
+    assigned_on_turn_number: 1,
+    assignment_type: "deposit",
+    citizen_id: "citizen-1",
+    citizens: { settlement_id: "settlement-1" },
+    construction_project_id: null,
+    created_at: "2026-01-01T00:00:00Z",
+    deposit_instance_id: "dep-1",
+    job_id: null,
+    managed_population_instance_id: null,
+    trade_route_end: null,
+    trade_route_id: null,
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function createDepositInstanceRow(
+  overrides: Partial<DepositInstanceRowFixture> = {},
+): DepositInstanceRowFixture {
+  return {
+    created_at: "2026-01-01T00:00:00Z",
+    deposit_instance_resources: [],
+    deposit_type_id: "dt-1",
+    deposit_types: { name: "Iron" },
+    discovered_by_event_id: null,
+    id: "dep-1",
+    max_workers: null,
+    name: "Iron Vein",
+    settlement_id: "settlement-1",
+    status: "active",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function createPopulationInstanceRow(
+  overrides: Partial<PopulationInstanceRowFixture> = {},
+): PopulationInstanceRowFixture {
+  return {
+    configured_cull_quantity: 2,
+    created_at: "2026-01-01T00:00:00Z",
+    current_count: 10,
+    id: "pop-1",
+    managed_population_type_id: "mpt-1",
+    managed_population_types: {
+      culling_job: { name: "Slaughter" },
+      husbandry_job: { name: "Shepherd" },
+      name: "Sheep",
+    },
+    name: "Flock A",
+    settlement_id: "settlement-1",
+    status: "active",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function createTradeRouteRow(
+  overrides: Partial<TradeRouteRowFixture> = {},
+): TradeRouteRowFixture {
+  return {
+    created_at: "2026-01-01T00:00:00Z",
+    destination_approval_status: "approved",
+    destination_approved_by_citizen_id: null,
+    destination_settlement: {
+      name: "Riverside",
+      nation: { name: "Empire" },
+    },
+    destination_settlement_id: "settlement-2",
+    id: "route-1",
+    origin_approval_status: "approved",
+    origin_approved_by_citizen_id: null,
+    origin_settlement: {
+      name: "Hillfort",
+      nation: { name: "Republic" },
+    },
+    origin_settlement_id: "settlement-1",
+    pause_reason_last_transition: null,
+    proposed_by_citizen_id: "citizen-1",
+    quantity_per_transition: 10,
+    replacement_for_trade_route_id: null,
+    resource: { name: "Grain" },
+    resource_id: "res-1",
+    status: "active",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Mock client builders
+// ---------------------------------------------------------------------------
 
 function createAggregateBuilder(rows: readonly AggregateRowFixture[]): unknown {
   const builder = {
@@ -213,6 +418,19 @@ function createFromBuilder(rows: readonly unknown[]): unknown {
   };
 }
 
+function createTableBuilder(rows: readonly unknown[]): unknown {
+  const builder = {
+    eq: vi.fn(() => builder),
+    in: vi.fn(() => builder),
+    or: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+  };
+  return {
+    select: vi.fn(() => builder),
+  };
+}
+
 function createRpcBuilder(rows: readonly unknown[]): unknown {
   return {
     returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
@@ -224,6 +442,94 @@ function createMaybeSingleBuilder(result: unknown): unknown {
     maybeSingle: vi.fn().mockResolvedValue({ data: result, error: null }),
   };
 }
+
+// ---------------------------------------------------------------------------
+// createClient
+// ---------------------------------------------------------------------------
+
+function createClient(config: {
+  // Bulk-tab config
+  readonly aggregates?: readonly AggregateRowFixture[];
+  readonly jobCounts?: readonly JobCountRowFixture[];
+  readonly projectCounts?: readonly ProjectCountRowFixture[];
+  readonly constructionProjects?: readonly ConstructionProjectRowFixture[];
+  readonly jobMutationResult?: MutationResultFixture;
+  readonly constructionMutationResult?: MutationResultFixture;
+  // Per-target config
+  readonly citizenRows?: readonly CitizenRowFixture[];
+  readonly citizenAssignmentRows?: readonly CitizenAssignmentRowFixture[];
+  readonly depositInstanceRows?: readonly DepositInstanceRowFixture[];
+  readonly populationInstanceRows?: readonly PopulationInstanceRowFixture[];
+  readonly tradeRouteRows?: readonly TradeRouteRowFixture[];
+  readonly perTargetMutationResult?: PerTargetMutationResultFixture;
+}): unknown {
+  const defaultMutationResult: MutationResultFixture = {
+    after: 1,
+    added_citizen_ids: [],
+    before: 0,
+    removed_citizen_ids: [],
+  };
+
+  const defaultPerTargetResult: PerTargetMutationResultFixture = {
+    assigned_count: 1,
+    replaced_count: 0,
+  };
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "citizens") {
+        if (config.citizenRows !== undefined) {
+          return createTableBuilder(config.citizenRows);
+        }
+        return createAggregateBuilder(config.aggregates ?? []);
+      }
+      if (table === "construction_projects") {
+        return createFromBuilder(config.constructionProjects ?? []);
+      }
+      if (table === "citizen_assignments") {
+        return createTableBuilder(config.citizenAssignmentRows ?? []);
+      }
+      if (table === "deposit_instances") {
+        return createTableBuilder(config.depositInstanceRows ?? []);
+      }
+      if (table === "managed_population_instances") {
+        return createTableBuilder(config.populationInstanceRows ?? []);
+      }
+      if (table === "trade_routes") {
+        return createTableBuilder(config.tradeRouteRows ?? []);
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+    rpc: vi.fn((name: string) => {
+      if (name === "get_settlement_standard_job_counts") {
+        return createRpcBuilder(config.jobCounts ?? []);
+      }
+      if (name === "get_settlement_construction_project_counts") {
+        return createRpcBuilder(config.projectCounts ?? []);
+      }
+      if (name === "set_bulk_standard_job_assignment") {
+        return createMaybeSingleBuilder(
+          config.jobMutationResult ?? defaultMutationResult,
+        );
+      }
+      if (name === "set_bulk_construction_assignment") {
+        return createMaybeSingleBuilder(
+          config.constructionMutationResult ?? defaultMutationResult,
+        );
+      }
+      if (name === "set_per_target_assignment") {
+        return createMaybeSingleBuilder(
+          config.perTargetMutationResult ?? defaultPerTargetResult,
+        );
+      }
+      throw new Error(`Unexpected RPC: ${name}`);
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// renderBoard
+// ---------------------------------------------------------------------------
 
 function renderBoard(
   props: Partial<{
@@ -246,6 +552,10 @@ function renderBoard(
   );
 }
 
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 describe("SettlementAssignmentBoard", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
@@ -263,19 +573,6 @@ describe("SettlementAssignmentBoard", () => {
         .getByRole("tab", { name: "Bulk jobs" })
         .getAttribute("aria-selected"),
     ).toBe("true");
-  });
-
-  it("shows per-target stub when Per-target jobs tab is clicked", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(createClient({}));
-
-    renderBoard();
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
-
-    expect(
-      screen.getByText("Per-target job assignments are not yet available."),
-    ).toBeDefined();
   });
 
   it("shows standard job rows with current/capacity display", async () => {
@@ -583,5 +880,324 @@ describe("SettlementAssignmentBoard", () => {
 
     const applyButton = screen.getByRole("button", { name: "Apply" });
     expect(applyButton).not.toBeDisabled();
+  });
+
+  // -------------------------------------------------------------------------
+  // Per-target tab tests
+  // -------------------------------------------------------------------------
+
+  it("shows deposit section with deposit name and capacity hint when per-target tab is clicked", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [
+          createDepositInstanceRow({
+            id: "dep-1",
+            name: "Iron Vein",
+            max_workers: 4,
+            status: "active",
+          }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard();
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    expect(await screen.findByText("Iron Vein")).toBeDefined();
+    expect(screen.getByText("0 / 4")).toBeDefined();
+  });
+
+  it("shows deposit capacity as assigned count only when max_workers is null", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [
+          createDepositInstanceRow({
+            id: "dep-1",
+            name: "Coal Seam",
+            max_workers: null,
+          }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard();
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    expect(await screen.findByText("Coal Seam")).toBeDefined();
+    expect(screen.getByText("0 assigned")).toBeDefined();
+  });
+
+  it("shows husbandry section with population name and job name", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [],
+        populationInstanceRows: [
+          createPopulationInstanceRow({
+            id: "pop-1",
+            name: "Flock A",
+            managed_population_types: {
+              culling_job: { name: "Slaughter" },
+              husbandry_job: { name: "Shepherd" },
+              name: "Sheep",
+            },
+          }),
+        ],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard();
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    expect(await screen.findByText("Flock A — Shepherd")).toBeDefined();
+  });
+
+  it("shows culling section with population name and culling job name", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [],
+        populationInstanceRows: [
+          createPopulationInstanceRow({
+            id: "pop-1",
+            name: "Flock A",
+            managed_population_types: {
+              culling_job: { name: "Slaughter" },
+              husbandry_job: { name: "Shepherd" },
+              name: "Sheep",
+            },
+          }),
+        ],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard();
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    expect(await screen.findByText("Flock A — Slaughter")).toBeDefined();
+  });
+
+  it("shows trade route section with origin and destination labels", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [],
+        populationInstanceRows: [],
+        tradeRouteRows: [
+          createTradeRouteRow({
+            id: "route-1",
+            origin_settlement_id: "settlement-1",
+            destination_settlement_id: "settlement-2",
+            origin_settlement: {
+              name: "Hillfort",
+              nation: { name: "Republic" },
+            },
+            destination_settlement: {
+              name: "Riverside",
+              nation: { name: "Empire" },
+            },
+            resource: { name: "Grain" },
+            status: "active",
+          }),
+        ],
+      }),
+    );
+
+    renderBoard();
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    expect(await screen.findByText(/Grain.*Hillfort.*Riverside/)).toBeDefined();
+    expect(screen.getByText(/Destination.*Riverside/)).toBeDefined();
+  });
+
+  it("shows assigned citizen name as tag on deposit row", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [
+          createCitizenRow({ id: "citizen-1", name: "Alice", status: "alive" }),
+        ],
+        citizenAssignmentRows: [
+          createCitizenAssignmentRow({
+            citizen_id: "citizen-1",
+            assignment_type: "deposit",
+            deposit_instance_id: "dep-1",
+          }),
+        ],
+        depositInstanceRows: [
+          createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard();
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    expect(await screen.findByText("Alice")).toBeDefined();
+  });
+
+  it("shows Assign citizens button when canManage and not archived on per-target tab", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [
+          createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard({ canManage: true, isArchived: false });
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    await screen.findByText("Iron Vein");
+    expect(
+      screen.getByRole("button", { name: "Assign citizens" }),
+    ).toBeDefined();
+  });
+
+  it("hides Assign citizens button on per-target tab when canManage is false", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [
+          createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard({ canManage: false, isArchived: false });
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    await screen.findByText("Iron Vein");
+    expect(
+      screen.queryByRole("button", { name: "Assign citizens" }),
+    ).toBeNull();
+  });
+
+  it("hides Assign citizens button on per-target tab when isArchived is true", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [
+          createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard({ canManage: true, isArchived: true });
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    await screen.findByText("Iron Vein");
+    expect(
+      screen.queryByRole("button", { name: "Assign citizens" }),
+    ).toBeNull();
+  });
+
+  it("filters out non-active deposits and populations from per-target sections", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [
+          createDepositInstanceRow({
+            id: "dep-active",
+            name: "Active Vein",
+            status: "active",
+          }),
+          createDepositInstanceRow({
+            id: "dep-depleted",
+            name: "Depleted Vein",
+            status: "depleted",
+          }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard();
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+
+    expect(await screen.findByText("Active Vein")).toBeDefined();
+    expect(screen.queryByText("Depleted Vein")).toBeNull();
+  });
+
+  it("shows assign dialog with alive citizens pre-selected when Assign citizens is clicked", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [
+          createCitizenRow({ id: "citizen-1", name: "Alice", status: "alive" }),
+          createCitizenRow({ id: "citizen-2", name: "Bob", status: "alive" }),
+        ],
+        citizenAssignmentRows: [
+          createCitizenAssignmentRow({
+            citizen_id: "citizen-1",
+            assignment_type: "deposit",
+            deposit_instance_id: "dep-1",
+          }),
+        ],
+        depositInstanceRows: [
+          createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard({ canManage: true });
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    await screen.findByText("Iron Vein");
+    await user.click(screen.getByRole("button", { name: "Assign citizens" }));
+
+    expect(screen.getByRole("dialog")).toBeDefined();
+    const aliceCheckbox = screen.getByRole("checkbox", { name: /Alice/ });
+    const bobCheckbox = screen.getByRole("checkbox", { name: /Bob/ });
+    expect(aliceCheckbox).toBeChecked();
+    expect(bobCheckbox).not.toBeChecked();
   });
 });
