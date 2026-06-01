@@ -83,6 +83,16 @@ vi.mock("@/features/citizens", async () => {
   };
 });
 
+vi.mock("@/features/buildings", async () => {
+  const actual = await vi.importActual("@/features/buildings");
+  return {
+    ...actual,
+    SettlementBuildingsPanel: () => (
+      <div data-testid="settlement-buildings-panel" />
+    ),
+  };
+});
+
 vi.mock("@/features/permissions", async () => {
   const actual = await vi.importActual("@/features/permissions");
   return {
