@@ -19,6 +19,7 @@ export type ConstructionProject = {
   readonly targetTierId: string;
   readonly tierNumber: number;
   readonly updatedAt: string;
+  readonly workerTurnsRequired: number;
 };
 
 export type CreateConstructionProjectResult = {

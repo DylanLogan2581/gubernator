@@ -4,6 +4,7 @@
 export { BlueprintTierEditor } from "./components/BlueprintTierEditor";
 export { BuildingsConfigPanel } from "./components/BuildingsConfigPanel";
 export { SettlementBuildingsPanel } from "./components/SettlementBuildingsPanel";
+export { SettlementConstructionPanel } from "./components/SettlementConstructionPanel";
 export { CostEditor, EffectsEditor } from "./components/TierEditorFields";
 export {
   buildCostInputs,

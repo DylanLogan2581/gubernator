@@ -3,7 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { SettlementBuildingsPanel } from "@/features/buildings";
+import {
+  SettlementBuildingsPanel,
+  SettlementConstructionPanel,
+} from "@/features/buildings";
 import { CitizensPanel } from "@/features/citizens";
 import {
   currentAccessContextQueryOptions,
@@ -289,6 +292,13 @@ function SettlementDetailLoaded({
         canAdmin={worldAccess.canAdmin}
         isArchived={isArchived}
         settlementId={settlement.id}
+      />
+
+      <SettlementConstructionPanel
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
       />
 
       {canDelete ? (

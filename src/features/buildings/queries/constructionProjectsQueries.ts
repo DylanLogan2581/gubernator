@@ -17,7 +17,10 @@ import type {
 type ConstructionProjectRow = {
   readonly activated_on_turn_number: number | null;
   readonly building_blueprint_id: string;
-  readonly building_blueprint_tiers: { readonly tier_number: number };
+  readonly building_blueprint_tiers: {
+    readonly tier_number: number;
+    readonly worker_turns_required: number;
+  };
   readonly building_blueprints: { readonly name: string };
   readonly completed_in_transition_id: string | null;
   readonly created_at: string;
@@ -31,7 +34,7 @@ type ConstructionProjectRow = {
 };
 
 const CONSTRUCTION_PROJECT_SELECT =
-  "id,settlement_id,building_blueprint_id,target_tier_id,status,queue_position,progress_worker_turns,completed_in_transition_id,activated_on_turn_number,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number)";
+  "id,settlement_id,building_blueprint_id,target_tier_id,status,queue_position,progress_worker_turns,completed_in_transition_id,activated_on_turn_number,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number,worker_turns_required)";
 
 type ConstructionProjectsBySettlementQueryKey = ReturnType<
   typeof buildingsQueryKeys.constructionProjectsBySettlement
@@ -90,5 +93,6 @@ function toConstructionProject(
     targetTierId: row.target_tier_id,
     tierNumber: row.building_blueprint_tiers.tier_number,
     updatedAt: row.updated_at,
+    workerTurnsRequired: row.building_blueprint_tiers.worker_turns_required,
   };
 }
