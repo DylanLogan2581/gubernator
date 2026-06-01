@@ -12,4 +12,10 @@ export const managedPopulationsQueryKeys = {
       "detail",
       managedPopulationTypeId,
     ] as const,
+  instancesBySettlement: (settlementId: string) =>
+    [
+      ...managedPopulationsQueryKeys.all,
+      "instances-by-settlement",
+      settlementId,
+    ] as const,
 } as const;
