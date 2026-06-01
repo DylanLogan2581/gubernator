@@ -6,6 +6,11 @@ export { NpcFlavorLine } from "./components/NpcFlavorLine";
 export { NpcFlavorEditor } from "./components/NpcFlavorEditor";
 export { PartnershipHistoryPanel } from "./components/PartnershipHistoryPanel";
 export {
+  BulkStandardJobAssignmentMutationError,
+  isBulkStandardJobAssignmentMutationError,
+  setBulkStandardJobAssignmentMutationOptions,
+} from "./mutations/bulkStandardJobAssignmentMutations";
+export {
   CitizenMutationError,
   createNpcMutationOptions,
   createPlayerCharacterMutationOptions,
@@ -35,6 +40,7 @@ export {
   assignmentsInSettlementQueryOptions,
   currentAssignmentForCitizenQueryOptions,
 } from "./queries/citizenAssignmentsQueries";
+export { settlementJobCountsQueryOptions } from "./queries/settlementJobCountsQueries";
 export {
   isManagerRole,
   isPlayerRole,
@@ -62,6 +68,7 @@ export {
   activePartnershipForCitizenQueryOptions,
   partnershipsForCitizenQueryOptions,
 } from "./queries/partnershipsQueries";
+export { setBulkStandardJobAssignmentInputSchema } from "./schemas/setBulkStandardJobAssignmentSchemas";
 export {
   assignCitizenRoleInputSchema,
   citizenRoleAssignmentSchema,
@@ -82,9 +89,14 @@ export {
   reassignPartnerInputSchema,
 } from "./schemas/partnershipSchemas";
 
+export type { BulkStandardJobAssignmentMutationIssue } from "./mutations/bulkStandardJobAssignmentMutations";
 export type { CitizenMutationIssue } from "./mutations/citizensMutations";
 export type { PartnershipMutationIssue } from "./mutations/partnershipsMutations";
 export type { PlayerCharacterRoleMutationIssue } from "./mutations/playerCharacterRoleMutations";
+export type {
+  SetBulkStandardJobAssignmentInput,
+  SetBulkStandardJobAssignmentValues,
+} from "./schemas/setBulkStandardJobAssignmentSchemas";
 export type {
   AssignCitizenRoleInput,
   AssignCitizenRoleValues,
@@ -120,6 +132,10 @@ export type {
   ReassignPartnerValues,
 } from "./schemas/partnershipSchemas";
 export type { CitizenRow } from "./queries/citizensQueries";
+export type {
+  BulkStandardJobAssignmentResult,
+  SettlementJobCount,
+} from "./types/bulkAssignmentTypes";
 export type { CitizenAssignment } from "./types/citizenAssignmentTypes";
 export type { NpcFlavor, NpcFlavorConfig } from "./utils/npcFlavor";
 export type {

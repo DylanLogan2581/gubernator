@@ -2138,6 +2138,17 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      get_settlement_standard_job_counts: {
+        Args: { p_settlement_id: string };
+        Returns: {
+          capacity: number;
+          current_count: number;
+          job_id: string;
+          job_name: string;
+          job_slug: string;
+          world_id: string;
+        }[];
+      };
       hard_delete_building_blueprint: {
         Args: { p_blueprint_id: string; p_world_id: string };
         Returns: {
@@ -2539,6 +2550,20 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      set_bulk_standard_job_assignment: {
+        Args: {
+          p_job_id: string;
+          p_removal_strategy: string;
+          p_settlement_id: string;
+          p_target_count: number;
+        };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
       };
       set_configured_cull_quantity: {
         Args: { p_instance_id: string; p_quantity: number };
