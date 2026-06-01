@@ -8,6 +8,7 @@ import {
   SettlementConstructionPanel,
 } from "@/features/buildings";
 import { CitizensPanel } from "@/features/citizens";
+import { SettlementDepositsPanel } from "@/features/deposits";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
@@ -295,6 +296,14 @@ function SettlementDetailLoaded({
       />
 
       <SettlementConstructionPanel
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementDepositsPanel
+        canAdmin={worldAccess.canAdmin}
         canManage={worldAccess.canManage}
         isArchived={isArchived}
         settlementId={settlement.id}

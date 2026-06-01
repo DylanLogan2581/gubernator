@@ -2,6 +2,7 @@
 // for per-settlement deposit management (Epic 5).
 
 export { DepositsConfigPanel } from "./components/DepositsConfigPanel";
+export { SettlementDepositsPanel } from "./components/SettlementDepositsPanel";
 export {
   CreateDepositInstanceMutationError,
   createDepositInstanceMutationOptions,
