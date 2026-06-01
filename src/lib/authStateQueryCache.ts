@@ -3,15 +3,20 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 export const authStateQueryCacheKeys = {
   authAll: ["auth"] as const,
+  buildingsAll: ["buildings"] as const,
   calendarAll: ["calendar"] as const,
   citizensAll: ["citizens"] as const,
   currentAppUser: () =>
     [...authStateQueryCacheKeys.authAll, "current-app-user"] as const,
   currentSession: () =>
     [...authStateQueryCacheKeys.authAll, "current-session"] as const,
+  depositsAll: ["deposits"] as const,
+  jobsAll: ["jobs"] as const,
+  managedPopulationsAll: ["managed-populations"] as const,
   nationsAll: ["nations"] as const,
   notificationsAll: ["notifications"] as const,
   permissionsAll: ["permissions"] as const,
+  resourcesAll: ["resources"] as const,
   settlementsAll: ["settlements"] as const,
   turnsAll: ["turns"] as const,
   worldAccessAll: ["world-access"] as const,
@@ -20,11 +25,16 @@ export const authStateQueryCacheKeys = {
 
 const authDependentQueryKeys = [
   authStateQueryCacheKeys.currentAppUser(),
+  authStateQueryCacheKeys.buildingsAll,
   authStateQueryCacheKeys.calendarAll,
   authStateQueryCacheKeys.citizensAll,
+  authStateQueryCacheKeys.depositsAll,
+  authStateQueryCacheKeys.jobsAll,
+  authStateQueryCacheKeys.managedPopulationsAll,
   authStateQueryCacheKeys.nationsAll,
   authStateQueryCacheKeys.notificationsAll,
   authStateQueryCacheKeys.permissionsAll,
+  authStateQueryCacheKeys.resourcesAll,
   authStateQueryCacheKeys.settlementsAll,
   authStateQueryCacheKeys.turnsAll,
   authStateQueryCacheKeys.worldAccessAll,

@@ -359,8 +359,8 @@ describe("CreatePlayerCharacterDialog", () => {
           p_settlement_id: SETTLEMENT_ID,
           p_world_id: WORLD_ID,
           p_user_id: USER_ID,
-          p_parent_a_citizen_id: null,
-          p_parent_b_citizen_id: null,
+          p_parent_a_citizen_id: undefined,
+          p_parent_b_citizen_id: undefined,
         }),
       );
     });

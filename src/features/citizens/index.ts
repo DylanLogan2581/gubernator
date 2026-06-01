@@ -45,6 +45,7 @@ export {
   generateNpcFlavor,
   renderNpcFlavorLine,
   roleLabelForAssignment,
+  roleLabelForAssignmentType,
   UNASSIGNED_ROLE_LABEL,
 } from "./utils/npcFlavor";
 export {

@@ -1,8 +1,10 @@
-import { QueryClientProvider } from "@tanstack/react-query";
+import { isCancelledError, QueryClientProvider } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,
   Link,
   Outlet,
+  useRouter,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { MapPinOff } from "lucide-react";
 import { lazy, Suspense, useEffect, type JSX } from "react";
@@ -75,8 +77,31 @@ function RootLayout(): JSX.Element {
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
   component: RootLayout,
+  errorComponent: RootErrorBoundary,
   notFoundComponent: NotFoundPage,
 });
+
+function RootErrorBoundary({ error }: ErrorComponentProps): JSX.Element | null {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isCancelledError(error)) {
+      void router.invalidate();
+    }
+  }, [error, router]);
+
+  if (isCancelledError(error)) {
+    return null;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+
+  return (
+    <div className="mx-auto max-w-4xl py-6">
+      <ErrorState title="Something went wrong" description={message} />
+    </div>
+  );
+}
 
 function NotFoundPage(): JSX.Element {
   return (

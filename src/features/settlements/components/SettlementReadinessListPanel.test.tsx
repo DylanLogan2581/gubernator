@@ -8,6 +8,35 @@ import type { WorldPermissionContext } from "@/features/worlds";
 
 import { SettlementReadinessListPanel } from "./SettlementReadinessListPanel";
 
+import type { ReactNode } from "react";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    to,
+    params,
+    className,
+  }: {
+    readonly children: ReactNode;
+    readonly to: string;
+    readonly params?: Readonly<Record<string, string>>;
+    readonly className?: string;
+  }) => {
+    const href =
+      params === undefined
+        ? to
+        : Object.entries(params).reduce(
+            (path, [name, value]) => path.replace(`$${name}`, value),
+            to,
+          );
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  },
+}));
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
@@ -79,6 +108,28 @@ describe("SettlementReadinessListPanel", () => {
     expect(screen.getByText("5/2/26, 12:00 PM")).toHaveAttribute(
       "dateTime",
       "2026-05-02T12:00:00.000Z",
+    );
+  });
+
+  it("links settlement names to their detail pages", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClientFixture({
+        settlementRows: [
+          createSettlementRow({
+            id: "settlement-1",
+            name: "Amberhold",
+            nation_id: "nation-1",
+          }),
+        ],
+      }).client,
+    );
+
+    renderSettlementReadinessListPanel();
+
+    const link = await screen.findByRole("link", { name: "Amberhold" });
+    expect(link).toHaveAttribute(
+      "href",
+      "/worlds/world-1/nations/nation-1/settlements/settlement-1",
     );
   });
 

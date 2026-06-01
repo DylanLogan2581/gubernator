@@ -61,7 +61,7 @@ describe("accessibleWorldsQueryOptions", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           current_turn_number: 5,
           id: "00000000-0000-0000-0000-000000000101",
-          name: "Local Development World",
+          name: "Verdant Reach",
           owner_id: "user-1",
           status: "active",
           updated_at: "2026-01-02T00:00:00.000Z",
@@ -92,9 +92,9 @@ describe("accessibleWorldsQueryOptions", () => {
         currentTurnNumber: 5,
         isArchived: false,
         isHidden: true,
-        name: "Local Development World",
+        name: "Verdant Reach",
         ownerId: "user-1",
-        slug: "local-development-world-00000000",
+        slug: "verdant-reach-00000000",
       }),
     ]);
     expect(from).toHaveBeenCalledWith("worlds");
@@ -188,7 +188,7 @@ describe("worldRouteAccessQueryOptions", () => {
       data: createWorldRow({
         current_turn_number: 8,
         id: "00000000-0000-0000-0000-000000000101",
-        name: "Local Development World",
+        name: "Verdant Reach",
         owner_id: "user-1",
         visibility: "private",
       }),
@@ -221,17 +221,17 @@ describe("worldRouteAccessQueryOptions", () => {
       currentTurnNumber: 8,
       inWorldDateLabel: "Secondday, Ember 1, 101 AG",
       isArchived: false,
-      name: "Local Development World",
+      name: "Verdant Reach",
       nextInWorldDateLabel: "Firstday, Ember 2, 101 AG",
       nextTurnNumber: 9,
       planningTurnNumber: 8,
-      slug: "local-development-world-00000000",
+      slug: "verdant-reach-00000000",
       status: "active",
       visibility: "private",
     });
     expect(routeAccess.world.id).toBe("00000000-0000-0000-0000-000000000101");
-    expect(routeAccess.world.name).toBe("Local Development World");
-    expect(routeAccess.world.slug).toBe("local-development-world-00000000");
+    expect(routeAccess.world.name).toBe("Verdant Reach");
+    expect(routeAccess.world.slug).toBe("verdant-reach-00000000");
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
       "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility",
@@ -247,7 +247,7 @@ describe("worldRouteAccessQueryOptions", () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: createWorldRow({
         id: "00000000-0000-0000-0000-000000000101",
-        name: "Renamed Local Development World",
+        name: "Renamed Verdant Reach",
         owner_id: "user-1",
         visibility: "private",
       }),
@@ -271,7 +271,7 @@ describe("worldRouteAccessQueryOptions", () => {
       ),
     );
 
-    expect(routeAccess.header.name).toBe("Renamed Local Development World");
+    expect(routeAccess.header.name).toBe("Renamed Verdant Reach");
     expect(routeAccess.world.id).toBe("00000000-0000-0000-0000-000000000101");
   });
 
@@ -483,7 +483,7 @@ function createWorldRow(
     current_turn_number: 5,
     id: "00000000-0000-0000-0000-000000000101",
     incest_prevention_depth: 4,
-    name: "Local Development World",
+    name: "Verdant Reach",
     owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",

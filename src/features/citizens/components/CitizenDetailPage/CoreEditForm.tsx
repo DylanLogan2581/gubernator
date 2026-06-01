@@ -163,12 +163,16 @@ export function CitizenCoreSection({
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Sex</span>
-        <Input
+        <select
+          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
           disabled={updateMutation.isPending}
-          placeholder="Leave blank to clear"
           value={sex}
           onChange={(event) => setSex(event.currentTarget.value)}
-        />
+        >
+          <option value=""></option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
       </label>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>

@@ -204,20 +204,20 @@ async function createNpc(
 
   const { data, error } = await client
     .rpc("create_npc", {
-      p_born_on_turn_number: values.bornOnTurnNumber ?? null,
+      p_born_on_turn_number: values.bornOnTurnNumber ?? undefined,
       p_name: values.name.trim(),
-      p_npc_flaw: values.npcFlaw,
-      p_npc_goal: values.npcGoal,
-      p_npc_secret_contradiction: values.npcSecretContradiction,
-      p_npc_trait_1: values.npcTrait1,
-      p_npc_trait_2: values.npcTrait2,
-      p_parent_a_citizen_id: values.parentACitizenId ?? null,
-      p_parent_b_citizen_id: values.parentBCitizenId ?? null,
-      p_personality_text: values.personalityText,
-      p_profile_photo_url: values.profilePhotoUrl,
-      p_settlement_id: values.settlementId ?? null,
-      p_sex: values.sex,
-      p_skills_text: values.skillsText,
+      p_npc_flaw: values.npcFlaw ?? undefined,
+      p_npc_goal: values.npcGoal ?? undefined,
+      p_npc_secret_contradiction: values.npcSecretContradiction ?? undefined,
+      p_npc_trait_1: values.npcTrait1 ?? undefined,
+      p_npc_trait_2: values.npcTrait2 ?? undefined,
+      p_parent_a_citizen_id: values.parentACitizenId ?? undefined,
+      p_parent_b_citizen_id: values.parentBCitizenId ?? undefined,
+      p_personality_text: values.personalityText ?? undefined,
+      p_profile_photo_url: values.profilePhotoUrl ?? undefined,
+      p_settlement_id: values.settlementId ?? undefined,
+      p_sex: values.sex ?? undefined,
+      p_skills_text: values.skillsText ?? undefined,
       p_world_id: values.worldId,
     })
     .maybeSingle<CitizenRow>();
@@ -241,15 +241,15 @@ async function createPlayerCharacter(
 
   const { data, error } = await client
     .rpc("create_player_character", {
-      p_born_on_turn_number: values.bornOnTurnNumber ?? null,
+      p_born_on_turn_number: values.bornOnTurnNumber ?? undefined,
       p_name: values.name.trim(),
-      p_parent_a_citizen_id: values.parentACitizenId ?? null,
-      p_parent_b_citizen_id: values.parentBCitizenId ?? null,
-      p_personality_text: values.personalityText,
-      p_profile_photo_url: values.profilePhotoUrl,
-      p_settlement_id: values.settlementId ?? null,
-      p_sex: values.sex,
-      p_skills_text: values.skillsText,
+      p_parent_a_citizen_id: values.parentACitizenId ?? undefined,
+      p_parent_b_citizen_id: values.parentBCitizenId ?? undefined,
+      p_personality_text: values.personalityText ?? undefined,
+      p_profile_photo_url: values.profilePhotoUrl ?? undefined,
+      p_settlement_id: values.settlementId ?? undefined,
+      p_sex: values.sex ?? undefined,
+      p_skills_text: values.skillsText ?? undefined,
       p_user_id: values.userId,
       p_world_id: values.worldId,
     })

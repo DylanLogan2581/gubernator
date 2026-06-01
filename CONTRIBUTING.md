@@ -149,18 +149,18 @@ npm run functions:cache-clear
 
 `supabase db reset` applies migrations and then loads `supabase/seed.sql`. The seed creates local-only confirmed email users and private worlds for access testing:
 
-| User                          | Password      | Behavior                                                                                               |
-| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| `superadmin@gubernator.local` | `password123` | Active super admin user. Owns `Local Development World` and has an explicit `world_admins` row for it. |
-| `test@gubernator.local`       | `password123` | Active normal user. Owns `Test User World`.                                                            |
-| `other@gubernator.local`      | `password123` | Active normal user. Owns `Restricted Development World`.                                               |
+| User                          | Password      | Behavior                                                                                         |
+| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------ |
+| `superadmin@gubernator.local` | `password123` | Active super admin user. Owns `Verdant Reach` and has an explicit `world_admins` row for it.     |
+| `test@gubernator.local`       | `password123` | Active normal user. Owns `Linnford Concord` and `Hollowmere Coast`; co-admin of `Verdant Reach`. |
+| `other@gubernator.local`      | `password123` | Active normal user. Owns `Greyfell March` and `Stormhold Vale`.                                  |
 
 The seeded credentials are local fixtures only. Do not reuse them in hosted Supabase projects or production data.
 
 Expected local access behavior:
 
 - super admin can see and manage all seeded worlds
-- each normal user can see and manage their own private world
+- each normal user can see and manage their owned worlds and any world they are an explicit `world_admins` co-admin of
 - normal users cannot see another user's private world unless an explicit access rule grants it
 - anonymous users cannot read application user, world, or world admin rows through RLS
 

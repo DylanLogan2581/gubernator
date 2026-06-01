@@ -103,6 +103,109 @@ describe("WorldNpcFlavorConfigPanel", () => {
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 
+  it("generate example output button is hidden for read-only viewers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "reader-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: false,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+    expect(
+      screen.queryByRole("button", { name: "Generate example output" }),
+    ).toBeNull();
+  });
+
+  it("clicking generate example output renders the canonical flavor line with two traits", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [
+          createWorldRow({
+            npc_flavor_config_json: {
+              contradictions: ["stoic but theatrical"],
+              flaws: ["impatient"],
+              goals: ["reclaim a lost relic"],
+              traits: ["curious", "earnest"],
+            },
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+    const initialTextboxCount = screen.getAllByRole("textbox").length;
+
+    await user.click(
+      screen.getByRole("button", { name: "Generate example output" }),
+    );
+
+    const preview = screen.getByText(
+      /^A Worker who is (curious|earnest), (curious|earnest), but secretly stoic but theatrical\. They want reclaim a lost relic but are prevented by impatient\.$/,
+    );
+    expect(preview.textContent).toContain("curious");
+    expect(preview.textContent).toContain("earnest");
+    expect(screen.getAllByRole("textbox").length).toBe(initialTextboxCount);
+  });
+
+  it("falls back to canonical placeholders when all pools are empty", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        worldRows: [
+          createWorldRow({
+            npc_flavor_config_json: {
+              contradictions: [],
+              flaws: [],
+              goals: [],
+              traits: [],
+            },
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+
+    await user.click(
+      screen.getByRole("button", { name: "Generate example output" }),
+    );
+
+    expect(
+      screen.getByText(
+        "A Worker who is mysterious, unreadable, but secretly keeps their secrets close. They want something they have yet to name but are prevented by something they will not admit.",
+      ),
+    ).toBeDefined();
+  });
+
   it("renders read-only summary without save controls for non-admin users", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ worldRows: [createWorldRow()] }),

@@ -152,6 +152,7 @@ async function setUnilateralStance(
         pending_stance: null,
         pending_status: null,
         to_nation_id: values.toNationId,
+        world_id: values.worldId,
       },
       { onConflict: "from_nation_id,to_nation_id" },
     )
@@ -194,6 +195,7 @@ async function proposeBilateral(
         pending_stance: values.stance,
         pending_status: "proposed",
         to_nation_id: values.toNationId,
+        world_id: values.worldId,
       },
       { onConflict: "from_nation_id,to_nation_id" },
     )

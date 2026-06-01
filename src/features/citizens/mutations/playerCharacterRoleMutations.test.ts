@@ -196,7 +196,7 @@ describe("assignCitizenRoleMutationOptions", () => {
     expect(rpc).toHaveBeenCalledWith("assign_citizen_role", {
       p_citizen_id: CITIZEN_ID,
       p_role_nation_id: NATION_ID,
-      p_role_settlement_id: null,
+      p_role_settlement_id: undefined,
       p_role_type: "nation_manager",
     });
     expect(options.mutationKey).toEqual(["citizens", "assign-citizen-role"]);
@@ -221,7 +221,7 @@ describe("assignCitizenRoleMutationOptions", () => {
 
     expect(rpc).toHaveBeenCalledWith("assign_citizen_role", {
       p_citizen_id: CITIZEN_ID,
-      p_role_nation_id: null,
+      p_role_nation_id: undefined,
       p_role_settlement_id: SETTLEMENT_ID,
       p_role_type: "settlement_manager",
     });

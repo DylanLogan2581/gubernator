@@ -4,15 +4,23 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Plus, RotateCcw, Save, X } from "lucide-react";
+import { Save, Sparkles } from "lucide-react";
+import { Tabs } from "radix-ui";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PoolEditor } from "@/components/shared/PoolEditor";
+import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  generateNpcFlavor,
+  renderNpcFlavorLine,
+  roleLabelForAssignmentType,
+} from "@/features/citizens";
 import { notifyMutationSuccess } from "@/lib/notify";
+import { createSeededRng } from "@/lib/seededRng";
 
 import { saveWorldNpcFlavorConfigMutationOptions } from "../mutations/worldNpcFlavorConfigMutations";
 import { worldNpcFlavorConfigQueryOptions } from "../queries/worldNpcFlavorConfigQueries";
@@ -37,27 +45,15 @@ export function WorldNpcFlavorConfigPanel({
   const configQuery = useQuery(worldNpcFlavorConfigQueryOptions(worldId));
 
   if (configQuery.isPending) {
-    return (
-      <section
-        aria-labelledby="world-npc-flavor-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <LoadingState label="Loading NPC flavor pools…" />
-      </section>
-    );
+    return <LoadingState label="Loading NPC flavor pools…" />;
   }
 
   if (configQuery.isError) {
     return (
-      <section
-        aria-labelledby="world-npc-flavor-title"
-        className="rounded-md border border-border bg-card p-5 text-card-foreground"
-      >
-        <ErrorState
-          title="NPC flavor pools could not be loaded"
-          description={getNpcFlavorErrorDescription(configQuery.error)}
-        />
-      </section>
+      <ErrorState
+        title="NPC flavor pools could not be loaded"
+        description={getNpcFlavorErrorDescription(configQuery.error)}
+      />
     );
   }
 
@@ -97,13 +93,22 @@ function WorldNpcFlavorConfigPanelContent({
   );
   const [draftConfig, setDraftConfig] =
     useState<WorldNpcFlavorConfig>(initialConfig);
+  const [exampleOutput, setExampleOutput] = useState<string | null>(null);
+  const [previewSeed, setPreviewSeed] = useState<number>(0);
 
   const canEdit = canAdmin && !isArchived;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    const sanitizedConfig: WorldNpcFlavorConfig = {
+      contradictions: sanitizePoolEntries(draftConfig.contradictions),
+      flaws: sanitizePoolEntries(draftConfig.flaws),
+      goals: sanitizePoolEntries(draftConfig.goals),
+      traits: sanitizePoolEntries(draftConfig.traits),
+    };
+    setDraftConfig(sanitizedConfig);
     saveMutation.mutate(
-      { config: draftConfig, worldId },
+      { config: sanitizedConfig, worldId },
       {
         onError: (error) => {
           toast.error(getNpcFlavorErrorDescription(error));
@@ -115,15 +120,16 @@ function WorldNpcFlavorConfigPanelContent({
     );
   }
 
-  function resetDraftConfig(): void {
-    setDraftConfig(initialConfig);
+  function handleGenerateExample(): void {
+    const rng = createSeededRng(previewSeed);
+    setPreviewSeed((current) => current + 1);
+    const flavor = generateNpcFlavor(draftConfig, rng);
+    const roleLabel = roleLabelForAssignmentType("standard_job");
+    setExampleOutput(renderNpcFlavorLine(flavor, roleLabel));
   }
 
   return (
-    <section
-      aria-labelledby="world-npc-flavor-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
+    <div className="grid gap-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h2
@@ -152,112 +158,115 @@ function WorldNpcFlavorConfigPanelContent({
           noValidate
           onSubmit={handleSubmit}
         >
-          <PoolEditor
-            label="Traits"
-            entries={draftConfig.traits}
-            onChange={(traits) =>
-              setDraftConfig((current) => ({ ...current, traits }))
-            }
-          />
-          <PoolEditor
-            label="Contradictions"
-            entries={draftConfig.contradictions}
-            onChange={(contradictions) =>
-              setDraftConfig((current) => ({ ...current, contradictions }))
-            }
-          />
-          <PoolEditor
-            label="Goals"
-            entries={draftConfig.goals}
-            onChange={(goals) =>
-              setDraftConfig((current) => ({ ...current, goals }))
-            }
-          />
-          <PoolEditor
-            label="Flaws"
-            entries={draftConfig.flaws}
-            onChange={(flaws) =>
-              setDraftConfig((current) => ({ ...current, flaws }))
-            }
-          />
+          <Tabs.Root defaultValue="traits">
+            <Tabs.List className="flex gap-1 rounded-md border border-border bg-muted p-1">
+              <NpcFlavorTab
+                value="traits"
+                label="Traits"
+                count={draftConfig.traits.length}
+              />
+              <NpcFlavorTab
+                value="contradictions"
+                label="Contradictions"
+                count={draftConfig.contradictions.length}
+              />
+              <NpcFlavorTab
+                value="goals"
+                label="Goals"
+                count={draftConfig.goals.length}
+              />
+              <NpcFlavorTab
+                value="flaws"
+                label="Flaws"
+                count={draftConfig.flaws.length}
+              />
+            </Tabs.List>
+            <Tabs.Content value="traits" className="mt-3">
+              <PoolEditor
+                label="Traits"
+                entries={draftConfig.traits}
+                onChange={(traits) =>
+                  setDraftConfig((current) => ({ ...current, traits }))
+                }
+              />
+            </Tabs.Content>
+            <Tabs.Content value="contradictions" className="mt-3">
+              <PoolEditor
+                label="Contradictions"
+                entries={draftConfig.contradictions}
+                onChange={(contradictions) =>
+                  setDraftConfig((current) => ({ ...current, contradictions }))
+                }
+              />
+            </Tabs.Content>
+            <Tabs.Content value="goals" className="mt-3">
+              <PoolEditor
+                label="Goals"
+                entries={draftConfig.goals}
+                onChange={(goals) =>
+                  setDraftConfig((current) => ({ ...current, goals }))
+                }
+              />
+            </Tabs.Content>
+            <Tabs.Content value="flaws" className="mt-3">
+              <PoolEditor
+                label="Flaws"
+                entries={draftConfig.flaws}
+                onChange={(flaws) =>
+                  setDraftConfig((current) => ({ ...current, flaws }))
+                }
+              />
+            </Tabs.Content>
+          </Tabs.Root>
 
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={saveMutation.isPending}>
-              <Save aria-hidden="true" />
-              Save pools
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={resetDraftConfig}
-              disabled={saveMutation.isPending}
-            >
-              <RotateCcw aria-hidden="true" />
-              Reset
-            </Button>
+          <div className="grid gap-3">
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={saveMutation.isPending}>
+                <Save aria-hidden="true" />
+                Save pools
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGenerateExample}
+              >
+                <Sparkles aria-hidden="true" />
+                Generate example output
+              </Button>
+            </div>
+            {exampleOutput !== null ? (
+              <p className="text-sm italic text-muted-foreground">
+                {exampleOutput}
+              </p>
+            ) : null}
           </div>
         </form>
       ) : (
         <NpcFlavorPoolReadOnlySummary config={draftConfig} />
       )}
-    </section>
+    </div>
   );
 }
 
-function PoolEditor({
-  entries,
+function NpcFlavorTab({
+  count,
   label,
-  onChange,
+  value,
 }: {
-  readonly entries: readonly string[];
+  readonly count: number;
   readonly label: string;
-  readonly onChange: (entries: string[]) => void;
+  readonly value: string;
 }): JSX.Element {
   return (
-    <fieldset className="grid gap-2">
-      <legend className="text-sm font-medium">{label}</legend>
-      {entries.length === 0 ? (
-        <p className="text-sm italic text-muted-foreground">No entries yet.</p>
-      ) : (
-        <ul className="grid gap-1.5">
-          {entries.map((entry, index) => (
-            <li key={index} className="flex gap-2">
-              <Input
-                value={entry}
-                onChange={(event) => {
-                  const next = [...entries];
-                  next[index] = event.currentTarget.value;
-                  onChange(next);
-                }}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Remove entry ${String(index + 1)}`}
-                onClick={() => {
-                  const next = entries.filter((_, i) => i !== index);
-                  onChange(next);
-                }}
-              >
-                <X aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onChange([...entries, ""])}
-        >
-          <Plus aria-hidden="true" />
-          Add entry
-        </Button>
-      </div>
-    </fieldset>
+    <Tabs.Trigger
+      value={value}
+      className="flex-1 rounded px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:text-foreground"
+    >
+      {label}
+      {count > 0 ? (
+        <span className="ml-1 opacity-60">({String(count)})</span>
+      ) : null}
+    </Tabs.Trigger>
   );
 }
 

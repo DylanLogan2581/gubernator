@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
 import { createSeededRng } from "@/lib/seededRng";
+import { generateLocalId } from "@/lib/uid";
 
 import { updateCitizenNpcFieldsMutationOptions } from "../../mutations/citizensMutations";
 import { generateNpcFlavor, type NpcFlavor } from "../../utils/npcFlavor";
@@ -81,7 +82,7 @@ export function CitizenNpcFlavorSection({
       goals: [],
       flaws: [],
     };
-    return generateNpcFlavor(config, createSeededRng(crypto.randomUUID()));
+    return generateNpcFlavor(config, createSeededRng(generateLocalId()));
   }
 
   if (isEditing) {

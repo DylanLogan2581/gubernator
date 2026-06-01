@@ -294,6 +294,12 @@ const appRuntimeRestrictedSyntax = [
     message:
       "Avoid Math.random() in app code. Prefer a dedicated random helper or deterministic input.",
   },
+  {
+    selector:
+      "CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']",
+    message:
+      "Avoid crypto.randomUUID() in app code. Use generateLocalId() from @/lib/uid instead.",
+  },
 ] as const;
 
 const routerProviderRestrictedSyntax = [
@@ -589,6 +595,7 @@ export default defineConfig([
       "src/main.tsx",
       "src/lib/supabase.ts",
       "src/lib/queryClient.ts",
+      "src/lib/uid.ts",
       "src/routes/__root.tsx",
     ],
     rules: {

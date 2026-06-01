@@ -164,6 +164,7 @@ export function NationRelationshipRow({
                     fromNationId: nation.id,
                     stance,
                     toNationId: other.id,
+                    worldId: nation.worldId,
                   },
                   {
                     onError: notifyStanceError,
@@ -193,6 +194,7 @@ export function NationRelationshipRow({
                         fromNationId: nation.id,
                         stance: "allied",
                         toNationId: other.id,
+                        worldId: nation.worldId,
                       },
                       {
                         onError: notifyStanceError,
@@ -215,6 +217,7 @@ export function NationRelationshipRow({
                         fromNationId: nation.id,
                         stance: "non_aggression_pact",
                         toNationId: other.id,
+                        worldId: nation.worldId,
                       },
                       {
                         onError: notifyStanceError,
@@ -317,6 +320,7 @@ export function NationRelationshipRow({
                 fromNationId: nation.id,
                 stance: pendingUnilateralStance,
                 toNationId: other.id,
+                worldId: nation.worldId,
               },
               {
                 onError: notifyStanceError,

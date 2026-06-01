@@ -29,7 +29,38 @@ export const calendarInputLimits = {
   startingYearMax: 1_000_000,
 } as const;
 
+export const resourceInputLimits = {
+  resourceNameMax: 64,
+  resourceSlugMax: 64,
+} as const;
+
 export const npcFlavorInputLimits = {
   poolSizeMax: 100,
   poolEntryMax: 200,
+} as const;
+
+export const jobInputLimits = {
+  jobNameMax: 64,
+  jobSlugMax: 64,
+} as const;
+
+export const buildingInputLimits = {
+  blueprintDescriptionMax: 500,
+  blueprintNameMax: 64,
+  blueprintSlugMax: 64,
+} as const;
+
+export const depositInputLimits = {
+  depositTypeNameMax: 64,
+  depositTypeSlugMax: 64,
+} as const;
+
+export const managedPopulationInputLimits = {
+  populationTypeNameMax: 64,
+  populationTypeSlugMax: 64,
+} as const;
+
+export const namingInputLimits = {
+  namePoolSizeMax: 100,
+  namePoolEntryMax: 64,
 } as const;

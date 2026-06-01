@@ -382,11 +382,11 @@ select
     'world admin cannot see unassigned hidden world'
   );
 
--- World admin cannot update a world (RLS silently affects 0 rows, no exception).
--- Run the update then read back to confirm name is unchanged.
+-- World admin can update a world via worlds_update_world_admin policy.
+-- Mirrors the write access Epic 4 child entities already grant world admins.
 update public.worlds
 set
-  name = 'Hacked'
+  name = 'Renamed By Admin'
 where
   id = 'e0000000-0000-0000-0000-000000000001';
 
@@ -400,8 +400,8 @@ select
       where
         id = 'e0000000-0000-0000-0000-000000000001'
     ),
-    'Private World',
-    'world admin update is silently blocked (name unchanged)'
+    'Renamed By Admin',
+    'world admin update succeeds via worlds_update_world_admin policy'
   );
 
 -- World admin can add another admin to an assigned world.
