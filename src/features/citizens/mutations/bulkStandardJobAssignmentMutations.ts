@@ -72,6 +72,11 @@ export function setBulkStandardJobAssignmentMutationOptions({
         queryClient.invalidateQueries({
           queryKey: citizensQueryKeys.settlementJobCounts(values.settlementId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementAggregateStats(
+            values.settlementId,
+          ),
+        }),
       ]);
     },
   });

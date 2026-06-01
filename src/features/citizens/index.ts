@@ -2,6 +2,7 @@
 // Implemented in Epic 3.
 export { CitizenDetailPage } from "./components/CitizenDetailPage";
 export { CitizensPanel } from "./components/CitizensPanel";
+export { SettlementAssignmentBoard } from "./components/SettlementAssignmentBoard";
 export { NpcFlavorLine } from "./components/NpcFlavorLine";
 export { NpcFlavorEditor } from "./components/NpcFlavorEditor";
 export { PartnershipHistoryPanel } from "./components/PartnershipHistoryPanel";

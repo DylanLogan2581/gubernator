@@ -395,6 +395,8 @@ function computeAggregate(
     trade_route: 0,
     unassigned: 0,
   };
+  let unassignedNpcCount = 0;
+  let unassignedPcCount = 0;
 
   for (const row of rows) {
     typeBreakdown[row.citizen_type] += 1;
@@ -402,6 +404,13 @@ function computeAggregate(
     const assignment = row.citizen_assignments?.[0]?.assignment_type ?? null;
     if (assignment === null) {
       assignmentTypeBreakdown.unassigned += 1;
+      if (row.status === "alive") {
+        if (row.citizen_type === "npc") {
+          unassignedNpcCount += 1;
+        } else {
+          unassignedPcCount += 1;
+        }
+      }
     } else {
       assignmentTypeBreakdown[assignment] += 1;
     }
@@ -412,6 +421,8 @@ function computeAggregate(
     statusBreakdown,
     total: rows.length,
     typeBreakdown,
+    unassignedNpcCount,
+    unassignedPcCount,
   };
 }
 
@@ -429,6 +440,8 @@ function emptyAggregateStats(): CitizenAggregateStats {
     statusBreakdown: { alive: 0, dead: 0 },
     total: 0,
     typeBreakdown: { npc: 0, player_character: 0 },
+    unassignedNpcCount: 0,
+    unassignedPcCount: 0,
   };
 }
 
