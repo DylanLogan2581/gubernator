@@ -17,6 +17,7 @@ import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
 } from "@/components/shared/ResourceAmountListEditor";
+import { SlugHint } from "@/components/shared/SlugHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -471,8 +472,6 @@ function CreateDepositTypeForm({
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
 
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
   const [jobId, setJobId] = useState("");
   const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState("1");
   const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>([]);
@@ -481,19 +480,9 @@ function CreateDepositTypeForm({
     undefined,
   );
 
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!slugEdited) {
-      setSlug(
-        toSlug(value, { maxLength: depositInputLimits.depositTypeSlugMax }),
-      );
-    }
-  }
-
-  function handleSlugChange(value: string): void {
-    setSlug(value);
-    setSlugEdited(value.length > 0);
-  }
+  const derivedSlug = toSlug(name, {
+    maxLength: depositInputLimits.depositTypeSlugMax,
+  });
 
   function handleJobChange(selectedJobId: string): void {
     setJobId(selectedJobId);
@@ -518,7 +507,7 @@ function CreateDepositTypeForm({
       name,
       outputUnitsPerWorker:
         outputUnitsPerWorker !== "" ? parseInt(outputUnitsPerWorker, 10) : 0,
-      slug,
+      slug: derivedSlug,
       workerInputsJson:
         workerInputs.length > 0
           ? workerInputs.map((e) => ({
@@ -584,31 +573,18 @@ function CreateDepositTypeForm({
             <span className="text-muted-foreground">Name</span>
             <Input
               aria-invalid={fieldErrors.name !== undefined}
+              aria-label="Name"
               disabled={isPending}
               maxLength={depositInputLimits.depositTypeNameMax}
               value={name}
               onChange={(e) => {
-                handleNameChange(e.currentTarget.value);
+                setName(e.currentTarget.value);
               }}
             />
             {fieldErrors.name !== undefined ? (
               <p className="text-xs text-destructive">{fieldErrors.name}</p>
             ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Slug</span>
-            <Input
-              aria-invalid={fieldErrors.slug !== undefined}
-              disabled={isPending}
-              maxLength={depositInputLimits.depositTypeSlugMax}
-              value={slug}
-              onChange={(e) => {
-                handleSlugChange(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.slug !== undefined ? (
-              <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-            ) : null}
+            <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
           </label>
           {depositJobs.length === 0 ? (
             <div className="grid gap-1 text-sm">
@@ -734,6 +710,13 @@ function EditDepositTypeForm({
   const [name, setName] = useState(depositType.name);
   const [slug, setSlug] = useState(depositType.slug);
   const [jobId, setJobId] = useState(depositType.jobId);
+
+  function handleNameChange(value: string): void {
+    setName(value);
+    setSlug(
+      toSlug(value, { maxLength: depositInputLimits.depositTypeSlugMax }),
+    );
+  }
   const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState(
     String(depositType.outputUnitsPerWorker),
   );
@@ -852,31 +835,18 @@ function EditDepositTypeForm({
           <span className="text-muted-foreground">Name</span>
           <Input
             aria-invalid={fieldErrors.name !== undefined}
+            aria-label="Name"
             disabled={isPending}
             maxLength={depositInputLimits.depositTypeNameMax}
             value={name}
             onChange={(e) => {
-              setName(e.currentTarget.value);
+              handleNameChange(e.currentTarget.value);
             }}
           />
           {fieldErrors.name !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Slug</span>
-          <Input
-            aria-invalid={fieldErrors.slug !== undefined}
-            disabled={isPending}
-            maxLength={depositInputLimits.depositTypeSlugMax}
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.slug !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-          ) : null}
+          <SlugHint slug={slug} error={fieldErrors.slug} />
         </label>
         {depositJobs.length === 0 ? (
           <div className="grid gap-1 text-sm">

@@ -12,6 +12,7 @@ import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { SlugHint } from "@/components/shared/SlugHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -448,6 +449,11 @@ function EditResourceForm({
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
+  function handleNameChange(value: string): void {
+    setName(value);
+    setSlug(toSlug(value, { maxLength: resourceInputLimits.resourceSlugMax }));
+  }
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
@@ -529,31 +535,18 @@ function EditResourceForm({
           <span className="text-muted-foreground">Name</span>
           <Input
             aria-invalid={fieldErrors.name !== undefined}
+            aria-label="Name"
             disabled={isPending}
             maxLength={resourceInputLimits.resourceNameMax}
             value={name}
             onChange={(e) => {
-              setName(e.currentTarget.value);
+              handleNameChange(e.currentTarget.value);
             }}
           />
           {fieldErrors.name !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Slug</span>
-          <Input
-            aria-invalid={fieldErrors.slug !== undefined}
-            disabled={isPending}
-            maxLength={resourceInputLimits.resourceSlugMax}
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.slug !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-          ) : null}
+          <SlugHint slug={slug} error={fieldErrors.slug} />
         </label>
         <label className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Base stockpile cap</span>
@@ -626,24 +619,12 @@ function CreateResourceForm({
   readonly worldId: string;
 }): JSX.Element {
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
   const [baseStockpileCap, setBaseStockpileCap] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!slugEdited) {
-      setSlug(
-        toSlug(value, { maxLength: resourceInputLimits.resourceSlugMax }),
-      );
-    }
-  }
-
-  function handleSlugChange(value: string): void {
-    setSlug(value);
-    setSlugEdited(value.length > 0);
-  }
+  const derivedSlug = toSlug(name, {
+    maxLength: resourceInputLimits.resourceSlugMax,
+  });
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -652,7 +633,7 @@ function CreateResourceForm({
     const input: CreateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
       name,
-      slug,
+      slug: derivedSlug,
       worldId,
     };
 
@@ -711,31 +692,18 @@ function CreateResourceForm({
             <span className="text-muted-foreground">Name</span>
             <Input
               aria-invalid={fieldErrors.name !== undefined}
+              aria-label="Name"
               disabled={isPending}
               maxLength={resourceInputLimits.resourceNameMax}
               value={name}
               onChange={(e) => {
-                handleNameChange(e.currentTarget.value);
+                setName(e.currentTarget.value);
               }}
             />
             {fieldErrors.name !== undefined ? (
               <p className="text-xs text-destructive">{fieldErrors.name}</p>
             ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Slug</span>
-            <Input
-              aria-invalid={fieldErrors.slug !== undefined}
-              disabled={isPending}
-              maxLength={resourceInputLimits.resourceSlugMax}
-              value={slug}
-              onChange={(e) => {
-                handleSlugChange(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.slug !== undefined ? (
-              <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-            ) : null}
+            <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
           </label>
           <label className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Base stockpile cap</span>

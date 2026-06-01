@@ -208,11 +208,8 @@ describe("DepositsConfigPanel", () => {
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Coal Seam",
     );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "coal-seam",
-    );
+
+    expect(within(dialog).getByText("slug: coal-seam")).toBeDefined();
 
     const jobSelect = within(dialog).getByRole("combobox", {
       name: "Linked deposit job",

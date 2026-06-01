@@ -247,11 +247,8 @@ describe("ManagedPopulationsConfigPanel", () => {
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Cattle",
     );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "cattle",
-    );
+
+    expect(within(dialog).getByText("slug: cattle")).toBeDefined();
 
     const husbandrySelect = within(dialog).getByRole("combobox", {
       name: "Husbandry job",
@@ -707,8 +704,6 @@ describe("ManagedPopulationsConfigPanel", () => {
     );
 
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Cattle");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "cattle");
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Husbandry job" }),
       HUSBANDRY_JOB_ID,

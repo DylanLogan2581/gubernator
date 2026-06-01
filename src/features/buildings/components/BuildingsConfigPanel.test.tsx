@@ -129,11 +129,8 @@ describe("BuildingsConfigPanel", () => {
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Farmhouse",
     );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "farmhouse",
-    );
+
+    expect(within(dialog).getByText("slug: farmhouse")).toBeDefined();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -254,8 +251,6 @@ describe("BuildingsConfigPanel", () => {
     await user.click(screen.getByRole("button", { name: "Add blueprint" }));
 
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Farmhouse");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "farmhouse");
 
     await user.click(screen.getByRole("button", { name: "Add tier" }));
 
@@ -300,8 +295,6 @@ describe("BuildingsConfigPanel", () => {
     await user.click(screen.getByRole("button", { name: "Add blueprint" }));
 
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Farmhouse");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "farmhouse");
 
     await user.click(screen.getByRole("button", { name: "Add tier" }));
 
@@ -344,8 +337,6 @@ describe("BuildingsConfigPanel", () => {
     await user.click(screen.getByRole("button", { name: "Add blueprint" }));
 
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Farmhouse");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "farmhouse");
 
     await user.click(screen.getByRole("button", { name: "Add tier" }));
 

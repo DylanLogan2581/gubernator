@@ -52,11 +52,8 @@ describe("ResourcesConfigPanel", () => {
       within(dialog).getByRole("textbox", { name: "Name" }),
       "Gold",
     );
-    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Slug" }),
-      "gold",
-    );
+
+    expect(within(dialog).getByText("slug: gold")).toBeDefined();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
