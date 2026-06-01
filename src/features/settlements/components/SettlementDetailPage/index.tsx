@@ -9,6 +9,7 @@ import {
   useActivePlayerCharacter,
   type AccessContext,
 } from "@/features/permissions";
+import { SettlementStockpilesPanel } from "@/features/resources";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -255,6 +256,12 @@ function SettlementDetailLoaded({
         isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}
+      />
+
+      <SettlementStockpilesPanel
+        canAdmin={worldAccess.canAdmin}
+        isArchived={isArchived}
+        settlementId={settlement.id}
       />
 
       <SettlementDetailsSection

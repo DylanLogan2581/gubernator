@@ -1,4 +1,5 @@
 export { ResourcesConfigPanel } from "./components/ResourcesConfigPanel";
+export { SettlementStockpilesPanel } from "./components/SettlementStockpilesPanel";
 export {
   ResourceMutationError,
   createResourceMutationOptions,
