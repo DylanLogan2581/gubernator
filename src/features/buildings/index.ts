@@ -1,5 +1,5 @@
-// Buildings feature — define building blueprints and their tier costs/effects for worlds.
-// Implemented in Epic 4.
+// Buildings feature — building blueprints, settlement buildings, and construction.
+// Epic 4 (blueprints/tiers) and Epic 5 (settlement buildings, manual deconstruct).
 
 export { BlueprintTierEditor } from "./components/BlueprintTierEditor";
 export { BuildingsConfigPanel } from "./components/BuildingsConfigPanel";
@@ -45,12 +45,19 @@ export {
   reorderConstructionProjectsMutationOptions,
 } from "./mutations/reorderConstructionProjectsMutations";
 export {
+  ManualDeconstructBuildingMutationError,
+  isManualDeconstructBuildingMutationError,
+  manualDeconstructBuildingMutationOptions,
+} from "./mutations/settlementBuildingsMutations";
+export {
   blueprintByIdQueryOptions,
   blueprintsByWorldQueryOptions,
   tierByIdQueryOptions,
   tiersByBlueprintQueryOptions,
 } from "./queries/buildingsQueries";
 export { constructionProjectsBySettlementQueryOptions } from "./queries/constructionProjectsQueries";
+export { settlementBuildingsBySettlementQueryOptions } from "./queries/settlementBuildingsQueries";
+export { settlementPopulationCapQueryOptions } from "./queries/settlementPopulationCapQueries";
 export { buildingsQueryKeys } from "./queries/buildingsQueryKeys";
 export {
   createBlueprintInputSchema,
@@ -67,12 +74,14 @@ export {
 export { cancelConstructionProjectInputSchema } from "./schemas/cancelConstructionProjectSchemas";
 export { createConstructionProjectInputSchema } from "./schemas/createConstructionProjectSchemas";
 export { reorderConstructionProjectsInputSchema } from "./schemas/reorderConstructionProjectsSchemas";
+export { manualDeconstructBuildingInputSchema } from "./schemas/manualDeconstructBuildingSchemas";
 export { validateBlueprintTierReferencesAgainstWorld } from "./utils/validateBuildingReferences";
 
 export type { BuildingMutationIssue } from "./mutations/buildingsMutations";
 export type { CancelConstructionProjectMutationIssue } from "./mutations/cancelConstructionProjectMutations";
 export type { ConstructionProjectMutationIssue } from "./mutations/createConstructionProjectMutations";
 export type { ReorderConstructionProjectsMutationIssue } from "./mutations/reorderConstructionProjectsMutations";
+export type { ManualDeconstructBuildingMutationIssue } from "./mutations/settlementBuildingsMutations";
 export type {
   CreateBlueprintInput,
   CreateBlueprintValues,
@@ -109,6 +118,10 @@ export type {
   ReorderConstructionProjectsValues,
 } from "./schemas/reorderConstructionProjectsSchemas";
 export type {
+  ManualDeconstructBuildingInput,
+  ManualDeconstructBuildingValues,
+} from "./schemas/manualDeconstructBuildingSchemas";
+export type {
   BuildingBlueprint,
   BuildingBlueprintTier,
   DeleteTierResult,
@@ -127,3 +140,10 @@ export type {
   ReorderConstructionProjectsResult,
 } from "./types/constructionProjectTypes";
 export type { BuildingReferenceIssue } from "./utils/validateBuildingReferences";
+export type {
+  EffectsDigest,
+  ManualDeconstructBuildingResult,
+  SettlementBuilding,
+  SettlementBuildingState,
+} from "./types/settlementBuildingTypes";
+export { computeEffectsDigest } from "./types/settlementBuildingTypes";

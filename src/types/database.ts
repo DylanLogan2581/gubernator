@@ -1358,7 +1358,7 @@ export type Database = {
           payload_jsonb: Json;
           resource_id: string | null;
           settlement_id: string | null;
-          turn_transition_id: string;
+          turn_transition_id: string | null;
           world_id: string;
         };
         Insert: {
@@ -1369,7 +1369,7 @@ export type Database = {
           payload_jsonb?: Json;
           resource_id?: string | null;
           settlement_id?: string | null;
-          turn_transition_id: string;
+          turn_transition_id?: string | null;
           world_id: string;
         };
         Update: {
@@ -1380,7 +1380,7 @@ export type Database = {
           payload_jsonb?: Json;
           resource_id?: string | null;
           settlement_id?: string | null;
-          turn_transition_id?: string;
+          turn_transition_id?: string | null;
           world_id?: string;
         };
         Relationships: [
@@ -2167,6 +2167,12 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      manual_deconstruct_settlement_building: {
+        Args: { p_settlement_building_id: string };
+        Returns: {
+          settlement_building_id: string;
+        }[];
       };
       mark_partnership_widowed: {
         Args: {
