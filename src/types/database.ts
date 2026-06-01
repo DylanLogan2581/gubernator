@@ -2292,6 +2292,13 @@ export type Database = {
           settlement_id: string;
         }[];
       };
+      remove_managed_population_instance: {
+        Args: { p_instance_id: string };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
+      };
       reorder_construction_projects: {
         Args: { p_positions: Json; p_settlement_id: string };
         Returns: {

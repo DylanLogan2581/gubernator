@@ -24,3 +24,8 @@ export type SetConfiguredCullQuantityResult = {
   readonly managedPopulationInstanceId: string;
   readonly settlementId: string;
 };
+
+export type RemoveManagedPopulationInstanceResult = {
+  readonly managedPopulationInstanceId: string;
+  readonly settlementId: string;
+};
