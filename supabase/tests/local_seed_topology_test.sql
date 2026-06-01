@@ -161,8 +161,145 @@ where
   user_id = '00000000-0000-0000-0000-000000000003'
   and world_id = '00000000-0000-0000-0000-000000000101';
 
+-- Epic 5 fixture resets: restore citizen assignments and world 101 trade routes
+-- to their seeded state so prior local mutations cannot flap these assertions.
+insert into
+  public.citizen_assignments (
+    citizen_id,
+    assignment_type,
+    job_id,
+    construction_project_id,
+    deposit_instance_id,
+    managed_population_instance_id,
+    trade_route_id,
+    trade_route_end,
+    assigned_on_turn_number
+  )
+values
+  (
+    '00000000-0000-0000-0000-000000000411',
+    'standard_job',
+    '00000000-0000-0000-0005-000000000101',
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  (
+    '00000000-0000-0000-0000-000000000412',
+    'standard_job',
+    '00000000-0000-0000-0005-000000000101',
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  (
+    '00000000-0000-0000-0000-000000000413',
+    'standard_job',
+    '00000000-0000-0000-0005-000000000102',
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  (
+    '00000000-0000-0000-0000-000000000401',
+    'trade_route',
+    null,
+    null,
+    null,
+    null,
+    '00000000-0000-0000-000e-000000000101',
+    'origin',
+    0
+  ),
+  (
+    '00000000-0000-0000-0000-000000000414',
+    'construction_project',
+    null,
+    '00000000-0000-0000-000b-000000000004',
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  (
+    '00000000-0000-0000-0000-000000000402',
+    'husbandry',
+    null,
+    null,
+    null,
+    '00000000-0000-0000-000d-000000000002',
+    null,
+    null,
+    0
+  ),
+  (
+    '00000000-0000-0000-0000-000000000403',
+    'deposit',
+    null,
+    null,
+    '00000000-0000-0000-000c-000000000003',
+    null,
+    null,
+    null,
+    0
+  ),
+  (
+    '00000000-0000-0000-0000-000000000415',
+    'culling',
+    null,
+    null,
+    null,
+    '00000000-0000-0000-000d-000000000005',
+    null,
+    null,
+    0
+  )
+on conflict (citizen_id) do update
+set
+  assignment_type = excluded.assignment_type,
+  job_id = excluded.job_id,
+  construction_project_id = excluded.construction_project_id,
+  deposit_instance_id = excluded.deposit_instance_id,
+  managed_population_instance_id = excluded.managed_population_instance_id,
+  trade_route_id = excluded.trade_route_id,
+  trade_route_end = excluded.trade_route_end,
+  assigned_on_turn_number = excluded.assigned_on_turn_number,
+  updated_at = now();
+
+update public.trade_routes
+set
+  status = 'active',
+  origin_approval_status = 'approved',
+  destination_approval_status = 'approved',
+  origin_approved_by_citizen_id = '00000000-0000-0000-0000-000000000411',
+  destination_approved_by_citizen_id = '00000000-0000-0000-0000-000000000414',
+  updated_at = now()
+where
+  id = '00000000-0000-0000-000e-000000000101';
+
+update public.trade_routes
+set
+  status = 'proposed',
+  origin_approval_status = 'pending',
+  destination_approval_status = 'pending',
+  origin_approved_by_citizen_id = null,
+  destination_approved_by_citizen_id = null,
+  updated_at = now()
+where
+  id = '00000000-0000-0000-000e-000000000102';
+
 select
-  plan (50);
+  plan (75);
 
 -- ===========================================================================
 -- Existing Epic 2 assertions: world calendar, nation, settlement readiness.
@@ -1116,6 +1253,458 @@ select
     '>=',
     10,
     'every seeded world has at least 10 NPC flavor flaws'
+  );
+
+-- ===========================================================================
+-- Epic 5 assertions: buildings, construction projects, deposits, managed
+-- populations, stockpiles, trade routes, and citizen assignments.
+-- All assertions target the five canonical settlements in Verdant Reach
+-- (world 101) and the cross-world trade route coverage.
+-- ===========================================================================
+-- Citizen 415 seeded at Stonehold Keep (settlement 305).
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.citizens
+      where
+        id = '00000000-0000-0000-0000-000000000415'
+        and settlement_id = '00000000-0000-0000-0000-000000000305'
+        and world_id = '00000000-0000-0000-0000-000000000101'
+        and citizen_type = 'npc'
+    ),
+    'Epic 5 seeds citizen 415 (Davin Stonehill) at Stonehold Keep'
+  );
+
+-- 3 active buildings per canonical settlement.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlement_buildings
+      where
+        settlement_id = '00000000-0000-0000-0000-000000000301'
+        and state = 'active'
+    ),
+    3,
+    'Hearthwatch has exactly 3 active seeded buildings'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlement_buildings
+      where
+        settlement_id in (
+          '00000000-0000-0000-0000-000000000301',
+          '00000000-0000-0000-0000-000000000302',
+          '00000000-0000-0000-0000-000000000303',
+          '00000000-0000-0000-0000-000000000304',
+          '00000000-0000-0000-0000-000000000305'
+        )
+        and state = 'active'
+    ),
+    15,
+    'all 5 canonical settlements have 15 active buildings total (3 each)'
+  );
+
+-- Buildings cover all 3 effect types for Hearthwatch (3 distinct blueprints).
+select
+  is (
+    (
+      select
+        count(distinct building_blueprint_id)::integer
+      from
+        public.settlement_buildings
+      where
+        settlement_id = '00000000-0000-0000-0000-000000000301'
+        and state = 'active'
+    ),
+    3,
+    'Hearthwatch buildings cover 3 distinct blueprints (job_capacity, storage, population_cap)'
+  );
+
+-- 1 in-progress construction project per canonical settlement.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.construction_projects
+      where
+        settlement_id in (
+          '00000000-0000-0000-0000-000000000301',
+          '00000000-0000-0000-0000-000000000302',
+          '00000000-0000-0000-0000-000000000303',
+          '00000000-0000-0000-0000-000000000304',
+          '00000000-0000-0000-0000-000000000305'
+        )
+        and status = 'in_progress'
+    ),
+    5,
+    'each of the 5 canonical settlements has exactly 1 in_progress construction project'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.construction_projects
+      where
+        id = '00000000-0000-0000-000b-000000000001'
+        and settlement_id = '00000000-0000-0000-0000-000000000301'
+        and status = 'in_progress'
+    ),
+    'Hearthwatch in-progress construction project is seeded with expected id'
+  );
+
+-- 1 active deposit instance per canonical settlement.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.deposit_instances
+      where
+        settlement_id in (
+          '00000000-0000-0000-0000-000000000301',
+          '00000000-0000-0000-0000-000000000302',
+          '00000000-0000-0000-0000-000000000303',
+          '00000000-0000-0000-0000-000000000304',
+          '00000000-0000-0000-0000-000000000305'
+        )
+        and status = 'active'
+    ),
+    5,
+    'each of the 5 canonical settlements has exactly 1 active deposit instance'
+  );
+
+-- Each deposit instance has at least 1 resource.
+select
+  cmp_ok (
+    (
+      select
+        count(*)::integer
+      from
+        public.deposit_instance_resources
+      where
+        deposit_instance_id in (
+          '00000000-0000-0000-000c-000000000001',
+          '00000000-0000-0000-000c-000000000002',
+          '00000000-0000-0000-000c-000000000003',
+          '00000000-0000-0000-000c-000000000004',
+          '00000000-0000-0000-000c-000000000005'
+        )
+    ),
+    '>=',
+    5,
+    'each seeded deposit instance has at least 1 resource entry'
+  );
+
+-- 1 active managed population instance per canonical settlement.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.managed_population_instances
+      where
+        settlement_id in (
+          '00000000-0000-0000-0000-000000000301',
+          '00000000-0000-0000-0000-000000000302',
+          '00000000-0000-0000-0000-000000000303',
+          '00000000-0000-0000-0000-000000000304',
+          '00000000-0000-0000-0000-000000000305'
+        )
+        and status = 'active'
+    ),
+    5,
+    'each of the 5 canonical settlements has exactly 1 active managed population instance'
+  );
+
+-- Stockpiles: Food > 0 at Hearthwatch.
+select
+  cmp_ok (
+    (
+      select
+        srs.quantity::numeric
+      from
+        public.settlement_resource_stockpiles srs
+        join public.resources r on r.id = srs.resource_id
+      where
+        srs.settlement_id = '00000000-0000-0000-0000-000000000301'
+        and r.slug = 'food'
+        and r.is_system_resource = true
+    ),
+    '>',
+    0::numeric,
+    'Hearthwatch Food stockpile is non-zero'
+  );
+
+-- Stockpiles: Fresh Water > 0 at Hearthwatch.
+select
+  cmp_ok (
+    (
+      select
+        srs.quantity::numeric
+      from
+        public.settlement_resource_stockpiles srs
+        join public.resources r on r.id = srs.resource_id
+      where
+        srs.settlement_id = '00000000-0000-0000-0000-000000000301'
+        and r.slug = 'fresh-water'
+        and r.is_system_resource = true
+    ),
+    '>',
+    0::numeric,
+    'Hearthwatch Fresh Water stockpile is non-zero'
+  );
+
+-- Stockpiles: at least 3 non-system resources > 0 at Hearthwatch.
+select
+  cmp_ok (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlement_resource_stockpiles srs
+        join public.resources r on r.id = srs.resource_id
+      where
+        srs.settlement_id = '00000000-0000-0000-0000-000000000301'
+        and r.is_system_resource = false
+        and srs.quantity > 0
+    ),
+    '>=',
+    3,
+    'Hearthwatch has at least 3 non-system resources with non-zero stockpile'
+  );
+
+-- Trade routes: active cross-nation route in world 101 (301 → 304).
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.trade_routes
+      where
+        id = '00000000-0000-0000-000e-000000000101'
+        and origin_settlement_id = '00000000-0000-0000-0000-000000000301'
+        and destination_settlement_id = '00000000-0000-0000-0000-000000000304'
+        and status = 'active'
+        and origin_approval_status = 'approved'
+        and destination_approval_status = 'approved'
+    ),
+    'world 101 active trade route (Hearthwatch → Tidewatch) is seeded with status=active and both approvals'
+  );
+
+-- Trade routes: pending route in world 101 (303 → 305).
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.trade_routes
+      where
+        id = '00000000-0000-0000-000e-000000000102'
+        and origin_settlement_id = '00000000-0000-0000-0000-000000000303'
+        and destination_settlement_id = '00000000-0000-0000-0000-000000000305'
+        and status = 'proposed'
+        and origin_approval_status = 'pending'
+        and destination_approval_status = 'pending'
+    ),
+    'world 101 pending trade route (Sunmere Hold → Stonehold Keep) is seeded with status=proposed'
+  );
+
+-- At least 5 active trade routes across all seeded worlds.
+select
+  cmp_ok (
+    (
+      select
+        count(*)::integer
+      from
+        public.trade_routes
+      where
+        status = 'active'
+    ),
+    '>=',
+    5,
+    'at least 5 active trade routes are seeded across all worlds'
+  );
+
+-- Trade routes span all 5 seeded worlds.
+select
+  is (
+    (
+      select
+        count(distinct n.world_id)::integer
+      from
+        public.trade_routes tr
+        join public.settlements s on s.id = tr.origin_settlement_id
+        join public.nations n on n.id = s.nation_id
+    ),
+    5,
+    'seeded trade routes span all 5 seeded worlds'
+  );
+
+-- Citizen assignments: 3 standard_job in world 101.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.citizen_assignments ca
+        join public.citizens c on c.id = ca.citizen_id
+      where
+        c.world_id = '00000000-0000-0000-0000-000000000101'
+        and ca.assignment_type = 'standard_job'
+    ),
+    3,
+    'world 101 has exactly 3 standard_job citizen assignments'
+  );
+
+-- All 6 assignment_type values are present in world 101.
+select
+  is (
+    (
+      select
+        count(distinct ca.assignment_type)::integer
+      from
+        public.citizen_assignments ca
+        join public.citizens c on c.id = ca.citizen_id
+      where
+        c.world_id = '00000000-0000-0000-0000-000000000101'
+    ),
+    6,
+    'world 101 citizen assignments cover all 6 assignment_type values'
+  );
+
+-- Trade route assignment for Aria has trade_route_end='origin'.
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.citizen_assignments
+      where
+        citizen_id = '00000000-0000-0000-0000-000000000401'
+        and assignment_type = 'trade_route'
+        and trade_route_end = 'origin'
+        and trade_route_id = '00000000-0000-0000-000e-000000000101'
+    ),
+    'Aria (401) has a trade_route assignment with trade_route_end=origin for the active route'
+  );
+
+-- Construction project assignment for Pell.
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.citizen_assignments
+      where
+        citizen_id = '00000000-0000-0000-0000-000000000414'
+        and assignment_type = 'construction_project'
+        and construction_project_id = '00000000-0000-0000-000b-000000000004'
+    ),
+    'Pell (414) has a construction_project assignment to the Tidewatch smithy project'
+  );
+
+-- Husbandry assignment for Halden.
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.citizen_assignments
+      where
+        citizen_id = '00000000-0000-0000-0000-000000000402'
+        and assignment_type = 'husbandry'
+        and managed_population_instance_id = '00000000-0000-0000-000d-000000000002'
+    ),
+    'Halden (402) has a husbandry assignment to the Mistfall sheep flock'
+  );
+
+-- Deposit assignment for Kestrel.
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.citizen_assignments
+      where
+        citizen_id = '00000000-0000-0000-0000-000000000403'
+        and assignment_type = 'deposit'
+        and deposit_instance_id = '00000000-0000-0000-000c-000000000003'
+    ),
+    'Kestrel (403) has a deposit assignment to the Sunmere stone quarry'
+  );
+
+-- Culling assignment for Davin.
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.citizen_assignments
+      where
+        citizen_id = '00000000-0000-0000-0000-000000000415'
+        and assignment_type = 'culling'
+        and managed_population_instance_id = '00000000-0000-0000-000d-000000000005'
+    ),
+    'Davin (415) has a culling assignment to the Stonehold pig drove'
+  );
+
+-- Managed population at Stonehold has configured_cull_quantity > 0.
+select
+  cmp_ok (
+    (
+      select
+        configured_cull_quantity::numeric
+      from
+        public.managed_population_instances
+      where
+        id = '00000000-0000-0000-000d-000000000005'
+    ),
+    '>',
+    0::numeric,
+    'Stonehold pig drove has configured_cull_quantity > 0 (supports culling assignment)'
+  );
+
+-- Managed population at Mistfall is active sheep herd.
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.managed_population_instances
+      where
+        id = '00000000-0000-0000-000d-000000000002'
+        and settlement_id = '00000000-0000-0000-0000-000000000302'
+        and managed_population_type_id = '00000000-0000-0000-0009-000000000101'
+        and status = 'active'
+    ),
+    'Mistfall managed population is an active sheep herd (pop_type offset 1)'
   );
 
 select
