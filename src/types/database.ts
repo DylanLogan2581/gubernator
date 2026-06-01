@@ -1883,6 +1883,32 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      create_managed_population_instance: {
+        Args: {
+          p_initial_count: number;
+          p_initial_cull_quantity: number;
+          p_name: string;
+          p_settlement_id: string;
+          p_type_id: string;
+        };
+        Returns: {
+          configured_cull_quantity: number;
+          created_at: string;
+          current_count: number;
+          id: string;
+          managed_population_type_id: string;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "managed_population_instances";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       create_npc: {
         Args: {
           p_born_on_turn_number?: number;
