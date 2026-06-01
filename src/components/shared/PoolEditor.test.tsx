@@ -77,10 +77,13 @@ describe("PoolEditor", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("shows bulk import textarea when Bulk import button is clicked", async () => {
+  it("opens a dialog with the pool label when Bulk import is clicked", async () => {
     const user = userEvent.setup();
     render(<PoolEditor label="Pool" entries={[]} onChange={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: /Bulk import/ }));
+    expect(
+      screen.getByRole("dialog", { name: /Bulk import — Pool/ }),
+    ).toBeDefined();
     expect(
       screen.getByRole("textbox", {
         name: /Bulk import entries/,
