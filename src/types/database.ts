@@ -870,6 +870,84 @@ export type Database = {
           },
         ];
       };
+      settlement_buildings: {
+        Row: {
+          activated_on_turn_number: number;
+          building_blueprint_id: string;
+          created_at: string;
+          current_tier_id: string;
+          deactivated_in_transition_id: string | null;
+          id: string;
+          missed_upkeep_count: number;
+          settlement_id: string;
+          source_project_id: string | null;
+          state: string;
+          updated_at: string;
+        };
+        Insert: {
+          activated_on_turn_number: number;
+          building_blueprint_id: string;
+          created_at?: string;
+          current_tier_id: string;
+          deactivated_in_transition_id?: string | null;
+          id?: string;
+          missed_upkeep_count?: number;
+          settlement_id: string;
+          source_project_id?: string | null;
+          state: string;
+          updated_at?: string;
+        };
+        Update: {
+          activated_on_turn_number?: number;
+          building_blueprint_id?: string;
+          created_at?: string;
+          current_tier_id?: string;
+          deactivated_in_transition_id?: string | null;
+          id?: string;
+          missed_upkeep_count?: number;
+          settlement_id?: string;
+          source_project_id?: string | null;
+          state?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_buildings_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_buildings_current_tier_id_fkey";
+            columns: ["current_tier_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprint_tiers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_buildings_deactivated_in_transition_id_fkey";
+            columns: ["deactivated_in_transition_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_buildings_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_buildings_source_project_id_fkey";
+            columns: ["source_project_id"];
+            isOneToOne: false;
+            referencedRelation: "construction_projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlement_resource_stockpiles: {
         Row: {
           created_at: string;
@@ -1985,6 +2063,14 @@ export type Database = {
           last_ready_at: string;
           ready_set_at: string;
         }[];
+      };
+      settlement_job_capacity: {
+        Args: { p_job_id: string; p_settlement_id: string };
+        Returns: number;
+      };
+      settlement_population_cap: {
+        Args: { p_settlement_id: string };
+        Returns: number;
       };
       soft_delete_building_blueprint: {
         Args: { p_blueprint_id: string; p_world_id: string };
