@@ -2,6 +2,7 @@
 // configuration and population instances for per-settlement management (Epic 5).
 
 export { ManagedPopulationsConfigPanel } from "./components/ManagedPopulationsConfigPanel";
+export { SettlementManagedPopulationsPanel } from "./components/SettlementManagedPopulationsPanel";
 export {
   CreateManagedPopulationInstanceMutationError,
   createManagedPopulationInstanceMutationOptions,
