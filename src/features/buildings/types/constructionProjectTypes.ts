@@ -25,3 +25,8 @@ export type CreateConstructionProjectResult = {
   readonly projectId: string;
   readonly settlementId: string;
 };
+
+export type CancelConstructionProjectResult = {
+  readonly projectId: string;
+  readonly unassignedCitizenCount: number;
+};

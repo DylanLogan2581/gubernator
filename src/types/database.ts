@@ -1749,6 +1749,13 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      cancel_construction_project: {
+        Args: { p_project_id: string };
+        Returns: {
+          project_id: string;
+          unassigned_citizen_count: number;
+        }[];
+      };
       citizen_role_scope_matches: {
         Args: {
           p_citizen_settlement_id: string;
