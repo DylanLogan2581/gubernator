@@ -5,10 +5,11 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
-import { useState, type FormEvent, type JSX } from "react";
+import { Plus, Trash2, X } from "lucide-react";
+import { useId, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -176,12 +177,12 @@ function DepositsConfigPanelContent({
         />
       ) : showTrash ? (
         <EmptyState title="No deposit types in trash" />
-      ) : !showCreateForm ? (
+      ) : (
         <EmptyState
           title="No deposit types yet"
           description="Add the first deposit type for this world."
         />
-      ) : null}
+      )}
 
       {canEdit && showCreateForm && !showTrash ? (
         <CreateDepositTypeForm
@@ -551,139 +552,159 @@ function CreateDepositTypeForm({
 
   const resources = resourcesQuery.data ?? [];
 
+  const titleId = useId();
+
   return (
-    <form
-      aria-label="Create deposit type"
-      className="grid gap-4 rounded-md border border-border bg-background p-4"
-      noValidate
-      onSubmit={handleSubmit}
-    >
-      <h3 className="text-sm font-medium">New deposit type</h3>
-      <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Name</span>
-          <Input
-            aria-invalid={fieldErrors.name !== undefined}
+    <DialogShell>
+      <form
+        aria-labelledby={titleId}
+        aria-modal="true"
+        className="grid w-full max-w-lg gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
+        noValidate
+        onSubmit={handleSubmit}
+        role="dialog"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h3 id={titleId} className="text-lg font-semibold">
+            Create deposit type
+          </h3>
+          <Button
+            aria-label="Cancel create deposit type"
             disabled={isPending}
-            maxLength={depositInputLimits.depositTypeNameMax}
-            value={name}
-            onChange={(e) => {
-              handleNameChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.name !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.name}</p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Slug</span>
-          <Input
-            aria-invalid={fieldErrors.slug !== undefined}
-            disabled={isPending}
-            maxLength={depositInputLimits.depositTypeSlugMax}
-            value={slug}
-            onChange={(e) => {
-              handleSlugChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.slug !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-          ) : null}
-        </label>
-        {depositJobs.length === 0 ? (
-          <div className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Linked deposit job</span>
-            <EmptyState
-              title="No deposit jobs yet"
-              description="Create one to assign to this deposit type."
-              action={
-                <Button asChild size="sm" variant="outline">
-                  <Link
-                    to="/worlds/$worldId/configuration"
-                    params={{ worldId }}
-                    search={{ tab: "jobs" }}
-                  >
-                    Create deposit job
-                  </Link>
-                </Button>
-              }
-            />
-          </div>
-        ) : (
+            onClick={onCancel}
+            size="icon-sm"
+            type="button"
+            variant="ghost"
+          >
+            <X aria-hidden="true" />
+          </Button>
+        </div>
+        <div className="grid gap-3">
           <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Linked deposit job</span>
-            <NativeSelect
-              aria-invalid={
-                fieldErrors.jobId !== undefined || jobLinkError !== undefined
-              }
-              className="w-full"
+            <span className="text-muted-foreground">Name</span>
+            <Input
+              aria-invalid={fieldErrors.name !== undefined}
               disabled={isPending}
-              value={jobId}
+              maxLength={depositInputLimits.depositTypeNameMax}
+              value={name}
               onChange={(e) => {
-                handleJobChange(e.currentTarget.value);
+                handleNameChange(e.currentTarget.value);
               }}
-            >
-              <option value="">Select a deposit job…</option>
-              {sortByName(depositJobs).map((job) => (
-                <option key={job.id} value={job.id}>
-                  {job.name}
-                </option>
-              ))}
-            </NativeSelect>
-            {jobLinkError !== undefined ? (
-              <p className="text-xs text-destructive">{jobLinkError}</p>
-            ) : fieldErrors.jobId !== undefined ? (
-              <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
+            />
+            {fieldErrors.name !== undefined ? (
+              <p className="text-xs text-destructive">{fieldErrors.name}</p>
             ) : null}
           </label>
-        )}
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Output units per worker</span>
-          <Input
-            aria-invalid={fieldErrors.outputUnitsPerWorker !== undefined}
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Slug</span>
+            <Input
+              aria-invalid={fieldErrors.slug !== undefined}
+              disabled={isPending}
+              maxLength={depositInputLimits.depositTypeSlugMax}
+              value={slug}
+              onChange={(e) => {
+                handleSlugChange(e.currentTarget.value);
+              }}
+            />
+            {fieldErrors.slug !== undefined ? (
+              <p className="text-xs text-destructive">{fieldErrors.slug}</p>
+            ) : null}
+          </label>
+          {depositJobs.length === 0 ? (
+            <div className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Linked deposit job</span>
+              <EmptyState
+                title="No deposit jobs yet"
+                description="Create one to assign to this deposit type."
+                action={
+                  <Button asChild size="sm" variant="outline">
+                    <Link
+                      to="/worlds/$worldId/configuration"
+                      params={{ worldId }}
+                      search={{ tab: "jobs" }}
+                    >
+                      Create deposit job
+                    </Link>
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Linked deposit job</span>
+              <NativeSelect
+                aria-invalid={
+                  fieldErrors.jobId !== undefined || jobLinkError !== undefined
+                }
+                className="w-full"
+                disabled={isPending}
+                value={jobId}
+                onChange={(e) => {
+                  handleJobChange(e.currentTarget.value);
+                }}
+              >
+                <option value="">Select a deposit job…</option>
+                {sortByName(depositJobs).map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.name}
+                  </option>
+                ))}
+              </NativeSelect>
+              {jobLinkError !== undefined ? (
+                <p className="text-xs text-destructive">{jobLinkError}</p>
+              ) : fieldErrors.jobId !== undefined ? (
+                <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
+              ) : null}
+            </label>
+          )}
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">
+              Output units per worker
+            </span>
+            <Input
+              aria-invalid={fieldErrors.outputUnitsPerWorker !== undefined}
+              disabled={isPending}
+              inputMode="numeric"
+              placeholder="1"
+              value={outputUnitsPerWorker}
+              onChange={(e) => {
+                setOutputUnitsPerWorker(e.currentTarget.value);
+              }}
+            />
+            {fieldErrors.outputUnitsPerWorker !== undefined ? (
+              <p className="text-xs text-destructive">
+                {fieldErrors.outputUnitsPerWorker}
+              </p>
+            ) : null}
+          </label>
+          <ResourceAmountListEditor
+            addLabel="Add input"
+            amountLabel="amount per worker"
             disabled={isPending}
-            inputMode="numeric"
-            placeholder="1"
-            value={outputUnitsPerWorker}
-            onChange={(e) => {
-              setOutputUnitsPerWorker(e.currentTarget.value);
-            }}
+            entries={workerInputs}
+            label="Worker inputs"
+            resources={resources}
+            onChange={setWorkerInputs}
           />
-          {fieldErrors.outputUnitsPerWorker !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.outputUnitsPerWorker}
-            </p>
-          ) : null}
-        </label>
-        <ResourceAmountListEditor
-          addLabel="Add input"
-          amountLabel="amount per worker"
-          disabled={isPending}
-          entries={workerInputs}
-          label="Worker inputs"
-          resources={resources}
-          onChange={setWorkerInputs}
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button
-          type="submit"
-          size="sm"
-          disabled={isPending || jobLinkError !== undefined}
-        >
-          Create
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={onCancel}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            disabled={isPending}
+            onClick={onCancel}
+            type="button"
+            variant="outline"
+          >
+            Cancel
+          </Button>
+          <Button
+            disabled={isPending || jobLinkError !== undefined}
+            type="submit"
+          >
+            Create
+          </Button>
+        </div>
+      </form>
+    </DialogShell>
   );
 }
 

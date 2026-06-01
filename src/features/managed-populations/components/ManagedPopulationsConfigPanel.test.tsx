@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -162,15 +162,19 @@ describe("ManagedPopulationsConfigPanel", () => {
       screen.getByRole("button", { name: "Add population type" }),
     );
 
-    await screen.findByRole("heading", { name: "New managed population type" });
-    expect(screen.getByText("No husbandry jobs yet")).toBeDefined();
-    expect(screen.getByText("Create husbandry job")).toBeDefined();
-    expect(screen.getByText("No culling jobs yet")).toBeDefined();
-    expect(screen.getByText("Create culling job")).toBeDefined();
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create managed population type",
+    });
+    expect(within(dialog).getByText("No husbandry jobs yet")).toBeDefined();
+    expect(within(dialog).getByText("Create husbandry job")).toBeDefined();
+    expect(within(dialog).getByText("No culling jobs yet")).toBeDefined();
+    expect(within(dialog).getByText("Create culling job")).toBeDefined();
     expect(
-      screen.queryByRole("combobox", { name: "Husbandry job" }),
+      within(dialog).queryByRole("combobox", { name: "Husbandry job" }),
     ).toBeNull();
-    expect(screen.queryByRole("combobox", { name: "Culling job" })).toBeNull();
+    expect(
+      within(dialog).queryByRole("combobox", { name: "Culling job" }),
+    ).toBeNull();
   });
 
   it("shows trashed population types when trash view is toggled", async () => {
@@ -236,21 +240,30 @@ describe("ManagedPopulationsConfigPanel", () => {
       screen.getByRole("button", { name: "Add population type" }),
     );
 
-    await user.type(screen.getByRole("textbox", { name: "Name" }), "Cattle");
-    await user.clear(screen.getByRole("textbox", { name: "Slug" }));
-    await user.type(screen.getByRole("textbox", { name: "Slug" }), "cattle");
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create managed population type",
+    });
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "Cattle",
+    );
+    await user.clear(within(dialog).getByRole("textbox", { name: "Slug" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Slug" }),
+      "cattle",
+    );
 
-    const husbandrySelect = screen.getByRole("combobox", {
+    const husbandrySelect = within(dialog).getByRole("combobox", {
       name: "Husbandry job",
     });
     await user.selectOptions(husbandrySelect, HUSBANDRY_JOB_ID);
 
-    const cullingSelect = screen.getByRole("combobox", {
+    const cullingSelect = within(dialog).getByRole("combobox", {
       name: "Culling job",
     });
     await user.selectOptions(cullingSelect, CULLING_JOB_ID);
 
-    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
@@ -357,19 +370,21 @@ describe("ManagedPopulationsConfigPanel", () => {
       screen.getByRole("button", { name: "Add population type" }),
     );
 
-    await screen.findByRole("heading", {
-      name: "New managed population type",
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create managed population type",
     });
-    const husbandrySelect = screen.getByRole("combobox", {
+    const husbandrySelect = within(dialog).getByRole("combobox", {
       name: "Husbandry job",
     });
     await user.selectOptions(husbandrySelect, HUSBANDRY_JOB_ID);
 
     expect(
-      screen.getByText('This job is already linked to "Cattle".'),
+      within(dialog).getByText('This job is already linked to "Cattle".'),
     ).toBeDefined();
 
-    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+    expect(
+      within(dialog).getByRole("button", { name: "Create" }),
+    ).toBeDisabled();
   });
 
   it("shows inline error when selected culling job is already linked to another type", async () => {
@@ -413,19 +428,21 @@ describe("ManagedPopulationsConfigPanel", () => {
       screen.getByRole("button", { name: "Add population type" }),
     );
 
-    await screen.findByRole("heading", {
-      name: "New managed population type",
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create managed population type",
     });
-    const cullingSelect = screen.getByRole("combobox", {
+    const cullingSelect = within(dialog).getByRole("combobox", {
       name: "Culling job",
     });
     await user.selectOptions(cullingSelect, CULLING_JOB_ID);
 
     expect(
-      screen.getByText('This job is already linked to "Cattle".'),
+      within(dialog).getByText('This job is already linked to "Cattle".'),
     ).toBeDefined();
 
-    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+    expect(
+      within(dialog).getByRole("button", { name: "Create" }),
+    ).toBeDisabled();
   });
 
   it("shows inline error when husbandry and culling jobs are the same", async () => {
@@ -458,25 +475,29 @@ describe("ManagedPopulationsConfigPanel", () => {
       screen.getByRole("button", { name: "Add population type" }),
     );
 
-    await screen.findByRole("heading", {
-      name: "New managed population type",
+    const dialog = await screen.findByRole("dialog", {
+      name: "Create managed population type",
     });
 
-    const husbandrySelect = screen.getByRole("combobox", {
+    const husbandrySelect = within(dialog).getByRole("combobox", {
       name: "Husbandry job",
     });
     await user.selectOptions(husbandrySelect, HUSBANDRY_JOB_ID);
 
-    const cullingSelect = screen.getByRole("combobox", {
+    const cullingSelect = within(dialog).getByRole("combobox", {
       name: "Culling job",
     });
     await user.selectOptions(cullingSelect, HUSBANDRY_JOB_ID);
 
     expect(
-      screen.getAllByText("Husbandry job and culling job must be different."),
+      within(dialog).getAllByText(
+        "Husbandry job and culling job must be different.",
+      ),
     ).toHaveLength(2);
 
-    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+    expect(
+      within(dialog).getByRole("button", { name: "Create" }),
+    ).toBeDisabled();
   });
 
   it("shows inline error in edit form when husbandry job is already linked to a different type", async () => {

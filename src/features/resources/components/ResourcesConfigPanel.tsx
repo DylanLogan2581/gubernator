@@ -4,10 +4,11 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
-import { useState, type FormEvent, type JSX } from "react";
+import { Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { useId, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -154,14 +155,14 @@ function ResourcesConfigPanelContent({
           worldId={worldId}
           onEditingChange={setEditingResourceId}
         />
-      ) : !showForm ? (
+      ) : (
         <EmptyState
           title={showTrash ? "No resources in trash" : "No resources yet"}
           description={
             showTrash ? undefined : "Add the first resource for this world."
           }
         />
-      ) : null}
+      )}
 
       {canEdit && showForm && !showTrash ? (
         <CreateResourceForm
@@ -678,79 +679,98 @@ function CreateResourceForm({
     onSubmit(input);
   }
 
+  const titleId = useId();
+
   return (
-    <form
-      aria-label="Create resource"
-      className="grid gap-4 rounded-md border border-border bg-background p-4"
-      noValidate
-      onSubmit={handleSubmit}
-    >
-      <h3 className="text-sm font-medium">New resource</h3>
-      <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Name</span>
-          <Input
-            aria-invalid={fieldErrors.name !== undefined}
+    <DialogShell>
+      <form
+        aria-labelledby={titleId}
+        aria-modal="true"
+        className="grid w-full max-w-lg gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
+        noValidate
+        onSubmit={handleSubmit}
+        role="dialog"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h3 id={titleId} className="text-lg font-semibold">
+            Create resource
+          </h3>
+          <Button
+            aria-label="Cancel create resource"
             disabled={isPending}
-            maxLength={resourceInputLimits.resourceNameMax}
-            value={name}
-            onChange={(e) => {
-              handleNameChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.name !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.name}</p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Slug</span>
-          <Input
-            aria-invalid={fieldErrors.slug !== undefined}
+            onClick={onCancel}
+            size="icon-sm"
+            type="button"
+            variant="ghost"
+          >
+            <X aria-hidden="true" />
+          </Button>
+        </div>
+        <div className="grid gap-3">
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Name</span>
+            <Input
+              aria-invalid={fieldErrors.name !== undefined}
+              disabled={isPending}
+              maxLength={resourceInputLimits.resourceNameMax}
+              value={name}
+              onChange={(e) => {
+                handleNameChange(e.currentTarget.value);
+              }}
+            />
+            {fieldErrors.name !== undefined ? (
+              <p className="text-xs text-destructive">{fieldErrors.name}</p>
+            ) : null}
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Slug</span>
+            <Input
+              aria-invalid={fieldErrors.slug !== undefined}
+              disabled={isPending}
+              maxLength={resourceInputLimits.resourceSlugMax}
+              value={slug}
+              onChange={(e) => {
+                handleSlugChange(e.currentTarget.value);
+              }}
+            />
+            {fieldErrors.slug !== undefined ? (
+              <p className="text-xs text-destructive">{fieldErrors.slug}</p>
+            ) : null}
+          </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Base stockpile cap</span>
+            <Input
+              aria-invalid={fieldErrors.baseStockpileCap !== undefined}
+              disabled={isPending}
+              inputMode="decimal"
+              placeholder="0"
+              value={baseStockpileCap}
+              onChange={(e) => {
+                setBaseStockpileCap(e.currentTarget.value);
+              }}
+            />
+            {fieldErrors.baseStockpileCap !== undefined ? (
+              <p className="text-xs text-destructive">
+                {fieldErrors.baseStockpileCap}
+              </p>
+            ) : null}
+          </label>
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
             disabled={isPending}
-            maxLength={resourceInputLimits.resourceSlugMax}
-            value={slug}
-            onChange={(e) => {
-              handleSlugChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.slug !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.slug}</p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Base stockpile cap</span>
-          <Input
-            aria-invalid={fieldErrors.baseStockpileCap !== undefined}
-            disabled={isPending}
-            inputMode="decimal"
-            placeholder="0"
-            value={baseStockpileCap}
-            onChange={(e) => {
-              setBaseStockpileCap(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.baseStockpileCap !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.baseStockpileCap}
-            </p>
-          ) : null}
-        </label>
-      </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
-          Create
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={onCancel}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+            onClick={onCancel}
+            type="button"
+            variant="outline"
+          >
+            Cancel
+          </Button>
+          <Button disabled={isPending} type="submit">
+            Create
+          </Button>
+        </div>
+      </form>
+    </DialogShell>
   );
 }
 
