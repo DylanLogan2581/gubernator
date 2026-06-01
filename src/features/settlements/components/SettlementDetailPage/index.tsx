@@ -7,7 +7,7 @@ import {
   SettlementBuildingsPanel,
   SettlementConstructionPanel,
 } from "@/features/buildings";
-import { CitizensPanel } from "@/features/citizens";
+import { CitizensPanel, SettlementAssignmentBoard } from "@/features/citizens";
 import { SettlementDepositsPanel } from "@/features/deposits";
 import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
 import {
@@ -327,6 +327,12 @@ function SettlementDetailLoaded({
         nationId={settlement.nationId}
         settlementId={settlement.id}
         worldId={worldId}
+      />
+
+      <SettlementAssignmentBoard
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        settlementId={settlement.id}
       />
 
       {canDelete ? (

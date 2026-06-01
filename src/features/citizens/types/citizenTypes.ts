@@ -48,4 +48,6 @@ export type CitizenAggregateStats = {
   readonly statusBreakdown: CitizenStatusBreakdown;
   readonly total: number;
   readonly typeBreakdown: CitizenTypeBreakdown;
+  readonly unassignedNpcCount: number;
+  readonly unassignedPcCount: number;
 };
