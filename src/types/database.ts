@@ -1708,6 +1708,19 @@ export type Database = {
           world_id: string;
         }[];
       };
+      approve_trade_route_side: {
+        Args: {
+          p_approver_citizen_id: string;
+          p_route_id: string;
+          p_side: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+          status: string;
+        }[];
+      };
       assign_citizen_role: {
         Args: {
           p_citizen_id: string;
