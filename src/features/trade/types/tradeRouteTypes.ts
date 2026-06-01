@@ -35,3 +35,10 @@ export type ProposeTradeRouteResult = {
   readonly originSettlementId: string;
   readonly tradeRouteId: string;
 };
+
+export type ApproveTradeRouteSideResult = {
+  readonly destinationSettlementId: string;
+  readonly originSettlementId: string;
+  readonly status: TradeRouteStatus;
+  readonly tradeRouteId: string;
+};
