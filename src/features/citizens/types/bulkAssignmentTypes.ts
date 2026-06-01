@@ -29,3 +29,8 @@ export type BulkConstructionAssignmentResult = {
   readonly before: number;
   readonly removedCitizenIds: readonly string[];
 };
+
+export type PerTargetAssignmentResult = {
+  readonly assignedCount: number;
+  readonly replacedCount: number;
+};
