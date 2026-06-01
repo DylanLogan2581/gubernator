@@ -8,4 +8,10 @@ export const depositsQueryKeys = {
     [...depositsQueryKeys.all, "by-world", worldId] as const,
   detail: (depositTypeId: string) =>
     [...depositsQueryKeys.all, "detail", depositTypeId] as const,
+  instancesBySettlement: (settlementId: string) =>
+    [
+      ...depositsQueryKeys.all,
+      "instances-by-settlement",
+      settlementId,
+    ] as const,
 } as const;
