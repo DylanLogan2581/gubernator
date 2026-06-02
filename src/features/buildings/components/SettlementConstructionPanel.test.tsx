@@ -33,6 +33,7 @@ const PROJECT_ID_2 = "00000000-0000-0000-0000-000000000011";
 const BLUEPRINT_ID = "00000000-0000-0000-0000-000000000020";
 const TIER_ID = "00000000-0000-0000-0000-000000000030";
 const BUILDING_ID_1 = "00000000-0000-0000-0000-000000000040";
+const RESOURCE_ID = "00000000-0000-0000-0000-000000000050";
 
 type TestProjectRow = {
   readonly activated_on_turn_number: number | null;
@@ -184,16 +185,24 @@ function createTierRow(overrides: Partial<TestTierRow> = {}): TestTierRow {
   };
 }
 
+type TestResourceRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly [key: string]: unknown;
+};
+
 function createClient({
   blueprintRows = [],
   buildingRows = [],
   projectRows = [],
+  resourceRows = [],
   tierRows = [],
   rpcMock,
 }: {
   readonly blueprintRows?: readonly TestBlueprintRow[];
   readonly buildingRows?: readonly TestBuildingRow[];
   readonly projectRows?: readonly TestProjectRow[];
+  readonly resourceRows?: readonly TestResourceRow[];
   readonly tierRows?: readonly TestTierRow[];
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
@@ -221,6 +230,17 @@ function createClient({
     returns: vi.fn().mockResolvedValue({ data: tierRows, error: null }),
   };
 
+  function createSimpleQueryBuilder(rows: readonly unknown[]): unknown {
+    const builder: Record<string, unknown> = {
+      eq: vi.fn(() => builder),
+      is: vi.fn(() => builder),
+      order: vi.fn(() => builder),
+      returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+      select: vi.fn(() => builder),
+    };
+    return builder;
+  }
+
   const defaultRpcMock = vi.fn(() => {
     throw new Error("Unexpected RPC call");
   });
@@ -238,6 +258,9 @@ function createClient({
       }
       if (table === "building_blueprint_tiers") {
         return { select: vi.fn(() => tiersSelectBuilder) };
+      }
+      if (table === "resources") {
+        return createSimpleQueryBuilder(resourceRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -450,6 +473,44 @@ describe("SettlementConstructionPanel", () => {
     expect(
       within(dialog).getByRole("button", { name: "Start" }),
     ).toBeDisabled();
+  });
+
+  it("renders resource name instead of UUID in construction cost list", async () => {
+    const user = userEvent.setup();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [createBlueprintRow()],
+        projectRows: [],
+        resourceRows: [{ id: RESOURCE_ID, name: "Lumber" }],
+        tierRows: [
+          createTierRow({
+            construction_costs_json: [{ amount: 12, resource_id: RESOURCE_ID }],
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canManage: true, isArchived: false });
+
+    await screen.findByText("No active projects");
+    await user.click(
+      screen.getByRole("button", { name: "Start construction" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Start construction",
+    });
+
+    const blueprintSelect = within(dialog).getByLabelText("Blueprint");
+    await user.selectOptions(blueprintSelect, BLUEPRINT_ID);
+
+    const tierSelect = await within(dialog).findByLabelText("Tier");
+    await user.selectOptions(tierSelect, TIER_ID);
+
+    await screen.findByText("Construction cost");
+    expect(screen.getByText(/Lumber/)).toBeDefined();
+    expect(screen.queryByText(new RegExp(RESOURCE_ID))).toBeNull();
   });
 
   it("calls reorder RPC with swapped positions when moving a project down", async () => {
