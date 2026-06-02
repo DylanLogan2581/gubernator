@@ -14,6 +14,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -474,6 +475,11 @@ function CreateProjectDialog({
     ...tiersByBlueprintQueryOptions(selectedBlueprintId),
     enabled: selectedBlueprintId !== "",
   });
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+
+  const resourceNames = new Map(
+    (resourcesQuery.data ?? []).map((r) => [r.id, r.name]),
+  );
 
   const createMutation = useMutation(
     createConstructionProjectMutationOptions({ queryClient }),
@@ -615,7 +621,8 @@ function CreateProjectDialog({
                     key={cost.resourceId}
                     className="text-sm text-muted-foreground"
                   >
-                    {cost.resourceId}: {cost.amount}
+                    {resourceNames.get(cost.resourceId) ?? cost.resourceId}:{" "}
+                    {cost.amount}
                   </li>
                 ))}
               </ul>

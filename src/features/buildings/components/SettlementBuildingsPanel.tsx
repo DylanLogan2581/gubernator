@@ -14,6 +14,8 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { citizenAggregateStatsForSettlementQueryOptions } from "@/features/citizens";
+import { activeJobsByWorldQueryOptions } from "@/features/jobs";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -31,12 +33,14 @@ type SettlementBuildingsPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly settlementId: string;
+  readonly worldId: string;
 };
 
 export function SettlementBuildingsPanel({
   canAdmin,
   isArchived,
   settlementId,
+  worldId,
 }: SettlementBuildingsPanelProps): JSX.Element {
   const buildingsQuery = useQuery(
     settlementBuildingsBySettlementQueryOptions(settlementId),
@@ -45,10 +49,17 @@ export function SettlementBuildingsPanel({
   const citizensQuery = useQuery(
     citizenAggregateStatsForSettlementQueryOptions(settlementId),
   );
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+  const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
   const queryClient = useQueryClient();
 
   const capValue = capQuery.data ?? 0;
   const citizenCount = citizensQuery.data?.statusBreakdown.alive ?? 0;
+
+  const resourceNames = new Map(
+    (resourcesQuery.data ?? []).map((r) => [r.id, r.name]),
+  );
+  const jobNames = new Map((jobsQuery.data ?? []).map((j) => [j.id, j.name]));
 
   return (
     <section
@@ -95,7 +106,9 @@ export function SettlementBuildingsPanel({
           buildings={buildingsQuery.data}
           canAdmin={canAdmin}
           isArchived={isArchived}
+          jobNames={jobNames}
           queryClient={queryClient}
+          resourceNames={resourceNames}
           settlementId={settlementId}
         />
       )}
@@ -121,13 +134,17 @@ function BuildingsGroups({
   buildings,
   canAdmin,
   isArchived,
+  jobNames,
   queryClient,
+  resourceNames,
   settlementId,
 }: {
   readonly buildings: readonly SettlementBuilding[];
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
+  readonly jobNames: ReadonlyMap<string, string>;
   readonly queryClient: QueryClient;
+  readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
 }): JSX.Element {
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(
@@ -163,9 +180,11 @@ function BuildingsGroups({
             canDeconstruct={canDeconstruct && group.states.includes("active")}
             buildings={groupBuildings}
             isCollapsed={isCollapsed}
+            jobNames={jobNames}
             label={group.label}
             panelId={panelId}
             queryClient={queryClient}
+            resourceNames={resourceNames}
             settlementId={settlementId}
             onToggle={() => {
               toggleGroup(group.label);
@@ -181,19 +200,23 @@ function BuildingStateGroup({
   buildings,
   canDeconstruct,
   isCollapsed,
+  jobNames,
   label,
   onToggle,
   panelId,
   queryClient,
+  resourceNames,
   settlementId,
 }: {
   readonly buildings: readonly SettlementBuilding[];
   readonly canDeconstruct: boolean;
   readonly isCollapsed: boolean;
+  readonly jobNames: ReadonlyMap<string, string>;
   readonly label: string;
   readonly onToggle: () => void;
   readonly panelId: string;
   readonly queryClient: QueryClient;
+  readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
 }): JSX.Element {
   return (
@@ -238,7 +261,9 @@ function BuildingStateGroup({
                   key={building.id}
                   building={building}
                   canDeconstruct={canDeconstruct}
+                  jobNames={jobNames}
                   queryClient={queryClient}
+                  resourceNames={resourceNames}
                   settlementId={settlementId}
                 />
               ))}
@@ -250,7 +275,11 @@ function BuildingStateGroup({
   );
 }
 
-function buildEffectsSummary(building: SettlementBuilding): string {
+function buildEffectsSummary(
+  building: SettlementBuilding,
+  resourceNames: ReadonlyMap<string, string>,
+  jobNames: ReadonlyMap<string, string>,
+): string {
   const rows = tierEffectsToState(building.effectsJson);
   const parts: string[] = [];
   for (const row of rows) {
@@ -259,13 +288,19 @@ function buildEffectsSummary(building: SettlementBuilding): string {
         parts.push(`cap +${row.amount}`);
         break;
       case "job_capacity_increase":
-        parts.push(`job +${row.amount} for ${row.jobId}`);
+        parts.push(
+          `job +${row.amount} for ${jobNames.get(row.jobId) ?? row.jobId}`,
+        );
         break;
       case "resource_storage_increase":
-        parts.push(`storage +${row.amount} for ${row.resourceId}`);
+        parts.push(
+          `storage +${row.amount} for ${resourceNames.get(row.resourceId) ?? row.resourceId}`,
+        );
         break;
       case "passive_resource_production":
-        parts.push(`passive +${row.amount}/turn of ${row.resourceId}`);
+        parts.push(
+          `passive +${row.amount}/turn of ${resourceNames.get(row.resourceId) ?? row.resourceId}`,
+        );
         break;
       case "":
         break;
@@ -308,16 +343,20 @@ function stateBadgeLabel(state: SettlementBuildingState): string {
 function BuildingRow({
   building,
   canDeconstruct,
+  jobNames,
   queryClient,
+  resourceNames,
   settlementId,
 }: {
   readonly building: SettlementBuilding;
   readonly canDeconstruct: boolean;
+  readonly jobNames: ReadonlyMap<string, string>;
   readonly queryClient: QueryClient;
+  readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
 }): JSX.Element {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const effectsSummary = buildEffectsSummary(building);
+  const effectsSummary = buildEffectsSummary(building, resourceNames, jobNames);
   const showDeconstructButton = canDeconstruct && building.state === "active";
 
   return (

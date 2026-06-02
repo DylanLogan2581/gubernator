@@ -27,10 +27,13 @@ vi.mock("sonner", () => ({
 }));
 
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000001";
+const WORLD_ID = "00000000-0000-0000-0000-000000000002";
 const BUILDING_ID_1 = "00000000-0000-0000-0000-000000000010";
 const BUILDING_ID_2 = "00000000-0000-0000-0000-000000000011";
 const BLUEPRINT_ID = "00000000-0000-0000-0000-000000000020";
 const TIER_ID = "00000000-0000-0000-0000-000000000030";
+const RESOURCE_ID = "00000000-0000-0000-0000-000000000040";
+const JOB_ID = "00000000-0000-0000-0000-000000000050";
 
 type TestBuildingRow = {
   readonly activated_on_turn_number: number;
@@ -39,8 +42,8 @@ type TestBuildingRow = {
     readonly effects_json: ReadonlyArray<{
       readonly type: string;
       readonly amount: number;
-      readonly jobId?: string;
-      readonly resourceId?: string;
+      readonly job_id?: string;
+      readonly resource_id?: string;
     }>;
     readonly tier_number: number;
   };
@@ -101,15 +104,52 @@ function createCitizenRow(
   };
 }
 
+type TestResourceRow = {
+  readonly base_stockpile_cap: number;
+  readonly created_at: string;
+  readonly id: string;
+  readonly is_system_resource: boolean;
+  readonly is_trashed: boolean;
+  readonly last_cleanup_summary_json: null;
+  readonly name: string;
+  readonly slug: string;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+type TestJobRow = {
+  readonly base_capacity: number | null;
+  readonly created_at: string;
+  readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
+  readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
+  readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
+  readonly id: string;
+  readonly inputs_json: readonly unknown[];
+  readonly is_trashed: boolean;
+  readonly job_type: string;
+  readonly linked_deposit_type_id: string | null;
+  readonly linked_managed_population_type_id: string | null;
+  readonly name: string;
+  readonly outputs_json: readonly unknown[];
+  readonly slug: string;
+  readonly trader_capacity_per_worker: number | null;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
 function createClient({
   buildingRows = [],
   citizenRows = [],
+  jobRows = [],
   populationCap = 0,
+  resourceRows = [],
   rpcMock,
 }: {
   readonly buildingRows?: readonly TestBuildingRow[];
   readonly citizenRows?: readonly TestCitizenRow[];
+  readonly jobRows?: readonly TestJobRow[];
   readonly populationCap?: number;
+  readonly resourceRows?: readonly TestResourceRow[];
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
   const buildingsSelectBuilder: Record<string, unknown> = {
@@ -122,6 +162,17 @@ function createClient({
     eq: vi.fn(() => citizensSelectBuilder),
     returns: vi.fn().mockResolvedValue({ data: citizenRows, error: null }),
   };
+
+  function createSimpleQueryBuilder(rows: readonly unknown[]): unknown {
+    const builder: Record<string, unknown> = {
+      eq: vi.fn(() => builder),
+      is: vi.fn(() => builder),
+      order: vi.fn(() => builder),
+      returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+      select: vi.fn(() => builder),
+    };
+    return builder;
+  }
 
   const defaultRpcMock = vi.fn((fn: string) => {
     if (fn === "settlement_population_cap") {
@@ -137,6 +188,12 @@ function createClient({
       }
       if (table === "citizens") {
         return { select: vi.fn(() => citizensSelectBuilder) };
+      }
+      if (table === "resources") {
+        return createSimpleQueryBuilder(resourceRows);
+      }
+      if (table === "job_definitions") {
+        return createSimpleQueryBuilder(jobRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -222,6 +279,82 @@ describe("SettlementBuildingsPanel", () => {
 
     await screen.findByText("Barracks");
     expect(screen.getByText("cap +10")).toBeDefined();
+  });
+
+  it("resolves resource and job names in effects column", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprint_tiers: {
+              effects_json: [
+                {
+                  amount: 2,
+                  job_id: JOB_ID,
+                  type: "job_capacity_increase",
+                },
+                {
+                  amount: 50,
+                  resource_id: RESOURCE_ID,
+                  type: "resource_storage_increase",
+                },
+                {
+                  amount: 3,
+                  resource_id: RESOURCE_ID,
+                  type: "passive_resource_production",
+                },
+              ],
+              tier_number: 1,
+            },
+          }),
+        ],
+        jobRows: [
+          {
+            base_capacity: null,
+            created_at: "2026-05-01T00:00:00.000Z",
+            culling_mpt: [],
+            deposit_types: [],
+            husbandry_mpt: [],
+            id: JOB_ID,
+            inputs_json: [],
+            is_trashed: false,
+            job_type: "standard",
+            linked_deposit_type_id: null,
+            linked_managed_population_type_id: null,
+            name: "Miner",
+            outputs_json: [],
+            slug: "miner",
+            trader_capacity_per_worker: null,
+            updated_at: "2026-05-01T00:00:00.000Z",
+            world_id: WORLD_ID,
+          },
+        ],
+        populationCap: 5,
+        resourceRows: [
+          {
+            base_stockpile_cap: 100,
+            created_at: "2026-05-01T00:00:00.000Z",
+            id: RESOURCE_ID,
+            is_system_resource: false,
+            is_trashed: false,
+            last_cleanup_summary_json: null,
+            name: "Iron Ore",
+            slug: "iron-ore",
+            updated_at: "2026-05-01T00:00:00.000Z",
+            world_id: WORLD_ID,
+          },
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    expect(
+      screen.getByText(
+        "job +2 for Miner, storage +50 for Iron Ore, passive +3/turn of Iron Ore",
+      ),
+    ).toBeDefined();
   });
 
   it("shows the deconstruct button for active buildings when admin", async () => {
@@ -418,6 +551,7 @@ function renderPanel({
         canAdmin={canAdmin}
         isArchived={isArchived}
         settlementId={SETTLEMENT_ID}
+        worldId={WORLD_ID}
       />
     </QueryClientProvider>,
   );
