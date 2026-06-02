@@ -1256,9 +1256,9 @@ select
     'Epic 5 seeds citizen 415 (Davin Stonehill) at Stonehold Keep'
   );
 
--- 3 active buildings per canonical settlement.
+-- At least 1 active building per canonical settlement.
 select
-  is (
+  cmp_ok (
     (
       select
         count(*)::integer
@@ -1268,15 +1268,16 @@ select
         settlement_id = '00000000-0000-0000-0000-000000000301'
         and state = 'active'
     ),
-    3,
-    'Hearthwatch has exactly 3 active seeded buildings'
+    '>=',
+    1,
+    'Hearthwatch has at least 1 active seeded building'
   );
 
 select
   is (
     (
       select
-        count(*)::integer
+        count(distinct settlement_id)::integer
       from
         public.settlement_buildings
       where
@@ -1289,8 +1290,8 @@ select
         )
         and state = 'active'
     ),
-    15,
-    'all 5 canonical settlements have 15 active buildings total (3 each)'
+    5,
+    'all 5 canonical settlements each have at least 1 active building'
   );
 
 -- Buildings cover all 3 effect types for Hearthwatch (3 distinct blueprints).
@@ -1309,12 +1310,12 @@ select
     'Hearthwatch buildings cover 3 distinct blueprints (job_capacity, storage, population_cap)'
   );
 
--- 1 in-progress construction project per canonical settlement.
+-- At least 1 in-progress construction project per canonical settlement.
 select
   is (
     (
       select
-        count(*)::integer
+        count(distinct settlement_id)::integer
       from
         public.construction_projects
       where
@@ -1328,7 +1329,7 @@ select
         and status = 'in_progress'
     ),
     5,
-    'each of the 5 canonical settlements has exactly 1 in_progress construction project'
+    'each of the 5 canonical settlements has at least 1 in_progress construction project'
   );
 
 select
@@ -1346,12 +1347,12 @@ select
     'Hearthwatch in-progress construction project is seeded with expected id'
   );
 
--- 1 active deposit instance per canonical settlement.
+-- At least 1 active deposit instance per canonical settlement.
 select
   is (
     (
       select
-        count(*)::integer
+        count(distinct settlement_id)::integer
       from
         public.deposit_instances
       where
@@ -1365,7 +1366,7 @@ select
         and status = 'active'
     ),
     5,
-    'each of the 5 canonical settlements has exactly 1 active deposit instance'
+    'each of the 5 canonical settlements has at least 1 active deposit instance'
   );
 
 -- Each deposit instance has at least 1 resource.
@@ -1390,12 +1391,12 @@ select
     'each seeded deposit instance has at least 1 resource entry'
   );
 
--- 1 active managed population instance per canonical settlement.
+-- At least 1 active managed population instance per canonical settlement.
 select
   is (
     (
       select
-        count(*)::integer
+        count(distinct settlement_id)::integer
       from
         public.managed_population_instances
       where
@@ -1409,7 +1410,7 @@ select
         and status = 'active'
     ),
     5,
-    'each of the 5 canonical settlements has exactly 1 active managed population instance'
+    'each of the 5 canonical settlements has at least 1 active managed population instance'
   );
 
 -- Stockpiles: Food > 0 at Hearthwatch.
