@@ -29,7 +29,6 @@ import type {
   SettlementConstructionProjectCount,
   SettlementJobCount,
 } from "../../types/bulkAssignmentTypes";
-import type { CitizenAggregateStats } from "../../types/citizenTypes";
 
 const TERMINAL_STATUSES = new Set(["complete", "cancelled"]);
 
@@ -91,7 +90,6 @@ export function BulkJobsTab({
   const projects = projectsQuery.data ?? [];
 
   const projectMap = new Map(projects.map((p) => [p.id, p]));
-  const totalUnassigned = stats.unassignedNpcCount + stats.unassignedPcCount;
 
   return (
     <div className="grid gap-6">
@@ -100,7 +98,7 @@ export function BulkJobsTab({
         jobCounts={jobCounts}
         queryClient={queryClient}
         settlementId={settlementId}
-        totalUnassigned={totalUnassigned}
+        unassignedNpcCount={stats.unassignedNpcCount}
       />
       <ConstructionSection
         canEdit={canEdit}
@@ -108,9 +106,8 @@ export function BulkJobsTab({
         projectMap={projectMap}
         queryClient={queryClient}
         settlementId={settlementId}
-        totalUnassigned={totalUnassigned}
+        unassignedNpcCount={stats.unassignedNpcCount}
       />
-      <UnassignedFooter stats={stats} />
     </div>
   );
 }
@@ -120,13 +117,13 @@ function StandardJobsSection({
   jobCounts,
   queryClient,
   settlementId,
-  totalUnassigned,
+  unassignedNpcCount,
 }: {
   readonly canEdit: boolean;
   readonly jobCounts: readonly SettlementJobCount[];
   readonly queryClient: QueryClient;
   readonly settlementId: string;
-  readonly totalUnassigned: number;
+  readonly unassignedNpcCount: number;
 }): JSX.Element {
   return (
     <div className="grid gap-2">
@@ -156,6 +153,10 @@ function StandardJobsSection({
             </tr>
           </thead>
           <tbody>
+            <UnassignedRow
+              canEdit={canEdit}
+              unassignedNpcCount={unassignedNpcCount}
+            />
             {jobCounts.map((job) => (
               <JobRow
                 key={job.jobId}
@@ -163,7 +164,7 @@ function StandardJobsSection({
                 job={job}
                 queryClient={queryClient}
                 settlementId={settlementId}
-                totalUnassigned={totalUnassigned}
+                unassignedNpcCount={unassignedNpcCount}
               />
             ))}
           </tbody>
@@ -173,18 +174,37 @@ function StandardJobsSection({
   );
 }
 
+function UnassignedRow({
+  canEdit,
+  unassignedNpcCount,
+}: {
+  readonly canEdit: boolean;
+  readonly unassignedNpcCount: number;
+}): JSX.Element {
+  return (
+    <tr className="border-b border-border">
+      <td className="py-2 pr-4 font-medium">Unassigned</td>
+      <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+        {unassignedNpcCount.toString()} /{" "}
+        <span aria-label="no upper bound">∞</span>
+      </td>
+      {canEdit ? <td className="py-2 text-muted-foreground">—</td> : null}
+    </tr>
+  );
+}
+
 function JobRow({
   canEdit,
   job,
   queryClient,
   settlementId,
-  totalUnassigned,
+  unassignedNpcCount,
 }: {
   readonly canEdit: boolean;
   readonly job: SettlementJobCount;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
-  readonly totalUnassigned: number;
+  readonly unassignedNpcCount: number;
 }): JSX.Element {
   const [localCount, setLocalCount] = useState(String(job.currentCount));
   const mutation = useMutation(
@@ -196,7 +216,7 @@ function JobRow({
   const isDirty = isValid && parsedCount !== job.currentCount;
   const isRaising = isValid && parsedCount > job.currentCount;
   const applyDisabled =
-    mutation.isPending || !isDirty || (isRaising && totalUnassigned === 0);
+    mutation.isPending || !isDirty || (isRaising && unassignedNpcCount === 0);
 
   async function handleApply(): Promise<void> {
     if (!isValid) return;
@@ -257,14 +277,14 @@ function ConstructionSection({
   projectMap,
   queryClient,
   settlementId,
-  totalUnassigned,
+  unassignedNpcCount,
 }: {
   readonly canEdit: boolean;
   readonly projectCounts: readonly SettlementConstructionProjectCount[];
   readonly projectMap: ReadonlyMap<string, ConstructionProject>;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
-  readonly totalUnassigned: number;
+  readonly unassignedNpcCount: number;
 }): JSX.Element | null {
   if (projectCounts.length === 0) return null;
 
@@ -290,6 +310,10 @@ function ConstructionSection({
           </tr>
         </thead>
         <tbody>
+          <UnassignedRow
+            canEdit={canEdit}
+            unassignedNpcCount={unassignedNpcCount}
+          />
           {projectCounts.map((pc) => {
             const project = projectMap.get(pc.constructionProjectId);
             if (project === undefined) return null;
@@ -301,7 +325,7 @@ function ConstructionSection({
                 projectCount={pc}
                 queryClient={queryClient}
                 settlementId={settlementId}
-                totalUnassigned={totalUnassigned}
+                unassignedNpcCount={unassignedNpcCount}
               />
             );
           })}
@@ -317,14 +341,14 @@ function ConstructionRow({
   projectCount,
   queryClient,
   settlementId,
-  totalUnassigned,
+  unassignedNpcCount,
 }: {
   readonly canEdit: boolean;
   readonly project: ConstructionProject;
   readonly projectCount: SettlementConstructionProjectCount;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
-  readonly totalUnassigned: number;
+  readonly unassignedNpcCount: number;
 }): JSX.Element {
   const [localCount, setLocalCount] = useState(
     String(projectCount.currentCount),
@@ -338,7 +362,7 @@ function ConstructionRow({
   const isDirty = isValid && parsedCount !== projectCount.currentCount;
   const isRaising = isValid && parsedCount > projectCount.currentCount;
   const applyDisabled =
-    mutation.isPending || !isDirty || (isRaising && totalUnassigned === 0);
+    mutation.isPending || !isDirty || (isRaising && unassignedNpcCount === 0);
 
   const projectLabel = `${project.blueprintName} (Tier ${project.tierNumber.toString()})`;
 
@@ -394,23 +418,5 @@ function ConstructionRow({
         </td>
       ) : null}
     </tr>
-  );
-}
-
-function UnassignedFooter({
-  stats,
-}: {
-  readonly stats: CitizenAggregateStats;
-}): JSX.Element {
-  const { unassignedNpcCount, unassignedPcCount } = stats;
-  return (
-    <p
-      aria-label="Unassigned citizens"
-      className="text-sm text-muted-foreground"
-    >
-      {unassignedNpcCount.toString()} NPC{unassignedNpcCount === 1 ? "" : "s"}{" "}
-      and {unassignedPcCount.toString()} player character
-      {unassignedPcCount === 1 ? "" : "s"} unassigned in this settlement.
-    </p>
   );
 }
