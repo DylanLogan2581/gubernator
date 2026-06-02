@@ -721,7 +721,92 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
-  it("shows unassigned footer with NPC and player character counts", async () => {
+  it("shows Unassigned row as first row in standard jobs table", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({
+            id: "c-1",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: null,
+          }),
+          createAggregateRow({
+            id: "c-2",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: null,
+          }),
+          createAggregateRow({
+            id: "c-3",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [{ assignment_type: "standard_job" }],
+          }),
+        ],
+        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
+        projectCounts: [],
+        constructionProjects: [],
+      }),
+    );
+
+    renderBoard();
+
+    await screen.findByText("Farmer");
+    const rows = screen.getAllByRole("row");
+    // rows[0] is the header; rows[1] is the first data row
+    expect(rows[1]).toHaveTextContent("Unassigned");
+    expect(rows[1]).toHaveTextContent("2");
+    expect(rows[1]).toHaveTextContent("∞");
+  });
+
+  it("Unassigned row appears first even when other job names sort alphabetically earlier", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [],
+        jobCounts: [
+          createJobCountRow({ job_id: "job-1", job_name: "Archer" }),
+          createJobCountRow({ job_id: "job-2", job_name: "Baker" }),
+        ],
+        projectCounts: [],
+        constructionProjects: [],
+      }),
+    );
+
+    renderBoard();
+
+    await screen.findByText("Archer");
+    const rows = screen.getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Unassigned");
+    expect(rows[2]).toHaveTextContent("Archer");
+    expect(rows[3]).toHaveTextContent("Baker");
+  });
+
+  it("Unassigned row has no Set count editor when canEdit is true", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [],
+        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
+        projectCounts: [],
+        constructionProjects: [],
+      }),
+    );
+
+    renderBoard({ canManage: true });
+
+    await screen.findByText("Farmer");
+    const rows = screen.getAllByRole("row");
+    const unassignedRow = rows[1];
+    expect(unassignedRow).toHaveTextContent("Unassigned");
+    expect(unassignedRow).not.toContainElement(
+      unassignedRow.querySelector("input"),
+    );
+    expect(unassignedRow).not.toContainElement(
+      unassignedRow.querySelector("button"),
+    );
+  });
+
+  it("Unassigned count shows only NPC count, excluding player characters", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [
@@ -743,14 +828,8 @@ describe("SettlementAssignmentBoard", () => {
             status: "alive",
             citizen_assignments: null,
           }),
-          createAggregateRow({
-            id: "c-4",
-            citizen_type: "npc",
-            status: "alive",
-            citizen_assignments: [{ assignment_type: "standard_job" }],
-          }),
         ],
-        jobCounts: [],
+        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
         projectCounts: [],
         constructionProjects: [],
       }),
@@ -758,9 +837,13 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard();
 
-    const footer = await screen.findByLabelText("Unassigned citizens");
-    expect(footer).toHaveTextContent("2 NPCs");
-    expect(footer).toHaveTextContent("1 player character");
+    await screen.findByText("Farmer");
+    const rows = screen.getAllByRole("row");
+    const unassignedRow = rows[1];
+    // 2 NPCs unassigned; the PC is not counted
+    expect(unassignedRow).toHaveTextContent("2");
+    // The total including the PC (3) should not appear in the Unassigned row
+    expect(unassignedRow).not.toHaveTextContent("3 /");
   });
 
   it("disables Apply button when raising count and no citizens are unassigned", async () => {
