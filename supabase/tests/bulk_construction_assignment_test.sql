@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (20);
+  plan (17);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -246,7 +246,7 @@ values
     null
   );
 
--- Initial citizen_assignments: NPCs 001-003 + PC 006 assigned to bc7...001 = count 4
+-- Initial citizen_assignments: NPCs 001-003 assigned to bc7...001 = count 3
 -- Unassigned alive NPCs: bc8...004, 005, 007
 insert into
   public.citizen_assignments (
@@ -273,12 +273,6 @@ values
     'construction_project',
     'bc700000-0000-0000-0000-000000000001',
     1
-  ),
-  (
-    'bc800000-0000-0000-0000-000000000006',
-    'construction_project',
-    'bc700000-0000-0000-0000-000000000001',
-    1
   );
 
 -- ===========================================================================
@@ -300,7 +294,7 @@ select
   );
 
 -- ===========================================================================
--- NO-OP: target = current (4)
+-- NO-OP: target = current (3)
 -- Both SELECT calls invoke the RPC independently; both are no-ops.
 -- ===========================================================================
 set
@@ -315,14 +309,10 @@ select
       select
         r.before
       from
-        public.set_bulk_construction_assignment (
-          'bc700000-0000-0000-0000-000000000001',
-          4,
-          'npc_first'
-        ) r
+        public.set_bulk_construction_assignment ('bc700000-0000-0000-0000-000000000001', 3) r
     ),
-    4,
-    'no-op: before = 4'
+    3,
+    'no-op: before = 3'
   );
 
 select
@@ -331,18 +321,14 @@ select
       select
         r.after
       from
-        public.set_bulk_construction_assignment (
-          'bc700000-0000-0000-0000-000000000001',
-          4,
-          'npc_first'
-        ) r
+        public.set_bulk_construction_assignment ('bc700000-0000-0000-0000-000000000001', 3) r
     ),
-    4,
-    'no-op: after = 4'
+    3,
+    'no-op: after = 3'
   );
 
 -- ===========================================================================
--- ADMIN RAISE: 4 → 5 (adds 1 NPC; unassigned NPCs: 004, 005, 007)
+-- ADMIN RAISE: 3 → 5 (adds 2 NPCs; unassigned NPCs: 004, 005, 007)
 -- ===========================================================================
 select
   is (
@@ -350,14 +336,10 @@ select
       select
         r.before
       from
-        public.set_bulk_construction_assignment (
-          'bc700000-0000-0000-0000-000000000001',
-          5,
-          'npc_first'
-        ) r
+        public.set_bulk_construction_assignment ('bc700000-0000-0000-0000-000000000001', 5) r
     ),
-    4,
-    'admin raise: before = 4'
+    3,
+    'admin raise: before = 3'
   );
 
 reset role;
@@ -378,24 +360,8 @@ select
     'admin raise: citizen_assignments count = 5'
   );
 
--- Raise must only add NPCs; PC (bc8...006) must not gain a duplicate row.
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.citizen_assignments
-      where
-        citizen_id = 'bc800000-0000-0000-0000-000000000006'
-    ),
-    1,
-    'admin raise: PC bc8...006 has exactly one assignment (only NPCs added)'
-  );
-
 -- ===========================================================================
--- ADMIN LOWER npc_first: 5 → 3 (state from raise above, count=5)
--- NPCs removed before PC; PC (bc8...006) must survive.
+-- ADMIN LOWER: 5 → 3 (state from raise above, count=5)
 -- ===========================================================================
 set
   local role authenticated;
@@ -409,32 +375,13 @@ select
       select
         r.before
       from
-        public.set_bulk_construction_assignment (
-          'bc700000-0000-0000-0000-000000000001',
-          3,
-          'npc_first'
-        ) r
+        public.set_bulk_construction_assignment ('bc700000-0000-0000-0000-000000000001', 3) r
     ),
     5,
-    'admin lower npc_first: before = 5'
+    'admin lower: before = 5'
   );
 
 reset role;
-
--- PC (bc8...006) must still be assigned (NPC-first removes NPCs before PCs).
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.citizen_assignments
-      where
-        citizen_id = 'bc800000-0000-0000-0000-000000000006'
-    ),
-    1,
-    'npc_first: PC bc8...006 preserved (PC-last invariant)'
-  );
 
 select
   is (
@@ -448,12 +395,11 @@ select
         and ca.construction_project_id = 'bc700000-0000-0000-0000-000000000001'
     ),
     3,
-    'npc_first: count = 3 after lower'
+    'admin lower: count = 3 after lower'
   );
 
 -- ===========================================================================
--- Reset for random lower test: 4 NPCs (001-004) + PC 006 = count 5
--- Unassigned NPCs: 005, 007
+-- ADMIN LOWER random: reset to 4 NPCs (001-004) = count 4, lower to 2
 -- ===========================================================================
 delete from public.citizen_assignments
 where
@@ -463,7 +409,6 @@ where
     'bc800000-0000-0000-0000-000000000003',
     'bc800000-0000-0000-0000-000000000004',
     'bc800000-0000-0000-0000-000000000005',
-    'bc800000-0000-0000-0000-000000000006',
     'bc800000-0000-0000-0000-000000000007'
   );
 
@@ -498,17 +443,8 @@ values
     'construction_project',
     'bc700000-0000-0000-0000-000000000001',
     1
-  ),
-  (
-    'bc800000-0000-0000-0000-000000000006',
-    'construction_project',
-    'bc700000-0000-0000-0000-000000000001',
-    1
   );
 
--- ===========================================================================
--- ADMIN LOWER random: 5 → 3 — 2 NPCs removed (PC-last; 4 NPCs ranked before PC)
--- ===========================================================================
 set
   local role authenticated;
 
@@ -520,8 +456,7 @@ select
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000001',
-      3,
-      'random'
+      2
     )
     $test$,
     'admin lower random: RPC succeeds'
@@ -529,19 +464,24 @@ select
 
 reset role;
 
--- PC (bc8...006) must still be assigned: 2 NPCs were removed, not the PC.
+-- ===========================================================================
+-- REJECTION: trigger blocks PC direct insert into citizen_assignments
+-- ===========================================================================
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.citizen_assignments
-      where
-        citizen_id = 'bc800000-0000-0000-0000-000000000006'
-    ),
-    1,
-    'random: PC bc8...006 preserved (PC-last invariant)'
+  throws_ok (
+    $test$
+    insert into public.citizen_assignments (
+      citizen_id, assignment_type, construction_project_id, assigned_on_turn_number
+    ) values (
+      'bc800000-0000-0000-0000-000000000006',
+      'construction_project',
+      'bc700000-0000-0000-0000-000000000001',
+      1
+    )
+    $test$,
+    'P0001',
+    null,
+    'trigger rejects direct PC insert into citizen_assignments'
   );
 
 -- ===========================================================================
@@ -558,8 +498,7 @@ select
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000002',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     'P0001',
@@ -575,8 +514,7 @@ select
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000003',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     'P0001',
@@ -592,8 +530,7 @@ select
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000001',
-      -1,
-      'npc_first'
+      -1
     )
     $test$,
     'P0001',
@@ -601,32 +538,12 @@ select
     'negative target count is rejected with P0001'
   );
 
--- ===========================================================================
--- REJECTION: invalid removal strategy
--- ===========================================================================
-select
-  throws_ok (
-    $test$
-    select public.set_bulk_construction_assignment(
-      'bc700000-0000-0000-0000-000000000001',
-      2,
-      'biggest_first'
-    )
-    $test$,
-    'P0001',
-    null,
-    'invalid removal strategy is rejected with P0001'
-  );
-
 reset role;
 
 -- ===========================================================================
 -- REJECTION: insufficient unassigned NPCs
--- All 6 NPCs absorbed into bc7...001 (3 already assigned from random test);
--- add the remaining 3 (005, 007, and one more). Then try to raise beyond
--- available unassigned NPCs.
--- Full reset: all 6 NPCs + PC in bc7...001 (count=7); 0 unassigned NPCs.
--- Try to raise bc7...001 to 8 → P0001.
+-- All 6 NPCs in bc7...001 (count=6); 0 unassigned NPCs.
+-- Try to raise bc7...001 to 7 → P0001.
 -- ===========================================================================
 delete from public.citizen_assignments
 where
@@ -636,7 +553,6 @@ where
     'bc800000-0000-0000-0000-000000000003',
     'bc800000-0000-0000-0000-000000000004',
     'bc800000-0000-0000-0000-000000000005',
-    'bc800000-0000-0000-0000-000000000006',
     'bc800000-0000-0000-0000-000000000007'
   );
 
@@ -683,12 +599,6 @@ values
     'construction_project',
     'bc700000-0000-0000-0000-000000000001',
     1
-  ),
-  (
-    'bc800000-0000-0000-0000-000000000006',
-    'construction_project',
-    'bc700000-0000-0000-0000-000000000001',
-    1
   );
 
 set
@@ -702,8 +612,7 @@ select
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000001',
-      8,
-      'npc_first'
+      7
     )
     $test$,
     'P0001',
@@ -727,8 +636,7 @@ select
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000001',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     '42501',
@@ -752,8 +660,7 @@ select
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000001',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     '42501',
@@ -764,7 +671,7 @@ select
 reset role;
 
 -- ===========================================================================
--- Reset for manager tests: 1 NPC (001) + PC (006) = count 2
+-- Reset for manager tests: 1 NPC (001) = count 1
 -- Free NPCs: 002, 003, 004, 005, 007
 -- ===========================================================================
 delete from public.citizen_assignments
@@ -775,7 +682,6 @@ where
     'bc800000-0000-0000-0000-000000000003',
     'bc800000-0000-0000-0000-000000000004',
     'bc800000-0000-0000-0000-000000000005',
-    'bc800000-0000-0000-0000-000000000006',
     'bc800000-0000-0000-0000-000000000007'
   );
 
@@ -792,16 +698,10 @@ values
     'construction_project',
     'bc700000-0000-0000-0000-000000000001',
     1
-  ),
-  (
-    'bc800000-0000-0000-0000-000000000006',
-    'construction_project',
-    'bc700000-0000-0000-0000-000000000001',
-    1
   );
 
 -- ===========================================================================
--- MANAGER RAISE: settlement manager can raise count (2 → 3)
+-- MANAGER RAISE: settlement manager can raise count (1 → 2)
 -- ===========================================================================
 set
   local role authenticated;
@@ -814,23 +714,21 @@ select
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000001',
-      3,
-      'npc_first'
+      2
     )
     $test$,
     'settlement manager can raise count'
   );
 
 -- ===========================================================================
--- MANAGER LOWER: settlement manager can lower count (3 → 2)
+-- MANAGER LOWER: settlement manager can lower count (2 → 1)
 -- ===========================================================================
 select
   lives_ok (
     $test$
     select public.set_bulk_construction_assignment(
       'bc700000-0000-0000-0000-000000000001',
-      2,
-      'npc_first'
+      1
     )
     $test$,
     'settlement manager can lower count'

@@ -2563,11 +2563,7 @@ export type Database = {
         };
       };
       set_bulk_construction_assignment: {
-        Args: {
-          p_construction_project_id: string;
-          p_removal_strategy: string;
-          p_target_count: number;
-        };
+        Args: { p_construction_project_id: string; p_target_count: number };
         Returns: {
           added_citizen_ids: string[];
           after: number;
@@ -2578,7 +2574,6 @@ export type Database = {
       set_bulk_standard_job_assignment: {
         Args: {
           p_job_id: string;
-          p_removal_strategy: string;
           p_settlement_id: string;
           p_target_count: number;
         };

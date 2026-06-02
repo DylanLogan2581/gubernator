@@ -4,9 +4,6 @@ export const setBulkConstructionAssignmentInputSchema = z.strictObject({
   constructionProjectId: z.guid(
     "Construction project id must be a valid UUID.",
   ),
-  removalStrategy: z.enum(["npc_first", "random"], {
-    error: "Removal strategy must be npc_first or random.",
-  }),
   targetCount: z
     .number()
     .int("Target count must be an integer.")

@@ -254,7 +254,7 @@ values
     'none'
   );
 
--- Beta PCs and Gamma PC need user_id (player_character constraint)
+-- Beta NPC 3, Beta NPC 4, Gamma NPC 4
 insert into
   public.citizens (
     id,
@@ -262,35 +262,31 @@ insert into
     citizen_type,
     name,
     status,
-    user_id,
     role_type
   )
 values
   (
     'e7000000-0000-0000-0000-000000000013',
     'e2000000-0000-0000-0000-000000000001',
-    'player_character',
-    'PC Beta 1',
+    'npc',
+    'NPC Beta 3',
     'alive',
-    'e1000000-0000-0000-0000-000000000001',
     'none'
   ),
   (
     'e7000000-0000-0000-0000-000000000014',
     'e2000000-0000-0000-0000-000000000001',
-    'player_character',
-    'PC Beta 2',
+    'npc',
+    'NPC Beta 4',
     'alive',
-    'e1000000-0000-0000-0000-000000000003',
     'none'
   ),
   (
     'e7000000-0000-0000-0000-000000000024',
     'e2000000-0000-0000-0000-000000000001',
-    'player_character',
-    'PC Gamma 1',
+    'npc',
+    'NPC Gamma 4',
     'alive',
-    'e1000000-0000-0000-0000-000000000001',
     'none'
   );
 
@@ -570,8 +566,8 @@ reset role;
 
 -- ===========================================================================
 -- NPC_FIRST SHRINK: correct citizen ids unassigned
--- Beta deposit: 4 workers (NPCs e7...11, e7...12; PCs e7...13, e7...14)
--- Shrink to 2 → should unassign both NPCs
+-- Beta deposit: 4 NPCs (e7...11, e7...12, e7...13, e7...14)
+-- Shrink to 2 → should unassign the 2 lowest-id NPCs (011, 012)
 -- ===========================================================================
 set
   local role authenticated;
@@ -595,10 +591,10 @@ select
           'npc_first'
         ) result
     ),
-    'npc_first shrink unassigns both NPCs'
+    'npc_first shrink unassigns 2 lowest-id NPCs'
   );
 
--- PC-last preservation: verify both PCs remain assigned after npc_first shrink
+-- Higher-id NPCs remain assigned after npc_first shrink
 select
   is (
     (
@@ -614,13 +610,13 @@ select
         )
     ),
     2,
-    'npc_first: PC-last preserved — both PCs remain assigned'
+    'npc_first: higher-id NPCs remain assigned after shrink'
   );
 
 -- ===========================================================================
--- RANDOM SHRINK: correct count removed, PC-last preserved
--- Gamma deposit: 4 workers (NPCs e7...21,22,23; PC e7...24)
--- Shrink to 2 → 2 excess; must unassign 2 NPCs (PC-last means PC stays)
+-- RANDOM SHRINK: correct count removed
+-- Gamma deposit: 4 NPCs (e7...21,22,23,24)
+-- Shrink to 2 → 2 excess; unassigns 2 in random order
 -- ===========================================================================
 select
   ok (
@@ -646,10 +642,9 @@ select
         public.citizen_assignments ca
       where
         ca.deposit_instance_id = 'e9000000-0000-0000-0000-000000000003'
-        and ca.citizen_id = 'e7000000-0000-0000-0000-000000000024'
     ),
-    1,
-    'random: PC-last preserved — PC remains assigned after random shrink'
+    2,
+    'random: exactly 2 workers remain assigned after gamma shrink'
   );
 
 -- ===========================================================================

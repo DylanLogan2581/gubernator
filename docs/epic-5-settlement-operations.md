@@ -173,12 +173,14 @@ Citizens are assigned to work targets via two surfaces:
 
 The caller specifies a target headcount, and the RPC adds or removes citizens to reach exactly that count.
 
-| RPC                                                                                         | Target types                                       | Auth                              |
-| ------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------- |
-| `set_bulk_standard_job_assignment(settlement_id, job_id, target_count, removal_strategy)`   | Standard `job_definitions` (job_type = 'standard') | `current_user_manages_settlement` |
-| `set_bulk_construction_assignment(construction_project_id, target_count, removal_strategy)` | Non-terminal `construction_projects`               | `current_user_manages_settlement` |
+| RPC                                                                       | Target types                                       | Auth                              |
+| ------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------- |
+| `set_bulk_standard_job_assignment(settlement_id, job_id, target_count)`   | Standard `job_definitions` (job_type = 'standard') | `current_user_manages_settlement` |
+| `set_bulk_construction_assignment(construction_project_id, target_count)` | Non-terminal `construction_projects`               | `current_user_manages_settlement` |
 
-**Raising** (target > current): only unassigned, alive NPCs from the settlement are picked (ordered by `citizen_id` for determinism). The RPC rejects with P0001 if there are insufficient unassigned NPCs. Player characters cannot be added to bulk-count jobs via these RPCs.
+**Raising** (target > current): only unassigned, alive NPCs from the settlement are picked (deterministic-random via `setseed(frac(epoch))`). The RPC rejects with P0001 if there are insufficient unassigned NPCs.
+
+**PC-not-assignable enforcement:** a `BEFORE INSERT OR UPDATE` trigger on `citizen_assignments` rejects any row where the citizen's `citizen_type = 'player_character'` (P0001, fires for all roles including superuser). This is the canonical enforcement point; the RPCs rely on it rather than duplicating the check.
 
 **Standard job ceiling:** `target_count` must not exceed `settlement_job_capacity(p_settlement_id, p_job_id)`. Construction projects have no settlement-wide capacity cap.
 
@@ -206,16 +208,7 @@ The atomic reassignment is a two-step delete-then-insert within a single transac
 
 All citizens supplied must be alive members of `p_settlement_id`. Passing an empty `p_citizen_ids` clears all assignments for the target.
 
-### Removal strategy (bulk-count RPCs)
-
-Both `set_bulk_standard_job_assignment` and `set_bulk_construction_assignment` accept a `p_removal_strategy` argument that governs which citizens are removed when the target count is lower than the current count.
-
-| Strategy    | Behaviour                                                                                                                                                            |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npc_first` | Removes NPCs before player characters; stable `citizen_id` tiebreak within each tier. Default choice — preserves player character assignments longest.               |
-| `random`    | Deterministic-random within the transaction via `setseed(frac(epoch))`; still preserves the PC-last invariant (citizen_type sort tier precedes the random ordering). |
-
-**Invariant across both strategies:** player characters are always removed last. This is enforced in both removal paths by sorting on `(c.citizen_type = 'player_character')::int asc` before the per-strategy tiebreak.
+**Lowering** (target < current): citizens to remove are selected in deterministic-random order via `setseed(frac(epoch))`. Only NPCs can be assigned (see PC-not-assignable enforcement above), so no special PC-preservation sort tier is needed.
 
 ## Code locations
 
@@ -246,6 +239,7 @@ Both `set_bulk_standard_job_assignment` and `set_bulk_construction_assignment` a
 | Bulk standard job assignment RPC       | `supabase/migrations/20260601000024_set_bulk_standard_job_assignment_rpc.sql`       |
 | Bulk construction assignment RPC       | `supabase/migrations/20260601000025_set_bulk_construction_assignment_rpc.sql`       |
 | Per-target assignment RPC              | `supabase/migrations/20260601000026_set_per_target_assignment_rpc.sql`              |
+| PC-not-assignable trigger + RPC update | `supabase/migrations/20260601000027_enforce_pc_not_assignable.sql`                  |
 | Trade feature module                   | `src/features/trade`                                                                |
 | Deposit feature module                 | `src/features/deposits`                                                             |
 | Managed populations feature module     | `src/features/managed-populations`                                                  |

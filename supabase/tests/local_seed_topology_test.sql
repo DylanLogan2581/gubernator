@@ -188,29 +188,7 @@ values
     0
   ),
   (
-    '00000000-0000-0000-0000-000000000412',
-    'standard_job',
-    '00000000-0000-0000-0005-000000000101',
-    null,
-    null,
-    null,
-    null,
-    null,
-    0
-  ),
-  (
-    '00000000-0000-0000-0000-000000000413',
-    'standard_job',
-    '00000000-0000-0000-0005-000000000102',
-    null,
-    null,
-    null,
-    null,
-    null,
-    0
-  ),
-  (
-    '00000000-0000-0000-0000-000000000401',
+    '00000000-0000-0000-0000-000000000421',
     'trade_route',
     null,
     null,
@@ -232,7 +210,7 @@ values
     0
   ),
   (
-    '00000000-0000-0000-0000-000000000402',
+    '00000000-0000-0000-0000-000000000412',
     'husbandry',
     null,
     null,
@@ -243,7 +221,7 @@ values
     0
   ),
   (
-    '00000000-0000-0000-0000-000000000403',
+    '00000000-0000-0000-0000-000000000413',
     'deposit',
     null,
     null,
@@ -1560,7 +1538,7 @@ select
     'seeded trade routes span all 5 seeded worlds'
   );
 
--- Citizen assignments: 3 standard_job in world 101.
+-- Citizen assignments: 1 standard_job in world 101 (411 Mara Quill; 412 now husbandry, 413 now deposit).
 select
   is (
     (
@@ -1573,8 +1551,8 @@ select
         c.world_id = '00000000-0000-0000-0000-000000000101'
         and ca.assignment_type = 'standard_job'
     ),
-    3,
-    'world 101 has exactly 3 standard_job citizen assignments'
+    1,
+    'world 101 has exactly 1 standard_job citizen assignment'
   );
 
 -- All 6 assignment_type values are present in world 101.
@@ -1593,7 +1571,7 @@ select
     'world 101 citizen assignments cover all 6 assignment_type values'
   );
 
--- Trade route assignment for Aria has trade_route_end='origin'.
+-- Trade route assignment for Tessen Marrow has trade_route_end='origin'.
 select
   ok (
     exists (
@@ -1602,12 +1580,12 @@ select
       from
         public.citizen_assignments
       where
-        citizen_id = '00000000-0000-0000-0000-000000000401'
+        citizen_id = '00000000-0000-0000-0000-000000000421'
         and assignment_type = 'trade_route'
         and trade_route_end = 'origin'
         and trade_route_id = '00000000-0000-0000-000e-000000000101'
     ),
-    'Aria (401) has a trade_route assignment with trade_route_end=origin for the active route'
+    'Tessen Marrow (421) has a trade_route assignment with trade_route_end=origin for the active route'
   );
 
 -- Construction project assignment for Pell.
@@ -1626,7 +1604,7 @@ select
     'Pell (414) has a construction_project assignment to the Tidewatch smithy project'
   );
 
--- Husbandry assignment for Halden.
+-- Husbandry assignment for Joren Bask.
 select
   ok (
     exists (
@@ -1635,14 +1613,14 @@ select
       from
         public.citizen_assignments
       where
-        citizen_id = '00000000-0000-0000-0000-000000000402'
+        citizen_id = '00000000-0000-0000-0000-000000000412'
         and assignment_type = 'husbandry'
         and managed_population_instance_id = '00000000-0000-0000-000d-000000000002'
     ),
-    'Halden (402) has a husbandry assignment to the Mistfall sheep flock'
+    'Joren Bask (412) has a husbandry assignment to the Mistfall sheep flock'
   );
 
--- Deposit assignment for Kestrel.
+-- Deposit assignment for Sable Wren.
 select
   ok (
     exists (
@@ -1651,11 +1629,11 @@ select
       from
         public.citizen_assignments
       where
-        citizen_id = '00000000-0000-0000-0000-000000000403'
+        citizen_id = '00000000-0000-0000-0000-000000000413'
         and assignment_type = 'deposit'
         and deposit_instance_id = '00000000-0000-0000-000c-000000000003'
     ),
-    'Kestrel (403) has a deposit assignment to the Sunmere stone quarry'
+    'Sable Wren (413) has a deposit assignment to the Sunmere stone quarry'
   );
 
 -- Culling assignment for Davin.

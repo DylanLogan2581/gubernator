@@ -11,7 +11,6 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
 import {
   constructionProjectsBySettlementQueryOptions,
   type ConstructionProject,
@@ -31,8 +30,6 @@ import type {
   SettlementJobCount,
 } from "../../types/bulkAssignmentTypes";
 import type { CitizenAggregateStats } from "../../types/citizenTypes";
-
-type RemovalStrategy = "npc_first" | "random";
 
 const TERMINAL_STATUSES = new Set(["complete", "cancelled"]);
 
@@ -190,7 +187,6 @@ function JobRow({
   readonly totalUnassigned: number;
 }): JSX.Element {
   const [localCount, setLocalCount] = useState(String(job.currentCount));
-  const [strategy, setStrategy] = useState<RemovalStrategy>("npc_first");
   const mutation = useMutation(
     setBulkStandardJobAssignmentMutationOptions({ queryClient }),
   );
@@ -207,7 +203,6 @@ function JobRow({
     try {
       const result = await mutation.mutateAsync({
         jobId: job.jobId,
-        removalStrategy: strategy,
         settlementId,
         targetCount: parsedCount,
       });
@@ -239,18 +234,6 @@ function JobRow({
                 setLocalCount(e.currentTarget.value);
               }}
             />
-            <NativeSelect
-              aria-label={`Removal strategy for ${job.jobName}`}
-              className="w-32"
-              disabled={mutation.isPending}
-              value={strategy}
-              onChange={(e) => {
-                setStrategy(e.currentTarget.value as RemovalStrategy);
-              }}
-            >
-              <option value="npc_first">NPC-first</option>
-              <option value="random">Random</option>
-            </NativeSelect>
             <Button
               disabled={applyDisabled}
               size="sm"
@@ -346,7 +329,6 @@ function ConstructionRow({
   const [localCount, setLocalCount] = useState(
     String(projectCount.currentCount),
   );
-  const [strategy, setStrategy] = useState<RemovalStrategy>("npc_first");
   const mutation = useMutation(
     setBulkConstructionAssignmentMutationOptions({ queryClient }),
   );
@@ -365,7 +347,6 @@ function ConstructionRow({
     try {
       const result = await mutation.mutateAsync({
         constructionProjectId: projectCount.constructionProjectId,
-        removalStrategy: strategy,
         targetCount: parsedCount,
       });
       await queryClient.invalidateQueries({
@@ -399,18 +380,6 @@ function ConstructionRow({
                 setLocalCount(e.currentTarget.value);
               }}
             />
-            <NativeSelect
-              aria-label={`Removal strategy for ${projectLabel}`}
-              className="w-32"
-              disabled={mutation.isPending}
-              value={strategy}
-              onChange={(e) => {
-                setStrategy(e.currentTarget.value as RemovalStrategy);
-              }}
-            >
-              <option value="npc_first">NPC-first</option>
-              <option value="random">Random</option>
-            </NativeSelect>
             <Button
               disabled={applyDisabled}
               size="sm"

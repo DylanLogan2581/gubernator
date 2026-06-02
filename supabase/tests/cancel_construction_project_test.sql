@@ -101,6 +101,7 @@ insert into
   )
 values
   (
+    -- Settlement manager PC (required for SM cancel test)
     'f8000000-0000-0000-0000-000000000001',
     'f2000000-0000-0000-0000-000000000001',
     'player_character',
@@ -110,6 +111,18 @@ values
     'settlement_manager',
     null,
     'f4000000-0000-0000-0000-000000000001'
+  ),
+  (
+    -- NPC assigned to the queued project to test cascade-unassign
+    'f8000000-0000-0000-0000-000000000002',
+    'f2000000-0000-0000-0000-000000000001',
+    'npc',
+    'CXP NPC Worker',
+    'alive',
+    null,
+    'none',
+    null,
+    null
   );
 
 insert into
@@ -206,7 +219,7 @@ insert into
   )
 values
   (
-    'f8000000-0000-0000-0000-000000000001',
+    'f8000000-0000-0000-0000-000000000002',
     'construction_project',
     'f7000000-0000-0000-0000-000000000001',
     1

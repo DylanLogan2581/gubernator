@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (22);
+  plan (27);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -307,9 +307,10 @@ values
 
 -- Citizens:
 --   feb...001-003 = NPCs, alive, settlement1
---   feb...004 = PC settlement manager (linked to user fe1...002)
+--   feb...004 = PC settlement manager (linked to user fe1...002), settlement1
 --   feb...005 = NPC, dead, settlement1
 --   feb...006 = NPC, alive, settlement2 (wrong settlement)
+--   feb...007 = PC, alive, settlement2 (for trade_route destination PC rejection test)
 insert into
   public.citizens (
     id,
@@ -386,6 +387,17 @@ values
     'FEPTA NPC Other Settlement',
     'alive',
     null,
+    'none',
+    null
+  ),
+  (
+    'feb00000-0000-0000-0000-000000000007',
+    'fe200000-0000-0000-0000-000000000001',
+    'fe400000-0000-0000-0000-000000000002',
+    'player_character',
+    'FEPTA PC Other Settlement',
+    'alive',
+    'fe100000-0000-0000-0000-000000000003',
     'none',
     null
   );
@@ -871,6 +883,98 @@ select
     ),
     1,
     'replaced_count = 1 when moving a citizen from another target'
+  );
+
+-- ===========================================================================
+-- REJECTION: PC in citizen_ids for deposit assignment
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.set_per_target_assignment(
+      'fe400000-0000-0000-0000-000000000001',
+      'deposit',
+      'fe900000-0000-0000-0000-000000000001',
+      array['feb00000-0000-0000-0000-000000000004'::uuid]
+    )
+    $test$,
+    'P0001',
+    null,
+    'PC in citizen_ids for deposit raises P0001'
+  );
+
+-- ===========================================================================
+-- REJECTION: PC in citizen_ids for husbandry assignment
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.set_per_target_assignment(
+      'fe400000-0000-0000-0000-000000000001',
+      'husbandry',
+      'fe900000-0000-0000-0000-000000000005',
+      array['feb00000-0000-0000-0000-000000000004'::uuid]
+    )
+    $test$,
+    'P0001',
+    null,
+    'PC in citizen_ids for husbandry raises P0001'
+  );
+
+-- ===========================================================================
+-- REJECTION: PC in citizen_ids for culling assignment
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.set_per_target_assignment(
+      'fe400000-0000-0000-0000-000000000001',
+      'culling',
+      'fe900000-0000-0000-0000-000000000005',
+      array['feb00000-0000-0000-0000-000000000004'::uuid]
+    )
+    $test$,
+    'P0001',
+    null,
+    'PC in citizen_ids for culling raises P0001'
+  );
+
+-- ===========================================================================
+-- REJECTION: PC in citizen_ids for trade_route origin assignment
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.set_per_target_assignment(
+      'fe400000-0000-0000-0000-000000000001',
+      'trade_route',
+      'fea00000-0000-0000-0000-000000000001',
+      array['feb00000-0000-0000-0000-000000000004'::uuid],
+      'origin'
+    )
+    $test$,
+    'P0001',
+    null,
+    'PC in citizen_ids for trade_route origin raises P0001'
+  );
+
+-- ===========================================================================
+-- REJECTION: PC in citizen_ids for trade_route destination assignment
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.set_per_target_assignment(
+      'fe400000-0000-0000-0000-000000000002',
+      'trade_route',
+      'fea00000-0000-0000-0000-000000000001',
+      array['feb00000-0000-0000-0000-000000000007'::uuid],
+      'destination'
+    )
+    $test$,
+    'P0001',
+    null,
+    'PC in citizen_ids for trade_route destination raises P0001'
   );
 
 reset role;
