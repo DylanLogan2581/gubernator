@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { useState, type JSX } from "react";
+import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { useState, type JSX, type ReactNode } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -53,14 +54,23 @@ export function TradeRoutesSection({
               : route.originSettlementName;
           const localLabel =
             localEnd === "origin"
-              ? `${route.resourceName} → ${route.destinationSettlementName} — Trader (origin)`
-              : `${route.originSettlementName} → ${route.resourceName} — Trader (destination)`;
+              ? `Trader (sending): ${route.resourceName} → ${route.destinationSettlementName}`
+              : `Trader (receiving): ${route.resourceName} from ${route.originSettlementName}`;
+          const localTooltip =
+            localEnd === "origin"
+              ? `Sending ${route.resourceName} to ${route.destinationSettlementName}`
+              : `Receiving ${route.resourceName} from ${route.originSettlementName}`;
+          const LocalIcon =
+            localEnd === "origin" ? ArrowUpFromLine : ArrowDownToLine;
           const localKey = `${route.id}:${localEnd}`;
           const remoteKey = `${route.id}:${remoteEnd}`;
 
           return (
             <div key={route.id} className="grid gap-1.5">
-              <p className="text-xs font-medium text-muted-foreground">
+              <p
+                aria-label={`${route.resourceName} travels from ${route.originSettlementName} to ${route.destinationSettlementName}`}
+                className="text-xs font-medium text-muted-foreground"
+              >
                 {route.resourceName}: {route.originSettlementName} →{" "}
                 {route.destinationSettlementName}
               </p>
@@ -69,6 +79,14 @@ export function TradeRoutesSection({
                 assignedIds={assignedByTradeRouteEnd.get(localKey) ?? []}
                 canEdit={canEdit}
                 citizenMap={citizenMap}
+                icon={
+                  <span title={localTooltip}>
+                    <LocalIcon
+                      aria-hidden="true"
+                      className="h-4 w-4 shrink-0 text-muted-foreground"
+                    />
+                  </span>
+                }
                 label={localLabel}
                 queryClient={queryClient}
                 routeId={route.id}
@@ -79,7 +97,10 @@ export function TradeRoutesSection({
                 assignedCount={
                   (assignedByTradeRouteEnd.get(remoteKey) ?? []).length
                 }
+                destinationSettlementName={route.destinationSettlementName}
+                originSettlementName={route.originSettlementName}
                 remoteSettlementName={remoteSettlementName}
+                resourceName={route.resourceName}
                 tradeRouteEnd={remoteEnd}
               />
             </div>
@@ -95,6 +116,7 @@ function TradeRouteLocalEndRow({
   assignedIds,
   canEdit,
   citizenMap,
+  icon,
   label,
   queryClient,
   routeId,
@@ -105,6 +127,7 @@ function TradeRouteLocalEndRow({
   readonly assignedIds: readonly string[];
   readonly canEdit: boolean;
   readonly citizenMap: ReadonlyMap<string, Citizen>;
+  readonly icon?: ReactNode;
   readonly label: string;
   readonly queryClient: QueryClient;
   readonly routeId: string;
@@ -171,6 +194,7 @@ function TradeRouteLocalEndRow({
           ) : undefined
         }
         capacityHint={capacityHint}
+        icon={icon}
         label={label}
       >
         <CitizenTags
@@ -202,18 +226,34 @@ function TradeRouteLocalEndRow({
 
 function TradeRouteRemoteEndRow({
   assignedCount,
+  destinationSettlementName,
+  originSettlementName,
   remoteSettlementName,
+  resourceName,
   tradeRouteEnd,
 }: {
   readonly assignedCount: number;
+  readonly destinationSettlementName: string;
+  readonly originSettlementName: string;
   readonly remoteSettlementName: string;
+  readonly resourceName: string;
   readonly tradeRouteEnd: "destination" | "origin";
 }): JSX.Element {
-  const endLabel = tradeRouteEnd === "origin" ? "Origin" : "Destination";
+  const isSending = tradeRouteEnd === "origin";
+  const RemoteIcon = isSending ? ArrowUpFromLine : ArrowDownToLine;
+  const remoteTooltip = isSending
+    ? `Sending ${resourceName} to ${destinationSettlementName}`
+    : `Receiving ${resourceName} from ${originSettlementName}`;
+  const endLabel = isSending
+    ? "Trader (sending — remote)"
+    : "Trader (receiving — remote)";
   return (
     <div className="rounded border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-      <span className="font-medium">
-        {endLabel}: {remoteSettlementName} — Trader
+      <span className="inline-flex items-center gap-1.5 font-medium">
+        <span title={remoteTooltip}>
+          <RemoteIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
+        </span>
+        {endLabel}: {remoteSettlementName}
       </span>
       <span className="ml-2 text-xs">
         {assignedCount.toString()} assigned (remote)

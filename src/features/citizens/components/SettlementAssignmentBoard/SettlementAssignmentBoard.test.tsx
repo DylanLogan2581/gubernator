@@ -1355,9 +1355,11 @@ describe("SettlementAssignmentBoard", () => {
 
     expect(await screen.findByText(/Grain.*Hillfort.*Riverside/)).toBeDefined();
     expect(
-      screen.getByText("Grain → Riverside — Trader (origin)"),
+      screen.getByText("Trader (sending): Grain → Riverside"),
     ).toBeDefined();
-    expect(screen.getByText("Destination: Riverside — Trader")).toBeDefined();
+    expect(
+      screen.getByText(/Trader \(receiving — remote\): Riverside/),
+    ).toBeDefined();
   });
 
   it("shows assigned citizen name as tag on deposit row", async () => {

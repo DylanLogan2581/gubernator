@@ -87,17 +87,20 @@ export function TargetRowShell({
   assignButton,
   capacityHint,
   children,
+  icon,
   label,
 }: {
   readonly assignButton?: ReactNode;
   readonly capacityHint?: string;
   readonly children: ReactNode;
+  readonly icon?: ReactNode;
   readonly label: string;
 }): JSX.Element {
   return (
     <div className="rounded border border-border bg-background p-3">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-1.5">
+          {icon}
           <span className="text-sm font-medium">{label}</span>
           {capacityHint !== undefined ? (
             <span className="text-xs text-muted-foreground">
