@@ -925,7 +925,7 @@ describe("SettlementTradeRoutesPanel", () => {
 
   it("replace flow — opens dialog, submits, shows success toast", async () => {
     const user = userEvent.setup();
-    const rpcMock = vi.fn((fn: string) => {
+    const rpcMock = vi.fn((fn: string, _params?: unknown) => {
       if (fn === "replace_trade_route") {
         return {
           maybeSingle: vi.fn().mockResolvedValue({
@@ -995,7 +995,7 @@ describe("SettlementTradeRoutesPanel", () => {
       );
     });
     const replaceCall = rpcMock.mock.calls.find(
-      ([fn]: [string]) => fn === "replace_trade_route",
+      ([fn]) => fn === "replace_trade_route",
     );
     expect(
       (
