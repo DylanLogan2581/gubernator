@@ -873,7 +873,7 @@ export type Database = {
           is_read: boolean;
           message_text: string;
           nation_id: string | null;
-          notification_type: string;
+          notification_type: Database["public"]["Enums"]["notification_type"];
           recipient_user_id: string;
           settlement_id: string | null;
           trade_route_id: string | null;
@@ -888,7 +888,7 @@ export type Database = {
           is_read?: boolean;
           message_text: string;
           nation_id?: string | null;
-          notification_type: string;
+          notification_type: Database["public"]["Enums"]["notification_type"];
           recipient_user_id: string;
           settlement_id?: string | null;
           trade_route_id?: string | null;
@@ -903,7 +903,7 @@ export type Database = {
           is_read?: boolean;
           message_text?: string;
           nation_id?: string | null;
-          notification_type?: string;
+          notification_type?: Database["public"]["Enums"]["notification_type"];
           recipient_user_id?: string;
           settlement_id?: string | null;
           trade_route_id?: string | null;
@@ -2807,7 +2807,12 @@ export type Database = {
       };
     };
     Enums: {
-      [_ in never]: never;
+      notification_type:
+        | "turn.completed"
+        | "trade_proposal_received"
+        | "trade_proposal_accepted"
+        | "trade_proposal_rejected"
+        | "trade_route_cancelled";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -2937,6 +2942,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      notification_type: [
+        "turn.completed",
+        "trade_proposal_received",
+        "trade_proposal_accepted",
+        "trade_proposal_rejected",
+        "trade_route_cancelled",
+      ],
+    },
   },
 } as const;

@@ -14,22 +14,6 @@
 --   • Fires 'trade_route_cancelled' notifications for managers on both endpoint
 --     sides. If a side has no active managers the world admins receive it instead.
 -- ---------------------------------------------------------------------------
--- Extend the notification_type allowlist to include the new type.
-alter table public.notifications
-drop constraint notifications_notification_type_check;
-
-alter table public.notifications
-add constraint notifications_notification_type_check check (
-  notification_type in (
-    'turn.completed',
-    'trade_proposal_received',
-    'trade_proposal_accepted',
-    'trade_proposal_rejected',
-    'trade_route_cancelled'
-  )
-);
-
--- ---------------------------------------------------------------------------
 create or replace function public.cancel_trade_route (p_route_id uuid) returns table (
   id uuid,
   origin_settlement_id uuid,
