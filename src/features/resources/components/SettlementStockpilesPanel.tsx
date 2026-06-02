@@ -4,15 +4,20 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { X } from "lucide-react";
-import { useId, useState, type FormEvent, type JSX } from "react";
+import { useState, type FormEvent, type JSX } from "react";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -206,7 +211,6 @@ function EditStockpileDialog({
   readonly queryClient: QueryClient;
   readonly stockpile: SettlementStockpile;
 }): JSX.Element {
-  const titleId = useId();
   const updateMutation = useMutation(
     updateSettlementStockpileMutationOptions({ queryClient }),
   );
@@ -250,64 +254,56 @@ function EditStockpileDialog({
   }
 
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        role="dialog"
-        onSubmit={(e) => {
-          void handleSubmit(e);
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Edit {stockpile.resourceName} quantity
-          </h3>
-          <Button
-            aria-label={`Cancel edit ${stockpile.resourceName} quantity`}
-            disabled={updateMutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Quantity</span>
-          <Input
-            aria-invalid={fieldError !== undefined}
-            aria-label="Quantity"
-            autoFocus
-            disabled={updateMutation.isPending}
-            inputMode="decimal"
-            placeholder="0"
-            value={quantity}
-            onChange={(e) => {
-              setQuantity(e.currentTarget.value);
-            }}
-          />
-          {fieldError !== undefined ? (
-            <p className="text-xs text-destructive">{fieldError}</p>
-          ) : null}
-        </label>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={updateMutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button disabled={updateMutation.isPending} type="submit">
-            Save
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <form
+          className="contents"
+          noValidate
+          onSubmit={(e) => {
+            void handleSubmit(e);
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Edit {stockpile.resourceName} quantity</DialogTitle>
+          </DialogHeader>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Quantity</span>
+            <Input
+              aria-invalid={fieldError !== undefined}
+              aria-label="Quantity"
+              autoFocus
+              disabled={updateMutation.isPending}
+              inputMode="decimal"
+              placeholder="0"
+              value={quantity}
+              onChange={(e) => {
+                setQuantity(e.currentTarget.value);
+              }}
+            />
+            {fieldError !== undefined ? (
+              <p className="text-xs text-destructive">{fieldError}</p>
+            ) : null}
+          </label>
+          <DialogFooter>
+            <Button
+              disabled={updateMutation.isPending}
+              onClick={onClose}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={updateMutation.isPending} type="submit">
+              Save
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

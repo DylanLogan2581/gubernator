@@ -602,17 +602,17 @@ describe("SettlementAssignmentBoard", () => {
     requireSupabaseClient.mockReset();
   });
 
-  it("renders tab navigation with Bulk jobs and Per-target jobs links", () => {
+  it("renders tab navigation with Bulk jobs and Per-target jobs tabs", () => {
     requireSupabaseClient.mockReturnValue(createClient({}));
 
     renderBoard();
 
-    const bulkLink = screen.getByRole("link", { name: "Bulk jobs" });
-    const perTargetLink = screen.getByRole("link", { name: "Per-target jobs" });
-    expect(bulkLink).toBeDefined();
-    expect(perTargetLink).toBeDefined();
-    expect(bulkLink.getAttribute("aria-current")).toBe("page");
-    expect(perTargetLink.getAttribute("aria-current")).toBeNull();
+    const bulkTab = screen.getByRole("tab", { name: "Bulk jobs" });
+    const perTargetTab = screen.getByRole("tab", { name: "Per-target jobs" });
+    expect(bulkTab).toBeDefined();
+    expect(perTargetTab).toBeDefined();
+    expect(bulkTab).toHaveAttribute("aria-selected", "true");
+    expect(perTargetTab).toHaveAttribute("aria-selected", "false");
   });
 
   it("mobile selector reflects active tab and calls navigate on change", async () => {

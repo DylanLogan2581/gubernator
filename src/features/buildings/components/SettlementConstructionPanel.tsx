@@ -4,15 +4,22 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useId, useState, type JSX } from "react";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -343,7 +350,6 @@ function CancelConfirmDialog({
   readonly queryClient: QueryClient;
   readonly settlementId: string;
 }): JSX.Element {
-  const titleId = useId();
   const cancelMutation = useMutation(
     cancelConstructionProjectMutationOptions({ queryClient, settlementId }),
   );
@@ -367,36 +373,24 @@ function CancelConfirmDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Cancel {project.blueprintName}?
-          </h3>
-          <Button
-            aria-label="Close cancel dialog"
-            disabled={cancelMutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cancel {project.blueprintName}?</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
           This will cancel the construction of{" "}
           <span className="font-medium text-foreground">
             {project.blueprintName}
           </span>{" "}
           (Tier {project.tierNumber}). Any assigned citizens will be unassigned.
-        </p>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </DialogDescription>
+        <DialogFooter>
           <Button
             disabled={cancelMutation.isPending}
             onClick={onClose}
@@ -415,9 +409,9 @@ function CancelConfirmDialog({
           >
             Cancel project
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -457,7 +451,6 @@ function CreateProjectDialog({
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const titleId = useId();
   const blueprintSelectId = useId();
   const tierSelectId = useId();
 
@@ -518,28 +511,16 @@ function CreateProjectDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-md gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Start construction
-          </h3>
-          <Button
-            aria-label="Close start construction dialog"
-            disabled={createMutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Start construction</DialogTitle>
+        </DialogHeader>
 
         <div className="grid gap-3">
           <div className="grid gap-1.5">
@@ -630,7 +611,7 @@ function CreateProjectDialog({
           ) : null}
         </div>
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <DialogFooter>
           <Button
             disabled={createMutation.isPending}
             onClick={onClose}
@@ -653,8 +634,8 @@ function CreateProjectDialog({
           >
             Start
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

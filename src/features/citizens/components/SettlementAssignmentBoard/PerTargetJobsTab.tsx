@@ -4,14 +4,25 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
-import { useId, useState, type JSX, type ReactNode } from "react";
+import { ChevronDown, X } from "lucide-react";
+import { useState, type JSX, type ReactNode } from "react";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   depositInstancesBySettlementQueryOptions,
   type DepositInstance,
@@ -187,33 +198,17 @@ function CollapsibleSection({
   readonly children: ReactNode;
   readonly title: string;
 }): JSX.Element {
-  const [collapsed, setCollapsed] = useState(false);
-  const contentId = useId();
-
   return (
-    <div className="grid gap-2">
-      <button
-        aria-controls={contentId}
-        aria-expanded={!collapsed}
-        className="flex items-center gap-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        type="button"
-        onClick={() => {
-          setCollapsed((v) => !v);
-        }}
-      >
-        {collapsed ? (
-          <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0" />
-        ) : (
-          <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0" />
-        )}
+    <Collapsible defaultOpen className="grid gap-2">
+      <CollapsibleTrigger className="group flex items-center gap-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <ChevronDown
+          aria-hidden="true"
+          className="h-4 w-4 shrink-0 -rotate-90 transition-transform group-data-[state=open]:rotate-0"
+        />
         {title}
-      </button>
-      {!collapsed ? (
-        <div className="grid gap-2" id={contentId}>
-          {children}
-        </div>
-      ) : null}
-    </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="grid gap-2">{children}</CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -285,7 +280,6 @@ function AssignDialog({
   readonly onSubmit: (citizenIds: string[]) => void;
   readonly title: string;
 }): JSX.Element {
-  const titleId = useId();
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(currentCitizenIds),
   );
@@ -303,28 +297,16 @@ function AssignDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="w-full max-w-md rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <h3 className="text-base font-medium" id={titleId}>
-            {title}
-          </h3>
-          <Button
-            aria-label="Close dialog"
-            disabled={isPending}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
         <div className="max-h-72 overflow-y-auto">
           {aliveCitizens.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -351,7 +333,7 @@ function AssignDialog({
             </ul>
           )}
         </div>
-        <div className="mt-4 flex justify-end gap-2">
+        <DialogFooter>
           <Button
             disabled={isPending}
             size="sm"
@@ -371,9 +353,9 @@ function AssignDialog({
           >
             Save
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

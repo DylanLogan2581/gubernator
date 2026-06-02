@@ -1,10 +1,17 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
-import { Save, Shuffle, UserPlus, Wand2, X } from "lucide-react";
+import { Save, Shuffle, UserPlus, Wand2 } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   worldNamingConfigQueryOptions,
@@ -51,7 +58,6 @@ export function CreateNpcDialog({
   settlementId,
   worldId,
 }: CreateNpcDialogProps): JSX.Element {
-  const titleId = useId();
   const nameId = useId();
   const [fields, setFields] = useState(EMPTY_COMMON_FIELDS);
   const [kinshipError, setKinshipError] = useState<string | undefined>(
@@ -198,214 +204,200 @@ export function CreateNpcDialog({
   const fieldError = kinshipError;
 
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-lg gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        onSubmit={handleSubmit}
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h3 id={titleId} className="text-lg font-semibold">
-              Create NPC
-            </h3>
-            <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="max-w-lg">
+        <form className="contents" noValidate onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Create NPC</DialogTitle>
+            <DialogDescription>
               NPCs are managed by World Admins and are not linked to a user.
-            </p>
-          </div>
-          <Button
-            aria-label="Cancel create NPC"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="grid gap-1 text-sm">
-          <label className="text-muted-foreground" htmlFor={nameId}>
-            Name
-          </label>
-          <div className="flex gap-2">
-            <Input
-              id={nameId}
+          <div className="grid gap-1 text-sm">
+            <label className="text-muted-foreground" htmlFor={nameId}>
+              Name
+            </label>
+            <div className="flex gap-2">
+              <Input
+                id={nameId}
+                disabled={mutation.isPending}
+                maxLength={textInputLimits.citizenNameMax}
+                required
+                value={fields.name}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  setFields((current) => ({ ...current, name: value }));
+                }}
+              />
+              <Button
+                aria-label="Generate name from world naming pools"
+                disabled={nameGenerationDisabled}
+                onClick={handleGenerateName}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Shuffle aria-hidden="true" />
+                Generate
+              </Button>
+            </div>
+            {nameGenerationHint !== null ? (
+              <p className="text-xs text-muted-foreground">
+                {nameGenerationHint}
+              </p>
+            ) : null}
+          </div>
+
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Sex</span>
+            <select
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
               disabled={mutation.isPending}
-              maxLength={textInputLimits.citizenNameMax}
-              required
-              value={fields.name}
+              value={fields.sex}
               onChange={(event) => {
                 const value = event.currentTarget.value;
-                setFields((current) => ({ ...current, name: value }));
+                setFields((current) => ({ ...current, sex: value }));
               }}
-            />
-            <Button
-              aria-label="Generate name from world naming pools"
-              disabled={nameGenerationDisabled}
-              onClick={handleGenerateName}
-              size="sm"
-              type="button"
-              variant="outline"
             >
-              <Shuffle aria-hidden="true" />
-              Generate
-            </Button>
-          </div>
-          {nameGenerationHint !== null ? (
-            <p className="text-xs text-muted-foreground">
-              {nameGenerationHint}
-            </p>
-          ) : null}
-        </div>
+              <option value=""></option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </label>
 
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Sex</span>
-          <select
-            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={mutation.isPending}
-            value={fields.sex}
-            onChange={(event) => {
-              const value = event.currentTarget.value;
-              setFields((current) => ({ ...current, sex: value }));
+          <ParentField
+            citizens={parentChoices}
+            disabled={mutation.isPending || citizensQuery.isPending}
+            label="Parent A"
+            onChange={(value) => {
+              setFields((current) => ({ ...current, parentACitizenId: value }));
+              setKinshipError(undefined);
             }}
-          >
-            <option value=""></option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-        </label>
+            value={fields.parentACitizenId}
+          />
 
-        <ParentField
-          citizens={parentChoices}
-          disabled={mutation.isPending || citizensQuery.isPending}
-          label="Parent A"
-          onChange={(value) => {
-            setFields((current) => ({ ...current, parentACitizenId: value }));
-            setKinshipError(undefined);
-          }}
-          value={fields.parentACitizenId}
-        />
+          <ParentField
+            citizens={parentChoices}
+            disabled={mutation.isPending || citizensQuery.isPending}
+            label="Parent B"
+            onChange={(value) => {
+              setFields((current) => ({ ...current, parentBCitizenId: value }));
+              setKinshipError(undefined);
+            }}
+            value={fields.parentBCitizenId}
+          />
 
-        <ParentField
-          citizens={parentChoices}
-          disabled={mutation.isPending || citizensQuery.isPending}
-          label="Parent B"
-          onChange={(value) => {
-            setFields((current) => ({ ...current, parentBCitizenId: value }));
-            setKinshipError(undefined);
-          }}
-          value={fields.parentBCitizenId}
-        />
+          <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">NPC flavor</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={
+                  mutation.isPending || flavorConfigQuery.data === undefined
+                }
+                onClick={handleRegenerate}
+              >
+                <Wand2 aria-hidden="true" />
+                Regenerate
+              </Button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-sm">
+                <span className="text-muted-foreground">Trait 1</span>
+                <Input
+                  disabled={mutation.isPending}
+                  value={flavor.trait1}
+                  onChange={(event) =>
+                    handleFlavorChange("trait1", event.currentTarget.value)
+                  }
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span className="text-muted-foreground">Trait 2</span>
+                <Input
+                  disabled={mutation.isPending}
+                  value={flavor.trait2}
+                  onChange={(event) =>
+                    handleFlavorChange("trait2", event.currentTarget.value)
+                  }
+                />
+              </label>
+            </div>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                Secret / contradiction
+              </span>
+              <textarea
+                className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                disabled={mutation.isPending}
+                value={flavor.contradiction}
+                onChange={(event) =>
+                  handleFlavorChange("contradiction", event.currentTarget.value)
+                }
+              />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Goal</span>
+              <textarea
+                className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                disabled={mutation.isPending}
+                value={flavor.goal}
+                onChange={(event) =>
+                  handleFlavorChange("goal", event.currentTarget.value)
+                }
+              />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Flaw</span>
+              <textarea
+                className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                disabled={mutation.isPending}
+                value={flavor.flaw}
+                onChange={(event) =>
+                  handleFlavorChange("flaw", event.currentTarget.value)
+                }
+              />
+            </label>
+          </div>
 
-        <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium">NPC flavor</p>
+          {fieldError === undefined ? null : (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {fieldError}
+            </p>
+          )}
+
+          <DialogFooter>
             <Button
+              disabled={mutation.isPending}
+              onClick={onClose}
               type="button"
               variant="outline"
-              size="sm"
-              disabled={
-                mutation.isPending || flavorConfigQuery.data === undefined
-              }
-              onClick={handleRegenerate}
             >
-              <Wand2 aria-hidden="true" />
-              Regenerate
+              Cancel
             </Button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Trait 1</span>
-              <Input
-                disabled={mutation.isPending}
-                value={flavor.trait1}
-                onChange={(event) =>
-                  handleFlavorChange("trait1", event.currentTarget.value)
-                }
-              />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Trait 2</span>
-              <Input
-                disabled={mutation.isPending}
-                value={flavor.trait2}
-                onChange={(event) =>
-                  handleFlavorChange("trait2", event.currentTarget.value)
-                }
-              />
-            </label>
-          </div>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">
-              Secret / contradiction
-            </span>
-            <textarea
-              className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-              disabled={mutation.isPending}
-              value={flavor.contradiction}
-              onChange={(event) =>
-                handleFlavorChange("contradiction", event.currentTarget.value)
-              }
-            />
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Goal</span>
-            <textarea
-              className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-              disabled={mutation.isPending}
-              value={flavor.goal}
-              onChange={(event) =>
-                handleFlavorChange("goal", event.currentTarget.value)
-              }
-            />
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Flaw</span>
-            <textarea
-              className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-              disabled={mutation.isPending}
-              value={flavor.flaw}
-              onChange={(event) =>
-                handleFlavorChange("flaw", event.currentTarget.value)
-              }
-            />
-          </label>
-        </div>
-
-        {fieldError === undefined ? null : (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {fieldError}
-          </p>
-        )}
-
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button disabled={mutation.isPending} type="submit">
-            {mutation.isPending ? (
-              <Save aria-hidden="true" />
-            ) : (
-              <UserPlus aria-hidden="true" />
-            )}
-            {mutation.isPending ? "Creating…" : "Create NPC"}
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+            <Button disabled={mutation.isPending} type="submit">
+              {mutation.isPending ? (
+                <Save aria-hidden="true" />
+              ) : (
+                <UserPlus aria-hidden="true" />
+              )}
+              {mutation.isPending ? "Creating…" : "Create NPC"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

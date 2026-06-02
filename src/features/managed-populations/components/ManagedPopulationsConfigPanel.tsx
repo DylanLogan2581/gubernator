@@ -5,11 +5,10 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Trash2, X } from "lucide-react";
-import { useId, useState, type FormEvent, type JSX } from "react";
+import { Plus, Trash2 } from "lucide-react";
+import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -21,6 +20,13 @@ import {
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
@@ -820,89 +826,77 @@ function CreateManagedPopulationTypeForm({
 
   const resources = resourcesQuery.data ?? [];
 
-  const titleId = useId();
-
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-lg gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        onSubmit={handleSubmit}
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Create managed population type
-          </h3>
-          <Button
-            aria-label="Cancel create managed population type"
-            disabled={isPending}
-            onClick={onCancel}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <div className="grid gap-3">
-          <PopulationTypeScalarFields
-            cullingJobId={cullingJobId}
-            cullingJobLinkError={cullingJobLinkError}
-            cullingJobs={cullingJobs}
-            fieldErrors={fieldErrors}
-            growthRate={growthRate}
-            husbandryJobId={husbandryJobId}
-            husbandryJobLinkError={husbandryJobLinkError}
-            husbandryJobs={husbandryJobs}
-            husbandryWorkersPerNAnimals={husbandryWorkersPerNAnimals}
-            isPending={isPending}
-            jobCollisionError={jobCollisionError}
-            name={name}
-            slug={derivedSlug}
-            worldId={worldId}
-            onCullingJobChange={handleCullingJobChange}
-            onGrowthRateChange={setGrowthRate}
-            onHusbandryJobChange={handleHusbandryJobChange}
-            onHusbandryWorkersPerNAnimalsChange={setHusbandryWorkersPerNAnimals}
-            onNameChange={setName}
-          />
-          <ResourceAmountListEditor
-            addLabel="Add entry"
-            amountLabel="amount per N animals"
-            disabled={isPending}
-            entries={maintenanceRules}
-            label="Maintenance rules"
-            resources={resources}
-            onChange={setMaintenanceRules}
-          />
-          <ResourceAmountListEditor
-            addLabel="Add entry"
-            amountLabel="amount per N animals"
-            disabled={isPending}
-            entries={cullingOutputs}
-            label="Culling outputs"
-            resources={resources}
-            onChange={setCullingOutputs}
-          />
-        </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={isPending}
-            onClick={onCancel}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button disabled={isPending || hasJobError} type="submit">
-            Create
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
+      <DialogContent className="max-w-lg">
+        <form className="contents" noValidate onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Create managed population type</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <PopulationTypeScalarFields
+              cullingJobId={cullingJobId}
+              cullingJobLinkError={cullingJobLinkError}
+              cullingJobs={cullingJobs}
+              fieldErrors={fieldErrors}
+              growthRate={growthRate}
+              husbandryJobId={husbandryJobId}
+              husbandryJobLinkError={husbandryJobLinkError}
+              husbandryJobs={husbandryJobs}
+              husbandryWorkersPerNAnimals={husbandryWorkersPerNAnimals}
+              isPending={isPending}
+              jobCollisionError={jobCollisionError}
+              name={name}
+              slug={derivedSlug}
+              worldId={worldId}
+              onCullingJobChange={handleCullingJobChange}
+              onGrowthRateChange={setGrowthRate}
+              onHusbandryJobChange={handleHusbandryJobChange}
+              onHusbandryWorkersPerNAnimalsChange={
+                setHusbandryWorkersPerNAnimals
+              }
+              onNameChange={setName}
+            />
+            <ResourceAmountListEditor
+              addLabel="Add entry"
+              amountLabel="amount per N animals"
+              disabled={isPending}
+              entries={maintenanceRules}
+              label="Maintenance rules"
+              resources={resources}
+              onChange={setMaintenanceRules}
+            />
+            <ResourceAmountListEditor
+              addLabel="Add entry"
+              amountLabel="amount per N animals"
+              disabled={isPending}
+              entries={cullingOutputs}
+              label="Culling outputs"
+              resources={resources}
+              onChange={setCullingOutputs}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={isPending}
+              onClick={onCancel}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={isPending || hasJobError} type="submit">
+              Create
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

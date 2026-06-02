@@ -4,14 +4,21 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus, X } from "lucide-react";
-import { useId, useState, type FormEvent, type JSX } from "react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { useState, type FormEvent, type JSX } from "react";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
@@ -549,7 +556,6 @@ function ApproveConfirmDialog({
   readonly settlementId: string;
   readonly side: "destination" | "origin";
 }): JSX.Element {
-  const titleId = useId();
   const mutation = useMutation(
     approveTradeRouteSideMutationOptions({ queryClient }),
   );
@@ -573,29 +579,17 @@ function ApproveConfirmDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Approve trade route?
-          </h3>
-          <Button
-            aria-label="Cancel approve"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Approve trade route?</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
           Approve the{" "}
           <span className="font-medium text-foreground">
             {side === "origin" ? "origin" : "destination"}
@@ -605,8 +599,8 @@ function ApproveConfirmDialog({
           {route.originSettlementId === settlementId
             ? "The route becomes active once both sides have approved."
             : ""}
-        </p>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </DialogDescription>
+        <DialogFooter>
           <Button
             disabled={mutation.isPending}
             onClick={onClose}
@@ -624,9 +618,9 @@ function ApproveConfirmDialog({
           >
             Approve
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -645,7 +639,6 @@ function RejectConfirmDialog({
   readonly route: TradeRoute;
   readonly side: "destination" | "origin";
 }): JSX.Element {
-  const titleId = useId();
   const mutation = useMutation(
     rejectTradeRouteSideMutationOptions({ queryClient }),
   );
@@ -665,34 +658,22 @@ function RejectConfirmDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Reject trade route?
-          </h3>
-          <Button
-            aria-label="Cancel reject"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reject trade route?</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
           Reject the trade route with{" "}
           <span className="font-medium text-foreground">{counterpart}</span>?
           This cannot be undone.
-        </p>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </DialogDescription>
+        <DialogFooter>
           <Button
             disabled={mutation.isPending}
             onClick={onClose}
@@ -711,9 +692,9 @@ function RejectConfirmDialog({
           >
             Reject
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -730,7 +711,6 @@ function CancelConfirmDialog({
   readonly route: TradeRoute;
   readonly traderCount: number;
 }): JSX.Element {
-  const titleId = useId();
   const mutation = useMutation(
     cancelTradeRouteMutationOptions({ queryClient }),
   );
@@ -753,29 +733,17 @@ function CancelConfirmDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Cancel trade route?
-          </h3>
-          <Button
-            aria-label="Cancel action"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cancel trade route?</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
           Cancel the trade route with{" "}
           <span className="font-medium text-foreground">{counterpart}</span>?
           {traderCount > 0 ? (
@@ -788,8 +756,8 @@ function CancelConfirmDialog({
               will be unassigned.
             </>
           ) : null}
-        </p>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </DialogDescription>
+        <DialogFooter>
           <Button
             disabled={mutation.isPending}
             onClick={onClose}
@@ -808,9 +776,9 @@ function CancelConfirmDialog({
           >
             Cancel route
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -834,7 +802,6 @@ function ProposeTradeRouteDialog({
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const titleId = useId();
   const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const mutation = useMutation(
@@ -897,144 +864,132 @@ function ProposeTradeRouteDialog({
   }
 
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        role="dialog"
-        onSubmit={handleSubmit}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Propose trade route
-          </h3>
-          <Button
-            aria-label="Cancel propose trade route"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <div className="grid gap-3">
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">
-              Destination settlement
-            </span>
-            {settlementsQuery.isPending ? (
-              <span className="text-xs text-muted-foreground">
-                Loading settlements…
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <form className="contents" noValidate onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Propose trade route</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                Destination settlement
               </span>
-            ) : settlements.length === 0 ? (
-              <span className="text-xs text-muted-foreground">
-                No other settlements available.
-              </span>
-            ) : (
-              <NativeSelect
-                aria-invalid={errors.destinationSettlementId !== undefined}
-                aria-label="Destination settlement"
-                className="w-full"
+              {settlementsQuery.isPending ? (
+                <span className="text-xs text-muted-foreground">
+                  Loading settlements…
+                </span>
+              ) : settlements.length === 0 ? (
+                <span className="text-xs text-muted-foreground">
+                  No other settlements available.
+                </span>
+              ) : (
+                <NativeSelect
+                  aria-invalid={errors.destinationSettlementId !== undefined}
+                  aria-label="Destination settlement"
+                  className="w-full"
+                  disabled={mutation.isPending}
+                  value={form.destinationSettlementId}
+                  onChange={(e) => {
+                    const val = e.currentTarget.value;
+                    setForm((prev) => ({
+                      ...prev,
+                      destinationSettlementId: val,
+                    }));
+                  }}
+                >
+                  <option value="">Select a settlement…</option>
+                  {sortByName(settlements).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.nationName})
+                    </option>
+                  ))}
+                </NativeSelect>
+              )}
+              {errors.destinationSettlementId !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {errors.destinationSettlementId}
+                </p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Resource</span>
+              {resources.length === 0 ? (
+                <span className="text-xs text-muted-foreground">
+                  No active resources available.
+                </span>
+              ) : (
+                <NativeSelect
+                  aria-invalid={errors.resourceId !== undefined}
+                  aria-label="Resource"
+                  className="w-full"
+                  disabled={mutation.isPending}
+                  value={form.resourceId}
+                  onChange={(e) => {
+                    const val = e.currentTarget.value;
+                    setForm((prev) => ({
+                      ...prev,
+                      resourceId: val,
+                    }));
+                  }}
+                >
+                  <option value="">Select a resource…</option>
+                  {sortByName(resources).map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              )}
+              {errors.resourceId !== undefined ? (
+                <p className="text-xs text-destructive">{errors.resourceId}</p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Quantity per turn</span>
+              <Input
+                aria-invalid={errors.quantityPerTransition !== undefined}
+                aria-label="Quantity per turn"
                 disabled={mutation.isPending}
-                value={form.destinationSettlementId}
+                inputMode="numeric"
+                placeholder="e.g. 10"
+                value={form.quantityPerTransition}
                 onChange={(e) => {
                   const val = e.currentTarget.value;
                   setForm((prev) => ({
                     ...prev,
-                    destinationSettlementId: val,
+                    quantityPerTransition: val,
                   }));
                 }}
-              >
-                <option value="">Select a settlement…</option>
-                {sortByName(settlements).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.nationName})
-                  </option>
-                ))}
-              </NativeSelect>
-            )}
-            {errors.destinationSettlementId !== undefined ? (
-              <p className="text-xs text-destructive">
-                {errors.destinationSettlementId}
-              </p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Resource</span>
-            {resources.length === 0 ? (
-              <span className="text-xs text-muted-foreground">
-                No active resources available.
-              </span>
-            ) : (
-              <NativeSelect
-                aria-invalid={errors.resourceId !== undefined}
-                aria-label="Resource"
-                className="w-full"
-                disabled={mutation.isPending}
-                value={form.resourceId}
-                onChange={(e) => {
-                  const val = e.currentTarget.value;
-                  setForm((prev) => ({
-                    ...prev,
-                    resourceId: val,
-                  }));
-                }}
-              >
-                <option value="">Select a resource…</option>
-                {sortByName(resources).map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            )}
-            {errors.resourceId !== undefined ? (
-              <p className="text-xs text-destructive">{errors.resourceId}</p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Quantity per turn</span>
-            <Input
-              aria-invalid={errors.quantityPerTransition !== undefined}
-              aria-label="Quantity per turn"
+              />
+              {errors.quantityPerTransition !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {errors.quantityPerTransition}
+                </p>
+              ) : null}
+            </label>
+          </div>
+          <DialogFooter>
+            <Button
               disabled={mutation.isPending}
-              inputMode="numeric"
-              placeholder="e.g. 10"
-              value={form.quantityPerTransition}
-              onChange={(e) => {
-                const val = e.currentTarget.value;
-                setForm((prev) => ({
-                  ...prev,
-                  quantityPerTransition: val,
-                }));
-              }}
-            />
-            {errors.quantityPerTransition !== undefined ? (
-              <p className="text-xs text-destructive">
-                {errors.quantityPerTransition}
-              </p>
-            ) : null}
-          </label>
-        </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button disabled={mutation.isPending} type="submit">
-            Propose
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+              onClick={onClose}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={mutation.isPending} type="submit">
+              Propose
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1051,7 +1006,6 @@ function ReplaceTradeRouteDialog({
   readonly queryClient: QueryClient;
   readonly route: TradeRoute;
 }): JSX.Element {
-  const titleId = useId();
   const mutation = useMutation(
     replaceTradeRouteMutationOptions({ queryClient }),
   );
@@ -1097,71 +1051,61 @@ function ReplaceTradeRouteDialog({
   }
 
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        role="dialog"
-        onSubmit={handleSubmit}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Replace trade route
-          </h3>
-          <Button
-            aria-label="Cancel replace trade route"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Replace the route with{" "}
-          <span className="font-medium text-foreground">{counterpart}</span>. A
-          new proposal will be created pending approval.
-        </p>
-        <div className="grid gap-3">
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Resource</span>
-            <p className="text-sm">{route.resourceName}</p>
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">New quantity per turn</span>
-            <Input
-              aria-invalid={qtyError !== undefined}
-              aria-label="New quantity per turn"
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <form className="contents" noValidate onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Replace trade route</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            Replace the route with{" "}
+            <span className="font-medium text-foreground">{counterpart}</span>.
+            A new proposal will be created pending approval.
+          </DialogDescription>
+          <div className="grid gap-3">
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Resource</span>
+              <p className="text-sm">{route.resourceName}</p>
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                New quantity per turn
+              </span>
+              <Input
+                aria-invalid={qtyError !== undefined}
+                aria-label="New quantity per turn"
+                disabled={mutation.isPending}
+                inputMode="numeric"
+                value={quantityPerTransition}
+                onChange={(e) => {
+                  setQuantityPerTransition(e.currentTarget.value);
+                }}
+              />
+              {qtyError !== undefined ? (
+                <p className="text-xs text-destructive">{qtyError}</p>
+              ) : null}
+            </label>
+          </div>
+          <DialogFooter>
+            <Button
               disabled={mutation.isPending}
-              inputMode="numeric"
-              value={quantityPerTransition}
-              onChange={(e) => {
-                setQuantityPerTransition(e.currentTarget.value);
-              }}
-            />
-            {qtyError !== undefined ? (
-              <p className="text-xs text-destructive">{qtyError}</p>
-            ) : null}
-          </label>
-        </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button disabled={mutation.isPending} type="submit">
-            Replace
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+              onClick={onClose}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={mutation.isPending} type="submit">
+              Replace
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

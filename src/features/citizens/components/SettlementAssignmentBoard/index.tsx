@@ -1,7 +1,7 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 
 import { NativeSelect } from "@/components/ui/native-select";
-import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { BulkJobsTab } from "./BulkJobsTab";
 import { PerTargetJobsTab } from "./PerTargetJobsTab";
@@ -32,12 +32,16 @@ export function SettlementAssignmentBoard({
 
   const settlementParams = { nationId, settlementId, worldId };
 
-  function handleSelectChange(e: ChangeEvent<HTMLSelectElement>): void {
+  function handleTabChange(value: string): void {
     void navigate({
       params: settlementParams,
-      search: { assignmentTab: e.target.value as Tab },
+      search: { assignmentTab: value as Tab },
       to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
     });
+  }
+
+  function handleSelectChange(e: ChangeEvent<HTMLSelectElement>): void {
+    handleTabChange(e.target.value);
   }
 
   return (
@@ -64,48 +68,20 @@ export function SettlementAssignmentBoard({
         </NativeSelect>
       </div>
 
-      {/* Desktop tab nav — visible from md up */}
-      <nav
-        aria-label="Assignment view"
-        className="hidden border-b border-border md:flex"
-      >
-        <Link
-          aria-current={activeTab === "bulk" ? "page" : undefined}
-          className={cn(
-            "px-3 pb-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            activeTab === "bulk"
-              ? "border-b-2 border-foreground text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-          params={settlementParams}
-          search={{ assignmentTab: "bulk" }}
-          to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-        >
-          Bulk jobs
-        </Link>
-        <Link
-          aria-current={activeTab === "per-target" ? "page" : undefined}
-          className={cn(
-            "px-3 pb-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            activeTab === "per-target"
-              ? "border-b-2 border-foreground text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-          params={settlementParams}
-          search={{ assignmentTab: "per-target" }}
-          to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-        >
-          Per-target jobs
-        </Link>
-      </nav>
+      {/* Desktop tab strip — visible from md up */}
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList className="hidden md:flex">
+          <TabsTrigger value="bulk">Bulk jobs</TabsTrigger>
+          <TabsTrigger value="per-target">Per-target jobs</TabsTrigger>
+        </TabsList>
 
-      <div hidden={activeTab !== "bulk"}>
-        <BulkJobsTab canEdit={canEdit} settlementId={settlementId} />
-      </div>
-
-      <div hidden={activeTab !== "per-target"}>
-        <PerTargetJobsTab canEdit={canEdit} settlementId={settlementId} />
-      </div>
+        <TabsContent value="bulk" forceMount>
+          <BulkJobsTab canEdit={canEdit} settlementId={settlementId} />
+        </TabsContent>
+        <TabsContent value="per-target" forceMount>
+          <PerTargetJobsTab canEdit={canEdit} settlementId={settlementId} />
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }

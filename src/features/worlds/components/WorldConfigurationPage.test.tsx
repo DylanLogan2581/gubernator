@@ -37,7 +37,7 @@ vi.mock("@tanstack/react-router", () => ({
             to,
           );
     return (
-      <a href={href} {...(rest)}>
+      <a href={href} {...rest}>
         {children}
       </a>
     );
@@ -124,7 +124,7 @@ describe("WorldConfigurationPage", () => {
     ).toHaveTextContent("Calendar");
   });
 
-  it("marks the active tab link with aria-current=page in the nav strip", async () => {
+  it("marks the active tab with aria-selected in the tab list", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         session: { user: { id: "user-1" } },
@@ -134,17 +134,10 @@ describe("WorldConfigurationPage", () => {
 
     renderPage({ activeTab: "calendar", worldId: WORLD_ID });
 
-    const nav = await screen.findByRole("navigation", {
-      name: "Configuration sections",
-    });
-    const calendarLink = Array.from(nav.querySelectorAll("a")).find(
-      (a) => a.textContent === "Calendar",
-    );
-    const resourcesLink = Array.from(nav.querySelectorAll("a")).find(
-      (a) => a.textContent === "Resources",
-    );
-    expect(calendarLink).toHaveAttribute("aria-current", "page");
-    expect(resourcesLink).not.toHaveAttribute("aria-current");
+    const calendarTab = await screen.findByRole("tab", { name: "Calendar" });
+    const resourcesTab = screen.getByRole("tab", { name: "Resources" });
+    expect(calendarTab).toHaveAttribute("aria-selected", "true");
+    expect(resourcesTab).toHaveAttribute("aria-selected", "false");
   });
 
   it("renders a back navigation link to the world page", async () => {
