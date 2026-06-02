@@ -35,7 +35,7 @@ const SELECT = [
   "citizen_id,assignment_type,trade_route_end,assigned_on_turn_number,created_at,updated_at",
   "job:job_definitions(id,name)",
   "construction_project:construction_projects(id,building_blueprints(name),building_blueprint_tiers(tier_number))",
-  "deposit_instance:deposit_instances(id,name,deposit_types(name,job:job_definitions(name)))",
+  "deposit_instance:deposit_instances(id,name,deposit_types(name,job:job_definitions!deposit_types_job_id_fk(name)))",
   "managed_population_instance:managed_population_instances(id,name,managed_population_types(husbandry_job:husbandry_job_id(name),culling_job:culling_job_id(name)))",
   "trade_route:trade_routes(id,resources(name),origin:origin_settlement_id(name),destination:destination_settlement_id(name))",
   "citizens!inner(settlement_id)",
