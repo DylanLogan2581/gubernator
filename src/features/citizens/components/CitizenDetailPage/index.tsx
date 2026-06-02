@@ -226,11 +226,7 @@ function CitizenDetailLoaded({
 
       <CitizenParentsSection citizen={citizen} />
 
-      <CitizenAssignmentSection
-        citizenId={citizen.id}
-        settlementId={citizen.settlementId}
-        worldId={worldId}
-      />
+      <CitizenAssignmentSection citizenId={citizen.id} />
 
       {citizen.citizenType === "npc" ? (
         <>

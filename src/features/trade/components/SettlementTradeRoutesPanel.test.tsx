@@ -119,11 +119,16 @@ function createRouteRow(
 type TestAssignmentRow = {
   readonly citizen_id: string;
   readonly assignment_type: string;
-  readonly job_id: null;
-  readonly construction_project_id: null;
-  readonly deposit_instance_id: null;
-  readonly managed_population_instance_id: null;
-  readonly trade_route_id: string | null;
+  readonly job: null;
+  readonly construction_project: null;
+  readonly deposit_instance: null;
+  readonly managed_population_instance: null;
+  readonly trade_route: {
+    readonly id: string;
+    readonly resources: { readonly name: string };
+    readonly origin: { readonly name: string };
+    readonly destination: { readonly name: string };
+  } | null;
   readonly trade_route_end: string | null;
   readonly assigned_on_turn_number: number;
   readonly created_at: string;
@@ -137,11 +142,16 @@ function createAssignmentRow(
   return {
     citizen_id: CITIZEN_ID_1,
     assignment_type: "trade_route",
-    job_id: null,
-    construction_project_id: null,
-    deposit_instance_id: null,
-    managed_population_instance_id: null,
-    trade_route_id: ROUTE_ID_1,
+    job: null,
+    construction_project: null,
+    deposit_instance: null,
+    managed_population_instance: null,
+    trade_route: {
+      id: ROUTE_ID_1,
+      resources: { name: "Grain" },
+      origin: { name: "Home Settlement" },
+      destination: { name: "Far Settlement" },
+    },
     trade_route_end: "origin",
     assigned_on_turn_number: 1,
     created_at: "2026-06-01T00:00:00.000Z",

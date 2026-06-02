@@ -95,11 +95,18 @@ function createInstanceRow(
 type TestAssignmentRow = {
   readonly citizen_id: string;
   readonly assignment_type: string;
-  readonly job_id: null;
-  readonly construction_project_id: null;
-  readonly deposit_instance_id: string | null;
-  readonly managed_population_instance_id: null;
-  readonly trade_route_id: null;
+  readonly job: null;
+  readonly construction_project: null;
+  readonly deposit_instance: {
+    readonly id: string;
+    readonly name: string;
+    readonly deposit_types: {
+      readonly name: string;
+      readonly job: { readonly name: string };
+    };
+  } | null;
+  readonly managed_population_instance: null;
+  readonly trade_route: null;
   readonly trade_route_end: null;
   readonly assigned_on_turn_number: number;
   readonly created_at: string;
@@ -113,11 +120,15 @@ function createAssignmentRow(
   return {
     citizen_id: CITIZEN_ID_1,
     assignment_type: "deposit",
-    job_id: null,
-    construction_project_id: null,
-    deposit_instance_id: INSTANCE_ID_1,
-    managed_population_instance_id: null,
-    trade_route_id: null,
+    job: null,
+    construction_project: null,
+    deposit_instance: {
+      id: INSTANCE_ID_1,
+      name: "North Mine",
+      deposit_types: { name: "Coal Vein", job: { name: "Miner" } },
+    },
+    managed_population_instance: null,
+    trade_route: null,
     trade_route_end: null,
     assigned_on_turn_number: 1,
     created_at: "2026-05-01T00:00:00.000Z",

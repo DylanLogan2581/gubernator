@@ -114,30 +114,33 @@ export function PerTargetJobsTab({
   const assignedByTradeRouteEnd = new Map<string, string[]>();
 
   for (const a of assignments) {
-    if (a.assignmentType === "deposit" && a.depositInstanceId !== null) {
-      const ids = assignedByDeposit.get(a.depositInstanceId) ?? [];
+    if (a.assignmentType === "deposit" && a.depositInstance !== null) {
+      const id = a.depositInstance.id;
+      const ids = assignedByDeposit.get(id) ?? [];
       ids.push(a.citizenId);
-      assignedByDeposit.set(a.depositInstanceId, ids);
+      assignedByDeposit.set(id, ids);
     } else if (
       a.assignmentType === "husbandry" &&
-      a.managedPopulationInstanceId !== null
+      a.managedPopulationInstance !== null
     ) {
-      const ids = assignedByHusbandry.get(a.managedPopulationInstanceId) ?? [];
+      const id = a.managedPopulationInstance.id;
+      const ids = assignedByHusbandry.get(id) ?? [];
       ids.push(a.citizenId);
-      assignedByHusbandry.set(a.managedPopulationInstanceId, ids);
+      assignedByHusbandry.set(id, ids);
     } else if (
       a.assignmentType === "culling" &&
-      a.managedPopulationInstanceId !== null
+      a.managedPopulationInstance !== null
     ) {
-      const ids = assignedByCulling.get(a.managedPopulationInstanceId) ?? [];
+      const id = a.managedPopulationInstance.id;
+      const ids = assignedByCulling.get(id) ?? [];
       ids.push(a.citizenId);
-      assignedByCulling.set(a.managedPopulationInstanceId, ids);
+      assignedByCulling.set(id, ids);
     } else if (
       a.assignmentType === "trade_route" &&
-      a.tradeRouteId !== null &&
+      a.tradeRoute !== null &&
       a.tradeRouteEnd !== null
     ) {
-      const key = `${a.tradeRouteId}:${a.tradeRouteEnd}`;
+      const key = `${a.tradeRoute.id}:${a.tradeRouteEnd}`;
       const ids = assignedByTradeRouteEnd.get(key) ?? [];
       ids.push(a.citizenId);
       assignedByTradeRouteEnd.set(key, ids);

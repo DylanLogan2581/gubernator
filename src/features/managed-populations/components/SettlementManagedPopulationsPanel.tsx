@@ -100,12 +100,12 @@ export function SettlementManagedPopulationsPanel({
     for (const a of assignmentsQuery.data) {
       if (
         a.assignmentType === "husbandry" &&
-        a.managedPopulationInstanceId !== null
+        a.managedPopulationInstance !== null
       ) {
+        const id = a.managedPopulationInstance.id;
         husbandryCountByInstance.set(
-          a.managedPopulationInstanceId,
-          (husbandryCountByInstance.get(a.managedPopulationInstanceId) ?? 0) +
-            1,
+          id,
+          (husbandryCountByInstance.get(id) ?? 0) + 1,
         );
       }
     }
