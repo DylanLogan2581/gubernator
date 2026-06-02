@@ -16,6 +16,7 @@ import {
 import { isManagerRole, managerScopeLabel } from "../../utils/citizenRoles";
 
 import { getRoleMutationErrorDescription } from "./ErrorMessages";
+import { Readout } from "./Shared";
 
 import type { Citizen } from "../../types/citizenTypes";
 
@@ -168,6 +169,13 @@ function CitizenLinkedUserControl({
   }
 
   const userChoices = usersQuery.data ?? [];
+  const linkedUser = userChoices.find((u) => u.id === citizen.userId);
+  const linkedUserLabel =
+    citizen.userId === null
+      ? null
+      : linkedUser !== undefined
+        ? `${linkedUser.username} · ${linkedUser.email}`
+        : citizen.userId;
 
   function unlinkRoleDescription(): string {
     if (roleScope === "nation") {
@@ -186,43 +194,34 @@ function CitizenLinkedUserControl({
   }
 
   return (
-    <div className="grid gap-2 rounded-md border border-border bg-background px-3 py-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="grid gap-0.5 text-sm">
-          <span className="text-xs text-muted-foreground">Linked user</span>
-          {citizen.userId === null ? (
-            <span className="italic text-muted-foreground">
-              No user linked.
-            </span>
-          ) : (
-            <span className="font-mono text-xs">{citizen.userId}</span>
-          )}
-        </div>
-        {canEdit && !isEditing ? (
-          <div className="flex flex-wrap gap-2">
+    <div className="grid gap-2">
+      <dl>
+        <Readout label="Linked user" value={linkedUserLabel} mono={false} />
+      </dl>
+      {canEdit && !isEditing ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+          >
+            <Pencil aria-hidden="true" />
+            {citizen.userId === null ? "Link user" : "Change user"}
+          </Button>
+          {citizen.userId === null ? null : (
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setIsEditing(true)}
+              onClick={handleUnlink}
+              disabled={unlinkMutation.isPending}
             >
-              <Pencil aria-hidden="true" />
-              {citizen.userId === null ? "Link user" : "Change user"}
+              {unlinkMutation.isPending ? "Unlinking…" : "Unlink"}
             </Button>
-            {citizen.userId === null ? null : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleUnlink}
-                disabled={unlinkMutation.isPending}
-              >
-                {unlinkMutation.isPending ? "Unlinking…" : "Unlink"}
-              </Button>
-            )}
-          </div>
-        ) : null}
-      </div>
+          )}
+        </div>
+      ) : null}
       {isEditing ? (
         <form className="grid gap-2" noValidate onSubmit={handleLink}>
           <label className="grid gap-1 text-sm">
