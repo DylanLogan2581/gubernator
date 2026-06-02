@@ -35,6 +35,7 @@ export function SettlementAssignmentBoard({
   function handleTabChange(value: string): void {
     void navigate({
       params: settlementParams,
+      resetScroll: false,
       search: { assignmentTab: value as Tab },
       to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
     });
