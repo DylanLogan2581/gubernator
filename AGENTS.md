@@ -254,3 +254,4 @@ Do not implement per-commit version bumps or per-commit tagging automation unles
 ## Epic References
 
 - Epic 3 world topology and roles — `docs/epic-3-world-topology.md` (role hierarchy, world-entry decision tree, citizen DB-vs-UI visibility, partnership lifecycle ownership across epics).
+- Epic 5 settlement operations — `docs/epic-5-settlement-operations.md` (stockpile RLS and admin-vs-manager boundary, construction queue lifecycle, building state machine and population cap derivation, deposit resource-mix model, managed population instance lifecycle, trade route bilateral approval matrix, assignment model with removal-strategy semantics).
