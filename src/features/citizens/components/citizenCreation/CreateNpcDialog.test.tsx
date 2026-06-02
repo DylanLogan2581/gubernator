@@ -165,6 +165,17 @@ describe("CreateNpcDialog", () => {
     );
   }
 
+  it("renders Parent A and Parent B side by side in a sm:grid-cols-2 container", () => {
+    renderDialog();
+
+    const parentALabel = screen.getByRole("combobox", { name: "Parent A" });
+    const parentBLabel = screen.getByRole("combobox", { name: "Parent B" });
+    const container = parentALabel.closest("label")?.parentElement;
+    expect(container).not.toBeNull();
+    expect(container?.className).toContain("sm:grid-cols-2");
+    expect(container).toContainElement(parentBLabel);
+  });
+
   it("does not call the mutation when the name is blank", async () => {
     renderDialog();
 
