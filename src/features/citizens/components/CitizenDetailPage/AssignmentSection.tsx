@@ -3,9 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import {
+  constructionProjectsBySettlementQueryOptions,
+  type ConstructionProject,
+} from "@/features/buildings";
+import {
   depositInstancesBySettlementQueryOptions,
   type DepositInstance,
 } from "@/features/deposits";
+import { type JobDefinition, jobsByWorldQueryOptions } from "@/features/jobs";
 import {
   managedPopulationInstancesBySettlementQueryOptions,
   type ManagedPopulationInstance,
@@ -27,9 +32,11 @@ import type { JSX } from "react";
 export function CitizenAssignmentSection({
   citizenId,
   settlementId,
+  worldId,
 }: {
   readonly citizenId: string;
   readonly settlementId: string | null;
+  readonly worldId: string;
 }): JSX.Element {
   const effectiveSettlementId = settlementId ?? "";
   const hasSettlement = settlementId !== null;
@@ -37,6 +44,11 @@ export function CitizenAssignmentSection({
   const assignmentQuery = useQuery(
     currentAssignmentForCitizenQueryOptions(citizenId),
   );
+  const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
+  const constructionProjectsQuery = useQuery({
+    ...constructionProjectsBySettlementQueryOptions(effectiveSettlementId),
+    enabled: hasSettlement,
+  });
   const depositsQuery = useQuery({
     ...depositInstancesBySettlementQueryOptions(effectiveSettlementId),
     enabled: hasSettlement,
@@ -70,7 +82,9 @@ export function CitizenAssignmentSection({
       ) : (
         <CitizenAssignmentSummary
           assignment={assignmentQuery.data}
+          constructionProjects={constructionProjectsQuery.data ?? []}
           deposits={depositsQuery.data ?? []}
+          jobs={jobsQuery.data ?? []}
           populations={populationsQuery.data ?? []}
           tradeRoutes={tradeRoutesQuery.data ?? []}
         />
@@ -81,12 +95,16 @@ export function CitizenAssignmentSection({
 
 function CitizenAssignmentSummary({
   assignment,
+  constructionProjects,
   deposits,
+  jobs,
   populations,
   tradeRoutes,
 }: {
   readonly assignment: CitizenAssignment | null;
+  readonly constructionProjects: readonly ConstructionProject[];
   readonly deposits: readonly DepositInstance[];
+  readonly jobs: readonly JobDefinition[];
   readonly populations: readonly ManagedPopulationInstance[];
   readonly tradeRoutes: readonly TradeRoute[];
 }): JSX.Element {
@@ -98,7 +116,11 @@ function CitizenAssignmentSummary({
     );
   }
 
+  const constructionProjectMap = new Map(
+    constructionProjects.map((p) => [p.id, p]),
+  );
   const depositMap = new Map(deposits.map((d) => [d.id, d]));
+  const jobMap = new Map(jobs.map((j) => [j.id, j]));
   const populationMap = new Map(populations.map((p) => [p.id, p]));
   const tradeRouteMap = new Map(tradeRoutes.map((r) => [r.id, r]));
 
@@ -116,7 +138,9 @@ function CitizenAssignmentSummary({
         label="Target"
         value={assignmentTargetLabel(
           assignment,
+          constructionProjectMap,
           depositMap,
+          jobMap,
           populationMap,
           tradeRouteMap,
         )}
@@ -145,17 +169,25 @@ function assignmentTypeLabel(type: CitizenAssignmentType): string {
 
 function assignmentTargetLabel(
   assignment: CitizenAssignment,
+  constructionProjectMap: ReadonlyMap<string, ConstructionProject>,
   depositMap: ReadonlyMap<string, DepositInstance>,
+  jobMap: ReadonlyMap<string, JobDefinition>,
   populationMap: ReadonlyMap<string, ManagedPopulationInstance>,
   tradeRouteMap: ReadonlyMap<string, TradeRoute>,
 ): string | null {
   switch (assignment.assignmentType) {
-    case "standard_job":
-      return assignment.jobId === null ? null : `Job #${assignment.jobId}`;
-    case "construction_project":
-      return assignment.constructionProjectId === null
-        ? null
-        : `Project #${assignment.constructionProjectId}`;
+    case "standard_job": {
+      if (assignment.jobId === null) return null;
+      const job = jobMap.get(assignment.jobId);
+      return job !== undefined ? job.name : "Unknown job";
+    }
+    case "construction_project": {
+      if (assignment.constructionProjectId === null) return null;
+      const project = constructionProjectMap.get(
+        assignment.constructionProjectId,
+      );
+      return project !== undefined ? project.blueprintName : "Unknown project";
+    }
     case "deposit": {
       if (assignment.depositInstanceId === null) return null;
       const deposit = depositMap.get(assignment.depositInstanceId);
