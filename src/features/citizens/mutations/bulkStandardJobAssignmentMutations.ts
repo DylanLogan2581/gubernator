@@ -77,6 +77,15 @@ export function setBulkStandardJobAssignmentMutationOptions({
             values.settlementId,
           ),
         }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementList(values.settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...citizensQueryKeys.all,
+            "current-assignment-for-citizen",
+          ],
+        }),
       ]);
     },
   });

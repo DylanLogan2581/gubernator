@@ -61,15 +61,34 @@ export function setBulkConstructionAssignmentMutationOptions({
     mutationFn: (input: SetBulkConstructionAssignmentInput) =>
       setBulkConstructionAssignment(client, input),
     mutationKey: [...citizensQueryKeys.all, "set-bulk-construction-assignment"],
-    onSuccess: async (): Promise<void> => {
+    onSuccess: async (_result, input): Promise<void> => {
+      const values = setBulkConstructionAssignmentInputSchema.parse(input);
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: [...citizensQueryKeys.all, "assignments-in-settlement"],
+          queryKey: citizensQueryKeys.assignmentsInSettlement(
+            values.settlementId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementConstructionProjectCounts(
+            values.settlementId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementAggregateStats(
+            values.settlementId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementList(values.settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementJobCounts(values.settlementId),
         }),
         queryClient.invalidateQueries({
           queryKey: [
             ...citizensQueryKeys.all,
-            "settlement-construction-project-counts",
+            "current-assignment-for-citizen",
           ],
         }),
       ]);

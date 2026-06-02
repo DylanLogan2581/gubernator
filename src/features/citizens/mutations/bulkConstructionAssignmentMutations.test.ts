@@ -13,11 +13,13 @@ import {
 } from "./bulkConstructionAssignmentMutations";
 
 const CONSTRUCTION_PROJECT_ID = "11111111-1111-1111-1111-111111111111";
-const CITIZEN_A_ID = "22222222-2222-2222-2222-222222222222";
-const CITIZEN_B_ID = "33333333-3333-3333-3333-333333333333";
+const SETTLEMENT_ID = "22222222-2222-2222-2222-222222222222";
+const CITIZEN_A_ID = "33333333-3333-3333-3333-333333333333";
+const CITIZEN_B_ID = "44444444-4444-4444-4444-444444444444";
 
 const VALID_INPUT = {
   constructionProjectId: CONSTRUCTION_PROJECT_ID,
+  settlementId: SETTLEMENT_ID,
   targetCount: 2,
 };
 
@@ -115,13 +117,23 @@ describe("setBulkConstructionAssignmentMutationOptions", () => {
       "set-bulk-construction-assignment",
     ]);
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: [...citizensQueryKeys.all, "assignments-in-settlement"],
+      queryKey: citizensQueryKeys.assignmentsInSettlement(SETTLEMENT_ID),
     });
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: [
-        ...citizensQueryKeys.all,
-        "settlement-construction-project-counts",
-      ],
+      queryKey:
+        citizensQueryKeys.settlementConstructionProjectCounts(SETTLEMENT_ID),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: citizensQueryKeys.settlementAggregateStats(SETTLEMENT_ID),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: citizensQueryKeys.settlementList(SETTLEMENT_ID),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: citizensQueryKeys.settlementJobCounts(SETTLEMENT_ID),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: [...citizensQueryKeys.all, "current-assignment-for-citizen"],
     });
   });
 

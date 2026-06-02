@@ -21,7 +21,6 @@ import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { setBulkConstructionAssignmentMutationOptions } from "../../mutations/bulkConstructionAssignmentMutations";
 import { setBulkStandardJobAssignmentMutationOptions } from "../../mutations/bulkStandardJobAssignmentMutations";
 import { citizenAggregateStatsForSettlementQueryOptions } from "../../queries/citizensQueries";
-import { citizensQueryKeys } from "../../queries/citizensQueryKeys";
 import { settlementConstructionProjectCountsQueryOptions } from "../../queries/settlementConstructionProjectCountsQueries";
 import { settlementJobCountsQueryOptions } from "../../queries/settlementJobCountsQueries";
 
@@ -381,10 +380,8 @@ function ConstructionRow({
     try {
       const result = await mutation.mutateAsync({
         constructionProjectId: projectCount.constructionProjectId,
+        settlementId,
         targetCount: parsedCount,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: citizensQueryKeys.settlementAggregateStats(settlementId),
       });
       setLocalCount(String(result.after));
       notifyMutationSuccess("Construction assignment updated.");

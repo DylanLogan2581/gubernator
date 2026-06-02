@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import { setBulkConstructionAssignmentInputSchema } from "./setBulkConstructionAssignmentSchemas";
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
+const SETTLEMENT_ID = "22222222-2222-2222-2222-222222222222";
 
 describe("setBulkConstructionAssignmentInputSchema", () => {
   it("accepts valid input", () => {
     const result = setBulkConstructionAssignmentInputSchema.safeParse({
       constructionProjectId: PROJECT_ID,
+      settlementId: SETTLEMENT_ID,
       targetCount: 3,
     });
 
@@ -17,6 +19,7 @@ describe("setBulkConstructionAssignmentInputSchema", () => {
   it("accepts valid input with targetCount = 0", () => {
     const result = setBulkConstructionAssignmentInputSchema.safeParse({
       constructionProjectId: PROJECT_ID,
+      settlementId: SETTLEMENT_ID,
       targetCount: 0,
     });
 
@@ -26,6 +29,7 @@ describe("setBulkConstructionAssignmentInputSchema", () => {
   it("rejects a negative targetCount", () => {
     const result = setBulkConstructionAssignmentInputSchema.safeParse({
       constructionProjectId: PROJECT_ID,
+      settlementId: SETTLEMENT_ID,
       targetCount: -1,
     });
 
@@ -35,6 +39,7 @@ describe("setBulkConstructionAssignmentInputSchema", () => {
   it("rejects a non-integer targetCount", () => {
     const result = setBulkConstructionAssignmentInputSchema.safeParse({
       constructionProjectId: PROJECT_ID,
+      settlementId: SETTLEMENT_ID,
       targetCount: 1.5,
     });
 
@@ -43,6 +48,16 @@ describe("setBulkConstructionAssignmentInputSchema", () => {
 
   it("rejects a missing constructionProjectId", () => {
     const result = setBulkConstructionAssignmentInputSchema.safeParse({
+      settlementId: SETTLEMENT_ID,
+      targetCount: 2,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing settlementId", () => {
+    const result = setBulkConstructionAssignmentInputSchema.safeParse({
+      constructionProjectId: PROJECT_ID,
       targetCount: 2,
     });
 
@@ -52,6 +67,17 @@ describe("setBulkConstructionAssignmentInputSchema", () => {
   it("rejects a non-UUID constructionProjectId", () => {
     const result = setBulkConstructionAssignmentInputSchema.safeParse({
       constructionProjectId: "not-a-uuid",
+      settlementId: SETTLEMENT_ID,
+      targetCount: 2,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-UUID settlementId", () => {
+    const result = setBulkConstructionAssignmentInputSchema.safeParse({
+      constructionProjectId: PROJECT_ID,
+      settlementId: "not-a-uuid",
       targetCount: 2,
     });
 
@@ -61,8 +87,9 @@ describe("setBulkConstructionAssignmentInputSchema", () => {
   it("rejects extra fields (strict mode)", () => {
     const result = setBulkConstructionAssignmentInputSchema.safeParse({
       constructionProjectId: PROJECT_ID,
-      settlementId: "22222222-2222-2222-2222-222222222222",
+      settlementId: SETTLEMENT_ID,
       targetCount: 2,
+      extraField: "unexpected",
     });
 
     expect(result.success).toBe(false);
