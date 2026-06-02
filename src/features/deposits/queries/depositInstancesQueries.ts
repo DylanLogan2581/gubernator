@@ -45,7 +45,7 @@ type DepositInstanceRow = {
 
 const DEPOSIT_INSTANCE_SELECT = [
   "id,settlement_id,deposit_type_id,name,status,max_workers,discovered_by_event_id,created_at,updated_at",
-  "deposit_types(name,job:job_definitions(name))",
+  "deposit_types(name,job:job_definitions!deposit_types_job_id_fk(name))",
   "deposit_instance_resources(id,deposit_instance_id,resource_id,initial_quantity,remaining_quantity,created_at,updated_at,resources(name))",
 ].join(",");
 
