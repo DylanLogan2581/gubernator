@@ -641,7 +641,7 @@ describe("SettlementAssignmentBoard", () => {
     expect(perTargetTab).toHaveAttribute("aria-selected", "false");
   });
 
-  it("mobile selector reflects active tab and calls navigate on change", async () => {
+  it("mobile selector reflects active tab and calls navigate with resetScroll: false on change", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(createClient({}));
 
@@ -654,6 +654,24 @@ describe("SettlementAssignmentBoard", () => {
 
     expect(mockNavigate).toHaveBeenCalledWith(
       expect.objectContaining({
+        resetScroll: false,
+        search: { assignmentTab: "per-target" },
+      }),
+    );
+  });
+
+  it("desktop tab trigger calls navigate with resetScroll: false", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({}));
+
+    renderBoard({ activeTab: "bulk" });
+
+    const perTargetTab = screen.getByRole("tab", { name: "Per-target jobs" });
+    await user.click(perTargetTab);
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resetScroll: false,
         search: { assignmentTab: "per-target" },
       }),
     );
