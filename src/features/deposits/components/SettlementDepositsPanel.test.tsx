@@ -40,7 +40,10 @@ type TestDepositInstanceRow = {
   readonly id: string;
   readonly settlement_id: string;
   readonly deposit_type_id: string;
-  readonly deposit_types: { readonly name: string };
+  readonly deposit_types: {
+    readonly job: { readonly name: string };
+    readonly name: string;
+  };
   readonly name: string;
   readonly status: string;
   readonly max_workers: number | null;
@@ -66,7 +69,7 @@ function createInstanceRow(
     id: INSTANCE_ID_1,
     settlement_id: SETTLEMENT_ID,
     deposit_type_id: DEPOSIT_TYPE_ID,
-    deposit_types: { name: "Coal Vein" },
+    deposit_types: { job: { name: "Miner" }, name: "Coal Vein" },
     name: "North Mine",
     status: "active",
     max_workers: 5,

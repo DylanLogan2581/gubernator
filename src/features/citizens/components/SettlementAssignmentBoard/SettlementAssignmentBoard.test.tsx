@@ -139,7 +139,10 @@ type DepositInstanceRowFixture = {
   readonly created_at: string;
   readonly deposit_instance_resources: readonly [];
   readonly deposit_type_id: string;
-  readonly deposit_types: { readonly name: string };
+  readonly deposit_types: {
+    readonly job: { readonly name: string };
+    readonly name: string;
+  };
   readonly discovered_by_event_id: null;
   readonly id: string;
   readonly max_workers: number | null;
@@ -327,7 +330,7 @@ function createDepositInstanceRow(
     created_at: "2026-01-01T00:00:00Z",
     deposit_instance_resources: [],
     deposit_type_id: "dt-1",
-    deposit_types: { name: "Iron" },
+    deposit_types: { job: { name: "Miner" }, name: "Iron" },
     discovered_by_event_id: null,
     id: "dep-1",
     max_workers: null,
@@ -973,7 +976,7 @@ describe("SettlementAssignmentBoard", () => {
 
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
 
-    expect(await screen.findByText("Iron Vein")).toBeDefined();
+    expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
     expect(screen.getByText("0 / 4")).toBeDefined();
   });
 
@@ -999,7 +1002,7 @@ describe("SettlementAssignmentBoard", () => {
 
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
 
-    expect(await screen.findByText("Coal Seam")).toBeDefined();
+    expect(await screen.findByText("Coal Seam — Miner")).toBeDefined();
     expect(screen.getByText("0 assigned")).toBeDefined();
   });
 
@@ -1094,7 +1097,10 @@ describe("SettlementAssignmentBoard", () => {
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
 
     expect(await screen.findByText(/Grain.*Hillfort.*Riverside/)).toBeDefined();
-    expect(screen.getByText(/Destination.*Riverside/)).toBeDefined();
+    expect(
+      screen.getByText("Grain → Riverside — Trader (origin)"),
+    ).toBeDefined();
+    expect(screen.getByText("Destination: Riverside — Trader")).toBeDefined();
   });
 
   it("shows assigned citizen name as tag on deposit row", async () => {
@@ -1144,7 +1150,7 @@ describe("SettlementAssignmentBoard", () => {
 
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
 
-    await screen.findByText("Iron Vein");
+    await screen.findByText("Iron Vein — Miner");
     expect(
       screen.getByRole("button", { name: "Assign citizens" }),
     ).toBeDefined();
@@ -1168,7 +1174,7 @@ describe("SettlementAssignmentBoard", () => {
 
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
 
-    await screen.findByText("Iron Vein");
+    await screen.findByText("Iron Vein — Miner");
     expect(
       screen.queryByRole("button", { name: "Assign citizens" }),
     ).toBeNull();
@@ -1192,7 +1198,7 @@ describe("SettlementAssignmentBoard", () => {
 
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
 
-    await screen.findByText("Iron Vein");
+    await screen.findByText("Iron Vein — Miner");
     expect(
       screen.queryByRole("button", { name: "Assign citizens" }),
     ).toBeNull();
@@ -1225,7 +1231,7 @@ describe("SettlementAssignmentBoard", () => {
 
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
 
-    expect(await screen.findByText("Active Vein")).toBeDefined();
+    expect(await screen.findByText("Active Vein — Miner")).toBeDefined();
     expect(screen.queryByText("Depleted Vein")).toBeNull();
   });
 
@@ -1255,7 +1261,7 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard({ canManage: true });
 
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
-    await screen.findByText("Iron Vein");
+    await screen.findByText("Iron Vein — Miner");
     await user.click(screen.getByRole("button", { name: "Assign citizens" }));
 
     expect(screen.getByRole("dialog")).toBeDefined();
@@ -1295,7 +1301,7 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard({ canManage: true });
 
     await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
-    await screen.findByText("Iron Vein");
+    await screen.findByText("Iron Vein — Miner");
     await user.click(screen.getByRole("button", { name: "Assign citizens" }));
 
     expect(screen.getByRole("dialog")).toBeDefined();
