@@ -1,7 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { citizensQueryKeys } from "../../queries/citizensQueryKeys";
 
 import { SettlementAssignmentBoard } from "./index";
 
@@ -1505,6 +1508,80 @@ describe("SettlementAssignmentBoard", () => {
     const bobCheckbox = screen.getByRole("checkbox", { name: /Bob/ });
     expect(aliceCheckbox).toBeChecked();
     expect(bobCheckbox).not.toBeChecked();
+  });
+
+  it("after bulk construction Apply, invalidates settlementList and settlementAggregateStats", async () => {
+    const PROJ_UUID = "11111111-1111-1111-1111-111111111111";
+    const SETTLEMENT_UUID = "22222222-2222-2222-2222-222222222222";
+
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    vi.mocked(toast.success).mockClear();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({
+            id: PROJ_UUID,
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: null,
+          }),
+        ],
+        jobCounts: [],
+        projectCounts: [
+          createProjectCountRow({
+            construction_project_id: PROJ_UUID,
+            current_count: 0,
+            status: "in_progress",
+          }),
+        ],
+        constructionProjects: [
+          createConstructionProjectRow({
+            id: PROJ_UUID,
+            settlement_id: SETTLEMENT_UUID,
+          }),
+        ],
+      }),
+    );
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SettlementAssignmentBoard
+          activeTab="bulk"
+          canManage={true}
+          isArchived={false}
+          nationId="nation-1"
+          settlementId={SETTLEMENT_UUID}
+          worldId="world-1"
+        />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("Granary (Tier 1)");
+
+    const input = screen.getByRole("spinbutton", {
+      name: "Target count for Granary (Tier 1)",
+    });
+    await user.clear(input);
+    await user.type(input, "1");
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+
+    // Wait for the success toast — fired only after mutateAsync and onSuccess both resolve
+    await waitFor(() => {
+      expect(vi.mocked(toast.success)).toHaveBeenCalled();
+    });
+
+    // onSuccess has completed; all invalidateQueries calls have been made
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: citizensQueryKeys.settlementList(SETTLEMENT_UUID),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: citizensQueryKeys.settlementAggregateStats(SETTLEMENT_UUID),
+    });
   });
 
   it("filters player characters out of the assign dialog, showing only NPCs", async () => {

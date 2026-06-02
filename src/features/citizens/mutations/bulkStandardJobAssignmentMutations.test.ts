@@ -126,6 +126,12 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: citizensQueryKeys.settlementAggregateStats(SETTLEMENT_ID),
     });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: citizensQueryKeys.settlementList(SETTLEMENT_ID),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: [...citizensQueryKeys.all, "current-assignment-for-citizen"],
+    });
   });
 
   it("raises bulk_assignment_failed when the RPC returns no row", async () => {

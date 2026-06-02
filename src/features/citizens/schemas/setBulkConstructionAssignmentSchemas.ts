@@ -4,6 +4,7 @@ export const setBulkConstructionAssignmentInputSchema = z.strictObject({
   constructionProjectId: z.guid(
     "Construction project id must be a valid UUID.",
   ),
+  settlementId: z.guid("Settlement id must be a valid UUID."),
   targetCount: z
     .number()
     .int("Target count must be an integer.")
