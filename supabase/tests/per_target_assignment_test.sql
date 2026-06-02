@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (27);
+  plan (28);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -684,8 +684,24 @@ select
     )
     $test$,
     'P0001',
-    null,
-    'exceeding max_workers raises P0001'
+    'citizen count (2) exceeds max workers (1) for this deposit instance',
+    'exceeding max_workers raises P0001 with message'
+  );
+
+-- ===========================================================================
+-- BOUNDARY: deposit at exactly max_workers (max=1, exactly 1 citizen)
+-- ===========================================================================
+select
+  lives_ok (
+    $test$
+    select public.set_per_target_assignment(
+      'fe400000-0000-0000-0000-000000000001',
+      'deposit',
+      'fe900000-0000-0000-0000-000000000004',
+      array['feb00000-0000-0000-0000-000000000001'::uuid]
+    )
+    $test$,
+    'deposit assignment at exactly max_workers succeeds'
   );
 
 -- ===========================================================================
