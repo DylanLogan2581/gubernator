@@ -621,6 +621,7 @@ function renderPage(): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <SettlementDetailPage
+        assignmentTab="bulk"
         nationId={NATION_ID}
         settlementId={SETTLEMENT_ID}
         worldId={WORLD_ID}

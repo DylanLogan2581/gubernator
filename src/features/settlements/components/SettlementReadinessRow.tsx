@@ -45,6 +45,7 @@ export function SettlementReadinessRow({
             settlementId: item.id,
             worldId,
           }}
+          search={{}}
           className="underline-offset-4 hover:underline"
         >
           {item.name}

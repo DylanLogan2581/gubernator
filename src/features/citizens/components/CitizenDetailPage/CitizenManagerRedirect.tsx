@@ -43,6 +43,7 @@ export function CitizenManagerRedirect({
     void navigate({
       params: { nationId, settlementId, worldId },
       replace: true,
+      search: {},
       to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
     });
   }, [navigate, nationId, settlementId, worldId]);

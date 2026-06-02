@@ -225,6 +225,7 @@ describe("CitizenDetailPage", () => {
           worldId: WORLD_ID,
         },
         replace: true,
+        search: {},
         to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
       });
     });
@@ -260,6 +261,7 @@ describe("CitizenDetailPage", () => {
           worldId: WORLD_ID,
         },
         replace: true,
+        search: {},
         to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
       });
     });
