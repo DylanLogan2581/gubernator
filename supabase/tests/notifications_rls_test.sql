@@ -516,7 +516,7 @@ select
       'Unknown notification type.'
     )
   $test$,
-    '23514',
+    '22P02',
     null,
     'notification_type is constrained to the system allowlist'
   );

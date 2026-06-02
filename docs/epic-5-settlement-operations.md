@@ -165,6 +165,14 @@ A trade route is proposed by one Nation Manager and must be approved by both sid
 
 **Approval guard:** `approve_trade_route_side` verifies the route is in `proposed` or `paused` status, rejects if the side is already `approved`, and (unless the caller is an admin) checks that the approver citizen belongs to the side's nation.
 
+**Notification type enum:** `notifications.notification_type` is a PostgreSQL enum (`public.notification_type`), promoted from a text CHECK constraint in migration `20260531000002_notification_type_enum.sql` (issue #421). The full set of Epic 5 values — `turn.completed`, `trade_proposal_received`, `trade_proposal_accepted`, `trade_proposal_rejected`, `trade_route_cancelled` — is seeded there. Future epics add new values with a single metadata-only statement:
+
+```sql
+alter type public.notification_type add value 'your_new_type';
+```
+
+This is safe inside a transaction on Postgres 14+ and requires no table scan or constraint rebuild, so it does not lock the `notifications` table.
+
 ## Assignment model
 
 Citizens are assigned to work targets via two surfaces:
