@@ -5,13 +5,41 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SettlementAssignmentBoard } from "./index";
 
-const { requireSupabaseClient } = vi.hoisted(() => ({
+import type { ReactNode } from "react";
+
+const { mockNavigate, requireSupabaseClient } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
 }));
+
+vi.mock("@tanstack/react-router", async () => {
+  const actual = await vi.importActual("@tanstack/react-router");
+  return {
+    ...actual,
+    Link: function MockLink({
+      children,
+      "aria-current": ariaCurrent,
+      className,
+      to,
+    }: {
+      readonly "aria-current"?: "page";
+      readonly children?: ReactNode;
+      readonly className?: string;
+      readonly to?: string;
+    }) {
+      return (
+        <a aria-current={ariaCurrent} className={className} href={to ?? "#"}>
+          {children}
+        </a>
+      );
+    },
+    useNavigate: () => mockNavigate,
+  };
+});
 
 vi.mock("sonner", () => ({
   toast: {
@@ -403,6 +431,9 @@ function createTradeRouteRow(
 function createAggregateBuilder(rows: readonly AggregateRowFixture[]): unknown {
   const builder = {
     eq: vi.fn(() => builder),
+    in: vi.fn(() => builder),
+    or: vi.fn(() => builder),
+    order: vi.fn(() => builder),
     returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
   };
   return {
@@ -536,9 +567,12 @@ function createClient(config: {
 
 function renderBoard(
   props: Partial<{
+    activeTab: "bulk" | "per-target";
     canManage: boolean;
     isArchived: boolean;
+    nationId: string;
     settlementId: string;
+    worldId: string;
   }> = {},
 ): void {
   const queryClient = new QueryClient({
@@ -547,9 +581,12 @@ function renderBoard(
   render(
     <QueryClientProvider client={queryClient}>
       <SettlementAssignmentBoard
+        activeTab={props.activeTab ?? "bulk"}
         canManage={props.canManage ?? true}
         isArchived={props.isArchived ?? false}
+        nationId={props.nationId ?? "nation-1"}
         settlementId={props.settlementId ?? "settlement-1"}
+        worldId={props.worldId ?? "world-1"}
       />
     </QueryClientProvider>,
   );
@@ -561,21 +598,140 @@ function renderBoard(
 
 describe("SettlementAssignmentBoard", () => {
   beforeEach(() => {
+    mockNavigate.mockReset();
     requireSupabaseClient.mockReset();
   });
 
-  it("renders tab shell with Bulk jobs and Per-target jobs tabs", () => {
+  it("renders tab navigation with Bulk jobs and Per-target jobs links", () => {
     requireSupabaseClient.mockReturnValue(createClient({}));
 
     renderBoard();
 
-    expect(screen.getByRole("tab", { name: "Bulk jobs" })).toBeDefined();
-    expect(screen.getByRole("tab", { name: "Per-target jobs" })).toBeDefined();
+    const bulkLink = screen.getByRole("link", { name: "Bulk jobs" });
+    const perTargetLink = screen.getByRole("link", { name: "Per-target jobs" });
+    expect(bulkLink).toBeDefined();
+    expect(perTargetLink).toBeDefined();
+    expect(bulkLink.getAttribute("aria-current")).toBe("page");
+    expect(perTargetLink.getAttribute("aria-current")).toBeNull();
+  });
+
+  it("mobile selector reflects active tab and calls navigate on change", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({}));
+
+    renderBoard({ activeTab: "bulk" });
+
+    const select = screen.getByRole("combobox", { name: "Assignment view" });
+    expect(select).toHaveValue("bulk");
+
+    await user.selectOptions(select, "per-target");
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        search: { assignmentTab: "per-target" },
+      }),
+    );
+  });
+
+  it("keeps both panels mounted when the non-active tab is hidden", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [],
+        jobCounts: [
+          createJobCountRow({
+            job_name: "Farmer",
+            current_count: 3,
+            capacity: 10,
+          }),
+        ],
+        projectCounts: [],
+        constructionProjects: [],
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [
+          createDepositInstanceRow({
+            id: "dep-1",
+            name: "Iron Vein",
+            status: "active",
+          }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard({ activeTab: "per-target" });
+
+    // Bulk panel is mounted and its data loads even though it is hidden
+    expect(await screen.findByText("Farmer")).toBeDefined();
+    // Per-target panel content is also present and visible
+    expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
+  });
+
+  it("preserves row-level input state when switching tabs and returning", async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [],
+        jobCounts: [
+          createJobCountRow({
+            job_name: "Farmer",
+            current_count: 3,
+            capacity: 10,
+          }),
+        ],
+        projectCounts: [],
+        constructionProjects: [],
+        citizenRows: [],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    const defaultProps = {
+      canManage: true,
+      isArchived: false,
+      nationId: "nation-1",
+      settlementId: "settlement-1",
+      worldId: "world-1",
+    };
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <SettlementAssignmentBoard activeTab="bulk" {...defaultProps} />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("Farmer");
+
+    const input = screen.getByRole("spinbutton", {
+      name: "Target count for Farmer",
+    });
+    await user.clear(input);
+    await user.type(input, "7");
+    expect(input).toHaveValue(7);
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <SettlementAssignmentBoard activeTab="per-target" {...defaultProps} />
+      </QueryClientProvider>,
+    );
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <SettlementAssignmentBoard activeTab="bulk" {...defaultProps} />
+      </QueryClientProvider>,
+    );
+
     expect(
-      screen
-        .getByRole("tab", { name: "Bulk jobs" })
-        .getAttribute("aria-selected"),
-    ).toBe("true");
+      screen.getByRole("spinbutton", { name: "Target count for Farmer" }),
+    ).toHaveValue(7);
   });
 
   it("shows standard job rows with current/capacity display", async () => {
@@ -953,8 +1109,7 @@ describe("SettlementAssignmentBoard", () => {
   // Per-target tab tests
   // -------------------------------------------------------------------------
 
-  it("shows deposit section with deposit name and capacity hint when per-target tab is clicked", async () => {
-    const user = userEvent.setup();
+  it("shows deposit section with deposit name and capacity hint on per-target tab", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -972,16 +1127,13 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard();
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({ activeTab: "per-target" });
 
     expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
     expect(screen.getByText("0 / 4")).toBeDefined();
   });
 
   it("shows deposit capacity as assigned count only when max_workers is null", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -998,16 +1150,13 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard();
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({ activeTab: "per-target" });
 
     expect(await screen.findByText("Coal Seam — Miner")).toBeDefined();
     expect(screen.getByText("0 assigned")).toBeDefined();
   });
 
   it("shows husbandry section with population name and job name", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -1028,15 +1177,12 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard();
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({ activeTab: "per-target" });
 
     expect(await screen.findByText("Flock A — Shepherd")).toBeDefined();
   });
 
   it("shows culling section with population name and culling job name", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -1057,15 +1203,12 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard();
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({ activeTab: "per-target" });
 
     expect(await screen.findByText("Flock A — Slaughter")).toBeDefined();
   });
 
   it("shows trade route section with origin and destination labels", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -1092,9 +1235,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard();
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({ activeTab: "per-target" });
 
     expect(await screen.findByText(/Grain.*Hillfort.*Riverside/)).toBeDefined();
     expect(
@@ -1104,7 +1245,6 @@ describe("SettlementAssignmentBoard", () => {
   });
 
   it("shows assigned citizen name as tag on deposit row", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [
@@ -1125,15 +1265,12 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard();
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({ activeTab: "per-target" });
 
     expect(await screen.findByText("Alice")).toBeDefined();
   });
 
   it("shows Assign citizens button when canManage and not archived on per-target tab", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -1146,9 +1283,11 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true, isArchived: false });
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({
+      activeTab: "per-target",
+      canManage: true,
+      isArchived: false,
+    });
 
     await screen.findByText("Iron Vein — Miner");
     expect(
@@ -1157,7 +1296,6 @@ describe("SettlementAssignmentBoard", () => {
   });
 
   it("hides Assign citizens button on per-target tab when canManage is false", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -1170,9 +1308,11 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: false, isArchived: false });
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({
+      activeTab: "per-target",
+      canManage: false,
+      isArchived: false,
+    });
 
     await screen.findByText("Iron Vein — Miner");
     expect(
@@ -1181,7 +1321,6 @@ describe("SettlementAssignmentBoard", () => {
   });
 
   it("hides Assign citizens button on per-target tab when isArchived is true", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -1194,9 +1333,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true, isArchived: true });
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({ activeTab: "per-target", canManage: true, isArchived: true });
 
     await screen.findByText("Iron Vein — Miner");
     expect(
@@ -1205,7 +1342,6 @@ describe("SettlementAssignmentBoard", () => {
   });
 
   it("filters out non-active deposits and populations from per-target sections", async () => {
-    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenRows: [],
@@ -1227,9 +1363,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard();
-
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    renderBoard({ activeTab: "per-target" });
 
     expect(await screen.findByText("Active Vein — Miner")).toBeDefined();
     expect(screen.queryByText("Depleted Vein")).toBeNull();
@@ -1258,9 +1392,8 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true });
+    renderBoard({ activeTab: "per-target", canManage: true });
 
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
     await screen.findByText("Iron Vein — Miner");
     await user.click(screen.getByRole("button", { name: "Assign citizens" }));
 
@@ -1298,9 +1431,8 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true });
+    renderBoard({ activeTab: "per-target", canManage: true });
 
-    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
     await screen.findByText("Iron Vein — Miner");
     await user.click(screen.getByRole("button", { name: "Assign citizens" }));
 

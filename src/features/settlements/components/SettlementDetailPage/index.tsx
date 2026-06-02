@@ -37,12 +37,14 @@ import type { SettlementWithNation } from "../../types/settlementTypes";
 import type { JSX } from "react";
 
 type SettlementDetailPageProps = {
+  readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
 };
 
 export function SettlementDetailPage({
+  assignmentTab,
   nationId,
   settlementId,
   worldId,
@@ -74,6 +76,7 @@ export function SettlementDetailPage({
   return (
     <SettlementDetailWorldGate
       accessContext={accessContextQuery.data}
+      assignmentTab={assignmentTab}
       nationId={nationId}
       settlementId={settlementId}
       worldId={worldId}
@@ -83,11 +86,13 @@ export function SettlementDetailPage({
 
 function SettlementDetailWorldGate({
   accessContext,
+  assignmentTab,
   nationId,
   settlementId,
   worldId,
 }: {
   readonly accessContext: AccessContext;
+  readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
@@ -140,6 +145,7 @@ function SettlementDetailWorldGate({
   return (
     <SettlementDetailContent
       accessContext={accessContext}
+      assignmentTab={assignmentTab}
       nationId={nationId}
       settlementId={settlementId}
       worldAccess={worldQuery.data}
@@ -150,12 +156,14 @@ function SettlementDetailWorldGate({
 
 function SettlementDetailContent({
   accessContext,
+  assignmentTab,
   nationId,
   settlementId,
   worldAccess,
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
+  readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldAccess: WorldRouteAccess;
@@ -201,6 +209,7 @@ function SettlementDetailContent({
   return (
     <SettlementDetailLoaded
       accessContext={accessContext}
+      assignmentTab={assignmentTab}
       settlement={settlement}
       worldAccess={worldAccess}
       worldId={worldId}
@@ -210,11 +219,13 @@ function SettlementDetailContent({
 
 function SettlementDetailLoaded({
   accessContext,
+  assignmentTab,
   settlement,
   worldAccess,
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
+  readonly assignmentTab: "bulk" | "per-target";
   readonly settlement: SettlementWithNation;
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
@@ -331,9 +342,12 @@ function SettlementDetailLoaded({
       />
 
       <SettlementAssignmentBoard
+        activeTab={assignmentTab}
         canManage={worldAccess.canManage}
         isArchived={isArchived}
+        nationId={settlement.nationId}
         settlementId={settlement.id}
+        worldId={worldId}
       />
 
       {canDelete ? (

@@ -71,6 +71,7 @@ function NationSettlementListItem({
           settlementId: settlement.id,
           worldId,
         }}
+        search={{}}
         className="text-sm font-medium underline-offset-4 hover:underline"
       >
         {settlement.name}
