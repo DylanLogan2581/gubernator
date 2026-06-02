@@ -134,7 +134,9 @@ export function PerTargetJobsTab({
   }
 
   const citizenMap = new Map(citizens.map((c) => [c.id, c]));
-  const aliveCitizens = citizens.filter((c) => c.status === "alive");
+  const aliveCitizens = citizens.filter(
+    (c) => c.status === "alive" && c.citizenType === "npc",
+  );
 
   return (
     <div className="grid gap-4">
@@ -343,11 +345,6 @@ function AssignDialog({
                       }}
                     />
                     {citizen.name}
-                    {citizen.citizenType === "player_character" ? (
-                      <span className="text-xs text-muted-foreground">
-                        (PC)
-                      </span>
-                    ) : null}
                   </label>
                 </li>
               ))}

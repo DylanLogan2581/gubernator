@@ -1264,4 +1264,42 @@ describe("SettlementAssignmentBoard", () => {
     expect(aliceCheckbox).toBeChecked();
     expect(bobCheckbox).not.toBeChecked();
   });
+
+  it("filters player characters out of the assign dialog, showing only NPCs", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [
+          createCitizenRow({
+            id: "npc-1",
+            name: "Alice",
+            citizen_type: "npc",
+            status: "alive",
+          }),
+          createCitizenRow({
+            id: "pc-1",
+            name: "HeroPC",
+            citizen_type: "player_character",
+            status: "alive",
+          }),
+        ],
+        citizenAssignmentRows: [],
+        depositInstanceRows: [
+          createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
+        ],
+        populationInstanceRows: [],
+        tradeRouteRows: [],
+      }),
+    );
+
+    renderBoard({ canManage: true });
+
+    await user.click(screen.getByRole("tab", { name: "Per-target jobs" }));
+    await screen.findByText("Iron Vein");
+    await user.click(screen.getByRole("button", { name: "Assign citizens" }));
+
+    expect(screen.getByRole("dialog")).toBeDefined();
+    expect(screen.getByRole("checkbox", { name: /Alice/ })).toBeDefined();
+    expect(screen.queryByRole("checkbox", { name: /HeroPC/ })).toBeNull();
+  });
 });
