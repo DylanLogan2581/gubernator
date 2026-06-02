@@ -160,7 +160,7 @@ function assignmentTargetLabel(
       if (assignment.depositInstanceId === null) return null;
       const deposit = depositMap.get(assignment.depositInstanceId);
       return deposit !== undefined
-        ? deposit.name
+        ? `${deposit.name} — ${deposit.depositTypeJobName}`
         : `Deposit #${assignment.depositInstanceId}`;
     }
     case "husbandry":
@@ -182,8 +182,14 @@ function assignmentTargetLabel(
       if (route === undefined) {
         return `Trade route #${assignment.tradeRouteId}`;
       }
-      const end = assignment.tradeRouteEnd ?? "";
-      return `${route.resourceName}: ${route.originSettlementName} → ${route.destinationSettlementName} (${end})`;
+      const end = assignment.tradeRouteEnd;
+      if (end === "origin") {
+        return `${route.resourceName} → ${route.destinationSettlementName} — Trader (origin)`;
+      }
+      if (end === "destination") {
+        return `${route.originSettlementName} → ${route.resourceName} — Trader (destination)`;
+      }
+      return `${route.resourceName}: ${route.originSettlementName} → ${route.destinationSettlementName}`;
     }
   }
 }

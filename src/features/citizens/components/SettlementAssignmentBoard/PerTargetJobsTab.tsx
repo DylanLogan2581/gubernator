@@ -470,6 +470,7 @@ function DepositTargetRow({
     setPerTargetAssignmentMutationOptions({ queryClient }),
   );
 
+  const label = `${deposit.name} — ${deposit.depositTypeJobName}`;
   const capacityHint =
     deposit.maxWorkers !== null
       ? `${assignedIds.length.toString()} / ${deposit.maxWorkers.toString()}`
@@ -526,14 +527,14 @@ function DepositTargetRow({
           ) : undefined
         }
         capacityHint={capacityHint}
-        label={deposit.name}
+        label={label}
       >
         <CitizenTags
           assignedIds={assignedIds}
           canEdit={canEdit}
           citizenMap={citizenMap}
           isPending={mutation.isPending}
-          labelPrefix={deposit.name}
+          labelPrefix={label}
           onRemove={handleRemove}
         />
       </TargetRowShell>
@@ -542,7 +543,7 @@ function DepositTargetRow({
           aliveCitizens={aliveCitizens}
           currentCitizenIds={assignedIds}
           isPending={mutation.isPending}
-          title={`Assign workers to ${deposit.name}`}
+          title={`Assign workers to ${label}`}
           onClose={() => {
             setShowDialog(false);
           }}
@@ -789,8 +790,8 @@ function TradeRoutesSection({
               : route.originSettlementName;
           const localLabel =
             localEnd === "origin"
-              ? `${route.resourceName} → ${route.destinationSettlementName} (origin)`
-              : `${route.originSettlementName} → ${route.resourceName} (destination)`;
+              ? `${route.resourceName} → ${route.destinationSettlementName} — Trader (origin)`
+              : `${route.originSettlementName} → ${route.resourceName} — Trader (destination)`;
           const localKey = `${route.id}:${localEnd}`;
           const remoteKey = `${route.id}:${remoteEnd}`;
 
@@ -949,7 +950,7 @@ function TradeRouteRemoteEndRow({
   return (
     <div className="rounded border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
       <span className="font-medium">
-        {endLabel}: {remoteSettlementName}
+        {endLabel}: {remoteSettlementName} — Trader
       </span>
       <span className="ml-2 text-xs">
         {assignedCount.toString()} assigned (remote)

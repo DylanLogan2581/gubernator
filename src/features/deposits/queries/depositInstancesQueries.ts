@@ -30,7 +30,10 @@ type DepositInstanceRow = {
   readonly created_at: string;
   readonly deposit_instance_resources: readonly DepositInstanceResourceRow[];
   readonly deposit_type_id: string;
-  readonly deposit_types: { readonly name: string };
+  readonly deposit_types: {
+    readonly job: { readonly name: string };
+    readonly name: string;
+  };
   readonly discovered_by_event_id: string | null;
   readonly id: string;
   readonly max_workers: number | null;
@@ -42,7 +45,7 @@ type DepositInstanceRow = {
 
 const DEPOSIT_INSTANCE_SELECT = [
   "id,settlement_id,deposit_type_id,name,status,max_workers,discovered_by_event_id,created_at,updated_at",
-  "deposit_types(name)",
+  "deposit_types(name,job:job_definitions(name))",
   "deposit_instance_resources(id,deposit_instance_id,resource_id,initial_quantity,remaining_quantity,created_at,updated_at,resources(name))",
 ].join(",");
 
@@ -91,6 +94,7 @@ function toDepositInstance(row: DepositInstanceRow): DepositInstance {
   return {
     createdAt: row.created_at,
     depositTypeId: row.deposit_type_id,
+    depositTypeJobName: row.deposit_types.job.name,
     depositTypeName: row.deposit_types.name,
     discoveredByEventId: row.discovered_by_event_id,
     id: row.id,

@@ -14,6 +14,7 @@ export type DepositInstanceResource = {
 export type DepositInstance = {
   readonly createdAt: string;
   readonly depositTypeId: string;
+  readonly depositTypeJobName: string;
   readonly depositTypeName: string;
   readonly discoveredByEventId: string | null;
   readonly id: string;
