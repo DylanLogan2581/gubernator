@@ -252,7 +252,7 @@ All citizens supplied must be alive members of `p_settlement_id`. Passing an emp
 | Deposit feature module                 | `src/features/deposits`                                                             |
 | Managed populations feature module     | `src/features/managed-populations`                                                  |
 | Buildings feature module               | `src/features/buildings`                                                            |
-| Citizen assignment board               | `src/features/citizens/components/AssignmentBoard.tsx`                              |
+| Citizen assignment board               | `src/features/citizens/components/SettlementAssignmentBoard/index.tsx`              |
 
 ## Related docs
 

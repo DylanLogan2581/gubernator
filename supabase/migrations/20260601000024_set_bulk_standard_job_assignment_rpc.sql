@@ -7,10 +7,12 @@
 --     world together with the current assigned-citizen count for that
 --     settlement and the settlement_job_capacity helper value.
 --
---   set_bulk_standard_job_assignment(p_settlement_id, p_job_id,
---                                    p_target_count, p_removal_strategy)
+--   set_bulk_standard_job_assignment(p_settlement_id, p_job_id, p_target_count)
 --     SECURITY DEFINER RPC that sets the number of citizens assigned to a
 --     standard job in a settlement to exactly p_target_count.
+--     NOTE: migration 20260601000027 drops the original 4-argument form
+--     (which accepted p_removal_strategy) and replaces it with this
+--     3-argument version; see that migration for the current function body.
 --
 -- Authorised callers for the mutation: admin (super admin / world admin) OR
 --   current_user_manages_settlement(p_settlement_id).
@@ -19,18 +21,16 @@
 --   P0002 (no_data_found)          – null param, settlement not found, job
 --                                    not found or not in the same world
 --   42501 (insufficient_privilege) – caller lacks authority
---   P0001 (raise_exception)        – negative target, invalid strategy,
---                                    trashed job, non-standard job, target
---                                    exceeds capacity, insufficient unassigned
---                                    NPCs when raising
+--   P0001 (raise_exception)        – negative target, trashed job,
+--                                    non-standard job, target exceeds capacity,
+--                                    insufficient unassigned NPCs when raising
 --
--- Raise behaviour: picks unassigned alive NPCs in the settlement (ordered
---   by citizen_id for determinism); rejects if not enough NPCs are available.
--- Lower behaviour (npc_first): removes NPCs before PCs, stable citizen_id
---   tiebreak within each tier.
--- Lower behaviour (random): deterministic-random within the transaction via
---   setseed(frac(epoch)); PC-last invariant preserved by the citizen_type
---   sort tier.
+-- Raise behaviour: picks unassigned alive NPCs using deterministic-random
+--   order (setseed(frac(epoch)) + order by random()); rejects if not enough
+--   NPCs are available.
+-- Lower behaviour: removes assignees in the same deterministic-random order.
+--   No PC sort tier is needed; a DB trigger (migration 20260601000027) blocks
+--   PC assignments on every path.
 -- ---------------------------------------------------------------------------
 -- ---------------------------------------------------------------------------
 -- get_settlement_standard_job_counts
