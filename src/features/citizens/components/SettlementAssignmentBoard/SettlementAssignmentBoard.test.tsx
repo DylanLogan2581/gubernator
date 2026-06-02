@@ -1028,6 +1028,78 @@ describe("SettlementAssignmentBoard", () => {
     expect(unassignedRow).not.toHaveTextContent("3 /");
   });
 
+  it("standard jobs Unassigned row and construction pool row show different counts", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          // 2 truly-unassigned NPCs
+          createAggregateRow({
+            id: "c-1",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: null,
+          }),
+          createAggregateRow({
+            id: "c-2",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: null,
+          }),
+          // 3 NPCs assigned to construction (not counted in unassignedNpcCount)
+          createAggregateRow({
+            id: "c-3",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [{ assignment_type: "construction_project" }],
+          }),
+          createAggregateRow({
+            id: "c-4",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [{ assignment_type: "construction_project" }],
+          }),
+          createAggregateRow({
+            id: "c-5",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [{ assignment_type: "construction_project" }],
+          }),
+        ],
+        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
+        projectCounts: [
+          createProjectCountRow({
+            construction_project_id: "proj-1",
+            current_count: 3,
+            status: "in_progress",
+          }),
+        ],
+        constructionProjects: [createConstructionProjectRow({ id: "proj-1" })],
+      }),
+    );
+
+    renderBoard();
+
+    // Wait for data to load
+    await screen.findByText("Farmer");
+    await screen.findByText("Granary (Tier 1)");
+
+    const rows = screen.getAllByRole("row");
+
+    // Standard jobs table: rows[0] = header, rows[1] = Unassigned, rows[2] = Farmer
+    const standardUnassignedRow = rows[1];
+    expect(standardUnassignedRow).toHaveTextContent("Unassigned");
+    expect(standardUnassignedRow).toHaveTextContent("2");
+
+    // Construction table: rows[3] = header, rows[4] = Construction pool, rows[5] = Granary
+    const constructionPoolRow = rows[4];
+    expect(constructionPoolRow).toHaveTextContent("Construction pool");
+    expect(constructionPoolRow).toHaveTextContent("3");
+
+    // The two counts are different
+    expect(standardUnassignedRow).not.toHaveTextContent("3 /");
+    expect(constructionPoolRow).not.toHaveTextContent("2 /");
+  });
+
   it("disables Apply button when raising count and no citizens are unassigned", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(

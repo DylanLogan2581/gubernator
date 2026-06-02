@@ -90,6 +90,10 @@ export function BulkJobsTab({
   const projects = projectsQuery.data ?? [];
 
   const projectMap = new Map(projects.map((p) => [p.id, p]));
+  const constructionPoolCount = projectCounts.reduce(
+    (sum, pc) => sum + pc.currentCount,
+    0,
+  );
 
   return (
     <div className="grid gap-6">
@@ -102,6 +106,7 @@ export function BulkJobsTab({
       />
       <ConstructionSection
         canEdit={canEdit}
+        constructionPoolCount={constructionPoolCount}
         projectCounts={projectCounts}
         projectMap={projectMap}
         queryClient={queryClient}
@@ -176,14 +181,16 @@ function StandardJobsSection({
 
 function UnassignedRow({
   canEdit,
+  label = "Unassigned",
   unassignedNpcCount,
 }: {
   readonly canEdit: boolean;
+  readonly label?: string;
   readonly unassignedNpcCount: number;
 }): JSX.Element {
   return (
     <tr className="border-b border-border">
-      <td className="py-2 pr-4 font-medium">Unassigned</td>
+      <td className="py-2 pr-4 font-medium">{label}</td>
       <td className="py-2 pr-4 tabular-nums text-muted-foreground">
         {unassignedNpcCount.toString()} /{" "}
         <span aria-label="no upper bound">∞</span>
@@ -273,6 +280,7 @@ function JobRow({
 
 function ConstructionSection({
   canEdit,
+  constructionPoolCount,
   projectCounts,
   projectMap,
   queryClient,
@@ -280,6 +288,7 @@ function ConstructionSection({
   unassignedNpcCount,
 }: {
   readonly canEdit: boolean;
+  readonly constructionPoolCount: number;
   readonly projectCounts: readonly SettlementConstructionProjectCount[];
   readonly projectMap: ReadonlyMap<string, ConstructionProject>;
   readonly queryClient: QueryClient;
@@ -312,7 +321,8 @@ function ConstructionSection({
         <tbody>
           <UnassignedRow
             canEdit={canEdit}
-            unassignedNpcCount={unassignedNpcCount}
+            label="Construction pool"
+            unassignedNpcCount={constructionPoolCount}
           />
           {projectCounts.map((pc) => {
             const project = projectMap.get(pc.constructionProjectId);
