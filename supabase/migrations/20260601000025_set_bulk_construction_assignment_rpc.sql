@@ -6,10 +6,12 @@
 --     count query. Returns every non-terminal construction_project in the
 --     settlement together with the current assigned-citizen count.
 --
---   set_bulk_construction_assignment(p_construction_project_id,
---                                    p_target_count, p_removal_strategy)
+--   set_bulk_construction_assignment(p_construction_project_id, p_target_count)
 --     SECURITY DEFINER RPC that sets the number of citizens assigned to a
 --     construction project to exactly p_target_count.
+--     NOTE: migration 20260601000027 drops the original 3-argument form
+--     (which accepted p_removal_strategy) and replaces it with this
+--     2-argument version; see that migration for the current function body.
 --
 -- Authorised callers for the mutation: super admin, world admin, OR
 --   current_user_manages_settlement(parent_settlement_id).
@@ -17,17 +19,16 @@
 -- Error contract (mutation):
 --   P0002 (no_data_found)          – null param, project not found
 --   42501 (insufficient_privilege) – caller lacks authority
---   P0001 (raise_exception)        – negative target, invalid strategy,
---                                    terminal project (complete/cancelled),
---                                    insufficient unassigned NPCs when raising
+--   P0001 (raise_exception)        – negative target, terminal project
+--                                    (complete/cancelled), insufficient
+--                                    unassigned NPCs when raising
 --
--- Raise behaviour: picks unassigned alive NPCs in the settlement (ordered
---   by citizen_id for determinism); rejects if not enough NPCs are available.
--- Lower behaviour (npc_first): removes NPCs before PCs, stable citizen_id
---   tiebreak within each tier.
--- Lower behaviour (random): deterministic-random within the transaction via
---   setseed(frac(epoch)); PC-last invariant preserved by the citizen_type
---   sort tier.
+-- Raise behaviour: picks unassigned alive NPCs using deterministic-random
+--   order (setseed(frac(epoch)) + order by random()); rejects if not enough
+--   NPCs are available.
+-- Lower behaviour: removes assignees in the same deterministic-random order.
+--   No PC sort tier is needed; a DB trigger (migration 20260601000027) blocks
+--   PC assignments on every path.
 -- No settlement-wide cap applies to construction jobs (spec §7); per-project
 --   ceiling is operational, not enforced at the DB layer.
 -- ---------------------------------------------------------------------------
