@@ -4,15 +4,27 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
-import { useId, useState, type JSX } from "react";
+import { ChevronDown } from "lucide-react";
+import { useState, type JSX } from "react";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { citizenAggregateStatsForSettlementQueryOptions } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
@@ -147,22 +159,6 @@ function BuildingsGroups({
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
 }): JSX.Element {
-  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-
-  function toggleGroup(label: string): void {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) {
-        next.delete(label);
-      } else {
-        next.add(label);
-      }
-      return next;
-    });
-  }
-
   const canDeconstruct = canAdmin && !isArchived;
 
   return (
@@ -172,23 +168,16 @@ function BuildingsGroups({
           (group.states as readonly string[]).includes(b.state),
         );
         if (groupBuildings.length === 0) return null;
-        const isCollapsed = collapsedGroups.has(group.label);
-        const panelId = `buildings-group-${group.label.toLowerCase()}`;
         return (
           <BuildingStateGroup
             key={group.label}
             canDeconstruct={canDeconstruct && group.states.includes("active")}
             buildings={groupBuildings}
-            isCollapsed={isCollapsed}
             jobNames={jobNames}
             label={group.label}
-            panelId={panelId}
             queryClient={queryClient}
             resourceNames={resourceNames}
             settlementId={settlementId}
-            onToggle={() => {
-              toggleGroup(group.label);
-            }}
           />
         );
       })}
@@ -199,79 +188,64 @@ function BuildingsGroups({
 function BuildingStateGroup({
   buildings,
   canDeconstruct,
-  isCollapsed,
   jobNames,
   label,
-  onToggle,
-  panelId,
   queryClient,
   resourceNames,
   settlementId,
 }: {
   readonly buildings: readonly SettlementBuilding[];
   readonly canDeconstruct: boolean;
-  readonly isCollapsed: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly label: string;
-  readonly onToggle: () => void;
-  readonly panelId: string;
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
 }): JSX.Element {
   return (
-    <div className="grid gap-1">
-      <button
-        aria-controls={panelId}
-        aria-expanded={!isCollapsed}
-        className="flex cursor-pointer items-center gap-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        type="button"
-        onClick={onToggle}
-      >
-        {isCollapsed ? (
-          <ChevronRight aria-hidden="true" className="h-4 w-4" />
-        ) : (
-          <ChevronDown aria-hidden="true" className="h-4 w-4" />
-        )}
+    <Collapsible defaultOpen className="grid gap-1">
+      <CollapsibleTrigger className="group flex cursor-pointer items-center gap-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <ChevronDown
+          aria-hidden="true"
+          className="h-4 w-4 -rotate-90 transition-transform group-data-[state=open]:rotate-0"
+        />
         {label} ({buildings.length})
-      </button>
-      {!isCollapsed ? (
-        <div id={panelId}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="pb-2 font-medium" scope="col">
-                  Building
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Tier
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Effects
-                </th>
-                <th className="w-16 pb-2" scope="col" aria-label="State" />
-                {canDeconstruct ? (
-                  <th className="w-28 pb-2" scope="col" aria-label="Actions" />
-                ) : null}
-              </tr>
-            </thead>
-            <tbody>
-              {buildings.map((building) => (
-                <BuildingRow
-                  key={building.id}
-                  building={building}
-                  canDeconstruct={canDeconstruct}
-                  jobNames={jobNames}
-                  queryClient={queryClient}
-                  resourceNames={resourceNames}
-                  settlementId={settlementId}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-    </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-muted-foreground">
+              <th className="pb-2 font-medium" scope="col">
+                Building
+              </th>
+              <th className="pb-2 font-medium" scope="col">
+                Tier
+              </th>
+              <th className="pb-2 font-medium" scope="col">
+                Effects
+              </th>
+              <th className="w-16 pb-2" scope="col" aria-label="State" />
+              {canDeconstruct ? (
+                <th className="w-28 pb-2" scope="col" aria-label="Actions" />
+              ) : null}
+            </tr>
+          </thead>
+          <tbody>
+            {buildings.map((building) => (
+              <BuildingRow
+                key={building.id}
+                building={building}
+                canDeconstruct={canDeconstruct}
+                jobNames={jobNames}
+                queryClient={queryClient}
+                resourceNames={resourceNames}
+                settlementId={settlementId}
+              />
+            ))}
+          </tbody>
+        </table>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -416,7 +390,6 @@ function DeconstructConfirmDialog({
   readonly queryClient: QueryClient;
   readonly settlementId: string;
 }): JSX.Element {
-  const titleId = useId();
   const deconstructMutation = useMutation(
     manualDeconstructBuildingMutationOptions({ queryClient, settlementId }),
   );
@@ -434,36 +407,24 @@ function DeconstructConfirmDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Deconstruct {building.blueprintName}?
-          </h3>
-          <Button
-            aria-label="Cancel deconstruct"
-            disabled={deconstructMutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Deconstruct {building.blueprintName}?</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
           This will permanently deconstruct{" "}
           <span className="font-medium text-foreground">
             {building.blueprintName}
           </span>{" "}
           (Tier {building.tierNumber}). This action cannot be undone.
-        </p>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </DialogDescription>
+        <DialogFooter>
           <Button
             disabled={deconstructMutation.isPending}
             onClick={onClose}
@@ -482,8 +443,8 @@ function DeconstructConfirmDialog({
           >
             Deconstruct
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

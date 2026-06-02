@@ -4,10 +4,9 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Minus, Plus, X } from "lucide-react";
-import { useId, useState, type FormEvent, type JSX } from "react";
+import { ChevronDown, ChevronRight, Minus, Plus } from "lucide-react";
+import { useState, type FormEvent, type JSX } from "react";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -16,6 +15,14 @@ import {
   type ResourceAmountEntry,
 } from "@/components/shared/ResourceAmountListEditor";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
@@ -446,7 +453,6 @@ function MaxWorkersEditDialog({
   readonly queryClient: QueryClient;
   readonly settlementId: string;
 }): JSX.Element {
-  const titleId = useId();
   const [maxWorkers, setMaxWorkers] = useState(
     instance.maxWorkers !== null ? String(instance.maxWorkers) : "",
   );
@@ -513,143 +519,110 @@ function MaxWorkersEditDialog({
     }
   }
 
-  if (showShrinkConfirm) {
-    return (
-      <DialogShell>
-        <div
-          aria-labelledby={titleId}
-          aria-modal="true"
-          className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-          role="dialog"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <h3 id={titleId} className="text-lg font-semibold">
-              Unassign workers?
-            </h3>
-            <Button
-              aria-label="Cancel max workers update"
-              disabled={mutation.isPending}
-              onClick={onClose}
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              <X aria-hidden="true" />
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Reducing max workers to{" "}
-            <span className="font-medium text-foreground">
-              {String(parsedMax)}
-            </span>{" "}
-            will cascade-unassign{" "}
-            <span className="font-medium text-foreground">
-              {String(cascadeCount)}
-            </span>{" "}
-            {cascadeCount === 1 ? "citizen" : "citizens"}.
-          </p>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Removal strategy</span>
-            <NativeSelect
-              aria-label="Removal strategy"
-              className="w-full"
-              disabled={mutation.isPending}
-              value={pendingStrategy}
-              onChange={(e) => {
-                const val = e.currentTarget.value;
-                if (val === "npc_first" || val === "random") {
-                  setPendingStrategy(val);
-                }
-              }}
-            >
-              <option value="npc_first">NPC first</option>
-              <option value="random">Random</option>
-            </NativeSelect>
-          </label>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              disabled={mutation.isPending}
-              onClick={onClose}
-              type="button"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={mutation.isPending}
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                void submitMaxWorkers(parsedMax, pendingStrategy);
-              }}
-            >
-              Confirm
-            </Button>
-          </div>
-        </div>
-      </DialogShell>
-    );
-  }
-
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        role="dialog"
-        onSubmit={handleSubmit}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Edit max workers — {instance.name}
-          </h3>
-          <Button
-            aria-label="Cancel max workers edit"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">
-            Max workers (leave blank for unlimited)
-          </span>
-          <Input
-            aria-invalid={fieldError !== undefined}
-            aria-label="Max workers"
-            disabled={mutation.isPending}
-            inputMode="numeric"
-            placeholder="Unlimited"
-            value={maxWorkers}
-            onChange={(e) => {
-              setMaxWorkers(e.currentTarget.value);
-            }}
-          />
-          {fieldError !== undefined ? (
-            <p className="text-xs text-destructive">{fieldError}</p>
-          ) : null}
-        </label>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button disabled={mutation.isPending} type="submit">
-            Save
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        {showShrinkConfirm ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Unassign workers?</DialogTitle>
+            </DialogHeader>
+            <DialogDescription>
+              Reducing max workers to{" "}
+              <span className="font-medium text-foreground">
+                {String(parsedMax)}
+              </span>{" "}
+              will cascade-unassign{" "}
+              <span className="font-medium text-foreground">
+                {String(cascadeCount)}
+              </span>{" "}
+              {cascadeCount === 1 ? "citizen" : "citizens"}.
+            </DialogDescription>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Removal strategy</span>
+              <NativeSelect
+                aria-label="Removal strategy"
+                className="w-full"
+                disabled={mutation.isPending}
+                value={pendingStrategy}
+                onChange={(e) => {
+                  const val = e.currentTarget.value;
+                  if (val === "npc_first" || val === "random") {
+                    setPendingStrategy(val);
+                  }
+                }}
+              >
+                <option value="npc_first">NPC first</option>
+                <option value="random">Random</option>
+              </NativeSelect>
+            </label>
+            <DialogFooter>
+              <Button
+                disabled={mutation.isPending}
+                onClick={onClose}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={mutation.isPending}
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  void submitMaxWorkers(parsedMax, pendingStrategy);
+                }}
+              >
+                Confirm
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <form className="contents" noValidate onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>Edit max workers — {instance.name}</DialogTitle>
+            </DialogHeader>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                Max workers (leave blank for unlimited)
+              </span>
+              <Input
+                aria-invalid={fieldError !== undefined}
+                aria-label="Max workers"
+                disabled={mutation.isPending}
+                inputMode="numeric"
+                placeholder="Unlimited"
+                value={maxWorkers}
+                onChange={(e) => {
+                  setMaxWorkers(e.currentTarget.value);
+                }}
+              />
+              {fieldError !== undefined ? (
+                <p className="text-xs text-destructive">{fieldError}</p>
+              ) : null}
+            </label>
+            <DialogFooter>
+              <Button
+                disabled={mutation.isPending}
+                onClick={onClose}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button disabled={mutation.isPending} type="submit">
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -662,7 +635,6 @@ function RemoveDepositConfirmDialog({
   readonly onClose: () => void;
   readonly queryClient: QueryClient;
 }): JSX.Element {
-  const titleId = useId();
   const mutation = useMutation(
     removeDepositInstanceMutationOptions({ queryClient }),
   );
@@ -678,34 +650,22 @@ function RemoveDepositConfirmDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Remove {instance.name}?
-          </h3>
-          <Button
-            aria-label="Cancel remove deposit"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Remove {instance.name}?</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
           This will permanently remove{" "}
           <span className="font-medium text-foreground">{instance.name}</span>.
           This action cannot be undone.
-        </p>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </DialogDescription>
+        <DialogFooter>
           <Button
             disabled={mutation.isPending}
             onClick={onClose}
@@ -724,9 +684,9 @@ function RemoveDepositConfirmDialog({
           >
             Remove
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -741,7 +701,6 @@ function AddDepositInstanceDialog({
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const titleId = useId();
   const depositTypesQuery = useQuery(
     activeDepositTypesByWorldQueryOptions(worldId),
   );
@@ -820,120 +779,108 @@ function AddDepositInstanceDialog({
   }
 
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-lg gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        role="dialog"
-        onSubmit={handleSubmit}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Add deposit instance
-          </h3>
-          <Button
-            aria-label="Cancel add deposit instance"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <div className="grid gap-3">
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Name</span>
-            <Input
-              aria-invalid={nameError !== undefined}
-              aria-label="Name"
-              disabled={mutation.isPending}
-              maxLength={depositInputLimits.depositInstanceNameMax}
-              value={name}
-              onChange={(e) => {
-                setName(e.currentTarget.value);
-              }}
-            />
-            {nameError !== undefined ? (
-              <p className="text-xs text-destructive">{nameError}</p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Deposit type</span>
-            {depositTypes.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No active deposit types available.
-              </p>
-            ) : (
-              <NativeSelect
-                aria-invalid={depositTypeError !== undefined}
-                aria-label="Deposit type"
-                className="w-full"
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="max-w-lg">
+        <form className="contents" noValidate onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Add deposit instance</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Name</span>
+              <Input
+                aria-invalid={nameError !== undefined}
+                aria-label="Name"
                 disabled={mutation.isPending}
-                value={depositTypeId}
+                maxLength={depositInputLimits.depositInstanceNameMax}
+                value={name}
                 onChange={(e) => {
-                  setDepositTypeId(e.currentTarget.value);
+                  setName(e.currentTarget.value);
                 }}
-              >
-                <option value="">Select a deposit type…</option>
-                {sortByName(depositTypes).map((dt: DepositType) => (
-                  <option key={dt.id} value={dt.id}>
-                    {dt.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            )}
-            {depositTypeError !== undefined ? (
-              <p className="text-xs text-destructive">{depositTypeError}</p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">
-              Max workers (leave blank for unlimited)
-            </span>
-            <Input
-              aria-invalid={maxWorkersError !== undefined}
-              aria-label="Max workers"
+              />
+              {nameError !== undefined ? (
+                <p className="text-xs text-destructive">{nameError}</p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Deposit type</span>
+              {depositTypes.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No active deposit types available.
+                </p>
+              ) : (
+                <NativeSelect
+                  aria-invalid={depositTypeError !== undefined}
+                  aria-label="Deposit type"
+                  className="w-full"
+                  disabled={mutation.isPending}
+                  value={depositTypeId}
+                  onChange={(e) => {
+                    setDepositTypeId(e.currentTarget.value);
+                  }}
+                >
+                  <option value="">Select a deposit type…</option>
+                  {sortByName(depositTypes).map((dt: DepositType) => (
+                    <option key={dt.id} value={dt.id}>
+                      {dt.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              )}
+              {depositTypeError !== undefined ? (
+                <p className="text-xs text-destructive">{depositTypeError}</p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                Max workers (leave blank for unlimited)
+              </span>
+              <Input
+                aria-invalid={maxWorkersError !== undefined}
+                aria-label="Max workers"
+                disabled={mutation.isPending}
+                inputMode="numeric"
+                placeholder="Unlimited"
+                value={maxWorkers}
+                onChange={(e) => {
+                  setMaxWorkers(e.currentTarget.value);
+                }}
+              />
+              {maxWorkersError !== undefined ? (
+                <p className="text-xs text-destructive">{maxWorkersError}</p>
+              ) : null}
+            </label>
+            <ResourceAmountListEditor
+              addLabel="Add resource"
+              amountLabel="initial quantity"
               disabled={mutation.isPending}
-              inputMode="numeric"
-              placeholder="Unlimited"
-              value={maxWorkers}
-              onChange={(e) => {
-                setMaxWorkers(e.currentTarget.value);
-              }}
+              entries={resourceEntries}
+              fieldError={resourcesError}
+              label="Resources"
+              resources={resources}
+              onChange={setResourceEntries}
             />
-            {maxWorkersError !== undefined ? (
-              <p className="text-xs text-destructive">{maxWorkersError}</p>
-            ) : null}
-          </label>
-          <ResourceAmountListEditor
-            addLabel="Add resource"
-            amountLabel="initial quantity"
-            disabled={mutation.isPending}
-            entries={resourceEntries}
-            fieldError={resourcesError}
-            label="Resources"
-            resources={resources}
-            onChange={setResourceEntries}
-          />
-        </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button disabled={mutation.isPending} type="submit">
-            Add
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+          </div>
+          <DialogFooter>
+            <Button
+              disabled={mutation.isPending}
+              onClick={onClose}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={mutation.isPending} type="submit">
+              Add
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

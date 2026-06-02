@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BuildingsConfigPanel } from "@/features/buildings";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { DepositsConfigPanel } from "@/features/deposits";
@@ -14,7 +15,6 @@ import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { cn } from "@/lib/utils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
@@ -90,28 +90,20 @@ export function WorldConfigurationPage({
       </div>
 
       {/* Desktop tab strip — scrollable, visible from md up */}
-      <nav
-        aria-label="Configuration sections"
-        className="hidden overflow-x-auto border-b border-border [scrollbar-width:none] md:flex"
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          handleTabSelect(v as TabKey);
+        }}
       >
-        {TABS.map(({ key, label }) => (
-          <Link
-            key={key}
-            aria-current={activeTab === key ? "page" : undefined}
-            to="/worlds/$worldId/configuration"
-            params={{ worldId }}
-            search={{ tab: key }}
-            className={cn(
-              "shrink-0 rounded-t-sm px-3 py-2 text-sm font-medium transition-colors",
-              activeTab === key
-                ? "border-b-2 border-primary text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
+        <TabsList className="hidden overflow-x-auto [scrollbar-width:none] md:flex">
+          {TABS.map(({ key, label }) => (
+            <TabsTrigger key={key} value={key} className="shrink-0">
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
       <section
         aria-label={`${activeTab} configuration`}
         className="min-h-[200px]"

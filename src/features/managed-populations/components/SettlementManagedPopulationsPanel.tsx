@@ -15,11 +15,18 @@ import {
 } from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
@@ -631,7 +638,6 @@ function MarkExtinctConfirmDialog({
   readonly onClose: () => void;
   readonly queryClient: QueryClient;
 }): JSX.Element {
-  const titleId = useId();
   const mutation = useMutation(
     removeManagedPopulationInstanceMutationOptions({ queryClient }),
   );
@@ -649,34 +655,22 @@ function MarkExtinctConfirmDialog({
   }
 
   return (
-    <DialogShell>
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold" id={titleId}>
-            Mark {instance.name} extinct?
-          </h3>
-          <Button
-            aria-label="Cancel mark extinct"
-            disabled={mutation.isPending}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Mark {instance.name} extinct?</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
           This will mark{" "}
           <span className="font-medium text-foreground">{instance.name}</span>{" "}
           as extinct. This action cannot be undone.
-        </p>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </DialogDescription>
+        <DialogFooter>
           <Button
             disabled={mutation.isPending}
             type="button"
@@ -695,9 +689,9 @@ function MarkExtinctConfirmDialog({
           >
             Mark extinct
           </Button>
-        </div>
-      </div>
-    </DialogShell>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -712,7 +706,6 @@ function AddManagedPopulationDialog({
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const titleId = useId();
   const typesQuery = useQuery(
     activeManagedPopulationTypesByWorldQueryOptions(worldId),
   );
@@ -784,127 +777,119 @@ function AddManagedPopulationDialog({
   }
 
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-sm gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        role="dialog"
-        onSubmit={handleSubmit}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold" id={titleId}>
-            Add managed population
-          </h3>
-          <Button
-            aria-label="Cancel add managed population"
-            disabled={mutation.isPending}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <div className="grid gap-3">
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Name</span>
-            <Input
-              aria-invalid={nameError !== undefined}
-              aria-label="Name"
-              disabled={mutation.isPending}
-              maxLength={managedPopulationInputLimits.populationInstanceNameMax}
-              value={name}
-              onChange={(e) => {
-                setName(e.currentTarget.value);
-              }}
-            />
-            {nameError !== undefined ? (
-              <p className="text-xs text-destructive">{nameError}</p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Population type</span>
-            {types.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No active population types available.
-              </p>
-            ) : (
-              <NativeSelect
-                aria-invalid={typeError !== undefined}
-                aria-label="Population type"
-                className="w-full"
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <form className="contents" noValidate onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Add managed population</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Name</span>
+              <Input
+                aria-invalid={nameError !== undefined}
+                aria-label="Name"
                 disabled={mutation.isPending}
-                value={typeId}
+                maxLength={
+                  managedPopulationInputLimits.populationInstanceNameMax
+                }
+                value={name}
                 onChange={(e) => {
-                  setTypeId(e.currentTarget.value);
+                  setName(e.currentTarget.value);
                 }}
-              >
-                <option value="">Select a population type…</option>
-                {sortByName(types).map((t: ManagedPopulationType) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            )}
-            {typeError !== undefined ? (
-              <p className="text-xs text-destructive">{typeError}</p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Initial count</span>
-            <Input
-              aria-invalid={initialCountError !== undefined}
-              aria-label="Initial count"
+              />
+              {nameError !== undefined ? (
+                <p className="text-xs text-destructive">{nameError}</p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Population type</span>
+              {types.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No active population types available.
+                </p>
+              ) : (
+                <NativeSelect
+                  aria-invalid={typeError !== undefined}
+                  aria-label="Population type"
+                  className="w-full"
+                  disabled={mutation.isPending}
+                  value={typeId}
+                  onChange={(e) => {
+                    setTypeId(e.currentTarget.value);
+                  }}
+                >
+                  <option value="">Select a population type…</option>
+                  {sortByName(types).map((t: ManagedPopulationType) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              )}
+              {typeError !== undefined ? (
+                <p className="text-xs text-destructive">{typeError}</p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Initial count</span>
+              <Input
+                aria-invalid={initialCountError !== undefined}
+                aria-label="Initial count"
+                disabled={mutation.isPending}
+                inputMode="numeric"
+                min={1}
+                type="number"
+                value={initialCount}
+                onChange={(e) => {
+                  setInitialCount(e.currentTarget.value);
+                }}
+              />
+              {initialCountError !== undefined ? (
+                <p className="text-xs text-destructive">{initialCountError}</p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                Initial cull quantity
+              </span>
+              <Input
+                aria-invalid={initialCullError !== undefined}
+                aria-label="Initial cull quantity"
+                disabled={mutation.isPending}
+                inputMode="numeric"
+                min={0}
+                type="number"
+                value={initialCullQuantity}
+                onChange={(e) => {
+                  setInitialCullQuantity(e.currentTarget.value);
+                }}
+              />
+              {initialCullError !== undefined ? (
+                <p className="text-xs text-destructive">{initialCullError}</p>
+              ) : null}
+            </label>
+          </div>
+          <DialogFooter>
+            <Button
               disabled={mutation.isPending}
-              inputMode="numeric"
-              min={1}
-              type="number"
-              value={initialCount}
-              onChange={(e) => {
-                setInitialCount(e.currentTarget.value);
-              }}
-            />
-            {initialCountError !== undefined ? (
-              <p className="text-xs text-destructive">{initialCountError}</p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Initial cull quantity</span>
-            <Input
-              aria-invalid={initialCullError !== undefined}
-              aria-label="Initial cull quantity"
-              disabled={mutation.isPending}
-              inputMode="numeric"
-              min={0}
-              type="number"
-              value={initialCullQuantity}
-              onChange={(e) => {
-                setInitialCullQuantity(e.currentTarget.value);
-              }}
-            />
-            {initialCullError !== undefined ? (
-              <p className="text-xs text-destructive">{initialCullError}</p>
-            ) : null}
-          </label>
-        </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={mutation.isPending}
-            type="button"
-            variant="outline"
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button disabled={mutation.isPending} type="submit">
-            Add
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button disabled={mutation.isPending} type="submit">
+              Add
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
