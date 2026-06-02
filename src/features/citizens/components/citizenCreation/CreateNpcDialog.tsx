@@ -210,7 +210,7 @@ export function CreateNpcDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create NPC</DialogTitle>
@@ -271,27 +271,35 @@ export function CreateNpcDialog({
             </select>
           </label>
 
-          <ParentField
-            citizens={parentChoices}
-            disabled={mutation.isPending || citizensQuery.isPending}
-            label="Parent A"
-            onChange={(value) => {
-              setFields((current) => ({ ...current, parentACitizenId: value }));
-              setKinshipError(undefined);
-            }}
-            value={fields.parentACitizenId}
-          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ParentField
+              citizens={parentChoices}
+              disabled={mutation.isPending || citizensQuery.isPending}
+              label="Parent A"
+              onChange={(value) => {
+                setFields((current) => ({
+                  ...current,
+                  parentACitizenId: value,
+                }));
+                setKinshipError(undefined);
+              }}
+              value={fields.parentACitizenId}
+            />
 
-          <ParentField
-            citizens={parentChoices}
-            disabled={mutation.isPending || citizensQuery.isPending}
-            label="Parent B"
-            onChange={(value) => {
-              setFields((current) => ({ ...current, parentBCitizenId: value }));
-              setKinshipError(undefined);
-            }}
-            value={fields.parentBCitizenId}
-          />
+            <ParentField
+              citizens={parentChoices}
+              disabled={mutation.isPending || citizensQuery.isPending}
+              label="Parent B"
+              onChange={(value) => {
+                setFields((current) => ({
+                  ...current,
+                  parentBCitizenId: value,
+                }));
+                setKinshipError(undefined);
+              }}
+              value={fields.parentBCitizenId}
+            />
+          </div>
 
           <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
             <div className="flex items-center justify-between gap-2">
