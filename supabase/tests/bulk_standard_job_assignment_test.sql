@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (21);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -233,7 +233,7 @@ values
     null
   );
 
--- Initial citizen_assignments: NPCs 001-003 + PC 006 assigned to ba5...001 = count 4
+-- Initial citizen_assignments: NPCs 001-003 assigned to ba5...001 = count 3
 -- Unassigned alive NPCs: ba6...004, 005, 007
 insert into
   public.citizen_assignments (
@@ -260,12 +260,6 @@ values
     'standard_job',
     'ba500000-0000-0000-0000-000000000001',
     1
-  ),
-  (
-    'ba600000-0000-0000-0000-000000000006',
-    'standard_job',
-    'ba500000-0000-0000-0000-000000000001',
-    1
   );
 
 -- ===========================================================================
@@ -287,7 +281,7 @@ select
   );
 
 -- ===========================================================================
--- NO-OP: target = current (4)
+-- NO-OP: target = current (3)
 -- Both SELECT calls invoke the RPC independently; both are no-ops.
 -- ===========================================================================
 set
@@ -305,12 +299,11 @@ select
         public.set_bulk_standard_job_assignment (
           'ba400000-0000-0000-0000-000000000001',
           'ba500000-0000-0000-0000-000000000001',
-          4,
-          'npc_first'
+          3
         ) r
     ),
-    4,
-    'no-op: before = 4'
+    3,
+    'no-op: before = 3'
   );
 
 select
@@ -322,16 +315,15 @@ select
         public.set_bulk_standard_job_assignment (
           'ba400000-0000-0000-0000-000000000001',
           'ba500000-0000-0000-0000-000000000001',
-          4,
-          'npc_first'
+          3
         ) r
     ),
-    4,
-    'no-op: after = 4'
+    3,
+    'no-op: after = 3'
   );
 
 -- ===========================================================================
--- ADMIN RAISE: 4 → 5 (adds 1 NPC; unassigned NPCs: 004, 005, 007)
+-- ADMIN RAISE: 3 → 5 (adds 2 NPCs; unassigned NPCs: 004, 005, 007)
 -- The SELECT below invokes the RPC once; state becomes count=5.
 -- ===========================================================================
 select
@@ -343,12 +335,11 @@ select
         public.set_bulk_standard_job_assignment (
           'ba400000-0000-0000-0000-000000000001',
           'ba500000-0000-0000-0000-000000000001',
-          5,
-          'npc_first'
+          5
         ) r
     ),
-    4,
-    'admin raise: before = 4'
+    3,
+    'admin raise: before = 3'
   );
 
 reset role;
@@ -370,24 +361,8 @@ select
     'admin raise: citizen_assignments count = 5'
   );
 
--- Raise must only add NPCs; PC (ba6...006) must not gain a duplicate row.
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.citizen_assignments
-      where
-        citizen_id = 'ba600000-0000-0000-0000-000000000006'
-    ),
-    1,
-    'admin raise: PC ba6...006 has exactly one assignment (only NPCs added)'
-  );
-
 -- ===========================================================================
--- ADMIN LOWER npc_first: 5 → 3 (state from raise above, count=5)
--- NPCs removed before PC; PC (ba6...006) must survive.
+-- ADMIN LOWER: 5 → 3 (state from raise above, count=5)
 -- ===========================================================================
 set
   local role authenticated;
@@ -404,30 +379,14 @@ select
         public.set_bulk_standard_job_assignment (
           'ba400000-0000-0000-0000-000000000001',
           'ba500000-0000-0000-0000-000000000001',
-          3,
-          'npc_first'
+          3
         ) r
     ),
     5,
-    'admin lower npc_first: before = 5'
+    'admin lower: before = 5'
   );
 
 reset role;
-
--- PC (ba6...006) must still be assigned (NPC-first removes NPCs before PCs).
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.citizen_assignments
-      where
-        citizen_id = 'ba600000-0000-0000-0000-000000000006'
-    ),
-    1,
-    'npc_first: PC ba6...006 preserved (PC-last invariant)'
-  );
 
 select
   is (
@@ -442,12 +401,11 @@ select
         and c.settlement_id = 'ba400000-0000-0000-0000-000000000001'
     ),
     3,
-    'npc_first: count = 3 after lower'
+    'admin lower: count = 3 after lower'
   );
 
 -- ===========================================================================
--- Reset for random lower test: 4 NPCs (001-004) + PC 006 = count 5
--- Unassigned NPCs: 005, 007
+-- ADMIN LOWER random: reset to 4 NPCs (001-004) = count 4, lower to 2
 -- ===========================================================================
 delete from public.citizen_assignments
 where
@@ -457,7 +415,6 @@ where
     'ba600000-0000-0000-0000-000000000003',
     'ba600000-0000-0000-0000-000000000004',
     'ba600000-0000-0000-0000-000000000005',
-    'ba600000-0000-0000-0000-000000000006',
     'ba600000-0000-0000-0000-000000000007'
   );
 
@@ -492,17 +449,8 @@ values
     'standard_job',
     'ba500000-0000-0000-0000-000000000001',
     1
-  ),
-  (
-    'ba600000-0000-0000-0000-000000000006',
-    'standard_job',
-    'ba500000-0000-0000-0000-000000000001',
-    1
   );
 
--- ===========================================================================
--- ADMIN LOWER random: 5 → 3 — 2 NPCs removed (PC-last; 4 NPCs ranked before PC)
--- ===========================================================================
 set
   local role authenticated;
 
@@ -515,8 +463,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000001',
-      3,
-      'random'
+      2
     )
     $test$,
     'admin lower random: RPC succeeds'
@@ -524,19 +471,24 @@ select
 
 reset role;
 
--- PC (ba6...006) must still be assigned: 2 NPCs were removed, not the PC.
+-- ===========================================================================
+-- REJECTION: trigger blocks PC direct insert into citizen_assignments
+-- ===========================================================================
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.citizen_assignments
-      where
-        citizen_id = 'ba600000-0000-0000-0000-000000000006'
-    ),
-    1,
-    'random: PC ba6...006 preserved (PC-last invariant)'
+  throws_ok (
+    $test$
+    insert into public.citizen_assignments (
+      citizen_id, assignment_type, job_id, assigned_on_turn_number
+    ) values (
+      'ba600000-0000-0000-0000-000000000006',
+      'standard_job',
+      'ba500000-0000-0000-0000-000000000001',
+      1
+    )
+    $test$,
+    'P0001',
+    null,
+    'trigger rejects direct PC insert into citizen_assignments'
   );
 
 -- ===========================================================================
@@ -554,8 +506,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000001',
-      6,
-      'npc_first'
+      6
     )
     $test$,
     'P0001',
@@ -572,8 +523,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000003',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     'P0001',
@@ -590,8 +540,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000002',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     'P0001',
@@ -608,8 +557,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000001',
-      -1,
-      'npc_first'
+      -1
     )
     $test$,
     'P0001',
@@ -617,31 +565,12 @@ select
     'negative target count is rejected with P0001'
   );
 
--- ===========================================================================
--- REJECTION: invalid removal strategy
--- ===========================================================================
-select
-  throws_ok (
-    $test$
-    select public.set_bulk_standard_job_assignment(
-      'ba400000-0000-0000-0000-000000000001',
-      'ba500000-0000-0000-0000-000000000001',
-      2,
-      'biggest_first'
-    )
-    $test$,
-    'P0001',
-    null,
-    'invalid removal strategy is rejected with P0001'
-  );
-
 reset role;
 
 -- ===========================================================================
 -- REJECTION: insufficient unassigned NPCs
--- Full reset: all 6 NPCs absorbed into ba5...004; only PC in ba5...001.
--- current_count = 1 for ba5...001 (just PC); 0 unassigned NPCs.
--- Try to raise ba5...001 to 2 → P0001.
+-- Full reset: all 6 NPCs absorbed into ba5...004; 0 unassigned NPCs.
+-- Try to raise ba5...001 to 1 → P0001.
 -- ===========================================================================
 delete from public.citizen_assignments
 where
@@ -651,7 +580,6 @@ where
     'ba600000-0000-0000-0000-000000000003',
     'ba600000-0000-0000-0000-000000000004',
     'ba600000-0000-0000-0000-000000000005',
-    'ba600000-0000-0000-0000-000000000006',
     'ba600000-0000-0000-0000-000000000007'
   );
 
@@ -698,12 +626,6 @@ values
     'standard_job',
     'ba500000-0000-0000-0000-000000000004',
     1
-  ),
-  (
-    'ba600000-0000-0000-0000-000000000006',
-    'standard_job',
-    'ba500000-0000-0000-0000-000000000001',
-    1
   );
 
 set
@@ -718,8 +640,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000001',
-      2,
-      'npc_first'
+      1
     )
     $test$,
     'P0001',
@@ -744,8 +665,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000001',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     '42501',
@@ -770,8 +690,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000001',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     '42501',
@@ -782,7 +701,7 @@ select
 reset role;
 
 -- ===========================================================================
--- Reset for manager tests: 1 NPC (001) + PC (006) = count 2
+-- Reset for manager tests: 1 NPC (001) = count 1
 -- Free NPCs: 002, 003, 004, 005, 007 (released from absorber)
 -- ===========================================================================
 delete from public.citizen_assignments
@@ -793,7 +712,6 @@ where
     'ba600000-0000-0000-0000-000000000003',
     'ba600000-0000-0000-0000-000000000004',
     'ba600000-0000-0000-0000-000000000005',
-    'ba600000-0000-0000-0000-000000000006',
     'ba600000-0000-0000-0000-000000000007'
   );
 
@@ -810,16 +728,10 @@ values
     'standard_job',
     'ba500000-0000-0000-0000-000000000001',
     1
-  ),
-  (
-    'ba600000-0000-0000-0000-000000000006',
-    'standard_job',
-    'ba500000-0000-0000-0000-000000000001',
-    1
   );
 
 -- ===========================================================================
--- MANAGER RAISE: settlement manager can raise count (2 → 3)
+-- MANAGER RAISE: settlement manager can raise count (1 → 2)
 -- ===========================================================================
 set
   local role authenticated;
@@ -833,15 +745,14 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000001',
-      3,
-      'npc_first'
+      2
     )
     $test$,
     'settlement manager can raise count'
   );
 
 -- ===========================================================================
--- MANAGER LOWER: settlement manager can lower count (3 → 2)
+-- MANAGER LOWER: settlement manager can lower count (2 → 1)
 -- ===========================================================================
 select
   lives_ok (
@@ -849,8 +760,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
       'ba500000-0000-0000-0000-000000000001',
-      2,
-      'npc_first'
+      1
     )
     $test$,
     'settlement manager can lower count'

@@ -86,7 +86,6 @@ async function setBulkConstructionAssignment(
   const { data, error } = await client
     .rpc("set_bulk_construction_assignment", {
       p_construction_project_id: values.constructionProjectId,
-      p_removal_strategy: values.removalStrategy,
       p_target_count: values.targetCount,
     })
     .maybeSingle<RpcResultRow>();

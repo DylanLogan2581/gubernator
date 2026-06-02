@@ -721,25 +721,6 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
-  it("removal strategy defaults to NPC-first", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        aggregates: [],
-        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [],
-        constructionProjects: [],
-      }),
-    );
-
-    renderBoard({ canManage: true });
-
-    await screen.findByText("Farmer");
-    const select = screen.getByRole("combobox", {
-      name: "Removal strategy for Farmer",
-    });
-    expect(select).toHaveValue("npc_first");
-  });
-
   it("shows unassigned footer with NPC and player character counts", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

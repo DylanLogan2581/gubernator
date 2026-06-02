@@ -403,7 +403,7 @@ values
     null,
     null
   ),
-  -- NPC 2 in settlement_1 (spare unassigned NPC)
+  -- NPC 2 in settlement_1 (pre-seeded on construction_project for T44-T46)
   (
     'a5500000-0000-0000-0000-000000000007',
     'a5100000-0000-0000-0000-000000000001',
@@ -411,6 +411,32 @@ values
     'npc',
     null,
     'A5 NPC Two',
+    'alive',
+    'none',
+    null,
+    null
+  ),
+  -- NPC 3 in settlement_1 (spare unassigned NPC for T41 bulk standard job raise)
+  (
+    'a5500000-0000-0000-0000-000000000008',
+    'a5100000-0000-0000-0000-000000000001',
+    'a5300000-0000-0000-0000-000000000001',
+    'npc',
+    null,
+    'A5 NPC Three',
+    'alive',
+    'none',
+    null,
+    null
+  ),
+  -- NPC 4 in settlement_1 (spare unassigned NPC for T46 bulk construction raise)
+  (
+    'a5500000-0000-0000-0000-000000000009',
+    'a5100000-0000-0000-0000-000000000001',
+    'a5300000-0000-0000-0000-000000000001',
+    'npc',
+    null,
+    'A5 NPC Four',
     'alive',
     'none',
     null,
@@ -576,9 +602,9 @@ values
     'a5500000-0000-0000-0000-000000000004'
   );
 
--- Pre-seed assignments for the PC-last bulk-removal tests.
---   Standard-job test (T39-T41): nm1_citizen (PC) + npc_1 (NPC) → job_standard.
---   Construction test (T44-T46): sm1_citizen (PC) + npc_2 (NPC) → project_1.
+-- Pre-seed NPC assignments for the PC-rejection and bulk-assignment tests.
+--   Standard-job test (T39-T41): npc_1 (NPC) → job_standard.
+--   Construction test (T44-T46): npc_2 (NPC) → project_1.
 insert into
   public.citizen_assignments (
     citizen_id,
@@ -587,12 +613,6 @@ insert into
     assigned_on_turn_number
   )
 values
-  (
-    'a5500000-0000-0000-0000-000000000004',
-    'standard_job',
-    'a5600000-0000-0000-0000-000000000001',
-    0
-  ),
   (
     'a5500000-0000-0000-0000-000000000006',
     'standard_job',
@@ -608,12 +628,6 @@ insert into
     assigned_on_turn_number
   )
 values
-  (
-    'a5500000-0000-0000-0000-000000000002',
-    'construction_project',
-    'a5900000-0000-0000-0000-000000000001',
-    0
-  ),
   (
     'a5500000-0000-0000-0000-000000000007',
     'construction_project',
@@ -1213,8 +1227,7 @@ select
     select * from public.set_bulk_standard_job_assignment(
       'a5300000-0000-0000-0000-000000000001',
       'a5600000-0000-0000-0000-000000000001',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     '42501',
@@ -1228,8 +1241,7 @@ select
     $test$
     select * from public.set_bulk_construction_assignment(
       'a5900000-0000-0000-0000-000000000001',
-      1,
-      'npc_first'
+      1
     )
     $test$,
     '42501',
@@ -1339,36 +1351,29 @@ select
 reset role;
 
 -- ===========================================================================
--- PART 4: PC-LAST BULK REMOVAL (npc_first strategy)
--- Pre-seeded fixture: nm1_citizen (player_character) and npc_1 (npc) are both
--- assigned to job_standard in settlement_1. Lowering to 1 with npc_first must
--- remove the NPC and keep the PC.
--- Also: sm1_citizen (PC) and npc_2 (NPC) are pre-seeded on construction_project_1.
--- Lowering the construction count to 1 with npc_first must remove npc_2.
+-- PART 4: PC-NOT-ASSIGNABLE TRIGGER COVERAGE
+-- T39-T41: trigger blocks direct PC inserts; NPCs and bulk RPCs still work.
+-- T44-T46: same pattern for construction assignment path.
 -- ===========================================================================
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"a5000000-0000-0000-0000-000000000001","role":"authenticated"}';
-
--- T39: the call itself must succeed
+-- T39: trigger rejects direct insert of nm1_citizen (PC) into citizen_assignments
 select
-  lives_ok (
+  throws_ok (
     $test$
-    select * from public.set_bulk_standard_job_assignment(
-      'a5300000-0000-0000-0000-000000000001',
+    insert into public.citizen_assignments (
+      citizen_id, assignment_type, job_id, assigned_on_turn_number
+    ) values (
+      'a5500000-0000-0000-0000-000000000004',
+      'standard_job',
       'a5600000-0000-0000-0000-000000000001',
-      1,
-      'npc_first'
+      0
     )
     $test$,
-    'world admin can lower bulk assignment count to 1 with npc_first strategy'
+    'P0001',
+    null,
+    'trigger rejects direct PC insert for standard_job'
   );
 
-reset role;
-
--- T40: the NPC is no longer assigned (removed by the RPC above).
+-- T40: NPC (npc_1) assignment to job_standard exists (pre-seeded; trigger permits NPC)
 select
   is (
     (
@@ -1378,53 +1383,52 @@ select
         public.citizen_assignments
       where
         citizen_id = 'a5500000-0000-0000-0000-000000000006'
-    ),
-    0,
-    'NPC assignment removed by npc_first strategy when lowering below current count'
-  );
-
--- T41: the player_character assignment survives.
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.citizen_assignments
-      where
-        citizen_id = 'a5500000-0000-0000-0000-000000000004'
         and assignment_type = 'standard_job'
     ),
     1,
-    'PC assignment preserved by npc_first strategy (PC removed last)'
+    'NPC assignment to standard_job is present (trigger allows NPC)'
   );
 
--- ---------------------------------------------------------------------------
--- PC-last for set_bulk_construction_assignment (T44–T46)
--- Pre-seeded: sm1_citizen (PC) + npc_2 (NPC) both on construction_project_1.
--- ---------------------------------------------------------------------------
+-- T41: set_bulk_standard_job_assignment raise succeeds (picks NPC, not PC)
 set
   local role authenticated;
 
 set
   local "request.jwt.claims" = '{"sub":"a5000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
--- T44: lowering construction count from 2 → 1 with npc_first must succeed
 select
   lives_ok (
     $test$
-    select * from public.set_bulk_construction_assignment(
-      'a5900000-0000-0000-0000-000000000001',
-      1,
-      'npc_first'
+    select * from public.set_bulk_standard_job_assignment(
+      'a5300000-0000-0000-0000-000000000001',
+      'a5600000-0000-0000-0000-000000000001',
+      2
     )
     $test$,
-    'world admin can lower bulk construction assignment count to 1 with npc_first'
+    'world admin can raise bulk standard job assignment (NPCs only)'
   );
 
 reset role;
 
--- T45: npc_2 is no longer assigned (removed as the NPC tier)
+-- T44: trigger rejects direct insert of sm1_citizen (PC) into construction_project
+select
+  throws_ok (
+    $test$
+    insert into public.citizen_assignments (
+      citizen_id, assignment_type, construction_project_id, assigned_on_turn_number
+    ) values (
+      'a5500000-0000-0000-0000-000000000002',
+      'construction_project',
+      'a5900000-0000-0000-0000-000000000001',
+      0
+    )
+    $test$,
+    'P0001',
+    null,
+    'trigger rejects direct PC insert for construction_project'
+  );
+
+-- T45: NPC (npc_2) assignment to construction_project_1 exists (pre-seeded)
 select
   is (
     (
@@ -1434,26 +1438,31 @@ select
         public.citizen_assignments
       where
         citizen_id = 'a5500000-0000-0000-0000-000000000007'
-    ),
-    0,
-    'NPC removed first by npc_first strategy in set_bulk_construction_assignment'
-  );
-
--- T46: sm1_citizen (PC) still holds the construction assignment
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.citizen_assignments
-      where
-        citizen_id = 'a5500000-0000-0000-0000-000000000002'
         and assignment_type = 'construction_project'
     ),
     1,
-    'PC preserved by npc_first strategy in set_bulk_construction_assignment'
+    'NPC assignment to construction_project is present (trigger allows NPC)'
   );
+
+-- T46: set_bulk_construction_assignment raise succeeds (picks NPC, not PC)
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"a5000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select * from public.set_bulk_construction_assignment(
+      'a5900000-0000-0000-0000-000000000001',
+      2
+    )
+    $test$,
+    'world admin can raise bulk construction assignment (NPCs only)'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- PART 5: CROSS-WORLD WRITE REJECT

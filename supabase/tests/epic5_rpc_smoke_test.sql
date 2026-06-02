@@ -1558,7 +1558,7 @@ reset role;
 
 -- ---------------------------------------------------------------------------
 -- set_bulk_standard_job_assignment
--- target_count=0 lowers to zero assignments; removal_strategy='npc_first'.
+-- target_count=0 lowers to zero assignments.
 -- ---------------------------------------------------------------------------
 set
   local role authenticated;
@@ -1572,8 +1572,7 @@ select
       select * from public.set_bulk_standard_job_assignment(
         '5e400000-0000-0000-0000-000000000001',
         '5e800000-0000-0000-0000-000000000001',
-        0,
-        'npc_first'
+        0
       )
     $test$,
     'set_bulk_standard_job_assignment: admin succeeds'
@@ -1591,8 +1590,7 @@ select
       select * from public.set_bulk_standard_job_assignment(
         '5e400000-0000-0000-0000-000000000001',
         '5e800000-0000-0000-0000-000000000001',
-        0,
-        'npc_first'
+        0
       )
     $test$,
     'set_bulk_standard_job_assignment: SM succeeds'
@@ -1610,8 +1608,7 @@ select
       select * from public.set_bulk_standard_job_assignment(
         '5e400000-0000-0000-0000-000000000001',
         '5e800000-0000-0000-0000-000000000001',
-        0,
-        'npc_first'
+        0
       )
     $test$,
     '42501',
@@ -1636,8 +1633,7 @@ select
     $test$
       select * from public.set_bulk_construction_assignment(
         '5ef00000-0000-0000-0000-000000000005',
-        0,
-        'npc_first'
+        0
       )
     $test$,
     'set_bulk_construction_assignment: admin succeeds'
@@ -1654,8 +1650,7 @@ select
     $test$
       select * from public.set_bulk_construction_assignment(
         '5ef00000-0000-0000-0000-000000000005',
-        0,
-        'npc_first'
+        0
       )
     $test$,
     'set_bulk_construction_assignment: SM succeeds'
@@ -1672,8 +1667,7 @@ select
     $test$
       select * from public.set_bulk_construction_assignment(
         '5ef00000-0000-0000-0000-000000000005',
-        0,
-        'npc_first'
+        0
       )
     $test$,
     '42501',

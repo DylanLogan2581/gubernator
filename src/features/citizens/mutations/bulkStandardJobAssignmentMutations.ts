@@ -91,7 +91,6 @@ async function setBulkStandardJobAssignment(
   const { data, error } = await client
     .rpc("set_bulk_standard_job_assignment", {
       p_job_id: values.jobId,
-      p_removal_strategy: values.removalStrategy,
       p_settlement_id: values.settlementId,
       p_target_count: values.targetCount,
     })

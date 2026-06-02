@@ -3111,33 +3111,9 @@ values
     null,
     0
   ),
-  -- Joren Bask (412, Mistfall 302): standard_job → grain farmer
+  -- Tessen Marrow (421, settlement 301): trade_route, origin end of route 101
   (
-    '00000000-0000-0000-0000-000000000412',
-    'standard_job',
-    '00000000-0000-0000-0005-000000000101',
-    null,
-    null,
-    null,
-    null,
-    null,
-    0
-  ),
-  -- Sable Wren (413, Sunmere 303): standard_job → cloth weaver (job offset 2)
-  (
-    '00000000-0000-0000-0000-000000000413',
-    'standard_job',
-    '00000000-0000-0000-0005-000000000102',
-    null,
-    null,
-    null,
-    null,
-    null,
-    0
-  ),
-  -- Aria of Hearthwatch (401, settlement 301): trade_route, origin end of route 101
-  (
-    '00000000-0000-0000-0000-000000000401',
+    '00000000-0000-0000-0000-000000000421',
     'trade_route',
     null,
     null,
@@ -3159,9 +3135,9 @@ values
     null,
     0
   ),
-  -- Halden Reyne (402, Mistfall 302): husbandry → sheep flock at 302
+  -- Joren Bask (412, Mistfall 302): husbandry → sheep flock at 302
   (
-    '00000000-0000-0000-0000-000000000402',
+    '00000000-0000-0000-0000-000000000412',
     'husbandry',
     null,
     null,
@@ -3171,9 +3147,9 @@ values
     null,
     0
   ),
-  -- Kestrel Vale (403, Sunmere 303): deposit → stone quarry at 303
+  -- Sable Wren (413, Sunmere 303): deposit → stone quarry at 303
   (
-    '00000000-0000-0000-0000-000000000403',
+    '00000000-0000-0000-0000-000000000413',
     'deposit',
     null,
     null,
