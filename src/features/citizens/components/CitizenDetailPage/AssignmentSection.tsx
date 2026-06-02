@@ -2,23 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import {
-  constructionProjectsBySettlementQueryOptions,
-  type ConstructionProject,
-} from "@/features/buildings";
-import {
-  depositInstancesBySettlementQueryOptions,
-  type DepositInstance,
-} from "@/features/deposits";
-import { type JobDefinition, jobsByWorldQueryOptions } from "@/features/jobs";
-import {
-  managedPopulationInstancesBySettlementQueryOptions,
-  type ManagedPopulationInstance,
-} from "@/features/managed-populations";
-import {
-  tradeRoutesForSettlementQueryOptions,
-  type TradeRoute,
-} from "@/features/trade";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { currentAssignmentForCitizenQueryOptions } from "../../queries/citizenAssignmentsQueries";
@@ -31,38 +14,12 @@ import type { JSX } from "react";
 
 export function CitizenAssignmentSection({
   citizenId,
-  settlementId,
-  worldId,
 }: {
   readonly citizenId: string;
-  readonly settlementId: string | null;
-  readonly worldId: string;
 }): JSX.Element {
-  const effectiveSettlementId = settlementId ?? "";
-  const hasSettlement = settlementId !== null;
-
   const assignmentQuery = useQuery(
     currentAssignmentForCitizenQueryOptions(citizenId),
   );
-  const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
-  const constructionProjectsQuery = useQuery({
-    ...constructionProjectsBySettlementQueryOptions(effectiveSettlementId),
-    enabled: hasSettlement,
-  });
-  const depositsQuery = useQuery({
-    ...depositInstancesBySettlementQueryOptions(effectiveSettlementId),
-    enabled: hasSettlement,
-  });
-  const populationsQuery = useQuery({
-    ...managedPopulationInstancesBySettlementQueryOptions(
-      effectiveSettlementId,
-    ),
-    enabled: hasSettlement,
-  });
-  const tradeRoutesQuery = useQuery({
-    ...tradeRoutesForSettlementQueryOptions(effectiveSettlementId),
-    enabled: hasSettlement,
-  });
 
   return (
     <section
@@ -80,14 +37,7 @@ export function CitizenAssignmentSection({
           description={getErrorDescription(assignmentQuery.error)}
         />
       ) : (
-        <CitizenAssignmentSummary
-          assignment={assignmentQuery.data}
-          constructionProjects={constructionProjectsQuery.data ?? []}
-          deposits={depositsQuery.data ?? []}
-          jobs={jobsQuery.data ?? []}
-          populations={populationsQuery.data ?? []}
-          tradeRoutes={tradeRoutesQuery.data ?? []}
-        />
+        <CitizenAssignmentSummary assignment={assignmentQuery.data} />
       )}
     </section>
   );
@@ -95,18 +45,8 @@ export function CitizenAssignmentSection({
 
 function CitizenAssignmentSummary({
   assignment,
-  constructionProjects,
-  deposits,
-  jobs,
-  populations,
-  tradeRoutes,
 }: {
   readonly assignment: CitizenAssignment | null;
-  readonly constructionProjects: readonly ConstructionProject[];
-  readonly deposits: readonly DepositInstance[];
-  readonly jobs: readonly JobDefinition[];
-  readonly populations: readonly ManagedPopulationInstance[];
-  readonly tradeRoutes: readonly TradeRoute[];
 }): JSX.Element {
   if (assignment === null) {
     return (
@@ -115,14 +55,6 @@ function CitizenAssignmentSummary({
       </p>
     );
   }
-
-  const constructionProjectMap = new Map(
-    constructionProjects.map((p) => [p.id, p]),
-  );
-  const depositMap = new Map(deposits.map((d) => [d.id, d]));
-  const jobMap = new Map(jobs.map((j) => [j.id, j]));
-  const populationMap = new Map(populations.map((p) => [p.id, p]));
-  const tradeRouteMap = new Map(tradeRoutes.map((r) => [r.id, r]));
 
   return (
     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -134,18 +66,7 @@ function CitizenAssignmentSummary({
         label="Assigned on turn"
         value={String(assignment.assignedOnTurnNumber)}
       />
-      <Readout
-        label="Target"
-        value={assignmentTargetLabel(
-          assignment,
-          constructionProjectMap,
-          depositMap,
-          jobMap,
-          populationMap,
-          tradeRouteMap,
-        )}
-        mono
-      />
+      <Readout label="Target" value={assignmentTargetLabel(assignment)} mono />
     </dl>
   );
 }
@@ -167,61 +88,38 @@ function assignmentTypeLabel(type: CitizenAssignmentType): string {
   }
 }
 
-function assignmentTargetLabel(
-  assignment: CitizenAssignment,
-  constructionProjectMap: ReadonlyMap<string, ConstructionProject>,
-  depositMap: ReadonlyMap<string, DepositInstance>,
-  jobMap: ReadonlyMap<string, JobDefinition>,
-  populationMap: ReadonlyMap<string, ManagedPopulationInstance>,
-  tradeRouteMap: ReadonlyMap<string, TradeRoute>,
-): string | null {
+function assignmentTargetLabel(assignment: CitizenAssignment): string | null {
   switch (assignment.assignmentType) {
     case "standard_job": {
-      if (assignment.jobId === null) return null;
-      const job = jobMap.get(assignment.jobId);
-      return job !== undefined ? job.name : "Unknown job";
+      return assignment.job?.name ?? null;
     }
     case "construction_project": {
-      if (assignment.constructionProjectId === null) return null;
-      const project = constructionProjectMap.get(
-        assignment.constructionProjectId,
-      );
-      return project !== undefined ? project.blueprintName : "Unknown project";
+      if (assignment.constructionProject === null) return null;
+      return assignment.constructionProject.blueprintName;
     }
     case "deposit": {
-      if (assignment.depositInstanceId === null) return null;
-      const deposit = depositMap.get(assignment.depositInstanceId);
-      return deposit !== undefined
-        ? `${deposit.name} — ${deposit.depositTypeJobName}`
-        : `Deposit #${assignment.depositInstanceId}`;
+      if (assignment.depositInstance === null) return null;
+      return `${assignment.depositInstance.name} — ${assignment.depositInstance.depositTypeJobName}`;
     }
     case "husbandry":
     case "culling": {
-      if (assignment.managedPopulationInstanceId === null) return null;
-      const pop = populationMap.get(assignment.managedPopulationInstanceId);
-      if (pop === undefined) {
-        return `Population #${assignment.managedPopulationInstanceId}`;
-      }
+      if (assignment.managedPopulationInstance === null) return null;
       const jobName =
         assignment.assignmentType === "husbandry"
-          ? pop.husbandryJobName
-          : pop.cullingJobName;
-      return `${pop.name} — ${jobName}`;
+          ? assignment.managedPopulationInstance.husbandryJobName
+          : assignment.managedPopulationInstance.cullingJobName;
+      return `${assignment.managedPopulationInstance.name} — ${jobName}`;
     }
     case "trade_route": {
-      if (assignment.tradeRouteId === null) return null;
-      const route = tradeRouteMap.get(assignment.tradeRouteId);
-      if (route === undefined) {
-        return `Trade route #${assignment.tradeRouteId}`;
-      }
+      if (assignment.tradeRoute === null) return null;
       const end = assignment.tradeRouteEnd;
       if (end === "origin") {
-        return `${route.resourceName} → ${route.destinationSettlementName} — Trader (origin)`;
+        return `${assignment.tradeRoute.resourceName} → ${assignment.tradeRoute.destinationSettlementName} — Trader (origin)`;
       }
       if (end === "destination") {
-        return `${route.originSettlementName} → ${route.resourceName} — Trader (destination)`;
+        return `${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.resourceName} — Trader (destination)`;
       }
-      return `${route.resourceName}: ${route.originSettlementName} → ${route.destinationSettlementName}`;
+      return `${assignment.tradeRoute.resourceName}: ${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.destinationSettlementName}`;
     }
   }
 }

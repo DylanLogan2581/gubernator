@@ -86,11 +86,9 @@ export function SettlementTradeRoutesPanel({
   const traderCountByRoute = new Map<string, number>();
   if (assignmentsQuery.data !== undefined) {
     for (const a of assignmentsQuery.data) {
-      if (a.assignmentType === "trade_route" && a.tradeRouteId !== null) {
-        traderCountByRoute.set(
-          a.tradeRouteId,
-          (traderCountByRoute.get(a.tradeRouteId) ?? 0) + 1,
-        );
+      if (a.assignmentType === "trade_route" && a.tradeRoute !== null) {
+        const id = a.tradeRoute.id;
+        traderCountByRoute.set(id, (traderCountByRoute.get(id) ?? 0) + 1);
       }
     }
   }

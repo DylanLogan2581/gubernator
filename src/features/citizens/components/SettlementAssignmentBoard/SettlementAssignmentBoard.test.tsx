@@ -153,13 +153,32 @@ type CitizenAssignmentRowFixture = {
   readonly assignment_type: "culling" | "deposit" | "husbandry" | "trade_route";
   readonly citizen_id: string;
   readonly citizens: { readonly settlement_id: string };
-  readonly construction_project_id: null;
+  readonly construction_project: null;
   readonly created_at: string;
-  readonly deposit_instance_id: string | null;
-  readonly job_id: null;
-  readonly managed_population_instance_id: string | null;
+  readonly deposit_instance: {
+    readonly id: string;
+    readonly name: string;
+    readonly deposit_types: {
+      readonly name: string;
+      readonly job: { readonly name: string };
+    };
+  } | null;
+  readonly job: null;
+  readonly managed_population_instance: {
+    readonly id: string;
+    readonly name: string;
+    readonly managed_population_types: {
+      readonly husbandry_job: { readonly name: string };
+      readonly culling_job: { readonly name: string };
+    };
+  } | null;
+  readonly trade_route: {
+    readonly id: string;
+    readonly resources: { readonly name: string };
+    readonly origin: { readonly name: string };
+    readonly destination: { readonly name: string };
+  } | null;
   readonly trade_route_end: string | null;
-  readonly trade_route_id: string | null;
   readonly updated_at: string;
 };
 
@@ -339,13 +358,17 @@ function createCitizenAssignmentRow(
     assignment_type: "deposit",
     citizen_id: "citizen-1",
     citizens: { settlement_id: "settlement-1" },
-    construction_project_id: null,
+    construction_project: null,
     created_at: "2026-01-01T00:00:00Z",
-    deposit_instance_id: "dep-1",
-    job_id: null,
-    managed_population_instance_id: null,
+    deposit_instance: {
+      id: "dep-1",
+      name: "Iron Vein",
+      deposit_types: { name: "Iron", job: { name: "Miner" } },
+    },
+    job: null,
+    managed_population_instance: null,
+    trade_route: null,
     trade_route_end: null,
-    trade_route_id: null,
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };
@@ -1254,7 +1277,11 @@ describe("SettlementAssignmentBoard", () => {
           createCitizenAssignmentRow({
             citizen_id: "citizen-1",
             assignment_type: "deposit",
-            deposit_instance_id: "dep-1",
+            deposit_instance: {
+              id: "dep-1",
+              name: "Iron Vein",
+              deposit_types: { name: "Iron", job: { name: "Miner" } },
+            },
           }),
         ],
         depositInstanceRows: [
@@ -1381,7 +1408,11 @@ describe("SettlementAssignmentBoard", () => {
           createCitizenAssignmentRow({
             citizen_id: "citizen-1",
             assignment_type: "deposit",
-            deposit_instance_id: "dep-1",
+            deposit_instance: {
+              id: "dep-1",
+              name: "Iron Vein",
+              deposit_types: { name: "Iron", job: { name: "Miner" } },
+            },
           }),
         ],
         depositInstanceRows: [

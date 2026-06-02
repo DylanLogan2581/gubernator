@@ -144,11 +144,18 @@ function createResourceRow(
 type TestAssignmentRow = {
   readonly citizen_id: string;
   readonly assignment_type: string;
-  readonly job_id: null;
-  readonly construction_project_id: null;
-  readonly deposit_instance_id: null;
-  readonly managed_population_instance_id: string | null;
-  readonly trade_route_id: null;
+  readonly job: null;
+  readonly construction_project: null;
+  readonly deposit_instance: null;
+  readonly managed_population_instance: {
+    readonly id: string;
+    readonly name: string;
+    readonly managed_population_types: {
+      readonly husbandry_job: { readonly name: string };
+      readonly culling_job: { readonly name: string };
+    };
+  } | null;
+  readonly trade_route: null;
   readonly trade_route_end: null;
   readonly assigned_on_turn_number: number;
   readonly created_at: string;
@@ -162,11 +169,18 @@ function createAssignmentRow(
   return {
     citizen_id: CITIZEN_ID_1,
     assignment_type: "husbandry",
-    job_id: null,
-    construction_project_id: null,
-    deposit_instance_id: null,
-    managed_population_instance_id: INSTANCE_ID_1,
-    trade_route_id: null,
+    job: null,
+    construction_project: null,
+    deposit_instance: null,
+    managed_population_instance: {
+      id: INSTANCE_ID_1,
+      name: "North Herd",
+      managed_population_types: {
+        husbandry_job: { name: "Cattle Herder" },
+        culling_job: { name: "Butcher" },
+      },
+    },
+    trade_route: null,
     trade_route_end: null,
     assigned_on_turn_number: 1,
     created_at: "2026-05-01T00:00:00.000Z",

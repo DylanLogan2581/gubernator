@@ -71,10 +71,11 @@ export function SettlementDepositsPanel({
   const assignedCountByInstance = new Map<string, number>();
   if (assignmentsQuery.data !== undefined) {
     for (const a of assignmentsQuery.data) {
-      if (a.assignmentType === "deposit" && a.depositInstanceId !== null) {
+      if (a.assignmentType === "deposit" && a.depositInstance !== null) {
+        const id = a.depositInstance.id;
         assignedCountByInstance.set(
-          a.depositInstanceId,
-          (assignedCountByInstance.get(a.depositInstanceId) ?? 0) + 1,
+          id,
+          (assignedCountByInstance.get(id) ?? 0) + 1,
         );
       }
     }
