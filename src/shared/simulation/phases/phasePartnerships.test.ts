@@ -155,6 +155,7 @@ function makeContext(
     settlements: [makeSettlement("s1", "Town")],
     stockpiles: [],
     systemResourceIds: { foodId: FOOD_ID, freshWaterId: WATER_ID },
+    events: [],
     tradeRoutes: [],
     turnNumber: 20,
     worldId: "w1",

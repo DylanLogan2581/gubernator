@@ -213,6 +213,27 @@ export type SimManagedPopulation = {
   readonly status: SimManagedPopulationStatus;
 };
 
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+export type SimEventStatus = "active" | "expired" | "pending" | "resolved";
+
+// Exhaustive union — adding a new value here requires a matching case in the
+// phaseEvents switch, which is the Epic 7 hand-off contract.
+export type EventEffectType =
+  | "deposit_discovered"
+  | "population_loss"
+  | "resource_grant";
+
+export type SimEvent = {
+  readonly activateOnTransitionAfterTurnNumber: number;
+  readonly effectPayloadJsonb: Record<string, unknown>;
+  readonly effectType: EventEffectType;
+  readonly id: string;
+  readonly status: SimEventStatus;
+};
+
 export type SimTradeRouteStatus =
   | "active"
   | "cancelled"
@@ -302,6 +323,7 @@ export type SimulationInputState = {
   readonly deconstructOvershootLedger: readonly SimDeconstructOvershootEntry[];
   readonly depositTypes: readonly SimDepositType[];
   readonly deposits: readonly SimDeposit[];
+  readonly events: readonly SimEvent[];
   readonly jobs: readonly SimJob[];
   readonly managedPopulationTypes: readonly SimManagedPopulationType[];
   readonly managedPopulations: readonly SimManagedPopulation[];

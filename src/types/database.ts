@@ -565,6 +565,53 @@ export type Database = {
           },
         ];
       };
+      events: {
+        Row: {
+          activate_on_transition_after_turn_number: number;
+          created_at: string;
+          description: string | null;
+          effect_payload_jsonb: Json;
+          effect_type: string;
+          id: string;
+          name: string;
+          status: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          activate_on_transition_after_turn_number: number;
+          created_at?: string;
+          description?: string | null;
+          effect_payload_jsonb?: Json;
+          effect_type: string;
+          id?: string;
+          name: string;
+          status?: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          activate_on_transition_after_turn_number?: number;
+          created_at?: string;
+          description?: string | null;
+          effect_payload_jsonb?: Json;
+          effect_type?: string;
+          id?: string;
+          name?: string;
+          status?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "events_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       job_definitions: {
         Row: {
           base_capacity: number | null;
