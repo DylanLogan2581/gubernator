@@ -1,0 +1,749 @@
+-- pgTAP tests for §C33: apply_turn_transition log entry bulk-insert and
+-- notification fan-out with scoped recipients (§4.15).
+-- Run with: npx supabase test db
+--
+-- UUID prefix map (all b1-prefixed ranges, unique to this file):
+--   b1100000 = users            b1200000 = worlds
+--   b1300000 = nations          b1400000 = settlements
+--   b1500000 = citizens
+begin;
+
+select
+  plan (11);
+
+-- ---------------------------------------------------------------------------
+-- Fixtures
+-- ---------------------------------------------------------------------------
+-- Users:
+--   b1100000-0001 = super admin (world owner for all worlds)
+--   b1100000-0002 = explicit world admin for World 1
+--   b1100000-0003 = nation manager for World 1 / Nation 1
+--   b1100000-0004 = settlement manager for World 1 / Settlement 1
+--   b1100000-0005 = explicit world admin for World 3
+--   b1100000-0006 = nation manager for World 3 / Nation 3
+--   b1100000-0007 = explicit world admin for World 4
+--   b1100000-0008 = nation manager for World 4 (must NOT receive world-scoped notifs)
+insert into
+  auth.users (
+    id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+  )
+values
+  (
+    'b1100000-0000-0000-0000-000000000001',
+    'atln-superadmin@example.com',
+    'x',
+    now(),
+    '{"username":"atln_superadmin"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'b1100000-0000-0000-0000-000000000002',
+    'atln-wadmin1@example.com',
+    'x',
+    now(),
+    '{"username":"atln_wadmin1"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'b1100000-0000-0000-0000-000000000003',
+    'atln-natmgr1@example.com',
+    'x',
+    now(),
+    '{"username":"atln_natmgr1"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'b1100000-0000-0000-0000-000000000004',
+    'atln-setmgr1@example.com',
+    'x',
+    now(),
+    '{"username":"atln_setmgr1"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'b1100000-0000-0000-0000-000000000005',
+    'atln-wadmin3@example.com',
+    'x',
+    now(),
+    '{"username":"atln_wadmin3"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'b1100000-0000-0000-0000-000000000006',
+    'atln-natmgr3@example.com',
+    'x',
+    now(),
+    '{"username":"atln_natmgr3"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'b1100000-0000-0000-0000-000000000007',
+    'atln-wadmin4@example.com',
+    'x',
+    now(),
+    '{"username":"atln_wadmin4"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'b1100000-0000-0000-0000-000000000008',
+    'atln-natmgr4@example.com',
+    'x',
+    now(),
+    '{"username":"atln_natmgr4"}'::jsonb,
+    now(),
+    now()
+  );
+
+update public.users
+set
+  is_super_admin = true
+where
+  id = 'b1100000-0000-0000-0000-000000000001';
+
+-- Five worlds, all at turn 5:
+--   World 1: settlement-scoped test (settlement + nation manager + world admin)
+--   World 2: settlement-scoped, no active managers → falls back to world admins
+--   World 3: nation-scoped test (nation manager + world admin, no settlement manager)
+--   World 4: world-scoped test (only world admins, managers excluded)
+--   World 5: retry dedup test
+insert into
+  public.worlds (
+    id,
+    name,
+    owner_id,
+    current_turn_number,
+    visibility,
+    status
+  )
+values
+  (
+    'b1200000-0000-0000-0000-000000000001',
+    'ATLN World 1',
+    'b1100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
+  ),
+  (
+    'b1200000-0000-0000-0000-000000000002',
+    'ATLN World 2',
+    'b1100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
+  ),
+  (
+    'b1200000-0000-0000-0000-000000000003',
+    'ATLN World 3',
+    'b1100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
+  ),
+  (
+    'b1200000-0000-0000-0000-000000000004',
+    'ATLN World 4',
+    'b1100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
+  ),
+  (
+    'b1200000-0000-0000-0000-000000000005',
+    'ATLN World 5',
+    'b1100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
+  );
+
+-- Explicit world admins (separate from owner)
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'b1200000-0000-0000-0000-000000000001',
+    'b1100000-0000-0000-0000-000000000002'
+  ),
+  (
+    'b1200000-0000-0000-0000-000000000003',
+    'b1100000-0000-0000-0000-000000000005'
+  ),
+  (
+    'b1200000-0000-0000-0000-000000000004',
+    'b1100000-0000-0000-0000-000000000007'
+  );
+
+-- One nation per world
+insert into
+  public.nations (id, world_id, name)
+values
+  (
+    'b1300000-0000-0000-0000-000000000001',
+    'b1200000-0000-0000-0000-000000000001',
+    'ATLN Nation 1'
+  ),
+  (
+    'b1300000-0000-0000-0000-000000000002',
+    'b1200000-0000-0000-0000-000000000002',
+    'ATLN Nation 2'
+  ),
+  (
+    'b1300000-0000-0000-0000-000000000003',
+    'b1200000-0000-0000-0000-000000000003',
+    'ATLN Nation 3'
+  ),
+  (
+    'b1300000-0000-0000-0000-000000000004',
+    'b1200000-0000-0000-0000-000000000004',
+    'ATLN Nation 4'
+  ),
+  (
+    'b1300000-0000-0000-0000-000000000005',
+    'b1200000-0000-0000-0000-000000000005',
+    'ATLN Nation 5'
+  );
+
+-- One settlement per world
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'b1400000-0000-0000-0000-000000000001',
+    'b1300000-0000-0000-0000-000000000001',
+    'ATLN Settlement 1'
+  ),
+  (
+    'b1400000-0000-0000-0000-000000000002',
+    'b1300000-0000-0000-0000-000000000002',
+    'ATLN Settlement 2'
+  ),
+  (
+    'b1400000-0000-0000-0000-000000000003',
+    'b1300000-0000-0000-0000-000000000003',
+    'ATLN Settlement 3'
+  ),
+  (
+    'b1400000-0000-0000-0000-000000000004',
+    'b1300000-0000-0000-0000-000000000004',
+    'ATLN Settlement 4'
+  ),
+  (
+    'b1400000-0000-0000-0000-000000000005',
+    'b1300000-0000-0000-0000-000000000005',
+    'ATLN Settlement 5'
+  );
+
+-- Player character citizens with manager roles
+-- Citizens for World 1: nation manager (user b1100000-0003) + settlement manager (user b1100000-0004)
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id
+  )
+values
+  (
+    'b1500000-0000-0000-0000-000000000001',
+    'b1200000-0000-0000-0000-000000000001',
+    'b1400000-0000-0000-0000-000000000001',
+    'player_character',
+    'ATLN Nation Mgr 1',
+    'alive',
+    'b1100000-0000-0000-0000-000000000003',
+    'nation_manager',
+    'b1300000-0000-0000-0000-000000000001'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status,
+    user_id,
+    role_type,
+    role_settlement_id
+  )
+values
+  (
+    'b1500000-0000-0000-0000-000000000002',
+    'b1200000-0000-0000-0000-000000000001',
+    'b1400000-0000-0000-0000-000000000001',
+    'player_character',
+    'ATLN Settlement Mgr 1',
+    'alive',
+    'b1100000-0000-0000-0000-000000000004',
+    'settlement_manager',
+    'b1400000-0000-0000-0000-000000000001'
+  );
+
+-- Citizen for World 3: nation manager (user b1100000-0006)
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id
+  )
+values
+  (
+    'b1500000-0000-0000-0000-000000000003',
+    'b1200000-0000-0000-0000-000000000003',
+    'b1400000-0000-0000-0000-000000000003',
+    'player_character',
+    'ATLN Nation Mgr 3',
+    'alive',
+    'b1100000-0000-0000-0000-000000000006',
+    'nation_manager',
+    'b1300000-0000-0000-0000-000000000003'
+  );
+
+-- Citizen for World 4: nation manager (user b1100000-0008)
+-- This user should NOT receive world-scoped notifications.
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id
+  )
+values
+  (
+    'b1500000-0000-0000-0000-000000000004',
+    'b1200000-0000-0000-0000-000000000004',
+    'b1400000-0000-0000-0000-000000000004',
+    'player_character',
+    'ATLN Nation Mgr 4',
+    'alive',
+    'b1100000-0000-0000-0000-000000000008',
+    'nation_manager',
+    'b1300000-0000-0000-0000-000000000004'
+  );
+
+-- ===========================================================================
+-- All tests run as super admin (world owner)
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+-- ===========================================================================
+-- TEST SCENARIO 1: Settlement-scoped notification fans out to settlement
+-- manager + nation manager + world admins (owner + explicit admin + super admin).
+-- World 1: super admin (owner), world admin B, nation manager C, settlement manager D.
+-- Expected: 4 distinct recipients.
+-- ===========================================================================
+select
+  public.apply_turn_transition (
+    'b1200000-0000-0000-0000-000000000001',
+    5,
+    jsonb_build_object(
+      'logEntries',
+      jsonb_build_array(
+        jsonb_build_object(
+          'category',
+          'settlement.starvation_occurred',
+          'settlementId',
+          'b1400000-0000-0000-0000-000000000001',
+          'payload',
+          jsonb_build_object('deaths', 2)
+        )
+      ),
+      'notifications',
+      jsonb_build_array(
+        jsonb_build_object(
+          'notificationType',
+          'settlement.starvation_occurred',
+          'messageText',
+          '2 citizen(s) starved in ATLN Settlement 1.',
+          'scope',
+          'settlement',
+          'settlementId',
+          'b1400000-0000-0000-0000-000000000001'
+        )
+      )
+    )
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000001'
+    ),
+    5,
+    'settlement-scoped: 5 notifications (seeded super admin, owner+super admin, world admin, nation mgr, settlement mgr)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000001'
+        and recipient_user_id = 'b1100000-0000-0000-0000-000000000004'
+    ),
+    1,
+    'settlement-scoped: settlement manager received notification'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000001'
+        and recipient_user_id = 'b1100000-0000-0000-0000-000000000003'
+    ),
+    1,
+    'settlement-scoped: nation manager received notification'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.turn_log_entries tle
+        inner join public.turn_transitions tt on tt.id = tle.turn_transition_id
+      where
+        tle.world_id = 'b1200000-0000-0000-0000-000000000001'
+        and tle.log_category = 'settlement.starvation_occurred'
+        and tle.settlement_id = 'b1400000-0000-0000-0000-000000000001'
+        and tt.world_id = 'b1200000-0000-0000-0000-000000000001'
+    ),
+    1,
+    'settlement-scoped: log entry inserted with settlement_id stamped'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 2: Settlement-scoped notification with no active managers
+-- falls back to world admins only.
+-- World 2: super admin is world owner only. No explicit world_admins, no managers.
+-- Expected: 1 notification (super admin / owner).
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  public.apply_turn_transition (
+    'b1200000-0000-0000-0000-000000000002',
+    5,
+    jsonb_build_object(
+      'notifications',
+      jsonb_build_array(
+        jsonb_build_object(
+          'notificationType',
+          'deposit.depleted',
+          'messageText',
+          'A deposit was depleted in ATLN Settlement 2.',
+          'scope',
+          'settlement',
+          'settlementId',
+          'b1400000-0000-0000-0000-000000000002'
+        )
+      )
+    )
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000002'
+    ),
+    2,
+    'no-managers fallback: settlement-scoped notification goes only to world admins (owner + seeded super admin)'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 3: Nation-scoped notification fans out to nation manager
+-- + world admins (owner + explicit admin + super admin).
+-- World 3: super admin (owner), world admin E, nation manager F.
+-- Expected: 3 notifications.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  public.apply_turn_transition (
+    'b1200000-0000-0000-0000-000000000003',
+    5,
+    jsonb_build_object(
+      'notifications',
+      jsonb_build_array(
+        jsonb_build_object(
+          'notificationType',
+          'building.auto_deconstructed',
+          'messageText',
+          'A building auto-deconstructed in ATLN Nation 3.',
+          'scope',
+          'nation',
+          'nationId',
+          'b1300000-0000-0000-0000-000000000003'
+        )
+      )
+    )
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000003'
+    ),
+    4,
+    'nation-scoped: 4 notifications (seeded super admin, super admin/owner, world admin, nation manager)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000003'
+        and recipient_user_id = 'b1100000-0000-0000-0000-000000000006'
+    ),
+    1,
+    'nation-scoped: nation manager received notification'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000003'
+        and recipient_user_id = 'b1100000-0000-0000-0000-000000000005'
+    ),
+    1,
+    'nation-scoped: explicit world admin received notification'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 4: World-scoped notification goes only to world admins;
+-- nation and settlement managers are excluded.
+-- World 4: super admin (owner), world admin G, nation manager H.
+-- Expected: 2 notifications (super admin + world admin G); H is excluded.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  public.apply_turn_transition (
+    'b1200000-0000-0000-0000-000000000004',
+    5,
+    jsonb_build_object(
+      'notifications',
+      jsonb_build_array(
+        jsonb_build_object(
+          'notificationType',
+          'turn.completed',
+          'messageText',
+          'World 4 turn simulated.',
+          'scope',
+          'world'
+        )
+      )
+    )
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000004'
+    ),
+    3,
+    'world-scoped: 3 notifications (seeded super admin, super admin/owner, world admin only)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000004'
+        and recipient_user_id = 'b1100000-0000-0000-0000-000000000008'
+    ),
+    0,
+    'world-scoped: nation manager (H) did NOT receive notification'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 5: Retry produces no duplicate notification rows.
+-- World 5: super admin as world owner only (1 recipient).
+-- First call → 1 notification. Reset transition to 'running'. Second call
+-- (reuses same transition_id via EXCEPTION handler) → ON CONFLICT DO NOTHING
+-- keeps count at 1.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  public.apply_turn_transition (
+    'b1200000-0000-0000-0000-000000000005',
+    5,
+    jsonb_build_object(
+      'notifications',
+      jsonb_build_array(
+        jsonb_build_object(
+          'notificationType',
+          'construction.completed',
+          'messageText',
+          'Construction completed in ATLN Settlement 5.',
+          'scope',
+          'settlement',
+          'settlementId',
+          'b1400000-0000-0000-0000-000000000005'
+        )
+      )
+    )
+  );
+
+reset role;
+
+-- Reset transition to 'running' to simulate the concurrent-reuse path:
+-- the next call will hit unique_violation on insert and reuse this row.
+-- Must run as postgres (superuser) because authenticated has UPDATE revoked on
+-- turn_transitions (20260519000001_protect_turn_audit_writes.sql).
+update public.turn_transitions
+set
+  status = 'running',
+  finished_at = null
+where
+  world_id = 'b1200000-0000-0000-0000-000000000005'
+  and from_turn_number = 5;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  public.apply_turn_transition (
+    'b1200000-0000-0000-0000-000000000005',
+    5,
+    jsonb_build_object(
+      'notifications',
+      jsonb_build_array(
+        jsonb_build_object(
+          'notificationType',
+          'construction.completed',
+          'messageText',
+          'Construction completed in ATLN Settlement 5.',
+          'scope',
+          'settlement',
+          'settlementId',
+          'b1400000-0000-0000-0000-000000000005'
+        )
+      )
+    )
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000005'
+    ),
+    2,
+    'retry: ON CONFLICT DO NOTHING prevents duplicate notification rows (owner + seeded super admin, no doubles)'
+  );
+
+reset role;
+
+rollback;
