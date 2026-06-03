@@ -229,6 +229,13 @@ export type SimTradeRoute = {
   readonly status: SimTradeRouteStatus;
 };
 
+export type NpcFlavorConfig = {
+  readonly contradictions: readonly string[];
+  readonly flaws: readonly string[];
+  readonly goals: readonly string[];
+  readonly traits: readonly string[];
+};
+
 export type SimCitizenType = "npc" | "player_character";
 
 export type SimCitizenStatus = "alive" | "dead";
@@ -298,6 +305,7 @@ export type SimulationInputState = {
   readonly jobs: readonly SimJob[];
   readonly managedPopulationTypes: readonly SimManagedPopulationType[];
   readonly managedPopulations: readonly SimManagedPopulation[];
+  readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];
   readonly populationRules: WorldPopulationRules;
   readonly settlementBuildings: readonly SimSettlementBuilding[];
@@ -380,10 +388,20 @@ export type CitizenDeath = {
 };
 
 export type CitizenBirth = {
+  readonly npcFlaw: string | null;
+  readonly npcGoal: string | null;
+  readonly npcSecretContradiction: string | null;
+  readonly npcTrait1: string | null;
+  readonly npcTrait2: string | null;
   readonly parentACitizenId: string;
   readonly parentBCitizenId: string;
   readonly sex: string;
   readonly settlementId: string;
+};
+
+export type CitizenPatch = {
+  readonly bornOnTurnNumber: number;
+  readonly citizenId: string;
 };
 
 export type PartnershipChange =
@@ -429,6 +447,7 @@ export type SimulationResult = {
   readonly buildingsCreated: readonly BuildingCreated[];
   readonly citizenBirths: readonly CitizenBirth[];
   readonly citizenDeaths: readonly CitizenDeath[];
+  readonly citizenPatches: readonly CitizenPatch[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
   readonly depositUpdates: readonly DepositUpdate[];
   readonly logEntries: readonly SimulationLogEntry[];

@@ -14,6 +14,7 @@ export function runSimulation(_input: SimulationInputState): SimulationResult {
     buildingsCreated: [],
     citizenBirths: [],
     citizenDeaths: [],
+    citizenPatches: [],
     constructionUpdates: [],
     depositUpdates: [],
     logEntries: [],

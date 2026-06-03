@@ -26,12 +26,18 @@ const exampleResult: SimulationResult = {
   ],
   citizenBirths: [
     {
+      npcFlaw: null,
+      npcGoal: "a seat on the council",
+      npcSecretContradiction: null,
+      npcTrait1: "earnest",
+      npcTrait2: null,
       parentACitizenId: "c-2",
       parentBCitizenId: "c-3",
       sex: "female",
       settlementId: "s-1",
     },
   ],
+  citizenPatches: [{ bornOnTurnNumber: 5, citizenId: "c-99" }],
   citizenDeaths: [
     { category: "starvation", citizenId: "c-4", detail: null },
     { category: "homeless", citizenId: "c-5", detail: "prolonged exposure" },
