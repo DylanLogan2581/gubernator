@@ -5,6 +5,13 @@ name: Pull Request Governance
 # do NOT check out untrusted code. Never add a checkout step here unless it is
 # scoped to the base ref (ref: ${{ github.base_ref }}), or you risk arbitrary
 # code execution with elevated permissions.
+#
+# Required status checks (configured in branch protection settings):
+#   - Lint     (ci.yml)     — ESLint + markdownlint + sqlfmt
+#   - Build    (ci.yml)     — tsc + vite build
+#   - Test     (ci.yml)     — Vitest unit/integration suite + coverage thresholds
+#   - Database (ci.yml)     — supabase db reset + npm run test:db (pgTAP)
+#   - Validate PR Title (this file)
 on:
   pull_request_target:
     types:

@@ -254,6 +254,7 @@ Do not implement per-commit version bumps or per-commit tagging automation unles
 - If schema changed, confirm a migration exists and was updated appropriately.
 - If schema changed, confirm RLS and policies were added or updated.
 - If auth, permission helpers, RLS, seeded access, or schema changed, run `npm run test:db` when practical.
+- The `Database` job in `.github/workflows/ci.yml` runs `npm run test:db` (pgTAP suite) on every PR — regressions in `apply_turn_transition` and related RPCs fail CI before reaching main.
 - Confirm the change was reviewed for security implications.
 
 ## Quick Placement Reminder
