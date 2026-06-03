@@ -758,6 +758,15 @@ export default defineConfig([
     },
   },
   {
+    // src/shared/ is cross-runtime (browser + Deno Edge Functions). Deno cannot
+    // resolve the @/ Vite alias, so parent-relative imports are the approved
+    // alternative for intra-module references within src/shared/.
+    files: ["src/shared/**/*.ts"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
+  {
     // Supabase Edge Functions cannot resolve the @/ Vite alias unless an
     // explicit import map is configured for the Edge runtime. Parent-relative
     // imports to src/shared/ are the approved alternative for shared pure logic.
