@@ -2,9 +2,25 @@
 // Implemented in Epic 3.
 export { CitizenDetailPage } from "./components/CitizenDetailPage";
 export { CitizensPanel } from "./components/CitizensPanel";
+export { SettlementAssignmentBoard } from "./components/SettlementAssignmentBoard";
 export { NpcFlavorLine } from "./components/NpcFlavorLine";
 export { NpcFlavorEditor } from "./components/NpcFlavorEditor";
 export { PartnershipHistoryPanel } from "./components/PartnershipHistoryPanel";
+export {
+  BulkConstructionAssignmentMutationError,
+  isBulkConstructionAssignmentMutationError,
+  setBulkConstructionAssignmentMutationOptions,
+} from "./mutations/bulkConstructionAssignmentMutations";
+export {
+  BulkStandardJobAssignmentMutationError,
+  isBulkStandardJobAssignmentMutationError,
+  setBulkStandardJobAssignmentMutationOptions,
+} from "./mutations/bulkStandardJobAssignmentMutations";
+export {
+  isPerTargetAssignmentMutationError,
+  PerTargetAssignmentMutationError,
+  setPerTargetAssignmentMutationOptions,
+} from "./mutations/perTargetAssignmentMutations";
 export {
   CitizenMutationError,
   createNpcMutationOptions,
@@ -35,6 +51,9 @@ export {
   assignmentsInSettlementQueryOptions,
   currentAssignmentForCitizenQueryOptions,
 } from "./queries/citizenAssignmentsQueries";
+export { settlementConstructionProjectCountsQueryOptions } from "./queries/settlementConstructionProjectCountsQueries";
+export { settlementJobCountsQueryOptions } from "./queries/settlementJobCountsQueries";
+export { settlementTargetAssignmentsQueryOptions } from "./queries/settlementTargetAssignmentsQueries";
 export {
   isManagerRole,
   isPlayerRole,
@@ -62,6 +81,9 @@ export {
   activePartnershipForCitizenQueryOptions,
   partnershipsForCitizenQueryOptions,
 } from "./queries/partnershipsQueries";
+export { setBulkConstructionAssignmentInputSchema } from "./schemas/setBulkConstructionAssignmentSchemas";
+export { setBulkStandardJobAssignmentInputSchema } from "./schemas/setBulkStandardJobAssignmentSchemas";
+export { setPerTargetAssignmentInputSchema } from "./schemas/setPerTargetAssignmentSchemas";
 export {
   assignCitizenRoleInputSchema,
   citizenRoleAssignmentSchema,
@@ -82,9 +104,24 @@ export {
   reassignPartnerInputSchema,
 } from "./schemas/partnershipSchemas";
 
+export type { BulkConstructionAssignmentMutationIssue } from "./mutations/bulkConstructionAssignmentMutations";
+export type { BulkStandardJobAssignmentMutationIssue } from "./mutations/bulkStandardJobAssignmentMutations";
+export type { PerTargetAssignmentMutationIssue } from "./mutations/perTargetAssignmentMutations";
 export type { CitizenMutationIssue } from "./mutations/citizensMutations";
 export type { PartnershipMutationIssue } from "./mutations/partnershipsMutations";
 export type { PlayerCharacterRoleMutationIssue } from "./mutations/playerCharacterRoleMutations";
+export type {
+  SetBulkConstructionAssignmentInput,
+  SetBulkConstructionAssignmentValues,
+} from "./schemas/setBulkConstructionAssignmentSchemas";
+export type {
+  SetBulkStandardJobAssignmentInput,
+  SetBulkStandardJobAssignmentValues,
+} from "./schemas/setBulkStandardJobAssignmentSchemas";
+export type {
+  SetPerTargetAssignmentInput,
+  SetPerTargetAssignmentValues,
+} from "./schemas/setPerTargetAssignmentSchemas";
 export type {
   AssignCitizenRoleInput,
   AssignCitizenRoleValues,
@@ -120,6 +157,13 @@ export type {
   ReassignPartnerValues,
 } from "./schemas/partnershipSchemas";
 export type { CitizenRow } from "./queries/citizensQueries";
+export type {
+  BulkConstructionAssignmentResult,
+  BulkStandardJobAssignmentResult,
+  PerTargetAssignmentResult,
+  SettlementConstructionProjectCount,
+  SettlementJobCount,
+} from "./types/bulkAssignmentTypes";
 export type { CitizenAssignment } from "./types/citizenAssignmentTypes";
 export type { NpcFlavor, NpcFlavorConfig } from "./utils/npcFlavor";
 export type {

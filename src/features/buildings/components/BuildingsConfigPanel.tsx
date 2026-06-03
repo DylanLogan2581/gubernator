@@ -6,22 +6,22 @@ import {
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Layers, Plus, Trash2, X } from "lucide-react";
-import {
-  useId,
-  useState,
-  type FormEvent,
-  type JSX,
-  type KeyboardEvent,
-} from "react";
+import { useState, type FormEvent, type JSX, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -603,200 +603,192 @@ function CreateBlueprintForm({
       ? Math.max(...pendingTiers.map((t) => t.tierNumber)) + 1
       : 1;
 
-  const titleId = useId();
-
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-lg gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        onSubmit={handleSubmit}
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 id={titleId} className="text-lg font-semibold">
-            Create blueprint
-          </h3>
-          <Button
-            aria-label="Cancel create blueprint"
-            disabled={isPending}
-            onClick={onCancel}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <div className="grid gap-3">
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Name</span>
-            <Input
-              aria-invalid={fieldErrors.name !== undefined}
-              aria-label="Name"
-              disabled={isPending}
-              maxLength={buildingInputLimits.blueprintNameMax}
-              value={name}
-              onChange={(e) => {
-                setName(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.name !== undefined ? (
-              <p className="text-xs text-destructive">{fieldErrors.name}</p>
-            ) : null}
-            <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Description</span>
-            <Textarea
-              aria-invalid={fieldErrors.description !== undefined}
-              disabled={isPending}
-              maxLength={buildingInputLimits.blueprintDescriptionMax}
-              value={description}
-              onChange={(e) => {
-                setDescription(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.description !== undefined ? (
-              <p className="text-xs text-destructive">
-                {fieldErrors.description}
-              </p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Grace period (turns)</span>
-            <Input
-              aria-invalid={fieldErrors.gracePeriodTurns !== undefined}
-              disabled={isPending}
-              inputMode="numeric"
-              placeholder="0"
-              value={gracePeriodTurns}
-              onChange={(e) => {
-                setGracePeriodTurns(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.gracePeriodTurns !== undefined ? (
-              <p className="text-xs text-destructive">
-                {fieldErrors.gracePeriodTurns}
-              </p>
-            ) : null}
-          </label>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">
-              Max instances per settlement
-            </span>
-            <Input
-              aria-invalid={fieldErrors.maxInstancesPerSettlement !== undefined}
-              disabled={isPending}
-              inputMode="numeric"
-              placeholder="Unlimited"
-              value={maxInstances}
-              onChange={(e) => {
-                setMaxInstances(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.maxInstancesPerSettlement !== undefined ? (
-              <p className="text-xs text-destructive">
-                {fieldErrors.maxInstancesPerSettlement}
-              </p>
-            ) : null}
-          </label>
-        </div>
-
-        <div className="grid gap-2 border-t border-border pt-3">
-          <span className="text-sm font-medium">Initial tiers (optional)</span>
-
-          {pendingTiers.length > 0 ? (
-            <ul aria-label="Pending tiers" className="grid gap-2">
-              {pendingTiers.map((draft) => (
-                <li
-                  key={draft.id}
-                  className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2"
-                >
-                  <span className="text-sm">
-                    Tier {draft.tierNumber}
-                    {draft.workerTurnsRequired !== undefined
-                      ? ` — ${String(draft.workerTurnsRequired)} worker turn${draft.workerTurnsRequired !== 1 ? "s" : ""}`
-                      : ""}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => {
-                      setPendingTiers((prev) =>
-                        prev.filter((t) => t.id !== draft.id),
-                      );
-                    }}
-                  >
-                    <X aria-hidden="true" className="text-destructive" />
-                    <span className="sr-only">
-                      Remove tier {draft.tierNumber}
-                    </span>
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {!showAddTierForm ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-fit"
-              disabled={isPending || !tiersReady}
-              onClick={() => {
-                setShowAddTierForm(true);
-              }}
-            >
-              <Plus aria-hidden="true" />
-              Add tier
-            </Button>
-          ) : null}
-
-          {showAddTierForm && tiersReady ? (
-            <InlineTierDraftForm
-              activeJobs={jobsQuery.data}
-              activeResources={resourcesQuery.data}
-              defaultTierNumber={nextTierNumber}
-              disabled={isPending}
-              onAdd={(draft) => {
-                setPendingTiers((prev) => [...prev, draft]);
-                setShowAddTierForm(false);
-              }}
-              onCancel={() => {
-                setShowAddTierForm(false);
-              }}
-            />
-          ) : null}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              disabled={isPending}
-              onClick={onCancel}
-              type="button"
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button disabled={isPending || showAddTierForm} type="submit">
-              Create
-            </Button>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
+      <DialogContent className="max-w-lg">
+        <form className="contents" noValidate onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Create blueprint</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Name</span>
+              <Input
+                aria-invalid={fieldErrors.name !== undefined}
+                aria-label="Name"
+                disabled={isPending}
+                maxLength={buildingInputLimits.blueprintNameMax}
+                value={name}
+                onChange={(e) => {
+                  setName(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.name !== undefined ? (
+                <p className="text-xs text-destructive">{fieldErrors.name}</p>
+              ) : null}
+              <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Description</span>
+              <Textarea
+                aria-invalid={fieldErrors.description !== undefined}
+                disabled={isPending}
+                maxLength={buildingInputLimits.blueprintDescriptionMax}
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.description !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.description}
+                </p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                Grace period (turns)
+              </span>
+              <Input
+                aria-invalid={fieldErrors.gracePeriodTurns !== undefined}
+                disabled={isPending}
+                inputMode="numeric"
+                placeholder="0"
+                value={gracePeriodTurns}
+                onChange={(e) => {
+                  setGracePeriodTurns(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.gracePeriodTurns !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.gracePeriodTurns}
+                </p>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">
+                Max instances per settlement
+              </span>
+              <Input
+                aria-invalid={
+                  fieldErrors.maxInstancesPerSettlement !== undefined
+                }
+                disabled={isPending}
+                inputMode="numeric"
+                placeholder="Unlimited"
+                value={maxInstances}
+                onChange={(e) => {
+                  setMaxInstances(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.maxInstancesPerSettlement !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.maxInstancesPerSettlement}
+                </p>
+              ) : null}
+            </label>
           </div>
-          {showAddTierForm ? (
-            <p className="text-sm text-muted-foreground">
-              Finish or cancel the tier draft first.
-            </p>
-          ) : null}
-        </div>
-      </form>
-    </DialogShell>
+
+          <div className="grid gap-2 border-t border-border pt-3">
+            <span className="text-sm font-medium">
+              Initial tiers (optional)
+            </span>
+
+            {pendingTiers.length > 0 ? (
+              <ul aria-label="Pending tiers" className="grid gap-2">
+                {pendingTiers.map((draft) => (
+                  <li
+                    key={draft.id}
+                    className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2"
+                  >
+                    <span className="text-sm">
+                      Tier {draft.tierNumber}
+                      {draft.workerTurnsRequired !== undefined
+                        ? ` — ${String(draft.workerTurnsRequired)} worker turn${draft.workerTurnsRequired !== 1 ? "s" : ""}`
+                        : ""}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => {
+                        setPendingTiers((prev) =>
+                          prev.filter((t) => t.id !== draft.id),
+                        );
+                      }}
+                    >
+                      <X aria-hidden="true" className="text-destructive" />
+                      <span className="sr-only">
+                        Remove tier {draft.tierNumber}
+                      </span>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {!showAddTierForm ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                disabled={isPending || !tiersReady}
+                onClick={() => {
+                  setShowAddTierForm(true);
+                }}
+              >
+                <Plus aria-hidden="true" />
+                Add tier
+              </Button>
+            ) : null}
+
+            {showAddTierForm && tiersReady ? (
+              <InlineTierDraftForm
+                activeJobs={jobsQuery.data}
+                activeResources={resourcesQuery.data}
+                defaultTierNumber={nextTierNumber}
+                disabled={isPending}
+                onAdd={(draft) => {
+                  setPendingTiers((prev) => [...prev, draft]);
+                  setShowAddTierForm(false);
+                }}
+                onCancel={() => {
+                  setShowAddTierForm(false);
+                }}
+              />
+            ) : null}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <DialogFooter>
+              <Button
+                disabled={isPending}
+                onClick={onCancel}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button disabled={isPending || showAddTierForm} type="submit">
+                Create
+              </Button>
+            </DialogFooter>
+            {showAddTierForm ? (
+              <p className="text-sm text-muted-foreground">
+                Finish or cancel the tier draft first.
+              </p>
+            ) : null}
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -98,6 +98,8 @@ const WORLD_ID = "00000000-0000-0000-0000-000000000010";
 const CITIZEN_ID = "00000000-0000-0000-0000-000000000020";
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000030";
 const NATION_ID = "00000000-0000-0000-0000-000000000040";
+const PARENT_A_ID = "00000000-0000-0000-0000-000000000051";
+const JOB_ID = "00000000-0000-0000-0000-000000000060";
 
 describe("CitizenDetailPage", () => {
   beforeEach(() => {
@@ -223,6 +225,7 @@ describe("CitizenDetailPage", () => {
           worldId: WORLD_ID,
         },
         replace: true,
+        search: {},
         to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
       });
     });
@@ -258,6 +261,7 @@ describe("CitizenDetailPage", () => {
           worldId: WORLD_ID,
         },
         replace: true,
+        search: {},
         to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
       });
     });
@@ -466,6 +470,25 @@ describe("CitizenDetailPage", () => {
       );
     });
 
+    it("renders linked user as username · email when user data is available", async () => {
+      requireSupabaseClient.mockReturnValue(
+        createClient({
+          adminRows: [{ world_id: WORLD_ID }],
+          citizen: createCitizenRow({
+            citizen_type: "player_character",
+            name: "Aldra",
+            user_id: USER_ID,
+          }),
+          usersRows: [USER_ROW],
+        }),
+      );
+
+      renderPage();
+
+      await screen.findByRole("heading", { level: 1, name: "Aldra" });
+      expect(await screen.findByText("user · user@example.com")).toBeDefined();
+    });
+
     it("links the selected user when the form is submitted", async () => {
       const linkedCitizenRow = createCitizenRow({
         citizen_type: "player_character",
@@ -509,6 +532,58 @@ describe("CitizenDetailPage", () => {
         });
       });
     });
+  });
+
+  it("renders parent A as a named link and parent B as an em-dash when absent", async () => {
+    const parentARow = createCitizenRow({ id: PARENT_A_ID, name: "Elder A" });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "npc",
+          name: "Child",
+          parent_a_citizen_id: PARENT_A_ID,
+          parent_b_citizen_id: null,
+        }),
+        citizenRowsById: { [PARENT_A_ID]: parentARow },
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Child" });
+    const link = await screen.findByRole("link", { name: "Elder A" });
+    expect((link as HTMLAnchorElement).href).toContain(PARENT_A_ID);
+    expect(screen.getByText("—")).toBeDefined();
+  });
+
+  it("renders a standard-job assignment with the job name", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({ citizen_type: "npc", name: "Worker" }),
+        assignmentRow: {
+          assigned_on_turn_number: 2,
+          assignment_type: "standard_job",
+          citizen_id: CITIZEN_ID,
+          construction_project: null,
+          created_at: "2026-05-01T00:00:00.000Z",
+          deposit_instance: null,
+          job: { id: JOB_ID, name: "Farming" },
+          managed_population_instance: null,
+          trade_route: null,
+          trade_route_end: null,
+          updated_at: "2026-05-01T00:00:00.000Z",
+        },
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Worker" });
+    expect(await screen.findByText("Farming")).toBeDefined();
+    expect(screen.queryByText(/Job #/)).toBeNull();
   });
 });
 
@@ -622,14 +697,20 @@ const NATION_ROW = {
 
 function createClient({
   adminRows,
+  assignmentRow = null,
   citizen,
+  citizenRowsById = {},
+  jobRows = [],
   usersRows = [USER_ROW],
   usersQueryFails = false,
   worldOwnerId = USER_ID,
   worldVisibility = "private",
 }: {
   readonly adminRows: ReadonlyArray<{ readonly world_id: string }>;
+  readonly assignmentRow?: unknown;
   readonly citizen: CitizenRowFixture;
+  readonly citizenRowsById?: Readonly<Record<string, CitizenRowFixture>>;
+  readonly jobRows?: readonly unknown[];
   readonly usersRows?: readonly (typeof USER_ROW)[];
   readonly usersQueryFails?: boolean;
   readonly worldOwnerId?: string;
@@ -667,26 +748,16 @@ function createClient({
         return createWorldsBuilder(worldRow);
       }
       if (table === "citizens") {
-        return {
-          select: vi.fn((columns: string) => {
-            if (columns === "world_id") {
-              const b: Record<string, unknown> = {};
-              b.eq = vi.fn(() => b);
-              b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-              return b;
-            }
-            const detailBuilder: Record<string, unknown> = {};
-            detailBuilder.eq = vi.fn(() => detailBuilder);
-            detailBuilder.order = vi.fn(() => detailBuilder);
-            detailBuilder.maybeSingle = vi
-              .fn()
-              .mockResolvedValue({ data: citizen, error: null });
-            return detailBuilder;
-          }),
-        };
+        return createCitizensBuilder(citizen, citizenRowsById);
       }
       if (table === "citizen_assignments") {
-        return createSingleSelectBuilder(null);
+        return createSingleSelectBuilder(assignmentRow);
+      }
+      if (table === "job_definitions") {
+        return createOrderedListBuilder(jobRows);
+      }
+      if (table === "construction_projects") {
+        return createOrderedListBuilder([]);
       }
       if (table === "nations") {
         return createSingleSelectBuilder(NATION_ROW);
@@ -695,6 +766,50 @@ function createClient({
         return createSettlementsBuilder();
       }
       throw new Error(`Unexpected table ${table}`);
+    }),
+  };
+}
+
+function createCitizensBuilder(
+  mainCitizen: CitizenRowFixture,
+  citizenRowsById: Readonly<Record<string, CitizenRowFixture>>,
+): unknown {
+  return {
+    select: vi.fn((columns: string) => {
+      if (columns === "world_id") {
+        const b: Record<string, unknown> = {};
+        b.eq = vi.fn(() => b);
+        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
+        return b;
+      }
+      let lastQueriedId = "";
+      const detailBuilder: Record<string, unknown> = {};
+      detailBuilder.eq = vi.fn((col: string, val: string) => {
+        if (col === "id") lastQueriedId = val;
+        return detailBuilder;
+      });
+      detailBuilder.order = vi.fn(() => detailBuilder);
+      detailBuilder.maybeSingle = vi.fn().mockImplementation(() => {
+        const row =
+          lastQueriedId in citizenRowsById
+            ? citizenRowsById[lastQueriedId]
+            : mainCitizen;
+        return Promise.resolve({ data: row, error: null });
+      });
+      return detailBuilder;
+    }),
+  };
+}
+
+function createOrderedListBuilder(data: readonly unknown[]): unknown {
+  return {
+    select: vi.fn(() => {
+      const builder: Record<string, unknown> = {
+        eq: vi.fn(() => builder),
+        order: vi.fn(() => builder),
+        returns: vi.fn().mockResolvedValue({ data, error: null }),
+      };
+      return builder;
     }),
   };
 }

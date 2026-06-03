@@ -27,7 +27,10 @@ export {
   updateSettlementCoordinatesMutationOptions,
   updateSettlementDetailsMutationOptions,
 } from "./mutations/settlementsMutations";
-export { settlementByIdQueryOptions } from "./queries/settlementsQueries";
+export {
+  settlementByIdQueryOptions,
+  settlementsByWorldQueryOptions,
+} from "./queries/settlementsQueries";
 export { settlementsQueryKeys } from "./queries/settlementsQueryKeys";
 export {
   createSettlementInputSchema,
@@ -79,5 +82,6 @@ export type {
 export type {
   Settlement,
   SettlementNationSummary,
+  SettlementSummary,
   SettlementWithNation,
 } from "./types/settlementTypes";

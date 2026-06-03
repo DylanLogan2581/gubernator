@@ -90,24 +90,36 @@ function assignmentTypeLabel(type: CitizenAssignmentType): string {
 
 function assignmentTargetLabel(assignment: CitizenAssignment): string | null {
   switch (assignment.assignmentType) {
-    case "standard_job":
-      return assignment.jobId === null ? null : `Job #${assignment.jobId}`;
-    case "construction_project":
-      return assignment.constructionProjectId === null
-        ? null
-        : `Project #${assignment.constructionProjectId}`;
-    case "deposit":
-      return assignment.depositInstanceId === null
-        ? null
-        : `Deposit #${assignment.depositInstanceId}`;
+    case "standard_job": {
+      return assignment.job?.name ?? null;
+    }
+    case "construction_project": {
+      if (assignment.constructionProject === null) return null;
+      return assignment.constructionProject.blueprintName;
+    }
+    case "deposit": {
+      if (assignment.depositInstance === null) return null;
+      return `${assignment.depositInstance.name} — ${assignment.depositInstance.depositTypeJobName}`;
+    }
     case "husbandry":
-    case "culling":
-      return assignment.managedPopulationInstanceId === null
-        ? null
-        : `Population #${assignment.managedPopulationInstanceId}`;
-    case "trade_route":
-      return assignment.tradeRouteId === null
-        ? null
-        : `Trade route #${assignment.tradeRouteId}`;
+    case "culling": {
+      if (assignment.managedPopulationInstance === null) return null;
+      const jobName =
+        assignment.assignmentType === "husbandry"
+          ? assignment.managedPopulationInstance.husbandryJobName
+          : assignment.managedPopulationInstance.cullingJobName;
+      return `${assignment.managedPopulationInstance.name} — ${jobName}`;
+    }
+    case "trade_route": {
+      if (assignment.tradeRoute === null) return null;
+      const end = assignment.tradeRouteEnd;
+      if (end === "origin") {
+        return `${assignment.tradeRoute.resourceName} → ${assignment.tradeRoute.destinationSettlementName} — Trader (origin)`;
+      }
+      if (end === "destination") {
+        return `${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.resourceName} — Trader (destination)`;
+      }
+      return `${assignment.tradeRoute.resourceName}: ${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.destinationSettlementName}`;
+    }
   }
 }

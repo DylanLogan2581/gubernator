@@ -35,12 +35,36 @@ type CitizenAssignmentRow = {
   readonly assigned_on_turn_number: number;
   readonly assignment_type: CitizenAssignmentType;
   readonly citizen_id: string;
-  readonly construction_project_id: number | null;
+  readonly construction_project: {
+    readonly building_blueprint_tiers: { readonly tier_number: number };
+    readonly building_blueprints: { readonly name: string };
+    readonly id: string;
+  } | null;
   readonly created_at: string;
-  readonly deposit_instance_id: number | null;
-  readonly job_id: number | null;
-  readonly managed_population_instance_id: number | null;
-  readonly trade_route_id: number | null;
+  readonly deposit_instance: {
+    readonly deposit_types: {
+      readonly job: { readonly name: string };
+      readonly name: string;
+    };
+    readonly id: string;
+    readonly name: string;
+  } | null;
+  readonly job: { readonly id: string; readonly name: string } | null;
+  readonly managed_population_instance: {
+    readonly id: string;
+    readonly managed_population_types: {
+      readonly culling_job: { readonly name: string };
+      readonly husbandry_job: { readonly name: string };
+    };
+    readonly name: string;
+  } | null;
+  readonly trade_route: {
+    readonly destination: { readonly name: string };
+    readonly id: string;
+    readonly origin: { readonly name: string };
+    readonly resources: { readonly name: string };
+  } | null;
+  readonly trade_route_end: string | null;
   readonly updated_at: string;
 };
 
@@ -50,8 +74,14 @@ type CitizenAssignmentInSettlementRow = CitizenAssignmentRow & {
   };
 };
 
-const CITIZEN_ASSIGNMENT_SELECT =
-  "citizen_id,assignment_type,job_id,construction_project_id,deposit_instance_id,managed_population_instance_id,trade_route_id,assigned_on_turn_number,created_at,updated_at";
+const CITIZEN_ASSIGNMENT_SELECT = [
+  "citizen_id,assignment_type,trade_route_end,assigned_on_turn_number,created_at,updated_at",
+  "job:job_definitions(id,name)",
+  "construction_project:construction_projects(id,building_blueprints(name),building_blueprint_tiers(tier_number))",
+  "deposit_instance:deposit_instances(id,name,deposit_types(name,job:job_definitions!deposit_types_job_id_fk(name)))",
+  "managed_population_instance:managed_population_instances(id,name,managed_population_types(husbandry_job:husbandry_job_id(name),culling_job:culling_job_id(name)))",
+  "trade_route:trade_routes(id,resources(name),origin:origin_settlement_id(name),destination:destination_settlement_id(name))",
+].join(",");
 
 const CITIZEN_ASSIGNMENT_IN_SETTLEMENT_SELECT = `${CITIZEN_ASSIGNMENT_SELECT},citizens!inner(settlement_id)`;
 
@@ -119,12 +149,49 @@ export function toCitizenAssignment(
     assignedOnTurnNumber: row.assigned_on_turn_number,
     assignmentType: row.assignment_type,
     citizenId: row.citizen_id,
-    constructionProjectId: row.construction_project_id,
+    constructionProject:
+      row.construction_project === null
+        ? null
+        : {
+            blueprintName: row.construction_project.building_blueprints.name,
+            id: row.construction_project.id,
+            tierNumber:
+              row.construction_project.building_blueprint_tiers.tier_number,
+          },
     createdAt: row.created_at,
-    depositInstanceId: row.deposit_instance_id,
-    jobId: row.job_id,
-    managedPopulationInstanceId: row.managed_population_instance_id,
-    tradeRouteId: row.trade_route_id,
+    depositInstance:
+      row.deposit_instance === null
+        ? null
+        : {
+            depositTypeJobName: row.deposit_instance.deposit_types.job.name,
+            depositTypeName: row.deposit_instance.deposit_types.name,
+            id: row.deposit_instance.id,
+            name: row.deposit_instance.name,
+          },
+    job: row.job,
+    managedPopulationInstance:
+      row.managed_population_instance === null
+        ? null
+        : {
+            cullingJobName:
+              row.managed_population_instance.managed_population_types
+                .culling_job.name,
+            husbandryJobName:
+              row.managed_population_instance.managed_population_types
+                .husbandry_job.name,
+            id: row.managed_population_instance.id,
+            name: row.managed_population_instance.name,
+          },
+    tradeRoute:
+      row.trade_route === null
+        ? null
+        : {
+            destinationSettlementName: row.trade_route.destination.name,
+            id: row.trade_route.id,
+            originSettlementName: row.trade_route.origin.name,
+            resourceName: row.trade_route.resources.name,
+          },
+    tradeRouteEnd: row.trade_route_end,
     updatedAt: row.updated_at,
   };
 }

@@ -59,7 +59,7 @@ describe("world configuration route", () => {
     });
   });
 
-  it("marks the jobs nav link as current when ?tab=jobs is in the URL", async () => {
+  it("marks the jobs tab as selected when ?tab=jobs is in the URL", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         session: { user: { id: "user-1" } },
@@ -78,13 +78,8 @@ describe("world configuration route", () => {
       "/worlds/00000000-0000-0000-0000-000000000202/configuration?tab=jobs",
     );
 
-    const nav = await screen.findByRole("navigation", {
-      name: "Configuration sections",
-    });
-    const jobsLink = Array.from(nav.querySelectorAll("a")).find(
-      (a) => a.textContent === "Jobs",
-    );
-    expect(jobsLink).toHaveAttribute("aria-current", "page");
+    const jobsTab = await screen.findByRole("tab", { name: "Jobs" });
+    expect(jobsTab).toHaveAttribute("aria-selected", "true");
   });
 });
 

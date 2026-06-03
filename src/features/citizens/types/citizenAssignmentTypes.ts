@@ -4,11 +4,34 @@ export type CitizenAssignment = {
   readonly assignedOnTurnNumber: number;
   readonly assignmentType: CitizenAssignmentType;
   readonly citizenId: string;
-  readonly constructionProjectId: number | null;
+  readonly constructionProject: {
+    readonly blueprintName: string;
+    readonly id: string;
+    readonly tierNumber: number;
+  } | null;
   readonly createdAt: string;
-  readonly depositInstanceId: number | null;
-  readonly jobId: number | null;
-  readonly managedPopulationInstanceId: number | null;
-  readonly tradeRouteId: number | null;
+  readonly depositInstance: {
+    readonly depositTypeJobName: string;
+    readonly depositTypeName: string;
+    readonly id: string;
+    readonly name: string;
+  } | null;
+  readonly job: {
+    readonly id: string;
+    readonly name: string;
+  } | null;
+  readonly managedPopulationInstance: {
+    readonly cullingJobName: string;
+    readonly husbandryJobName: string;
+    readonly id: string;
+    readonly name: string;
+  } | null;
+  readonly tradeRoute: {
+    readonly destinationSettlementName: string;
+    readonly id: string;
+    readonly originSettlementName: string;
+    readonly resourceName: string;
+  } | null;
+  readonly tradeRouteEnd: string | null;
   readonly updatedAt: string;
 };

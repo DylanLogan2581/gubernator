@@ -95,12 +95,13 @@ type AssignmentRowFixture = {
     | "standard_job"
     | "trade_route";
   readonly citizen_id: string;
-  readonly construction_project_id: number | null;
+  readonly construction_project: null;
   readonly created_at: string;
-  readonly deposit_instance_id: number | null;
-  readonly job_id: number | null;
-  readonly managed_population_instance_id: number | null;
-  readonly trade_route_id: number | null;
+  readonly deposit_instance: null;
+  readonly job: null;
+  readonly managed_population_instance: null;
+  readonly trade_route: null;
+  readonly trade_route_end: null;
   readonly updated_at: string;
 };
 
@@ -350,12 +351,13 @@ function createAssignmentRow(
     assigned_on_turn_number: 1,
     assignment_type: "standard_job",
     citizen_id: "c-1",
-    construction_project_id: null,
+    construction_project: null,
     created_at: "2026-05-01T00:00:00.000Z",
-    deposit_instance_id: null,
-    job_id: null,
-    managed_population_instance_id: null,
-    trade_route_id: null,
+    deposit_instance: null,
+    job: null,
+    managed_population_instance: null,
+    trade_route: null,
+    trade_route_end: null,
     updated_at: "2026-05-01T00:00:00.000Z",
     ...overrides,
   };

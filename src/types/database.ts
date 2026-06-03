@@ -107,36 +107,39 @@ export type Database = {
           assigned_on_turn_number: number;
           assignment_type: string;
           citizen_id: string;
-          construction_project_id: number | null;
+          construction_project_id: string | null;
           created_at: string;
-          deposit_instance_id: number | null;
-          job_id: number | null;
-          managed_population_instance_id: number | null;
-          trade_route_id: number | null;
+          deposit_instance_id: string | null;
+          job_id: string | null;
+          managed_population_instance_id: string | null;
+          trade_route_end: string | null;
+          trade_route_id: string | null;
           updated_at: string;
         };
         Insert: {
           assigned_on_turn_number: number;
           assignment_type: string;
           citizen_id: string;
-          construction_project_id?: number | null;
+          construction_project_id?: string | null;
           created_at?: string;
-          deposit_instance_id?: number | null;
-          job_id?: number | null;
-          managed_population_instance_id?: number | null;
-          trade_route_id?: number | null;
+          deposit_instance_id?: string | null;
+          job_id?: string | null;
+          managed_population_instance_id?: string | null;
+          trade_route_end?: string | null;
+          trade_route_id?: string | null;
           updated_at?: string;
         };
         Update: {
           assigned_on_turn_number?: number;
           assignment_type?: string;
           citizen_id?: string;
-          construction_project_id?: number | null;
+          construction_project_id?: string | null;
           created_at?: string;
-          deposit_instance_id?: number | null;
-          job_id?: number | null;
-          managed_population_instance_id?: number | null;
-          trade_route_id?: number | null;
+          deposit_instance_id?: string | null;
+          job_id?: string | null;
+          managed_population_instance_id?: string | null;
+          trade_route_end?: string | null;
+          trade_route_id?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -145,6 +148,41 @@ export type Database = {
             columns: ["citizen_id"];
             isOneToOne: true;
             referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_construction_project_id_fkey";
+            columns: ["construction_project_id"];
+            isOneToOne: false;
+            referencedRelation: "construction_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_deposit_instance_id_fkey";
+            columns: ["deposit_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_managed_population_instance_id_fkey";
+            columns: ["managed_population_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_trade_route_id_fkey";
+            columns: ["trade_route_id"];
+            isOneToOne: false;
+            referencedRelation: "trade_routes";
             referencedColumns: ["id"];
           },
         ];
@@ -297,6 +335,173 @@ export type Database = {
           },
         ];
       };
+      construction_projects: {
+        Row: {
+          activated_on_turn_number: number | null;
+          building_blueprint_id: string;
+          completed_in_transition_id: string | null;
+          created_at: string;
+          id: string;
+          progress_worker_turns: number;
+          queue_position: number;
+          settlement_id: string;
+          status: string;
+          target_tier_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          activated_on_turn_number?: number | null;
+          building_blueprint_id: string;
+          completed_in_transition_id?: string | null;
+          created_at?: string;
+          id?: string;
+          progress_worker_turns?: number;
+          queue_position: number;
+          settlement_id: string;
+          status: string;
+          target_tier_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          activated_on_turn_number?: number | null;
+          building_blueprint_id?: string;
+          completed_in_transition_id?: string | null;
+          created_at?: string;
+          id?: string;
+          progress_worker_turns?: number;
+          queue_position?: number;
+          settlement_id?: string;
+          status?: string;
+          target_tier_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "construction_projects_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_projects_completed_in_transition_id_fkey";
+            columns: ["completed_in_transition_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_projects_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "construction_projects_target_tier_id_fkey";
+            columns: ["target_tier_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprint_tiers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      deposit_instance_resources: {
+        Row: {
+          created_at: string;
+          deposit_instance_id: string;
+          id: string;
+          initial_quantity: number;
+          remaining_quantity: number;
+          resource_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          deposit_instance_id: string;
+          id?: string;
+          initial_quantity: number;
+          remaining_quantity: number;
+          resource_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          deposit_instance_id?: string;
+          id?: string;
+          initial_quantity?: number;
+          remaining_quantity?: number;
+          resource_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deposit_instance_resources_deposit_instance_id_fkey";
+            columns: ["deposit_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "deposit_instance_resources_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      deposit_instances: {
+        Row: {
+          created_at: string;
+          deposit_type_id: string;
+          discovered_by_event_id: string | null;
+          id: string;
+          max_workers: number | null;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          deposit_type_id: string;
+          discovered_by_event_id?: string | null;
+          id?: string;
+          max_workers?: number | null;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          deposit_type_id?: string;
+          discovered_by_event_id?: string | null;
+          id?: string;
+          max_workers?: number | null;
+          name?: string;
+          settlement_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deposit_instances_deposit_type_id_fkey";
+            columns: ["deposit_type_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "deposit_instances_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deposit_types: {
         Row: {
           created_at: string;
@@ -420,6 +625,57 @@ export type Database = {
             columns: ["world_id"];
             isOneToOne: false;
             referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      managed_population_instances: {
+        Row: {
+          configured_cull_quantity: number;
+          created_at: string;
+          current_count: number;
+          id: string;
+          managed_population_type_id: string;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          configured_cull_quantity?: number;
+          created_at?: string;
+          current_count: number;
+          id?: string;
+          managed_population_type_id: string;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at?: string;
+        };
+        Update: {
+          configured_cull_quantity?: number;
+          created_at?: string;
+          current_count?: number;
+          id?: string;
+          managed_population_type_id?: string;
+          name?: string;
+          settlement_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "managed_population_instances_managed_population_type_id_fkey";
+            columns: ["managed_population_type_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "managed_population_instances_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
             referencedColumns: ["id"];
           },
         ];
@@ -617,7 +873,7 @@ export type Database = {
           is_read: boolean;
           message_text: string;
           nation_id: string | null;
-          notification_type: string;
+          notification_type: Database["public"]["Enums"]["notification_type"];
           recipient_user_id: string;
           settlement_id: string | null;
           trade_route_id: string | null;
@@ -632,7 +888,7 @@ export type Database = {
           is_read?: boolean;
           message_text: string;
           nation_id?: string | null;
-          notification_type: string;
+          notification_type: Database["public"]["Enums"]["notification_type"];
           recipient_user_id: string;
           settlement_id?: string | null;
           trade_route_id?: string | null;
@@ -647,7 +903,7 @@ export type Database = {
           is_read?: boolean;
           message_text?: string;
           nation_id?: string | null;
-          notification_type?: string;
+          notification_type?: Database["public"]["Enums"]["notification_type"];
           recipient_user_id?: string;
           settlement_id?: string | null;
           trade_route_id?: string | null;
@@ -673,6 +929,13 @@ export type Database = {
             columns: ["settlement_id"];
             isOneToOne: false;
             referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_trade_route_fkey";
+            columns: ["trade_route_id"];
+            isOneToOne: false;
+            referencedRelation: "trade_routes";
             referencedColumns: ["id"];
           },
           {
@@ -799,6 +1062,126 @@ export type Database = {
           },
         ];
       };
+      settlement_buildings: {
+        Row: {
+          activated_on_turn_number: number;
+          building_blueprint_id: string;
+          created_at: string;
+          current_tier_id: string;
+          deactivated_in_transition_id: string | null;
+          id: string;
+          missed_upkeep_count: number;
+          settlement_id: string;
+          source_project_id: string | null;
+          state: string;
+          updated_at: string;
+        };
+        Insert: {
+          activated_on_turn_number: number;
+          building_blueprint_id: string;
+          created_at?: string;
+          current_tier_id: string;
+          deactivated_in_transition_id?: string | null;
+          id?: string;
+          missed_upkeep_count?: number;
+          settlement_id: string;
+          source_project_id?: string | null;
+          state: string;
+          updated_at?: string;
+        };
+        Update: {
+          activated_on_turn_number?: number;
+          building_blueprint_id?: string;
+          created_at?: string;
+          current_tier_id?: string;
+          deactivated_in_transition_id?: string | null;
+          id?: string;
+          missed_upkeep_count?: number;
+          settlement_id?: string;
+          source_project_id?: string | null;
+          state?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_buildings_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_buildings_current_tier_id_fkey";
+            columns: ["current_tier_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprint_tiers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_buildings_deactivated_in_transition_id_fkey";
+            columns: ["deactivated_in_transition_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_buildings_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_buildings_source_project_id_fkey";
+            columns: ["source_project_id"];
+            isOneToOne: false;
+            referencedRelation: "construction_projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      settlement_resource_stockpiles: {
+        Row: {
+          created_at: string;
+          id: string;
+          quantity: number;
+          resource_id: string;
+          settlement_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          quantity?: number;
+          resource_id: string;
+          settlement_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          quantity?: number;
+          resource_id?: string;
+          settlement_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_resource_stockpiles_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_resource_stockpiles_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlements: {
         Row: {
           auto_ready_enabled: boolean;
@@ -862,6 +1245,110 @@ export type Database = {
           },
         ];
       };
+      trade_routes: {
+        Row: {
+          created_at: string;
+          destination_approval_status: string;
+          destination_approved_by_citizen_id: string | null;
+          destination_settlement_id: string;
+          id: string;
+          origin_approval_status: string;
+          origin_approved_by_citizen_id: string | null;
+          origin_settlement_id: string;
+          pause_reason_last_transition: string | null;
+          proposed_by_citizen_id: string;
+          quantity_per_transition: number;
+          replacement_for_trade_route_id: string | null;
+          resource_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          destination_approval_status?: string;
+          destination_approved_by_citizen_id?: string | null;
+          destination_settlement_id: string;
+          id?: string;
+          origin_approval_status?: string;
+          origin_approved_by_citizen_id?: string | null;
+          origin_settlement_id: string;
+          pause_reason_last_transition?: string | null;
+          proposed_by_citizen_id: string;
+          quantity_per_transition: number;
+          replacement_for_trade_route_id?: string | null;
+          resource_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          destination_approval_status?: string;
+          destination_approved_by_citizen_id?: string | null;
+          destination_settlement_id?: string;
+          id?: string;
+          origin_approval_status?: string;
+          origin_approved_by_citizen_id?: string | null;
+          origin_settlement_id?: string;
+          pause_reason_last_transition?: string | null;
+          proposed_by_citizen_id?: string;
+          quantity_per_transition?: number;
+          replacement_for_trade_route_id?: string | null;
+          resource_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "trade_routes_destination_approved_by_citizen_id_fkey";
+            columns: ["destination_approved_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_destination_settlement_id_fkey";
+            columns: ["destination_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_origin_approved_by_citizen_id_fkey";
+            columns: ["origin_approved_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_origin_settlement_id_fkey";
+            columns: ["origin_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_proposed_by_citizen_id_fkey";
+            columns: ["proposed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_replacement_for_trade_route_id_fkey";
+            columns: ["replacement_for_trade_route_id"];
+            isOneToOne: false;
+            referencedRelation: "trade_routes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       turn_log_entries: {
         Row: {
           citizen_id: string | null;
@@ -871,7 +1358,7 @@ export type Database = {
           payload_jsonb: Json;
           resource_id: string | null;
           settlement_id: string | null;
-          turn_transition_id: string;
+          turn_transition_id: string | null;
           world_id: string;
         };
         Insert: {
@@ -882,7 +1369,7 @@ export type Database = {
           payload_jsonb?: Json;
           resource_id?: string | null;
           settlement_id?: string | null;
-          turn_transition_id: string;
+          turn_transition_id?: string | null;
           world_id: string;
         };
         Update: {
@@ -893,7 +1380,7 @@ export type Database = {
           payload_jsonb?: Json;
           resource_id?: string | null;
           settlement_id?: string | null;
-          turn_transition_id?: string;
+          turn_transition_id?: string | null;
           world_id?: string;
         };
         Relationships: [
@@ -1175,7 +1662,32 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      settlement_stockpiles_view: {
+        Row: {
+          effective_cap: number | null;
+          is_system_resource: boolean | null;
+          quantity: number | null;
+          resource_id: string | null;
+          resource_name: string | null;
+          settlement_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_resource_stockpiles_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_resource_stockpiles_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Functions: {
       advance_world_turn_if_current: {
@@ -1194,6 +1706,19 @@ export type Database = {
           status: string;
           to_turn_number: number;
           world_id: string;
+        }[];
+      };
+      approve_trade_route_side: {
+        Args: {
+          p_approver_citizen_id: string;
+          p_route_id: string;
+          p_side: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+          status: string;
         }[];
       };
       assign_citizen_role: {
@@ -1236,6 +1761,22 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      cancel_construction_project: {
+        Args: { p_project_id: string };
+        Returns: {
+          project_id: string;
+          unassigned_citizen_count: number;
+        }[];
+      };
+      cancel_trade_route: {
+        Args: { p_route_id: string };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+          status: string;
+        }[];
       };
       citizen_role_scope_matches: {
         Args: {
@@ -1308,6 +1849,84 @@ export type Database = {
         SetofOptions: {
           from: "*";
           to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      create_construction_project: {
+        Args: {
+          p_blueprint_id: string;
+          p_settlement_id: string;
+          p_target_tier_id: string;
+        };
+        Returns: {
+          activated_on_turn_number: number | null;
+          building_blueprint_id: string;
+          completed_in_transition_id: string | null;
+          created_at: string;
+          id: string;
+          progress_worker_turns: number;
+          queue_position: number;
+          settlement_id: string;
+          status: string;
+          target_tier_id: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "construction_projects";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      create_deposit_instance: {
+        Args: {
+          p_deposit_type_id: string;
+          p_max_workers: number;
+          p_name: string;
+          p_resources: Json;
+          p_settlement_id: string;
+        };
+        Returns: {
+          created_at: string;
+          deposit_type_id: string;
+          discovered_by_event_id: string | null;
+          id: string;
+          max_workers: number | null;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "deposit_instances";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      create_managed_population_instance: {
+        Args: {
+          p_initial_count: number;
+          p_initial_cull_quantity: number;
+          p_name: string;
+          p_settlement_id: string;
+          p_type_id: string;
+        };
+        Returns: {
+          configured_cull_quantity: number;
+          created_at: string;
+          current_count: number;
+          id: string;
+          managed_population_type_id: string;
+          name: string;
+          settlement_id: string;
+          status: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "managed_population_instances";
           isOneToOne: false;
           isSetofReturn: true;
         };
@@ -1519,6 +2138,28 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      get_settlement_construction_project_counts: {
+        Args: { p_settlement_id: string };
+        Returns: {
+          building_blueprint_id: string;
+          construction_project_id: string;
+          current_count: number;
+          queue_position: number;
+          status: string;
+          target_tier_id: string;
+        }[];
+      };
+      get_settlement_standard_job_counts: {
+        Args: { p_settlement_id: string };
+        Returns: {
+          capacity: number;
+          current_count: number;
+          job_id: string;
+          job_name: string;
+          job_slug: string;
+          world_id: string;
+        }[];
+      };
       hard_delete_building_blueprint: {
         Args: { p_blueprint_id: string; p_world_id: string };
         Returns: {
@@ -1623,6 +2264,12 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      manual_deconstruct_settlement_building: {
+        Args: { p_settlement_building_id: string };
+        Returns: {
+          settlement_building_id: string;
+        }[];
+      };
       mark_partnership_widowed: {
         Args: {
           p_change_reason: string;
@@ -1653,6 +2300,20 @@ export type Database = {
         Args: { p_nation_id: string };
         Returns: boolean;
       };
+      propose_trade_route: {
+        Args: {
+          p_destination: string;
+          p_origin: string;
+          p_proposed_by_citizen_id: string;
+          p_quantity: number;
+          p_resource_id: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+        }[];
+      };
       reassign_partner: {
         Args: {
           p_change_reason: string;
@@ -1681,6 +2342,52 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      reject_trade_route_side: {
+        Args: {
+          p_rejector_citizen_id: string;
+          p_route_id: string;
+          p_side: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+          status: string;
+        }[];
+      };
+      remove_deposit_instance: {
+        Args: { p_deposit_instance_id: string };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
+      };
+      remove_managed_population_instance: {
+        Args: { p_instance_id: string };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
+      };
+      reorder_construction_projects: {
+        Args: { p_positions: Json; p_settlement_id: string };
+        Returns: {
+          updated_count: number;
+        }[];
+      };
+      replace_trade_route: {
+        Args: {
+          p_new_payload: Json;
+          p_old_id: string;
+          p_proposing_citizen_id: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          new_route_id: string;
+          old_route_id: string;
+          origin_settlement_id: string;
+        }[];
       };
       respond_to_bilateral: {
         Args: {
@@ -1855,6 +2562,59 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      set_bulk_construction_assignment: {
+        Args: { p_construction_project_id: string; p_target_count: number };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
+      };
+      set_bulk_standard_job_assignment: {
+        Args: {
+          p_job_id: string;
+          p_settlement_id: string;
+          p_target_count: number;
+        };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
+      };
+      set_configured_cull_quantity: {
+        Args: { p_instance_id: string; p_quantity: number };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
+      };
+      set_deposit_instance_max_workers: {
+        Args: {
+          p_deposit_instance_id: string;
+          p_max_workers: number;
+          p_removal_strategy: string;
+        };
+        Returns: {
+          max_workers: number;
+          unassigned_citizen_ids: string[];
+        }[];
+      };
+      set_per_target_assignment: {
+        Args: {
+          p_assignment_type: string;
+          p_citizen_ids: string[];
+          p_settlement_id: string;
+          p_target_id: string;
+          p_trade_route_end?: string;
+        };
+        Returns: {
+          assigned_count: number;
+          replaced_count: number;
+        }[];
+      };
       set_settlement_auto_ready: {
         Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
         Returns: {
@@ -1872,6 +2632,26 @@ export type Database = {
           last_ready_at: string;
           ready_set_at: string;
         }[];
+      };
+      set_settlement_stockpile_quantity: {
+        Args: {
+          p_quantity: number;
+          p_resource_id: string;
+          p_settlement_id: string;
+        };
+        Returns: {
+          quantity: number;
+          resource_id: string;
+          settlement_id: string;
+        }[];
+      };
+      settlement_job_capacity: {
+        Args: { p_job_id: string; p_settlement_id: string };
+        Returns: number;
+      };
+      settlement_population_cap: {
+        Args: { p_settlement_id: string };
+        Returns: number;
       };
       soft_delete_building_blueprint: {
         Args: { p_blueprint_id: string; p_world_id: string };
@@ -2027,7 +2807,12 @@ export type Database = {
       };
     };
     Enums: {
-      [_ in never]: never;
+      notification_type:
+        | "turn.completed"
+        | "trade_proposal_received"
+        | "trade_proposal_accepted"
+        | "trade_proposal_rejected"
+        | "trade_route_cancelled";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -2157,6 +2942,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      notification_type: [
+        "turn.completed",
+        "trade_proposal_received",
+        "trade_proposal_accepted",
+        "trade_proposal_rejected",
+        "trade_route_cancelled",
+      ],
+    },
   },
 } as const;

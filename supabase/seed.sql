@@ -2250,3 +2250,935 @@ begin
       updated_at = now();
   end loop;
 end$$;
+
+-- ===========================================================================
+-- Epic 5 settlement operations: buildings, construction projects, deposits,
+-- managed populations, trade routes, citizen assignments, and stockpiles.
+-- All rows use ON CONFLICT ... DO UPDATE for idempotent re-seeding.
+--
+-- UUID scheme (fourth UUID group, Epic 5 prefix):
+--   settlement_buildings         '00000000-0000-0000-000a-' || lpad(S*10+I, 12, '0')
+--   construction_projects        '00000000-0000-0000-000b-' || lpad(S,      12, '0')
+--   deposit_instances            '00000000-0000-0000-000c-' || lpad(S,      12, '0')
+--   managed_population_instances '00000000-0000-0000-000d-' || lpad(S,      12, '0')
+--   trade_routes                 '00000000-0000-0000-000e-' || lpad(W*100+R, 12, '0')
+-- S = canonical settlement slot (1=301 Hearthwatch, 2=302 Mistfall Crossing,
+--     3=303 Sunmere Hold, 4=304 Tidewatch, 5=305 Stonehold Keep), I = building
+--     index within the settlement (1..3), W = 1-based world index, R = route
+--     index within that world.
+--
+-- All Epic 4 IDs referenced below are derived from the scheme documented in
+-- the Epic 4 DO block above (resources=0004, jobs=0005, blueprints=0006,
+-- tiers=0007, deposit_types=0008, pop_types=0009, each using W=1 for world 101).
+-- ===========================================================================
+-- ---------------------------------------------------------------------------
+-- Citizen 415: NPC at Stonehold Keep (settlement 305, Verdant Reach) for the
+-- culling assignment. Must be inserted before citizen_assignments references it.
+-- ---------------------------------------------------------------------------
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    sex,
+    status,
+    born_on_turn_number,
+    npc_trait_1,
+    npc_trait_2,
+    npc_secret_contradiction,
+    npc_goal,
+    npc_flaw
+  )
+values
+  (
+    '00000000-0000-0000-0000-000000000415',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000305',
+    'npc',
+    'Davin Stonehill',
+    'male',
+    'alive',
+    -35,
+    'stoic',
+    'blunt',
+    'holds a vow they cannot remember swearing',
+    'to outlive every captain they ever served',
+    'pride'
+  )
+on conflict (id) do update
+set
+  world_id = excluded.world_id,
+  settlement_id = excluded.settlement_id,
+  citizen_type = excluded.citizen_type,
+  name = excluded.name,
+  sex = excluded.sex,
+  status = excluded.status,
+  born_on_turn_number = excluded.born_on_turn_number,
+  npc_trait_1 = excluded.npc_trait_1,
+  npc_trait_2 = excluded.npc_trait_2,
+  npc_secret_contradiction = excluded.npc_secret_contradiction,
+  npc_goal = excluded.npc_goal,
+  npc_flaw = excluded.npc_flaw,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Settlement buildings: 3 completed buildings per canonical settlement in
+-- Verdant Reach (W=1). The three blueprints cover the three settlement effect
+-- types: job_capacity_increase (farmstead tier 1), resource_storage_increase
+-- (storehouse tier 1), population_cap_increase (longhouse tier 1).
+-- The check_settlement_building_tier_match trigger validates blueprint/tier
+-- alignment at INSERT time.
+-- ---------------------------------------------------------------------------
+insert into
+  public.settlement_buildings (
+    id,
+    settlement_id,
+    building_blueprint_id,
+    current_tier_id,
+    state,
+    activated_on_turn_number
+  )
+values
+  -- Hearthwatch (301): farmstead=101, storehouse=102, longhouse=104
+  (
+    '00000000-0000-0000-000a-000000000011',
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0006-000000000101',
+    '00000000-0000-0000-0007-000000001011',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000012',
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0006-000000000102',
+    '00000000-0000-0000-0007-000000001021',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000013',
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0006-000000000104',
+    '00000000-0000-0000-0007-000000001041',
+    'active',
+    0
+  ),
+  -- Mistfall Crossing (302)
+  (
+    '00000000-0000-0000-000a-000000000021',
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0006-000000000101',
+    '00000000-0000-0000-0007-000000001011',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000022',
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0006-000000000102',
+    '00000000-0000-0000-0007-000000001021',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000023',
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0006-000000000104',
+    '00000000-0000-0000-0007-000000001041',
+    'active',
+    0
+  ),
+  -- Sunmere Hold (303)
+  (
+    '00000000-0000-0000-000a-000000000031',
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0006-000000000101',
+    '00000000-0000-0000-0007-000000001011',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000032',
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0006-000000000102',
+    '00000000-0000-0000-0007-000000001021',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000033',
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0006-000000000104',
+    '00000000-0000-0000-0007-000000001041',
+    'active',
+    0
+  ),
+  -- Tidewatch (304)
+  (
+    '00000000-0000-0000-000a-000000000041',
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0006-000000000101',
+    '00000000-0000-0000-0007-000000001011',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000042',
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0006-000000000102',
+    '00000000-0000-0000-0007-000000001021',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000043',
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0006-000000000104',
+    '00000000-0000-0000-0007-000000001041',
+    'active',
+    0
+  ),
+  -- Stonehold Keep (305)
+  (
+    '00000000-0000-0000-000a-000000000051',
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0006-000000000101',
+    '00000000-0000-0000-0007-000000001011',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000052',
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0006-000000000102',
+    '00000000-0000-0000-0007-000000001021',
+    'active',
+    0
+  ),
+  (
+    '00000000-0000-0000-000a-000000000053',
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0006-000000000104',
+    '00000000-0000-0000-0007-000000001041',
+    'active',
+    0
+  )
+on conflict (id) do update
+set
+  settlement_id = excluded.settlement_id,
+  building_blueprint_id = excluded.building_blueprint_id,
+  current_tier_id = excluded.current_tier_id,
+  state = excluded.state,
+  activated_on_turn_number = excluded.activated_on_turn_number,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Construction projects: 1 in-progress smithy (tier 1) per canonical
+-- settlement. Smithy tier 1 requires 7 worker_turns_required (Epic 4 seed);
+-- progress_worker_turns=4 represents partial completion.
+-- The partial unique index on (settlement_id, queue_position) WHERE status IN
+-- ('queued','in_progress','paused') is satisfied because each settlement has
+-- exactly one in-progress project at queue_position=1.
+-- ---------------------------------------------------------------------------
+insert into
+  public.construction_projects (
+    id,
+    settlement_id,
+    building_blueprint_id,
+    target_tier_id,
+    status,
+    queue_position,
+    progress_worker_turns
+  )
+values
+  (
+    '00000000-0000-0000-000b-000000000001',
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0006-000000000105',
+    '00000000-0000-0000-0007-000000001051',
+    'in_progress',
+    1,
+    4
+  ),
+  (
+    '00000000-0000-0000-000b-000000000002',
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0006-000000000105',
+    '00000000-0000-0000-0007-000000001051',
+    'in_progress',
+    1,
+    4
+  ),
+  (
+    '00000000-0000-0000-000b-000000000003',
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0006-000000000105',
+    '00000000-0000-0000-0007-000000001051',
+    'in_progress',
+    1,
+    4
+  ),
+  (
+    '00000000-0000-0000-000b-000000000004',
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0006-000000000105',
+    '00000000-0000-0000-0007-000000001051',
+    'in_progress',
+    1,
+    4
+  ),
+  (
+    '00000000-0000-0000-000b-000000000005',
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0006-000000000105',
+    '00000000-0000-0000-0007-000000001051',
+    'in_progress',
+    1,
+    4
+  )
+on conflict (id) do update
+set
+  status = excluded.status,
+  progress_worker_turns = excluded.progress_worker_turns,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Deposit instances: 1 per canonical settlement with varied deposit types so
+-- the panel surfaces different resource configurations.
+-- ---------------------------------------------------------------------------
+insert into
+  public.deposit_instances (
+    id,
+    settlement_id,
+    deposit_type_id,
+    name,
+    status,
+    max_workers
+  )
+values
+  -- Hearthwatch (301): iron vein (dep_type offset 1)
+  (
+    '00000000-0000-0000-000c-000000000001',
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0008-000000000101',
+    'Eastwall Iron Vein',
+    'active',
+    8
+  ),
+  -- Mistfall Crossing (302): hardwood grove (dep_type offset 4)
+  (
+    '00000000-0000-0000-000c-000000000002',
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0008-000000000104',
+    'Riverbank Hardwood Grove',
+    'active',
+    6
+  ),
+  -- Sunmere Hold (303): stone quarry (dep_type offset 3)
+  (
+    '00000000-0000-0000-000c-000000000003',
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0008-000000000103',
+    'Hilltop Stone Quarry',
+    'active',
+    10
+  ),
+  -- Tidewatch (304): copper vein (dep_type offset 2)
+  (
+    '00000000-0000-0000-000c-000000000004',
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0008-000000000102',
+    'Headland Copper Vein',
+    'active',
+    6
+  ),
+  -- Stonehold Keep (305): iron vein (dep_type offset 1)
+  (
+    '00000000-0000-0000-000c-000000000005',
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0008-000000000101',
+    'Granite Seam Iron Vein',
+    'active',
+    8
+  )
+on conflict (id) do update
+set
+  name = excluded.name,
+  status = excluded.status,
+  max_workers = excluded.max_workers,
+  updated_at = now();
+
+-- Deposit instance resources: one resource per deposit instance.
+-- ON CONFLICT targets the unique constraint (deposit_instance_id, resource_id).
+-- Resource IDs use the W=1 formula: lpad(1*100+offset, 12, '0').
+insert into
+  public.deposit_instance_resources (
+    deposit_instance_id,
+    resource_id,
+    initial_quantity,
+    remaining_quantity
+  )
+values
+  -- Hearthwatch iron vein → iron ore (resource offset 10)
+  (
+    '00000000-0000-0000-000c-000000000001',
+    '00000000-0000-0000-0004-000000000110',
+    5000,
+    4800
+  ),
+  -- Mistfall hardwood grove → hardwood logs (resource offset 8)
+  (
+    '00000000-0000-0000-000c-000000000002',
+    '00000000-0000-0000-0004-000000000108',
+    3000,
+    2750
+  ),
+  -- Sunmere stone quarry → stone block (resource offset 9)
+  (
+    '00000000-0000-0000-000c-000000000003',
+    '00000000-0000-0000-0004-000000000109',
+    8000,
+    7600
+  ),
+  -- Tidewatch copper vein → copper ingot (resource offset 11)
+  (
+    '00000000-0000-0000-000c-000000000004',
+    '00000000-0000-0000-0004-000000000111',
+    2000,
+    1900
+  ),
+  -- Stonehold iron vein → iron ore (resource offset 10)
+  (
+    '00000000-0000-0000-000c-000000000005',
+    '00000000-0000-0000-0004-000000000110',
+    4000,
+    3800
+  )
+on conflict (deposit_instance_id, resource_id) do update
+set
+  remaining_quantity = excluded.remaining_quantity,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Managed population instances: 1 per canonical settlement.
+-- Settlement 302 uses sheep_herd so citizen 402 (Halden) can be assigned
+-- husbandry. Settlement 305 uses pig_herd with configured_cull_quantity > 0
+-- so citizen 415 (Davin) can be assigned culling.
+-- ---------------------------------------------------------------------------
+insert into
+  public.managed_population_instances (
+    id,
+    settlement_id,
+    managed_population_type_id,
+    name,
+    current_count,
+    configured_cull_quantity,
+    status
+  )
+values
+  -- Hearthwatch (301): sheep herd (pop_type offset 1)
+  (
+    '00000000-0000-0000-000d-000000000001',
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0009-000000000101',
+    'Hearthwatch Flock',
+    80,
+    0,
+    'active'
+  ),
+  -- Mistfall Crossing (302): sheep herd (for husbandry assignment)
+  (
+    '00000000-0000-0000-000d-000000000002',
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0009-000000000101',
+    'Mistfall Flock',
+    100,
+    0,
+    'active'
+  ),
+  -- Sunmere Hold (303): bee colony (pop_type offset 2)
+  (
+    '00000000-0000-0000-000d-000000000003',
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0009-000000000102',
+    'Sunmere Hives',
+    60,
+    0,
+    'active'
+  ),
+  -- Tidewatch (304): pig herd (pop_type offset 3)
+  (
+    '00000000-0000-0000-000d-000000000004',
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0009-000000000103',
+    'Tidewatch Drove',
+    50,
+    0,
+    'active'
+  ),
+  -- Stonehold Keep (305): pig herd with cull quota (for culling assignment)
+  (
+    '00000000-0000-0000-000d-000000000005',
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0009-000000000103',
+    'Stonehold Drove',
+    120,
+    15,
+    'active'
+  )
+on conflict (id) do update
+set
+  name = excluded.name,
+  current_count = excluded.current_count,
+  configured_cull_quantity = excluded.configured_cull_quantity,
+  status = excluded.status,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Settlement resource stockpiles: set non-zero quantities for the five
+-- canonical settlements in Verdant Reach (world 101).
+-- Non-system resources (grain=101, beer=105, hardwood_logs=108,
+-- stone_block=109, iron_ore=110) use deterministic W=1 UUIDs from Epic 4.
+-- ---------------------------------------------------------------------------
+insert into
+  public.settlement_resource_stockpiles (settlement_id, resource_id, quantity)
+values
+  -- Hearthwatch (301)
+  (
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0004-000000000101',
+    250
+  ),
+  (
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0004-000000000105',
+    60
+  ),
+  (
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0004-000000000108',
+    120
+  ),
+  (
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0004-000000000109',
+    200
+  ),
+  (
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0004-000000000110',
+    80
+  ),
+  -- Mistfall Crossing (302)
+  (
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0004-000000000101',
+    180
+  ),
+  (
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0004-000000000105',
+    40
+  ),
+  (
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0004-000000000108',
+    90
+  ),
+  (
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0004-000000000109',
+    150
+  ),
+  (
+    '00000000-0000-0000-0000-000000000302',
+    '00000000-0000-0000-0004-000000000110',
+    55
+  ),
+  -- Sunmere Hold (303)
+  (
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0004-000000000101',
+    300
+  ),
+  (
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0004-000000000105',
+    75
+  ),
+  (
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0004-000000000108',
+    160
+  ),
+  (
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0004-000000000109',
+    240
+  ),
+  (
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0004-000000000110',
+    100
+  ),
+  -- Tidewatch (304)
+  (
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0004-000000000101',
+    140
+  ),
+  (
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0004-000000000105',
+    35
+  ),
+  (
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0004-000000000108',
+    70
+  ),
+  (
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0004-000000000109',
+    110
+  ),
+  (
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0004-000000000110',
+    45
+  ),
+  -- Stonehold Keep (305)
+  (
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0004-000000000101',
+    200
+  ),
+  (
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0004-000000000105',
+    50
+  ),
+  (
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0004-000000000108',
+    100
+  ),
+  (
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0004-000000000109',
+    180
+  ),
+  (
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0004-000000000110',
+    65
+  )
+on conflict (settlement_id, resource_id) do update
+set
+  quantity = excluded.quantity,
+  updated_at = now();
+
+-- System resources (Food, Fresh Water): resolved by slug + world_id because
+-- their UUIDs are generated non-deterministically by the
+-- worlds_seed_system_resources trigger at world INSERT time.
+insert into
+  public.settlement_resource_stockpiles (settlement_id, resource_id, quantity)
+select
+  v.settlement_id,
+  r.id,
+  v.quantity
+from
+  (
+    values
+      (
+        '00000000-0000-0000-0000-000000000301'::uuid,
+        'food',
+        120::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000301'::uuid,
+        'fresh-water',
+        95::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000302'::uuid,
+        'food',
+        90::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000302'::uuid,
+        'fresh-water',
+        70::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000303'::uuid,
+        'food',
+        150::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000303'::uuid,
+        'fresh-water',
+        110::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000304'::uuid,
+        'food',
+        80::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000304'::uuid,
+        'fresh-water',
+        65::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000305'::uuid,
+        'food',
+        100::numeric
+      ),
+      (
+        '00000000-0000-0000-0000-000000000305'::uuid,
+        'fresh-water',
+        80::numeric
+      )
+  ) as v (settlement_id, slug, quantity)
+  join public.resources r on r.world_id = '00000000-0000-0000-0000-000000000101'
+  and r.slug = v.slug
+  and r.is_system_resource = true
+on conflict (settlement_id, resource_id) do update
+set
+  quantity = excluded.quantity,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Trade routes.
+-- World 101: one active cross-nation route (Hearthwatch 301, Ashvale →
+-- Tidewatch 304, Tideholm; grain) and one pending route (Sunmere Hold 303,
+-- Ashvale → Stonehold Keep 305, Stoneridge; wool).
+-- Worlds 102-105: one active cross-nation grain route each using the first
+-- settlement of two different bulk nations.
+--
+-- Approvers are validated by the check_trade_route_approver_nation trigger:
+-- each approver's settlement must belong to the matching endpoint's nation.
+-- World 101 origin approver: Mara Quill (411, settlement 301, Ashvale).
+-- World 101 destination approver: Pell Auren (414, settlement 304, Tideholm).
+-- Bulk world approvers are the first NPC of each endpoint settlement (P=1).
+-- ---------------------------------------------------------------------------
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    resource_id,
+    quantity_per_transition,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status,
+    origin_approved_by_citizen_id,
+    destination_approved_by_citizen_id
+  )
+values
+  -- World 101 active: Hearthwatch (301) → Tidewatch (304), grain.
+  (
+    '00000000-0000-0000-000e-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    '00000000-0000-0000-0000-000000000304',
+    '00000000-0000-0000-0004-000000000101',
+    25,
+    'active',
+    '00000000-0000-0000-0000-000000000401',
+    'approved',
+    'approved',
+    '00000000-0000-0000-0000-000000000411',
+    '00000000-0000-0000-0000-000000000414'
+  ),
+  -- World 101 pending: Sunmere Hold (303) → Stonehold Keep (305), wool.
+  (
+    '00000000-0000-0000-000e-000000000102',
+    '00000000-0000-0000-0000-000000000303',
+    '00000000-0000-0000-0000-000000000305',
+    '00000000-0000-0000-0004-000000000107',
+    15,
+    'proposed',
+    '00000000-0000-0000-0000-000000000403',
+    'pending',
+    'pending',
+    null,
+    null
+  ),
+  -- World 102 active: Riverdown Cantons S1 → Mosswold Reach S1, grain W=2.
+  -- Nation N=2: lpad(202,12,'0'). Settlement: lpad(W*10000+N*100+S,12,'0').
+  -- NPC: lpad(W*100000+N*1000+S*10+P,12,'0').
+  (
+    '00000000-0000-0000-000e-000000000201',
+    '00000000-0000-0000-0002-000000020201',
+    '00000000-0000-0000-0002-000000020301',
+    '00000000-0000-0000-0004-000000000201',
+    20,
+    'active',
+    '00000000-0000-0000-0003-000000202011',
+    'approved',
+    'approved',
+    '00000000-0000-0000-0003-000000202011',
+    '00000000-0000-0000-0003-000000203011'
+  ),
+  -- World 103 active: Verdant Pact S1 → Tidewatch Holdings S1, grain W=3.
+  (
+    '00000000-0000-0000-000e-000000000301',
+    '00000000-0000-0000-0002-000000030201',
+    '00000000-0000-0000-0002-000000030301',
+    '00000000-0000-0000-0004-000000000301',
+    20,
+    'active',
+    '00000000-0000-0000-0003-000000302011',
+    'approved',
+    'approved',
+    '00000000-0000-0000-0003-000000302011',
+    '00000000-0000-0000-0003-000000303011'
+  ),
+  -- World 104 active: Hollowmere Crown S1 → Salt Marsh Republic S1, grain W=4.
+  (
+    '00000000-0000-0000-000e-000000000401',
+    '00000000-0000-0000-0002-000000040101',
+    '00000000-0000-0000-0002-000000040201',
+    '00000000-0000-0000-0004-000000000401',
+    20,
+    'active',
+    '00000000-0000-0000-0003-000000401011',
+    'approved',
+    'approved',
+    '00000000-0000-0000-0003-000000401011',
+    '00000000-0000-0000-0003-000000402011'
+  ),
+  -- World 105 active: Stormhold Crown S1 → Ashfen Republic S1, grain W=5.
+  (
+    '00000000-0000-0000-000e-000000000501',
+    '00000000-0000-0000-0002-000000050101',
+    '00000000-0000-0000-0002-000000050201',
+    '00000000-0000-0000-0004-000000000501',
+    20,
+    'active',
+    '00000000-0000-0000-0003-000000501011',
+    'approved',
+    'approved',
+    '00000000-0000-0000-0003-000000501011',
+    '00000000-0000-0000-0003-000000502011'
+  )
+on conflict (id) do update
+set
+  status = excluded.status,
+  origin_approval_status = excluded.origin_approval_status,
+  destination_approval_status = excluded.destination_approval_status,
+  origin_approved_by_citizen_id = excluded.origin_approved_by_citizen_id,
+  destination_approved_by_citizen_id = excluded.destination_approved_by_citizen_id,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Citizen assignments: all 6 assignment_type values represented in world 101.
+-- Three standard_job assignments (citizens 411, 412, 413), plus one each of
+-- trade_route, construction_project, husbandry, deposit, and culling.
+--
+-- The citizen_assignments_check_trade_route_end trigger fires BEFORE INSERT
+-- for trade_route rows and validates citizen.settlement_id against the route
+-- endpoint. Aria (401) is at settlement 301 = origin_settlement_id of route
+-- 000e-101, so trade_route_end='origin' passes. ✓
+-- ---------------------------------------------------------------------------
+insert into
+  public.citizen_assignments (
+    citizen_id,
+    assignment_type,
+    job_id,
+    construction_project_id,
+    deposit_instance_id,
+    managed_population_instance_id,
+    trade_route_id,
+    trade_route_end,
+    assigned_on_turn_number
+  )
+values
+  -- Mara Quill (411, Hearthwatch 301): standard_job → grain farmer (job offset 1)
+  (
+    '00000000-0000-0000-0000-000000000411',
+    'standard_job',
+    '00000000-0000-0000-0005-000000000101',
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  -- Tessen Marrow (421, settlement 301): trade_route, origin end of route 101
+  (
+    '00000000-0000-0000-0000-000000000421',
+    'trade_route',
+    null,
+    null,
+    null,
+    null,
+    '00000000-0000-0000-000e-000000000101',
+    'origin',
+    0
+  ),
+  -- Pell Auren (414, Tidewatch 304): construction_project → smithy project at 304
+  (
+    '00000000-0000-0000-0000-000000000414',
+    'construction_project',
+    null,
+    '00000000-0000-0000-000b-000000000004',
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  -- Joren Bask (412, Mistfall 302): husbandry → sheep flock at 302
+  (
+    '00000000-0000-0000-0000-000000000412',
+    'husbandry',
+    null,
+    null,
+    null,
+    '00000000-0000-0000-000d-000000000002',
+    null,
+    null,
+    0
+  ),
+  -- Sable Wren (413, Sunmere 303): deposit → stone quarry at 303
+  (
+    '00000000-0000-0000-0000-000000000413',
+    'deposit',
+    null,
+    null,
+    '00000000-0000-0000-000c-000000000003',
+    null,
+    null,
+    null,
+    0
+  ),
+  -- Davin Stonehill (415, Stonehold 305): culling → pig drove at 305
+  (
+    '00000000-0000-0000-0000-000000000415',
+    'culling',
+    null,
+    null,
+    null,
+    '00000000-0000-0000-000d-000000000005',
+    null,
+    null,
+    0
+  )
+on conflict (citizen_id) do update
+set
+  assignment_type = excluded.assignment_type,
+  job_id = excluded.job_id,
+  construction_project_id = excluded.construction_project_id,
+  deposit_instance_id = excluded.deposit_instance_id,
+  managed_population_instance_id = excluded.managed_population_instance_id,
+  trade_route_id = excluded.trade_route_id,
+  trade_route_end = excluded.trade_route_end,
+  assigned_on_turn_number = excluded.assigned_on_turn_number,
+  updated_at = now();

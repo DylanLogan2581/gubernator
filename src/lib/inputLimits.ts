@@ -51,11 +51,13 @@ export const buildingInputLimits = {
 } as const;
 
 export const depositInputLimits = {
+  depositInstanceNameMax: 64,
   depositTypeNameMax: 64,
   depositTypeSlugMax: 64,
 } as const;
 
 export const managedPopulationInputLimits = {
+  populationInstanceNameMax: 64,
   populationTypeNameMax: 64,
   populationTypeSlugMax: 64,
 } as const;

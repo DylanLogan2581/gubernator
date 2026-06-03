@@ -3,12 +3,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { CitizensPanel } from "@/features/citizens";
+import {
+  SettlementBuildingsPanel,
+  SettlementConstructionPanel,
+} from "@/features/buildings";
+import { CitizensPanel, SettlementAssignmentBoard } from "@/features/citizens";
+import { SettlementDepositsPanel } from "@/features/deposits";
+import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
   type AccessContext,
 } from "@/features/permissions";
+import { SettlementStockpilesPanel } from "@/features/resources";
+import { SettlementTradeRoutesPanel } from "@/features/trade";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -29,12 +37,14 @@ import type { SettlementWithNation } from "../../types/settlementTypes";
 import type { JSX } from "react";
 
 type SettlementDetailPageProps = {
+  readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
 };
 
 export function SettlementDetailPage({
+  assignmentTab,
   nationId,
   settlementId,
   worldId,
@@ -66,6 +76,7 @@ export function SettlementDetailPage({
   return (
     <SettlementDetailWorldGate
       accessContext={accessContextQuery.data}
+      assignmentTab={assignmentTab}
       nationId={nationId}
       settlementId={settlementId}
       worldId={worldId}
@@ -75,11 +86,13 @@ export function SettlementDetailPage({
 
 function SettlementDetailWorldGate({
   accessContext,
+  assignmentTab,
   nationId,
   settlementId,
   worldId,
 }: {
   readonly accessContext: AccessContext;
+  readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
@@ -132,6 +145,7 @@ function SettlementDetailWorldGate({
   return (
     <SettlementDetailContent
       accessContext={accessContext}
+      assignmentTab={assignmentTab}
       nationId={nationId}
       settlementId={settlementId}
       worldAccess={worldQuery.data}
@@ -142,12 +156,14 @@ function SettlementDetailWorldGate({
 
 function SettlementDetailContent({
   accessContext,
+  assignmentTab,
   nationId,
   settlementId,
   worldAccess,
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
+  readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldAccess: WorldRouteAccess;
@@ -193,6 +209,7 @@ function SettlementDetailContent({
   return (
     <SettlementDetailLoaded
       accessContext={accessContext}
+      assignmentTab={assignmentTab}
       settlement={settlement}
       worldAccess={worldAccess}
       worldId={worldId}
@@ -202,11 +219,13 @@ function SettlementDetailContent({
 
 function SettlementDetailLoaded({
   accessContext,
+  assignmentTab,
   settlement,
   worldAccess,
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
+  readonly assignmentTab: "bulk" | "per-target";
   readonly settlement: SettlementWithNation;
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
@@ -257,6 +276,12 @@ function SettlementDetailLoaded({
         worldId={worldId}
       />
 
+      <SettlementStockpilesPanel
+        canAdmin={worldAccess.canAdmin}
+        isArchived={isArchived}
+        settlementId={settlement.id}
+      />
+
       <SettlementDetailsSection
         canEdit={canEditDetails}
         queryClient={queryClient}
@@ -273,6 +298,54 @@ function SettlementDetailLoaded({
         canAdmin={worldAccess.canAdmin}
         incestPreventionDepth={worldAccess.world.incestPreventionDepth}
         isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementBuildingsPanel
+        canAdmin={worldAccess.canAdmin}
+        isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementConstructionPanel
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementDepositsPanel
+        canAdmin={worldAccess.canAdmin}
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementManagedPopulationsPanel
+        canAdmin={worldAccess.canAdmin}
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementTradeRoutesPanel
+        canAdmin={worldAccess.canAdmin}
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        nationId={settlement.nationId}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementAssignmentBoard
+        activeTab={assignmentTab}
+        canManage={worldAccess.canManage}
+        isArchived={isArchived}
+        nationId={settlement.nationId}
         settlementId={settlement.id}
         worldId={worldId}
       />

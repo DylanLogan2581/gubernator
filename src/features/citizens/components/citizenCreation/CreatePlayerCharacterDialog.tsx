@@ -1,10 +1,17 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
-import { Save, UserPlus, X } from "lucide-react";
+import { Save, UserPlus } from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
-import { DialogShell } from "@/components/shared/DialogShell";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { textInputLimits } from "@/lib/inputLimits";
@@ -40,7 +47,6 @@ export function CreatePlayerCharacterDialog({
   settlementId,
   worldId,
 }: CreatePlayerCharacterDialogProps): JSX.Element {
-  const titleId = useId();
   const nameId = useId();
   const userId = useId();
   const [fields, setFields] = useState({
@@ -139,138 +145,124 @@ export function CreatePlayerCharacterDialog({
   };
 
   return (
-    <DialogShell>
-      <form
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="grid w-full max-w-lg gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        noValidate
-        onSubmit={handleSubmit}
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h3 id={titleId} className="text-lg font-semibold">
-              Create player character
-            </h3>
-            <p className="text-sm text-muted-foreground">
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="max-w-lg">
+        <form className="contents" noValidate onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Create player character</DialogTitle>
+            <DialogDescription>
               Player characters are linked to a user account at creation.
-            </p>
-          </div>
-          <Button
-            aria-label="Cancel create player character"
-            disabled={mutation.isPending}
-            onClick={onClose}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
+            </DialogDescription>
+          </DialogHeader>
 
-        <label className="grid gap-1 text-sm" htmlFor={nameId}>
-          <span className="text-muted-foreground">Name</span>
-          <Input
-            id={nameId}
-            disabled={mutation.isPending}
-            maxLength={textInputLimits.citizenNameMax}
-            required
-            value={fields.name}
-            onChange={(event) => {
-              const value = event.currentTarget.value;
-              setFields((current) => ({ ...current, name: value }));
-            }}
-          />
-        </label>
+          <label className="grid gap-1 text-sm" htmlFor={nameId}>
+            <span className="text-muted-foreground">Name</span>
+            <Input
+              id={nameId}
+              disabled={mutation.isPending}
+              maxLength={textInputLimits.citizenNameMax}
+              required
+              value={fields.name}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setFields((current) => ({ ...current, name: value }));
+              }}
+            />
+          </label>
 
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Sex</span>
-          <Input
-            disabled={mutation.isPending}
-            placeholder="Optional"
-            value={fields.sex}
-            onChange={(event) => {
-              const value = event.currentTarget.value;
-              setFields((current) => ({ ...current, sex: value }));
-            }}
-          />
-        </label>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Sex</span>
+            <Input
+              disabled={mutation.isPending}
+              placeholder="Optional"
+              value={fields.sex}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setFields((current) => ({ ...current, sex: value }));
+              }}
+            />
+          </label>
 
-        <label className="grid gap-1 text-sm" htmlFor={userId}>
-          <span className="text-muted-foreground">User</span>
-          <select
-            id={userId}
-            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={mutation.isPending || usersQuery.isPending}
-            required
-            value={fields.userId}
-            onChange={(event) => {
-              const value = event.currentTarget.value;
-              setFields((current) => ({ ...current, userId: value }));
+          <label className="grid gap-1 text-sm" htmlFor={userId}>
+            <span className="text-muted-foreground">User</span>
+            <select
+              id={userId}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={mutation.isPending || usersQuery.isPending}
+              required
+              value={fields.userId}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setFields((current) => ({ ...current, userId: value }));
+                setFormError(undefined);
+              }}
+            >
+              <option value="">Select a user…</option>
+              {userChoices.map((appUser) => (
+                <option key={appUser.id} value={appUser.id}>
+                  {appUser.username}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <ParentField
+            citizens={parentChoices}
+            disabled={mutation.isPending || citizensQuery.isPending}
+            label="Parent A"
+            onChange={(value) => {
+              setFields((current) => ({ ...current, parentACitizenId: value }));
               setFormError(undefined);
             }}
-          >
-            <option value="">Select a user…</option>
-            {userChoices.map((appUser) => (
-              <option key={appUser.id} value={appUser.id}>
-                {appUser.username}
-              </option>
-            ))}
-          </select>
-        </label>
+            value={fields.parentACitizenId}
+          />
 
-        <ParentField
-          citizens={parentChoices}
-          disabled={mutation.isPending || citizensQuery.isPending}
-          label="Parent A"
-          onChange={(value) => {
-            setFields((current) => ({ ...current, parentACitizenId: value }));
-            setFormError(undefined);
-          }}
-          value={fields.parentACitizenId}
-        />
+          <ParentField
+            citizens={parentChoices}
+            disabled={mutation.isPending || citizensQuery.isPending}
+            label="Parent B"
+            onChange={(value) => {
+              setFields((current) => ({ ...current, parentBCitizenId: value }));
+              setFormError(undefined);
+            }}
+            value={fields.parentBCitizenId}
+          />
 
-        <ParentField
-          citizens={parentChoices}
-          disabled={mutation.isPending || citizensQuery.isPending}
-          label="Parent B"
-          onChange={(value) => {
-            setFields((current) => ({ ...current, parentBCitizenId: value }));
-            setFormError(undefined);
-          }}
-          value={fields.parentBCitizenId}
-        />
+          {formError === undefined ? null : (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {formError}
+            </p>
+          )}
 
-        {formError === undefined ? null : (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {formError}
-          </p>
-        )}
-
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button disabled={mutation.isPending} type="submit">
-            {mutation.isPending ? (
-              <Save aria-hidden="true" />
-            ) : (
-              <UserPlus aria-hidden="true" />
-            )}
-            {mutation.isPending ? "Creating…" : "Create player character"}
-          </Button>
-        </div>
-      </form>
-    </DialogShell>
+          <DialogFooter>
+            <Button
+              disabled={mutation.isPending}
+              onClick={onClose}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={mutation.isPending} type="submit">
+              {mutation.isPending ? (
+                <Save aria-hidden="true" />
+              ) : (
+                <UserPlus aria-hidden="true" />
+              )}
+              {mutation.isPending ? "Creating…" : "Create player character"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

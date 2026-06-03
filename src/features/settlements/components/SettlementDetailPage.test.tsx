@@ -83,6 +83,16 @@ vi.mock("@/features/citizens", async () => {
   };
 });
 
+vi.mock("@/features/buildings", async () => {
+  const actual = await vi.importActual("@/features/buildings");
+  return {
+    ...actual,
+    SettlementBuildingsPanel: () => (
+      <div data-testid="settlement-buildings-panel" />
+    ),
+  };
+});
+
 vi.mock("@/features/permissions", async () => {
   const actual = await vi.importActual("@/features/permissions");
   return {
@@ -611,6 +621,7 @@ function renderPage(): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <SettlementDetailPage
+        assignmentTab="bulk"
         nationId={NATION_ID}
         settlementId={SETTLEMENT_ID}
         worldId={WORLD_ID}
