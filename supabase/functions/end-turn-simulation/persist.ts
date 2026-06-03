@@ -5,6 +5,7 @@ import { isRecord } from "./utils.ts";
 import type { ApplyTurnTransitionPayload } from "./transition.ts";
 import type {
   ApplyTurnTransitionSummary,
+  EndTurnSimulationAuthContext,
   EndTurnSimulationPersistResult,
   EndTurnSimulationRequestBody,
 } from "./types.ts";
@@ -38,13 +39,16 @@ function isApplyTurnTransitionSummary(
 export async function persistSimulationTransition(
   body: EndTurnSimulationRequestBody,
   payload: ApplyTurnTransitionPayload,
+  authContext: EndTurnSimulationAuthContext,
 ): Promise<EndTurnSimulationPersistResult> {
   const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
-  const supabaseServiceRoleKey = getRequiredRuntimeEnv(
-    "SUPABASE_SERVICE_ROLE_KEY",
-  );
+  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
 
-  if (supabaseUrl === undefined || supabaseServiceRoleKey === undefined) {
+  if (
+    supabaseUrl === undefined ||
+    supabaseAnonKey === undefined ||
+    authContext.authorizationHeader === undefined
+  ) {
     return createTransitionUnavailableResult();
   }
 
@@ -57,8 +61,8 @@ export async function persistSimulationTransition(
         p_world_id: body.worldId,
       }),
       headers: {
-        apikey: supabaseServiceRoleKey,
-        authorization: `Bearer ${supabaseServiceRoleKey}`,
+        apikey: supabaseAnonKey,
+        authorization: authContext.authorizationHeader,
         "content-type": "application/json",
       },
       method: "POST",

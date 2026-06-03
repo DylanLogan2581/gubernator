@@ -97,6 +97,7 @@ export async function handleEndTurnSimulationRequest(
   const persistResult = await persistSimulationTransition(
     validateResult.body,
     transitionResult.payload,
+    authContextResult.context,
   );
   if (!persistResult.ok) {
     return respond(persistResult.error, persistResult.status);

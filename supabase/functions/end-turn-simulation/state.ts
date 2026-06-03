@@ -335,10 +335,14 @@ export async function resolveSupabaseEndTurnSimulationInput(
       supabaseUrl,
       table: "partnerships",
       params: {
-        "citizens!citizen_a_id.world_id": `eq.${worldId}`,
+        // PostgREST requires an alias when filtering by a related table that has
+        // multiple FKs to the same target (citizen_a_id / citizen_b_id both point
+        // to citizens).  "citizens!citizen_a_id.world_id" is not valid syntax in
+        // PostgREST 14; instead we alias the embed and filter by the alias.
+        "citizen_a.world_id": `eq.${worldId}`,
         order: "id.asc",
         select:
-          "id,citizen_a_id,citizen_b_id,status,formed_on_turn_number,ended_on_turn_number,citizens!citizen_a_id!inner()",
+          "id,citizen_a_id,citizen_b_id,status,formed_on_turn_number,ended_on_turn_number,citizen_a:citizens!citizen_a_id!inner(world_id)",
       },
     }),
   ]);

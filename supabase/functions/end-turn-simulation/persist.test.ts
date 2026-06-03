@@ -3,20 +3,34 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { persistSimulationTransition } from "./persist";
 
 import type { ApplyTurnTransitionPayload } from "./transition";
-import type { EndTurnSimulationRequestBody } from "./types";
+import type {
+  EndTurnSimulationAuthContext,
+  EndTurnSimulationRequestBody,
+} from "./types";
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
-const SERVICE_ROLE_KEY = "test-service-role-key";
+const ANON_KEY = "test-anon-key";
+const USER_TOKEN = "test-user-access-token";
 const SUPABASE_URL = "http://localhost:54321";
 
 const TRANSITION_ID = "00000000-0000-0000-0000-000000000099";
 
 function makeRequestBody(): EndTurnSimulationRequestBody {
   return { expectedTurnNumber: 5, worldId: WORLD_ID };
+}
+
+function makeAuthContext(
+  overrides?: Partial<EndTurnSimulationAuthContext>,
+): EndTurnSimulationAuthContext {
+  return {
+    authorizationHeader: `Bearer ${USER_TOKEN}`,
+    userId: "00000000-0000-0000-0000-000000000001",
+    ...overrides,
+  };
 }
 
 function makeMinimalPayload(): ApplyTurnTransitionPayload {
@@ -57,13 +71,13 @@ function makeSuccessSummary(): Record<string, unknown> {
 
 function stubEnvAndFetch(
   fetchResponse: { body: unknown; status: number } | "fetch_throws",
-  serviceRoleKey: string = SERVICE_ROLE_KEY,
+  anonKey: string = ANON_KEY,
 ): ReturnType<typeof vi.fn> {
   vi.stubGlobal("Deno", {
     env: {
       get: (name: string): string | undefined => {
         if (name === "SUPABASE_URL") return SUPABASE_URL;
-        if (name === "SUPABASE_SERVICE_ROLE_KEY") return serviceRoleKey;
+        if (name === "SUPABASE_ANON_KEY") return anonKey;
         return undefined;
       },
     },
@@ -95,6 +109,7 @@ describe("persistSimulationTransition — success", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     expect(result.ok).toBe(true);
@@ -113,7 +128,11 @@ describe("persistSimulationTransition — success", () => {
       status: 200,
     });
 
-    await persistSimulationTransition(makeRequestBody(), makeMinimalPayload());
+    await persistSimulationTransition(
+      makeRequestBody(),
+      makeMinimalPayload(),
+      makeAuthContext(),
+    );
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -127,28 +146,32 @@ describe("persistSimulationTransition — success", () => {
     expect(sentBody.p_payload).toBeDefined();
   });
 
-  it("uses service-role key in apikey and authorization headers", async () => {
+  it("uses anon key and caller JWT in apikey and authorization headers", async () => {
     const fetchMock = stubEnvAndFetch({
       body: makeSuccessSummary(),
       status: 200,
     });
 
-    await persistSimulationTransition(makeRequestBody(), makeMinimalPayload());
+    await persistSimulationTransition(
+      makeRequestBody(),
+      makeMinimalPayload(),
+      makeAuthContext(),
+    );
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const headers = init.headers as Record<string, string>;
 
-    expect(headers["apikey"]).toBe(SERVICE_ROLE_KEY);
-    expect(headers["authorization"]).toBe(`Bearer ${SERVICE_ROLE_KEY}`);
+    expect(headers["apikey"]).toBe(ANON_KEY);
+    expect(headers["authorization"]).toBe(`Bearer ${USER_TOKEN}`);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Missing env → transition_unavailable
+// Missing env / auth → transition_unavailable
 // ---------------------------------------------------------------------------
 
 describe("persistSimulationTransition — missing env", () => {
-  it("returns end_turn_transition_unavailable when SUPABASE_SERVICE_ROLE_KEY is absent", async () => {
+  it("returns end_turn_transition_unavailable when SUPABASE_ANON_KEY is absent", async () => {
     vi.stubGlobal("Deno", {
       env: {
         get: (name: string): string | undefined => {
@@ -161,6 +184,22 @@ describe("persistSimulationTransition — missing env", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("type narrowing");
+    expect(result.error.error.code).toBe("end_turn_transition_unavailable");
+    expect(result.status).toBe(500);
+  });
+
+  it("returns end_turn_transition_unavailable when authorizationHeader is absent", async () => {
+    stubEnvAndFetch({ body: makeSuccessSummary(), status: 200 });
+
+    const result = await persistSimulationTransition(
+      makeRequestBody(),
+      makeMinimalPayload(),
+      makeAuthContext({ authorizationHeader: undefined }),
     );
 
     expect(result.ok).toBe(false);
@@ -184,6 +223,7 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     expect(result.ok).toBe(false);
@@ -204,6 +244,7 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     expect(result.ok).toBe(false);
@@ -221,6 +262,7 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     expect(result.ok).toBe(false);
@@ -241,6 +283,7 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     expect(result.ok).toBe(false);
@@ -255,6 +298,7 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     expect(result.ok).toBe(false);
@@ -272,6 +316,7 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     expect(result.ok).toBe(false);
@@ -282,23 +327,24 @@ describe("persistSimulationTransition — error code mapping", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Service-role key not leaked in error messages
+// Caller token not leaked in error messages
 // ---------------------------------------------------------------------------
 
-describe("persistSimulationTransition — service-role key never logged", () => {
-  it("does not include the service-role key in any error message", async () => {
+describe("persistSimulationTransition — caller token never leaked", () => {
+  it("does not include the caller token in any error message", async () => {
     stubEnvAndFetch("fetch_throws");
 
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     const serialized = JSON.stringify(result);
-    expect(serialized).not.toContain(SERVICE_ROLE_KEY);
+    expect(serialized).not.toContain(USER_TOKEN);
   });
 
-  it("does not include the service-role key in the 42501 error message", async () => {
+  it("does not include the caller token in the 42501 error message", async () => {
     stubEnvAndFetch({
       body: { code: "42501", message: "insufficient privilege" },
       status: 403,
@@ -307,9 +353,10 @@ describe("persistSimulationTransition — service-role key never logged", () => 
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
+      makeAuthContext(),
     );
 
     const serialized = JSON.stringify(result);
-    expect(serialized).not.toContain(SERVICE_ROLE_KEY);
+    expect(serialized).not.toContain(USER_TOKEN);
   });
 });

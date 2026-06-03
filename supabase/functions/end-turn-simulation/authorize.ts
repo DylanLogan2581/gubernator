@@ -33,8 +33,15 @@ export async function resolveSupabaseEndTurnSimulationAuthorization(
 
   const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
   const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+  const supabaseServiceRoleKey = getRequiredRuntimeEnv(
+    "SUPABASE_SERVICE_ROLE_KEY",
+  );
 
-  if (supabaseUrl === undefined || supabaseAnonKey === undefined) {
+  if (
+    supabaseUrl === undefined ||
+    supabaseAnonKey === undefined ||
+    supabaseServiceRoleKey === undefined
+  ) {
     return createAuthContextUnavailableResult();
   }
 
@@ -51,9 +58,13 @@ export async function resolveSupabaseEndTurnSimulationAuthorization(
   }
 
   if (superAdminResult.value) {
+    // Use the service role key for the world existence check so that RLS is
+    // bypassed entirely — the user's JWT already proved super-admin status via
+    // the RPC call above, and table GETs inside Docker can fail JWT verification
+    // for ES256 tokens issued by newer Supabase Auth versions.
     const worldExistsResult = await fetchSupabaseWorldExists({
-      authorizationHeader,
-      supabaseAnonKey,
+      authorizationHeader: `Bearer ${supabaseServiceRoleKey}`,
+      supabaseAnonKey: supabaseServiceRoleKey,
       supabaseUrl,
       worldId: requestBody.worldId,
     });
