@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  addDecimal,
+  clampDecimal,
   clampToRange,
+  divideDecimal,
+  multiplyDecimal,
   proportionalShare,
   scaleDeficit,
+  subtractDecimal,
+  toDecimal,
 } from "./decimalMath.ts";
 
 describe("proportionalShare", () => {
@@ -152,5 +158,63 @@ describe("clampToRange", () => {
     expect(clampToRange(0.5, 0.1, 0.9)).toBeCloseTo(0.5, 10);
     expect(clampToRange(0.05, 0.1, 0.9)).toBeCloseTo(0.1, 10);
     expect(clampToRange(0.95, 0.1, 0.9)).toBeCloseTo(0.9, 10);
+  });
+});
+
+describe("toDecimal", () => {
+  it("returns the value unchanged", () => {
+    expect(toDecimal(42)).toBe(42);
+    expect(toDecimal(0)).toBe(0);
+    expect(toDecimal(-7.5)).toBe(-7.5);
+  });
+});
+
+describe("addDecimal", () => {
+  it("adds two values", () => {
+    expect(addDecimal(3, 4)).toBe(7);
+    expect(addDecimal(0.1, 0.2)).toBeCloseTo(0.3, 10);
+    expect(addDecimal(-5, 5)).toBe(0);
+  });
+});
+
+describe("subtractDecimal", () => {
+  it("subtracts b from a", () => {
+    expect(subtractDecimal(10, 4)).toBe(6);
+    expect(subtractDecimal(0, 5)).toBe(-5);
+    expect(subtractDecimal(3.5, 1.5)).toBeCloseTo(2, 10);
+  });
+});
+
+describe("multiplyDecimal", () => {
+  it("multiplies two values", () => {
+    expect(multiplyDecimal(3, 4)).toBe(12);
+    expect(multiplyDecimal(0.5, 6)).toBe(3);
+    expect(multiplyDecimal(-2, 7)).toBe(-14);
+  });
+});
+
+describe("divideDecimal", () => {
+  it("divides a by b", () => {
+    expect(divideDecimal(10, 2)).toBe(5);
+    expect(divideDecimal(1, 3)).toBeCloseTo(1 / 3, 10);
+  });
+
+  it("throws RangeError when b is zero", () => {
+    expect(() => divideDecimal(5, 0)).toThrow(RangeError);
+    expect(() => divideDecimal(5, 0)).toThrow("Division by zero.");
+  });
+});
+
+describe("clampDecimal", () => {
+  it("returns value when within range", () => {
+    expect(clampDecimal(5, 0, 10)).toBe(5);
+  });
+
+  it("clamps to min when below range", () => {
+    expect(clampDecimal(-3, 0, 10)).toBe(0);
+  });
+
+  it("clamps to max when above range", () => {
+    expect(clampDecimal(15, 0, 10)).toBe(10);
   });
 });

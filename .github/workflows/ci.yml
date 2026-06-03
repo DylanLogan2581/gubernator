@@ -91,6 +91,9 @@ jobs:
       - name: Run test suite
         run: npm run test
 
+      - name: Run coverage with thresholds
+        run: npm run test:coverage
+
   database:
     name: Database
     runs-on: ubuntu-latest

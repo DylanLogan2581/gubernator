@@ -214,6 +214,21 @@ resolve without an explicit import map.
 - Prefer fast unit tests for schemas, query helpers, and pure transformations.
 - If a change is hard to test automatically, note that clearly in the handoff.
 
+### Coverage Thresholds
+
+`src/shared/simulation/**` enforces per-path coverage thresholds in `vitest.config.ts`:
+
+| Metric     | Threshold |
+| ---------- | --------- |
+| Statements | ≥ 90%     |
+| Branches   | ≥ 85%     |
+| Functions  | ≥ 90%     |
+| Lines      | ≥ 90%     |
+
+Run `npm run test:coverage` to check thresholds locally. CI enforces these thresholds on every PR.
+The branches threshold is set to 85% (rather than 90%) because several phase files have hard-to-reach
+defensive branches; raise it as those gaps are closed.
+
 ## Workflow Defaults
 
 - short descriptive branches

@@ -19,6 +19,14 @@ export default mergeConfig(
           "src/test/**",
           "src/**/*.test.{ts,tsx}",
         ],
+        thresholds: {
+          "src/shared/simulation/**": {
+            statements: 90,
+            branches: 85,
+            functions: 90,
+            lines: 90,
+          },
+        },
       },
     },
   }),
