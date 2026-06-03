@@ -2802,6 +2802,15 @@ export type Database = {
           removed_citizen_ids: string[];
         }[];
       };
+      set_bulk_construction_pool: {
+        Args: { p_settlement_id: string; p_target_count: number };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
+      };
       set_bulk_standard_job_assignment: {
         Args: {
           p_job_id: string;

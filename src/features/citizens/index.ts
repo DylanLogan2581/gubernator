@@ -12,6 +12,11 @@ export {
   setBulkConstructionAssignmentMutationOptions,
 } from "./mutations/bulkConstructionAssignmentMutations";
 export {
+  BulkConstructionPoolMutationError,
+  isBulkConstructionPoolMutationError,
+  setBulkConstructionPoolMutationOptions,
+} from "./mutations/bulkConstructionPoolMutations";
+export {
   BulkStandardJobAssignmentMutationError,
   isBulkStandardJobAssignmentMutationError,
   setBulkStandardJobAssignmentMutationOptions,
@@ -82,6 +87,7 @@ export {
   partnershipsForCitizenQueryOptions,
 } from "./queries/partnershipsQueries";
 export { setBulkConstructionAssignmentInputSchema } from "./schemas/setBulkConstructionAssignmentSchemas";
+export { setBulkConstructionPoolInputSchema } from "./schemas/setBulkConstructionPoolSchemas";
 export { setBulkStandardJobAssignmentInputSchema } from "./schemas/setBulkStandardJobAssignmentSchemas";
 export { setPerTargetAssignmentInputSchema } from "./schemas/setPerTargetAssignmentSchemas";
 export {
@@ -105,6 +111,7 @@ export {
 } from "./schemas/partnershipSchemas";
 
 export type { BulkConstructionAssignmentMutationIssue } from "./mutations/bulkConstructionAssignmentMutations";
+export type { BulkConstructionPoolMutationIssue } from "./mutations/bulkConstructionPoolMutations";
 export type { BulkStandardJobAssignmentMutationIssue } from "./mutations/bulkStandardJobAssignmentMutations";
 export type { PerTargetAssignmentMutationIssue } from "./mutations/perTargetAssignmentMutations";
 export type { CitizenMutationIssue } from "./mutations/citizensMutations";
@@ -114,6 +121,10 @@ export type {
   SetBulkConstructionAssignmentInput,
   SetBulkConstructionAssignmentValues,
 } from "./schemas/setBulkConstructionAssignmentSchemas";
+export type {
+  SetBulkConstructionPoolInput,
+  SetBulkConstructionPoolValues,
+} from "./schemas/setBulkConstructionPoolSchemas";
 export type {
   SetBulkStandardJobAssignmentInput,
   SetBulkStandardJobAssignmentValues,
