@@ -3,11 +3,60 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 export type {
+  AssignmentClear,
+  BuildingCreated,
+  BuildingStateChange,
+  CitizenBirth,
+  CitizenDeath,
+  ConstructionUpdate,
+  DeathCauseCategory,
+  DepositResourceDelta,
+  DepositUpdate,
+  ManagedPopulationUpdate,
+  PartnershipChange,
+  ReadinessSummary,
+  ResourceSnapshot,
+  SettlementSnapshot,
+  SimAssignmentType,
+  SimBuildingBlueprint,
+  SimBuildingState,
+  SimBuildingTier,
+  SimCitizen,
+  SimCitizenAssignment,
+  SimCitizenStatus,
+  SimCitizenType,
+  SimConstructionProject,
+  SimConstructionStatus,
+  SimDeconstructOvershootEntry,
+  SimDeposit,
+  SimDepositResource,
+  SimDepositStatus,
+  SimDepositType,
+  SimJob,
+  SimJobIoEntry,
+  SimJobType,
+  SimManagedPopulation,
+  SimManagedPopulationStatus,
+  SimManagedPopulationType,
+  SimPartnership,
+  SimPartnershipStatus,
+  SimPopulationResourceEntry,
+  SimSettlement,
+  SimSettlementBuilding,
+  SimStockpile,
+  SimTierCostEntry,
+  SimTierEffect,
+  SimTradeRoute,
+  SimTradeRouteStatus,
+  SimWorkerInputEntry,
   SimulationContext,
-  SimulationInput,
+  SimulationInputState,
   SimulationLogEntry,
   SimulationNotification,
-  SimulationOutput,
+  SimulationResult,
+  StockpileDelta,
+  TradeRouteOutcome,
+  WorldPopulationRules,
 } from "./simulationTypes.ts";
 
 export {
@@ -76,10 +125,8 @@ export { phaseLogsAndSnapshots } from "./phases/phaseLogsAndSnapshots.ts";
 export type { PhaseLogsAndSnapshotsOutput } from "./phases/phaseLogsAndSnapshots.ts";
 
 export { buildSettlementSnapshot } from "./outcomes/settlementSnapshotBuilder.ts";
-export type { SettlementSnapshot } from "./outcomes/settlementSnapshotBuilder.ts";
 
 export { buildResourceSnapshots } from "./outcomes/resourceSnapshotBuilder.ts";
-export type { ResourceSnapshot } from "./outcomes/resourceSnapshotBuilder.ts";
 
 export { buildNotification } from "./outcomes/notificationBuilder.ts";
 export type { NotificationBuildInput } from "./outcomes/notificationBuilder.ts";

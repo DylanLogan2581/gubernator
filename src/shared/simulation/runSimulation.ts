@@ -2,13 +2,33 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import type { SimulationInput, SimulationOutput } from "./simulationTypes.ts";
+import type {
+  SimulationInputState,
+  SimulationResult,
+} from "./simulationTypes.ts";
 
-export function runSimulation(input: SimulationInput): SimulationOutput {
+export function runSimulation(_input: SimulationInputState): SimulationResult {
   return {
-    logs: [],
+    assignmentClears: [],
+    buildingStateChanges: [],
+    buildingsCreated: [],
+    citizenBirths: [],
+    citizenDeaths: [],
+    constructionUpdates: [],
+    depositUpdates: [],
+    logEntries: [],
+    managedPopulationUpdates: [],
     notifications: [],
-    settlementId: input.settlementId,
-    turnNumber: input.turnNumber,
+    partnershipChanges: [],
+    readinessSummary: {
+      notReadySettlementCount: 0,
+      readyPercentage: 0,
+      readySettlementCount: 0,
+      totalSettlementCount: 0,
+    },
+    resourceSnapshots: [],
+    settlementSnapshots: [],
+    stockpileDeltas: [],
+    tradeRouteOutcomes: [],
   };
 }

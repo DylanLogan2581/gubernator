@@ -2,12 +2,12 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import type { SimulationContext } from "../simulationTypes.ts";
+import type {
+  SimulationContext,
+  SettlementSnapshot,
+} from "../simulationTypes.ts";
 
-export type SettlementSnapshot = {
-  readonly settlementId: string;
-  readonly turnNumber: number;
-};
+export type { SettlementSnapshot } from "../simulationTypes.ts";
 
 export function buildSettlementSnapshot(
   context: SimulationContext,
