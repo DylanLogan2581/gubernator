@@ -35,6 +35,8 @@ The `authenticated` role has all other stockpile columns revoked. The auto-seed 
 
 ## Construction queue lifecycle
 
+> **Epic 6:** The simulation drives the `queued → in_progress → complete` progression and moves projects to `paused` when workers or stockpile inputs fall short. See [`docs/epic-6-simulation-engine.md`](epic-6-simulation-engine.md) — construction phase.
+
 ```text
 queued → in_progress → paused → in_progress → ...
 queued → cancelled
@@ -54,6 +56,8 @@ Projects are created via `create_construction_project(p_settlement_id, p_bluepri
 - A BEFORE INSERT trigger (`construction_projects_max_instances`) enforces `building_blueprints.max_instances_per_settlement` across in-flight projects per settlement.
 
 ## Settlement buildings state machine and population cap
+
+> **Epic 6:** The simulation auto-deconstructs buildings when upkeep cannot be met and drives the `suspended ↔ active` transitions when resource shortfalls are resolved. See [`docs/epic-6-simulation-engine.md`](epic-6-simulation-engine.md) — building upkeep phase.
 
 ```text
 active ↔ suspended
@@ -106,6 +110,8 @@ Deposits arrive via admin action (direct insert) or future discovery events (Epi
 
 ## Managed population instance lifecycle
 
+> **Epic 6:** The simulation decrements `current_count` each turn via culling and natural decline, and transitions the instance to `extinct` when the count reaches zero. See [`docs/epic-6-simulation-engine.md`](epic-6-simulation-engine.md) — managed populations phase.
+
 Each `managed_population_instances` row represents one herd or flock at a settlement.
 
 | Status    | Meaning                                                                               |
@@ -128,6 +134,8 @@ Key constraints enforced at the DB layer:
 - **DELETE** — any user who passes `current_user_manages_settlement` (includes World Admin / Super Admin).
 
 ## Trade route bilateral approval matrix
+
+> **Epic 6:** The simulation pauses active routes when either endpoint cannot meet the transfer quantity, and resumes them automatically once the shortfall clears. See [`docs/epic-6-simulation-engine.md`](epic-6-simulation-engine.md) — trade routes phase.
 
 A trade route is proposed by one Nation Manager and must be approved by both sides' Nation Managers before resources flow.
 
