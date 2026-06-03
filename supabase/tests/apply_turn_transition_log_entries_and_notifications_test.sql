@@ -689,17 +689,27 @@ select
 
 reset role;
 
--- Reset transition to 'running' to simulate the concurrent-reuse path:
--- the next call will hit unique_violation on insert and reuse this row.
--- Must run as postgres (superuser) because authenticated has UPDATE revoked on
--- turn_transitions (20260519000001_protect_turn_audit_writes.sql).
+-- Reset transition to 'running' and world turn back to 5 to simulate the
+-- concurrent-reuse path: the next call will hit unique_violation on insert
+-- and reuse this row. The world turn must also be reset because §C35a
+-- advanced it during the first call; without the reset the second call
+-- would get "stale expected turn number" before reaching the reuse path.
+-- Must run as postgres (superuser) because authenticated has UPDATE revoked
+-- on turn_transitions (20260519000001_protect_turn_audit_writes.sql).
 update public.turn_transitions
 set
   status = 'running',
-  finished_at = null
+  finished_at = null,
+  readiness_summary_jsonb = null
 where
   world_id = 'b1200000-0000-0000-0000-000000000005'
   and from_turn_number = 5;
+
+update public.worlds
+set
+  current_turn_number = 5
+where
+  id = 'b1200000-0000-0000-0000-000000000005';
 
 set
   local role authenticated;

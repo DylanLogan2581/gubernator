@@ -232,6 +232,7 @@ select
 
 -- ===========================================================================
 -- WORLD OWNER: implicit world admin via ownership
+-- (world is now at turn 5 after super admin advanced it from 4)
 -- ===========================================================================
 set
   local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000002","role":"authenticated"}';
@@ -242,7 +243,7 @@ select
       select
         public.apply_turn_transition (
           'c1200000-0000-0000-0000-000000000001',
-          4,
+          5,
           '{}'::jsonb
         ) ->> 'transitionId'
     ) is not null,
@@ -251,6 +252,7 @@ select
 
 -- ===========================================================================
 -- WORLD ADMIN: explicit world_admins row
+-- (world is now at turn 6 after owner advanced it from 5)
 -- ===========================================================================
 set
   local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000003","role":"authenticated"}';
@@ -261,7 +263,7 @@ select
       select
         public.apply_turn_transition (
           'c1200000-0000-0000-0000-000000000001',
-          4,
+          6,
           '{}'::jsonb
         ) ->> 'transitionId'
     ) is not null,
