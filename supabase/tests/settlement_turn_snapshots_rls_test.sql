@@ -334,10 +334,10 @@ select
       population_total, population_npc, population_player_character, population_cap
     ) values (
       'd7000000-0000-0000-0000-000000000002',
-      'd5000000-0000-0000-0000-000000000001',
+      null,
       'd2000000-0000-0000-0000-000000000001',
       'd4000000-0000-0000-0000-000000000001',
-      3, 12, 11, 1, 50
+      4, 12, 11, 1, 50
     )
     $test$,
     'world admin can insert a snapshot row'
@@ -396,10 +396,10 @@ select
       population_total, population_npc, population_player_character, population_cap
     ) values (
       'd7000000-0000-0000-0000-000000000003',
-      'd5000000-0000-0000-0000-000000000001',
+      null,
       'd2000000-0000-0000-0000-000000000001',
       'd4000000-0000-0000-0000-000000000001',
-      3, 15, 14, 1, 50
+      5, 15, 14, 1, 50
     )
     $test$,
     'super admin can insert a snapshot row in any world'
