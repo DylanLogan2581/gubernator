@@ -95,13 +95,41 @@ const exampleResult: SimulationResult = {
   },
   resourceSnapshots: [
     {
-      quantity: 100,
+      consumed: 10,
+      produced: 20,
+      quantityAfter: 110,
+      quantityBefore: 100,
       resourceId: "res-1",
       settlementId: "s-1",
+      tradeIn: 5,
+      tradeOut: 0,
       turnNumber: 5,
     },
   ],
-  settlementSnapshots: [{ settlementId: "s-1", turnNumber: 5 }],
+  settlementSnapshots: [
+    {
+      aliveNpc: 8,
+      alivePc: 2,
+      aliveTotal: 10,
+      birthCount: 1,
+      buildingSummary: {
+        active: 2,
+        auto_deconstructed: 0,
+        manually_deconstructed: 0,
+        suspended: 1,
+      },
+      deathCount: 0,
+      homelessDeathsCount: 0,
+      managedPopulationSummary: [],
+      partnershipsFormedCount: 1,
+      populationCap: 20,
+      settlementId: "s-1",
+      starvationDeathsCount: 0,
+      tradeSummary: [],
+      turnNumber: 5,
+      warnings: { depletedDepositIds: [], pausedProjectIds: [] },
+    },
+  ],
   stockpileDeltas: [{ delta: -5, resourceId: "res-1", settlementId: "s-1" }],
   tradeRouteOutcomes: [
     {

@@ -19,6 +19,10 @@ export type {
   ReadinessSummary,
   ResourceSnapshot,
   SettlementSnapshot,
+  SettlementSnapshotBuildingStateCounts,
+  SettlementSnapshotManagedPopEntry,
+  SettlementSnapshotTradeEntry,
+  SettlementSnapshotWarnings,
   SimAssignmentType,
   SimBuildingBlueprint,
   SimBuildingState,
@@ -131,7 +135,12 @@ export type { PhaseStockpileClampOutput } from "./phases/phaseStockpileClamp.ts"
 export { phaseLogsAndSnapshots } from "./phases/phaseLogsAndSnapshots.ts";
 export type { PhaseLogsAndSnapshotsOutput } from "./phases/phaseLogsAndSnapshots.ts";
 
-export { buildSettlementSnapshot } from "./outcomes/settlementSnapshotBuilder.ts";
+export { buildSettlementSnapshots } from "./outcomes/settlementSnapshotBuilder.ts";
+export type { BuildSettlementSnapshotsParams } from "./outcomes/settlementSnapshotBuilder.ts";
+
+export type { BuildResourceSnapshotsParams } from "./outcomes/resourceSnapshotBuilder.ts";
+
+export type { PhaseLogsAndSnapshotsAccumulator } from "./phases/phaseLogsAndSnapshots.ts";
 
 export { buildResourceSnapshots } from "./outcomes/resourceSnapshotBuilder.ts";
 

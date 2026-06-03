@@ -444,15 +444,56 @@ export type AssignmentClear = {
   readonly reason: string;
 };
 
+export type SettlementSnapshotManagedPopEntry = {
+  readonly currentCount: number;
+  readonly instanceId: string;
+};
+
+export type SettlementSnapshotBuildingStateCounts = {
+  readonly active: number;
+  readonly auto_deconstructed: number;
+  readonly manually_deconstructed: number;
+  readonly suspended: number;
+};
+
+export type SettlementSnapshotTradeEntry = {
+  readonly delivered: boolean;
+  readonly quantityTransferred: number;
+  readonly tradeRouteId: string;
+};
+
+export type SettlementSnapshotWarnings = {
+  readonly depletedDepositIds: readonly string[];
+  readonly pausedProjectIds: readonly string[];
+};
+
 export type SettlementSnapshot = {
+  readonly aliveNpc: number;
+  readonly alivePc: number;
+  readonly aliveTotal: number;
+  readonly birthCount: number;
+  readonly buildingSummary: SettlementSnapshotBuildingStateCounts;
+  readonly deathCount: number;
+  readonly homelessDeathsCount: number;
+  readonly managedPopulationSummary: readonly SettlementSnapshotManagedPopEntry[];
+  readonly partnershipsFormedCount: number;
+  readonly populationCap: number;
   readonly settlementId: string;
+  readonly starvationDeathsCount: number;
+  readonly tradeSummary: readonly SettlementSnapshotTradeEntry[];
   readonly turnNumber: number;
+  readonly warnings: SettlementSnapshotWarnings;
 };
 
 export type ResourceSnapshot = {
-  readonly quantity: number;
+  readonly consumed: number;
+  readonly produced: number;
+  readonly quantityAfter: number;
+  readonly quantityBefore: number;
   readonly resourceId: string;
   readonly settlementId: string;
+  readonly tradeIn: number;
+  readonly tradeOut: number;
   readonly turnNumber: number;
 };
 
