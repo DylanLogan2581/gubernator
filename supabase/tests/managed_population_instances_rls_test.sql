@@ -575,10 +575,12 @@ select
   );
 
 -- ===========================================================================
--- CONSTRAINT: configured_cull_quantity > current_count is rejected
+-- CONSTRAINT DROPPED: configured_cull_quantity > current_count is now allowed
+-- at the table level; enforcement is via set_configured_cull_quantity RPC and
+-- client-side validation only (constraint dropped in 20260602000005).
 -- ===========================================================================
 select
-  throws_ok (
+  lives_ok (
     $test$
     insert into public.managed_population_instances (
       settlement_id, managed_population_type_id,
@@ -591,9 +593,7 @@ select
       50, 51, 'active'
     )
   $test$,
-    '23514',
-    null,
-    'configured_cull_quantity > current_count is rejected by the check constraint'
+    'configured_cull_quantity > current_count is now permitted at the table level (cull_le_count constraint dropped)'
   );
 
 select
