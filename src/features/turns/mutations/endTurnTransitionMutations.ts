@@ -133,6 +133,15 @@ export function endTurnTransitionMutationOptions({
         queryClient.invalidateQueries({
           queryKey: turnQueryKeys.latestTransitionStatus(input.worldId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: turnQueryKeys.latestTransitionOutcome(input.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...turnQueryKeys.all,
+            "latest-settlement-transition-outcome",
+          ],
+        }),
         queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: resourcesQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: buildingsQueryKeys.all }),

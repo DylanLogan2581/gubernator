@@ -28,6 +28,15 @@ export {
   latestTurnTransitionStatusQueryOptions,
   shouldRetryLatestTurnTransitionStatusQuery,
 } from "./queries/latestTurnTransitionStatusQueries";
+export {
+  latestSettlementTransitionOutcomeQueryOptions,
+  latestWorldTransitionOutcomeQueryOptions,
+  type TurnTransitionLogEntry,
+  type TurnTransitionNotification,
+  type TurnTransitionOutcome,
+  type TurnTransitionResourceSnapshot,
+  type TurnTransitionSettlementSnapshot,
+} from "./queries/turnTransitionOutcomeQueries";
 export { turnQueryKeys } from "./queries/turnQueryKeys";
 export type {
   CurrentTurnDateDisplay,
