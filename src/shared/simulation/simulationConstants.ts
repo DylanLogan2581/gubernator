@@ -38,6 +38,7 @@ export type LogCategory = (typeof LOG_CATEGORIES)[keyof typeof LOG_CATEGORIES];
 
 export const SIMULATION_NOTIFICATION_TYPES = {
   CONSTRUCTION_COMPLETE: "simulation.construction.complete",
+  CONSTRUCTION_PAUSED: "simulation.construction.paused",
   DEPOSIT_DEPLETED: "simulation.deposit.depleted",
   STOCKPILE_CLAMPED: "simulation.stockpile.clamped",
   TURN_SIMULATED: "simulation.turn.simulated",
