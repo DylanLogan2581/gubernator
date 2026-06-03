@@ -42,10 +42,15 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     expect(
-      await screen.findByRole("heading", { name: "End turn" }),
+      await screen.findByRole("heading", { name: "Run turn transition" }),
     ).toBeDefined();
     expect(
-      screen.getByText("Advance the world from turn 7", { exact: false }),
+      screen.getByText(
+        "Run the full simulation and advance the world from turn 7",
+        {
+          exact: false,
+        },
+      ),
     ).toBeDefined();
     expect(await screen.findByText("Current turn")).toBeDefined();
     expect(screen.getByText("7")).toBeDefined();
@@ -91,7 +96,9 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
 
     expect(
       await screen.findByText("2 of 3 settlements ready (66%). 1 not ready."),
@@ -115,10 +122,12 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
 
     expect(
-      await screen.findByRole("dialog", { name: "Confirm end turn" }),
+      await screen.findByRole("dialog", { name: "Confirm turn transition" }),
     ).toBeDefined();
     expect(screen.getAllByText("Current turn").length).toBeGreaterThan(0);
     expect(screen.getByText("Next turn")).toBeDefined();
@@ -131,14 +140,44 @@ describe("EndTurnControl", () => {
     expect(screen.getByText(/2 of 2 settlements ready/i)).toBeDefined();
     expect(screen.queryByRole("alert")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Confirm end turn" }));
+    await user.click(
+      screen.getByRole("button", { name: "Confirm turn transition" }),
+    );
 
-    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-basic", {
+    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-simulation", {
       body: {
         expectedTurnNumber: 7,
         worldId: "world-1",
       },
     });
+  });
+
+  it("shows the transition checklist in the confirmation dialog", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Confirm turn transition",
+    });
+
+    expect(within(dialog).getByText("The transition will run:")).toBeDefined();
+    expect(
+      within(dialog).getByText("Jobs & resource production"),
+    ).toBeDefined();
+    expect(within(dialog).getByText("Construction progress")).toBeDefined();
+    expect(within(dialog).getByText("Building upkeep")).toBeDefined();
+    expect(within(dialog).getByText("Trade routes")).toBeDefined();
+    expect(within(dialog).getByText("Homelessness")).toBeDefined();
   });
 
   it("shows numeric turn values in the confirmation dialog for turn zero", async () => {
@@ -156,10 +195,12 @@ describe("EndTurnControl", () => {
     });
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
 
     const dialog = await screen.findByRole("dialog", {
-      name: "Confirm end turn",
+      name: "Confirm turn transition",
     });
 
     expect(dialog).toHaveTextContent("Current turn");
@@ -185,7 +226,9 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
 
     expect(await screen.findByText("Readiness summary")).toBeDefined();
     expect(screen.getByText(/1 of 2 settlements ready/i)).toBeDefined();
@@ -193,7 +236,9 @@ describe("EndTurnControl", () => {
       /some settlements are not ready/i,
     );
 
-    await user.click(screen.getByRole("button", { name: "Confirm end turn" }));
+    await user.click(
+      screen.getByRole("button", { name: "Confirm turn transition" }),
+    );
 
     expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
   });
@@ -204,7 +249,9 @@ describe("EndTurnControl", () => {
 
     renderEndTurnControl({ canAdmin: false });
 
-    expect(screen.queryByRole("button", { name: "End turn" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Run turn transition" }),
+    ).toBeNull();
     expect(clientFixture.invoke).not.toHaveBeenCalled();
   });
 
@@ -215,7 +262,9 @@ describe("EndTurnControl", () => {
 
     renderEndTurnControl({ isArchived: true });
 
-    const button = await screen.findByRole("button", { name: "End turn" });
+    const button = await screen.findByRole("button", {
+      name: "Run turn transition",
+    });
 
     expect(button).toBeDisabled();
     expect(
@@ -239,16 +288,18 @@ describe("EndTurnControl", () => {
 
     await screen.findByText("Current turn");
 
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     expect(
-      (await screen.findAllByRole("button", { name: "Ending turn..." }))[0],
+      (await screen.findAllByRole("button", { name: "Running..." }))[0],
     ).toBeDisabled();
     expect(screen.getByText("End-turn transition is running.")).toBeDefined();
-    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-basic", {
+    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-simulation", {
       body: {
         expectedTurnNumber: 7,
         worldId: "world-1",
@@ -268,31 +319,39 @@ describe("EndTurnControl", () => {
 
     await screen.findByText("Current turn");
 
-    const button = await screen.findByRole("button", { name: "End turn" });
+    const button = await screen.findByRole("button", {
+      name: "Run turn transition",
+    });
 
     await user.click(button);
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
     await user.click(
-      (await screen.findAllByRole("button", { name: "Ending turn..." }))[0],
+      (await screen.findAllByRole("button", { name: "Running..." }))[0],
     );
 
     expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
   });
 
-  it("toasts the new turn and date after ending the turn", async () => {
+  it("toasts the new turn and simulation counts after the transition", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: {
         data: {
           data: {
             actorId: "user-1",
-            transition: {
-              nextDateLabel: "Secondday, Ember 1, 101 AG",
-              nextTurnNumber: 8,
-              previousDateLabel: "Firstday, Dawn 2, 101 AG",
-              previousTurnNumber: 7,
+            summary: {
+              currentTurnNumber: 8,
+              fromTurnNumber: 7,
+              patchCounts: {
+                citizenDeaths: 2,
+                citizenBirths: 1,
+                buildingStateChanges: 3,
+                depositUpdates: 1,
+              },
+              toTurnNumber: 8,
+              transitionId: "transition-1",
             },
             worldId: "world-1",
           },
@@ -313,34 +372,41 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledTimes(1);
     });
     expect(toastSuccess).toHaveBeenCalledWith("Advanced to turn 8", {
-      description:
-        "Now Secondday, Ember 1, 101 AG (was turn 7 on Firstday, Dawn 2, 101 AG).",
+      description: "2 deaths, 1 births, 3 building changes, 1 deposit updates.",
     });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByText("End-turn transition completed.")).toBeNull();
   });
 
-  it("toasts authoritative date labels from the response, not pre-submit prop values", async () => {
+  it("toasts simulation counts sourced from the response summary", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: {
         data: {
           data: {
             actorId: "user-1",
-            transition: {
-              nextDateLabel: "Authoritative Next Date",
-              nextTurnNumber: 8,
-              previousDateLabel: "Authoritative Previous Date",
-              previousTurnNumber: 7,
+            summary: {
+              currentTurnNumber: 8,
+              fromTurnNumber: 7,
+              patchCounts: {
+                citizenDeaths: 5,
+                citizenBirths: 3,
+                buildingStateChanges: 2,
+                depositUpdates: 4,
+              },
+              toTurnNumber: 8,
+              transitionId: "transition-1",
             },
             worldId: "world-1",
           },
@@ -352,15 +418,14 @@ describe("EndTurnControl", () => {
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
-    renderEndTurnControl({
-      currentDateLabel: "Stale Current Date",
-      nextDateLabel: "Stale Next Date",
-    });
+    renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
@@ -368,10 +433,10 @@ describe("EndTurnControl", () => {
     });
     const [, options] = toastSuccess.mock.calls[0];
 
-    expect(options?.description).toContain("Authoritative Next Date");
-    expect(options?.description).toContain("Authoritative Previous Date");
-    expect(options?.description).not.toContain("Stale Current Date");
-    expect(options?.description).not.toContain("Stale Next Date");
+    expect(options?.description).toContain("5 deaths");
+    expect(options?.description).toContain("3 births");
+    expect(options?.description).toContain("2 building changes");
+    expect(options?.description).toContain("4 deposit updates");
   });
 
   it("toasts a refresh-safe message for stale-turn failures", async () => {
@@ -388,9 +453,11 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
@@ -416,9 +483,11 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
@@ -446,9 +515,11 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
@@ -521,11 +592,17 @@ function createClientFixture({
     data: {
       data: {
         actorId: "user-1",
-        transition: {
-          nextDateLabel: "Secondday, Ember 1, 101 AG",
-          nextTurnNumber: 8,
-          previousDateLabel: "Firstday, Dawn 2, 101 AG",
-          previousTurnNumber: 7,
+        summary: {
+          currentTurnNumber: 8,
+          fromTurnNumber: 7,
+          patchCounts: {
+            citizenDeaths: 0,
+            citizenBirths: 0,
+            buildingStateChanges: 0,
+            depositUpdates: 0,
+          },
+          toTurnNumber: 8,
+          transitionId: "transition-1",
         },
         worldId: "world-1",
       },

@@ -12,7 +12,7 @@ import {
 } from "@/features/settlements";
 import { notifyMutationSuccess } from "@/lib/notify";
 
-import { endTurnBasicMutationOptions } from "../mutations/endTurnBasicMutations";
+import { endTurnTransitionMutationOptions } from "../mutations/endTurnTransitionMutations";
 import {
   getControlDescription,
   getErrorDescription,
@@ -79,7 +79,7 @@ function EndTurnControlContent({
     settlementReadinessSummaryQueryOptions(worldId),
   );
   const endTurnMutation = useMutation(
-    endTurnBasicMutationOptions({ queryClient }),
+    endTurnTransitionMutationOptions({ queryClient }),
   );
   const isReadinessUnavailable = !readinessSummaryQuery.isSuccess;
   const isDisabled =
@@ -110,12 +110,14 @@ function EndTurnControlContent({
         },
         onSuccess: (result) => {
           setIsConfirming(false);
-          notifyMutationSuccess(
-            `Advanced to turn ${result.transition.nextTurnNumber.toString()}`,
-            {
-              description: `Now ${result.transition.nextDateLabel} (was turn ${result.transition.previousTurnNumber.toString()} on ${result.transition.previousDateLabel}).`,
-            },
-          );
+          const { patchCounts, toTurnNumber } = result.summary;
+          const deaths = patchCounts.citizenDeaths ?? 0;
+          const births = patchCounts.citizenBirths ?? 0;
+          const buildingChanges = patchCounts.buildingStateChanges ?? 0;
+          const depositUpdates = patchCounts.depositUpdates ?? 0;
+          notifyMutationSuccess(`Advanced to turn ${toTurnNumber.toString()}`, {
+            description: `${deaths.toString()} deaths, ${births.toString()} births, ${buildingChanges.toString()} building changes, ${depositUpdates.toString()} deposit updates.`,
+          });
         },
       },
     );
@@ -132,11 +134,11 @@ function EndTurnControlContent({
             id="end-turn-title"
             className="text-lg font-semibold tracking-normal"
           >
-            End turn
+            Run turn transition
           </h2>
           <p className="text-sm text-muted-foreground">
-            Advance the world from turn {currentTurnNumber} after reviewing
-            settlement readiness.
+            Run the full simulation and advance the world from turn{" "}
+            {currentTurnNumber}.
           </p>
         </div>
         <Button
@@ -146,7 +148,7 @@ function EndTurnControlContent({
           className="w-fit"
         >
           <StepForward aria-hidden="true" />
-          {endTurnMutation.isPending ? "Ending turn..." : "End turn"}
+          {endTurnMutation.isPending ? "Running..." : "Run turn transition"}
         </Button>
       </div>
 

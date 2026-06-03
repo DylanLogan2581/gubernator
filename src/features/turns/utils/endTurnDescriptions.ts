@@ -3,7 +3,7 @@ import {
   type SettlementReadinessSummary,
 } from "@/features/settlements";
 
-import { isEndTurnBasicError } from "../mutations/endTurnBasicMutations";
+import { isEndTurnTransitionError } from "../mutations/endTurnTransitionMutations";
 
 export function getControlDescription({
   isArchived,
@@ -40,7 +40,7 @@ export function getReadinessSummaryDescription(
 }
 
 export function getErrorDescription(error: unknown): string {
-  if (isEndTurnBasicError(error)) {
+  if (isEndTurnTransitionError(error)) {
     switch (error.code) {
       case "end_turn_archived_world":
         return "This world is archived. End turn is unavailable.";

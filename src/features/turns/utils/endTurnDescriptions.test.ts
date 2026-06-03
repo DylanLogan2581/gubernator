@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { EndTurnBasicError } from "../mutations/endTurnBasicMutations";
+import { EndTurnTransitionError } from "../mutations/endTurnTransitionMutations";
 
 import {
   getControlDescription,
@@ -99,7 +99,7 @@ describe("getErrorDescription", () => {
   it("returns archived world message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_archived_world",
           message: "",
           worldId: "w",
@@ -111,7 +111,7 @@ describe("getErrorDescription", () => {
   it("returns running transition message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_running_transition",
           message: "",
           worldId: "w",
@@ -125,7 +125,7 @@ describe("getErrorDescription", () => {
   it("returns stale turn message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_stale_turn",
           message: "",
           worldId: "w",
@@ -139,7 +139,7 @@ describe("getErrorDescription", () => {
   it("returns transition failed message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_transition_failed",
           message: "",
           worldId: "w",
@@ -153,7 +153,7 @@ describe("getErrorDescription", () => {
   it("returns unauthorized message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_unauthorized",
           message: "",
           worldId: "w",

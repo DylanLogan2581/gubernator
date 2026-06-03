@@ -9,6 +9,18 @@ import { EndTurnMetric } from "./EndTurnMetric";
 
 import type { JSX } from "react";
 
+const TRANSITION_PHASES = [
+  "Jobs & resource production",
+  "Deposit extraction",
+  "Construction progress",
+  "Building upkeep",
+  "Trade routes",
+  "Managed populations",
+  "Citizen consumption",
+  "Partnerships",
+  "Homelessness",
+] as const;
+
 export function EndTurnConfirmationDialog({
   currentDateLabel,
   currentTurnNumber,
@@ -44,14 +56,15 @@ export function EndTurnConfirmationDialog({
               id="end-turn-confirmation-title"
               className="text-lg font-semibold tracking-normal"
             >
-              Confirm end turn
+              Confirm turn transition
             </h3>
             <p className="text-sm text-muted-foreground">
-              This transition advances world state and cannot be undone.
+              This runs the full simulation and advances world state. It cannot
+              be undone.
             </p>
           </div>
           <Button
-            aria-label="Cancel end turn"
+            aria-label="Cancel turn transition"
             disabled={isPending}
             onClick={onCancel}
             size="icon-sm"
@@ -79,6 +92,15 @@ export function EndTurnConfirmationDialog({
           </p>
         </div>
 
+        <div className="rounded-md border border-border bg-background px-3 py-2">
+          <p className="text-sm font-medium">The transition will run:</p>
+          <ul className="mt-1 list-inside list-disc text-sm text-muted-foreground">
+            {TRANSITION_PHASES.map((phase) => (
+              <li key={phase}>{phase}</li>
+            ))}
+          </ul>
+        </div>
+
         {hasNotReadySettlements ? (
           <p
             className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -104,7 +126,7 @@ export function EndTurnConfirmationDialog({
           </Button>
           <Button disabled={isPending} onClick={onConfirm} type="button">
             <StepForward aria-hidden="true" />
-            {isPending ? "Ending turn..." : "Confirm end turn"}
+            {isPending ? "Running..." : "Confirm turn transition"}
           </Button>
         </div>
       </div>
