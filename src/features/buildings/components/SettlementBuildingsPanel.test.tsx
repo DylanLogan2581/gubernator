@@ -137,10 +137,39 @@ type TestJobRow = {
   readonly world_id: string;
 };
 
+type TestSnapshotLookupRow = {
+  readonly turn_transition_id: string;
+};
+
+type TestTransitionRow = {
+  readonly finished_at: string | null;
+  readonly from_turn_number: number;
+  readonly id: string;
+  readonly notifications: readonly unknown[];
+  readonly settlement_turn_resource_snapshots: readonly unknown[];
+  readonly settlement_turn_snapshots: readonly unknown[];
+  readonly started_at: string;
+  readonly status: string;
+  readonly to_turn_number: number;
+  readonly turn_log_entries: ReadonlyArray<{
+    readonly citizen_id: null;
+    readonly id: string;
+    readonly log_category: string;
+    readonly nation_id: null;
+    readonly payload_jsonb: unknown;
+    readonly resource_id: null;
+    readonly settlement_id: string;
+    readonly world_id: string;
+  }>;
+  readonly world_id: string;
+};
+
 function createClient({
   buildingRows = [],
   citizenRows = [],
   jobRows = [],
+  latestSnapshotRow = null,
+  latestTransitionRow = null,
   populationCap = 0,
   resourceRows = [],
   rpcMock,
@@ -148,6 +177,8 @@ function createClient({
   readonly buildingRows?: readonly TestBuildingRow[];
   readonly citizenRows?: readonly TestCitizenRow[];
   readonly jobRows?: readonly TestJobRow[];
+  readonly latestSnapshotRow?: TestSnapshotLookupRow | null;
+  readonly latestTransitionRow?: TestTransitionRow | null;
   readonly populationCap?: number;
   readonly resourceRows?: readonly TestResourceRow[];
   readonly rpcMock?: ReturnType<typeof vi.fn>;
@@ -174,6 +205,25 @@ function createClient({
     return builder;
   }
 
+  const snapshotLookupBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => snapshotLookupBuilder),
+    not: vi.fn(() => snapshotLookupBuilder),
+    order: vi.fn(() => snapshotLookupBuilder),
+    limit: vi.fn(() => snapshotLookupBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: latestSnapshotRow,
+      error: null,
+    }),
+  };
+
+  const transitionBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => transitionBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: latestTransitionRow,
+      error: null,
+    }),
+  };
+
   const defaultRpcMock = vi.fn((fn: string) => {
     if (fn === "settlement_population_cap") {
       return Promise.resolve({ data: populationCap, error: null });
@@ -194,6 +244,12 @@ function createClient({
       }
       if (table === "job_definitions") {
         return createSimpleQueryBuilder(jobRows);
+      }
+      if (table === "settlement_turn_snapshots") {
+        return { select: vi.fn(() => snapshotLookupBuilder) };
+      }
+      if (table === "turn_transitions") {
+        return { select: vi.fn(() => transitionBuilder) };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -258,6 +314,107 @@ describe("SettlementBuildingsPanel", () => {
     expect(screen.getByText("Granary")).toBeDefined();
     expect(screen.getByText("Active (1)")).toBeDefined();
     expect(screen.getByText("Suspended (1)")).toBeDefined();
+  });
+
+  it("renders amber Suspended badge for suspended buildings", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Granary" },
+            missed_upkeep_count: 1,
+            state: "suspended",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Granary");
+    const badge = screen.getByRole("generic", { name: "State: Suspended" });
+    expect(badge).toBeDefined();
+    expect(badge.getAttribute("data-variant")).toBe("warning");
+    expect(badge.getAttribute("title")).toBe("Missed upkeep 1×");
+  });
+
+  it("renders red Auto-deconstructed badge for auto_deconstructed buildings", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Granary" },
+            missed_upkeep_count: 3,
+            state: "auto_deconstructed",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Granary");
+    const badge = screen.getByRole("generic", {
+      name: "State: Auto-deconstructed",
+    });
+    expect(badge).toBeDefined();
+    expect(badge.getAttribute("data-variant")).toBe("destructive");
+    expect(badge.getAttribute("title")).toBe("Missed upkeep 3×");
+  });
+
+  it("shows transition-sourced tooltip when latest outcome has a matching log entry", async () => {
+    const TRANSITION_ID = "00000000-0000-0000-0000-000000000099";
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Granary" },
+            id: BUILDING_ID_1,
+            missed_upkeep_count: 2,
+            state: "suspended",
+          }),
+        ],
+        latestSnapshotRow: { turn_transition_id: TRANSITION_ID },
+        latestTransitionRow: {
+          finished_at: "2026-06-01T01:00:00.000Z",
+          from_turn_number: 3,
+          id: TRANSITION_ID,
+          notifications: [],
+          settlement_turn_resource_snapshots: [],
+          settlement_turn_snapshots: [],
+          started_at: "2026-06-01T00:00:00.000Z",
+          status: "completed",
+          to_turn_number: 4,
+          turn_log_entries: [
+            {
+              citizen_id: null,
+              id: "00000000-0000-0000-0000-000000000088",
+              log_category: "building.suspended",
+              nation_id: null,
+              payload_jsonb: {
+                blueprintId: BLUEPRINT_ID,
+                buildingId: BUILDING_ID_1,
+                missedUpkeepCount: 2,
+              },
+              resource_id: null,
+              settlement_id: SETTLEMENT_ID,
+              world_id: WORLD_ID,
+            },
+          ],
+          world_id: WORLD_ID,
+        },
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Granary");
+    const badge = screen.getByRole("generic", { name: "State: Suspended" });
+    expect(badge.getAttribute("title")).toBe("Turn 4 · missed upkeep 2×");
   });
 
   it("shows effects summary using tierEffectsToState formatting", async () => {

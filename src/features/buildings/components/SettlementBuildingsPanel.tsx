@@ -28,6 +28,10 @@ import {
 import { citizenAggregateStatsForSettlementQueryOptions } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import {
+  latestSettlementTransitionOutcomeQueryOptions,
+  type TurnTransitionOutcome,
+} from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -63,6 +67,9 @@ export function SettlementBuildingsPanel({
   );
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
+  const latestOutcomeQuery = useQuery(
+    latestSettlementTransitionOutcomeQueryOptions(settlementId),
+  );
   const queryClient = useQueryClient();
 
   const capValue = capQuery.data ?? 0;
@@ -119,6 +126,7 @@ export function SettlementBuildingsPanel({
           canAdmin={canAdmin}
           isArchived={isArchived}
           jobNames={jobNames}
+          latestOutcome={latestOutcomeQuery.data ?? null}
           queryClient={queryClient}
           resourceNames={resourceNames}
           settlementId={settlementId}
@@ -147,6 +155,7 @@ function BuildingsGroups({
   canAdmin,
   isArchived,
   jobNames,
+  latestOutcome,
   queryClient,
   resourceNames,
   settlementId,
@@ -155,6 +164,7 @@ function BuildingsGroups({
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
@@ -175,6 +185,7 @@ function BuildingsGroups({
             buildings={groupBuildings}
             jobNames={jobNames}
             label={group.label}
+            latestOutcome={latestOutcome}
             queryClient={queryClient}
             resourceNames={resourceNames}
             settlementId={settlementId}
@@ -190,6 +201,7 @@ function BuildingStateGroup({
   canDeconstruct,
   jobNames,
   label,
+  latestOutcome,
   queryClient,
   resourceNames,
   settlementId,
@@ -198,6 +210,7 @@ function BuildingStateGroup({
   readonly canDeconstruct: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly label: string;
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
@@ -237,6 +250,7 @@ function BuildingStateGroup({
                 building={building}
                 canDeconstruct={canDeconstruct}
                 jobNames={jobNames}
+                latestOutcome={latestOutcome}
                 queryClient={queryClient}
                 resourceNames={resourceNames}
                 settlementId={settlementId}
@@ -287,17 +301,23 @@ function buildEffectsSummary(
   return parts.length > 0 ? parts.join(", ") : "—";
 }
 
-type StateBadgeVariant = "default" | "secondary" | "outline" | "destructive";
+type StateBadgeVariant =
+  | "default"
+  | "secondary"
+  | "outline"
+  | "destructive"
+  | "warning";
 
 function stateBadgeVariant(state: SettlementBuildingState): StateBadgeVariant {
   switch (state) {
     case "active":
       return "default";
     case "suspended":
-      return "outline";
+      return "warning";
     case "manually_deconstructed":
-    case "auto_deconstructed":
       return "secondary";
+    case "auto_deconstructed":
+      return "destructive";
   }
 }
 
@@ -306,18 +326,80 @@ function stateBadgeLabel(state: SettlementBuildingState): string {
     case "active":
       return "active";
     case "suspended":
-      return "suspended";
+      return "Suspended";
     case "manually_deconstructed":
       return "deconstructed";
     case "auto_deconstructed":
-      return "auto-deconstructed";
+      return "Auto-deconstructed";
   }
+}
+
+type BuildingUpkeepPayload = {
+  readonly buildingId: string;
+  readonly missedUpkeepCount: number;
+  readonly gracePeriodTurns?: number;
+};
+
+function parseBuildingUpkeepPayload(
+  payload: unknown,
+): BuildingUpkeepPayload | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const p = payload as Record<string, unknown>;
+  if (typeof p.buildingId !== "string") return null;
+  if (typeof p.missedUpkeepCount !== "number") return null;
+  return {
+    buildingId: p.buildingId,
+    missedUpkeepCount: p.missedUpkeepCount,
+    gracePeriodTurns:
+      typeof p.gracePeriodTurns === "number" ? p.gracePeriodTurns : undefined,
+  };
+}
+
+function buildStateBadgeTooltip(
+  building: SettlementBuilding,
+  latestOutcome: TurnTransitionOutcome | null,
+): string | undefined {
+  if (
+    building.state !== "suspended" &&
+    building.state !== "auto_deconstructed"
+  ) {
+    return undefined;
+  }
+
+  const logEntry = latestOutcome?.logEntries.find((e) => {
+    if (
+      e.logCategory !== "building.suspended" &&
+      e.logCategory !== "building.auto_deconstructed"
+    ) {
+      return false;
+    }
+    return (
+      parseBuildingUpkeepPayload(e.payloadJsonb)?.buildingId === building.id
+    );
+  });
+
+  if (logEntry !== undefined && latestOutcome !== null) {
+    const payload = parseBuildingUpkeepPayload(logEntry.payloadJsonb);
+    if (payload !== null) {
+      const parts = [
+        `Turn ${latestOutcome.toTurnNumber}`,
+        `missed upkeep ${payload.missedUpkeepCount}×`,
+      ];
+      if (payload.gracePeriodTurns !== undefined) {
+        parts.push(`grace period: ${payload.gracePeriodTurns} turns`);
+      }
+      return parts.join(" · ");
+    }
+  }
+
+  return `Missed upkeep ${building.missedUpkeepCount}×`;
 }
 
 function BuildingRow({
   building,
   canDeconstruct,
   jobNames,
+  latestOutcome,
   queryClient,
   resourceNames,
   settlementId,
@@ -325,6 +407,7 @@ function BuildingRow({
   readonly building: SettlementBuilding;
   readonly canDeconstruct: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
@@ -332,6 +415,7 @@ function BuildingRow({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const effectsSummary = buildEffectsSummary(building, resourceNames, jobNames);
   const showDeconstructButton = canDeconstruct && building.state === "active";
+  const stateTooltip = buildStateBadgeTooltip(building, latestOutcome);
 
   return (
     <>
@@ -342,6 +426,7 @@ function BuildingRow({
         <td className="w-16 py-2 pr-2">
           <Badge
             aria-label={`State: ${stateBadgeLabel(building.state)}`}
+            title={stateTooltip}
             variant={stateBadgeVariant(building.state)}
           >
             {stateBadgeLabel(building.state)}
