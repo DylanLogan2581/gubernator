@@ -426,6 +426,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     citizen_type: "npc",
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
+    death_cause_category: null,
     id: CITIZEN_ID,
     name: "Aldra",
     npc_flaw: null,

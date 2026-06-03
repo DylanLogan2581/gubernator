@@ -67,6 +67,13 @@ type CitizenRowFixture = {
   readonly citizen_type: "npc" | "player_character";
   readonly created_at: string;
   readonly death_cause: string | null;
+  readonly death_cause_category:
+    | "starvation"
+    | "homeless"
+    | "event"
+    | "manual_admin"
+    | "unknown"
+    | null;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -624,6 +631,7 @@ function createCitizenRow(
     citizen_type: "npc",
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
+    death_cause_category: null,
     id: "c-1",
     name: "Citizen",
     npc_flaw: null,
@@ -655,6 +663,7 @@ function toCitizenType(row: CitizenRowFixture): Citizen {
     citizenType: row.citizen_type,
     createdAt: row.created_at,
     deathCause: row.death_cause,
+    deathCauseCategory: row.death_cause_category,
     id: row.id,
     name: row.name,
     npcFlaw: row.npc_flaw,

@@ -1,6 +1,12 @@
 export type CitizenType = "npc" | "player_character";
 export type CitizenStatus = "alive" | "dead";
 export type CitizenRoleType = "none" | "nation_manager" | "settlement_manager";
+export type DeathCauseCategory =
+  | "starvation"
+  | "homeless"
+  | "event"
+  | "manual_admin"
+  | "unknown";
 export type CitizenAssignmentType =
   | "standard_job"
   | "construction_project"
@@ -14,6 +20,7 @@ export type Citizen = {
   readonly citizenType: CitizenType;
   readonly createdAt: string;
   readonly deathCause: string | null;
+  readonly deathCauseCategory: DeathCauseCategory | null;
   readonly id: string;
   readonly name: string;
   readonly npcFlaw: string | null;

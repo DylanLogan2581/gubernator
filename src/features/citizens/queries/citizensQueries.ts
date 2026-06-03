@@ -15,6 +15,7 @@ import type {
   CitizenRoleType,
   CitizenStatus,
   CitizenType,
+  DeathCauseCategory,
 } from "../types/citizenTypes";
 
 type CitizenListQueryKey = ReturnType<typeof citizensQueryKeys.settlementList>;
@@ -74,6 +75,7 @@ type CitizenRow = {
   readonly citizen_type: CitizenType;
   readonly created_at: string;
   readonly death_cause: string | null;
+  readonly death_cause_category: DeathCauseCategory | null;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -110,7 +112,7 @@ type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
 };
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,death_cause_category,created_at,updated_at";
 
 const CITIZEN_AGGREGATE_SELECT =
   "id,citizen_type,status,citizen_assignments(assignment_type)";
@@ -451,6 +453,7 @@ export function toCitizen(row: CitizenRow): Citizen {
     citizenType: row.citizen_type,
     createdAt: row.created_at,
     deathCause: row.death_cause,
+    deathCauseCategory: row.death_cause_category,
     id: row.id,
     name: row.name,
     npcFlaw: row.npc_flaw,

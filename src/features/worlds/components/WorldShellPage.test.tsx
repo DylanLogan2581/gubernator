@@ -423,6 +423,7 @@ function createCitizen(overrides: Partial<Citizen> = {}): Citizen {
     citizenType: "player_character",
     createdAt: "2026-05-01T00:00:00.000Z",
     deathCause: null,
+    deathCauseCategory: null,
     id: "citizen-1",
     name: "Player",
     npcFlaw: null,

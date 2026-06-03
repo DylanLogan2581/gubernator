@@ -147,6 +147,7 @@ describe("CitizenDetailPage", () => {
         adminRows: [{ world_id: WORLD_ID }],
         citizen: createCitizenRow({
           death_cause: "fever",
+          death_cause_category: "manual_admin",
           name: "Cael",
           status: "dead",
         }),
@@ -159,10 +160,86 @@ describe("CitizenDetailPage", () => {
       await screen.findByRole("heading", { level: 1, name: "Cael" }),
     ).toBeDefined();
     expect(screen.getAllByText("Deceased").length).toBeGreaterThan(0);
-    expect(screen.getByText("Cause of death: fever")).toBeDefined();
+    expect(screen.getByText("Admin")).toBeDefined();
+    expect(screen.getByText("fever")).toBeDefined();
     expect(
       screen.getByRole("button", { name: "Revive citizen" }),
     ).toBeDefined();
+  });
+
+  it("renders the starvation death category badge for dead citizens", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          death_cause: null,
+          death_cause_category: "starvation",
+          name: "Maret",
+          status: "dead",
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Maret" });
+    expect(screen.getByText("Starvation")).toBeDefined();
+  });
+
+  it("renders the homeless death category badge for dead citizens", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          death_cause_category: "homeless",
+          name: "Tova",
+          status: "dead",
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Tova" });
+    expect(screen.getByText("Homeless")).toBeDefined();
+  });
+
+  it("renders the event death category badge with detail line", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          death_cause: "Plague swept the settlement",
+          death_cause_category: "event",
+          name: "Soren",
+          status: "dead",
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Soren" });
+    expect(screen.getByText("Event")).toBeDefined();
+    expect(screen.getByText("Plague swept the settlement")).toBeDefined();
+  });
+
+  it("renders the unknown death category badge when category is unknown", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          death_cause_category: "unknown",
+          name: "Unnamed",
+          status: "dead",
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Unnamed" });
+    expect(screen.getByText("Unknown")).toBeDefined();
   });
 
   it("renders the page for the linked PC viewing themselves without admin or lifecycle controls", async () => {
@@ -609,6 +686,13 @@ type CitizenRowFixture = {
   readonly citizen_type: "npc" | "player_character";
   readonly created_at: string;
   readonly death_cause: string | null;
+  readonly death_cause_category:
+    | "starvation"
+    | "homeless"
+    | "event"
+    | "manual_admin"
+    | "unknown"
+    | null;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -640,6 +724,7 @@ function createCitizenRow(
     citizen_type: "npc",
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
+    death_cause_category: null,
     id: CITIZEN_ID,
     name: "Citizen",
     npc_flaw: null,
