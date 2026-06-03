@@ -11,23 +11,16 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  constructionProjectsBySettlementQueryOptions,
-  type ConstructionProject,
-} from "@/features/buildings";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import { setBulkConstructionAssignmentMutationOptions } from "../../mutations/bulkConstructionAssignmentMutations";
+import { setBulkConstructionPoolMutationOptions } from "../../mutations/bulkConstructionPoolMutations";
 import { setBulkStandardJobAssignmentMutationOptions } from "../../mutations/bulkStandardJobAssignmentMutations";
 import { citizenAggregateStatsForSettlementQueryOptions } from "../../queries/citizensQueries";
 import { settlementConstructionProjectCountsQueryOptions } from "../../queries/settlementConstructionProjectCountsQueries";
 import { settlementJobCountsQueryOptions } from "../../queries/settlementJobCountsQueries";
 
-import type {
-  SettlementConstructionProjectCount,
-  SettlementJobCount,
-} from "../../types/bulkAssignmentTypes";
+import type { SettlementJobCount } from "../../types/bulkAssignmentTypes";
 
 const TERMINAL_STATUSES = new Set(["complete", "cancelled"]);
 
@@ -51,24 +44,17 @@ export function BulkJobsTab({
   const projectCountsQuery = useQuery(
     settlementConstructionProjectCountsQueryOptions(settlementId),
   );
-  const projectsQuery = useQuery(
-    constructionProjectsBySettlementQueryOptions(settlementId),
-  );
 
   if (
     aggregateQuery.isPending ||
     jobCountsQuery.isPending ||
-    projectCountsQuery.isPending ||
-    projectsQuery.isPending
+    projectCountsQuery.isPending
   ) {
     return <LoadingState label="Loading job assignments…" />;
   }
 
   const firstError =
-    aggregateQuery.error ??
-    jobCountsQuery.error ??
-    projectCountsQuery.error ??
-    projectsQuery.error;
+    aggregateQuery.error ?? jobCountsQuery.error ?? projectCountsQuery.error;
   if (firstError !== null && firstError !== undefined) {
     return (
       <ErrorState
@@ -83,16 +69,12 @@ export function BulkJobsTab({
     return <LoadingState label="Loading job assignments…" />;
   }
   const jobCounts = jobCountsQuery.data ?? [];
-  const projectCounts = (projectCountsQuery.data ?? []).filter(
+  const activeProjectCount = (projectCountsQuery.data ?? []).filter(
     (pc) => !TERMINAL_STATUSES.has(pc.status),
-  );
-  const projects = projectsQuery.data ?? [];
+  ).length;
 
-  const projectMap = new Map(projects.map((p) => [p.id, p]));
-  const constructionPoolCount = projectCounts.reduce(
-    (sum, pc) => sum + pc.currentCount,
-    0,
-  );
+  const constructionPoolCount =
+    stats.assignmentTypeBreakdown.construction_project;
 
   return (
     <div className="grid gap-6">
@@ -106,8 +88,7 @@ export function BulkJobsTab({
       <ConstructionSection
         canEdit={canEdit}
         constructionPoolCount={constructionPoolCount}
-        projectCounts={projectCounts}
-        projectMap={projectMap}
+        hasActiveProjects={activeProjectCount > 0}
         queryClient={queryClient}
         settlementId={settlementId}
         unassignedNpcCount={stats.unassignedNpcCount}
@@ -280,21 +261,19 @@ function JobRow({
 function ConstructionSection({
   canEdit,
   constructionPoolCount,
-  projectCounts,
-  projectMap,
+  hasActiveProjects,
   queryClient,
   settlementId,
   unassignedNpcCount,
 }: {
   readonly canEdit: boolean;
   readonly constructionPoolCount: number;
-  readonly projectCounts: readonly SettlementConstructionProjectCount[];
-  readonly projectMap: ReadonlyMap<string, ConstructionProject>;
+  readonly hasActiveProjects: boolean;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
 }): JSX.Element | null {
-  if (projectCounts.length === 0) return null;
+  if (!hasActiveProjects) return null;
 
   return (
     <div className="grid gap-2">
@@ -305,7 +284,7 @@ function ConstructionSection({
         <thead>
           <tr className="border-b border-border text-left text-muted-foreground">
             <th className="pb-2 font-medium" scope="col">
-              Project
+              Pool
             </th>
             <th className="pb-2 font-medium" scope="col">
               Assigned
@@ -318,89 +297,69 @@ function ConstructionSection({
           </tr>
         </thead>
         <tbody>
-          <UnassignedRow
+          <ConstructionPoolRow
             canEdit={canEdit}
-            label="Construction pool"
-            unassignedNpcCount={constructionPoolCount}
+            constructionPoolCount={constructionPoolCount}
+            queryClient={queryClient}
+            settlementId={settlementId}
+            unassignedNpcCount={unassignedNpcCount}
           />
-          {projectCounts.map((pc) => {
-            const project = projectMap.get(pc.constructionProjectId);
-            if (project === undefined) return null;
-            return (
-              <ConstructionRow
-                key={pc.constructionProjectId}
-                canEdit={canEdit}
-                project={project}
-                projectCount={pc}
-                queryClient={queryClient}
-                settlementId={settlementId}
-                unassignedNpcCount={unassignedNpcCount}
-              />
-            );
-          })}
         </tbody>
       </table>
     </div>
   );
 }
 
-function ConstructionRow({
+function ConstructionPoolRow({
   canEdit,
-  project,
-  projectCount,
+  constructionPoolCount,
   queryClient,
   settlementId,
   unassignedNpcCount,
 }: {
   readonly canEdit: boolean;
-  readonly project: ConstructionProject;
-  readonly projectCount: SettlementConstructionProjectCount;
+  readonly constructionPoolCount: number;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
 }): JSX.Element {
-  const [localCount, setLocalCount] = useState(
-    String(projectCount.currentCount),
-  );
+  const [localCount, setLocalCount] = useState(String(constructionPoolCount));
   const mutation = useMutation(
-    setBulkConstructionAssignmentMutationOptions({ queryClient }),
+    setBulkConstructionPoolMutationOptions({ queryClient }),
   );
 
   const parsedCount = parseInt(localCount, 10);
   const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
-  const isDirty = isValid && parsedCount !== projectCount.currentCount;
-  const isRaising = isValid && parsedCount > projectCount.currentCount;
+  const isDirty = isValid && parsedCount !== constructionPoolCount;
+  const isRaising = isValid && parsedCount > constructionPoolCount;
   const applyDisabled =
     mutation.isPending || !isDirty || (isRaising && unassignedNpcCount === 0);
-
-  const projectLabel = `${project.blueprintName} (Tier ${project.tierNumber.toString()})`;
 
   async function handleApply(): Promise<void> {
     if (!isValid) return;
     try {
       const result = await mutation.mutateAsync({
-        constructionProjectId: projectCount.constructionProjectId,
         settlementId,
         targetCount: parsedCount,
       });
       setLocalCount(String(result.after));
-      notifyMutationSuccess("Construction assignment updated.");
+      notifyMutationSuccess("Construction pool updated.");
     } catch (error) {
-      notifyMutationError(error, "Failed to update construction assignment.");
+      notifyMutationError(error, "Failed to update construction pool.");
     }
   }
 
   return (
     <tr className="border-b border-border last:border-0">
-      <td className="py-2 pr-4 font-medium">{projectLabel}</td>
+      <td className="py-2 pr-4 font-medium">Construction pool</td>
       <td className="py-2 pr-4 tabular-nums text-muted-foreground">
-        {projectCount.currentCount}
+        {constructionPoolCount}
       </td>
       {canEdit ? (
         <td className="py-2">
           <div className="flex flex-wrap items-center gap-2">
             <Input
-              aria-label={`Target count for ${projectLabel}`}
+              aria-label="Target count for Construction pool"
               className="w-20"
               disabled={mutation.isPending}
               inputMode="numeric"

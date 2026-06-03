@@ -88,30 +88,6 @@ type ProjectCountRowFixture = {
   readonly target_tier_id: string;
 };
 
-type ConstructionProjectRowFixture = {
-  readonly activated_on_turn_number: number | null;
-  readonly building_blueprint_id: string;
-  readonly building_blueprint_tiers: {
-    readonly tier_number: number;
-    readonly worker_turns_required: number;
-  };
-  readonly building_blueprints: { readonly name: string };
-  readonly completed_in_transition_id: string | null;
-  readonly created_at: string;
-  readonly id: string;
-  readonly progress_worker_turns: number;
-  readonly queue_position: number;
-  readonly settlement_id: string;
-  readonly status:
-    | "cancelled"
-    | "complete"
-    | "in_progress"
-    | "paused"
-    | "queued";
-  readonly target_tier_id: string;
-  readonly updated_at: string;
-};
-
 type MutationResultFixture = {
   readonly after: number;
   readonly added_citizen_ids: string[];
@@ -295,27 +271,6 @@ function createProjectCountRow(
   };
 }
 
-function createConstructionProjectRow(
-  overrides: Partial<ConstructionProjectRowFixture> = {},
-): ConstructionProjectRowFixture {
-  return {
-    activated_on_turn_number: null,
-    building_blueprint_id: "bp-1",
-    building_blueprint_tiers: { tier_number: 1, worker_turns_required: 100 },
-    building_blueprints: { name: "Granary" },
-    completed_in_transition_id: null,
-    created_at: "2026-05-01T00:00:00Z",
-    id: "proj-1",
-    progress_worker_turns: 20,
-    queue_position: 1,
-    settlement_id: "settlement-1",
-    status: "in_progress",
-    target_tier_id: "tier-1",
-    updated_at: "2026-05-01T00:00:00Z",
-    ...overrides,
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Per-target factory functions
 // ---------------------------------------------------------------------------
@@ -467,17 +422,6 @@ function createAggregateBuilder(rows: readonly AggregateRowFixture[]): unknown {
   };
 }
 
-function createFromBuilder(rows: readonly unknown[]): unknown {
-  const builder = {
-    eq: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-  };
-  return {
-    select: vi.fn(() => builder),
-  };
-}
-
 function createTableBuilder(rows: readonly unknown[]): unknown {
   const builder = {
     eq: vi.fn(() => builder),
@@ -512,9 +456,8 @@ function createClient(config: {
   readonly aggregates?: readonly AggregateRowFixture[];
   readonly jobCounts?: readonly JobCountRowFixture[];
   readonly projectCounts?: readonly ProjectCountRowFixture[];
-  readonly constructionProjects?: readonly ConstructionProjectRowFixture[];
   readonly jobMutationResult?: MutationResultFixture;
-  readonly constructionMutationResult?: MutationResultFixture;
+  readonly constructionPoolMutationResult?: MutationResultFixture;
   // Per-target config
   readonly citizenRows?: readonly CitizenRowFixture[];
   readonly citizenAssignmentRows?: readonly CitizenAssignmentRowFixture[];
@@ -543,9 +486,6 @@ function createClient(config: {
         }
         return createAggregateBuilder(config.aggregates ?? []);
       }
-      if (table === "construction_projects") {
-        return createFromBuilder(config.constructionProjects ?? []);
-      }
       if (table === "citizen_assignments") {
         return createTableBuilder(config.citizenAssignmentRows ?? []);
       }
@@ -572,9 +512,9 @@ function createClient(config: {
           config.jobMutationResult ?? defaultMutationResult,
         );
       }
-      if (name === "set_bulk_construction_assignment") {
+      if (name === "set_bulk_construction_pool") {
         return createMaybeSingleBuilder(
-          config.constructionMutationResult ?? defaultMutationResult,
+          config.constructionPoolMutationResult ?? defaultMutationResult,
         );
       }
       if (name === "set_per_target_assignment") {
@@ -689,7 +629,6 @@ describe("SettlementAssignmentBoard", () => {
           }),
         ],
         projectCounts: [],
-        constructionProjects: [],
         citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
@@ -729,7 +668,6 @@ describe("SettlementAssignmentBoard", () => {
           }),
         ],
         projectCounts: [],
-        constructionProjects: [],
         citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [],
@@ -797,7 +735,6 @@ describe("SettlementAssignmentBoard", () => {
           }),
         ],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -809,42 +746,49 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.getByText("1 / 5")).toBeDefined();
   });
 
-  it("shows construction project rows with blueprint name and tier", async () => {
+  it("shows construction pool row with editable count when there are active projects", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        aggregates: [],
+        aggregates: [
+          createAggregateRow({
+            id: "c-1",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [{ assignment_type: "construction_project" }],
+          }),
+          createAggregateRow({
+            id: "c-2",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [{ assignment_type: "construction_project" }],
+          }),
+        ],
         jobCounts: [],
         projectCounts: [
           createProjectCountRow({
             construction_project_id: "proj-1",
-            current_count: 2,
             status: "in_progress",
-          }),
-        ],
-        constructionProjects: [
-          createConstructionProjectRow({
-            building_blueprints: { name: "Granary" },
-            building_blueprint_tiers: {
-              tier_number: 2,
-              worker_turns_required: 100,
-            },
-            id: "proj-1",
           }),
         ],
       }),
     );
 
-    renderBoard();
+    renderBoard({ canManage: true });
 
-    expect(await screen.findByText("Granary (Tier 2)")).toBeDefined();
+    expect(await screen.findByText("Construction pool")).toBeDefined();
     expect(screen.getByText("2")).toBeDefined();
+    expect(
+      screen.getByRole("spinbutton", {
+        name: "Target count for Construction pool",
+      }),
+    ).toBeDefined();
   });
 
-  it("filters out complete and cancelled construction projects", async () => {
+  it("hides construction section when all projects are terminal", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [],
-        jobCounts: [],
+        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
         projectCounts: [
           createProjectCountRow({
             construction_project_id: "proj-complete",
@@ -854,26 +798,14 @@ describe("SettlementAssignmentBoard", () => {
             construction_project_id: "proj-cancelled",
             status: "cancelled",
           }),
-          createProjectCountRow({
-            construction_project_id: "proj-active",
-            current_count: 3,
-            status: "in_progress",
-          }),
-        ],
-        constructionProjects: [
-          createConstructionProjectRow({
-            id: "proj-active",
-            building_blueprints: { name: "Smithy" },
-          }),
         ],
       }),
     );
 
     renderBoard();
 
-    expect(await screen.findByText("Smithy (Tier 1)")).toBeDefined();
-    expect(screen.queryByText("proj-complete")).toBeNull();
-    expect(screen.queryByText("proj-cancelled")).toBeNull();
+    await screen.findByText("Farmer");
+    expect(screen.queryByText("Construction pool")).toBeNull();
   });
 
   it("shows inline editor with Apply button when canManage and not archived", async () => {
@@ -882,7 +814,6 @@ describe("SettlementAssignmentBoard", () => {
         aggregates: [],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -898,7 +829,6 @@ describe("SettlementAssignmentBoard", () => {
         aggregates: [],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -914,7 +844,6 @@ describe("SettlementAssignmentBoard", () => {
         aggregates: [],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -949,7 +878,6 @@ describe("SettlementAssignmentBoard", () => {
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -972,7 +900,6 @@ describe("SettlementAssignmentBoard", () => {
           createJobCountRow({ job_id: "job-2", job_name: "Baker" }),
         ],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -991,7 +918,6 @@ describe("SettlementAssignmentBoard", () => {
         aggregates: [],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -1034,7 +960,6 @@ describe("SettlementAssignmentBoard", () => {
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -1094,7 +1019,6 @@ describe("SettlementAssignmentBoard", () => {
             status: "in_progress",
           }),
         ],
-        constructionProjects: [createConstructionProjectRow({ id: "proj-1" })],
       }),
     );
 
@@ -1102,7 +1026,7 @@ describe("SettlementAssignmentBoard", () => {
 
     // Wait for data to load
     await screen.findByText("Farmer");
-    await screen.findByText("Granary (Tier 1)");
+    await screen.findByText("Construction pool");
 
     const rows = screen.getAllByRole("row");
 
@@ -1111,9 +1035,10 @@ describe("SettlementAssignmentBoard", () => {
     expect(standardUnassignedRow).toHaveTextContent("Unassigned");
     expect(standardUnassignedRow).toHaveTextContent("2");
 
-    // Construction table: rows[3] = header, rows[4] = Construction pool, rows[5] = Granary
+    // Construction table: rows[3] = header, rows[4] = Construction pool
     const constructionPoolRow = rows[4];
     expect(constructionPoolRow).toHaveTextContent("Construction pool");
+    // Pool count = assignmentTypeBreakdown.construction_project = 3
     expect(constructionPoolRow).toHaveTextContent("3");
 
     // The two counts are different
@@ -1134,7 +1059,6 @@ describe("SettlementAssignmentBoard", () => {
           }),
         ],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -1172,7 +1096,6 @@ describe("SettlementAssignmentBoard", () => {
           }),
         ],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -1203,7 +1126,6 @@ describe("SettlementAssignmentBoard", () => {
           }),
         ],
         projectCounts: [],
-        constructionProjects: [],
       }),
     );
 
@@ -1530,7 +1452,7 @@ describe("SettlementAssignmentBoard", () => {
     expect(bobCheckbox).not.toBeChecked();
   });
 
-  it("after bulk construction Apply, invalidates settlementList and settlementAggregateStats", async () => {
+  it("after bulk construction pool Apply, invalidates settlementList and settlementAggregateStats", async () => {
     const PROJ_UUID = "11111111-1111-1111-1111-111111111111";
     const SETTLEMENT_UUID = "22222222-2222-2222-2222-222222222222";
 
@@ -1559,12 +1481,6 @@ describe("SettlementAssignmentBoard", () => {
             status: "in_progress",
           }),
         ],
-        constructionProjects: [
-          createConstructionProjectRow({
-            id: PROJ_UUID,
-            settlement_id: SETTLEMENT_UUID,
-          }),
-        ],
       }),
     );
 
@@ -1581,10 +1497,10 @@ describe("SettlementAssignmentBoard", () => {
       </QueryClientProvider>,
     );
 
-    await screen.findByText("Granary (Tier 1)");
+    await screen.findByText("Construction pool");
 
     const input = screen.getByRole("spinbutton", {
-      name: "Target count for Granary (Tier 1)",
+      name: "Target count for Construction pool",
     });
     await user.clear(input);
     await user.type(input, "1");

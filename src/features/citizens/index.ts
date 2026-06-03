@@ -7,11 +7,6 @@ export { NpcFlavorLine } from "./components/NpcFlavorLine";
 export { NpcFlavorEditor } from "./components/NpcFlavorEditor";
 export { PartnershipHistoryPanel } from "./components/PartnershipHistoryPanel";
 export {
-  BulkConstructionAssignmentMutationError,
-  isBulkConstructionAssignmentMutationError,
-  setBulkConstructionAssignmentMutationOptions,
-} from "./mutations/bulkConstructionAssignmentMutations";
-export {
   BulkConstructionPoolMutationError,
   isBulkConstructionPoolMutationError,
   setBulkConstructionPoolMutationOptions,
@@ -86,7 +81,6 @@ export {
   activePartnershipForCitizenQueryOptions,
   partnershipsForCitizenQueryOptions,
 } from "./queries/partnershipsQueries";
-export { setBulkConstructionAssignmentInputSchema } from "./schemas/setBulkConstructionAssignmentSchemas";
 export { setBulkConstructionPoolInputSchema } from "./schemas/setBulkConstructionPoolSchemas";
 export { setBulkStandardJobAssignmentInputSchema } from "./schemas/setBulkStandardJobAssignmentSchemas";
 export { setPerTargetAssignmentInputSchema } from "./schemas/setPerTargetAssignmentSchemas";
@@ -110,17 +104,12 @@ export {
   reassignPartnerInputSchema,
 } from "./schemas/partnershipSchemas";
 
-export type { BulkConstructionAssignmentMutationIssue } from "./mutations/bulkConstructionAssignmentMutations";
 export type { BulkConstructionPoolMutationIssue } from "./mutations/bulkConstructionPoolMutations";
 export type { BulkStandardJobAssignmentMutationIssue } from "./mutations/bulkStandardJobAssignmentMutations";
 export type { PerTargetAssignmentMutationIssue } from "./mutations/perTargetAssignmentMutations";
 export type { CitizenMutationIssue } from "./mutations/citizensMutations";
 export type { PartnershipMutationIssue } from "./mutations/partnershipsMutations";
 export type { PlayerCharacterRoleMutationIssue } from "./mutations/playerCharacterRoleMutations";
-export type {
-  SetBulkConstructionAssignmentInput,
-  SetBulkConstructionAssignmentValues,
-} from "./schemas/setBulkConstructionAssignmentSchemas";
 export type {
   SetBulkConstructionPoolInput,
   SetBulkConstructionPoolValues,
