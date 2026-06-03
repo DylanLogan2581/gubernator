@@ -69,3 +69,16 @@ export type EndTurnSimulationAuthorizationResult =
 export type EndTurnSimulationHandlerOptions = {
   readonly allowedOrigins?: readonly string[];
 };
+
+import type { SimulationInputState } from "../../../src/shared/simulation/simulationTypes.ts";
+
+export type EndTurnSimulationStateResult =
+  | {
+      readonly input: SimulationInputState;
+      readonly ok: true;
+    }
+  | {
+      readonly error: EndTurnSimulationErrorResponse;
+      readonly ok: false;
+      readonly status: number;
+    };
