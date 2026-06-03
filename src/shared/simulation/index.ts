@@ -80,7 +80,12 @@ export {
 } from "./decimalMath.ts";
 export type { DecimalValue } from "./decimalMath.ts";
 
-export { createSeededRng } from "./seededRng.ts";
+export {
+  createSeededRng,
+  hashStringToSeed,
+  mulberry32,
+  pickDeterministic,
+} from "./seededRng.ts";
 export type { SeededRng } from "./seededRng.ts";
 
 export { runSimulation } from "./runSimulation.ts";
