@@ -2977,7 +2977,22 @@ export type Database = {
         | "trade_proposal_received"
         | "trade_proposal_accepted"
         | "trade_proposal_rejected"
-        | "trade_route_cancelled";
+        | "trade_route_cancelled"
+        | "building.auto_deconstructed"
+        | "building.suspended"
+        | "citizen.born"
+        | "citizen.died"
+        | "construction.completed"
+        | "construction.paused"
+        | "deposit.depleted"
+        | "managed_population.declining"
+        | "managed_population.extinct"
+        | "partnership.formed"
+        | "partnership.widowed"
+        | "settlement.homelessness_occurred"
+        | "settlement.starvation_occurred"
+        | "trade_route.paused"
+        | "trade_route.resumed";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -3114,6 +3129,21 @@ export const Constants = {
         "trade_proposal_accepted",
         "trade_proposal_rejected",
         "trade_route_cancelled",
+        "building.auto_deconstructed",
+        "building.suspended",
+        "citizen.born",
+        "citizen.died",
+        "construction.completed",
+        "construction.paused",
+        "deposit.depleted",
+        "managed_population.declining",
+        "managed_population.extinct",
+        "partnership.formed",
+        "partnership.widowed",
+        "settlement.homelessness_occurred",
+        "settlement.starvation_occurred",
+        "trade_route.paused",
+        "trade_route.resumed",
       ],
     },
   },
