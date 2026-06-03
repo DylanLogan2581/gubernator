@@ -94,7 +94,7 @@ export {
 } from "./seededRng.ts";
 export type { SeededRng } from "./seededRng.ts";
 
-export { runSimulation } from "./runSimulation.ts";
+export { runSimulation, SimulationRejectionError } from "./runSimulation.ts";
 
 export { phaseStandardJobs } from "./phases/phaseStandardJobs.ts";
 export type { PhaseStandardJobsOutput } from "./phases/phaseStandardJobs.ts";

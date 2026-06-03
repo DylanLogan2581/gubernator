@@ -324,6 +324,7 @@ export type SimulationInputState = {
   readonly depositTypes: readonly SimDepositType[];
   readonly deposits: readonly SimDeposit[];
   readonly events: readonly SimEvent[];
+  readonly isWorldArchived?: boolean;
   readonly jobs: readonly SimJob[];
   readonly managedPopulationTypes: readonly SimManagedPopulationType[];
   readonly managedPopulations: readonly SimManagedPopulation[];
@@ -531,3 +532,17 @@ export type SimulationResult = {
 export type SimulationContext = {
   readonly input: SimulationInputState;
 };
+
+// ---------------------------------------------------------------------------
+// SimulationRejectionError — thrown by runSimulation before any phase runs
+// ---------------------------------------------------------------------------
+
+export class SimulationRejectionError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = "SimulationRejectionError";
+    this.code = code;
+  }
+}
