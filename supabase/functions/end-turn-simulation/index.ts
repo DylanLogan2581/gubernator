@@ -1,9 +1,15 @@
+import { resolveSupabaseEndTurnSimulationAuthorization } from "./authorize.ts";
 import { getEdgeRuntime } from "./env.ts";
 import {
   buildCorsHeaders,
   createJsonResponse,
   getAllowedOrigins,
 } from "./http.ts";
+import { persistSimulationTransition } from "./persist.ts";
+import { resolveSupabaseSimulationAuthContext } from "./session.ts";
+import { resolveSupabaseEndTurnSimulationInput } from "./state.ts";
+import { planSimulationTransition } from "./transition.ts";
+import { parseEndTurnSimulationRequestBody } from "./validate.ts";
 
 import type {
   EndTurnSimulationHandlerOptions,
@@ -22,10 +28,10 @@ export type {
   EndTurnSimulationSuccessResponse,
 } from "./types.ts";
 
-export function handleEndTurnSimulationRequest(
+export async function handleEndTurnSimulationRequest(
   request: Request,
   options: EndTurnSimulationHandlerOptions = {},
-): Response {
+): Promise<Response> {
   const allowedOrigins = options.allowedOrigins ?? getAllowedOrigins();
   const origin = request.headers.get("origin");
 
@@ -56,15 +62,55 @@ export function handleEndTurnSimulationRequest(
     );
   }
 
+  const validateResult = await parseEndTurnSimulationRequestBody(request);
+  if (!validateResult.ok) {
+    return respond(validateResult.error, 400);
+  }
+
+  const authContextResult = await resolveSupabaseSimulationAuthContext(request);
+  if (!authContextResult.ok) {
+    return respond(authContextResult.error, authContextResult.status);
+  }
+
+  const authorizationResult =
+    await resolveSupabaseEndTurnSimulationAuthorization(
+      validateResult.body,
+      authContextResult.context,
+    );
+  if (!authorizationResult.ok) {
+    return respond(authorizationResult.error, authorizationResult.status);
+  }
+
+  const stateResult = await resolveSupabaseEndTurnSimulationInput(
+    validateResult.body,
+    authContextResult.context,
+  );
+  if (!stateResult.ok) {
+    return respond(stateResult.error, stateResult.status);
+  }
+
+  const transitionResult = planSimulationTransition(stateResult.input);
+  if (!transitionResult.ok) {
+    return respond(transitionResult.error, transitionResult.status);
+  }
+
+  const persistResult = await persistSimulationTransition(
+    validateResult.body,
+    transitionResult.payload,
+  );
+  if (!persistResult.ok) {
+    return respond(persistResult.error, persistResult.status);
+  }
+
   return respond(
     {
-      error: {
-        code: "not_implemented",
-        message: "end-turn-simulation is not yet wired",
+      data: {
+        actorId: authContextResult.context.userId,
+        worldId: validateResult.body.worldId,
       },
-      ok: false,
+      ok: true,
     },
-    501,
+    200,
   );
 }
 

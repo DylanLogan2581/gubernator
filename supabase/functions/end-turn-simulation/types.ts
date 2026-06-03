@@ -82,3 +82,22 @@ export type EndTurnSimulationStateResult =
       readonly ok: false;
       readonly status: number;
     };
+
+export type ApplyTurnTransitionSummary = {
+  readonly currentTurnNumber: number;
+  readonly fromTurnNumber: number;
+  readonly patchCounts: Record<string, number>;
+  readonly toTurnNumber: number;
+  readonly transitionId: string;
+};
+
+export type EndTurnSimulationPersistResult =
+  | {
+      readonly ok: true;
+      readonly summary: ApplyTurnTransitionSummary;
+    }
+  | {
+      readonly error: EndTurnSimulationErrorResponse;
+      readonly ok: false;
+      readonly status: number;
+    };

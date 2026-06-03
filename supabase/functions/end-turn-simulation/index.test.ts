@@ -6,9 +6,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// ---------------------------------------------------------------------------
+// CORS / method gate — these paths resolve before any async IO
+// ---------------------------------------------------------------------------
+
 describe("handleEndTurnSimulationRequest", () => {
-  it("returns a 204 preflight response with CORS headers for OPTIONS", () => {
-    const response = handleEndTurnSimulationRequest(
+  it("returns a 204 preflight response with CORS headers for OPTIONS", async () => {
+    const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", {
         method: "OPTIONS",
       }),
@@ -24,8 +28,8 @@ describe("handleEndTurnSimulationRequest", () => {
     );
   });
 
-  it("returns a 204 preflight response with echoed origin for a recognized Origin", () => {
-    const response = handleEndTurnSimulationRequest(
+  it("returns a 204 preflight response with echoed origin for a recognized Origin", async () => {
+    const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", {
         headers: { origin: "http://localhost:5173" },
         method: "OPTIONS",
@@ -45,8 +49,8 @@ describe("handleEndTurnSimulationRequest", () => {
     );
   });
 
-  it("returns a 403 for an unrecognized Origin on OPTIONS", () => {
-    const response = handleEndTurnSimulationRequest(
+  it("returns a 403 for an unrecognized Origin on OPTIONS", async () => {
+    const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", {
         headers: { origin: "http://evil.example.com" },
         method: "OPTIONS",
@@ -57,8 +61,8 @@ describe("handleEndTurnSimulationRequest", () => {
     expect(response.status).toBe(403);
   });
 
-  it("returns a 403 for an unrecognized Origin on POST", () => {
-    const response = handleEndTurnSimulationRequest(
+  it("returns a 403 for an unrecognized Origin on POST", async () => {
+    const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", {
         body: JSON.stringify({ expectedTurnNumber: 1, worldId: "world-1" }),
         headers: {
@@ -74,7 +78,7 @@ describe("handleEndTurnSimulationRequest", () => {
   });
 
   it("returns a 405 for non-POST methods", async () => {
-    const response = handleEndTurnSimulationRequest(
+    const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", { method: "GET" }),
     );
 
@@ -90,33 +94,8 @@ describe("handleEndTurnSimulationRequest", () => {
     });
   });
 
-  it("returns a typed 501 not_implemented response for POST", async () => {
-    const response = handleEndTurnSimulationRequest(
-      new Request("http://localhost/end-turn-simulation", {
-        body: JSON.stringify({ expectedTurnNumber: 1, worldId: "world-1" }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }),
-    );
-
-    const responseBody: unknown = await response.json();
-
-    expect(response.status).toBe(501);
-    expect(responseBody).toEqual({
-      error: {
-        code: "not_implemented",
-        message: "end-turn-simulation is not yet wired",
-      },
-      ok: false,
-    });
-    expect(response.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8",
-    );
-    expect(response.headers.get("access-control-allow-origin")).toBeNull();
-  });
-
-  it("echoes the allowed Origin in access-control-allow-origin on the 501 response", () => {
-    const response = handleEndTurnSimulationRequest(
+  it("echoes the allowed Origin in access-control-allow-origin header", async () => {
+    const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", {
         body: JSON.stringify({ expectedTurnNumber: 1, worldId: "world-1" }),
         headers: {
@@ -128,9 +107,25 @@ describe("handleEndTurnSimulationRequest", () => {
       { allowedOrigins: ["http://localhost:5173"] },
     );
 
-    expect(response.status).toBe(501);
     expect(response.headers.get("access-control-allow-origin")).toBe(
       "http://localhost:5173",
     );
+  });
+
+  it("returns 400 for an invalid request body on POST", async () => {
+    const response = await handleEndTurnSimulationRequest(
+      new Request("http://localhost/end-turn-simulation", {
+        body: "not-json",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+    );
+
+    const responseBody: unknown = await response.json();
+    expect(response.status).toBe(400);
+    expect(responseBody).toMatchObject({
+      error: { code: "invalid_request" },
+      ok: false,
+    });
   });
 });
