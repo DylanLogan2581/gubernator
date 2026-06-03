@@ -1,18 +1,140 @@
-// Phase: building upkeep — stub filled by #B14.
+// Phase: building upkeep — subtracts upkeep costs from stockpiles; suspends or
+// auto-deconstructs buildings that cannot pay.
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import type {
+  BuildingStateChange,
   SimulationContext,
   SimulationLogEntry,
+  SimulationNotification,
+  StockpileDelta,
 } from "../simulationTypes.ts";
 
 export type PhaseBuildingUpkeepOutput = {
+  readonly buildingStateChanges: readonly BuildingStateChange[];
   readonly logs: readonly SimulationLogEntry[];
+  readonly notifications: readonly SimulationNotification[];
+  readonly stockpileDeltas: readonly StockpileDelta[];
 };
 
 export function phaseBuildingUpkeep(
-  _context: SimulationContext,
+  context: SimulationContext,
 ): PhaseBuildingUpkeepOutput {
-  return { logs: [] };
+  const {
+    buildingBlueprints,
+    buildingTiers,
+    settlementBuildings,
+    settlements,
+    stockpiles,
+    worldId,
+  } = context.input;
+
+  const tierById = new Map(buildingTiers.map((t) => [t.id, t]));
+  const blueprintById = new Map(buildingBlueprints.map((b) => [b.id, b]));
+  const settlementById = new Map(settlements.map((s) => [s.id, s]));
+
+  // Mutable stockpile quantity map shared across all buildings this phase.
+  const stockpileQty = new Map<string, number>();
+  for (const sp of stockpiles) {
+    stockpileQty.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
+  }
+
+  const allStateChanges: BuildingStateChange[] = [];
+  const allLogs: SimulationLogEntry[] = [];
+  const allNotifications: SimulationNotification[] = [];
+  const allDeltas: StockpileDelta[] = [];
+
+  for (const building of settlementBuildings) {
+    if (building.state !== "active") continue;
+
+    const tier = tierById.get(building.currentTierId);
+    if (tier === undefined) continue;
+
+    const blueprint = blueprintById.get(tier.buildingBlueprintId);
+    if (blueprint === undefined) continue;
+
+    const settlement = settlementById.get(building.settlementId);
+    const settlementName = settlement?.name ?? building.settlementId;
+
+    // Check whether the stockpile can cover all upkeep costs.
+    let canPay = true;
+    for (const cost of tier.upkeepCostsJson) {
+      const available =
+        stockpileQty.get(`${building.settlementId}:${cost.resourceId}`) ?? 0;
+      if (available < cost.amount) {
+        canPay = false;
+        break;
+      }
+    }
+
+    if (canPay) {
+      // Deduct upkeep from stockpile.
+      for (const cost of tier.upkeepCostsJson) {
+        const key = `${building.settlementId}:${cost.resourceId}`;
+        allDeltas.push({
+          delta: -cost.amount,
+          resourceId: cost.resourceId,
+          settlementId: building.settlementId,
+        });
+        stockpileQty.set(key, (stockpileQty.get(key) ?? 0) - cost.amount);
+      }
+      // v1: no state change on successful payment (missed_upkeep_count unchanged).
+    } else {
+      // Cannot pay — increment missed upkeep count and check grace period.
+      const newMissedCount = building.missedUpkeepCount + 1;
+
+      if (newMissedCount > blueprint.gracePeriodTurns) {
+        allStateChanges.push({
+          missedUpkeepCountDelta: 1,
+          settlementBuildingId: building.id,
+          toState: "auto_deconstructed",
+        });
+        allLogs.push({
+          category: "building.auto_deconstructed",
+          payload: {
+            blueprintId: blueprint.id,
+            buildingId: building.id,
+            gracePeriodTurns: blueprint.gracePeriodTurns,
+            missedUpkeepCount: newMissedCount,
+            settlementId: building.settlementId,
+          },
+          phase: "buildingUpkeep",
+        });
+        allNotifications.push({
+          messageText: `A building in "${settlementName}" was auto-deconstructed after missing upkeep too many times.`,
+          notificationType: "simulation.building.auto_deconstructed",
+          recipientUserId: worldId,
+        });
+      } else {
+        allStateChanges.push({
+          missedUpkeepCountDelta: 1,
+          settlementBuildingId: building.id,
+          toState: "suspended",
+        });
+        allLogs.push({
+          category: "building.suspended",
+          payload: {
+            blueprintId: blueprint.id,
+            buildingId: building.id,
+            missedUpkeepCount: newMissedCount,
+            settlementId: building.settlementId,
+          },
+          phase: "buildingUpkeep",
+        });
+        allNotifications.push({
+          messageText: `A building in "${settlementName}" was suspended due to insufficient upkeep resources.`,
+          notificationType: "simulation.building.suspended",
+          recipientUserId: worldId,
+        });
+      }
+    }
+  }
+
+  return {
+    buildingStateChanges: allStateChanges,
+    logs: allLogs,
+    notifications: allNotifications,
+    stockpileDeltas: allDeltas,
+  };
 }
