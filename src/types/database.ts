@@ -1182,6 +1182,94 @@ export type Database = {
           },
         ];
       };
+      settlement_turn_snapshots: {
+        Row: {
+          birth_count: number;
+          buildings_summary_json: Json | null;
+          created_at: string;
+          death_count: number;
+          homeless_deaths_count: number;
+          id: string;
+          managed_populations_summary_json: Json | null;
+          partnerships_formed_count: number;
+          population_cap: number;
+          population_npc: number;
+          population_player_character: number;
+          population_total: number;
+          settlement_id: string;
+          starvation_deaths_count: number;
+          trade_summary_json: Json | null;
+          turn_number: number;
+          turn_transition_id: string | null;
+          warnings_summary_json: Json | null;
+          world_id: string;
+        };
+        Insert: {
+          birth_count?: number;
+          buildings_summary_json?: Json | null;
+          created_at?: string;
+          death_count?: number;
+          homeless_deaths_count?: number;
+          id?: string;
+          managed_populations_summary_json?: Json | null;
+          partnerships_formed_count?: number;
+          population_cap: number;
+          population_npc: number;
+          population_player_character: number;
+          population_total: number;
+          settlement_id: string;
+          starvation_deaths_count?: number;
+          trade_summary_json?: Json | null;
+          turn_number: number;
+          turn_transition_id?: string | null;
+          warnings_summary_json?: Json | null;
+          world_id: string;
+        };
+        Update: {
+          birth_count?: number;
+          buildings_summary_json?: Json | null;
+          created_at?: string;
+          death_count?: number;
+          homeless_deaths_count?: number;
+          id?: string;
+          managed_populations_summary_json?: Json | null;
+          partnerships_formed_count?: number;
+          population_cap?: number;
+          population_npc?: number;
+          population_player_character?: number;
+          population_total?: number;
+          settlement_id?: string;
+          starvation_deaths_count?: number;
+          trade_summary_json?: Json | null;
+          turn_number?: number;
+          turn_transition_id?: string | null;
+          warnings_summary_json?: Json | null;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_turn_snapshots_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_snapshots_transition_world_fkey";
+            columns: ["turn_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlements: {
         Row: {
           auto_ready_enabled: boolean;
