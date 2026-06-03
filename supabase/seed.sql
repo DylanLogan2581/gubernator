@@ -3187,6 +3187,536 @@ set
   assigned_on_turn_number = excluded.assigned_on_turn_number,
   updated_at = now();
 
+-- ===========================================================================
+-- Epic 6 simulation fixture: extends Verdant Reach (world 101) settlements
+-- 301–303 to ≥ 20 alive NPCs with parent links, one active partnership per
+-- settlement, construction pool workers, and multi-resource deposit mixes so
+-- the simulation engine can be exercised immediately after
+-- `npx supabase db reset`.
+--
+-- UUID scheme (canonical fixture range, fourth group):
+--   new parents / standalone  '00000000-0000-0000-0000-000000000432' – '000000000453'
+--   new children              '00000000-0000-0000-0000-000000000434',
+--                             '00000000-0000-0000-0000-000000000437',
+--                             '00000000-0000-0000-0000-000000000444',
+--                             '00000000-0000-0000-0000-000000000454'
+--   new partnerships          '00000000-0000-0000-0000-000000000503' – '000000000505'
+-- ===========================================================================
+-- ---------------------------------------------------------------------------
+-- New NPC parents — inserted before children so the composite-world FKs
+-- (parent_a / parent_b same-world check) resolve correctly.
+-- ---------------------------------------------------------------------------
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    sex,
+    status,
+    born_on_turn_number,
+    npc_trait_1,
+    npc_trait_2,
+    npc_secret_contradiction,
+    npc_goal,
+    npc_flaw
+  )
+values
+  -- Hearthwatch (301) pair 1: Elva & Curt Thornwick
+  (
+    '00000000-0000-0000-0000-000000000432',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Elva Thornwick',
+    'female',
+    'alive',
+    -44,
+    'stoic',
+    'tender',
+    'shelters the family of a soldier they killed',
+    'to outlive every captain they ever served',
+    'a temper that comes out in writing'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000433',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Curt Thornwick',
+    'male',
+    'alive',
+    -46,
+    'blunt',
+    'watchful',
+    'owes a debt to the very people they hunt',
+    'to apprentice a child of the lower ward',
+    'pride'
+  ),
+  -- Hearthwatch (301) pair 2: Doran & Merin Westmark
+  (
+    '00000000-0000-0000-0000-000000000435',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Doran Westmark',
+    'male',
+    'alive',
+    -51,
+    'fervent',
+    'shrewd',
+    'writes letters to a god they no longer trust',
+    'a seat on the council',
+    'envy'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000436',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Merin Westmark',
+    'female',
+    'alive',
+    -48,
+    'patient',
+    'courtly',
+    'loves their rival',
+    'to restore their family''s name',
+    'miserliness with their own household'
+  ),
+  -- Mistfall Crossing (302) pair: Oswin & Selma Ashford
+  (
+    '00000000-0000-0000-0000-000000000442',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Oswin Ashford',
+    'male',
+    'alive',
+    -39,
+    'wry',
+    'boisterous',
+    'mourns a friend they betrayed',
+    'to walk the south road one more time',
+    'an addiction to risk'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000443',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Selma Ashford',
+    'female',
+    'alive',
+    -37,
+    'earnest',
+    'scrappy',
+    'hides a wound that should have killed them',
+    'to see the long winter season end',
+    'a tendency to read every silence as betrayal'
+  ),
+  -- Sunmere Hold (303) pair: Aldric & Neva Sunmoor
+  (
+    '00000000-0000-0000-0000-000000000452',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000303',
+    'npc',
+    'Aldric Sunmoor',
+    'male',
+    'alive',
+    -42,
+    'weary',
+    'soft-spoken',
+    'holds a vow they cannot remember swearing',
+    'to read the unburned half of the library',
+    'the certainty that they alone can hold the line'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000453',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000303',
+    'npc',
+    'Neva Sunmoor',
+    'female',
+    'alive',
+    -40,
+    'haunted',
+    'patient',
+    'keeps a child''s portrait they have never named',
+    'to pay back the gold lender of Mistfall',
+    'an inability to forgive the dead'
+  )
+on conflict (id) do update
+set
+  world_id = excluded.world_id,
+  settlement_id = excluded.settlement_id,
+  citizen_type = excluded.citizen_type,
+  name = excluded.name,
+  sex = excluded.sex,
+  status = excluded.status,
+  born_on_turn_number = excluded.born_on_turn_number,
+  npc_trait_1 = excluded.npc_trait_1,
+  npc_trait_2 = excluded.npc_trait_2,
+  npc_secret_contradiction = excluded.npc_secret_contradiction,
+  npc_goal = excluded.npc_goal,
+  npc_flaw = excluded.npc_flaw,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- New NPC children and standalone NPCs — parent rows above must exist first.
+-- Standalone NPCs carry null parent columns; the insert shape is shared so
+-- a single ON CONFLICT covers all variants.
+-- ---------------------------------------------------------------------------
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    sex,
+    status,
+    born_on_turn_number,
+    parent_a_citizen_id,
+    parent_b_citizen_id,
+    npc_trait_1,
+    npc_trait_2,
+    npc_secret_contradiction,
+    npc_goal,
+    npc_flaw
+  )
+values
+  -- Hearthwatch (301): child of Elva (432) + Curt (433) Thornwick
+  (
+    '00000000-0000-0000-0000-000000000434',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Lyss Thornwick',
+    'female',
+    'alive',
+    -12,
+    '00000000-0000-0000-0000-000000000432',
+    '00000000-0000-0000-0000-000000000433',
+    'earnest',
+    'wry',
+    'mourns a friend they betrayed',
+    'to restore their family''s name',
+    'envy'
+  ),
+  -- Hearthwatch (301): child of Doran (435) + Merin (436) Westmark
+  (
+    '00000000-0000-0000-0000-000000000437',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Colt Westmark',
+    'male',
+    'alive',
+    -10,
+    '00000000-0000-0000-0000-000000000435',
+    '00000000-0000-0000-0000-000000000436',
+    'patient',
+    'stoic',
+    'loves their rival',
+    'a seat on the council',
+    'pride'
+  ),
+  -- Mistfall Crossing (302): standalone NPC
+  (
+    '00000000-0000-0000-0000-000000000441',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Brynn Ashford',
+    'female',
+    'alive',
+    -27,
+    null,
+    null,
+    'watchful',
+    'fervent',
+    'owes a debt to the very people they hunt',
+    'to outlive every captain they ever served',
+    'a slow drinking habit kept quiet at court'
+  ),
+  -- Mistfall Crossing (302): child of Oswin (442) + Selma (443) Ashford
+  (
+    '00000000-0000-0000-0000-000000000444',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Pip Ashford',
+    'male',
+    'alive',
+    -9,
+    '00000000-0000-0000-0000-000000000442',
+    '00000000-0000-0000-0000-000000000443',
+    'boisterous',
+    'earnest',
+    'writes letters to a god they no longer trust',
+    'to walk the south road one more time',
+    'a need to be the cleverest voice in the room'
+  ),
+  -- Mistfall Crossing (302): standalone NPC
+  (
+    '00000000-0000-0000-0000-000000000445',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Wulf Dray',
+    'male',
+    'alive',
+    -31,
+    null,
+    null,
+    'shrewd',
+    'blunt',
+    'shelters the family of a soldier they killed',
+    'to die at home and not on the road',
+    'miserliness with their own household'
+  ),
+  -- Sunmere Hold (303): standalone NPC
+  (
+    '00000000-0000-0000-0000-000000000456',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000303',
+    'npc',
+    'Cress Finmore',
+    'female',
+    'alive',
+    -26,
+    null,
+    null,
+    'tender',
+    'courtly',
+    'keeps a child''s portrait they have never named',
+    'to apprentice a child of the lower ward',
+    'a tendency to read every silence as betrayal'
+  ),
+  -- Sunmere Hold (303): child of Aldric (452) + Neva (453) Sunmoor
+  (
+    '00000000-0000-0000-0000-000000000454',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000303',
+    'npc',
+    'Kit Sunmoor',
+    'male',
+    'alive',
+    -11,
+    '00000000-0000-0000-0000-000000000452',
+    '00000000-0000-0000-0000-000000000453',
+    'wry',
+    'watchful',
+    'holds a vow they cannot remember swearing',
+    'to see the long winter season end',
+    'pride'
+  )
+on conflict (id) do update
+set
+  world_id = excluded.world_id,
+  settlement_id = excluded.settlement_id,
+  citizen_type = excluded.citizen_type,
+  name = excluded.name,
+  sex = excluded.sex,
+  status = excluded.status,
+  born_on_turn_number = excluded.born_on_turn_number,
+  parent_a_citizen_id = excluded.parent_a_citizen_id,
+  parent_b_citizen_id = excluded.parent_b_citizen_id,
+  npc_trait_1 = excluded.npc_trait_1,
+  npc_trait_2 = excluded.npc_trait_2,
+  npc_secret_contradiction = excluded.npc_secret_contradiction,
+  npc_goal = excluded.npc_goal,
+  npc_flaw = excluded.npc_flaw,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Active partnerships: one per Ashvale settlement (301, 302, 303).
+-- Each pair is intra-settlement so the partnership is unambiguously
+-- associated with that settlement's population.
+-- The partial unique indexes partnerships_unique_active_citizen_{a,b}_idx
+-- allow at most one active row per citizen; all six citizens below are new
+-- and have no prior partnership rows.
+-- ---------------------------------------------------------------------------
+insert into
+  public.partnerships (
+    id,
+    citizen_a_id,
+    citizen_b_id,
+    status,
+    formed_on_turn_number,
+    ended_on_turn_number,
+    changed_by_user_id,
+    change_reason
+  )
+values
+  -- Settlement 301: Elva Thornwick (432) + Curt Thornwick (433)
+  (
+    '00000000-0000-0000-0000-000000000503',
+    '00000000-0000-0000-0000-000000000432',
+    '00000000-0000-0000-0000-000000000433',
+    'active',
+    0,
+    null,
+    null,
+    null
+  ),
+  -- Settlement 302: Oswin Ashford (442) + Selma Ashford (443)
+  (
+    '00000000-0000-0000-0000-000000000504',
+    '00000000-0000-0000-0000-000000000442',
+    '00000000-0000-0000-0000-000000000443',
+    'active',
+    0,
+    null,
+    null,
+    null
+  ),
+  -- Settlement 303: Aldric Sunmoor (452) + Neva Sunmoor (453)
+  (
+    '00000000-0000-0000-0000-000000000505',
+    '00000000-0000-0000-0000-000000000452',
+    '00000000-0000-0000-0000-000000000453',
+    'active',
+    0,
+    null,
+    null,
+    null
+  )
+on conflict (id) do update
+set
+  citizen_a_id = excluded.citizen_a_id,
+  citizen_b_id = excluded.citizen_b_id,
+  status = excluded.status,
+  formed_on_turn_number = excluded.formed_on_turn_number,
+  ended_on_turn_number = excluded.ended_on_turn_number,
+  changed_by_user_id = excluded.changed_by_user_id,
+  change_reason = excluded.change_reason,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Construction pool workers: one pool-member assignment per Ashvale
+-- settlement. construction_project_id = NULL marks these as pool members;
+-- the simulation allocates them to the in-progress project by queue_position
+-- each turn transition (see Epic 6 phaseBuildingConstruction).
+-- ---------------------------------------------------------------------------
+insert into
+  public.citizen_assignments (
+    citizen_id,
+    assignment_type,
+    job_id,
+    construction_project_id,
+    deposit_instance_id,
+    managed_population_instance_id,
+    trade_route_id,
+    trade_route_end,
+    assigned_on_turn_number
+  )
+values
+  -- Lyss Thornwick (434, Hearthwatch 301): construction pool
+  (
+    '00000000-0000-0000-0000-000000000434',
+    'construction_project',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  -- Brynn Ashford (441, Mistfall Crossing 302): construction pool
+  (
+    '00000000-0000-0000-0000-000000000441',
+    'construction_project',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  -- Cress Finmore (456, Sunmere Hold 303): construction pool
+  (
+    '00000000-0000-0000-0000-000000000456',
+    'construction_project',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  )
+on conflict (citizen_id) do update
+set
+  assignment_type = excluded.assignment_type,
+  job_id = excluded.job_id,
+  construction_project_id = excluded.construction_project_id,
+  deposit_instance_id = excluded.deposit_instance_id,
+  managed_population_instance_id = excluded.managed_population_instance_id,
+  trade_route_id = excluded.trade_route_id,
+  trade_route_end = excluded.trade_route_end,
+  assigned_on_turn_number = excluded.assigned_on_turn_number,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Multi-resource deposit mixes: add a secondary resource to each canonical
+-- deposit instance so the extraction phase runs against heterogeneous mixes.
+-- Resource IDs use the W=1 formula: lpad(1*100+offset, 12, '0').
+-- The unique constraint is on (deposit_instance_id, resource_id); these rows
+-- use a different resource_id from the primary entry so there is no conflict.
+-- ---------------------------------------------------------------------------
+insert into
+  public.deposit_instance_resources (
+    deposit_instance_id,
+    resource_id,
+    initial_quantity,
+    remaining_quantity
+  )
+values
+  -- Hearthwatch iron vein (000c-1): secondary stone block (resource offset 9)
+  (
+    '00000000-0000-0000-000c-000000000001',
+    '00000000-0000-0000-0004-000000000109',
+    1500,
+    1400
+  ),
+  -- Mistfall hardwood grove (000c-2): secondary iron ore (resource offset 10)
+  (
+    '00000000-0000-0000-000c-000000000002',
+    '00000000-0000-0000-0004-000000000110',
+    1200,
+    1100
+  ),
+  -- Sunmere stone quarry (000c-3): secondary hardwood logs (resource offset 8)
+  (
+    '00000000-0000-0000-000c-000000000003',
+    '00000000-0000-0000-0004-000000000108',
+    2000,
+    1850
+  ),
+  -- Tidewatch copper vein (000c-4): secondary stone block (resource offset 9)
+  (
+    '00000000-0000-0000-000c-000000000004',
+    '00000000-0000-0000-0004-000000000109',
+    1000,
+    950
+  ),
+  -- Stonehold iron vein (000c-5): secondary copper ingot (resource offset 11)
+  (
+    '00000000-0000-0000-000c-000000000005',
+    '00000000-0000-0000-0004-000000000111',
+    800,
+    750
+  )
+on conflict (deposit_instance_id, resource_id) do update
+set
+  remaining_quantity = excluded.remaining_quantity,
+  updated_at = now();
+
 -- ---------------------------------------------------------------------------
 -- Epic 6 baseline turn snapshots: one row per settlement and one row per
 -- (settlement, resource) pair. The migration backfill
