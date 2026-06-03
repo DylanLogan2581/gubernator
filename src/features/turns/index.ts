@@ -17,6 +17,11 @@ export {
 } from "./mutations/endTurnTransitionMutations";
 export { EndTurnControl } from "./components/EndTurnControl";
 export {
+  TurnTransitionOutcomeContent,
+  TurnTransitionOutcomeEmptyState,
+  TurnTransitionOutcomePanel,
+} from "./components/TurnTransitionOutcomePanel";
+export {
   CurrentTurnStateError,
   currentTurnStateQueryOptions,
   isCurrentTurnStateError,

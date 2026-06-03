@@ -14,7 +14,7 @@ import {
   SettlementReadinessListPanel,
   SettlementReadinessSummaryPanel,
 } from "@/features/settlements";
-import { EndTurnControl } from "@/features/turns";
+import { EndTurnControl, TurnTransitionOutcomePanel } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
@@ -173,6 +173,7 @@ function WorldShellContent({
         nextTurnNumber={worldQuery.data.header.nextTurnNumber}
         worldId={worldId}
       />
+      <TurnTransitionOutcomePanel scope="world" id={worldId} />
       <nav aria-label="World sections" className="flex flex-wrap gap-2">
         <Button asChild variant="outline" size="sm" className="w-fit">
           <Link to="/worlds/$worldId/nations" params={{ worldId }}>

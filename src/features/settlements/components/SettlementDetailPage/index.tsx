@@ -17,6 +17,7 @@ import {
 } from "@/features/permissions";
 import { SettlementStockpilesPanel } from "@/features/resources";
 import { SettlementTradeRoutesPanel } from "@/features/trade";
+import { TurnTransitionOutcomePanel } from "@/features/turns";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -266,6 +267,8 @@ function SettlementDetailLoaded({
           </p>
         </div>
       </header>
+
+      <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
 
       <SettlementReadinessSection
         accessContext={accessContext}
