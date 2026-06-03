@@ -8,12 +8,10 @@
 --     calendar_config_json).
 --   • Owner cannot insert worlds with state-machine columns pre-set.
 --   • Owner can insert a world specifying only allowed metadata columns.
---   • advance_world_turn_if_current still advances the turn for the owner
---     (regression check: SECURITY DEFINER path bypasses column grants).
 begin;
 
 select
-  plan (14);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -233,32 +231,6 @@ select
   );
 
 reset role;
-
--- ===========================================================================
--- Regression: advance_world_turn_if_current still advances the world when
--- called via the privileged (service-role) path with the owner as initiator.
--- The SECURITY DEFINER path bypasses column grants on public.worlds.
--- ===========================================================================
-select
-  public.advance_world_turn_if_current (
-    '71000000-0000-0000-0000-000000000001',
-    0,
-    '70000000-0000-0000-0000-000000000001'
-  );
-
-select
-  is (
-    (
-      select
-        current_turn_number
-      from
-        public.worlds
-      where
-        id = '71000000-0000-0000-0000-000000000001'
-    ),
-    1,
-    'advance_world_turn_if_current advances the owner''s world despite column restrictions'
-  );
 
 select
   *

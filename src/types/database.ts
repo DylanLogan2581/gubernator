@@ -1911,23 +1911,13 @@ export type Database = {
       };
     };
     Functions: {
-      advance_world_turn_if_current: {
+      apply_turn_transition: {
         Args: {
           p_expected_turn_number: number;
-          p_initiated_by_user_id: string;
-          p_log_payload_jsonb?: Json;
-          p_notification_payload_jsonb?: Json;
+          p_payload: Json;
           p_world_id: string;
         };
-        Returns: {
-          from_turn_number: number;
-          id: string;
-          initiated_by_user_id: string;
-          started_at: string;
-          status: string;
-          to_turn_number: number;
-          world_id: string;
-        }[];
+        Returns: Json;
       };
       approve_trade_route_side: {
         Args: {
