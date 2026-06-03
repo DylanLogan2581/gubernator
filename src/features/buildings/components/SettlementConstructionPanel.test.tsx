@@ -34,6 +34,7 @@ const BLUEPRINT_ID = "00000000-0000-0000-0000-000000000020";
 const TIER_ID = "00000000-0000-0000-0000-000000000030";
 const BUILDING_ID_1 = "00000000-0000-0000-0000-000000000040";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000050";
+const TRANSITION_ID = "00000000-0000-0000-0000-000000000060";
 
 type TestProjectRow = {
   readonly activated_on_turn_number: number | null;
@@ -191,9 +192,58 @@ type TestResourceRow = {
   readonly [key: string]: unknown;
 };
 
+type TestSnapshotLookupRow = {
+  readonly turn_transition_id: string;
+};
+
+type TestLogEntryRow = {
+  readonly citizen_id: null;
+  readonly id: string;
+  readonly log_category: string;
+  readonly nation_id: null;
+  readonly payload_jsonb: unknown;
+  readonly resource_id: null;
+  readonly settlement_id: string;
+  readonly world_id: string;
+};
+
+type TestTransitionRow = {
+  readonly finished_at: string | null;
+  readonly from_turn_number: number;
+  readonly id: string;
+  readonly notifications: readonly unknown[];
+  readonly settlement_turn_resource_snapshots: readonly unknown[];
+  readonly settlement_turn_snapshots: readonly unknown[];
+  readonly started_at: string;
+  readonly status: string;
+  readonly to_turn_number: number;
+  readonly turn_log_entries: readonly TestLogEntryRow[];
+  readonly world_id: string;
+};
+
+function createTransitionRow(
+  logEntries: readonly TestLogEntryRow[] = [],
+): TestTransitionRow {
+  return {
+    finished_at: "2026-06-01T00:01:00.000Z",
+    from_turn_number: 1,
+    id: TRANSITION_ID,
+    notifications: [],
+    settlement_turn_resource_snapshots: [],
+    settlement_turn_snapshots: [],
+    started_at: "2026-06-01T00:00:00.000Z",
+    status: "complete",
+    to_turn_number: 2,
+    turn_log_entries: logEntries,
+    world_id: WORLD_ID,
+  };
+}
+
 function createClient({
   blueprintRows = [],
   buildingRows = [],
+  latestSnapshotRow = null,
+  latestTransitionRow = null,
   projectRows = [],
   resourceRows = [],
   tierRows = [],
@@ -201,6 +251,8 @@ function createClient({
 }: {
   readonly blueprintRows?: readonly TestBlueprintRow[];
   readonly buildingRows?: readonly TestBuildingRow[];
+  readonly latestSnapshotRow?: TestSnapshotLookupRow | null;
+  readonly latestTransitionRow?: TestTransitionRow | null;
   readonly projectRows?: readonly TestProjectRow[];
   readonly resourceRows?: readonly TestResourceRow[];
   readonly tierRows?: readonly TestTierRow[];
@@ -241,6 +293,23 @@ function createClient({
     return builder;
   }
 
+  const snapshotLookupBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => snapshotLookupBuilder),
+    not: vi.fn(() => snapshotLookupBuilder),
+    order: vi.fn(() => snapshotLookupBuilder),
+    limit: vi.fn(() => snapshotLookupBuilder),
+    maybeSingle: vi
+      .fn()
+      .mockResolvedValue({ data: latestSnapshotRow, error: null }),
+  };
+
+  const transitionBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => transitionBuilder),
+    maybeSingle: vi
+      .fn()
+      .mockResolvedValue({ data: latestTransitionRow, error: null }),
+  };
+
   const defaultRpcMock = vi.fn(() => {
     throw new Error("Unexpected RPC call");
   });
@@ -261,6 +330,12 @@ function createClient({
       }
       if (table === "resources") {
         return createSimpleQueryBuilder(resourceRows);
+      }
+      if (table === "settlement_turn_snapshots") {
+        return { select: vi.fn(() => snapshotLookupBuilder) };
+      }
+      if (table === "turn_transitions") {
+        return { select: vi.fn(() => transitionBuilder) };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -558,6 +633,84 @@ describe("SettlementConstructionPanel", () => {
         ],
       });
     });
+  });
+
+  it("shows worker count from transition log entry for active project", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        projectRows: [createProjectRow({ status: "in_progress" })],
+        latestSnapshotRow: { turn_transition_id: TRANSITION_ID },
+        latestTransitionRow: createTransitionRow([
+          {
+            citizen_id: null,
+            id: "log-1",
+            log_category: "construction.progress",
+            nation_id: null,
+            payload_jsonb: {
+              projectId: PROJECT_ID_1,
+              workers: 4,
+              newProgress: 4,
+              workerTurnsRequired: 10,
+              costsDeducted: {},
+              settlementId: SETTLEMENT_ID,
+            },
+            resource_id: null,
+            settlement_id: SETTLEMENT_ID,
+            world_id: WORLD_ID,
+          },
+        ]),
+      }),
+    );
+
+    renderPanel({ canManage: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    expect(screen.getByText("4")).toBeDefined();
+  });
+
+  it("shows em dash for workers when no transition log entry exists", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        projectRows: [createProjectRow({ status: "queued" })],
+        latestSnapshotRow: null,
+        latestTransitionRow: null,
+      }),
+    );
+
+    renderPanel({ canManage: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    expect(screen.getByText("—")).toBeDefined();
+  });
+
+  it("shows paused badge with pause reason tooltip when project is paused", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        projectRows: [createProjectRow({ status: "paused" })],
+        latestSnapshotRow: { turn_transition_id: TRANSITION_ID },
+        latestTransitionRow: createTransitionRow([
+          {
+            citizen_id: null,
+            id: "log-1",
+            log_category: "construction.paused",
+            nation_id: null,
+            payload_jsonb: { projectId: PROJECT_ID_1, workers: 2 },
+            resource_id: null,
+            settlement_id: SETTLEMENT_ID,
+            world_id: WORLD_ID,
+          },
+        ]),
+      }),
+    );
+
+    renderPanel({ canManage: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    const badge = screen.getByText("paused");
+    expect(badge).toBeDefined();
+    const wrapper = badge.closest("[title]");
+    expect(wrapper?.getAttribute("title")).toBe("Insufficient resources");
+    expect(screen.getByText("2")).toBeDefined();
   });
 
   it("calls cancel RPC and shows success with unassigned count", async () => {

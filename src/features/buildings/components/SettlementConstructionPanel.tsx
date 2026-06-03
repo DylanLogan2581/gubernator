@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import {
+  latestSettlementTransitionOutcomeQueryOptions,
+  type TurnTransitionLogEntry,
+} from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -52,6 +56,44 @@ type SettlementConstructionPanelProps = {
   readonly worldId: string;
 };
 
+type ProjectLogData = {
+  readonly pauseReason: string | null;
+  readonly workers: number;
+};
+
+const CONSTRUCTION_LOG_CATEGORIES = new Set([
+  "construction.completed",
+  "construction.paused",
+  "construction.progress",
+]);
+
+function getProjectLogData(
+  projectId: string,
+  logEntries: readonly TurnTransitionLogEntry[],
+): ProjectLogData | null {
+  for (const entry of logEntries) {
+    if (!CONSTRUCTION_LOG_CATEGORIES.has(entry.logCategory)) continue;
+    const p = entry.payloadJsonb;
+    if (
+      typeof p !== "object" ||
+      p === null ||
+      (p as Record<string, unknown>).projectId !== projectId ||
+      typeof (p as Record<string, unknown>).workers !== "number"
+    ) {
+      continue;
+    }
+    const workers = (p as Record<string, unknown>).workers as number;
+    return {
+      pauseReason:
+        entry.logCategory === "construction.paused"
+          ? "Insufficient resources"
+          : null,
+      workers,
+    };
+  }
+  return null;
+}
+
 const ACTIVE_STATUSES: readonly ConstructionProjectStatus[] = [
   "queued",
   "in_progress",
@@ -67,6 +109,9 @@ export function SettlementConstructionPanel({
   const [createOpen, setCreateOpen] = useState(false);
   const projectsQuery = useQuery(
     constructionProjectsBySettlementQueryOptions(settlementId),
+  );
+  const latestOutcomeQuery = useQuery(
+    latestSettlementTransitionOutcomeQueryOptions(settlementId),
   );
   const queryClient = useQueryClient();
   const canAct = canManage && !isArchived;
@@ -107,6 +152,7 @@ export function SettlementConstructionPanel({
         <QueueContent
           allProjects={projectsQuery.data}
           canAct={canAct}
+          logEntries={latestOutcomeQuery.data?.logEntries ?? []}
           queryClient={queryClient}
           settlementId={settlementId}
         />
@@ -129,11 +175,13 @@ export function SettlementConstructionPanel({
 function QueueContent({
   allProjects,
   canAct,
+  logEntries,
   queryClient,
   settlementId,
 }: {
   readonly allProjects: readonly ConstructionProject[];
   readonly canAct: boolean;
+  readonly logEntries: readonly TurnTransitionLogEntry[];
   readonly queryClient: QueryClient;
   readonly settlementId: string;
 }): JSX.Element {
@@ -164,6 +212,9 @@ function QueueContent({
             Status
           </th>
           <th className="pb-2 font-medium" scope="col">
+            Workers (this turn)
+          </th>
+          <th className="pb-2 font-medium" scope="col">
             Progress
           </th>
           {canAct ? (
@@ -178,6 +229,7 @@ function QueueContent({
             canAct={canAct}
             isFirst={index === 0}
             isLast={index === activeProjects.length - 1}
+            logData={getProjectLogData(project.id, logEntries)}
             project={project}
             projects={activeProjects}
             queryClient={queryClient}
@@ -225,6 +277,7 @@ function ProjectRow({
   canAct,
   isFirst,
   isLast,
+  logData,
   project,
   projects,
   queryClient,
@@ -233,6 +286,7 @@ function ProjectRow({
   readonly canAct: boolean;
   readonly isFirst: boolean;
   readonly isLast: boolean;
+  readonly logData: ProjectLogData | null;
   readonly project: ConstructionProject;
   readonly projects: readonly ConstructionProject[];
   readonly queryClient: QueryClient;
@@ -266,18 +320,31 @@ function ProjectRow({
     }
   }
 
+  const pauseReason: string | null = logData?.pauseReason ?? null;
+
+  const statusBadge = (
+    <Badge
+      aria-label={`Status: ${statusBadgeLabel(project.status)}`}
+      variant={statusBadgeVariant(project.status)}
+    >
+      {statusBadgeLabel(project.status)}
+    </Badge>
+  );
+
   return (
     <>
       <tr className="border-b border-border last:border-0">
         <td className="py-2 pr-4">{project.blueprintName}</td>
         <td className="py-2 pr-4">Tier {project.tierNumber}</td>
         <td className="py-2 pr-4">
-          <Badge
-            aria-label={`Status: ${statusBadgeLabel(project.status)}`}
-            variant={statusBadgeVariant(project.status)}
-          >
-            {statusBadgeLabel(project.status)}
-          </Badge>
+          {pauseReason !== null ? (
+            <span title={pauseReason}>{statusBadge}</span>
+          ) : (
+            statusBadge
+          )}
+        </td>
+        <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+          {logData !== null ? logData.workers.toString() : "—"}
         </td>
         <td className="py-2 pr-4 text-muted-foreground">
           {project.progressWorkerTurns} / {project.workerTurnsRequired}{" "}
