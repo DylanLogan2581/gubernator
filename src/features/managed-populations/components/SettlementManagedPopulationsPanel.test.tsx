@@ -35,6 +35,7 @@ const RESOURCE_ID_1 = "00000000-0000-0000-0000-000000000030";
 const CITIZEN_ID_1 = "00000000-0000-0000-0000-000000000040";
 const JOB_ID_1 = "00000000-0000-0000-0000-000000000050";
 const JOB_ID_2 = "00000000-0000-0000-0000-000000000051";
+const TRANSITION_ID = "00000000-0000-0000-0000-000000000099";
 
 type TestInstanceRow = {
   readonly id: string;
@@ -141,6 +142,48 @@ function createResourceRow(
   };
 }
 
+type TestTransitionRow = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly status: string;
+  readonly from_turn_number: number;
+  readonly to_turn_number: number;
+  readonly started_at: string;
+  readonly finished_at: string | null;
+  readonly turn_log_entries: ReadonlyArray<{
+    readonly id: string;
+    readonly world_id: string;
+    readonly log_category: string;
+    readonly payload_jsonb: unknown;
+    readonly citizen_id: string | null;
+    readonly nation_id: string | null;
+    readonly resource_id: string | null;
+    readonly settlement_id: string | null;
+  }>;
+  readonly notifications: readonly unknown[];
+  readonly settlement_turn_snapshots: readonly unknown[];
+  readonly settlement_turn_resource_snapshots: readonly unknown[];
+};
+
+function createTransitionRow(
+  overrides: Partial<TestTransitionRow> = {},
+): TestTransitionRow {
+  return {
+    id: TRANSITION_ID,
+    world_id: WORLD_ID,
+    status: "completed",
+    from_turn_number: 4,
+    to_turn_number: 5,
+    started_at: "2026-05-05T00:00:00.000Z",
+    finished_at: "2026-05-05T00:01:00.000Z",
+    turn_log_entries: [],
+    notifications: [],
+    settlement_turn_snapshots: [],
+    settlement_turn_resource_snapshots: [],
+    ...overrides,
+  };
+}
+
 type TestAssignmentRow = {
   readonly citizen_id: string;
   readonly assignment_type: string;
@@ -190,17 +233,26 @@ function createAssignmentRow(
   };
 }
 
+type TestSnapshotRow = {
+  readonly turn_number: number;
+  readonly managed_populations_summary_json: unknown;
+};
+
 function createClient({
   instanceRows = [],
   typeRows = [],
   resourceRows = [],
   assignmentRows = [],
+  transitionRow = null,
+  snapshotRows = [],
   rpcMock,
 }: {
   readonly instanceRows?: readonly TestInstanceRow[];
   readonly typeRows?: readonly TestTypeRow[];
   readonly resourceRows?: readonly TestResourceRow[];
   readonly assignmentRows?: readonly TestAssignmentRow[];
+  readonly transitionRow?: TestTransitionRow | null;
+  readonly snapshotRows?: readonly TestSnapshotRow[];
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
   const instancesSelectBuilder: Record<string, unknown> = {
@@ -228,6 +280,29 @@ function createClient({
     returns: vi.fn().mockResolvedValue({ data: assignmentRows, error: null }),
   };
 
+  // settlement_turn_snapshots: handles both the latestOutcome lookup (maybeSingle)
+  // and the snapshot trend query (returns).
+  const snapshotBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => snapshotBuilder),
+    not: vi.fn(() => snapshotBuilder),
+    order: vi.fn(() => snapshotBuilder),
+    limit: vi.fn(() => snapshotBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data:
+        transitionRow !== null ? { turn_transition_id: TRANSITION_ID } : null,
+      error: null,
+    }),
+    returns: vi.fn().mockResolvedValue({ data: snapshotRows, error: null }),
+  };
+
+  const transitionSelectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => transitionSelectBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: transitionRow ?? null,
+      error: null,
+    }),
+  };
+
   return {
     from: vi.fn((table: string) => {
       if (table === "managed_population_instances") {
@@ -241,6 +316,12 @@ function createClient({
       }
       if (table === "citizen_assignments") {
         return { select: vi.fn(() => assignmentsSelectBuilder) };
+      }
+      if (table === "settlement_turn_snapshots") {
+        return { select: vi.fn(() => snapshotBuilder) };
+      }
+      if (table === "turn_transitions") {
+        return { select: vi.fn(() => transitionSelectBuilder) };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -621,6 +702,141 @@ describe("SettlementManagedPopulationsPanel", () => {
         undefined,
       );
     });
+  });
+
+  it("shows Extinct badge for instances with status=extinct", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "South Herd",
+            status: "extinct",
+            current_count: 0,
+          }),
+        ],
+        typeRows: [createTypeRow()],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("South Herd");
+    expect(screen.getByRole("generic", { name: "Extinct" })).toBeDefined();
+  });
+
+  it("shows Extinct badge with turn tooltip when managed_population.extinct log entry exists", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "South Herd",
+            status: "extinct",
+            current_count: 0,
+          }),
+        ],
+        typeRows: [createTypeRow()],
+        transitionRow: createTransitionRow({
+          to_turn_number: 5,
+          turn_log_entries: [
+            {
+              id: "00000000-0000-0000-0000-000000000090",
+              world_id: WORLD_ID,
+              log_category: "managed_population.extinct",
+              payload_jsonb: {
+                managedPopulationInstanceId: INSTANCE_ID_1,
+                name: "South Herd",
+              },
+              citizen_id: null,
+              nation_id: null,
+              resource_id: null,
+              settlement_id: SETTLEMENT_ID,
+            },
+          ],
+        }),
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("South Herd");
+    const badge = screen.getByRole("generic", { name: "Extinct" });
+    expect(badge.getAttribute("title")).toBe("Turn 5");
+  });
+
+  it("shows snapshot-based growth trend when two snapshots are available", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "North Herd",
+            status: "active",
+            current_count: 110,
+          }),
+        ],
+        typeRows: [createTypeRow()],
+        snapshotRows: [
+          {
+            turn_number: 5,
+            managed_populations_summary_json: [
+              { instanceId: INSTANCE_ID_1, currentCount: 110 },
+            ],
+          },
+          {
+            turn_number: 4,
+            managed_populations_summary_json: [
+              { instanceId: INSTANCE_ID_1, currentCount: 100 },
+            ],
+          },
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Herd");
+    // delta = (110-100)/100*100 = 10%, growing
+    expect(screen.getByLabelText("Growing")).toBeDefined();
+    expect(screen.getByText(/10\.0%/)).toBeDefined();
+  });
+
+  it("shows snapshot-based decline trend when count dropped", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "North Herd",
+            status: "active",
+            current_count: 90,
+          }),
+        ],
+        typeRows: [createTypeRow()],
+        snapshotRows: [
+          {
+            turn_number: 5,
+            managed_populations_summary_json: [
+              { instanceId: INSTANCE_ID_1, currentCount: 90 },
+            ],
+          },
+          {
+            turn_number: 4,
+            managed_populations_summary_json: [
+              { instanceId: INSTANCE_ID_1, currentCount: 100 },
+            ],
+          },
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Herd");
+    // delta = (90-100)/100*100 = -10%, declining
+    expect(screen.getByLabelText("Declining")).toBeDefined();
+    expect(screen.getByText(/10\.0%/)).toBeDefined();
   });
 
   it("shows maintenance per turn using resource names and computed amounts", async () => {

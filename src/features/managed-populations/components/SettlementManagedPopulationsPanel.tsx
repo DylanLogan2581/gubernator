@@ -18,6 +18,7 @@ import { useId, useState, type FormEvent, type JSX } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,6 +35,10 @@ import {
   activeResourcesByWorldQueryOptions,
   type Resource,
 } from "@/features/resources";
+import {
+  latestSettlementTransitionOutcomeQueryOptions,
+  type TurnTransitionOutcome,
+} from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -43,6 +48,10 @@ import { createManagedPopulationInstanceMutationOptions } from "../mutations/cre
 import { removeManagedPopulationInstanceMutationOptions } from "../mutations/removeManagedPopulationInstanceMutations";
 import { setConfiguredCullQuantityMutationOptions } from "../mutations/setConfiguredCullQuantityMutations";
 import { managedPopulationInstancesBySettlementQueryOptions } from "../queries/managedPopulationInstancesQueries";
+import {
+  managedPopulationSnapshotsBySettlementQueryOptions,
+  type ManagedPopSnapshotCounts,
+} from "../queries/managedPopulationSnapshotsQueries";
 import { activeManagedPopulationTypesByWorldQueryOptions } from "../queries/managedPopulationsQueries";
 import { createManagedPopulationInstanceInputSchema } from "../schemas/createManagedPopulationInstanceSchemas";
 
@@ -78,6 +87,12 @@ export function SettlementManagedPopulationsPanel({
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const assignmentsQuery = useQuery(
     settlementTargetAssignmentsQueryOptions(settlementId),
+  );
+  const latestOutcomeQuery = useQuery(
+    latestSettlementTransitionOutcomeQueryOptions(settlementId),
+  );
+  const snapshotCountsQuery = useQuery(
+    managedPopulationSnapshotsBySettlementQueryOptions(settlementId),
   );
 
   const typeById = new Map<string, ManagedPopulationType>();
@@ -142,8 +157,15 @@ export function SettlementManagedPopulationsPanel({
           canManage={(canManage || canAdmin) && !isArchived}
           husbandryCountByInstance={husbandryCountByInstance}
           instances={instancesQuery.data}
+          latestOutcome={latestOutcomeQuery.data ?? null}
           queryClient={queryClient}
           resourceById={resourceById}
+          snapshotCounts={
+            snapshotCountsQuery.data ?? {
+              latestCounts: null,
+              prevCounts: null,
+            }
+          }
           typeById={typeById}
         />
       )}
@@ -218,16 +240,20 @@ function ManagedPopulationsGroups({
   canManage,
   husbandryCountByInstance,
   instances,
+  latestOutcome,
   queryClient,
   resourceById,
+  snapshotCounts,
   typeById,
 }: {
   readonly canAdmin: boolean;
   readonly canManage: boolean;
   readonly husbandryCountByInstance: ReadonlyMap<string, number>;
   readonly instances: readonly ManagedPopulationInstance[];
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly resourceById: ReadonlyMap<string, Resource>;
+  readonly snapshotCounts: ManagedPopSnapshotCounts;
   readonly typeById: ReadonlyMap<string, ManagedPopulationType>;
 }): JSX.Element {
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(
@@ -264,9 +290,11 @@ function ManagedPopulationsGroups({
             instances={groupInstances}
             isCollapsed={isCollapsed}
             label={group.label}
+            latestOutcome={latestOutcome}
             panelId={panelId}
             queryClient={queryClient}
             resourceById={resourceById}
+            snapshotCounts={snapshotCounts}
             typeById={typeById}
             onToggle={() => {
               toggleGroup(group.label);
@@ -285,10 +313,12 @@ function ManagedPopulationsStatusGroup({
   instances,
   isCollapsed,
   label,
+  latestOutcome,
   onToggle,
   panelId,
   queryClient,
   resourceById,
+  snapshotCounts,
   typeById,
 }: {
   readonly canAdmin: boolean;
@@ -297,10 +327,12 @@ function ManagedPopulationsStatusGroup({
   readonly instances: readonly ManagedPopulationInstance[];
   readonly isCollapsed: boolean;
   readonly label: string;
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly onToggle: () => void;
   readonly panelId: string;
   readonly queryClient: QueryClient;
   readonly resourceById: ReadonlyMap<string, Resource>;
+  readonly snapshotCounts: ManagedPopSnapshotCounts;
   readonly typeById: ReadonlyMap<string, ManagedPopulationType>;
 }): JSX.Element {
   return (
@@ -357,8 +389,10 @@ function ManagedPopulationsStatusGroup({
                     husbandryCountByInstance.get(instance.id) ?? 0
                   }
                   instance={instance}
+                  latestOutcome={latestOutcome}
                   queryClient={queryClient}
                   resourceById={resourceById}
+                  snapshotCounts={snapshotCounts}
                   type={typeById.get(instance.managedPopulationTypeId)}
                 />
               ))}
@@ -370,21 +404,49 @@ function ManagedPopulationsStatusGroup({
   );
 }
 
+type ExtinctPayload = { readonly managedPopulationInstanceId: string };
+
+function parseExtinctPayload(payload: unknown): ExtinctPayload | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const p = payload as Record<string, unknown>;
+  if (typeof p.managedPopulationInstanceId !== "string") return null;
+  return { managedPopulationInstanceId: p.managedPopulationInstanceId };
+}
+
+function extinctBadgeTooltip(
+  instanceId: string,
+  latestOutcome: TurnTransitionOutcome | null,
+): string | undefined {
+  if (latestOutcome === null) return undefined;
+  const entry = latestOutcome.logEntries.find(
+    (e) =>
+      e.logCategory === "managed_population.extinct" &&
+      parseExtinctPayload(e.payloadJsonb)?.managedPopulationInstanceId ===
+        instanceId,
+  );
+  if (entry === undefined) return undefined;
+  return `Turn ${latestOutcome.toTurnNumber.toString()}`;
+}
+
 function ManagedPopulationInstanceRow({
   canAdmin,
   canManage,
   husbandryCount,
   instance,
+  latestOutcome,
   queryClient,
   resourceById,
+  snapshotCounts,
   type,
 }: {
   readonly canAdmin: boolean;
   readonly canManage: boolean;
   readonly husbandryCount: number;
   readonly instance: ManagedPopulationInstance;
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly resourceById: ReadonlyMap<string, Resource>;
+  readonly snapshotCounts: ManagedPopSnapshotCounts;
   readonly type: ManagedPopulationType | undefined;
 }): JSX.Element {
   const [editingCull, setEditingCull] = useState(false);
@@ -401,6 +463,19 @@ function ManagedPopulationInstanceRow({
       ? type.growthRate * (husbandryCount / requiredWorkers)
       : null;
 
+  // Actual count delta from the last two snapshots (takes priority over trendValue)
+  const latestCount = snapshotCounts.latestCounts?.get(instance.id) ?? null;
+  const prevCount = snapshotCounts.prevCounts?.get(instance.id) ?? null;
+  const snapshotDelta =
+    latestCount !== null && prevCount !== null && prevCount > 0
+      ? ((latestCount - prevCount) / prevCount) * 100
+      : null;
+
+  const extinctTooltip =
+    instance.status === "extinct"
+      ? extinctBadgeTooltip(instance.id, latestOutcome)
+      : undefined;
+
   const maintenanceSummary =
     type !== undefined && type.maintenanceRulesJson.length > 0
       ? type.maintenanceRulesJson
@@ -416,14 +491,37 @@ function ManagedPopulationInstanceRow({
   return (
     <>
       <tr className="border-b border-border last:border-0">
-        <td className="py-2 pr-4 font-medium">{instance.name}</td>
+        <td className="py-2 pr-4 font-medium">
+          <span className="flex items-center gap-2">
+            {instance.name}
+            {instance.status === "extinct" ? (
+              <Badge
+                aria-label="Extinct"
+                title={extinctTooltip}
+                variant="secondary"
+              >
+                Extinct
+              </Badge>
+            ) : null}
+          </span>
+        </td>
         <td className="py-2 pr-4 text-muted-foreground">
           {instance.managedPopulationTypeName}
         </td>
         <td className="py-2 pr-4">
           <span className="flex items-center gap-1">
             {instance.currentCount.toLocaleString()}
-            {trendValue !== null ? (
+            {snapshotDelta !== null ? (
+              snapshotDelta !== 0 ? (
+                <span
+                  aria-label={snapshotDelta > 0 ? "Growing" : "Declining"}
+                  className={`text-xs ${snapshotDelta > 0 ? "text-green-600" : "text-red-600"}`}
+                >
+                  {snapshotDelta > 0 ? "↑" : "↓"}
+                  {Math.abs(snapshotDelta).toFixed(1)}%
+                </span>
+              ) : null
+            ) : trendValue !== null ? (
               trendValue > 0 ? (
                 <TrendingUp
                   aria-label="Growing"
