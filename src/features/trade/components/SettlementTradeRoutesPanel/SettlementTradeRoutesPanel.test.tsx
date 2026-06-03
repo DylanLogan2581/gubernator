@@ -209,17 +209,60 @@ function createResourceRow(
   };
 }
 
+type TestTransitionRow = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly from_turn_number: number;
+  readonly to_turn_number: number;
+  readonly status: string;
+  readonly started_at: string;
+  readonly finished_at: string | null;
+  readonly turn_log_entries: {
+    readonly id: string;
+    readonly settlement_id: string | null;
+    readonly world_id: string;
+    readonly citizen_id: string | null;
+    readonly nation_id: string | null;
+    readonly resource_id: string | null;
+    readonly log_category: string;
+    readonly payload_jsonb: unknown;
+  }[];
+  readonly notifications: unknown[];
+  readonly settlement_turn_resource_snapshots: unknown[];
+  readonly settlement_turn_snapshots: unknown[];
+};
+
+function createTransitionRow(
+  logEntries: TestTransitionRow["turn_log_entries"] = [],
+): TestTransitionRow {
+  return {
+    id: "00000000-0000-0000-0000-000000000099",
+    world_id: WORLD_ID,
+    from_turn_number: 1,
+    to_turn_number: 2,
+    status: "completed",
+    started_at: "2026-06-01T00:00:00.000Z",
+    finished_at: "2026-06-01T00:01:00.000Z",
+    turn_log_entries: logEntries,
+    notifications: [],
+    settlement_turn_resource_snapshots: [],
+    settlement_turn_snapshots: [],
+  };
+}
+
 function createClient({
   routeRows = [],
   assignmentRows = [],
   settlementRows = [],
   resourceRows = [],
+  transitionRow,
   rpcMock,
 }: {
   readonly routeRows?: readonly TestTradeRouteRow[];
   readonly assignmentRows?: readonly TestAssignmentRow[];
   readonly settlementRows?: readonly TestSettlementRow[];
   readonly resourceRows?: readonly TestResourceRow[];
+  readonly transitionRow?: TestTransitionRow | null;
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
   const routesSelectBuilder: Record<string, unknown> = {
@@ -247,6 +290,16 @@ function createClient({
     returns: vi.fn().mockResolvedValue({ data: resourceRows, error: null }),
   };
 
+  const resolvedTransition = transitionRow !== undefined ? transitionRow : null;
+  const transitionsSelectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => transitionsSelectBuilder),
+    order: vi.fn(() => transitionsSelectBuilder),
+    limit: vi.fn(() => transitionsSelectBuilder),
+    maybeSingle: vi
+      .fn()
+      .mockResolvedValue({ data: resolvedTransition, error: null }),
+  };
+
   return {
     from: vi.fn((table: string) => {
       if (table === "trade_routes") {
@@ -260,6 +313,9 @@ function createClient({
       }
       if (table === "resources") {
         return { select: vi.fn(() => resourcesSelectBuilder) };
+      }
+      if (table === "turn_transitions") {
+        return { select: vi.fn(() => transitionsSelectBuilder) };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -316,12 +372,20 @@ describe("SettlementTradeRoutesPanel", () => {
       order: vi.fn(() => assignmentsSelectBuilder),
       returns: vi.fn().mockReturnValue(neverResolving),
     };
+    const transitionsSelectBuilder: Record<string, unknown> = {
+      eq: vi.fn(() => transitionsSelectBuilder),
+      order: vi.fn(() => transitionsSelectBuilder),
+      limit: vi.fn(() => transitionsSelectBuilder),
+      maybeSingle: vi.fn().mockReturnValue(neverResolving),
+    };
     requireSupabaseClient.mockReturnValue({
       from: vi.fn((table: string) => {
         if (table === "trade_routes")
           return { select: vi.fn(() => routesSelectBuilder) };
         if (table === "citizen_assignments")
           return { select: vi.fn(() => assignmentsSelectBuilder) };
+        if (table === "turn_transitions")
+          return { select: vi.fn(() => transitionsSelectBuilder) };
         throw new Error(`Unexpected: ${table}`);
       }),
       rpc: vi.fn(),
@@ -1058,5 +1122,122 @@ describe("SettlementTradeRoutesPanel", () => {
         name: "Approve trade route with Far Settlement (Far Nation)",
       }),
     ).toBeDefined();
+  });
+
+  it("shows pause reason tooltip on paused route status badge", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "paused",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+            pause_reason_last_transition: "insufficient_origin_stock",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    const badge = screen.getByTitle("Insufficient stock at origin");
+    expect(badge).toBeDefined();
+    expect(badge.textContent).toBe("Paused");
+  });
+
+  it("shows destination space tooltip on paused route with destination space reason", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "paused",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+            pause_reason_last_transition: "insufficient_destination_space",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    expect(
+      screen.getByTitle("Insufficient space at destination"),
+    ).toBeDefined();
+  });
+
+  it("shows no tooltip on active route status badge", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "active",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    const badge = screen.getByText("Active");
+    expect(badge.title).toBe("");
+  });
+
+  it("applies resumed highlight class to rows that resumed in the latest transition", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "active",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+        transitionRow: createTransitionRow([
+          {
+            id: "log-1",
+            settlement_id: SETTLEMENT_ID,
+            world_id: WORLD_ID,
+            citizen_id: null,
+            nation_id: null,
+            resource_id: null,
+            log_category: "trade_route.resumed",
+            payload_jsonb: { tradeRouteId: ROUTE_ID_1 },
+          },
+        ]),
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    const row = document.getElementById(`trade-route-${ROUTE_ID_1}`);
+    expect(row?.className).toContain("animate-pulse");
+  });
+
+  it("does not apply resumed highlight to routes not in latest transition log", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "active",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+        transitionRow: createTransitionRow([]),
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    const row = document.getElementById(`trade-route-${ROUTE_ID_1}`);
+    expect(row?.className).not.toContain("animate-pulse");
   });
 });

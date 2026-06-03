@@ -12,6 +12,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
+import { latestWorldTransitionOutcomeQueryOptions } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { tradeRoutesForSettlementQueryOptions } from "../../queries/tradeRoutesQueries";
@@ -54,6 +55,9 @@ export function SettlementTradeRoutesPanel({
   const assignmentsQuery = useQuery(
     settlementTargetAssignmentsQueryOptions(settlementId),
   );
+  const latestOutcomeQuery = useQuery(
+    latestWorldTransitionOutcomeQueryOptions(worldId),
+  );
 
   const isNationManager =
     activeCharacter !== null &&
@@ -69,6 +73,21 @@ export function SettlementTradeRoutesPanel({
     !isArchived &&
     activeCharacter !== null &&
     (canAdmin || isNationManager || isSettlementManager);
+
+  const resumedRouteIds = new Set<string>();
+  if (
+    latestOutcomeQuery.data !== null &&
+    latestOutcomeQuery.data !== undefined
+  ) {
+    for (const entry of latestOutcomeQuery.data.logEntries) {
+      if (entry.logCategory === "trade_route.resumed") {
+        const tradeRouteId = parseTradeRouteResumedPayload(entry.payloadJsonb);
+        if (tradeRouteId !== null) {
+          resumedRouteIds.add(tradeRouteId);
+        }
+      }
+    }
+  }
 
   const traderCountByRoute = new Map<string, number>();
   if (assignmentsQuery.data !== undefined) {
@@ -145,6 +164,7 @@ export function SettlementTradeRoutesPanel({
             canManageRoutes={canManageRoutes}
             label="Outgoing"
             queryClient={queryClient}
+            resumedRouteIds={resumedRouteIds}
             routes={outgoing}
             settlementId={settlementId}
             side="origin"
@@ -155,6 +175,7 @@ export function SettlementTradeRoutesPanel({
             canManageRoutes={canManageRoutes}
             label="Incoming"
             queryClient={queryClient}
+            resumedRouteIds={resumedRouteIds}
             routes={incoming}
             settlementId={settlementId}
             side="destination"
@@ -171,6 +192,7 @@ function TradeRoutesDirection({
   canManageRoutes,
   label,
   queryClient,
+  resumedRouteIds,
   routes,
   settlementId,
   side,
@@ -180,6 +202,7 @@ function TradeRoutesDirection({
   readonly canManageRoutes: boolean;
   readonly label: string;
   readonly queryClient: QueryClient;
+  readonly resumedRouteIds: ReadonlySet<string>;
   readonly routes: readonly TradeRoute[];
   readonly settlementId: string;
   readonly side: "destination" | "origin";
@@ -240,6 +263,7 @@ function TradeRoutesDirection({
                   key={route.id}
                   activeCharacterId={activeCharacterId}
                   canManageRoutes={canManageRoutes}
+                  isResumedThisTransition={resumedRouteIds.has(route.id)}
                   queryClient={queryClient}
                   route={route}
                   settlementId={settlementId}
@@ -258,6 +282,7 @@ function TradeRoutesDirection({
 function TradeRouteRow({
   activeCharacterId,
   canManageRoutes,
+  isResumedThisTransition,
   queryClient,
   route,
   settlementId,
@@ -266,6 +291,7 @@ function TradeRouteRow({
 }: {
   readonly activeCharacterId: string | null;
   readonly canManageRoutes: boolean;
+  readonly isResumedThisTransition: boolean;
   readonly queryClient: QueryClient;
   readonly route: TradeRoute;
   readonly settlementId: string;
@@ -305,7 +331,7 @@ function TradeRouteRow({
     <>
       <tr
         id={`trade-route-${route.id}`}
-        className="border-b border-border last:border-0"
+        className={`border-b border-border last:border-0${isResumedThisTransition ? " animate-pulse bg-green-50 dark:bg-green-950 [animation-iteration-count:4]" : ""}`}
       >
         <td className="py-2 pr-4 font-medium">{counterpart}</td>
         <td className="py-2 pr-4 text-muted-foreground">
@@ -315,7 +341,10 @@ function TradeRouteRow({
           {route.quantityPerTransition.toLocaleString()}
         </td>
         <td className="py-2 pr-4">
-          <StatusBadge status={route.status} />
+          <StatusBadge
+            pauseReason={route.pauseReasonLastTransition}
+            status={route.status}
+          />
           {route.replacementForTradeRouteId !== null ? (
             <a
               href={`#trade-route-${route.replacementForTradeRouteId}`}
@@ -445,9 +474,18 @@ function TradeRouteRow({
   );
 }
 
+const PAUSE_REASON_LABELS: Record<string, string> = {
+  insufficient_destination_space: "Insufficient space at destination",
+  insufficient_origin_stock: "Insufficient stock at origin",
+  insufficient_trader_destination: "Insufficient traders at destination",
+  insufficient_trader_origin: "Insufficient traders at origin",
+};
+
 function StatusBadge({
+  pauseReason,
   status,
 }: {
+  readonly pauseReason?: string | null;
   readonly status: TradeRouteStatus;
 }): JSX.Element {
   const styles: Record<TradeRouteStatus, string> = {
@@ -464,11 +502,27 @@ function StatusBadge({
     proposed: "Proposed",
     replaced: "Replaced",
   };
+  const title =
+    status === "paused" && pauseReason !== null && pauseReason !== undefined
+      ? (PAUSE_REASON_LABELS[pauseReason] ?? pauseReason)
+      : undefined;
   return (
-    <span className={`text-xs font-medium ${styles[status]}`}>
+    <span className={`text-xs font-medium ${styles[status]}`} title={title}>
       {labels[status]}
     </span>
   );
+}
+
+function parseTradeRouteResumedPayload(payloadJsonb: unknown): string | null {
+  if (
+    typeof payloadJsonb !== "object" ||
+    payloadJsonb === null ||
+    !("tradeRouteId" in payloadJsonb) ||
+    typeof (payloadJsonb as Record<string, unknown>).tradeRouteId !== "string"
+  ) {
+    return null;
+  }
+  return (payloadJsonb as Record<string, unknown>).tradeRouteId as string;
 }
 
 function ApprovalBadge({
