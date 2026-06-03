@@ -106,6 +106,7 @@ export async function handleEndTurnSimulationRequest(
     {
       data: {
         actorId: authContextResult.context.userId,
+        summary: persistResult.summary,
         worldId: validateResult.body.worldId,
       },
       ok: true,

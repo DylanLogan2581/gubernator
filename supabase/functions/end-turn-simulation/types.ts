@@ -31,6 +31,7 @@ export type EndTurnSimulationErrorResponse = {
 export type EndTurnSimulationSuccessResponse = {
   readonly data: {
     readonly actorId: string;
+    readonly summary: ApplyTurnTransitionSummary;
     readonly worldId: string;
   };
   readonly ok: true;
