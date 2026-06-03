@@ -35,6 +35,7 @@ export type WorldPopulationRules = {
   readonly mourningPeriodTurns: number;
   readonly partnershipSeekChance: number;
   readonly starvationSeverityMultiplier: number;
+  readonly waterConsumptionPerCitizen: number;
 };
 
 export type SimSettlement = {
@@ -303,6 +304,10 @@ export type SimulationInputState = {
   readonly settlementId: string;
   readonly settlements: readonly SimSettlement[];
   readonly stockpiles: readonly SimStockpile[];
+  readonly systemResourceIds: {
+    readonly foodId: string;
+    readonly freshWaterId: string;
+  };
   readonly tradeRoutes: readonly SimTradeRoute[];
   readonly turnNumber: number;
   readonly worldId: string;

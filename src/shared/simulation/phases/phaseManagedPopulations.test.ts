@@ -35,6 +35,7 @@ const POPULATION_RULES: SimulationInputState["populationRules"] = {
   mourningPeriodTurns: 0,
   partnershipSeekChance: 0,
   starvationSeverityMultiplier: 0,
+  waterConsumptionPerCitizen: 0,
 };
 
 function makePopType(
@@ -135,6 +136,7 @@ function makeContext(
     settlementId: "s1",
     settlements: [],
     stockpiles: [],
+    systemResourceIds: { foodId: "food", freshWaterId: "fresh-water" },
     tradeRoutes: [],
     turnNumber: 1,
     worldId: "w1",
