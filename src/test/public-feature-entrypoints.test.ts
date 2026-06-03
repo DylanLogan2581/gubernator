@@ -43,7 +43,6 @@ import {
 import {
   EndTurnControl,
   currentTurnStateQueryOptions,
-  endTurnBasicMutationOptions,
   latestTurnTransitionStatusQueryOptions,
   planBasicEndTurnTransition,
   shouldRetryCurrentTurnStateQuery,
@@ -51,7 +50,6 @@ import {
   turnQueryKeys,
   type BasicEndTurnTransitionInput,
   type CurrentTurnDateDisplay,
-  type EndTurnBasicInput,
   type LatestTurnTransitionStatus,
 } from "@/features/turns";
 
@@ -98,7 +96,6 @@ describe("public feature entrypoints", () => {
     expect(latestTurnTransitionStatusQueryOptions).toEqual(
       expect.any(Function),
     );
-    expect(endTurnBasicMutationOptions).toEqual(expect.any(Function));
     expect(EndTurnControl).toEqual(expect.any(Function));
     expect(planBasicEndTurnTransition).toEqual(expect.any(Function));
     expect(shouldRetryCurrentTurnStateQuery).toEqual(expect.any(Function));
@@ -120,10 +117,6 @@ describe("public feature entrypoints", () => {
       Pick<CurrentTurnDateDisplay, "currentTurnNumber" | "worldId">
     >().toEqualTypeOf<{
       readonly currentTurnNumber: number;
-      readonly worldId: string;
-    }>();
-    expectTypeOf<EndTurnBasicInput>().toEqualTypeOf<{
-      readonly expectedTurnNumber: number;
       readonly worldId: string;
     }>();
     expectTypeOf<
