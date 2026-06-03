@@ -1182,6 +1182,83 @@ export type Database = {
           },
         ];
       };
+      settlement_turn_resource_snapshots: {
+        Row: {
+          consumed_amount: number;
+          created_at: string;
+          id: string;
+          produced_amount: number;
+          quantity_after: number;
+          quantity_before: number;
+          resource_id: string;
+          settlement_id: string;
+          trade_in_amount: number;
+          trade_out_amount: number;
+          turn_number: number;
+          turn_transition_id: string | null;
+          world_id: string;
+        };
+        Insert: {
+          consumed_amount?: number;
+          created_at?: string;
+          id?: string;
+          produced_amount?: number;
+          quantity_after?: number;
+          quantity_before?: number;
+          resource_id: string;
+          settlement_id: string;
+          trade_in_amount?: number;
+          trade_out_amount?: number;
+          turn_number: number;
+          turn_transition_id?: string | null;
+          world_id: string;
+        };
+        Update: {
+          consumed_amount?: number;
+          created_at?: string;
+          id?: string;
+          produced_amount?: number;
+          quantity_after?: number;
+          quantity_before?: number;
+          resource_id?: string;
+          settlement_id?: string;
+          trade_in_amount?: number;
+          trade_out_amount?: number;
+          turn_number?: number;
+          turn_transition_id?: string | null;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_transition_world_fkey";
+            columns: ["turn_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlement_turn_snapshots: {
         Row: {
           birth_count: number;
