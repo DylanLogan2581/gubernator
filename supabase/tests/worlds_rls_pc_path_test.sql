@@ -105,7 +105,8 @@ insert into
     name,
     status,
     user_id,
-    role_type
+    role_type,
+    death_cause_category
   )
 values
   (
@@ -116,7 +117,8 @@ values
     'PC Holder Citizen',
     'alive',
     '81000000-0000-0000-0000-000000000003',
-    'none'
+    'none',
+    null
   ),
   (
     '85000000-0000-0000-0000-000000000004',
@@ -126,7 +128,8 @@ values
     'Suspended PC Holder Citizen',
     'alive',
     '81000000-0000-0000-0000-000000000004',
-    'none'
+    'none',
+    null
   ),
   (
     '85000000-0000-0000-0000-000000000005',
@@ -136,7 +139,8 @@ values
     'Dead PC Holder Citizen',
     'dead',
     '81000000-0000-0000-0000-000000000005',
-    'none'
+    'none',
+    'unknown'
   );
 
 -- ===========================================================================

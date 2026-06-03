@@ -780,7 +780,8 @@ insert into
     npc_secret_contradiction,
     npc_goal,
     npc_flaw,
-    death_cause
+    death_cause,
+    death_cause_category
   )
 values
   (
@@ -799,6 +800,7 @@ values
     'mourns a friend they betrayed',
     'a seat on the council',
     'envy',
+    null,
     null
   ),
   (
@@ -817,7 +819,8 @@ values
     'mourns a friend they betrayed',
     'to restore their family''s name',
     'pride',
-    'Died peacefully during the first winter after the founding.'
+    'Died peacefully during the first winter after the founding.',
+    'unknown'
   )
 on conflict (id) do update
 set
@@ -836,6 +839,7 @@ set
   npc_goal = excluded.npc_goal,
   npc_flaw = excluded.npc_flaw,
   death_cause = excluded.death_cause,
+  death_cause_category = excluded.death_cause_category,
   updated_at = now();
 
 -- Active partnership between two living NPCs (Mara Quill + Joren Bask) plus a

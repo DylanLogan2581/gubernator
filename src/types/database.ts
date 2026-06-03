@@ -193,6 +193,9 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id: string;
           name: string;
           npc_flaw: string | null;
@@ -220,6 +223,9 @@ export type Database = {
           citizen_type: string;
           created_at?: string;
           death_cause?: string | null;
+          death_cause_category?:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id?: string;
           name: string;
           npc_flaw?: string | null;
@@ -247,6 +253,9 @@ export type Database = {
           citizen_type?: string;
           created_at?: string;
           death_cause?: string | null;
+          death_cause_category?:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id?: string;
           name?: string;
           npc_flaw?: string | null;
@@ -1898,6 +1907,9 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id: string;
           name: string;
           npc_flaw: string | null;
@@ -1989,6 +2001,9 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id: string;
           name: string;
           npc_flaw: string | null;
@@ -2119,6 +2134,9 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id: string;
           name: string;
           npc_flaw: string | null;
@@ -2196,6 +2214,9 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id: string;
           name: string;
           npc_flaw: string | null;
@@ -2400,6 +2421,9 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id: string;
           name: string;
           npc_flaw: string | null;
@@ -2434,6 +2458,45 @@ export type Database = {
         Returns: {
           settlement_building_id: string;
         }[];
+      };
+      mark_citizen_dead: {
+        Args: { p_citizen_id: string; p_reason: string };
+        Returns: {
+          born_on_turn_number: number | null;
+          citizen_type: string;
+          created_at: string;
+          death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          id: string;
+          name: string;
+          npc_flaw: string | null;
+          npc_goal: string | null;
+          npc_secret_contradiction: string | null;
+          npc_trait_1: string | null;
+          npc_trait_2: string | null;
+          parent_a_citizen_id: string | null;
+          parent_b_citizen_id: string | null;
+          personality_text: string | null;
+          profile_photo_url: string | null;
+          role_nation_id: string | null;
+          role_settlement_id: string | null;
+          role_type: string;
+          settlement_id: string | null;
+          sex: string | null;
+          skills_text: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string | null;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       mark_partnership_widowed: {
         Args: {
@@ -2698,6 +2761,9 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id: string;
           name: string;
           npc_flaw: string | null;
@@ -2809,6 +2875,14 @@ export type Database = {
           resource_id: string;
           settlement_id: string;
         }[];
+      };
+      settlement_alive_citizen_count: {
+        Args: { p_settlement_id: string };
+        Returns: number;
+      };
+      settlement_effective_storage_cap: {
+        Args: { p_resource_id: string; p_settlement_id: string };
+        Returns: number;
       };
       settlement_job_capacity: {
         Args: { p_job_id: string; p_settlement_id: string };
@@ -2937,6 +3011,9 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
           id: string;
           name: string;
           npc_flaw: string | null;
@@ -2972,6 +3049,12 @@ export type Database = {
       };
     };
     Enums: {
+      death_cause_category:
+        | "starvation"
+        | "homeless"
+        | "event"
+        | "manual_admin"
+        | "unknown";
       notification_type:
         | "turn.completed"
         | "trade_proposal_received"
@@ -3123,6 +3206,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      death_cause_category: [
+        "starvation",
+        "homeless",
+        "event",
+        "manual_admin",
+        "unknown",
+      ],
       notification_type: [
         "turn.completed",
         "trade_proposal_received",

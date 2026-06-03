@@ -142,7 +142,8 @@ insert into
     name,
     status,
     user_id,
-    role_type
+    role_type,
+    death_cause_category
   )
 values
   (
@@ -153,7 +154,8 @@ values
     'PC Holder Citizen',
     'alive',
     '91000000-0000-0000-0000-000000000005',
-    'none'
+    'none',
+    null
   ),
   (
     '97000000-0000-0000-0000-000000000002',
@@ -163,7 +165,8 @@ values
     'Dead PC Holder Citizen',
     'dead',
     '91000000-0000-0000-0000-000000000006',
-    'none'
+    'none',
+    'unknown'
   );
 
 insert into

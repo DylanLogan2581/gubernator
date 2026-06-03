@@ -1058,11 +1058,12 @@ select
 select
   lives_ok (
     $test$
-    update public.citizens
-    set status = 'dead'
-    where id = 'c5000000-0000-0000-0000-000000000010'
+    select * from public.mark_citizen_dead (
+      'c5000000-0000-0000-0000-000000000010',
+      'admin action'
+    )
   $test$,
-    'world admin can update status on any citizen in the administered world'
+    'world admin can mark a citizen dead via the mark_citizen_dead RPC'
   );
 
 select

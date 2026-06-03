@@ -321,7 +321,8 @@ insert into
     status,
     user_id,
     role_type,
-    role_settlement_id
+    role_settlement_id,
+    death_cause_category
   )
 values
   (
@@ -333,6 +334,7 @@ values
     'alive',
     null,
     'none',
+    null,
     null
   ),
   (
@@ -344,6 +346,7 @@ values
     'alive',
     null,
     'none',
+    null,
     null
   ),
   (
@@ -355,6 +358,7 @@ values
     'alive',
     null,
     'none',
+    null,
     null
   ),
   (
@@ -366,7 +370,8 @@ values
     'alive',
     'fe100000-0000-0000-0000-000000000002',
     'settlement_manager',
-    'fe400000-0000-0000-0000-000000000001'
+    'fe400000-0000-0000-0000-000000000001',
+    null
   ),
   (
     'feb00000-0000-0000-0000-000000000005',
@@ -377,7 +382,8 @@ values
     'dead',
     null,
     'none',
-    null
+    null,
+    'unknown'
   ),
   (
     'feb00000-0000-0000-0000-000000000006',
@@ -388,6 +394,7 @@ values
     'alive',
     null,
     'none',
+    null,
     null
   ),
   (
@@ -399,6 +406,7 @@ values
     'alive',
     'fe100000-0000-0000-0000-000000000003',
     'none',
+    null,
     null
   );
 

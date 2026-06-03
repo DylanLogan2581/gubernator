@@ -133,7 +133,8 @@ insert into
     citizen_type,
     name,
     status,
-    death_cause
+    death_cause,
+    death_cause_category
   )
 values
   (
@@ -143,6 +144,7 @@ values
     'npc',
     'SACC Dead 1',
     'dead',
+    'starvation',
     'starvation'
   ),
   (
@@ -152,6 +154,7 @@ values
     'npc',
     'SACC Dead 2',
     'dead',
+    'starvation',
     'starvation'
   );
 
