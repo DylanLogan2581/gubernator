@@ -14,6 +14,7 @@ import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
 } from "@/components/shared/ResourceAmountListEditor";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +28,10 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import {
+  latestSettlementTransitionOutcomeQueryOptions,
+  type TurnTransitionOutcome,
+} from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -66,6 +71,9 @@ export function SettlementDepositsPanel({
   );
   const assignmentsQuery = useQuery(
     settlementTargetAssignmentsQueryOptions(settlementId),
+  );
+  const latestOutcomeQuery = useQuery(
+    latestSettlementTransitionOutcomeQueryOptions(settlementId),
   );
 
   const assignedCountByInstance = new Map<string, number>();
@@ -112,6 +120,7 @@ export function SettlementDepositsPanel({
           canAdmin={canAdmin && !isArchived}
           canManage={(canManage || canAdmin) && !isArchived}
           instances={instancesQuery.data}
+          latestOutcome={latestOutcomeQuery.data ?? null}
           queryClient={queryClient}
           settlementId={settlementId}
         />
@@ -185,6 +194,7 @@ function DepositsGroups({
   canAdmin,
   canManage,
   instances,
+  latestOutcome,
   queryClient,
   settlementId,
 }: {
@@ -192,6 +202,7 @@ function DepositsGroups({
   readonly canAdmin: boolean;
   readonly canManage: boolean;
   readonly instances: readonly DepositInstance[];
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
 }): JSX.Element {
@@ -229,6 +240,7 @@ function DepositsGroups({
             instances={groupInstances}
             isCollapsed={isCollapsed}
             label={group.label}
+            latestOutcome={latestOutcome}
             panelId={panelId}
             queryClient={queryClient}
             settlementId={settlementId}
@@ -249,6 +261,7 @@ function DepositsStatusGroup({
   instances,
   isCollapsed,
   label,
+  latestOutcome,
   onToggle,
   panelId,
   queryClient,
@@ -260,6 +273,7 @@ function DepositsStatusGroup({
   readonly instances: readonly DepositInstance[];
   readonly isCollapsed: boolean;
   readonly label: string;
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly onToggle: () => void;
   readonly panelId: string;
   readonly queryClient: QueryClient;
@@ -311,6 +325,7 @@ function DepositsStatusGroup({
                   canAdmin={canAdmin}
                   canManage={canManage}
                   instance={instance}
+                  latestOutcome={latestOutcome}
                   queryClient={queryClient}
                   settlementId={settlementId}
                 />
@@ -323,11 +338,39 @@ function DepositsStatusGroup({
   );
 }
 
+type DepositDepletedPayload = {
+  readonly depositId: string;
+};
+
+function parseDepositDepletedPayload(
+  payload: unknown,
+): DepositDepletedPayload | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const p = payload as Record<string, unknown>;
+  if (typeof p.depositId !== "string") return null;
+  return { depositId: p.depositId };
+}
+
+function depositDepletedTooltip(
+  depositId: string,
+  latestOutcome: TurnTransitionOutcome | null,
+): string | undefined {
+  if (latestOutcome === null) return undefined;
+  const entry = latestOutcome.logEntries.find(
+    (e) =>
+      e.logCategory === "deposit.depleted" &&
+      parseDepositDepletedPayload(e.payloadJsonb)?.depositId === depositId,
+  );
+  if (entry === undefined) return undefined;
+  return `Turn ${latestOutcome.toTurnNumber.toString()}`;
+}
+
 function DepositInstanceRow({
   assignedCount,
   canAdmin,
   canManage,
   instance,
+  latestOutcome,
   queryClient,
   settlementId,
 }: {
@@ -335,21 +378,17 @@ function DepositInstanceRow({
   readonly canAdmin: boolean;
   readonly canManage: boolean;
   readonly instance: DepositInstance;
+  readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
 }): JSX.Element {
   const [showMaxWorkersEdit, setShowMaxWorkersEdit] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
-  const resourcesSummary =
-    instance.resources.length === 0
-      ? "—"
-      : instance.resources
-          .map(
-            (r) =>
-              `${r.resourceName}: ${r.remainingQuantity.toLocaleString()}/${r.initialQuantity.toLocaleString()}`,
-          )
-          .join(", ");
+  const isDepletion = instance.status === "depleted";
+  const depletedTooltip = isDepletion
+    ? depositDepletedTooltip(instance.id, latestOutcome)
+    : undefined;
 
   const workersDisplay =
     instance.maxWorkers === null
@@ -359,12 +398,40 @@ function DepositInstanceRow({
   return (
     <>
       <tr className="border-b border-border last:border-0">
-        <td className="py-2 pr-4 font-medium">{instance.name}</td>
+        <td className="py-2 pr-4 font-medium">
+          <span className="flex items-center gap-2">
+            {instance.name}
+            {isDepletion ? (
+              <Badge
+                aria-label="Depleted"
+                title={depletedTooltip}
+                variant="secondary"
+              >
+                Depleted
+              </Badge>
+            ) : null}
+          </span>
+        </td>
         <td className="py-2 pr-4 text-muted-foreground">
           {instance.depositTypeName}
         </td>
         <td className="py-2 pr-4 text-muted-foreground text-xs">
-          {resourcesSummary}
+          {instance.resources.length === 0 ? (
+            "—"
+          ) : (
+            <span className="flex flex-wrap gap-x-1">
+              {instance.resources.map((r, idx) => {
+                const text = `${r.resourceName}: ${r.remainingQuantity.toLocaleString()}/${r.initialQuantity.toLocaleString()}`;
+                const isZero = isDepletion && r.remainingQuantity === 0;
+                return (
+                  <span key={r.id} className={isZero ? "line-through" : ""}>
+                    {text}
+                    {idx < instance.resources.length - 1 ? "," : ""}
+                  </span>
+                );
+              })}
+            </span>
+          )}
         </td>
         <td className="py-2 pr-4">
           <span className="text-sm">{workersDisplay}</span>

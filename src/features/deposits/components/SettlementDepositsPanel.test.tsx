@@ -192,17 +192,76 @@ function createResourceRow(
   };
 }
 
+const TRANSITION_ID = "00000000-0000-0000-0000-000000000099";
+
+type TestTransitionOutcomeRow = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly status: string;
+  readonly from_turn_number: number;
+  readonly to_turn_number: number;
+  readonly started_at: string;
+  readonly finished_at: string | null;
+  readonly turn_log_entries: ReadonlyArray<{
+    readonly id: string;
+    readonly world_id: string;
+    readonly log_category: string;
+    readonly payload_jsonb: unknown;
+    readonly citizen_id: string | null;
+    readonly nation_id: string | null;
+    readonly resource_id: string | null;
+    readonly settlement_id: string | null;
+  }>;
+  readonly notifications: readonly unknown[];
+  readonly settlement_turn_snapshots: ReadonlyArray<{
+    readonly id: string;
+    readonly settlement_id: string;
+    readonly world_id: string;
+    readonly turn_number: number;
+    readonly birth_count: number;
+    readonly death_count: number;
+    readonly homeless_deaths_count: number;
+    readonly starvation_deaths_count: number;
+    readonly population_cap: number;
+    readonly population_total: number;
+    readonly population_npc: number;
+    readonly population_player_character: number;
+  }>;
+  readonly settlement_turn_resource_snapshots: readonly unknown[];
+};
+
+function createTransitionRow(
+  overrides: Partial<TestTransitionOutcomeRow> = {},
+): TestTransitionOutcomeRow {
+  return {
+    id: TRANSITION_ID,
+    world_id: WORLD_ID,
+    status: "completed",
+    from_turn_number: 4,
+    to_turn_number: 5,
+    started_at: "2026-05-05T00:00:00.000Z",
+    finished_at: "2026-05-05T00:01:00.000Z",
+    turn_log_entries: [],
+    notifications: [],
+    settlement_turn_snapshots: [],
+    settlement_turn_resource_snapshots: [],
+    ...overrides,
+  };
+}
+
 function createClient({
   instanceRows = [],
   assignmentRows = [],
   depositTypeRows = [],
   resourceRows = [],
+  transitionRow = null,
   rpcMock,
 }: {
   readonly instanceRows?: readonly TestDepositInstanceRow[];
   readonly assignmentRows?: readonly TestAssignmentRow[];
   readonly depositTypeRows?: readonly TestDepositTypeRow[];
   readonly resourceRows?: readonly TestResourceRow[];
+  readonly transitionRow?: TestTransitionOutcomeRow | null;
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
   const instancesSelectBuilder: Record<string, unknown> = {
@@ -230,6 +289,29 @@ function createClient({
     returns: vi.fn().mockResolvedValue({ data: resourceRows, error: null }),
   };
 
+  // settlement_turn_snapshots: returns a snapshot pointing to TRANSITION_ID when
+  // transitionRow is provided, otherwise returns null (no prior transition).
+  const snapshotLookupBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => snapshotLookupBuilder),
+    not: vi.fn(() => snapshotLookupBuilder),
+    order: vi.fn(() => snapshotLookupBuilder),
+    limit: vi.fn(() => snapshotLookupBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data:
+        transitionRow !== null ? { turn_transition_id: TRANSITION_ID } : null,
+      error: null,
+    }),
+  };
+
+  // turn_transitions: returns the transition row when queried by id.
+  const transitionSelectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => transitionSelectBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: transitionRow ?? null,
+      error: null,
+    }),
+  };
+
   return {
     from: vi.fn((table: string) => {
       if (table === "deposit_instances") {
@@ -243,6 +325,12 @@ function createClient({
       }
       if (table === "resources") {
         return { select: vi.fn(() => resourcesSelectBuilder) };
+      }
+      if (table === "settlement_turn_snapshots") {
+        return { select: vi.fn(() => snapshotLookupBuilder) };
+      }
+      if (table === "turn_transitions") {
+        return { select: vi.fn(() => transitionSelectBuilder) };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -295,6 +383,121 @@ describe("SettlementDepositsPanel", () => {
     await screen.findByText("North Mine");
     expect(screen.getByText("Coal Vein")).toBeDefined();
     expect(screen.getByText(/Coal: 60\/100/)).toBeDefined();
+  });
+
+  it("shows Depleted badge with turn tooltip when deposit.depleted log entry exists", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "North Mine",
+            status: "depleted",
+            deposit_instance_resources: [
+              {
+                id: "00000000-0000-0000-0000-000000000050",
+                deposit_instance_id: INSTANCE_ID_1,
+                resource_id: RESOURCE_ID_1,
+                initial_quantity: 100,
+                remaining_quantity: 0,
+                created_at: "2026-05-01T00:00:00.000Z",
+                updated_at: "2026-05-05T00:00:00.000Z",
+                resources: { name: "Coal" },
+              },
+            ],
+          }),
+        ],
+        transitionRow: createTransitionRow({
+          to_turn_number: 5,
+          turn_log_entries: [
+            {
+              id: "00000000-0000-0000-0000-000000000090",
+              world_id: WORLD_ID,
+              log_category: "deposit.depleted",
+              payload_jsonb: {
+                depositId: INSTANCE_ID_1,
+                depositName: "North Mine",
+              },
+              citizen_id: null,
+              nation_id: null,
+              resource_id: null,
+              settlement_id: SETTLEMENT_ID,
+            },
+          ],
+        }),
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Mine");
+    const badge = screen.getByRole("generic", { name: "Depleted" });
+    expect(badge).toBeDefined();
+    expect(badge.getAttribute("title")).toBe("Turn 5");
+  });
+
+  it("shows Depleted badge without tooltip when no matching log entry", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            status: "depleted",
+            deposit_instance_resources: [
+              {
+                id: "00000000-0000-0000-0000-000000000050",
+                deposit_instance_id: INSTANCE_ID_1,
+                resource_id: RESOURCE_ID_1,
+                initial_quantity: 100,
+                remaining_quantity: 0,
+                created_at: "2026-05-01T00:00:00.000Z",
+                updated_at: "2026-05-05T00:00:00.000Z",
+                resources: { name: "Coal" },
+              },
+            ],
+          }),
+        ],
+        transitionRow: null,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Mine");
+    const badge = screen.getByRole("generic", { name: "Depleted" });
+    expect(badge).toBeDefined();
+    expect(badge.getAttribute("title")).toBeNull();
+  });
+
+  it("applies line-through to resources with 0 remaining quantity on depleted deposits", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            status: "depleted",
+            deposit_instance_resources: [
+              {
+                id: "00000000-0000-0000-0000-000000000050",
+                deposit_instance_id: INSTANCE_ID_1,
+                resource_id: RESOURCE_ID_1,
+                initial_quantity: 100,
+                remaining_quantity: 0,
+                created_at: "2026-05-01T00:00:00.000Z",
+                updated_at: "2026-05-05T00:00:00.000Z",
+                resources: { name: "Coal" },
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Mine");
+    const resourceSpan = screen.getByText(/Coal: 0\/100/);
+    expect(resourceSpan.className).toContain("line-through");
   });
 
   it("shows worker count with max-workers cap", async () => {
