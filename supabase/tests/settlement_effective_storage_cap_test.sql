@@ -127,9 +127,19 @@ values
     '[{"type":"resource_storage_increase","resource_id":"6e500000-0000-0000-0000-000000000001","amount":30}]'::jsonb
   );
 
+-- Each SELECT call to settlement_effective_storage_cap is wrapped in its own
+-- set/reset block so that the INSERT statements between tests continue to run
+-- as the postgres superuser (bypassing RLS).  The world owner is used as the
+-- auth principal; the auth-specific test file covers admin and PC-user paths.
 -- ===========================================================================
 -- TEST 1: no buildings — returns base_stockpile_cap only
 -- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"6e100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
 select
   is (
     public.settlement_effective_storage_cap (
@@ -139,6 +149,8 @@ select
     100::numeric,
     'settlement_effective_storage_cap returns base_stockpile_cap when no buildings exist'
   );
+
+reset role;
 
 -- Insert building 1 (Warehouse, two effects totalling +70 for resource A).
 insert into
@@ -164,6 +176,12 @@ values
 -- TEST 2: one active building with two resource_storage_increase entries
 --         summed within a single tier's effects_json (100 + 50 + 20 = 170)
 -- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"6e100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
 select
   is (
     public.settlement_effective_storage_cap (
@@ -173,6 +191,8 @@ select
     170::numeric,
     'settlement_effective_storage_cap sums multiple effects in a single tier (100 + 50 + 20 = 170)'
   );
+
+reset role;
 
 -- Insert building 2 (Granary, +30 for resource A).
 insert into
@@ -196,7 +216,16 @@ values
 
 -- ===========================================================================
 -- TEST 3: multiple active buildings stack (100 + 50 + 20 + 30 = 200)
+-- TEST 4: non-matching resource_id — building effects for resource A do not
+--         contribute to resource B's cap
+-- (no INSERT/UPDATE between these two tests, share one set/reset block)
 -- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"6e100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
 select
   is (
     public.settlement_effective_storage_cap (
@@ -207,10 +236,6 @@ select
     'settlement_effective_storage_cap stacks effects across multiple active buildings (100 + 70 + 30 = 200)'
   );
 
--- ===========================================================================
--- TEST 4: non-matching resource_id — building effects for resource A do not
---         contribute to resource B's cap
--- ===========================================================================
 select
   is (
     public.settlement_effective_storage_cap (
@@ -221,8 +246,10 @@ select
     'settlement_effective_storage_cap returns only base_stockpile_cap for non-matching resource_id'
   );
 
+reset role;
+
 -- ===========================================================================
--- TEST 5: function is SECURITY DEFINER
+-- TEST 5: function is SECURITY DEFINER (catalog query, no auth needed)
 -- ===========================================================================
 select
   is (

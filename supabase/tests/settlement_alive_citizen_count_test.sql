@@ -69,13 +69,23 @@ values
 
 -- ===========================================================================
 -- TEST 1: empty settlement — returns 0
+-- Each SELECT is wrapped in its own set/reset block so that the INSERTs
+-- between tests continue to run as the postgres superuser and bypass RLS.
 -- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
 select
   is (
     public.settlement_alive_citizen_count ('fc400000-0000-0000-0000-000000000001'),
     0,
     'settlement_alive_citizen_count returns 0 for a settlement with no citizens'
   );
+
+reset role;
 
 -- ===========================================================================
 -- TEST 2: alive-only citizens — returns exact count
@@ -115,12 +125,20 @@ values
     'alive'
   );
 
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
 select
   is (
     public.settlement_alive_citizen_count ('fc400000-0000-0000-0000-000000000001'),
     3,
     'settlement_alive_citizen_count returns 3 when all citizens are alive'
   );
+
+reset role;
 
 -- ===========================================================================
 -- TEST 3: mixed alive/dead — only alive counted
@@ -158,6 +176,12 @@ values
     'starvation'
   );
 
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
 select
   is (
     public.settlement_alive_citizen_count ('fc400000-0000-0000-0000-000000000001'),
@@ -175,8 +199,10 @@ select
     'settlement_alive_citizen_count returns 0 when no citizens belong to the given settlement'
   );
 
+reset role;
+
 -- ===========================================================================
--- TEST 5: function is SECURITY DEFINER
+-- TEST 5: function is SECURITY DEFINER (catalog query, no auth needed)
 -- ===========================================================================
 select
   is (
