@@ -180,7 +180,14 @@ function makeContext(
       );
     }
   }
-  return { input, shared: { pendingPopCapBySettlement, pendingStockpiles } };
+  return {
+    input,
+    shared: {
+      pendingDeaths: new Set<string>(),
+      pendingPopCapBySettlement,
+      pendingStockpiles,
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------

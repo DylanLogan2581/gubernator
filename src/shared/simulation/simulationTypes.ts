@@ -543,6 +543,9 @@ export type SimulationSharedState = {
   // Population cap per settlement, decremented when buildings are suspended
   // or auto-deconstructed in phase 4.
   readonly pendingPopCapBySettlement: Map<string, number>;
+  // Citizen IDs that have died in earlier phases this turn (populated after
+  // phase 8 so that phase 10 homelessness does not double-count starvation deaths).
+  readonly pendingDeaths: Set<string>;
 };
 
 // ---------------------------------------------------------------------------

@@ -317,6 +317,123 @@ describe("cross-phase stockpile flow", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Cross-phase test 2a: phase-8 starvation deaths reduce phase-10 overage
+  // ---------------------------------------------------------------------------
+
+  describe("phase-8 starvation deaths reduce phase-10 homeless overage", () => {
+    it("no homeless deaths when starvation kills the only NPC above the population cap", () => {
+      // Setup:
+      //   - cap=2 (barracks building with population_cap_increase 2)
+      //   - 3 alive NPCs → raw overage=1 → rate=1 → normally 1 homeless death
+      //   - starvation is configured to kill exactly 1 NPC (severity=1, food=0)
+      //   - phase 8 kills 1 NPC (c1, eldest); pendingDeaths={c1}
+      //   - phase 10 effective alive=2 = cap → overage=0 → no homeless deaths
+      //
+      // Without the fix: phase 10 reads input.citizens (3 alive) → overage=1 → 1 homeless death.
+      // With the fix: phase 10 subtracts pendingDeaths → effective alive=2 → no homeless deaths.
+      const blueprint = makeBlueprint("cap-bp", 5);
+      const tier = makeTier("cap-tier", "cap-bp", {
+        effects: [{ type: "population_cap_increase", amount: 2 }],
+      });
+      const capBuilding = makeBuilding("cap-b1", "s1", "cap-tier", "cap-bp");
+
+      const c1 = {
+        bornOnTurnNumber: 1,
+        citizenType: "npc" as const,
+        id: "c1",
+        name: "c1",
+        parentACitizenId: null,
+        parentBCitizenId: null,
+        settlementId: "s1",
+        sex: "male",
+        status: "alive" as const,
+      };
+      const c2 = { ...c1, id: "c2", name: "c2", bornOnTurnNumber: 2 };
+      const c3 = { ...c1, id: "c3", name: "c3", bornOnTurnNumber: 3 };
+
+      const input = makeInput({
+        buildingBlueprints: [blueprint],
+        buildingTiers: [tier],
+        citizens: [c1, c2, c3],
+        populationRules: {
+          ...BASE_POPULATION_RULES,
+          // Each citizen needs 1 food; stockpile=0 → deficit=1 → kills floor(1 * 1 * 3) = 3 NPCs.
+          // We only want 1 death (to land at overage==0 after phase 10), so we use a very low
+          // severity multiplier: floor(1 * 0.1 * 3) = floor(0.3) = 0 — that's too low.
+          // Instead use severity=0.4: floor(1 * 0.4 * 3) = floor(1.2) = 1 starvation death.
+          foodConsumptionPerCitizen: 1,
+          homelessnessDecliningRate: 1,
+          starvationSeverityMultiplier: 0.4,
+          waterConsumptionPerCitizen: 0,
+        },
+        settlementBuildings: [capBuilding],
+        // No food → full deficit; 1 NPC starves in phase 8.
+        stockpiles: [makeStockpile("s1", "food", 0)],
+        systemResourceIds: { foodId: "food", freshWaterId: "water" },
+      });
+
+      const result = runSimulation(input, "cross-phase-death-test-1");
+
+      // Exactly 1 starvation death (c1, eldest) from phase 8.
+      const starvationDeaths = result.citizenDeaths.filter(
+        (d) => d.category === "starvation",
+      );
+      expect(starvationDeaths).toHaveLength(1);
+      expect(starvationDeaths[0]?.citizenId).toBe("c1");
+
+      // No homeless deaths — phase 10 saw effective alive=2 = cap.
+      const homelessDeaths = result.citizenDeaths.filter(
+        (d) => d.category === "homeless",
+      );
+      expect(homelessDeaths).toHaveLength(0);
+    });
+
+    it("total deaths equal starvation-only when starved citizens bring alive count to cap", () => {
+      // Mirror of the above: total citizenDeaths count is exactly the starvation count.
+      const blueprint = makeBlueprint("cap-bp", 5);
+      const tier = makeTier("cap-tier", "cap-bp", {
+        effects: [{ type: "population_cap_increase", amount: 2 }],
+      });
+      const capBuilding = makeBuilding("cap-b1", "s1", "cap-tier", "cap-bp");
+
+      const c1 = {
+        bornOnTurnNumber: 1,
+        citizenType: "npc" as const,
+        id: "c1",
+        name: "c1",
+        parentACitizenId: null,
+        parentBCitizenId: null,
+        settlementId: "s1",
+        sex: "male",
+        status: "alive" as const,
+      };
+      const c2 = { ...c1, id: "c2", name: "c2", bornOnTurnNumber: 2 };
+      const c3 = { ...c1, id: "c3", name: "c3", bornOnTurnNumber: 3 };
+
+      const input = makeInput({
+        buildingBlueprints: [blueprint],
+        buildingTiers: [tier],
+        citizens: [c1, c2, c3],
+        populationRules: {
+          ...BASE_POPULATION_RULES,
+          foodConsumptionPerCitizen: 1,
+          homelessnessDecliningRate: 1,
+          starvationSeverityMultiplier: 0.4,
+          waterConsumptionPerCitizen: 0,
+        },
+        settlementBuildings: [capBuilding],
+        stockpiles: [makeStockpile("s1", "food", 0)],
+        systemResourceIds: { foodId: "food", freshWaterId: "water" },
+      });
+
+      const result = runSimulation(input, "cross-phase-death-test-2");
+
+      expect(result.citizenDeaths).toHaveLength(1);
+      expect(result.citizenDeaths[0]?.category).toBe("starvation");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Cross-phase test 2: phase 4 auto-deconstruct does not contribute to phase 9
   // fertility population cap
   // ---------------------------------------------------------------------------

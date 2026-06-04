@@ -72,9 +72,11 @@ export function runSimulation(
     }
   }
 
+  const pendingDeaths = new Set<string>();
+
   const context: SimulationContext = {
     input,
-    shared: { pendingPopCapBySettlement, pendingStockpiles },
+    shared: { pendingDeaths, pendingPopCapBySettlement, pendingStockpiles },
   };
 
   function applyDeltas(deltas: readonly StockpileDelta[]): void {
@@ -198,6 +200,12 @@ export function runSimulation(
 
   const p8 = phaseCitizenConsumption(context);
   applyDeltas(p8.stockpileDeltas);
+
+  // Propagate phase-8 deaths into shared state so downstream phases (10+) see
+  // starvation victims as already dead when computing alive counts.
+  for (const d of p8.citizenDeaths) {
+    pendingDeaths.add(d.citizenId);
+  }
 
   // -------------------------------------------------------------------------
   // Phase 9 — Partnerships (receives starvation deaths from phase 8)

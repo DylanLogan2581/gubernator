@@ -59,7 +59,8 @@ export function phaseHomelessness(
       (c) =>
         c.status === "alive" &&
         c.settlementId === sid &&
-        c.citizenType === "npc",
+        c.citizenType === "npc" &&
+        !context.shared.pendingDeaths.has(c.id),
     );
     const aliveNpcCount = aliveNpcs.length;
 

@@ -119,7 +119,11 @@ function makeContext(
   }
   return {
     input,
-    shared: { pendingPopCapBySettlement: new Map(), pendingStockpiles },
+    shared: {
+      pendingDeaths: new Set<string>(),
+      pendingPopCapBySettlement: new Map(),
+      pendingStockpiles,
+    },
   };
 }
 

@@ -142,7 +142,11 @@ function makeContext(
   }
   return {
     input,
-    shared: { pendingPopCapBySettlement: new Map(), pendingStockpiles },
+    shared: {
+      pendingDeaths: new Set<string>(),
+      pendingPopCapBySettlement: new Map(),
+      pendingStockpiles,
+    },
   };
 }
 
@@ -598,6 +602,62 @@ describe("phaseHomelessness", () => {
       expect(deadIds.filter((id) => id.startsWith("s2"))).toHaveLength(3);
       expect(result.notifications).toHaveLength(1);
       expect(result.notifications[0]?.messageText).toContain("Town B");
+    });
+  });
+
+  describe("pendingDeaths exclusion — phase-8 starvation victims not counted", () => {
+    it("no homelessness deaths when alive NPCs equal cap but one is already pending-dead", () => {
+      // cap=2, 3 NPCs in input, but 1 died in phase 8 (starvation) → effective alive=2 = cap
+      // → overage=0 → no homeless deaths.
+      const { building, tier } = makeCapBuilding("s1", 2);
+      const ctx = makeContext({
+        buildingTiers: [tier],
+        citizens: [
+          makeNpc("c1", "s1", 1),
+          makeNpc("c2", "s1", 2),
+          makeNpc("c3", "s1", 3),
+        ],
+        populationRules: {
+          ...BASE_POPULATION_RULES,
+          homelessnessDecliningRate: 1,
+        },
+        settlementBuildings: [building],
+      });
+      // Simulate phase-8 having killed c1 (starvation) before phase 10 runs.
+      ctx.shared.pendingDeaths.add("c1");
+
+      const result = phaseHomelessness(ctx);
+
+      expect(result.citizenDeaths).toHaveLength(0);
+      expect(result.notifications).toHaveLength(0);
+    });
+
+    it("reduces overage by the number of pending-dead citizens", () => {
+      // cap=2, 5 NPCs, 2 pending-dead → effective alive=3, overage=1, rate=1 → 1 death.
+      const { building, tier } = makeCapBuilding("s1", 2);
+      const ctx = makeContext({
+        buildingTiers: [tier],
+        citizens: [
+          makeNpc("c1", "s1", 1),
+          makeNpc("c2", "s1", 2),
+          makeNpc("c3", "s1", 3),
+          makeNpc("c4", "s1", 4),
+          makeNpc("c5", "s1", 5),
+        ],
+        populationRules: {
+          ...BASE_POPULATION_RULES,
+          homelessnessDecliningRate: 1,
+        },
+        settlementBuildings: [building],
+      });
+      ctx.shared.pendingDeaths.add("c1");
+      ctx.shared.pendingDeaths.add("c2");
+
+      const result = phaseHomelessness(ctx);
+
+      expect(result.citizenDeaths).toHaveLength(1);
+      // c1 and c2 are pending-dead so the eldest survivor (c3) dies.
+      expect(result.citizenDeaths[0]?.citizenId).toBe("c3");
     });
   });
 
