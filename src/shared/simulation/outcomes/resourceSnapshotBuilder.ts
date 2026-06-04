@@ -12,7 +12,7 @@ import type {
 export type { ResourceSnapshot } from "../simulationTypes.ts";
 
 export type BuildResourceSnapshotsParams = {
-  // Positive deltas from production phases (standard jobs, deposits, passive effects, etc.)
+  // Negative deltas from consumption phases (standard jobs, deposits, passive effects, etc.)
   readonly consumptionDeltas: readonly StockpileDelta[];
   // Post-clamp quantities keyed by "settlementId:resourceId"
   readonly pendingStockpiles: ReadonlyMap<string, number>;
