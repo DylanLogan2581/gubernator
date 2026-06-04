@@ -144,6 +144,13 @@ export function phaseDepositExtraction(
       }
     }
 
+    // Schema invariant: an active deposit must have at least one resource row.
+    if (deposit.resources.length === 0) {
+      throw new Error(
+        `Deposit ${deposit.id} has no resource rows — schema invariant violated`,
+      );
+    }
+
     // Deposit depletes when every resource's remaining quantity reaches zero.
     const isDepleted = deposit.resources.every((r) => {
       const extracted = extractedByResource[r.resourceId] ?? 0;

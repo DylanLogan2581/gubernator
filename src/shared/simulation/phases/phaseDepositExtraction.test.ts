@@ -380,6 +380,25 @@ describe("phaseDepositExtraction", () => {
     expect(result.notifications).toHaveLength(0);
   });
 
+  describe("empty resources guard", () => {
+    it("throws when an active deposit with workers has no resource rows", () => {
+      const depositType = makeDepositType("dt1", 5);
+      const deposit = makeDeposit("dep1", "dt1", "s1", []);
+      const ctx = makeContext({
+        settlements: [makeSettlement("s1")],
+        citizens: [makeCitizen("c1", "s1")],
+        citizenAssignments: [makeDepositAssignment("c1", "dep1")],
+        depositTypes: [depositType],
+        deposits: [deposit],
+        stockpiles: [],
+      });
+
+      expect(() => phaseDepositExtraction(ctx)).toThrow(
+        /Deposit dep1 has no resource rows/,
+      );
+    });
+  });
+
   describe("depletion", () => {
     it("marks deposit depleted and unassigns all workers when all resources reach zero", () => {
       // 2 workers × 5 = 10 total; only 8 remaining → extracts 8 and depletes
