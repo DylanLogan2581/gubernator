@@ -168,6 +168,7 @@ describe("handleEndTurnSimulationRequest", () => {
     expect(response.headers.get("access-control-allow-headers")).toContain(
       "authorization",
     );
+    expect(response.headers.get("access-control-max-age")).toBe("86400");
   });
 
   it("returns a 204 preflight response with echoed origin for a recognized Origin", async () => {
@@ -189,6 +190,7 @@ describe("handleEndTurnSimulationRequest", () => {
     expect(response.headers.get("access-control-allow-headers")).toContain(
       "authorization",
     );
+    expect(response.headers.get("access-control-max-age")).toBe("86400");
   });
 
   it("returns a 403 for an unrecognized Origin on OPTIONS", async () => {

@@ -10,6 +10,7 @@ const corsBaseHeaders = {
   "access-control-allow-headers":
     "authorization, x-client-info, apikey, content-type",
   "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-max-age": "86400",
 } as const;
 
 export function getAllowedOrigins(): readonly string[] {
