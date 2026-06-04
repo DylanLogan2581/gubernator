@@ -3,6 +3,7 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import { formatStockpileForDisplay } from "../decimalMath.ts";
 import { compareById } from "../sortUtils.ts";
 
 import type {
@@ -117,7 +118,7 @@ export function phaseCitizenConsumption(
         });
 
         const toKill = sorted.slice(0, starvationDeaths);
-        const deathDetail = `food: ${foodStock}/${foodRequired}, water: ${waterStock}/${waterRequired}`;
+        const deathDetail = `food: ${formatStockpileForDisplay(foodStock)}/${formatStockpileForDisplay(foodRequired)}, water: ${formatStockpileForDisplay(waterStock)}/${formatStockpileForDisplay(waterRequired)}`;
 
         for (const citizen of toKill) {
           allDeaths.push({

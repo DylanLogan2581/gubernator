@@ -2,6 +2,7 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import { formatStockpileForDisplay } from "../decimalMath.ts";
 import { compareById } from "../sortUtils.ts";
 
 import type {
@@ -82,7 +83,7 @@ export function phaseHomelessness(
     });
 
     const toKill = sorted.slice(0, homelessDeaths);
-    const deathDetail = `cap: ${cap}, alive: ${aliveNpcCount}`;
+    const deathDetail = `cap: ${formatStockpileForDisplay(cap)}, alive: ${formatStockpileForDisplay(aliveNpcCount)}`;
 
     for (const citizen of toKill) {
       allDeaths.push({

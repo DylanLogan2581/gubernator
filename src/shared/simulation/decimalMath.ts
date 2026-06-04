@@ -99,3 +99,13 @@ export function scaleDeficit(required: number, available: number): number {
 export function clampToRange(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
+
+/**
+ * Formats a stockpile quantity for display in death-detail strings.
+ * Integers render without decimals; fractional values render to at most 2
+ * significant decimal places (trailing zeros stripped).
+ */
+export function formatStockpileForDisplay(value: number): string {
+  if (Number.isInteger(value)) return String(value);
+  return parseFloat(value.toFixed(2)).toString();
+}
