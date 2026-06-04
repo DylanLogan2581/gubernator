@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { phaseStockpileClamp } from "./phaseStockpileClamp.ts";
 
 import type {
+  SimStockpile,
   SimulationContext,
   SimulationInputState,
 } from "../simulationTypes.ts";
@@ -33,6 +34,22 @@ const POPULATION_RULES: SimulationInputState["populationRules"] = {
   starvationSeverityMultiplier: 0,
   waterConsumptionPerCitizen: 0,
 };
+
+function makeStockpileKeyIndex(
+  stockpiles: readonly SimStockpile[],
+): ReadonlyMap<
+  string,
+  { readonly settlementId: string; readonly resourceId: string }
+> {
+  const index = new Map<string, { settlementId: string; resourceId: string }>();
+  for (const sp of stockpiles) {
+    index.set(`${sp.settlementId}:${sp.resourceId}`, {
+      settlementId: sp.settlementId,
+      resourceId: sp.resourceId,
+    });
+  }
+  return index;
+}
 
 function makeContext(
   overrides: Partial<SimulationInputState>,
@@ -84,7 +101,12 @@ describe("phaseStockpileClamp", () => {
   it("returns empty output when pending stockpiles map is empty", () => {
     const ctx = makeContext({});
     const pending = new Map<string, number>();
-    const result = phaseStockpileClamp(ctx, pending, new Map());
+    const result = phaseStockpileClamp(
+      ctx,
+      pending,
+      new Map(),
+      makeStockpileKeyIndex(ctx.input.stockpiles),
+    );
 
     expect(result.logs).toHaveLength(0);
     expect(result.stockpileDeltas).toHaveLength(0);
@@ -97,7 +119,12 @@ describe("phaseStockpileClamp", () => {
       ],
     });
     const pending = new Map([["s1:r1", -10]]);
-    const result = phaseStockpileClamp(ctx, pending, new Map([["s1:r1", 100]]));
+    const result = phaseStockpileClamp(
+      ctx,
+      pending,
+      new Map([["s1:r1", 100]]),
+      makeStockpileKeyIndex(ctx.input.stockpiles),
+    );
 
     expect(result.stockpileDeltas).toHaveLength(1);
     expect(result.stockpileDeltas[0]?.delta).toBe(10);
@@ -121,7 +148,12 @@ describe("phaseStockpileClamp", () => {
       ],
     });
     const pending = new Map([["s1:r1", 150]]);
-    const result = phaseStockpileClamp(ctx, pending, new Map([["s1:r1", 100]]));
+    const result = phaseStockpileClamp(
+      ctx,
+      pending,
+      new Map([["s1:r1", 100]]),
+      makeStockpileKeyIndex(ctx.input.stockpiles),
+    );
 
     expect(result.stockpileDeltas).toHaveLength(1);
     expect(result.stockpileDeltas[0]?.delta).toBe(-50);
@@ -142,7 +174,12 @@ describe("phaseStockpileClamp", () => {
       ],
     });
     const pending = new Map([["s1:r1", 100]]);
-    const result = phaseStockpileClamp(ctx, pending, new Map([["s1:r1", 100]]));
+    const result = phaseStockpileClamp(
+      ctx,
+      pending,
+      new Map([["s1:r1", 100]]),
+      makeStockpileKeyIndex(ctx.input.stockpiles),
+    );
 
     expect(result.stockpileDeltas).toHaveLength(0);
     expect(result.logs).toHaveLength(0);
@@ -156,7 +193,12 @@ describe("phaseStockpileClamp", () => {
       ],
     });
     const pending = new Map([["s1:r1", 50]]);
-    const result = phaseStockpileClamp(ctx, pending, new Map([["s1:r1", 100]]));
+    const result = phaseStockpileClamp(
+      ctx,
+      pending,
+      new Map([["s1:r1", 100]]),
+      makeStockpileKeyIndex(ctx.input.stockpiles),
+    );
 
     expect(result.stockpileDeltas).toHaveLength(0);
     expect(result.logs).toHaveLength(0);
@@ -171,7 +213,12 @@ describe("phaseStockpileClamp", () => {
     });
     const pending = new Map([["s1:r1", 120]]);
     // empty effectiveStorageCaps — falls back to sp.cap = 80
-    const result = phaseStockpileClamp(ctx, pending, new Map());
+    const result = phaseStockpileClamp(
+      ctx,
+      pending,
+      new Map(),
+      makeStockpileKeyIndex(ctx.input.stockpiles),
+    );
 
     expect(result.stockpileDeltas).toHaveLength(1);
     expect(result.stockpileDeltas[0]?.delta).toBe(-40);
@@ -194,7 +241,12 @@ describe("phaseStockpileClamp", () => {
       ["s1:r1", 100],
       ["s1:r2", 50],
     ]);
-    const result = phaseStockpileClamp(ctx, pending, effectiveCaps);
+    const result = phaseStockpileClamp(
+      ctx,
+      pending,
+      effectiveCaps,
+      makeStockpileKeyIndex(ctx.input.stockpiles),
+    );
 
     expect(result.stockpileDeltas).toHaveLength(1);
     expect(result.stockpileDeltas[0]?.resourceId).toBe("r1");
@@ -227,7 +279,12 @@ describe("phaseStockpileClamp", () => {
       ["s1:r4", 100],
     ]);
 
-    phaseStockpileClamp(ctx, pending, effectiveCaps);
+    phaseStockpileClamp(
+      ctx,
+      pending,
+      effectiveCaps,
+      makeStockpileKeyIndex(ctx.input.stockpiles),
+    );
 
     for (const [key, qty] of pending) {
       const cap = effectiveCaps.get(key) ?? 100;

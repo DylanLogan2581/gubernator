@@ -230,10 +230,24 @@ export function runSimulation(
   // Phase 12 — Stockpile Clamp (mutates pendingStockpiles in place)
   // -------------------------------------------------------------------------
 
+  // Structured (settlementId, resourceId) index threaded to the clamp phase so
+  // it can read fields directly rather than parsing composite key strings.
+  const stockpileKeyIndex = new Map<
+    string,
+    { readonly settlementId: string; readonly resourceId: string }
+  >();
+  for (const sp of input.stockpiles) {
+    stockpileKeyIndex.set(`${sp.settlementId}:${sp.resourceId}`, {
+      settlementId: sp.settlementId,
+      resourceId: sp.resourceId,
+    });
+  }
+
   const p12 = phaseStockpileClamp(
     context,
     pendingStockpiles,
     effectiveStorageCaps,
+    stockpileKeyIndex,
   );
 
   // -------------------------------------------------------------------------

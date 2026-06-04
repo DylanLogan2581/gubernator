@@ -25,11 +25,18 @@ export type PhaseStockpileClampOutput = {
  * @param effectiveStorageCaps - Pre-computed effective caps keyed by
  *   "settlementId:resourceId" (supplied by the loader). Falls back to the base
  *   cap from context.input.stockpiles when a key is absent.
+ * @param stockpileKeyIndex - Structured (settlementId, resourceId) pairs indexed
+ *   by "settlementId:resourceId", threaded from runSimulation so this phase can
+ *   read structured fields directly instead of parsing composite key strings.
  */
 export function phaseStockpileClamp(
   context: SimulationContext,
   pendingStockpiles: Map<string, number>,
   effectiveStorageCaps: ReadonlyMap<string, number>,
+  stockpileKeyIndex: ReadonlyMap<
+    string,
+    { readonly settlementId: string; readonly resourceId: string }
+  >,
 ): PhaseStockpileClampOutput {
   const { stockpiles } = context.input;
 
@@ -51,9 +58,9 @@ export function phaseStockpileClamp(
     if (post === pre) continue;
 
     const delta = post - pre;
-    const colonIndex = key.indexOf(":");
-    const settlementId = key.slice(0, colonIndex);
-    const resourceId = key.slice(colonIndex + 1);
+    const meta = stockpileKeyIndex.get(key);
+    if (meta === undefined) continue;
+    const { settlementId, resourceId } = meta;
     const reason: string = pre < 0 ? "negative" : "over_cap";
 
     logs.push({
