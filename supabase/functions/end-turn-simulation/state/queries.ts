@@ -160,7 +160,8 @@ export function fetchSettlements(
     params: {
       "nations.world_id": `eq.${worldId}`,
       order: "id.asc",
-      select: "id,name,nations!inner()",
+      select:
+        "id,name,is_ready_current_turn,auto_ready_enabled,nations!inner()",
     },
   });
 }

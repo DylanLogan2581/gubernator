@@ -163,7 +163,12 @@ function toSimPopResourceEntries(
 // ---------------------------------------------------------------------------
 
 export function toSimSettlement(row: SupabaseSettlementRow): SimSettlement {
-  return { id: row.id, name: row.name };
+  return {
+    autoReadyEnabled: row.auto_ready_enabled,
+    id: row.id,
+    isReadyCurrentTurn: row.is_ready_current_turn,
+    name: row.name,
+  };
 }
 
 export function toSimStockpile(row: SupabaseStockpileRow): SimStockpile {

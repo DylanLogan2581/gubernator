@@ -337,8 +337,17 @@ describe("runSimulation — happy turn end-to-end", () => {
     expect(r1.settlementSnapshots).toEqual(r2.settlementSnapshots);
   });
 
-  it("returns readiness summary with 1 settlement ready", () => {
-    const input = makeInput({});
+  it("returns readiness summary derived from input settlement state", () => {
+    const input = makeInput({
+      settlements: [
+        {
+          id: "s1",
+          name: "Testville",
+          isReadyCurrentTurn: true,
+          autoReadyEnabled: false,
+        },
+      ],
+    });
 
     const result = runSimulation(input, "transition-readiness");
 
@@ -365,5 +374,133 @@ describe("runSimulation — happy turn end-to-end", () => {
 
     const phases = [...new Set(result.logEntries.map((e) => e.phase))];
     expect(phases).toContain("standardJobs");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readinessSummary: computed from input settlements
+// ---------------------------------------------------------------------------
+
+describe("runSimulation — readinessSummary", () => {
+  it("reports 0/0 ready for an empty settlements list", () => {
+    const input = makeInput({ settlements: [] });
+    const result = runSimulation(input, "t-readiness-empty");
+    expect(result.readinessSummary).toEqual({
+      notReadySettlementCount: 0,
+      readyPercentage: 0,
+      readySettlementCount: 0,
+      totalSettlementCount: 0,
+    });
+  });
+
+  it("reports 0/1 when the single settlement is not ready", () => {
+    const input = makeInput({
+      settlements: [
+        {
+          id: "s1",
+          name: "s1",
+          isReadyCurrentTurn: false,
+          autoReadyEnabled: false,
+        },
+      ],
+    });
+    const result = runSimulation(input, "t-readiness-none");
+    expect(result.readinessSummary).toEqual({
+      notReadySettlementCount: 1,
+      readyPercentage: 0,
+      readySettlementCount: 0,
+      totalSettlementCount: 1,
+    });
+  });
+
+  it("reports 1/1 when the settlement is manually marked ready", () => {
+    const input = makeInput({
+      settlements: [
+        {
+          id: "s1",
+          name: "s1",
+          isReadyCurrentTurn: true,
+          autoReadyEnabled: false,
+        },
+      ],
+    });
+    const result = runSimulation(input, "t-readiness-manual");
+    expect(result.readinessSummary).toEqual({
+      notReadySettlementCount: 0,
+      readyPercentage: 100,
+      readySettlementCount: 1,
+      totalSettlementCount: 1,
+    });
+  });
+
+  it("reports 1/1 when the settlement has auto-ready enabled", () => {
+    const input = makeInput({
+      settlements: [
+        {
+          id: "s1",
+          name: "s1",
+          isReadyCurrentTurn: false,
+          autoReadyEnabled: true,
+        },
+      ],
+    });
+    const result = runSimulation(input, "t-readiness-auto");
+    expect(result.readinessSummary).toEqual({
+      notReadySettlementCount: 0,
+      readyPercentage: 100,
+      readySettlementCount: 1,
+      totalSettlementCount: 1,
+    });
+  });
+
+  it("reports 2/4 ready (50%) for a four-settlement world with two ready", () => {
+    const input = makeInput({
+      settlements: [
+        {
+          id: "s1",
+          name: "s1",
+          isReadyCurrentTurn: true,
+          autoReadyEnabled: false,
+        },
+        {
+          id: "s2",
+          name: "s2",
+          isReadyCurrentTurn: false,
+          autoReadyEnabled: true,
+        },
+        {
+          id: "s3",
+          name: "s3",
+          isReadyCurrentTurn: false,
+          autoReadyEnabled: false,
+        },
+        {
+          id: "s4",
+          name: "s4",
+          isReadyCurrentTurn: false,
+          autoReadyEnabled: false,
+        },
+      ],
+    });
+    const result = runSimulation(input, "t-readiness-partial");
+    expect(result.readinessSummary).toEqual({
+      notReadySettlementCount: 2,
+      readyPercentage: 50,
+      readySettlementCount: 2,
+      totalSettlementCount: 4,
+    });
+  });
+
+  it("treats missing readiness fields as not-ready (undefined → false)", () => {
+    const input = makeInput({
+      settlements: [makeSettlement("s1"), makeSettlement("s2")],
+    });
+    const result = runSimulation(input, "t-readiness-missing-fields");
+    expect(result.readinessSummary).toEqual({
+      notReadySettlementCount: 2,
+      readyPercentage: 0,
+      readySettlementCount: 0,
+      totalSettlementCount: 2,
+    });
   });
 });

@@ -20,6 +20,7 @@ import { createSeededRng } from "./seededRng.ts";
 import { SimulationRejectionError } from "./simulationTypes.ts";
 
 import type {
+  ReadinessSummary,
   SimulationContext,
   SimulationInputState,
   SimulationLogEntry,
@@ -341,15 +342,30 @@ export function runSimulation(
     managedPopulationUpdates: p7.managedPopulationUpdates,
     notifications,
     partnershipChanges: p9.partnershipChanges,
-    readinessSummary: {
-      notReadySettlementCount: 0,
-      readyPercentage: 100,
-      readySettlementCount: 1,
-      totalSettlementCount: 1,
-    },
+    readinessSummary: computeReadinessSummary(input),
     resourceSnapshots: p13.resourceSnapshots,
     settlementSnapshots: p13.settlementSnapshots,
     stockpileDeltas,
     tradeRouteOutcomes: p6.tradeRouteOutcomes,
+  };
+}
+
+function computeReadinessSummary(
+  input: SimulationInputState,
+): ReadinessSummary {
+  const totalSettlementCount = input.settlements.length;
+  const readySettlementCount = input.settlements.filter(
+    (s) => (s.isReadyCurrentTurn ?? false) || (s.autoReadyEnabled ?? false),
+  ).length;
+  const notReadySettlementCount = totalSettlementCount - readySettlementCount;
+  const readyPercentage =
+    totalSettlementCount === 0
+      ? 0
+      : (readySettlementCount / totalSettlementCount) * 100;
+  return {
+    notReadySettlementCount,
+    readyPercentage,
+    readySettlementCount,
+    totalSettlementCount,
   };
 }

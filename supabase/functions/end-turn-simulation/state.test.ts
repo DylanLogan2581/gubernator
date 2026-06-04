@@ -121,7 +121,15 @@ function makeAllSuccessResponses(): Record<
       status: 200,
     },
     "/rest/v1/settlements": {
-      body: [{ id: SETTLEMENT_ID, name: "Settlement One", nations: {} }],
+      body: [
+        {
+          id: SETTLEMENT_ID,
+          name: "Settlement One",
+          is_ready_current_turn: false,
+          auto_ready_enabled: false,
+          nations: {},
+        },
+      ],
       status: 200,
     },
     "/rest/v1/resources": {
@@ -406,7 +414,9 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     // Settlements
     expect(input.settlements).toHaveLength(1);
     expect(input.settlements[0]).toEqual({
+      autoReadyEnabled: false,
       id: SETTLEMENT_ID,
+      isReadyCurrentTurn: false,
       name: "Settlement One",
     });
 
@@ -640,7 +650,15 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     stubSupabaseFetch({
       "/rest/v1/worlds": { body: [badWorld], status: 200 },
       "/rest/v1/settlements": {
-        body: [{ id: SETTLEMENT_ID, name: "S1", nations: {} }],
+        body: [
+          {
+            id: SETTLEMENT_ID,
+            name: "S1",
+            is_ready_current_turn: false,
+            auto_ready_enabled: false,
+            nations: {},
+          },
+        ],
         status: 200,
       },
     });
@@ -693,7 +711,15 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     stubSupabaseFetch({
       "/rest/v1/worlds": { body: [makeWorldRow()], status: 200 },
       "/rest/v1/settlements": {
-        body: [{ id: SETTLEMENT_ID, name: "S1", nations: {} }],
+        body: [
+          {
+            id: SETTLEMENT_ID,
+            name: "S1",
+            is_ready_current_turn: false,
+            auto_ready_enabled: false,
+            nations: {},
+          },
+        ],
         status: 200,
       },
       "/rest/v1/resources": {

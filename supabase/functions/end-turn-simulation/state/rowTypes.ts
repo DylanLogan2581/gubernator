@@ -23,7 +23,9 @@ export type SupabaseWorldRow = {
 };
 
 export type SupabaseSettlementRow = {
+  readonly auto_ready_enabled: boolean;
   readonly id: string;
+  readonly is_ready_current_turn: boolean;
   readonly name: string;
 };
 
@@ -211,7 +213,13 @@ export function isWorldRow(v: unknown): v is SupabaseWorldRow {
 }
 
 export function isSettlementRow(v: unknown): v is SupabaseSettlementRow {
-  return isRecord(v) && typeof v.id === "string" && typeof v.name === "string";
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.name === "string" &&
+    typeof v.is_ready_current_turn === "boolean" &&
+    typeof v.auto_ready_enabled === "boolean"
+  );
 }
 
 export function isResourceRow(v: unknown): v is SupabaseResourceRow {

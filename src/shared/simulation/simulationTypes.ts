@@ -47,7 +47,9 @@ export type WorldPopulationRules = {
 };
 
 export type SimSettlement = {
+  readonly autoReadyEnabled?: boolean;
   readonly id: string;
+  readonly isReadyCurrentTurn?: boolean;
   readonly name: string;
 };
 
