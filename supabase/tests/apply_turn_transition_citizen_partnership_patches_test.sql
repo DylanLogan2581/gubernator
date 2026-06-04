@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (12);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -42,7 +42,7 @@ set
 where
   id = 'a9100000-0000-0000-0000-000000000001';
 
--- Seven worlds — one per scenario, all at turn 5:
+-- Nine worlds — one per scenario, all at turn 5:
 --   World 1: citizen birth
 --   World 2: NPC death
 --   World 3: PC death attempt (raises P0001)
@@ -50,6 +50,8 @@ where
 --   World 5: partnership formation
 --   World 6: partnership widowing
 --   World 7: bornOnTurnBackfill + manual_deconstruct_overshoot stamping
+--   World 8: dead-partner guard (raises P0001)
+--   World 9: non-existent citizen death guard (raises P0001)
 insert into
   public.worlds (
     id,
@@ -115,6 +117,22 @@ values
     5,
     'private',
     'active'
+  ),
+  (
+    'a9200000-0000-0000-0000-000000000008',
+    'ATTCP Dead Partner World',
+    'a9100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
+  ),
+  (
+    'a9200000-0000-0000-0000-000000000009',
+    'ATTCP Ghost Death World',
+    'a9100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
   );
 
 -- One nation per world
@@ -155,6 +173,16 @@ values
     'a9300000-0000-0000-0000-000000000007',
     'a9200000-0000-0000-0000-000000000007',
     'ATTCP Nation 7'
+  ),
+  (
+    'a9300000-0000-0000-0000-000000000008',
+    'a9200000-0000-0000-0000-000000000008',
+    'ATTCP Nation 8'
+  ),
+  (
+    'a9300000-0000-0000-0000-000000000009',
+    'a9200000-0000-0000-0000-000000000009',
+    'ATTCP Nation 9'
   );
 
 -- One settlement per world
@@ -195,6 +223,16 @@ values
     'a9400000-0000-0000-0000-000000000007',
     'a9300000-0000-0000-0000-000000000007',
     'ATTCP Settlement 7'
+  ),
+  (
+    'a9400000-0000-0000-0000-000000000008',
+    'a9300000-0000-0000-0000-000000000008',
+    'ATTCP Settlement 8'
+  ),
+  (
+    'a9400000-0000-0000-0000-000000000009',
+    'a9300000-0000-0000-0000-000000000009',
+    'ATTCP Settlement 9'
   );
 
 -- NPC citizens for death, assignment-clear, partnership, and backfill worlds
@@ -267,6 +305,23 @@ values
     'a9400000-0000-0000-0000-000000000007',
     'npc',
     'ATTCP Backfill Citizen',
+    'alive'
+  ),
+  -- World 8: two NPCs; c9 will be killed in the same payload that attempts to partner them.
+  (
+    'a9500000-0000-0000-0000-000000000009',
+    'a9200000-0000-0000-0000-000000000008',
+    'a9400000-0000-0000-0000-000000000008',
+    'npc',
+    'ATTCP Starved NPC',
+    'alive'
+  ),
+  (
+    'a9500000-0000-0000-0000-000000000010',
+    'a9200000-0000-0000-0000-000000000008',
+    'a9400000-0000-0000-0000-000000000008',
+    'npc',
+    'ATTCP Survivor NPC',
     'alive'
   );
 
@@ -448,6 +503,22 @@ values
   (
     'a9300000-0000-0000-0000-000000000007',
     'a9200000-0000-0000-0000-000000000007',
+    5,
+    6,
+    'a9100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'a9300000-0000-0000-0000-000000000008',
+    'a9200000-0000-0000-0000-000000000008',
+    5,
+    6,
+    'a9100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'a9300000-0000-0000-0000-000000000009',
+    'a9200000-0000-0000-0000-000000000009',
     5,
     6,
     'a9100000-0000-0000-0000-000000000001',
@@ -804,91 +875,6 @@ select
 -- partnershipChanges in the same payload. After the engine fix, this payload
 -- combination is never produced. The RPC guard rejects it if it somehow arrives.
 -- ===========================================================================
--- Fixtures for World 8
-insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
-values
-  (
-    'a9200000-0000-0000-0000-000000000008',
-    'ATTCP Dead Partner World',
-    'a9100000-0000-0000-0000-000000000001',
-    5,
-    'private',
-    'active'
-  );
-
-insert into
-  public.nations (id, world_id, name)
-values
-  (
-    'a9300000-0000-0000-0000-000000000008',
-    'a9200000-0000-0000-0000-000000000008',
-    'ATTCP Nation 8'
-  );
-
-insert into
-  public.settlements (id, nation_id, name)
-values
-  (
-    'a9400000-0000-0000-0000-000000000008',
-    'a9300000-0000-0000-0000-000000000008',
-    'ATTCP Settlement 8'
-  );
-
--- Two NPCs: c9 will be killed in the same payload that attempts to partner them.
-insert into
-  public.citizens (
-    id,
-    world_id,
-    settlement_id,
-    citizen_type,
-    name,
-    status
-  )
-values
-  (
-    'a9500000-0000-0000-0000-000000000009',
-    'a9200000-0000-0000-0000-000000000008',
-    'a9400000-0000-0000-0000-000000000008',
-    'npc',
-    'ATTCP Starved NPC',
-    'alive'
-  ),
-  (
-    'a9500000-0000-0000-0000-000000000010',
-    'a9200000-0000-0000-0000-000000000008',
-    'a9400000-0000-0000-0000-000000000008',
-    'npc',
-    'ATTCP Survivor NPC',
-    'alive'
-  );
-
-insert into
-  public.turn_transitions (
-    id,
-    world_id,
-    from_turn_number,
-    to_turn_number,
-    initiated_by_user_id,
-    status
-  )
-values
-  (
-    'a9300000-0000-0000-0000-000000000008',
-    'a9200000-0000-0000-0000-000000000008',
-    5,
-    6,
-    'a9100000-0000-0000-0000-000000000001',
-    'running'
-  );
-
 select
   throws_ok (
     $test$
@@ -921,6 +907,35 @@ select
     'P0001',
     null,
     'dead-partner guard: partnership formation with a dead citizen raises P0001'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 9: death payload referencing a non-existent citizen raises P0001
+-- Issue #525 / review finding M18: non-existent citizenId in citizenDeaths
+-- must produce a clear error rather than silently passing.
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.apply_turn_transition(
+      'a9200000-0000-0000-0000-000000000009',
+      5,
+      jsonb_build_object(
+        'citizenDeaths',
+        jsonb_build_array(
+          jsonb_build_object(
+            'citizenId', 'a9500000-0000-0000-0000-000000000099',
+            'deathCauseCategory', 'starvation',
+            'deathCause', 'ghost citizen should be rejected'
+          )
+        )
+      ),
+      'a9300000-0000-0000-0000-000000000009'::uuid
+    )
+  $test$,
+    'P0001',
+    null,
+    'non-existent citizen death raises P0001'
   );
 
 reset role;
