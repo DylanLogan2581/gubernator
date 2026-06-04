@@ -45,16 +45,37 @@ export function runSimulation(
   // phases (e.g. partnerships) create their own phase-scoped seeds internally.
   void createSeededRng(transitionId);
 
-  const context: SimulationContext = { input };
-
   // -------------------------------------------------------------------------
-  // Pending stockpile state — initialized from input and updated after each phase.
+  // Shared mutable state — initialized from input and updated after each phase.
   // -------------------------------------------------------------------------
 
   const pendingStockpiles = new Map<string, number>();
   for (const sp of input.stockpiles) {
     pendingStockpiles.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
   }
+
+  const tierById = new Map(input.buildingTiers.map((t) => [t.id, t]));
+  const buildingById = new Map(input.settlementBuildings.map((b) => [b.id, b]));
+
+  const pendingPopCapBySettlement = new Map<string, number>();
+  for (const building of input.settlementBuildings) {
+    if (building.state !== "active") continue;
+    const tier = tierById.get(building.currentTierId);
+    if (tier === undefined) continue;
+    for (const effect of tier.effectsJson) {
+      if (effect.type !== "population_cap_increase") continue;
+      pendingPopCapBySettlement.set(
+        building.settlementId,
+        (pendingPopCapBySettlement.get(building.settlementId) ?? 0) +
+          effect.amount,
+      );
+    }
+  }
+
+  const context: SimulationContext = {
+    input,
+    shared: { pendingPopCapBySettlement, pendingStockpiles },
+  };
 
   function applyDeltas(deltas: readonly StockpileDelta[]): void {
     for (const d of deltas) {
@@ -72,7 +93,6 @@ export function runSimulation(
   for (const sp of input.stockpiles) {
     effectiveStorageCaps.set(`${sp.settlementId}:${sp.resourceId}`, sp.cap);
   }
-  const tierById = new Map(input.buildingTiers.map((t) => [t.id, t]));
   for (const building of input.settlementBuildings) {
     if (building.state !== "active") continue;
     const tier = tierById.get(building.currentTierId);
@@ -114,6 +134,32 @@ export function runSimulation(
 
   const p4 = phaseBuildingUpkeep(context);
   applyDeltas(p4.stockpileDeltas);
+
+  // Remove population cap contributions from buildings that were suspended or
+  // auto-deconstructed this phase so phase 9 fertility sees the correct cap.
+  for (const change of p4.buildingStateChanges) {
+    if (
+      change.toState !== "suspended" &&
+      change.toState !== "auto_deconstructed"
+    ) {
+      continue;
+    }
+    const building = buildingById.get(change.settlementBuildingId);
+    if (building === undefined) continue;
+    const tier = tierById.get(building.currentTierId);
+    if (tier === undefined) continue;
+    for (const effect of tier.effectsJson) {
+      if (effect.type !== "population_cap_increase") continue;
+      pendingPopCapBySettlement.set(
+        building.settlementId,
+        Math.max(
+          0,
+          (pendingPopCapBySettlement.get(building.settlementId) ?? 0) -
+            effect.amount,
+        ),
+      );
+    }
+  }
 
   // -------------------------------------------------------------------------
   // Phase 5 — Passive Effects

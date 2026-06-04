@@ -25,19 +25,13 @@ export type PhaseManagedPopulationsOutput = {
 export function phaseManagedPopulations(
   context: SimulationContext,
 ): PhaseManagedPopulationsOutput {
-  const {
-    citizenAssignments,
-    managedPopulationTypes,
-    managedPopulations,
-    stockpiles,
-  } = context.input;
+  const { citizenAssignments, managedPopulationTypes, managedPopulations } =
+    context.input;
 
   const popTypeById = new Map(managedPopulationTypes.map((t) => [t.id, t]));
 
-  const stockpileQty = new Map<string, number>();
-  for (const sp of stockpiles) {
-    stockpileQty.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
-  }
+  // Start from running post-prior-phase totals so upkeep deductions are visible.
+  const stockpileQty = new Map(context.shared.pendingStockpiles);
 
   // Collect worker citizen IDs by population instance for each assignment type.
   const husbandryWorkersByPop = new Map<string, string[]>();

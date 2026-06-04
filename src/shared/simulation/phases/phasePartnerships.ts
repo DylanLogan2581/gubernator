@@ -111,14 +111,11 @@ export function phasePartnerships(
   priorDeaths: readonly CitizenDeath[] = [],
 ): PhasePartnershipsOutput {
   const {
-    buildingTiers,
     citizens: inputCitizens,
     npcFlavorConfig,
     partnerships,
     populationRules,
-    settlementBuildings,
     settlements,
-    stockpiles,
     systemResourceIds,
     turnNumber,
     worldId,
@@ -236,21 +233,10 @@ export function phasePartnerships(
     inMourningCitizenIds.add(id);
   }
 
-  // --- Population caps and alive counts from active buildings ---
-  const tierById = new Map(buildingTiers.map((t) => [t.id, t]));
-  const popCapBySettlement = new Map<string, number>();
-  for (const building of settlementBuildings) {
-    if (building.state !== "active") continue;
-    const tier = tierById.get(building.currentTierId);
-    if (tier === undefined) continue;
-    for (const effect of tier.effectsJson) {
-      if (effect.type !== "population_cap_increase") continue;
-      popCapBySettlement.set(
-        building.settlementId,
-        (popCapBySettlement.get(building.settlementId) ?? 0) + effect.amount,
-      );
-    }
-  }
+  // --- Population caps: read from shared state (updated by phase 4) ---
+  // This ensures buildings suspended or auto-deconstructed in phase 4 do not
+  // contribute to the fertility cap check.
+  const popCapBySettlement = context.shared.pendingPopCapBySettlement;
 
   const aliveCountBySettlement = new Map<string, number>();
   for (const citizen of citizenById.values()) {
@@ -262,10 +248,8 @@ export function phasePartnerships(
   }
 
   // --- Stockpile lookup for fertility food/water checks ---
-  const stockpileQty = new Map<string, number>();
-  for (const sp of stockpiles) {
-    stockpileQty.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
-  }
+  // Read post-phase-8 quantities so citizen consumption is reflected.
+  const stockpileQty = new Map(context.shared.pendingStockpiles);
 
   // Existing active partnerships (not newly widowed) used for fertility
   const activeInputPartnerships = partnerships.filter(

@@ -161,7 +161,26 @@ function makeContext(
     worldId: "w1",
     ...overrides,
   };
-  return { input };
+  const pendingStockpiles = new Map<string, number>();
+  for (const sp of input.stockpiles) {
+    pendingStockpiles.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
+  }
+  const pendingPopCapBySettlement = new Map<string, number>();
+  const tierById = new Map(input.buildingTiers.map((t) => [t.id, t]));
+  for (const building of input.settlementBuildings) {
+    if (building.state !== "active") continue;
+    const tier = tierById.get(building.currentTierId);
+    if (tier === undefined) continue;
+    for (const effect of tier.effectsJson) {
+      if (effect.type !== "population_cap_increase") continue;
+      pendingPopCapBySettlement.set(
+        building.settlementId,
+        (pendingPopCapBySettlement.get(building.settlementId) ?? 0) +
+          effect.amount,
+      );
+    }
+  }
+  return { input, shared: { pendingPopCapBySettlement, pendingStockpiles } };
 }
 
 // ---------------------------------------------------------------------------

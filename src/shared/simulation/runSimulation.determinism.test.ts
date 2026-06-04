@@ -245,7 +245,7 @@ const BUILDING_TIERS: readonly SimBuildingTier[] = [
     ],
     id: TIER_SMITHY_T1,
     tierNumber: 1,
-    upkeepCostsJson: [{ amount: 3, resourceId: IRON_ID }],
+    upkeepCostsJson: [{ amount: 7, resourceId: IRON_ID }],
     workerTurnsRequired: 20,
   },
   {
@@ -596,7 +596,8 @@ const STOCKPILES: readonly SimStockpile[] = [
   { cap: 500, quantity: 200, resourceId: FOOD_ID, settlementId: S1 },
   { cap: 500, quantity: 200, resourceId: WATER_ID, settlementId: S1 },
   { cap: 200, quantity: 80, resourceId: STONE_ID, settlementId: S1 },
-  // iron starts below smithy upkeep (3) so phase 4 logs a suspension/deconstruction
+  // iron stockpile (2) + phase-2 deposit output (3) = 5, still below smithy upkeep (7)
+  // so phase 4 logs a suspension/deconstruction even with cross-phase stock sharing
   { cap: 300, quantity: 2, resourceId: IRON_ID, settlementId: S1 },
   // coins start near cap so phase 12 (stockpileClamp) clamps them
   { cap: 500, quantity: 498, resourceId: COINS_ID, settlementId: S1 },

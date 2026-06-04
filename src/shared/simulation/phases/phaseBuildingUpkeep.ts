@@ -26,18 +26,14 @@ export function phaseBuildingUpkeep(
     buildingTiers,
     settlementBuildings,
     settlements,
-    stockpiles,
   } = context.input;
 
   const tierById = new Map(buildingTiers.map((t) => [t.id, t]));
   const blueprintById = new Map(buildingBlueprints.map((b) => [b.id, b]));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
 
-  // Mutable stockpile quantity map shared across all buildings this phase.
-  const stockpileQty = new Map<string, number>();
-  for (const sp of stockpiles) {
-    stockpileQty.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
-  }
+  // Start from running post-prior-phase totals so phase 1–3 production is visible.
+  const stockpileQty = new Map(context.shared.pendingStockpiles);
 
   const allStateChanges: BuildingStateChange[] = [];
   const allLogs: SimulationLogEntry[] = [];

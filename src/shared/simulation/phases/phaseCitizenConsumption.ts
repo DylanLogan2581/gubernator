@@ -21,20 +21,14 @@ export type PhaseCitizenConsumptionOutput = {
 export function phaseCitizenConsumption(
   context: SimulationContext,
 ): PhaseCitizenConsumptionOutput {
-  const {
-    citizens,
-    populationRules,
-    settlements,
-    stockpiles,
-    systemResourceIds,
-  } = context.input;
+  const { citizens, populationRules, settlements, systemResourceIds } =
+    context.input;
 
   const { foodId, freshWaterId } = systemResourceIds;
 
-  const stockpileQty = new Map<string, number>();
-  for (const sp of stockpiles) {
-    stockpileQty.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
-  }
+  // Start from running post-prior-phase totals so managed-population maintenance
+  // deductions (phase 7) are visible before citizen food/water is checked.
+  const stockpileQty = new Map(context.shared.pendingStockpiles);
 
   const allDeaths: CitizenDeath[] = [];
   const allLogs: SimulationLogEntry[] = [];

@@ -63,7 +63,14 @@ function makeContext(
     worldId: "w1",
     ...overrides,
   };
-  return { input };
+  const pendingStockpiles = new Map<string, number>();
+  for (const sp of input.stockpiles) {
+    pendingStockpiles.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
+  }
+  return {
+    input,
+    shared: { pendingPopCapBySettlement: new Map(), pendingStockpiles },
+  };
 }
 
 // ---------------------------------------------------------------------------

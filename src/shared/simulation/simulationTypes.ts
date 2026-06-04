@@ -534,11 +534,24 @@ export type SimulationResult = {
 };
 
 // ---------------------------------------------------------------------------
+// SimulationSharedState — mutable running totals updated after each phase
+// ---------------------------------------------------------------------------
+
+export type SimulationSharedState = {
+  // Running stockpile quantities updated after every phase.
+  readonly pendingStockpiles: Map<string, number>;
+  // Population cap per settlement, decremented when buildings are suspended
+  // or auto-deconstructed in phase 4.
+  readonly pendingPopCapBySettlement: Map<string, number>;
+};
+
+// ---------------------------------------------------------------------------
 // SimulationContext — passed through every phase
 // ---------------------------------------------------------------------------
 
 export type SimulationContext = {
   readonly input: SimulationInputState;
+  readonly shared: SimulationSharedState;
 };
 
 // ---------------------------------------------------------------------------

@@ -28,13 +28,11 @@ export function phaseTradeRoutes(
   const jobById = new Map(jobs.map((j) => [j.id, j]));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
 
-  // Mutable stockpile maps so intra-phase transfers are visible to later routes.
-  const stockpileQty = new Map<string, number>();
+  // Start quantities from running post-prior-phase totals; caps are static.
+  const stockpileQty = new Map(context.shared.pendingStockpiles);
   const stockpileCap = new Map<string, number>();
   for (const sp of stockpiles) {
-    const key = `${sp.settlementId}:${sp.resourceId}`;
-    stockpileQty.set(key, sp.quantity);
-    stockpileCap.set(key, sp.cap);
+    stockpileCap.set(`${sp.settlementId}:${sp.resourceId}`, sp.cap);
   }
 
   // Sum trader capacity per route end: key = `${routeId}:${end}`.
