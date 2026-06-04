@@ -84,6 +84,8 @@ export {
   subtractDecimal,
   toDecimal,
 } from "./decimalMath.ts";
+
+export { compareById } from "./sortUtils.ts";
 export type { DecimalValue } from "./decimalMath.ts";
 
 export {

@@ -4,6 +4,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import { createSeededRng } from "../seededRng.ts";
+import { compareById } from "../sortUtils.ts";
 
 import type { SeededRng } from "../seededRng.ts";
 import type {
@@ -274,7 +275,7 @@ export function phasePartnerships(
     });
 
     // Deterministic sort before RNG rolls
-    eligible.sort((a, b) => (a.id < b.id ? -1 : 1));
+    eligible.sort(compareById);
 
     // Roll seek chance per citizen
     const seekingMales: SimCitizen[] = [];

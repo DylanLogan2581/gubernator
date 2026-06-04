@@ -3,6 +3,8 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import { compareById } from "../sortUtils.ts";
+
 import type {
   CitizenDeath,
   SimulationContext,
@@ -111,7 +113,7 @@ export function phaseCitizenConsumption(
           const aTurn = a.bornOnTurnNumber ?? -Infinity;
           const bTurn = b.bornOnTurnNumber ?? -Infinity;
           if (aTurn !== bTurn) return aTurn - bTurn;
-          return a.id < b.id ? -1 : 1;
+          return compareById(a, b);
         });
 
         const toKill = sorted.slice(0, starvationDeaths);
