@@ -8,13 +8,33 @@ import {
   isEndTurnTransitionError,
 } from "./endTurnTransitionMutations";
 
+const successPatchCounts = {
+  assignmentClears: 0,
+  bornOnTurnBackfill: 0,
+  buildingStateChanges: 0,
+  buildingsCreated: 0,
+  citizenBirths: 0,
+  citizenDeaths: 0,
+  constructionUpdates: 0,
+  depositUpdates: 0,
+  logEntries: 0,
+  managedPopulationUpdates: 0,
+  notifications: 0,
+  overshootStamped: 0,
+  partnershipChanges: 0,
+  readinessReset: 0,
+  settlementSnapshots: 0,
+  stockpileDeltas: 0,
+  tradeRouteOutcomes: 0,
+};
+
 const successResult = {
   data: {
     actorId: "user-1",
     summary: {
       currentTurnNumber: 4,
       fromTurnNumber: 3,
-      patchCounts: { settlements: 2, citizens: 5 },
+      patchCounts: successPatchCounts,
       toTurnNumber: 4,
       transitionId: "transition-abc",
     },
@@ -43,7 +63,7 @@ describe("endTurnTransitionMutationOptions", () => {
       summary: {
         currentTurnNumber: 4,
         fromTurnNumber: 3,
-        patchCounts: { settlements: 2, citizens: 5 },
+        patchCounts: successPatchCounts,
         toTurnNumber: 4,
         transitionId: "transition-abc",
       },

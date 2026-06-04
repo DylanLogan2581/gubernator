@@ -111,10 +111,10 @@ function EndTurnControlContent({
         onSuccess: (result) => {
           setIsConfirming(false);
           const { patchCounts, toTurnNumber } = result.summary;
-          const deaths = patchCounts.citizenDeaths ?? 0;
-          const births = patchCounts.citizenBirths ?? 0;
-          const buildingChanges = patchCounts.buildingStateChanges ?? 0;
-          const depositUpdates = patchCounts.depositUpdates ?? 0;
+          const deaths = patchCounts.citizenDeaths;
+          const births = patchCounts.citizenBirths;
+          const buildingChanges = patchCounts.buildingStateChanges;
+          const depositUpdates = patchCounts.depositUpdates;
           notifyMutationSuccess(`Advanced to turn ${toTurnNumber.toString()}`, {
             description: `${deaths.toString()} deaths, ${births.toString()} births, ${buildingChanges.toString()} building changes, ${depositUpdates.toString()} deposit updates.`,
           });

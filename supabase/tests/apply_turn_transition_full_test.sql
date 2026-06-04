@@ -862,8 +862,80 @@ select
     'patchCounts.settlementSnapshots = 2'
   );
 
+select
+  is (
+    (
+      current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'constructionUpdates'
+    )::integer,
+    0,
+    'patchCounts.constructionUpdates = 0'
+  );
+
+select
+  is (
+    (
+      current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'buildingsCreated'
+    )::integer,
+    0,
+    'patchCounts.buildingsCreated = 0'
+  );
+
+select
+  is (
+    (
+      current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'buildingStateChanges'
+    )::integer,
+    0,
+    'patchCounts.buildingStateChanges = 0'
+  );
+
+select
+  is (
+    (
+      current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'depositUpdates'
+    )::integer,
+    0,
+    'patchCounts.depositUpdates = 0'
+  );
+
+select
+  is (
+    (
+      current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'managedPopulationUpdates'
+    )::integer,
+    0,
+    'patchCounts.managedPopulationUpdates = 0'
+  );
+
+select
+  is (
+    (
+      current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'citizenBirths'
+    )::integer,
+    0,
+    'patchCounts.citizenBirths = 0'
+  );
+
+select
+  is (
+    (
+      current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'overshootStamped'
+    )::integer,
+    0,
+    'patchCounts.overshootStamped = 0'
+  );
+
+select
+  is (
+    (
+      current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'readinessReset'
+    )::integer,
+    0,
+    'patchCounts.readinessReset = 0'
+  );
+
 -- ---------------------------------------------------------------------------
--- Tests 17–19: Wholeness — row counts match payload shape
+-- Tests 25–27: Wholeness — row counts match payload shape
 -- ---------------------------------------------------------------------------
 select
   is (

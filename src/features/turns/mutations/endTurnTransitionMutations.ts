@@ -73,10 +73,30 @@ export type EndTurnTransitionInput = {
   readonly worldId: string;
 };
 
+export type PatchCounts = {
+  readonly assignmentClears: number;
+  readonly bornOnTurnBackfill: number;
+  readonly buildingStateChanges: number;
+  readonly buildingsCreated: number;
+  readonly citizenBirths: number;
+  readonly citizenDeaths: number;
+  readonly constructionUpdates: number;
+  readonly depositUpdates: number;
+  readonly logEntries: number;
+  readonly managedPopulationUpdates: number;
+  readonly notifications: number;
+  readonly overshootStamped: number;
+  readonly partnershipChanges: number;
+  readonly readinessReset: number;
+  readonly settlementSnapshots: number;
+  readonly stockpileDeltas: number;
+  readonly tradeRouteOutcomes: number;
+};
+
 export type EndTurnTransitionSummary = {
   readonly currentTurnNumber: number;
   readonly fromTurnNumber: number;
-  readonly patchCounts: Record<string, number>;
+  readonly patchCounts: PatchCounts;
   readonly toTurnNumber: number;
   readonly transitionId: string;
 };
@@ -310,6 +330,29 @@ function isEndTurnTransitionFunctionErrorResponse(
   );
 }
 
+function isPatchCounts(value: unknown): value is PatchCounts {
+  return (
+    isRecord(value) &&
+    typeof value.assignmentClears === "number" &&
+    typeof value.bornOnTurnBackfill === "number" &&
+    typeof value.buildingStateChanges === "number" &&
+    typeof value.buildingsCreated === "number" &&
+    typeof value.citizenBirths === "number" &&
+    typeof value.citizenDeaths === "number" &&
+    typeof value.constructionUpdates === "number" &&
+    typeof value.depositUpdates === "number" &&
+    typeof value.logEntries === "number" &&
+    typeof value.managedPopulationUpdates === "number" &&
+    typeof value.notifications === "number" &&
+    typeof value.overshootStamped === "number" &&
+    typeof value.partnershipChanges === "number" &&
+    typeof value.readinessReset === "number" &&
+    typeof value.settlementSnapshots === "number" &&
+    typeof value.stockpileDeltas === "number" &&
+    typeof value.tradeRouteOutcomes === "number"
+  );
+}
+
 function isEndTurnTransitionSummary(
   value: unknown,
 ): value is EndTurnTransitionSummary {
@@ -317,7 +360,7 @@ function isEndTurnTransitionSummary(
     isRecord(value) &&
     typeof value.currentTurnNumber === "number" &&
     typeof value.fromTurnNumber === "number" &&
-    isRecord(value.patchCounts) &&
+    isPatchCounts(value.patchCounts) &&
     typeof value.toTurnNumber === "number" &&
     typeof value.transitionId === "string"
   );
