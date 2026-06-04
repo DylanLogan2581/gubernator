@@ -202,7 +202,7 @@ describe("phaseBuildingUpkeep", () => {
 
     expect(result.notifications).toHaveLength(1);
     expect(result.notifications[0]?.notificationType).toBe(
-      "simulation.building.suspended",
+      "building.suspended",
     );
     expect(result.notifications[0]?.messageText).toContain("Oakvale");
   });
@@ -239,7 +239,7 @@ describe("phaseBuildingUpkeep", () => {
 
     expect(result.notifications).toHaveLength(1);
     expect(result.notifications[0]?.notificationType).toBe(
-      "simulation.building.auto_deconstructed",
+      "building.auto_deconstructed",
     );
     expect(result.notifications[0]?.messageText).toContain("Ashford");
   });

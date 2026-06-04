@@ -59,6 +59,7 @@ export type {
   SimulationInputState,
   SimulationLogEntry,
   SimulationNotification,
+  SimulationNotificationScope,
   SimulationResult,
   StockpileDelta,
   TradeRouteOutcome,

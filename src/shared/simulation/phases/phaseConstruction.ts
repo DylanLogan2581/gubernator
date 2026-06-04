@@ -29,7 +29,6 @@ export function phaseConstruction(
     constructionProjects,
     settlements,
     stockpiles,
-    worldId,
   } = context.input;
 
   const buildingTierById = new Map(buildingTiers.map((t) => [t.id, t]));
@@ -112,15 +111,16 @@ export function phaseConstruction(
           category: "construction.paused",
           payload: {
             projectId: project.id,
-            settlementId: sid,
             workers,
           },
           phase: "construction",
+          settlementId: sid,
         });
         allNotifications.push({
           messageText: `A construction project in "${settlement.name}" was paused due to insufficient resources.`,
-          notificationType: "simulation.construction.paused",
-          recipientUserId: worldId,
+          notificationType: "construction.paused",
+          scope: "settlement",
+          settlementId: sid,
         });
         continue;
       }
@@ -168,16 +168,17 @@ export function phaseConstruction(
             costsDeducted,
             newProgress,
             projectId: project.id,
-            settlementId: sid,
             workers,
             workerTurnsRequired: project.workerTurnsRequired,
           },
           phase: "construction",
+          settlementId: sid,
         });
         allNotifications.push({
           messageText: `Construction completed in "${settlement.name}".`,
-          notificationType: "simulation.construction.complete",
-          recipientUserId: worldId,
+          notificationType: "construction.completed",
+          scope: "settlement",
+          settlementId: sid,
         });
       } else {
         allLogs.push({

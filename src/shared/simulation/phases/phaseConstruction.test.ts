@@ -235,7 +235,7 @@ describe("phaseConstruction", () => {
 
     expect(result.notifications).toHaveLength(1);
     expect(result.notifications[0]?.notificationType).toBe(
-      "simulation.construction.complete",
+      "construction.completed",
     );
   });
 
@@ -317,7 +317,7 @@ describe("phaseConstruction", () => {
 
     expect(result.notifications).toHaveLength(1);
     expect(result.notifications[0]?.notificationType).toBe(
-      "simulation.construction.paused",
+      "construction.paused",
     );
   });
 

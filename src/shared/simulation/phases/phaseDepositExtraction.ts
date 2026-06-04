@@ -25,7 +25,7 @@ export type PhaseDepositExtractionOutput = {
 export function phaseDepositExtraction(
   context: SimulationContext,
 ): PhaseDepositExtractionOutput {
-  const { citizenAssignments, depositTypes, deposits, stockpiles, worldId } =
+  const { citizenAssignments, depositTypes, deposits, stockpiles } =
     context.input;
 
   const depositTypeById = new Map(depositTypes.map((dt) => [dt.id, dt]));
@@ -180,15 +180,16 @@ export function phaseDepositExtraction(
         payload: {
           depositId: deposit.id,
           depositName: deposit.name,
-          settlementId: sid,
         },
         phase: "depositExtraction",
+        settlementId: sid,
       });
 
       allNotifications.push({
         messageText: `Deposit "${deposit.name}" has been depleted.`,
-        notificationType: "simulation.deposit.depleted",
-        recipientUserId: worldId,
+        notificationType: "deposit.depleted",
+        scope: "settlement",
+        settlementId: sid,
       });
     }
   }

@@ -27,7 +27,6 @@ export function phaseBuildingUpkeep(
     settlementBuildings,
     settlements,
     stockpiles,
-    worldId,
   } = context.input;
 
   const tierById = new Map(buildingTiers.map((t) => [t.id, t]));
@@ -97,14 +96,15 @@ export function phaseBuildingUpkeep(
             buildingId: building.id,
             gracePeriodTurns: blueprint.gracePeriodTurns,
             missedUpkeepCount: newMissedCount,
-            settlementId: building.settlementId,
           },
           phase: "buildingUpkeep",
+          settlementId: building.settlementId,
         });
         allNotifications.push({
           messageText: `A building in "${settlementName}" was auto-deconstructed after missing upkeep too many times.`,
-          notificationType: "simulation.building.auto_deconstructed",
-          recipientUserId: worldId,
+          notificationType: "building.auto_deconstructed",
+          scope: "settlement",
+          settlementId: building.settlementId,
         });
       } else {
         allStateChanges.push({
@@ -118,14 +118,15 @@ export function phaseBuildingUpkeep(
             blueprintId: blueprint.id,
             buildingId: building.id,
             missedUpkeepCount: newMissedCount,
-            settlementId: building.settlementId,
           },
           phase: "buildingUpkeep",
+          settlementId: building.settlementId,
         });
         allNotifications.push({
           messageText: `A building in "${settlementName}" was suspended due to insufficient upkeep resources.`,
-          notificationType: "simulation.building.suspended",
-          recipientUserId: worldId,
+          notificationType: "building.suspended",
+          scope: "settlement",
+          settlementId: building.settlementId,
         });
       }
     }

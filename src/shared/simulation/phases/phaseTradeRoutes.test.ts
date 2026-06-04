@@ -266,7 +266,7 @@ describe("phaseTradeRoutes", () => {
       expect(result.logs[0]?.category).toBe("trade_route.paused");
       expect(result.notifications).toHaveLength(1);
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.trade_route.paused",
+        "trade_route.paused",
       );
     });
 
@@ -346,7 +346,7 @@ describe("phaseTradeRoutes", () => {
       expect(result.stockpileDeltas).toHaveLength(0);
       expect(result.logs[0]?.category).toBe("trade_route.paused");
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.trade_route.paused",
+        "trade_route.paused",
       );
     });
 
@@ -396,7 +396,7 @@ describe("phaseTradeRoutes", () => {
       expect(result.stockpileDeltas).toHaveLength(0);
       expect(result.logs[0]?.category).toBe("trade_route.paused");
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.trade_route.paused",
+        "trade_route.paused",
       );
     });
 
@@ -451,7 +451,7 @@ describe("phaseTradeRoutes", () => {
 
       expect(result.notifications).toHaveLength(1);
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.trade_route.resumed",
+        "trade_route.resumed",
       );
 
       const originDelta = result.stockpileDeltas.find(

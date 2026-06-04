@@ -27,7 +27,6 @@ export function phaseHomelessness(
     populationRules,
     settlementBuildings,
     settlements,
-    worldId,
   } = context.input;
 
   const { homelessnessDecliningRate } = populationRules;
@@ -93,15 +92,18 @@ export function phaseHomelessness(
       });
       allLogs.push({
         category: "citizen.died_homeless",
-        payload: { citizenId: citizen.id, deathDetail, settlementId: sid },
+        citizenId: citizen.id,
+        payload: { deathDetail },
         phase: "homelessness",
+        settlementId: sid,
       });
     }
 
     allNotifications.push({
       messageText: `${homelessDeaths} citizen(s) died from homelessness in ${settlement.name}.`,
-      notificationType: "simulation.settlement.homelessness_occurred",
-      recipientUserId: worldId,
+      notificationType: "settlement.homelessness_occurred",
+      scope: "settlement",
+      settlementId: sid,
     });
   }
 

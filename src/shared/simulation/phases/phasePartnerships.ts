@@ -185,18 +185,19 @@ export function phasePartnerships(
       category: "partnership.widowed",
       payload: {
         partnershipId: partnership.id,
-        settlementId: survivorSettlementId,
         survivingCitizenId: survivorId,
       },
       phase: "partnerships",
+      settlementId: survivorSettlementId ?? undefined,
     });
 
     if (survivorAlive) {
       newlyWidowedSurvivorIds.add(survivorId);
       allNotifications.push({
         messageText: `A citizen lost their partner this turn.`,
-        notificationType: "simulation.partnership.widowed",
-        recipientUserId: worldId,
+        notificationType: "partnership.widowed",
+        scope: "settlement",
+        settlementId: survivorSettlementId ?? undefined,
       });
     }
   }
@@ -326,14 +327,15 @@ export function phasePartnerships(
           payload: {
             citizenAId: male.id,
             citizenBId: female.id,
-            settlementId: sid,
           },
           phase: "partnerships",
+          settlementId: sid,
         });
         allNotifications.push({
           messageText: `A new partnership formed in ${settlement.name}.`,
-          notificationType: "simulation.partnership.formed",
-          recipientUserId: worldId,
+          notificationType: "partnership.formed",
+          scope: "settlement",
+          settlementId: sid,
         });
 
         newlyPaired.add(male.id);
@@ -402,9 +404,9 @@ export function phasePartnerships(
         payload: {
           parentACitizenId: partnership.citizenAId,
           parentBCitizenId: partnership.citizenBId,
-          settlementId: sid,
         },
         phase: "partnerships",
+        settlementId: sid,
       });
 
       currentAliveCount++;

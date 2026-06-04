@@ -436,7 +436,7 @@ describe("phaseHomelessness", () => {
       );
       expect(homelessLogs).toHaveLength(1);
       expect(homelessLogs[0]?.phase).toBe("homelessness");
-      expect(homelessLogs[0]?.payload.citizenId).toBe("c1");
+      expect(homelessLogs[0]?.citizenId).toBe("c1");
     });
 
     it("emits settlement.homelessness_occurred notification per settlement with deaths", () => {
@@ -456,7 +456,7 @@ describe("phaseHomelessness", () => {
 
       expect(result.notifications).toHaveLength(1);
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.settlement.homelessness_occurred",
+        "settlement.homelessness_occurred",
       );
       expect(result.notifications[0]?.messageText).toContain("Testville");
     });

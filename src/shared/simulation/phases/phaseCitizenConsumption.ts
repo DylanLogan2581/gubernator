@@ -27,7 +27,6 @@ export function phaseCitizenConsumption(
     settlements,
     stockpiles,
     systemResourceIds,
-    worldId,
   } = context.input;
 
   const { foodId, freshWaterId } = systemResourceIds;
@@ -132,15 +131,18 @@ export function phaseCitizenConsumption(
           });
           allLogs.push({
             category: "citizen.starved",
-            payload: { citizenId: citizen.id, deathDetail, settlementId: sid },
+            citizenId: citizen.id,
+            payload: { deathDetail },
             phase: "citizenConsumption",
+            settlementId: sid,
           });
         }
 
         allNotifications.push({
           messageText: `${starvationDeaths} citizen(s) starved in ${settlement.name}.`,
-          notificationType: "simulation.settlement.starvation_occurred",
-          recipientUserId: worldId,
+          notificationType: "settlement.starvation_occurred",
+          scope: "settlement",
+          settlementId: sid,
         });
       }
     }

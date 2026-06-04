@@ -37,11 +37,19 @@ export const LOG_CATEGORIES = {
 export type LogCategory = (typeof LOG_CATEGORIES)[keyof typeof LOG_CATEGORIES];
 
 export const SIMULATION_NOTIFICATION_TYPES = {
-  CONSTRUCTION_COMPLETE: "simulation.construction.complete",
-  CONSTRUCTION_PAUSED: "simulation.construction.paused",
-  DEPOSIT_DEPLETED: "simulation.deposit.depleted",
-  STOCKPILE_CLAMPED: "simulation.stockpile.clamped",
-  TURN_SIMULATED: "simulation.turn.simulated",
+  BUILDING_AUTO_DECONSTRUCTED: "building.auto_deconstructed",
+  BUILDING_SUSPENDED: "building.suspended",
+  CONSTRUCTION_COMPLETED: "construction.completed",
+  CONSTRUCTION_PAUSED: "construction.paused",
+  DEPOSIT_DEPLETED: "deposit.depleted",
+  MANAGED_POPULATION_DECLINING: "managed_population.declining",
+  MANAGED_POPULATION_EXTINCT: "managed_population.extinct",
+  PARTNERSHIP_FORMED: "partnership.formed",
+  PARTNERSHIP_WIDOWED: "partnership.widowed",
+  SETTLEMENT_HOMELESSNESS_OCCURRED: "settlement.homelessness_occurred",
+  SETTLEMENT_STARVATION_OCCURRED: "settlement.starvation_occurred",
+  TRADE_ROUTE_PAUSED: "trade_route.paused",
+  TRADE_ROUTE_RESUMED: "trade_route.resumed",
 } as const;
 
 export type SimulationNotificationType =

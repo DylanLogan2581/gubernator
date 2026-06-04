@@ -30,7 +30,6 @@ export function phaseManagedPopulations(
     managedPopulationTypes,
     managedPopulations,
     stockpiles,
-    worldId,
   } = context.input;
 
   const popTypeById = new Map(managedPopulationTypes.map((t) => [t.id, t]));
@@ -163,14 +162,15 @@ export function phaseManagedPopulations(
         payload: {
           managedPopulationInstanceId: pop.id,
           name: pop.name,
-          settlementId: sid,
         },
         phase: "managedPopulations",
+        settlementId: sid,
       });
       allNotifications.push({
         messageText: `Population "${pop.name}" has gone extinct.`,
-        notificationType: "simulation.managed_population.extinct",
-        recipientUserId: worldId,
+        notificationType: "managed_population.extinct",
+        scope: "settlement",
+        settlementId: sid,
       });
     } else if (growthCountDelta < 0) {
       allLogs.push({
@@ -180,14 +180,15 @@ export function phaseManagedPopulations(
           maintenanceCoverage,
           managedPopulationInstanceId: pop.id,
           name: pop.name,
-          settlementId: sid,
         },
         phase: "managedPopulations",
+        settlementId: sid,
       });
       allNotifications.push({
         messageText: `Population "${pop.name}" is declining due to insufficient maintenance or husbandry.`,
-        notificationType: "simulation.managed_population.declining",
-        recipientUserId: worldId,
+        notificationType: "managed_population.declining",
+        scope: "settlement",
+        settlementId: sid,
       });
     }
   }

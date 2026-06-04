@@ -22,14 +22,8 @@ export type PhaseTradeRoutesOutput = {
 export function phaseTradeRoutes(
   context: SimulationContext,
 ): PhaseTradeRoutesOutput {
-  const {
-    citizenAssignments,
-    jobs,
-    settlements,
-    stockpiles,
-    tradeRoutes,
-    worldId,
-  } = context.input;
+  const { citizenAssignments, jobs, settlements, stockpiles, tradeRoutes } =
+    context.input;
 
   const jobById = new Map(jobs.map((j) => [j.id, j]));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
@@ -98,18 +92,19 @@ export function phaseTradeRoutes(
         category: "trade_route.paused",
         payload: {
           destinationSettlementId,
-          originSettlementId,
           pauseReason,
           quantityPerTransition,
           resourceId,
           tradeRouteId: id,
         },
         phase: "tradeRoutes",
+        settlementId: originSettlementId,
       });
       allNotifications.push({
         messageText: `Trade route from "${originName}" to "${destinationName}" paused: ${pauseReason}.`,
-        notificationType: "simulation.trade_route.paused",
-        recipientUserId: worldId,
+        notificationType: "trade_route.paused",
+        scope: "settlement",
+        settlementId: originSettlementId,
       });
     };
 
@@ -170,17 +165,18 @@ export function phaseTradeRoutes(
         category: "trade_route.resumed",
         payload: {
           destinationSettlementId,
-          originSettlementId,
           quantityTransferred: quantityPerTransition,
           resourceId,
           tradeRouteId: id,
         },
         phase: "tradeRoutes",
+        settlementId: originSettlementId,
       });
       allNotifications.push({
         messageText: `Trade route from "${originName}" to "${destinationName}" has resumed.`,
-        notificationType: "simulation.trade_route.resumed",
-        recipientUserId: worldId,
+        notificationType: "trade_route.resumed",
+        scope: "settlement",
+        settlementId: originSettlementId,
       });
     } else {
       allLogs.push({

@@ -345,7 +345,7 @@ describe("phasePartnerships", () => {
       expect(formedLogs[0]?.phase).toBe("partnerships");
 
       const notifications = result.notifications.filter(
-        (n) => n.notificationType === "simulation.partnership.formed",
+        (n) => n.notificationType === "partnership.formed",
       );
       expect(notifications).toHaveLength(1);
       expect(notifications[0]?.messageText).toContain("Town");
@@ -505,7 +505,7 @@ describe("phasePartnerships", () => {
       expect(widowedLogs).toHaveLength(1);
 
       const widowedNotifs = result.notifications.filter(
-        (n) => n.notificationType === "simulation.partnership.widowed",
+        (n) => n.notificationType === "partnership.widowed",
       );
       expect(widowedNotifs).toHaveLength(1);
     });
@@ -553,7 +553,7 @@ describe("phasePartnerships", () => {
       expect(widowed).toHaveLength(1);
 
       const widowedNotifs = result.notifications.filter(
-        (n) => n.notificationType === "simulation.partnership.widowed",
+        (n) => n.notificationType === "partnership.widowed",
       );
       expect(widowedNotifs).toHaveLength(0);
     });
@@ -629,7 +629,7 @@ describe("phasePartnerships", () => {
       expect(bornLogs[0]?.phase).toBe("partnerships");
 
       const birthNotifs = result.notifications.filter(
-        (n) => n.notificationType === "simulation.citizen.born",
+        (n) => n.notificationType === "citizen.born",
       );
       expect(birthNotifs).toHaveLength(0);
     });

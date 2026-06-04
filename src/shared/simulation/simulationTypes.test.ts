@@ -74,8 +74,8 @@ const exampleResult: SimulationResult = {
   notifications: [
     {
       messageText: "Turn simulated.",
-      notificationType: "simulation.turn.simulated",
-      recipientUserId: "user-1",
+      notificationType: "turn.completed",
+      scope: "world" as const,
     },
   ],
   partnershipChanges: [

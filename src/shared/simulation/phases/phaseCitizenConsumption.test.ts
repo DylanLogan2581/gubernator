@@ -210,7 +210,7 @@ describe("phaseCitizenConsumption", () => {
       expect(result.citizenDeaths).toHaveLength(5);
       expect(result.notifications).toHaveLength(1);
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.settlement.starvation_occurred",
+        "settlement.starvation_occurred",
       );
     });
   });

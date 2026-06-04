@@ -10,14 +10,22 @@ import type { TurnCalendarConfig } from "../turnCalendarPrimitives.ts";
 
 export type SimulationLogEntry = {
   readonly category: string;
+  readonly citizenId?: string;
+  readonly nationId?: string;
   readonly payload: Record<string, unknown>;
   readonly phase: string;
+  readonly resourceId?: string;
+  readonly settlementId?: string;
 };
+
+export type SimulationNotificationScope = "settlement" | "nation" | "world";
 
 export type SimulationNotification = {
   readonly messageText: string;
+  readonly nationId?: string;
   readonly notificationType: string;
-  readonly recipientUserId: string;
+  readonly scope: SimulationNotificationScope;
+  readonly settlementId?: string;
 };
 
 // ---------------------------------------------------------------------------

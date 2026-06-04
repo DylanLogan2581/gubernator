@@ -297,7 +297,7 @@ describe("phaseManagedPopulations", () => {
 
       expect(result.notifications).toHaveLength(1);
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.managed_population.declining",
+        "managed_population.declining",
       );
     });
 
@@ -369,7 +369,7 @@ describe("phaseManagedPopulations", () => {
       expect(result.managedPopulationUpdates[0]?.countDelta).toBe(-10);
       expect(result.logs[0]?.category).toBe("managed_population.declining");
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.managed_population.declining",
+        "managed_population.declining",
       );
     });
 
@@ -532,7 +532,7 @@ describe("phaseManagedPopulations", () => {
 
       expect(result.notifications).toHaveLength(1);
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.managed_population.extinct",
+        "managed_population.extinct",
       );
     });
 

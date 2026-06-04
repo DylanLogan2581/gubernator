@@ -406,7 +406,7 @@ describe("phaseDepositExtraction", () => {
 
       expect(result.notifications).toHaveLength(1);
       expect(result.notifications[0]?.notificationType).toBe(
-        "simulation.deposit.depleted",
+        "deposit.depleted",
       );
 
       const extracted = result.logs.find(

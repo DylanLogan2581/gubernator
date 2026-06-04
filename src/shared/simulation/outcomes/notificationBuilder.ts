@@ -2,12 +2,17 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import type { SimulationNotification } from "../simulationTypes.ts";
+import type {
+  SimulationNotification,
+  SimulationNotificationScope,
+} from "../simulationTypes.ts";
 
 export type NotificationBuildInput = {
   readonly messageText: string;
+  readonly nationId?: string;
   readonly notificationType: string;
-  readonly recipientUserId: string;
+  readonly scope: SimulationNotificationScope;
+  readonly settlementId?: string;
 };
 
 export function buildNotification(
@@ -15,7 +20,9 @@ export function buildNotification(
 ): SimulationNotification {
   return {
     messageText: input.messageText,
+    nationId: input.nationId,
     notificationType: input.notificationType,
-    recipientUserId: input.recipientUserId,
+    scope: input.scope,
+    settlementId: input.settlementId,
   };
 }
