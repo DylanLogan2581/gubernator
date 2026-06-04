@@ -34,6 +34,10 @@ import {
 } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import {
+  parseBuildingAutoDeconstructedPayload,
+  parseBuildingSuspendedPayload,
+} from "@/shared/simulation";
 
 import { manualDeconstructBuildingMutationOptions } from "../mutations/settlementBuildingsMutations";
 import { settlementBuildingsBySettlementQueryOptions } from "../queries/settlementBuildingsQueries";
@@ -334,27 +338,6 @@ function stateBadgeLabel(state: SettlementBuildingState): string {
   }
 }
 
-type BuildingUpkeepPayload = {
-  readonly buildingId: string;
-  readonly missedUpkeepCount: number;
-  readonly gracePeriodTurns?: number;
-};
-
-function parseBuildingUpkeepPayload(
-  payload: unknown,
-): BuildingUpkeepPayload | null {
-  if (typeof payload !== "object" || payload === null) return null;
-  const p = payload as Record<string, unknown>;
-  if (typeof p.buildingId !== "string") return null;
-  if (typeof p.missedUpkeepCount !== "number") return null;
-  return {
-    buildingId: p.buildingId,
-    missedUpkeepCount: p.missedUpkeepCount,
-    gracePeriodTurns:
-      typeof p.gracePeriodTurns === "number" ? p.gracePeriodTurns : undefined,
-  };
-}
-
 function buildStateBadgeTooltip(
   building: SettlementBuilding,
   latestOutcome: TurnTransitionOutcome | null,
@@ -367,28 +350,38 @@ function buildStateBadgeTooltip(
   }
 
   const logEntry = latestOutcome?.logEntries.find((e) => {
-    if (
-      e.logCategory !== "building.suspended" &&
-      e.logCategory !== "building.auto_deconstructed"
-    ) {
-      return false;
+    if (e.logCategory === "building.auto_deconstructed") {
+      return (
+        parseBuildingAutoDeconstructedPayload(e.payloadJsonb)?.buildingId ===
+        building.id
+      );
     }
-    return (
-      parseBuildingUpkeepPayload(e.payloadJsonb)?.buildingId === building.id
-    );
+    if (e.logCategory === "building.suspended") {
+      return (
+        parseBuildingSuspendedPayload(e.payloadJsonb)?.buildingId ===
+        building.id
+      );
+    }
+    return false;
   });
 
   if (logEntry !== undefined && latestOutcome !== null) {
-    const payload = parseBuildingUpkeepPayload(logEntry.payloadJsonb);
-    if (payload !== null) {
-      const parts = [
-        `Turn ${latestOutcome.toTurnNumber}`,
-        `missed upkeep ${payload.missedUpkeepCount}×`,
-      ];
-      if (payload.gracePeriodTurns !== undefined) {
+    const parts = [`Turn ${latestOutcome.toTurnNumber}`];
+    if (logEntry.logCategory === "building.auto_deconstructed") {
+      const payload = parseBuildingAutoDeconstructedPayload(
+        logEntry.payloadJsonb,
+      );
+      if (payload !== null) {
+        parts.push(`missed upkeep ${payload.missedUpkeepCount}×`);
         parts.push(`grace period: ${payload.gracePeriodTurns} turns`);
+        return parts.join(" · ");
       }
-      return parts.join(" · ");
+    } else {
+      const payload = parseBuildingSuspendedPayload(logEntry.payloadJsonb);
+      if (payload !== null) {
+        parts.push(`missed upkeep ${payload.missedUpkeepCount}×`);
+        return parts.join(" · ");
+      }
     }
   }
 

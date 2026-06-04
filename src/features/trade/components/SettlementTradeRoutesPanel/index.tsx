@@ -14,6 +14,7 @@ import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { latestWorldTransitionOutcomeQueryOptions } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { parseTradeRouteResumedPayload } from "@/shared/simulation";
 
 import { tradeRoutesForSettlementQueryOptions } from "../../queries/tradeRoutesQueries";
 
@@ -81,9 +82,9 @@ export function SettlementTradeRoutesPanel({
   ) {
     for (const entry of latestOutcomeQuery.data.logEntries) {
       if (entry.logCategory === "trade_route.resumed") {
-        const tradeRouteId = parseTradeRouteResumedPayload(entry.payloadJsonb);
-        if (tradeRouteId !== null) {
-          resumedRouteIds.add(tradeRouteId);
+        const parsed = parseTradeRouteResumedPayload(entry.payloadJsonb);
+        if (parsed !== null) {
+          resumedRouteIds.add(parsed.tradeRouteId);
         }
       }
     }
@@ -511,18 +512,6 @@ function StatusBadge({
       {labels[status]}
     </span>
   );
-}
-
-function parseTradeRouteResumedPayload(payloadJsonb: unknown): string | null {
-  if (
-    typeof payloadJsonb !== "object" ||
-    payloadJsonb === null ||
-    !("tradeRouteId" in payloadJsonb) ||
-    typeof (payloadJsonb as Record<string, unknown>).tradeRouteId !== "string"
-  ) {
-    return null;
-  }
-  return (payloadJsonb as Record<string, unknown>).tradeRouteId as string;
 }
 
 function ApprovalBadge({

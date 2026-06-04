@@ -43,6 +43,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
+import { parseManagedPopulationExtinctPayload } from "@/shared/simulation";
 
 import { createManagedPopulationInstanceMutationOptions } from "../mutations/createManagedPopulationInstanceMutations";
 import { removeManagedPopulationInstanceMutationOptions } from "../mutations/removeManagedPopulationInstanceMutations";
@@ -404,15 +405,6 @@ function ManagedPopulationsStatusGroup({
   );
 }
 
-type ExtinctPayload = { readonly managedPopulationInstanceId: string };
-
-function parseExtinctPayload(payload: unknown): ExtinctPayload | null {
-  if (typeof payload !== "object" || payload === null) return null;
-  const p = payload as Record<string, unknown>;
-  if (typeof p.managedPopulationInstanceId !== "string") return null;
-  return { managedPopulationInstanceId: p.managedPopulationInstanceId };
-}
-
 function extinctBadgeTooltip(
   instanceId: string,
   latestOutcome: TurnTransitionOutcome | null,
@@ -421,8 +413,8 @@ function extinctBadgeTooltip(
   const entry = latestOutcome.logEntries.find(
     (e) =>
       e.logCategory === "managed_population.extinct" &&
-      parseExtinctPayload(e.payloadJsonb)?.managedPopulationInstanceId ===
-        instanceId,
+      parseManagedPopulationExtinctPayload(e.payloadJsonb)
+        ?.managedPopulationInstanceId === instanceId,
   );
   if (entry === undefined) return undefined;
   return `Turn ${latestOutcome.toTurnNumber.toString()}`;

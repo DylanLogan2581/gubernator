@@ -1207,7 +1207,12 @@ describe("SettlementTradeRoutesPanel", () => {
             nation_id: null,
             resource_id: null,
             log_category: "trade_route.resumed",
-            payload_jsonb: { tradeRouteId: ROUTE_ID_1 },
+            payload_jsonb: {
+              destinationSettlementId: DEST_SETTLEMENT_ID,
+              quantityTransferred: 10,
+              resourceId: RESOURCE_ID_1,
+              tradeRouteId: ROUTE_ID_1,
+            },
           },
         ]),
       }),

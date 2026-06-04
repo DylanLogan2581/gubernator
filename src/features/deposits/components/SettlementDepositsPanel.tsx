@@ -36,6 +36,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
+import { parseDepositDepletedPayload } from "@/shared/simulation";
 
 import { createDepositInstanceMutationOptions } from "../mutations/createDepositInstanceMutations";
 import { removeDepositInstanceMutationOptions } from "../mutations/removeDepositInstanceMutations";
@@ -336,19 +337,6 @@ function DepositsStatusGroup({
       ) : null}
     </div>
   );
-}
-
-type DepositDepletedPayload = {
-  readonly depositId: string;
-};
-
-function parseDepositDepletedPayload(
-  payload: unknown,
-): DepositDepletedPayload | null {
-  if (typeof payload !== "object" || payload === null) return null;
-  const p = payload as Record<string, unknown>;
-  if (typeof p.depositId !== "string") return null;
-  return { depositId: p.depositId };
 }
 
 function depositDepletedTooltip(

@@ -28,6 +28,7 @@ import {
 } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { parseConstructionPausedPayload } from "@/shared/simulation";
 
 import { cancelConstructionProjectMutationOptions } from "../mutations/cancelConstructionProjectMutations";
 import { createConstructionProjectMutationOptions } from "../mutations/createConstructionProjectMutations";
@@ -73,22 +74,14 @@ function getProjectLogData(
 ): ProjectLogData | null {
   for (const entry of logEntries) {
     if (!CONSTRUCTION_LOG_CATEGORIES.has(entry.logCategory)) continue;
-    const p = entry.payloadJsonb;
-    if (
-      typeof p !== "object" ||
-      p === null ||
-      (p as Record<string, unknown>).projectId !== projectId ||
-      typeof (p as Record<string, unknown>).workers !== "number"
-    ) {
-      continue;
-    }
-    const workers = (p as Record<string, unknown>).workers as number;
+    const parsed = parseConstructionPausedPayload(entry.payloadJsonb);
+    if (parsed === null || parsed.projectId !== projectId) continue;
     return {
       pauseReason:
         entry.logCategory === "construction.paused"
           ? "Insufficient resources"
           : null,
-      workers,
+      workers: parsed.workers,
     };
   }
   return null;
