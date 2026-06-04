@@ -135,29 +135,39 @@ export function runSimulation(
   const p4 = phaseBuildingUpkeep(context);
   applyDeltas(p4.stockpileDeltas);
 
-  // Remove population cap contributions from buildings that were suspended or
-  // auto-deconstructed this phase so phase 9 fertility sees the correct cap.
+  // Adjust population cap contributions from buildings whose state changed this phase.
+  // Suspended/auto-deconstructed buildings lose their cap; recovered buildings regain it.
   for (const change of p4.buildingStateChanges) {
-    if (
-      change.toState !== "suspended" &&
-      change.toState !== "auto_deconstructed"
-    ) {
-      continue;
-    }
     const building = buildingById.get(change.settlementBuildingId);
     if (building === undefined) continue;
     const tier = tierById.get(building.currentTierId);
     if (tier === undefined) continue;
-    for (const effect of tier.effectsJson) {
-      if (effect.type !== "population_cap_increase") continue;
-      pendingPopCapBySettlement.set(
-        building.settlementId,
-        Math.max(
-          0,
-          (pendingPopCapBySettlement.get(building.settlementId) ?? 0) -
+
+    if (
+      change.toState === "suspended" ||
+      change.toState === "auto_deconstructed"
+    ) {
+      for (const effect of tier.effectsJson) {
+        if (effect.type !== "population_cap_increase") continue;
+        pendingPopCapBySettlement.set(
+          building.settlementId,
+          Math.max(
+            0,
+            (pendingPopCapBySettlement.get(building.settlementId) ?? 0) -
+              effect.amount,
+          ),
+        );
+      }
+    } else if (change.toState === "active") {
+      // Building recovered from suspension — restore its pop cap contribution.
+      for (const effect of tier.effectsJson) {
+        if (effect.type !== "population_cap_increase") continue;
+        pendingPopCapBySettlement.set(
+          building.settlementId,
+          (pendingPopCapBySettlement.get(building.settlementId) ?? 0) +
             effect.amount,
-        ),
-      );
+        );
+      }
     }
   }
 

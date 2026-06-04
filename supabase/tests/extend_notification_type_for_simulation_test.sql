@@ -4,7 +4,7 @@
 begin;
 
 select
-  plan (15);
+  plan (16);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -64,6 +64,12 @@ values
     'b2000000-0000-0000-0000-000000000001',
     'building.auto_deconstructed',
     'Building was auto-deconstructed.'
+  ),
+  (
+    'b1000000-0000-0000-0000-000000000001',
+    'b2000000-0000-0000-0000-000000000001',
+    'building.recovered',
+    'Building recovered.'
   ),
   (
     'b1000000-0000-0000-0000-000000000001',
@@ -165,6 +171,20 @@ select
         and notification_type = 'building.auto_deconstructed'
     ),
     'building.auto_deconstructed is a valid notification_type'
+  );
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.notifications
+      where
+        world_id = 'b2000000-0000-0000-0000-000000000001'
+        and notification_type = 'building.recovered'
+    ),
+    'building.recovered is a valid notification_type'
   );
 
 select

@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (16);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -41,12 +41,13 @@ set
 where
   id = 'a6100000-0000-0000-0000-000000000001';
 
--- Five worlds — one per scenario, all at turn 3:
+-- Six worlds — one per scenario, all at turn 3:
 --   World 1: single project advance
 --   World 2: single project completion + building creation
 --   World 3: building suspend
 --   World 4: building auto-deconstruct
 --   World 5: multi-project batch
+--   World 6: building recovery (suspended → active)
 insert into
   public.worlds (
     id,
@@ -96,6 +97,14 @@ values
     3,
     'private',
     'active'
+  ),
+  (
+    'a6200000-0000-0000-0000-000000000006',
+    'ATTCP Building Recovery World',
+    'a6100000-0000-0000-0000-000000000001',
+    3,
+    'private',
+    'active'
   );
 
 -- One nation per world
@@ -126,6 +135,11 @@ values
     'a6300000-0000-0000-0000-000000000005',
     'a6200000-0000-0000-0000-000000000005',
     'ATTCP Nation 5'
+  ),
+  (
+    'a6300000-0000-0000-0000-000000000006',
+    'a6200000-0000-0000-0000-000000000006',
+    'ATTCP Nation 6'
   );
 
 -- One settlement per world
@@ -156,6 +170,11 @@ values
     'a6400000-0000-0000-0000-000000000005',
     'a6300000-0000-0000-0000-000000000005',
     'ATTCP Settlement 5'
+  ),
+  (
+    'a6400000-0000-0000-0000-000000000006',
+    'a6300000-0000-0000-0000-000000000006',
+    'ATTCP Settlement 6'
   );
 
 -- One building blueprint per world (max_instances_per_settlement = NULL → no cap)
@@ -191,6 +210,12 @@ values
     'a6200000-0000-0000-0000-000000000005',
     'ATTCP Granary 5',
     'attcp-granary-5'
+  ),
+  (
+    'a6500000-0000-0000-0000-000000000006',
+    'a6200000-0000-0000-0000-000000000006',
+    'ATTCP Granary 6',
+    'attcp-granary-6'
   );
 
 -- One tier per blueprint (tier 1, 10 worker-turns required)
@@ -229,6 +254,12 @@ values
   (
     'a6600000-0000-0000-0000-000000000005',
     'a6500000-0000-0000-0000-000000000005',
+    1,
+    10
+  ),
+  (
+    'a6600000-0000-0000-0000-000000000006',
+    'a6500000-0000-0000-0000-000000000006',
     1,
     10
   );
@@ -289,6 +320,7 @@ values
 -- Pre-existing buildings for state-change scenarios:
 --   B3: World 3, state=active  (will be suspended)
 --   B4: World 4, state=suspended  (will be auto-deconstructed)
+--   B6: World 6, state=suspended, missed_upkeep_count=2  (will recover to active)
 insert into
   public.settlement_buildings (
     id,
@@ -314,6 +346,15 @@ values
     'a6400000-0000-0000-0000-000000000004',
     'a6500000-0000-0000-0000-000000000004',
     'a6600000-0000-0000-0000-000000000004',
+    'suspended',
+    2,
+    1
+  ),
+  (
+    'a6800000-0000-0000-0000-000000000006',
+    'a6400000-0000-0000-0000-000000000006',
+    'a6500000-0000-0000-0000-000000000006',
+    'a6600000-0000-0000-0000-000000000006',
     'suspended',
     2,
     1
@@ -364,6 +405,14 @@ values
   (
     'a6300000-0000-0000-0000-000000000005',
     'a6200000-0000-0000-0000-000000000005',
+    3,
+    4,
+    'a6100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'a6300000-0000-0000-0000-000000000006',
+    'a6200000-0000-0000-0000-000000000006',
     3,
     4,
     'a6100000-0000-0000-0000-000000000001',
@@ -795,6 +844,59 @@ select
     ),
     'in_progress',
     'multi-batch: project P5b status updated to in_progress'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 6: building recovery (suspended → active)
+-- Building B6 is suspended (missed_upkeep_count=2); state changes to active
+-- with missed_upkeep_count=0 and deactivated_in_transition_id cleared to null.
+-- ===========================================================================
+select
+  public.apply_turn_transition (
+    'a6200000-0000-0000-0000-000000000006',
+    3,
+    jsonb_build_object(
+      'buildingStateChanges',
+      jsonb_build_array(
+        jsonb_build_object(
+          'buildingId',
+          'a6800000-0000-0000-0000-000000000006',
+          'state',
+          'active',
+          'missedUpkeepCount',
+          0
+        )
+      )
+    ),
+    'a6300000-0000-0000-0000-000000000006'::uuid
+  );
+
+select
+  is (
+    (
+      select
+        sb.state
+      from
+        public.settlement_buildings sb
+      where
+        sb.id = 'a6800000-0000-0000-0000-000000000006'
+    ),
+    'active',
+    'building recovery: state updated to active'
+  );
+
+select
+  is (
+    (
+      select
+        sb.missed_upkeep_count
+      from
+        public.settlement_buildings sb
+      where
+        sb.id = 'a6800000-0000-0000-0000-000000000006'
+    ),
+    0,
+    'building recovery: missed_upkeep_count reset to 0'
   );
 
 reset role;

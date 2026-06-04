@@ -38,6 +38,7 @@ export type LogCategory = (typeof LOG_CATEGORIES)[keyof typeof LOG_CATEGORIES];
 
 export const SIMULATION_NOTIFICATION_TYPES = {
   BUILDING_AUTO_DECONSTRUCTED: "building.auto_deconstructed",
+  BUILDING_RECOVERED: "building.recovered",
   BUILDING_SUSPENDED: "building.suspended",
   CONSTRUCTION_COMPLETED: "construction.completed",
   CONSTRUCTION_PAUSED: "construction.paused",

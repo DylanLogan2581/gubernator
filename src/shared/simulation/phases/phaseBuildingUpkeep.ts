@@ -1,5 +1,6 @@
 // Phase: building upkeep — subtracts upkeep costs from stockpiles; suspends or
-// auto-deconstructs buildings that cannot pay.
+// auto-deconstructs buildings that cannot pay; recovers suspended buildings that
+// can pay again.
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
@@ -41,7 +42,7 @@ export function phaseBuildingUpkeep(
   const allDeltas: StockpileDelta[] = [];
 
   for (const building of settlementBuildings) {
-    if (building.state !== "active") continue;
+    if (building.state !== "active" && building.state !== "suspended") continue;
 
     const tier = tierById.get(building.currentTierId);
     if (tier === undefined) continue;
@@ -74,7 +75,29 @@ export function phaseBuildingUpkeep(
         });
         stockpileQty.set(key, (stockpileQty.get(key) ?? 0) - cost.amount);
       }
-      // v1: no state change on successful payment (missed_upkeep_count unchanged).
+      // Recover a suspended building that can now pay its upkeep.
+      if (building.state === "suspended") {
+        allStateChanges.push({
+          missedUpkeepCountDelta: -building.missedUpkeepCount,
+          settlementBuildingId: building.id,
+          toState: "active",
+        });
+        allLogs.push({
+          category: "building.recovered",
+          payload: {
+            blueprintId: blueprint.id,
+            buildingId: building.id,
+          },
+          phase: "buildingUpkeep",
+          settlementId: building.settlementId,
+        });
+        allNotifications.push({
+          messageText: `A suspended building in "${settlementName}" resumed operation after upkeep costs were met.`,
+          notificationType: "building.recovered",
+          scope: "settlement",
+          settlementId: building.settlementId,
+        });
+      }
     } else {
       // Cannot pay — increment missed upkeep count and check grace period.
       const newMissedCount = building.missedUpkeepCount + 1;

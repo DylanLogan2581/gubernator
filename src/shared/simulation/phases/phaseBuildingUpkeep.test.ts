@@ -271,27 +271,20 @@ describe("phaseBuildingUpkeep", () => {
     expect(result.buildingStateChanges[0]?.toState).toBe("suspended");
   });
 
-  it("skips non-active buildings (suspended, auto_deconstructed, manually_deconstructed)", () => {
+  it("skips deconstructed buildings (auto_deconstructed, manually_deconstructed)", () => {
     const blueprint = makeBlueprint("bp1", 2);
     const tier = makeTier("t1", "bp1", [{ resourceId: "wood", amount: 5 }]);
-    const suspended = makeBuilding("b1", "s1", "t1", "bp1", {
-      state: "suspended",
-    });
-    const autoDeconstructed = makeBuilding("b2", "s1", "t1", "bp1", {
+    const autoDeconstructed = makeBuilding("b1", "s1", "t1", "bp1", {
       state: "auto_deconstructed",
     });
-    const manuallyDeconstructed = makeBuilding("b3", "s1", "t1", "bp1", {
+    const manuallyDeconstructed = makeBuilding("b2", "s1", "t1", "bp1", {
       state: "manually_deconstructed",
     });
     const ctx = makeContext({
       buildingBlueprints: [blueprint],
       buildingTiers: [tier],
       settlements: [makeSettlement("s1")],
-      settlementBuildings: [
-        suspended,
-        autoDeconstructed,
-        manuallyDeconstructed,
-      ],
+      settlementBuildings: [autoDeconstructed, manuallyDeconstructed],
       stockpiles: [makeStockpile("s1", "wood", 1000)],
     });
 
@@ -300,6 +293,101 @@ describe("phaseBuildingUpkeep", () => {
     expect(result.buildingStateChanges).toHaveLength(0);
     expect(result.stockpileDeltas).toHaveLength(0);
     expect(result.logs).toHaveLength(0);
+  });
+
+  it("suspended building pays upkeep → recovers to active with log and notification", () => {
+    const blueprint = makeBlueprint("bp1", 3);
+    const tier = makeTier("t1", "bp1", [{ resourceId: "wood", amount: 10 }]);
+    const building = makeBuilding("b1", "s1", "t1", "bp1", {
+      state: "suspended",
+      missedUpkeepCount: 2,
+    });
+    const ctx = makeContext({
+      buildingBlueprints: [blueprint],
+      buildingTiers: [tier],
+      settlements: [makeSettlement("s1", "Riverford")],
+      settlementBuildings: [building],
+      stockpiles: [makeStockpile("s1", "wood", 50)],
+    });
+
+    const result = phaseBuildingUpkeep(ctx);
+
+    // Upkeep deducted
+    expect(result.stockpileDeltas).toHaveLength(1);
+    expect(result.stockpileDeltas[0]?.delta).toBe(-10);
+
+    // State change: back to active, missed count reset
+    expect(result.buildingStateChanges).toHaveLength(1);
+    const change = result.buildingStateChanges[0];
+    expect(change?.settlementBuildingId).toBe("b1");
+    expect(change?.toState).toBe("active");
+    expect(change?.missedUpkeepCountDelta).toBe(-2); // resets from 2 to 0
+
+    // Recovery log entry
+    expect(result.logs).toHaveLength(1);
+    expect(result.logs[0]?.category).toBe("building.recovered");
+    expect(result.logs[0]?.phase).toBe("buildingUpkeep");
+    expect(result.logs[0]?.payload.buildingId).toBe("b1");
+
+    // Recovery notification
+    expect(result.notifications).toHaveLength(1);
+    expect(result.notifications[0]?.notificationType).toBe(
+      "building.recovered",
+    );
+    expect(result.notifications[0]?.messageText).toContain("Riverford");
+  });
+
+  it("suspended building cannot pay → missed count increments, auto-deconstructs after grace", () => {
+    // grace = 2, missed = 2 → new count = 3 > 2 → auto-deconstruct
+    const blueprint = makeBlueprint("bp1", 2);
+    const tier = makeTier("t1", "bp1", [{ resourceId: "wood", amount: 10 }]);
+    const building = makeBuilding("b1", "s1", "t1", "bp1", {
+      state: "suspended",
+      missedUpkeepCount: 2,
+    });
+    const ctx = makeContext({
+      buildingBlueprints: [blueprint],
+      buildingTiers: [tier],
+      settlements: [makeSettlement("s1", "Dunmore")],
+      settlementBuildings: [building],
+      stockpiles: [], // nothing in stockpile
+    });
+
+    const result = phaseBuildingUpkeep(ctx);
+
+    expect(result.stockpileDeltas).toHaveLength(0);
+    expect(result.buildingStateChanges).toHaveLength(1);
+    expect(result.buildingStateChanges[0]?.toState).toBe("auto_deconstructed");
+    expect(result.buildingStateChanges[0]?.missedUpkeepCountDelta).toBe(1);
+    expect(result.logs[0]?.category).toBe("building.auto_deconstructed");
+    expect(result.notifications[0]?.notificationType).toBe(
+      "building.auto_deconstructed",
+    );
+  });
+
+  it("recovery resets missedUpkeepCount to zero regardless of prior count", () => {
+    const blueprint = makeBlueprint("bp1", 5);
+    const tier = makeTier("t1", "bp1", [{ resourceId: "food", amount: 1 }]);
+    // Building has missed 4 payments but can now pay
+    const building = makeBuilding("b1", "s1", "t1", "bp1", {
+      state: "suspended",
+      missedUpkeepCount: 4,
+    });
+    const ctx = makeContext({
+      buildingBlueprints: [blueprint],
+      buildingTiers: [tier],
+      settlements: [makeSettlement("s1")],
+      settlementBuildings: [building],
+      stockpiles: [makeStockpile("s1", "food", 100)],
+    });
+
+    const result = phaseBuildingUpkeep(ctx);
+
+    expect(result.buildingStateChanges).toHaveLength(1);
+    const change = result.buildingStateChanges[0];
+    expect(change?.toState).toBe("active");
+    // Delta of -4 brings count from 4 to 0
+    expect(change?.missedUpkeepCountDelta).toBe(-4);
   });
 
   it("zero-upkeep building pays successfully with empty stockpile", () => {
