@@ -122,7 +122,7 @@ describe("phaseEvents", () => {
     ];
 
     for (const effectType of effectTypes) {
-      it(`emits event.applied log for ${effectType}`, () => {
+      it(`emits a single event.skipped summary for ${effectType}`, () => {
         const ctx = makeContext({
           events: [makeEvent(effectType)],
           turnNumber: 5,
@@ -131,10 +131,10 @@ describe("phaseEvents", () => {
         const result = phaseEvents(ctx);
 
         expect(result.logs).toHaveLength(1);
-        expect(result.logs[0]?.category).toBe("event.applied");
+        expect(result.logs[0]?.category).toBe("event.skipped");
         expect(result.logs[0]?.phase).toBe("events");
-        expect(result.logs[0]?.payload.effectType).toBe(effectType);
-        expect(result.logs[0]?.payload.reason).toBe("not-yet-implemented");
+        expect(result.logs[0]?.payload.count).toBe(1);
+        expect(result.logs[0]?.payload.reason).toBe("epic-7-pending");
       });
     }
   });
@@ -229,7 +229,7 @@ describe("phaseEvents", () => {
   });
 
   describe("combined filtering", () => {
-    it("only emits logs for eligible events in a mixed list", () => {
+    it("emits one summary log covering only eligible events in a mixed list", () => {
       const ctx = makeContext({
         events: [
           makeEvent("resource_grant", {
@@ -255,10 +255,9 @@ describe("phaseEvents", () => {
       const result = phaseEvents(ctx);
 
       // Only the first and fourth events are eligible
-      expect(result.logs).toHaveLength(2);
-      expect(result.logs.every((l) => l.category === "event.applied")).toBe(
-        true,
-      );
+      expect(result.logs).toHaveLength(1);
+      expect(result.logs[0]?.category).toBe("event.skipped");
+      expect(result.logs[0]?.payload.count).toBe(2);
     });
   });
 
@@ -273,7 +272,7 @@ describe("phaseEvents", () => {
       expect(result.notifications).toHaveLength(0);
     });
 
-    it("emits one log entry per eligible event", () => {
+    it("emits one summary log regardless of how many eligible events exist", () => {
       const ctx = makeContext({
         events: [
           makeEvent("resource_grant"),
@@ -285,7 +284,8 @@ describe("phaseEvents", () => {
 
       const result = phaseEvents(ctx);
 
-      expect(result.logs).toHaveLength(3);
+      expect(result.logs).toHaveLength(1);
+      expect(result.logs[0]?.payload.count).toBe(3);
     });
   });
 });

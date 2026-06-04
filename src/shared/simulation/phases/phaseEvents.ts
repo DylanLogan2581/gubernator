@@ -28,7 +28,7 @@ export type PhaseEventsOutput = {
 export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
   const { events, turnNumber } = context.input;
 
-  const logs: SimulationLogEntry[] = [];
+  let skippedCount = 0;
 
   for (const event of events) {
     if (event.status !== "pending" && event.status !== "active") continue;
@@ -40,6 +40,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
       case "population_loss":
       case "resource_grant":
         // No-op: Epic 7 implements effect resolution for each case.
+        skippedCount++;
         break;
       default: {
         const _: never = effectType;
@@ -47,10 +48,13 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         break;
       }
     }
+  }
 
+  const logs: SimulationLogEntry[] = [];
+  if (skippedCount > 0) {
     logs.push({
-      category: "event.applied",
-      payload: { effectType: event.effectType, reason: "not-yet-implemented" },
+      category: "event.skipped",
+      payload: { count: skippedCount, reason: "epic-7-pending" },
       phase: "events",
     });
   }
