@@ -135,7 +135,6 @@ function makeContext(
     citizenAssignments: [],
     citizens: [],
     constructionProjects: [],
-    deconstructOvershootLedger: [],
     depositTypes: [],
     deposits: [],
     jobs: [],

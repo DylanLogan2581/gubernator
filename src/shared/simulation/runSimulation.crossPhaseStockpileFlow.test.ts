@@ -57,7 +57,6 @@ function makeInput(
     citizenAssignments: [],
     citizens: [],
     constructionProjects: [],
-    deconstructOvershootLedger: [],
     depositTypes: [],
     deposits: [],
     events: [],

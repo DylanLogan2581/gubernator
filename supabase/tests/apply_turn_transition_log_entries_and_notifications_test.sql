@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (11);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -113,12 +113,13 @@ set
 where
   id = 'b1100000-0000-0000-0000-000000000001';
 
--- Five worlds, all at turn 5:
+-- Six worlds, all at turn 5:
 --   World 1: settlement-scoped test (settlement + nation manager + world admin)
 --   World 2: settlement-scoped, no active managers → falls back to world admins
 --   World 3: nation-scoped test (nation manager + world admin, no settlement manager)
 --   World 4: world-scoped test (only world admins, managers excluded)
 --   World 5: retry dedup test
+--   World 6: §C32e overshoot-stamp test
 insert into
   public.worlds (
     id,
@@ -164,6 +165,14 @@ values
   (
     'b1200000-0000-0000-0000-000000000005',
     'ATLN World 5',
+    'b1100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
+  ),
+  (
+    'b1200000-0000-0000-0000-000000000006',
+    'ATLN World 6',
     'b1100000-0000-0000-0000-000000000001',
     5,
     'private',
@@ -401,6 +410,41 @@ values
     6,
     'b1100000-0000-0000-0000-000000000001',
     'running'
+  ),
+  (
+    'b1300000-0000-0000-0000-000000000006',
+    'b1200000-0000-0000-0000-000000000006',
+    5,
+    6,
+    'b1100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
+-- Out-of-band overshoot log entry (turn_transition_id IS NULL — written by
+-- manual_deconstruct_settlement_building RPC before the turn ran).
+insert into
+  public.turn_log_entries (
+    id,
+    world_id,
+    log_category,
+    turn_transition_id,
+    payload_jsonb
+  )
+values
+  (
+    'b1600000-0000-0000-0000-000000000001',
+    'b1200000-0000-0000-0000-000000000006',
+    'manual_deconstruct_overshoot',
+    null,
+    '{"settlement_building_id":"test-building","current_citizens":8,"new_cap":5}'
+  ),
+  -- A second entry with a different category that must NOT be stamped.
+  (
+    'b1600000-0000-0000-0000-000000000002',
+    'b1200000-0000-0000-0000-000000000006',
+    'citizen.died_homeless',
+    null,
+    '{}'
   );
 
 -- ===========================================================================
@@ -812,5 +856,58 @@ select
   );
 
 reset role;
+
+-- ===========================================================================
+-- TEST SCENARIO 6: §C32e stamps manual_deconstruct_overshoot log entries that
+-- have turn_transition_id IS NULL; entries with other categories are left alone.
+-- World 6: one overshoot entry + one non-overshoot entry, both null-stamped before the call.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  public.apply_turn_transition (
+    'b1200000-0000-0000-0000-000000000006',
+    5,
+    '{}'::jsonb,
+    'b1300000-0000-0000-0000-000000000006'::uuid
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.turn_log_entries
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000006'
+        and log_category = 'manual_deconstruct_overshoot'
+        and turn_transition_id is not null
+    ),
+    1,
+    '§C32e: overshoot entry has turn_transition_id stamped after apply_turn_transition'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.turn_log_entries
+      where
+        world_id = 'b1200000-0000-0000-0000-000000000006'
+        and log_category = 'citizen.died_homeless'
+        and turn_transition_id is null
+    ),
+    1,
+    '§C32e: non-overshoot entry with null transition_id is not stamped'
+  );
 
 rollback;

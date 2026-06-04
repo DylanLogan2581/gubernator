@@ -4,7 +4,6 @@
 
 import type {
   CitizenDeath,
-  SimDeconstructOvershootEntry,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
@@ -12,7 +11,6 @@ import type {
 
 export type PhaseHomelessnessOutput = {
   readonly citizenDeaths: readonly CitizenDeath[];
-  readonly consumedOvershootEntries: readonly SimDeconstructOvershootEntry[];
   readonly logs: readonly SimulationLogEntry[];
   readonly notifications: readonly SimulationNotification[];
 };
@@ -23,7 +21,6 @@ export function phaseHomelessness(
   const {
     buildingTiers,
     citizens,
-    deconstructOvershootLedger,
     populationRules,
     settlementBuildings,
     settlements,
@@ -110,7 +107,6 @@ export function phaseHomelessness(
 
   return {
     citizenDeaths: allDeaths,
-    consumedOvershootEntries: deconstructOvershootLedger,
     logs: allLogs,
     notifications: allNotifications,
   };

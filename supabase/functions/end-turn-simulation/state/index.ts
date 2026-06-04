@@ -10,7 +10,6 @@ import {
 import {
   toBlueprintsAndTiers,
   toDeposits,
-  toOvershootLedger,
   toSimBuilding,
   toSimCitizen,
   toSimCitizenAssignment,
@@ -37,7 +36,6 @@ import {
   fetchJobs,
   fetchManagedPops,
   fetchManagedPopTypes,
-  fetchOvershoot,
   fetchPartnerships,
   fetchProjects,
   fetchResources,
@@ -162,7 +160,6 @@ export async function resolveSupabaseEndTurnSimulationInput(
     tradeRoutesResult,
     citizensResult,
     eventsResult,
-    overshootResult,
     assignmentsResult,
     partnershipsResult,
   ] = await Promise.all([
@@ -179,7 +176,6 @@ export async function resolveSupabaseEndTurnSimulationInput(
     fetchTradeRoutes(ctx, settlementIds),
     fetchCitizens(ctx, worldId),
     fetchEvents(ctx, worldId),
-    fetchOvershoot(ctx, worldId),
     fetchAssignments(ctx, worldId),
     fetchPartnerships(ctx, worldId),
   ]);
@@ -198,7 +194,6 @@ export async function resolveSupabaseEndTurnSimulationInput(
     tradeRoutesResult,
     citizensResult,
     eventsResult,
-    overshootResult,
     assignmentsResult,
     partnershipsResult,
   ];
@@ -246,9 +241,6 @@ export async function resolveSupabaseEndTurnSimulationInput(
     ).rows
       .filter(isProjectRow)
       .map(toSimProject),
-    deconstructOvershootLedger: toOvershootLedger(
-      (overshootResult as Extract<typeof overshootResult, { ok: true }>).rows,
-    ),
     depositTypes: (
       depositTypesResult as Extract<typeof depositTypesResult, { ok: true }>
     ).rows

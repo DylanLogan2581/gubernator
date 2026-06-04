@@ -11,7 +11,6 @@ import {
   fetchJobs,
   fetchManagedPops,
   fetchManagedPopTypes,
-  fetchOvershoot,
   fetchPartnerships,
   fetchProjects,
   fetchResources,
@@ -339,24 +338,6 @@ describe("fetchEvents", () => {
     expect(url).toContain("status=in.");
     expect(url).toContain("active");
     expect(url).toContain("pending");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// fetchOvershoot
-// ---------------------------------------------------------------------------
-
-describe("fetchOvershoot", () => {
-  it("filters by world_id=eq.<uuid> and log_category=eq.manual_deconstruct_overshoot", async () => {
-    const { calls } = stubFetch([]);
-
-    await fetchOvershoot(ctx, WORLD_ID);
-
-    const url = calls[0];
-    expect(url).toContain("/rest/v1/turn_log_entries");
-    expect(url).toContain(`world_id=eq.${WORLD_ID}`);
-    expect(url).toContain("log_category=eq.manual_deconstruct_overshoot");
-    expect(url).toContain("turn_transition_id=is.null");
   });
 });
 

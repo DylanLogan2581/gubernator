@@ -186,11 +186,6 @@ export type SupabaseEventRow = {
   readonly effect_payload_jsonb: unknown;
 };
 
-export type SupabaseOvershootRow = {
-  readonly settlement_id: string | null;
-  readonly payload_jsonb: unknown;
-};
-
 // ---------------------------------------------------------------------------
 // Type guards
 // ---------------------------------------------------------------------------
@@ -430,12 +425,5 @@ export function isEventRow(v: unknown): v is SupabaseEventRow {
     typeof v.status === "string" &&
     typeof v.effect_type === "string" &&
     typeof v.activate_on_transition_after_turn_number === "number"
-  );
-}
-
-export function isOvershootRow(v: unknown): v is SupabaseOvershootRow {
-  return (
-    isRecord(v) &&
-    (v.settlement_id === null || typeof v.settlement_id === "string")
   );
 }

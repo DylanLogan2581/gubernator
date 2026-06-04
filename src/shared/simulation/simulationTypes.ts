@@ -312,15 +312,6 @@ export type SimPartnership = {
   readonly status: SimPartnershipStatus;
 };
 
-// Tracks the resource overshoot when a building is manually deconstructed mid-turn
-// (i.e., upkeep costs that were partially or fully bypassed). The sim uses this
-// ledger to avoid double-charging or incorrectly crediting stockpiles.
-export type SimDeconstructOvershootEntry = {
-  readonly amount: number;
-  readonly resourceId: string;
-  readonly settlementBuildingId: string;
-};
-
 export type SimulationInputState = {
   readonly buildingBlueprints: readonly SimBuildingBlueprint[];
   readonly buildingTiers: readonly SimBuildingTier[];
@@ -328,7 +319,6 @@ export type SimulationInputState = {
   readonly citizenAssignments: readonly SimCitizenAssignment[];
   readonly citizens: readonly SimCitizen[];
   readonly constructionProjects: readonly SimConstructionProject[];
-  readonly deconstructOvershootLedger: readonly SimDeconstructOvershootEntry[];
   readonly depositTypes: readonly SimDepositType[];
   readonly deposits: readonly SimDeposit[];
   readonly events: readonly SimEvent[];

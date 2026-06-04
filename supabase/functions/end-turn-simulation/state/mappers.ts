@@ -4,7 +4,6 @@ import {
   isBlueprintRow,
   isDepositResourceRow,
   isDepositRow,
-  isOvershootRow,
   isTierRow,
 } from "./rowTypes.ts";
 
@@ -31,7 +30,6 @@ import type {
   SimCitizen,
   SimCitizenAssignment,
   SimConstructionProject,
-  SimDeconstructOvershootEntry,
   SimDeposit,
   SimDepositResource,
   SimDepositType,
@@ -381,45 +379,6 @@ export function toDeposits(rows: readonly unknown[]): SimDeposit[] {
       status: raw.status as SimDeposit["status"],
     }),
   );
-}
-
-export function toDeconstructOvershootEntries(row: {
-  readonly settlement_id: string | null;
-  readonly payload_jsonb: unknown;
-}): readonly SimDeconstructOvershootEntry[] {
-  const payload = row.payload_jsonb;
-  if (!isRecord(payload)) return [];
-
-  const buildingId = payload.settlement_building_id;
-  const currentCitizens = payload.current_citizens;
-  const newCap = payload.new_cap;
-
-  if (
-    typeof buildingId !== "string" ||
-    typeof currentCitizens !== "number" ||
-    typeof newCap !== "number"
-  ) {
-    return [];
-  }
-
-  const overshootAmount = Math.max(0, currentCitizens - newCap);
-  if (overshootAmount === 0) return [];
-
-  return [
-    {
-      amount: overshootAmount,
-      resourceId: "population",
-      settlementBuildingId: buildingId,
-    },
-  ];
-}
-
-export function toOvershootLedger(
-  rows: readonly unknown[],
-): SimDeconstructOvershootEntry[] {
-  return rows
-    .filter(isOvershootRow)
-    .flatMap((row) => toDeconstructOvershootEntries(row));
 }
 
 export function toWorldPopulationRules(

@@ -617,7 +617,6 @@ function buildFullInput(): SimulationInputState {
     citizenAssignments: CITIZEN_ASSIGNMENTS,
     citizens: CITIZENS,
     constructionProjects: CONSTRUCTION_PROJECTS,
-    deconstructOvershootLedger: [],
     depositTypes: DEPOSIT_TYPES,
     deposits: DEPOSITS,
     events: EVENTS,

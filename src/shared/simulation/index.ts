@@ -33,7 +33,6 @@ export type {
   SimCitizenType,
   SimConstructionProject,
   SimConstructionStatus,
-  SimDeconstructOvershootEntry,
   SimDeposit,
   SimDepositResource,
   SimDepositStatus,

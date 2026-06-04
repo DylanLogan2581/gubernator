@@ -282,23 +282,6 @@ export function fetchEvents(
   });
 }
 
-export function fetchOvershoot(
-  ctx: FetchContext,
-  worldId: string,
-): Promise<FetchRowsResult> {
-  return fetchRows({
-    ctx,
-    table: "turn_log_entries",
-    params: {
-      world_id: `eq.${worldId}`,
-      log_category: "eq.manual_deconstruct_overshoot",
-      turn_transition_id: "is.null",
-      order: "id.asc",
-      select: "settlement_id,payload_jsonb",
-    },
-  });
-}
-
 export function fetchAssignments(
   ctx: FetchContext,
   worldId: string,

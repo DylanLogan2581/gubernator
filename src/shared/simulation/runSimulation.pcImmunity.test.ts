@@ -106,7 +106,6 @@ function baseInput(
     citizenAssignments: [],
     citizens: [],
     constructionProjects: [],
-    deconstructOvershootLedger: [],
     depositTypes: [],
     deposits: [],
     events: [],

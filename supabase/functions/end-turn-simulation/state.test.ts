@@ -331,19 +331,6 @@ function makeAllSuccessResponses(): Record<
       ],
       status: 200,
     },
-    "/rest/v1/turn_log_entries": {
-      body: [
-        {
-          payload_jsonb: {
-            current_citizens: 8,
-            new_cap: 5,
-            settlement_building_id: BUILDING_ID,
-          },
-          settlement_id: SETTLEMENT_ID,
-        },
-      ],
-      status: 200,
-    },
     "/rest/v1/citizen_assignments": {
       body: [
         {
@@ -567,13 +554,6 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(event.effectType).toBe("resource_grant");
     expect(event.status).toBe("pending");
     expect(event.activateOnTransitionAfterTurnNumber).toBe(4);
-
-    // Deconstruct overshoot ledger
-    expect(input.deconstructOvershootLedger).toHaveLength(1);
-    const entry = input.deconstructOvershootLedger[0];
-    expect(entry.settlementBuildingId).toBe(BUILDING_ID);
-    expect(entry.amount).toBe(3); // 8 citizens - 5 cap
-    expect(entry.resourceId).toBe("population");
   });
 
   it("returns a state_unavailable error when auth header is missing", async () => {
@@ -735,7 +715,6 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/trade_routes": { body: [], status: 200 },
       "/rest/v1/citizens": { body: [], status: 200 },
       "/rest/v1/events": { body: [], status: 200 },
-      "/rest/v1/turn_log_entries": { body: [], status: 200 },
       "/rest/v1/citizen_assignments": { body: [], status: 200 },
       "/rest/v1/partnerships": { body: [], status: 200 },
     });
@@ -755,7 +734,6 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(input.buildingTiers).toHaveLength(0);
     expect(input.citizenAssignments).toHaveLength(0);
     expect(input.citizens).toHaveLength(0);
-    expect(input.deconstructOvershootLedger).toHaveLength(0);
     expect(input.deposits).toHaveLength(0);
     expect(input.events).toHaveLength(0);
     expect(input.managedPopulations).toHaveLength(0);

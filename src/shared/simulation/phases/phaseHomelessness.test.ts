@@ -117,7 +117,6 @@ function makeContext(
     citizenAssignments: [],
     citizens: [],
     constructionProjects: [],
-    deconstructOvershootLedger: [],
     depositTypes: [],
     deposits: [],
     jobs: [],
@@ -533,36 +532,6 @@ describe("phaseHomelessness", () => {
 
       const aliveAfter = 7 - result.citizenDeaths.length;
       expect(aliveAfter).toBe(3);
-    });
-  });
-
-  describe("overshoot ledger pass-through", () => {
-    it("passes deconstructOvershootLedger through as consumedOvershootEntries", () => {
-      const { building, tier } = makeCapBuilding("s1", 10);
-      const ledgerEntry = {
-        amount: 5,
-        resourceId: "res-1",
-        settlementBuildingId: "b-1",
-      };
-      const ctx = makeContext({
-        buildingTiers: [tier],
-        citizens: [],
-        deconstructOvershootLedger: [ledgerEntry],
-        settlementBuildings: [building],
-      });
-
-      const result = phaseHomelessness(ctx);
-
-      expect(result.consumedOvershootEntries).toHaveLength(1);
-      expect(result.consumedOvershootEntries[0]).toEqual(ledgerEntry);
-    });
-
-    it("returns empty consumedOvershootEntries when ledger is empty", () => {
-      const ctx = makeContext({ deconstructOvershootLedger: [] });
-
-      const result = phaseHomelessness(ctx);
-
-      expect(result.consumedOvershootEntries).toHaveLength(0);
     });
   });
 
