@@ -286,6 +286,10 @@ read snapshots for that world.
 
 Direct `INSERT`, `UPDATE`, and `DELETE` through the table API are blocked for all roles
 including World Admin; mutations route exclusively through `apply_turn_transition`.
+Super Admin retains a **DELETE escape hatch** (RLS policy `*_delete_super_admin`) for
+incident recovery — e.g., purging a corrupted snapshot row without a full DB migration.
+Direct `INSERT` is blocked even for Super Admin (the INSERT grant is revoked); re-seed via
+the RPC or a direct Postgres/service-role connection if needed.
 
 Key snapshot tables:
 

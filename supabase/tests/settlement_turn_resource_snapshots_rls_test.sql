@@ -3,9 +3,9 @@
 --
 -- RLS matrix:
 --   SELECT  — world-access reads succeed (owner, world admin, super admin, PC holder)
---   INSERT  — admin-only (world admin or super admin); non-admins and PC-holders denied
---   UPDATE  — blocked for all authenticated callers (column grant; append-only table)
---   DELETE  — admin-only
+--   INSERT  — blocked for all authenticated callers (grant revoked; RPC is sole write path)
+--   UPDATE  — blocked for all authenticated callers (grant revoked; append-only table)
+--   DELETE  — super admin only (incident-recovery escape hatch); world admin denied
 --   cross-world reads/writes denied for outsiders
 --
 -- UUID ranges (all numeric/hex, unique to this file):
@@ -16,7 +16,7 @@
 begin;
 
 select
-  plan (13);
+  plan (14);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -227,6 +227,16 @@ values
     3,
     100.0,
     90.0
+  ),
+  (
+    'e8000000-0000-0000-0000-000000000002',
+    'e5000000-0000-0000-0000-000000000001',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-000000000001',
+    'e6000000-0000-0000-0000-000000000002',
+    3,
+    50.0,
+    40.0
   );
 
 -- ===========================================================================
@@ -320,7 +330,7 @@ select
 reset role;
 
 -- ===========================================================================
--- WORLD ADMIN: can read and manage snapshots in the administered world
+-- WORLD ADMIN: can read snapshots; direct INSERT/UPDATE/DELETE are denied
 -- ===========================================================================
 set
   local role authenticated;
@@ -342,7 +352,7 @@ select
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.settlement_turn_resource_snapshots (
       id, turn_transition_id, world_id, settlement_id, resource_id, turn_number,
@@ -356,7 +366,9 @@ select
       3, 50.0, 40.0
     )
     $test$,
-    'world admin can insert a resource snapshot row'
+    '42501',
+    null,
+    'world admin cannot directly insert a resource snapshot row (INSERT grant revoked)'
   );
 
 select
@@ -364,26 +376,29 @@ select
     $test$
     update public.settlement_turn_resource_snapshots
     set turn_number = 99
-    where id = 'e8000000-0000-0000-0000-000000000002'
+    where id = 'e8000000-0000-0000-0000-000000000001'
     $test$,
     '42501',
     null,
-    'world admin cannot directly update a resource snapshot row (column grant enforces append-only)'
+    'world admin cannot directly update a resource snapshot row (grant revoked; append-only)'
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     delete from public.settlement_turn_resource_snapshots
-    where id = 'e8000000-0000-0000-0000-000000000002'
+    where id = 'e8000000-0000-0000-0000-000000000001'
     $test$,
-    'world admin can delete a resource snapshot row'
+    '42501',
+    null,
+    'world admin cannot directly delete a resource snapshot row (policy dropped)'
   );
 
 reset role;
 
 -- ===========================================================================
--- SUPER ADMIN: can read across worlds and insert into any world
+-- SUPER ADMIN: can read across worlds; INSERT blocked (grant revoked);
+-- DELETE allowed as incident-recovery escape hatch
 -- ===========================================================================
 set
   local role authenticated;
@@ -405,7 +420,7 @@ select
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.settlement_turn_resource_snapshots (
       id, turn_transition_id, world_id, settlement_id, resource_id, turn_number,
@@ -419,7 +434,18 @@ select
       3, 200.0, 180.0
     )
     $test$,
-    'super admin can insert a resource snapshot row in any world'
+    '42501',
+    null,
+    'super admin cannot directly insert a resource snapshot row (INSERT grant revoked; use RPC)'
+  );
+
+select
+  lives_ok (
+    $test$
+    delete from public.settlement_turn_resource_snapshots
+    where id = 'e8000000-0000-0000-0000-000000000002'
+    $test$,
+    'super admin can delete a resource snapshot row (incident-recovery escape hatch)'
   );
 
 reset role;
