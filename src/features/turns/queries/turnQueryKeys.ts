@@ -14,4 +14,6 @@ export const turnQueryKeys = {
       "latest-settlement-transition-outcome",
       settlementId,
     ] as const,
+  latestSettlementTransitionOutcomeAll: () =>
+    [...turnQueryKeys.all, "latest-settlement-transition-outcome"] as const,
 } as const;

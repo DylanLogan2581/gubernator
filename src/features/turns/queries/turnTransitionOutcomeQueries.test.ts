@@ -5,6 +5,7 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import { endTurnTransitionMutationOptions } from "../mutations/endTurnTransitionMutations";
 
+import { turnQueryKeys } from "./turnQueryKeys";
 import {
   latestSettlementTransitionOutcomeQueryOptions,
   latestWorldTransitionOutcomeQueryOptions,
@@ -19,11 +20,9 @@ describe("latestWorldTransitionOutcomeQueryOptions", () => {
       {} as GubernatorSupabaseClient,
     );
 
-    expect(options.queryKey).toEqual([
-      "turns",
-      "latest-transition-outcome",
-      "world-1",
-    ]);
+    expect(options.queryKey).toEqual(
+      turnQueryKeys.latestTransitionOutcome("world-1"),
+    );
   });
 });
 
@@ -34,11 +33,9 @@ describe("latestSettlementTransitionOutcomeQueryOptions", () => {
       {} as GubernatorSupabaseClient,
     );
 
-    expect(options.queryKey).toEqual([
-      "turns",
-      "latest-settlement-transition-outcome",
-      "settlement-1",
-    ]);
+    expect(options.queryKey).toEqual(
+      turnQueryKeys.latestSettlementTransitionOutcome("settlement-1"),
+    );
   });
 });
 
@@ -65,7 +62,7 @@ describe("endTurnTransitionMutationOptions cache invalidation", () => {
     });
 
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ["turns", "latest-transition-outcome", "world-1"],
+      queryKey: turnQueryKeys.latestTransitionOutcome("world-1"),
     });
   });
 
@@ -89,7 +86,7 @@ describe("endTurnTransitionMutationOptions cache invalidation", () => {
     });
 
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ["turns", "latest-settlement-transition-outcome"],
+      queryKey: turnQueryKeys.latestSettlementTransitionOutcomeAll(),
     });
   });
 });
