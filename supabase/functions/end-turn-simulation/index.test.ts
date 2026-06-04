@@ -98,14 +98,13 @@ function makeStateResponses(): Record<
   };
 }
 
-/** Stubs Deno.env with the three keys all sub-modules require. */
+/** Stubs Deno.env with the keys all sub-modules require. */
 function stubDenoEnv(): void {
   vi.stubGlobal("Deno", {
     env: {
       get: (name: string): string | undefined => {
         if (name === "SUPABASE_URL") return "http://localhost:54321";
         if (name === "SUPABASE_ANON_KEY") return "test-anon-key";
-        if (name === "SUPABASE_SERVICE_ROLE_KEY") return "test-service-key";
         return undefined;
       },
     },
