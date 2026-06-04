@@ -260,9 +260,11 @@ export function phasePartnerships(
   for (const settlement of settlements) {
     const sid = settlement.id;
 
-    // Eligible for partnership formation: alive, unpaired, of age, not in mourning
+    // Eligible for partnership formation: alive, not dying this turn, unpaired,
+    // of age, not in mourning
     const eligible = Array.from(citizenById.values()).filter((c) => {
       if (c.status !== "alive") return false;
+      if (priorDeadIds.has(c.id)) return false;
       if (c.settlementId !== sid) return false;
       if (pairedCitizenIds.has(c.id)) return false;
       if (inMourningCitizenIds.has(c.id)) return false;

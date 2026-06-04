@@ -428,6 +428,30 @@ describe("phasePartnerships", () => {
       expect(formed).toHaveLength(1);
     });
 
+    it("citizen dying this turn (in priorDeadIds) is excluded from eligibility even if status=alive in input", () => {
+      // c-male starved in phase 8 but is still status='alive' in input state.
+      // c-female is a live survivor. With seek chance = 1, a partnership would
+      // form without the priorDeadIds guard. With the guard, c-male is excluded
+      // so no eligible males remain.
+      const ctx = makeContext({
+        citizens: [
+          makeNpc("c-male", "s1", "male", 0),
+          makeNpc("c-female", "s1", "female", 0),
+        ],
+        populationRules: { ...BASE_POPULATION_RULES, partnershipSeekChance: 1 },
+      });
+      const priorDeaths: CitizenDeath[] = [
+        { category: "starvation", citizenId: "c-male", detail: null },
+      ];
+
+      const result = phasePartnerships(ctx, priorDeaths);
+
+      const formed = result.partnershipChanges.filter(
+        (c) => c.type === "formed",
+      );
+      expect(formed).toHaveLength(0);
+    });
+
     it("mourning period blocks partnership formation", () => {
       // turnNumber=20, mourningPeriodTurns=3, endedOnTurnNumber=18 → 20-18=2 ≤ 3 → in mourning
       const ctx = makeContext({

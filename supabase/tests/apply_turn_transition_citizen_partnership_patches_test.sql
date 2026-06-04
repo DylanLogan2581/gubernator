@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (11);
+  plan (12);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -796,6 +796,131 @@ select
         and tt.world_id = 'a9200000-0000-0000-0000-000000000007'
     ) = 1,
     'overshoot stamp: manual_deconstruct_overshoot entry linked to the transition'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 8: partnership formation with a dead citizen raises P0001
+-- Issue #499 / review finding H1: citizenDeaths are applied before
+-- partnershipChanges in the same payload. After the engine fix, this payload
+-- combination is never produced. The RPC guard rejects it if it somehow arrives.
+-- ===========================================================================
+-- Fixtures for World 8
+insert into
+  public.worlds (
+    id,
+    name,
+    owner_id,
+    current_turn_number,
+    visibility,
+    status
+  )
+values
+  (
+    'a9200000-0000-0000-0000-000000000008',
+    'ATTCP Dead Partner World',
+    'a9100000-0000-0000-0000-000000000001',
+    5,
+    'private',
+    'active'
+  );
+
+insert into
+  public.nations (id, world_id, name)
+values
+  (
+    'a9300000-0000-0000-0000-000000000008',
+    'a9200000-0000-0000-0000-000000000008',
+    'ATTCP Nation 8'
+  );
+
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'a9400000-0000-0000-0000-000000000008',
+    'a9300000-0000-0000-0000-000000000008',
+    'ATTCP Settlement 8'
+  );
+
+-- Two NPCs: c9 will be killed in the same payload that attempts to partner them.
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status
+  )
+values
+  (
+    'a9500000-0000-0000-0000-000000000009',
+    'a9200000-0000-0000-0000-000000000008',
+    'a9400000-0000-0000-0000-000000000008',
+    'npc',
+    'ATTCP Starved NPC',
+    'alive'
+  ),
+  (
+    'a9500000-0000-0000-0000-000000000010',
+    'a9200000-0000-0000-0000-000000000008',
+    'a9400000-0000-0000-0000-000000000008',
+    'npc',
+    'ATTCP Survivor NPC',
+    'alive'
+  );
+
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    'a9300000-0000-0000-0000-000000000008',
+    'a9200000-0000-0000-0000-000000000008',
+    5,
+    6,
+    'a9100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
+select
+  throws_ok (
+    $test$
+    select public.apply_turn_transition(
+      'a9200000-0000-0000-0000-000000000008',
+      5,
+      jsonb_build_object(
+        'citizenDeaths',
+        jsonb_build_array(
+          jsonb_build_object(
+            'citizenId', 'a9500000-0000-0000-0000-000000000009',
+            'deathCauseCategory', 'starvation',
+            'deathCause', 'insufficient food'
+          )
+        ),
+        'partnershipChanges',
+        jsonb_build_array(
+          jsonb_build_object(
+            'citizenAId', 'a9500000-0000-0000-0000-000000000009',
+            'citizenBId', 'a9500000-0000-0000-0000-000000000010',
+            'toStatus', 'active',
+            'formedOnTurnNumber', 6,
+            'endedOnTurnNumber', null
+          )
+        )
+      ),
+      'a9300000-0000-0000-0000-000000000008'::uuid
+    )
+  $test$,
+    'P0001',
+    null,
+    'dead-partner guard: partnership formation with a dead citizen raises P0001'
   );
 
 reset role;
