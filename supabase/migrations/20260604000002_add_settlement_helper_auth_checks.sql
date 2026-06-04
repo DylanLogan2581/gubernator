@@ -10,11 +10,11 @@
 --                          (manual_deconstruct_settlement_building, etc.) use
 --                          these directly; they run as the function owner
 --                          (postgres) so PostgreSQL grants them access.
---   public wrappers       — enforce world access for authenticated PostgREST
---                          callers (auth.uid() is non-null).  Callers with a
---                          null auth.uid() (postgres superuser, service-role,
---                          pgTAP tests) bypass the check and hit the internal
---                          variant directly.
+--   public wrappers       — always enforce world access; raises 42501 for
+--                          any caller (including anon and postgres superuser)
+--                          that lacks a valid session in the settlement's world.
+--                          Functional pgTAP tests for these helpers supply a
+--                          world-owner JWT so the check is satisfied.
 -- ---------------------------------------------------------------------------
 -- ===========================================================================
 -- INTERNAL VARIANTS (no auth check, private)
