@@ -703,4 +703,22 @@ describe("runSimulation — determinism", () => {
     expect(result.resourceSnapshots.length).toBeGreaterThan(0);
     expect(result.settlementSnapshots.length).toBeGreaterThan(0);
   });
+
+  it("resource snapshot balance equation holds for every snapshot including clamped resources", () => {
+    // Verifies: quantityAfter = quantityBefore + produced + tradeIn - consumed - tradeOut
+    // The coins stockpile in this scenario is clamped (498 + 4 passive > cap 500),
+    // which exercises the clamp-delta accounting path added in the fix for #520.
+    const input = buildFullInput();
+    const result = runSimulation(input, "fixed-uuid");
+
+    for (const snap of result.resourceSnapshots) {
+      const expected =
+        snap.quantityBefore +
+        snap.produced +
+        snap.tradeIn -
+        snap.consumed -
+        snap.tradeOut;
+      expect(expected).toBe(snap.quantityAfter);
+    }
+  });
 });

@@ -88,6 +88,26 @@ totals between phases.
 | 12  | `stockpileClamp`     | Stockpiles are clamped to `[0, effectiveStorageCap]`. Caps are pre-computed from the input state before any phase runs, so building-upkeep auto-deconstructions in phase 4 do not shrink caps mid-turn.                                                                                     |
 | 13  | `logsAndSnapshots`   | Collects phase outputs and assembles `ResourceSnapshot` and `SettlementSnapshot` records. Produces no mutations.                                                                                                                                                                            |
 
+### Snapshot accounting model
+
+Each `ResourceSnapshot` satisfies the balance equation:
+
+```
+quantityAfter = quantityBefore + produced + tradeIn − consumed − tradeOut
+```
+
+Phase 12 (stockpile clamp) deltas are classified into the same `produced`/`consumed`
+buckets to preserve this invariant:
+
+- A **positive** clamp delta (a stockpile that went negative and is raised back to 0)
+  is counted as `produced`.
+- A **negative** clamp delta (an over-cap stockpile that is lowered to the cap) is
+  counted as `consumed`.
+
+When phase 11 (events) gains stockpile-affecting effects in a future epic, those deltas
+must receive the same treatment (positives → `produced`, negatives → `consumed`) so the
+balance equation continues to hold.
+
 ---
 
 ## Determinism model

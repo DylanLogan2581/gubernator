@@ -245,11 +245,17 @@ export function runSimulation(
   // productionDeltas: positive deltas from production phases.
   // consumptionDeltas: negative deltas from consumption phases.
   // tradeRouteDeltas: all deltas from phaseTradeRoutes (split internally by builder).
+  //
+  // Phase 12 (stockpileClamp) deltas are included here so the snapshot balance
+  // equation holds: quantityAfter = quantityBefore + produced + tradeIn - consumed - tradeOut.
+  // A positive clamp delta (negative stockpile raised to 0) joins production;
+  // a negative clamp delta (over-cap stockpile lowered) joins consumption.
   const productionDeltas: StockpileDelta[] = [
     ...p1.stockpileDeltas.filter((d) => d.delta > 0),
     ...p2.stockpileDeltas.filter((d) => d.delta > 0),
     ...p5.stockpileDeltas,
     ...p7.stockpileDeltas.filter((d) => d.delta > 0),
+    ...p12.stockpileDeltas.filter((d) => d.delta > 0),
   ];
   const consumptionDeltas: StockpileDelta[] = [
     ...p1.stockpileDeltas.filter((d) => d.delta < 0),
@@ -258,6 +264,7 @@ export function runSimulation(
     ...p4.stockpileDeltas,
     ...p7.stockpileDeltas.filter((d) => d.delta < 0),
     ...p8.stockpileDeltas,
+    ...p12.stockpileDeltas.filter((d) => d.delta < 0),
   ];
 
   const p13 = phaseLogsAndSnapshots(context, {
