@@ -238,10 +238,11 @@ describe("persistSimulationTransition — error code mapping", () => {
     expect(result.status).toBe(403);
   });
 
-  it("maps P0001 with 'archived' to end_turn_world_archived (409)", async () => {
+  it("maps P0001 with hint='world_archived' to end_turn_world_archived (409)", async () => {
     stubEnvAndFetch({
       body: {
         code: "P0001",
+        hint: "world_archived",
         message: "world is archived and cannot be advanced",
       },
       status: 500,
@@ -260,9 +261,13 @@ describe("persistSimulationTransition — error code mapping", () => {
     expect(result.status).toBe(409);
   });
 
-  it("maps P0001 with 'stale' to end_turn_stale_expected_turn (409)", async () => {
+  it("maps P0001 with hint='stale_expected_turn' to end_turn_stale_expected_turn (409)", async () => {
     stubEnvAndFetch({
-      body: { code: "P0001", message: "stale expected turn number" },
+      body: {
+        code: "P0001",
+        hint: "stale_expected_turn",
+        message: "stale expected turn number",
+      },
       status: 500,
     });
 
@@ -279,7 +284,30 @@ describe("persistSimulationTransition — error code mapping", () => {
     expect(result.status).toBe(409);
   });
 
-  it("maps other P0001 errors to end_turn_transition_failed (500)", async () => {
+  it("maps P0001 with hint='state_drifted' to end_turn_state_drifted (409)", async () => {
+    stubEnvAndFetch({
+      body: {
+        code: "P0001",
+        hint: "state_drifted",
+        message: "state diverged: stockpile was 10 but payload claimed 5",
+      },
+      status: 500,
+    });
+
+    const result = await persistSimulationTransition(
+      makeRequestBody(),
+      makeMinimalPayload(),
+      makeAuthContext(),
+      TRANSITION_ID,
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("type narrowing");
+    expect(result.error.error.code).toBe("end_turn_state_drifted");
+    expect(result.status).toBe(409);
+  });
+
+  it("maps P0001 without a recognised hint to end_turn_transition_failed (500)", async () => {
     stubEnvAndFetch({
       body: {
         code: "P0001",

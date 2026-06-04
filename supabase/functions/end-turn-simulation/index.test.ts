@@ -423,6 +423,7 @@ describe("handleEndTurnSimulationRequest", () => {
         "rpc/apply_turn_transition": {
           body: {
             code: "P0001",
+            hint: "world_archived",
             message: "world is archived and cannot be advanced",
           },
           status: 500,
@@ -451,7 +452,11 @@ describe("handleEndTurnSimulationRequest", () => {
     it("returns 409 when the persist RPC reports a stale expected turn", async () => {
       stubFullCycle({
         "rpc/apply_turn_transition": {
-          body: { code: "P0001", message: "stale expected turn number" },
+          body: {
+            code: "P0001",
+            hint: "stale_expected_turn",
+            message: "stale expected turn number",
+          },
           status: 500,
         },
       });

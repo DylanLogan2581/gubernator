@@ -13,6 +13,7 @@ import type {
 
 type SupabaseRpcError = {
   readonly code: string;
+  readonly hint?: string;
   readonly message: string;
 };
 
@@ -191,7 +192,7 @@ function rpcErrorToStartResult(
   }
 
   if (error.code === "P0001") {
-    if (error.message.includes("archived")) {
+    if (error.hint === "world_archived") {
       return {
         error: createErrorResponse({
           code: "end_turn_world_archived",
@@ -202,7 +203,7 @@ function rpcErrorToStartResult(
       };
     }
 
-    if (error.message.includes("stale")) {
+    if (error.hint === "stale_expected_turn") {
       return {
         error: createErrorResponse({
           code: "end_turn_stale_expected_turn",
@@ -241,7 +242,7 @@ function rpcErrorToResult(
   }
 
   if (error.code === "P0001") {
-    if (error.message.includes("archived")) {
+    if (error.hint === "world_archived") {
       return {
         error: createErrorResponse({
           code: "end_turn_world_archived",
@@ -252,7 +253,7 @@ function rpcErrorToResult(
       };
     }
 
-    if (error.message.includes("stale")) {
+    if (error.hint === "stale_expected_turn") {
       return {
         error: createErrorResponse({
           code: "end_turn_stale_expected_turn",
@@ -263,7 +264,7 @@ function rpcErrorToResult(
       };
     }
 
-    if (error.message.includes("state diverged")) {
+    if (error.hint === "state_drifted") {
       return {
         error: createErrorResponse({
           code: "end_turn_state_drifted",
