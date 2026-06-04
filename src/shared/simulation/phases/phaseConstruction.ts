@@ -3,6 +3,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import type {
+  AssignmentClear,
   BuildingCreated,
   ConstructionUpdate,
   SimulationContext,
@@ -12,6 +13,7 @@ import type {
 } from "../simulationTypes.ts";
 
 export type PhaseConstructionOutput = {
+  readonly assignmentClears: readonly AssignmentClear[];
   readonly buildingsCreated: readonly BuildingCreated[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
   readonly logs: readonly SimulationLogEntry[];
@@ -68,6 +70,22 @@ export function phaseConstruction(
     arr.sort((a, b) => a.queuePosition - b.queuePosition);
   }
 
+  // Build map of construction pool citizen IDs per settlement.
+  const constructionWorkersBySettlement = new Map<string, string[]>();
+  for (const assignment of citizenAssignments) {
+    if (assignment.assignmentType !== "construction_project") continue;
+    const citizen = citizenById.get(assignment.citizenId);
+    if (citizen === undefined || citizen.settlementId === null) continue;
+    const sid = citizen.settlementId;
+    const arr = constructionWorkersBySettlement.get(sid);
+    if (arr === undefined) {
+      constructionWorkersBySettlement.set(sid, [assignment.citizenId]);
+    } else {
+      arr.push(assignment.citizenId);
+    }
+  }
+
+  const allAssignmentClears: AssignmentClear[] = [];
   const allLogs: SimulationLogEntry[] = [];
   const allNotifications: SimulationNotification[] = [];
   const allConstructionUpdates: ConstructionUpdate[] = [];
@@ -157,6 +175,14 @@ export function phaseConstruction(
       });
 
       if (isComplete) {
+        for (const citizenId of constructionWorkersBySettlement.get(sid) ??
+          []) {
+          allAssignmentClears.push({
+            citizenId,
+            reason: "construction_project_completed",
+          });
+        }
+
         allBuildingsCreated.push({
           buildingBlueprintId: project.buildingBlueprintId,
           settlementId: sid,
@@ -198,6 +224,7 @@ export function phaseConstruction(
   }
 
   return {
+    assignmentClears: allAssignmentClears,
     buildingsCreated: allBuildingsCreated,
     constructionUpdates: allConstructionUpdates,
     logs: allLogs,

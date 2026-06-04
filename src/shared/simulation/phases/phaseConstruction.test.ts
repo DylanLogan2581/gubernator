@@ -534,6 +534,58 @@ describe("phaseConstruction", () => {
     expect(result.logs).toHaveLength(0);
   });
 
+  it("emits AssignmentClear for all construction workers when a project completes", () => {
+    const tier = makeTier("t1", "bp1", 2);
+    const project = makeProject("p1", "s1", "t1", "bp1", {
+      workerTurnsRequired: 2,
+      progressWorkerTurns: 0,
+    });
+    const ctx = makeContext({
+      settlements: [makeSettlement("s1")],
+      buildingTiers: [tier],
+      constructionProjects: [project],
+      citizens: [makeCitizen("c1", "s1"), makeCitizen("c2", "s1")],
+      citizenAssignments: [
+        makeConstructionAssignment("c1", null),
+        makeConstructionAssignment("c2", null),
+      ],
+    });
+
+    const result = phaseConstruction(ctx);
+
+    expect(result.constructionUpdates[0]?.toStatus).toBe("complete");
+    expect(result.assignmentClears).toHaveLength(2);
+    const clearedIds = result.assignmentClears.map((a) => a.citizenId);
+    expect(clearedIds).toContain("c1");
+    expect(clearedIds).toContain("c2");
+    expect(
+      result.assignmentClears.every(
+        (a) => a.reason === "construction_project_completed",
+      ),
+    ).toBe(true);
+  });
+
+  it("does not emit AssignmentClear when a project only advances without completing", () => {
+    const tier = makeTier("t1", "bp1", 10);
+    const project = makeProject("p1", "s1", "t1", "bp1", {
+      status: "in_progress",
+      workerTurnsRequired: 10,
+      progressWorkerTurns: 0,
+    });
+    const ctx = makeContext({
+      settlements: [makeSettlement("s1")],
+      buildingTiers: [tier],
+      constructionProjects: [project],
+      citizens: [makeCitizen("c1", "s1")],
+      citizenAssignments: [makeConstructionAssignment("c1", null)],
+    });
+
+    const result = phaseConstruction(ctx);
+
+    expect(result.constructionUpdates[0]?.toStatus).toBeNull();
+    expect(result.assignmentClears).toHaveLength(0);
+  });
+
   it("idle pool members with null constructionProjectId still count toward pool size", () => {
     // Per §11.2: idle pool members keep assignment with constructionProjectId=null
     const tier = makeTier("t1", "bp1", 1);

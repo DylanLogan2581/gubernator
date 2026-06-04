@@ -318,7 +318,11 @@ export function runSimulation(
   ];
 
   return {
-    assignmentClears: [...p2.assignmentClears, ...p7.assignmentClears],
+    assignmentClears: [
+      ...p2.assignmentClears,
+      ...p3.assignmentClears,
+      ...p7.assignmentClears,
+    ],
     buildingStateChanges: p4.buildingStateChanges,
     buildingsCreated: p3.buildingsCreated,
     citizenBirths: p9.citizenBirths,

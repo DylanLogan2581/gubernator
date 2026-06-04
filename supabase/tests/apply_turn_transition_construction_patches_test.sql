@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (18);
+  plan (20);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -105,6 +105,14 @@ values
     3,
     'private',
     'active'
+  ),
+  (
+    'a6200000-0000-0000-0000-000000000007',
+    'ATTCP Assignment Clear World',
+    'a6100000-0000-0000-0000-000000000001',
+    3,
+    'private',
+    'active'
   );
 
 -- One nation per world
@@ -140,6 +148,11 @@ values
     'a6300000-0000-0000-0000-000000000006',
     'a6200000-0000-0000-0000-000000000006',
     'ATTCP Nation 6'
+  ),
+  (
+    'a6300000-0000-0000-0000-000000000007',
+    'a6200000-0000-0000-0000-000000000007',
+    'ATTCP Nation 7'
   );
 
 -- One settlement per world
@@ -175,6 +188,11 @@ values
     'a6400000-0000-0000-0000-000000000006',
     'a6300000-0000-0000-0000-000000000006',
     'ATTCP Settlement 6'
+  ),
+  (
+    'a6400000-0000-0000-0000-000000000007',
+    'a6300000-0000-0000-0000-000000000007',
+    'ATTCP Settlement 7'
   );
 
 -- One building blueprint per world (max_instances_per_settlement = NULL → no cap)
@@ -216,6 +234,12 @@ values
     'a6200000-0000-0000-0000-000000000006',
     'ATTCP Granary 6',
     'attcp-granary-6'
+  ),
+  (
+    'a6500000-0000-0000-0000-000000000007',
+    'a6200000-0000-0000-0000-000000000007',
+    'ATTCP Granary 7',
+    'attcp-granary-7'
   );
 
 -- One tier per blueprint (tier 1, 10 worker-turns required)
@@ -260,6 +284,12 @@ values
   (
     'a6600000-0000-0000-0000-000000000006',
     'a6500000-0000-0000-0000-000000000006',
+    1,
+    10
+  ),
+  (
+    'a6600000-0000-0000-0000-000000000007',
+    'a6500000-0000-0000-0000-000000000007',
     1,
     10
   );
@@ -315,6 +345,16 @@ values
     'queued',
     2,
     0
+  ),
+  -- P7: World 7, status=in_progress (will complete, clearing worker assignment)
+  (
+    'a6700000-0000-0000-0000-000000000007',
+    'a6400000-0000-0000-0000-000000000007',
+    'a6500000-0000-0000-0000-000000000007',
+    'a6600000-0000-0000-0000-000000000007',
+    'in_progress',
+    1,
+    8
   );
 
 -- Pre-existing buildings for state-change scenarios:
@@ -417,6 +457,50 @@ values
     4,
     'a6100000-0000-0000-0000-000000000001',
     'running'
+  ),
+  (
+    'a6300000-0000-0000-0000-000000000007',
+    'a6200000-0000-0000-0000-000000000007',
+    3,
+    4,
+    'a6100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
+-- One construction pool worker for World 7 (assignment_type='construction_project',
+-- construction_project_id=null per §11.2 pool model).
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    name,
+    status
+  )
+values
+  (
+    'a6900000-0000-0000-0000-000000000007',
+    'a6200000-0000-0000-0000-000000000007',
+    'a6400000-0000-0000-0000-000000000007',
+    'npc',
+    'ATTCP Worker 7',
+    'alive'
+  );
+
+insert into
+  public.citizen_assignments (
+    citizen_id,
+    assignment_type,
+    construction_project_id,
+    assigned_on_turn_number
+  )
+values
+  (
+    'a6900000-0000-0000-0000-000000000007',
+    'construction_project',
+    null,
+    3
   );
 
 -- ===========================================================================
@@ -897,6 +981,82 @@ select
     ),
     0,
     'building recovery: missed_upkeep_count reset to 0'
+  );
+
+-- ===========================================================================
+-- TEST SCENARIO 7: construction completion clears worker assignments
+-- Project P7 completes; the construction pool worker's citizen_assignments row
+-- is removed via assignmentClears in the same payload.
+-- ===========================================================================
+-- Pre-condition: worker assignment exists before the transition.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.citizen_assignments ca
+      where
+        ca.citizen_id = 'a6900000-0000-0000-0000-000000000007'
+    ),
+    1,
+    'assignment clear pre-condition: citizen_assignments row exists before transition'
+  );
+
+select
+  public.apply_turn_transition (
+    'a6200000-0000-0000-0000-000000000007',
+    3,
+    jsonb_build_object(
+      'constructionUpdates',
+      jsonb_build_array(
+        jsonb_build_object(
+          'projectId',
+          'a6700000-0000-0000-0000-000000000007',
+          'status',
+          'complete',
+          'progressWorkerTurns',
+          10,
+          'activatedOnTurnNumber',
+          3
+        )
+      ),
+      'buildingsCreated',
+      jsonb_build_array(
+        jsonb_build_object(
+          'settlementId',
+          'a6400000-0000-0000-0000-000000000007',
+          'buildingBlueprintId',
+          'a6500000-0000-0000-0000-000000000007',
+          'currentTierId',
+          'a6600000-0000-0000-0000-000000000007',
+          'sourceProjectId',
+          'a6700000-0000-0000-0000-000000000007'
+        )
+      ),
+      'assignmentClears',
+      jsonb_build_array(
+        jsonb_build_object(
+          'citizenId',
+          'a6900000-0000-0000-0000-000000000007'
+        )
+      )
+    ),
+    'a6300000-0000-0000-0000-000000000007'::uuid
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.citizen_assignments ca
+      where
+        ca.citizen_id = 'a6900000-0000-0000-0000-000000000007'
+    ),
+    0,
+    'assignment clear: citizen_assignments row deleted after construction project completes'
   );
 
 reset role;
