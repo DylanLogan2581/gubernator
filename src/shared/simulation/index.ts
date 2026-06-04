@@ -145,9 +145,6 @@ export type { PhaseLogsAndSnapshotsAccumulator } from "./phases/phaseLogsAndSnap
 
 export { buildResourceSnapshots } from "./outcomes/resourceSnapshotBuilder.ts";
 
-export { buildNotification } from "./outcomes/notificationBuilder.ts";
-export type { NotificationBuildInput } from "./outcomes/notificationBuilder.ts";
-
 export {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,
