@@ -272,6 +272,7 @@ function createSettlementFilterClient(
   const transitionBuilder: Record<string, unknown> = {};
   transitionBuilder.select = vi.fn(() => transitionBuilder);
   transitionBuilder.eq = vi.fn(() => transitionBuilder);
+  transitionBuilder.returns = vi.fn(() => transitionBuilder);
   transitionBuilder.maybeSingle = vi
     .fn()
     .mockResolvedValue({ data: row, error: null });

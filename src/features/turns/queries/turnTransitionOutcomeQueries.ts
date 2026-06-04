@@ -220,6 +220,7 @@ async function getLatestWorldTransitionOutcome(
     .eq("world_id", worldId)
     .order("started_at", { ascending: false })
     .limit(1)
+    .returns<TransitionOutcomeRow[]>()
     .maybeSingle();
 
   if (error !== null) {
@@ -230,7 +231,7 @@ async function getLatestWorldTransitionOutcome(
     return null;
   }
 
-  return toTurnTransitionOutcome(data as unknown as TransitionOutcomeRow);
+  return toTurnTransitionOutcome(data);
 }
 
 async function getLatestSettlementTransitionOutcome(
@@ -260,6 +261,7 @@ async function getLatestSettlementTransitionOutcome(
     .from("turn_transitions")
     .select(TRANSITION_OUTCOME_SELECT)
     .eq("id", latestSnapshot.turn_transition_id)
+    .returns<TransitionOutcomeRow[]>()
     .maybeSingle();
 
   if (error !== null) {
@@ -270,7 +272,7 @@ async function getLatestSettlementTransitionOutcome(
     return null;
   }
 
-  const row = data as unknown as TransitionOutcomeRow;
+  const row = data;
 
   return toTurnTransitionOutcome({
     ...row,

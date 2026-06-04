@@ -377,6 +377,7 @@ function createWorldClient(row: TestTransitionRow | null): unknown {
   builder.eq = vi.fn(() => builder);
   builder.order = vi.fn(() => builder);
   builder.limit = vi.fn(() => builder);
+  builder.returns = vi.fn(() => builder);
   builder.maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null });
 
   return {
@@ -403,6 +404,7 @@ function createSettlementClient(row: TestTransitionRow | null): unknown {
   const transitionBuilder: Record<string, unknown> = {};
   transitionBuilder.select = vi.fn(() => transitionBuilder);
   transitionBuilder.eq = vi.fn(() => transitionBuilder);
+  transitionBuilder.returns = vi.fn(() => transitionBuilder);
   transitionBuilder.maybeSingle = vi
     .fn()
     .mockResolvedValue({ data: row, error: null });
@@ -438,6 +440,7 @@ function createSettlementClientWithRow(
   const transitionBuilder: Record<string, unknown> = {};
   transitionBuilder.select = vi.fn(() => transitionBuilder);
   transitionBuilder.eq = vi.fn(() => transitionBuilder);
+  transitionBuilder.returns = vi.fn(() => transitionBuilder);
   transitionBuilder.maybeSingle = vi
     .fn()
     .mockResolvedValue({ data: row, error: null });
