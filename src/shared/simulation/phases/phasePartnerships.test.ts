@@ -881,6 +881,45 @@ describe("phasePartnerships", () => {
       expect(result.citizenBirths).toHaveLength(0);
     });
 
+    it("fertility blocked when pendingPopCapBySettlement reflects a phase-4 auto-deconstruct", () => {
+      // Building is active in input (cap contribution = 10), so makeContext initialises
+      // pendingPopCapBySettlement to 10.  We then simulate what the orchestrator does
+      // after phaseBuildingUpkeep auto-deconstructs the building: decrement the shared
+      // map to 0.  Phase 9 must read from that shared map — not from input buildings —
+      // so births are blocked even though the input still shows the building as active.
+      const ctx = makeContext({
+        buildingTiers: [
+          {
+            buildingBlueprintId: "bp-1",
+            constructionCostsJson: [],
+            effectsJson: [{ amount: 10, type: "population_cap_increase" }],
+            id: "tier-1",
+            tierNumber: 1,
+            upkeepCostsJson: [],
+            workerTurnsRequired: 0,
+          },
+        ],
+        citizens: [
+          makeNpc("c-male", "s1", "male", 0),
+          makeNpc("c-female", "s1", "female", 0),
+        ],
+        partnerships: [makePartnership("p1", "c-male", "c-female")],
+        populationRules: { ...BASE_POPULATION_RULES, fertilityChance: 1 },
+        settlementBuildings: [makeBuilding("b1", "s1", "tier-1")],
+        stockpiles: [
+          makeStockpile("s1", FOOD_ID, 10),
+          makeStockpile("s1", WATER_ID, 10),
+        ],
+      });
+
+      // Orchestrator decrements shared cap after phase-4 auto-deconstruct.
+      ctx.shared.pendingPopCapBySettlement.set("s1", 0);
+
+      const result = phasePartnerships(ctx);
+
+      expect(result.citizenBirths).toHaveLength(0);
+    });
+
     it("child birth bumps population count preventing second birth in same settlement", () => {
       // cap=3, only 2 alive citizens → first birth allowed (count goes to 3),
       // second partnership blocked because count=3 >= cap=3

@@ -500,6 +500,73 @@ describe("cross-phase stockpile flow", () => {
       expect(result.citizenBirths).toHaveLength(0);
     });
 
+    it("invariant: no citizen born in phase 9 is killed in phase 10 of the same turn", () => {
+      // Babies born in phase 9 are CitizenBirth records without a citizen ID — they
+      // are pending DB inserts. phaseHomelessness (phase 10) kills by citizen ID from
+      // context.input.citizens, so a baby cannot appear in citizenDeaths.
+      //
+      // This test constructs the exact scenario described in issue #503:
+      //   - A cap building that auto-deconstructs in phase 4 (grace=0, no upkeep resource).
+      //   - fertilityChance=1, so a birth is guaranteed if the cap check passes.
+      //   - With the fix, pendingPopCapBySettlement drops to 0 after phase 4; phase 9
+      //     sees cap=0, 2 alive ≥ 0 → no birth.
+      //   - Without the fix, phase 9 would read input.settlementBuildings (state=active)
+      //     → cap=10, 2 alive < 10 → birth fires; that baby would push next-turn alive
+      //     count over the now-correct cap of 0.
+      const blueprint = makeBlueprint("cap-bp", 0);
+      const tier = makeTier("cap-tier", "cap-bp", {
+        upkeepCosts: [{ resourceId: "stone", amount: 1 }],
+        effects: [{ type: "population_cap_increase", amount: 10 }],
+      });
+      const capBuilding = makeBuilding("cap-b1", "s1", "cap-tier", "cap-bp");
+
+      const male = makeNpc("c-male", "s1", "male");
+      const female = makeNpc("c-female", "s1", "female");
+      const partnership = makePartnership("p1", "c-male", "c-female");
+
+      const input = makeInput({
+        buildingBlueprints: [blueprint],
+        buildingTiers: [tier],
+        citizens: [male, female],
+        partnerships: [partnership],
+        populationRules: {
+          ...BASE_POPULATION_RULES,
+          fertilityChance: 1,
+          minimumPartnershipAgeTurns: 0,
+        },
+        settlementBuildings: [capBuilding],
+        stockpiles: [
+          makeStockpile("s1", "food", 1000),
+          makeStockpile("s1", "water", 1000),
+        ],
+        systemResourceIds: { foodId: "food", freshWaterId: "water" },
+        turnNumber: 5,
+      });
+
+      const result = runSimulation(
+        input,
+        "cross-phase-birth-homeless-invariant",
+      );
+
+      // Phase 4 must have auto-deconstructed the cap building.
+      const deconstructed = result.buildingStateChanges.find(
+        (c) =>
+          c.settlementBuildingId === "cap-b1" &&
+          c.toState === "auto_deconstructed",
+      );
+      expect(deconstructed).toBeDefined();
+
+      // Phase 9 must have seen cap=0 → no births.
+      expect(result.citizenBirths).toHaveLength(0);
+
+      // No citizen born this turn can appear in citizenDeaths.
+      // CitizenBirth records carry no id; all deaths reference ids from input.citizens.
+      const inputCitizenIds = new Set(input.citizens.map((c) => c.id));
+      for (const death of result.citizenDeaths) {
+        expect(inputCitizenIds.has(death.citizenId)).toBe(true);
+      }
+    });
+
     it("births occur when pop-cap building pays upkeep and remains active", () => {
       // Same setup but with enough stone to pay upkeep.
       // Building stays active → cap=10 > 2 alive → fertility roll at 1.0 → birth.
