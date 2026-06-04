@@ -79,7 +79,7 @@ export function phaseTradeRoutes(
       settlementById.get(destinationSettlementId)?.name ??
       destinationSettlementId;
 
-    const pause = (pauseReason: string): void => {
+    const pause = (pauseReason: string, previouslyPaused: boolean): void => {
       allOutcomes.push({
         delivered: false,
         pauseReason,
@@ -98,25 +98,27 @@ export function phaseTradeRoutes(
         phase: "tradeRoutes",
         settlementId: originSettlementId,
       });
-      allNotifications.push({
-        messageText: `Trade route from "${originName}" to "${destinationName}" paused: ${pauseReason}.`,
-        notificationType: "trade_route.paused",
-        scope: "settlement",
-        settlementId: originSettlementId,
-      });
+      if (!previouslyPaused) {
+        allNotifications.push({
+          messageText: `Trade route from "${originName}" to "${destinationName}" paused: ${pauseReason}.`,
+          notificationType: "trade_route.paused",
+          scope: "settlement",
+          settlementId: originSettlementId,
+        });
+      }
     };
 
     // Check trader capacity at origin.
     const originCapacity = traderCapacity.get(`${id}:origin`) ?? 0;
     if (originCapacity < quantityPerTransition) {
-      pause("insufficient_trader_origin");
+      pause("insufficient_trader_origin", wasPaused);
       continue;
     }
 
     // Check trader capacity at destination.
     const destCapacity = traderCapacity.get(`${id}:destination`) ?? 0;
     if (destCapacity < quantityPerTransition) {
-      pause("insufficient_trader_destination");
+      pause("insufficient_trader_destination", wasPaused);
       continue;
     }
 
@@ -124,7 +126,7 @@ export function phaseTradeRoutes(
     const originKey = `${originSettlementId}:${resourceId}`;
     const originQty = stockpileQty.get(originKey) ?? 0;
     if (originQty < quantityPerTransition) {
-      pause("insufficient_origin_stock");
+      pause("insufficient_origin_stock", wasPaused);
       continue;
     }
 
@@ -133,7 +135,7 @@ export function phaseTradeRoutes(
     const destQty = stockpileQty.get(destKey) ?? 0;
     const destCap = stockpileCap.get(destKey) ?? 0;
     if (destCap - destQty < quantityPerTransition) {
-      pause("insufficient_destination_space");
+      pause("insufficient_destination_space", wasPaused);
       continue;
     }
 

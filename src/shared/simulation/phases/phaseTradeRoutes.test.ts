@@ -497,6 +497,28 @@ describe("phaseTradeRoutes", () => {
         "insufficient_origin_stock",
       );
     });
+
+    it("already-paused route that still fails emits a log entry but no notification", () => {
+      const traderJob = makeTraderJob("j1", 10);
+      const ctx = makeContext({
+        settlements: [makeSettlement("s1"), makeSettlement("s2")],
+        jobs: [traderJob],
+        citizenAssignments: [
+          makeTradeAssignment("c1", "r1", "origin", "j1"),
+          makeTradeAssignment("c2", "r1", "destination", "j1"),
+        ],
+        tradeRoutes: [makeRoute("r1", "s1", "s2", "grain", 10, "paused")],
+        stockpiles: [
+          makeStockpile("s1", "grain", 3), // still insufficient
+          makeStockpile("s2", "grain", 0, 100),
+        ],
+      });
+
+      const result = phaseTradeRoutes(ctx);
+      expect(result.logs).toHaveLength(1);
+      expect(result.logs[0]?.category).toBe("trade_route.paused");
+      expect(result.notifications).toHaveLength(0);
+    });
   });
 
   describe("intra-phase stockpile state", () => {
