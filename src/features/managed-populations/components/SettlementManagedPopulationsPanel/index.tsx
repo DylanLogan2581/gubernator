@@ -16,7 +16,7 @@ import {
   type Resource,
 } from "@/features/resources";
 import {
-  latestSettlementTransitionOutcomeQueryOptions,
+  useSettlementTransitionOutcome,
   type TurnTransitionOutcome,
 } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -64,9 +64,7 @@ export function SettlementManagedPopulationsPanel({
   const assignmentsQuery = useQuery(
     settlementTargetAssignmentsQueryOptions(settlementId),
   );
-  const latestOutcomeQuery = useQuery(
-    latestSettlementTransitionOutcomeQueryOptions(settlementId),
-  );
+  const latestOutcome = useSettlementTransitionOutcome(settlementId);
   const snapshotCountsQuery = useQuery(
     managedPopulationSnapshotsBySettlementQueryOptions(settlementId),
   );
@@ -133,7 +131,7 @@ export function SettlementManagedPopulationsPanel({
           canManage={(canManage || canAdmin) && !isArchived}
           husbandryCountByInstance={husbandryCountByInstance}
           instances={instancesQuery.data}
-          latestOutcome={latestOutcomeQuery.data ?? null}
+          latestOutcome={latestOutcome}
           queryClient={queryClient}
           resourceById={resourceById}
           snapshotCounts={

@@ -12,7 +12,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
-import { latestWorldTransitionOutcomeQueryOptions } from "@/features/turns";
+import { useWorldTransitionOutcome } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { parseTradeRouteResumedPayload } from "@/shared/simulation";
 
@@ -56,9 +56,7 @@ export function SettlementTradeRoutesPanel({
   const assignmentsQuery = useQuery(
     settlementTargetAssignmentsQueryOptions(settlementId),
   );
-  const latestOutcomeQuery = useQuery(
-    latestWorldTransitionOutcomeQueryOptions(worldId),
-  );
+  const latestOutcome = useWorldTransitionOutcome(worldId);
 
   const isNationManager =
     activeCharacter !== null &&
@@ -76,11 +74,8 @@ export function SettlementTradeRoutesPanel({
     (canAdmin || isNationManager || isSettlementManager);
 
   const resumedRouteIds = new Set<string>();
-  if (
-    latestOutcomeQuery.data !== null &&
-    latestOutcomeQuery.data !== undefined
-  ) {
-    for (const entry of latestOutcomeQuery.data.logEntries) {
+  if (latestOutcome !== null) {
+    for (const entry of latestOutcome.logEntries) {
       if (entry.logCategory === "trade_route.resumed") {
         const parsed = parseTradeRouteResumedPayload(entry.payloadJsonb);
         if (parsed !== null) {

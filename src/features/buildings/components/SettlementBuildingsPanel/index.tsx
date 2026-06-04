@@ -18,7 +18,7 @@ import { citizenAggregateStatsForSettlementQueryOptions } from "@/features/citiz
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import {
-  latestSettlementTransitionOutcomeQueryOptions,
+  useSettlementTransitionOutcome,
   type TurnTransitionOutcome,
 } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -55,9 +55,7 @@ export function SettlementBuildingsPanel({
   );
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
-  const latestOutcomeQuery = useQuery(
-    latestSettlementTransitionOutcomeQueryOptions(settlementId),
-  );
+  const latestOutcome = useSettlementTransitionOutcome(settlementId);
   const queryClient = useQueryClient();
 
   const capValue = capQuery.data ?? 0;
@@ -114,7 +112,7 @@ export function SettlementBuildingsPanel({
           canAdmin={canAdmin}
           isArchived={isArchived}
           jobNames={jobNames}
-          latestOutcome={latestOutcomeQuery.data ?? null}
+          latestOutcome={latestOutcome}
           queryClient={queryClient}
           resourceNames={resourceNames}
           settlementId={settlementId}

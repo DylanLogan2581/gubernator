@@ -12,7 +12,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import {
-  latestSettlementTransitionOutcomeQueryOptions,
+  useSettlementTransitionOutcome,
   type TurnTransitionOutcome,
 } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -49,9 +49,7 @@ export function SettlementDepositsPanel({
   const assignmentsQuery = useQuery(
     settlementTargetAssignmentsQueryOptions(settlementId),
   );
-  const latestOutcomeQuery = useQuery(
-    latestSettlementTransitionOutcomeQueryOptions(settlementId),
-  );
+  const latestOutcome = useSettlementTransitionOutcome(settlementId);
 
   const assignedCountByInstance = new Map<string, number>();
   if (assignmentsQuery.data !== undefined) {
@@ -97,7 +95,7 @@ export function SettlementDepositsPanel({
           canAdmin={canAdmin && !isArchived}
           canManage={(canManage || canAdmin) && !isArchived}
           instances={instancesQuery.data}
-          latestOutcome={latestOutcomeQuery.data ?? null}
+          latestOutcome={latestOutcome}
           queryClient={queryClient}
           settlementId={settlementId}
         />

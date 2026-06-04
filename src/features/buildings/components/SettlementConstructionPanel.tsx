@@ -23,7 +23,7 @@ import {
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import {
-  latestSettlementTransitionOutcomeQueryOptions,
+  useSettlementTransitionOutcome,
   type TurnTransitionLogEntry,
 } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -103,9 +103,7 @@ export function SettlementConstructionPanel({
   const projectsQuery = useQuery(
     constructionProjectsBySettlementQueryOptions(settlementId),
   );
-  const latestOutcomeQuery = useQuery(
-    latestSettlementTransitionOutcomeQueryOptions(settlementId),
-  );
+  const latestOutcome = useSettlementTransitionOutcome(settlementId);
   const queryClient = useQueryClient();
   const canAct = canManage && !isArchived;
 
@@ -145,7 +143,7 @@ export function SettlementConstructionPanel({
         <QueueContent
           allProjects={projectsQuery.data}
           canAct={canAct}
-          logEntries={latestOutcomeQuery.data?.logEntries ?? []}
+          logEntries={latestOutcome?.logEntries ?? []}
           queryClient={queryClient}
           settlementId={settlementId}
         />
