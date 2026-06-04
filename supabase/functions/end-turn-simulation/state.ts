@@ -159,6 +159,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
       params: {
         world_id: `eq.${worldId}`,
         is_system_resource: "eq.true",
+        is_trashed: "eq.false",
         select: "id,slug",
       },
     }),

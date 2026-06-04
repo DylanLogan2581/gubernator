@@ -676,6 +676,23 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(result.status).toBe(500);
   });
 
+  it("sends is_trashed=eq.false in the resources query URL", async () => {
+    const fetchMock = stubSupabaseFetch(makeAllSuccessResponses());
+
+    const result = await resolveSupabaseEndTurnSimulationInput(
+      makeRequestBody(),
+      makeAuthContext(),
+    );
+
+    expect(result.ok).toBe(true);
+
+    const resourcesUrl = (fetchMock.mock.calls as [string, ...unknown[]][])
+      .map(([url]) => url)
+      .find((url) => url.includes("/rest/v1/resources"));
+    expect(resourcesUrl).toBeDefined();
+    expect(resourcesUrl).toContain("is_trashed=eq.false");
+  });
+
   it("sets isWorldArchived to true for an archived world", async () => {
     const archivedWorld = { ...makeWorldRow(), status: "archived" };
     const responses = makeAllSuccessResponses();
