@@ -233,7 +233,7 @@ export function ManagedPopulationInstanceRow({
               snapshotDelta !== 0 ? (
                 <span
                   aria-label={snapshotDelta > 0 ? "Growing" : "Declining"}
-                  className={`text-xs ${snapshotDelta > 0 ? "text-green-600" : "text-red-600"}`}
+                  className={`text-xs ${snapshotDelta > 0 ? "text-success-foreground" : "text-destructive"}`}
                 >
                   {snapshotDelta > 0 ? "↑" : "↓"}
                   {Math.abs(snapshotDelta).toFixed(1)}%
@@ -243,12 +243,12 @@ export function ManagedPopulationInstanceRow({
               trendValue > 0 ? (
                 <TrendingUp
                   aria-label="Growing"
-                  className="h-3.5 w-3.5 text-green-600"
+                  className="h-3.5 w-3.5 text-success-foreground"
                 />
               ) : (
                 <TrendingDown
                   aria-label="Declining"
-                  className="h-3.5 w-3.5 text-red-600"
+                  className="h-3.5 w-3.5 text-destructive"
                 />
               )
             ) : null}

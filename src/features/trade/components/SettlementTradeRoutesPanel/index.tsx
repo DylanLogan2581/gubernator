@@ -332,7 +332,7 @@ function TradeRouteRow({
     <>
       <tr
         id={`trade-route-${route.id}`}
-        className={`border-b border-border last:border-0${isResumedThisTransition ? " animate-pulse bg-green-50 dark:bg-green-950 [animation-iteration-count:4]" : ""}`}
+        className={`border-b border-border last:border-0${isResumedThisTransition ? " animate-pulse bg-success [animation-iteration-count:4]" : ""}`}
       >
         <td className="py-2 pr-4 font-medium">{counterpart}</td>
         <td className="py-2 pr-4 text-muted-foreground">
@@ -490,10 +490,10 @@ function StatusBadge({
   readonly status: TradeRouteStatus;
 }): JSX.Element {
   const styles: Record<TradeRouteStatus, string> = {
-    active: "text-green-700",
+    active: "text-success-foreground",
     cancelled: "text-destructive",
-    paused: "text-amber-600",
-    proposed: "text-amber-600",
+    paused: "text-warning-foreground",
+    proposed: "text-warning-foreground",
     replaced: "text-muted-foreground",
   };
   const labels: Record<TradeRouteStatus, string> = {
@@ -522,7 +522,7 @@ function ApprovalBadge({
   readonly status: TradeRouteApprovalStatus;
 }): JSX.Element {
   const styles: Record<TradeRouteApprovalStatus, string> = {
-    approved: "text-green-700",
+    approved: "text-success-foreground",
     pending: "text-muted-foreground",
     rejected: "text-destructive",
   };
