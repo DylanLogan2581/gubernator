@@ -11,6 +11,45 @@ import {
   latestWorldTransitionOutcomeQueryOptions,
 } from "./turnTransitionOutcomeQueries";
 
+// -- Notification scope filtering --
+
+describe("latestSettlementTransitionOutcomeQueryOptions notification filtering", () => {
+  it("excludes world-scope notifications (settlement_id null) from settlement-scoped results", async () => {
+    const queryClient = createQueryClient();
+
+    const options = latestSettlementTransitionOutcomeQueryOptions(
+      "settlement-1",
+      createSettlementFilterClient([
+        makeNotificationRow({ id: "notif-world", settlement_id: null }),
+        makeNotificationRow({
+          id: "notif-settlement",
+          settlement_id: "settlement-1",
+        }),
+      ]) as GubernatorSupabaseClient,
+    );
+    const result = await queryClient.fetchQuery(options);
+
+    expect(result?.notifications.map((n) => n.id)).toEqual([
+      "notif-settlement",
+    ]);
+  });
+
+  it("excludes notifications scoped to other settlements", async () => {
+    const queryClient = createQueryClient();
+
+    const options = latestSettlementTransitionOutcomeQueryOptions(
+      "settlement-1",
+      createSettlementFilterClient([
+        makeNotificationRow({ id: "notif-a", settlement_id: "settlement-1" }),
+        makeNotificationRow({ id: "notif-b", settlement_id: "settlement-2" }),
+      ]) as GubernatorSupabaseClient,
+    );
+    const result = await queryClient.fetchQuery(options);
+
+    expect(result?.notifications.map((n) => n.id)).toEqual(["notif-a"]);
+  });
+});
+
 // -- Query key shape --
 
 describe("latestWorldTransitionOutcomeQueryOptions", () => {
@@ -165,4 +204,87 @@ function executeMutation(
     .getMutationCache()
     .build(queryClient, options)
     .execute(variables);
+}
+
+// -- Notification scope filtering fixtures --
+
+type NotificationRowFixture = {
+  readonly citizen_id: null;
+  readonly generated_at: string;
+  readonly generated_in_transition_id: string;
+  readonly id: string;
+  readonly is_read: boolean;
+  readonly message_text: string;
+  readonly nation_id: null;
+  readonly notification_type: string;
+  readonly recipient_user_id: string;
+  readonly settlement_id: string | null;
+  readonly world_id: string;
+};
+
+function makeNotificationRow(
+  overrides: Partial<NotificationRowFixture> = {},
+): NotificationRowFixture {
+  return {
+    citizen_id: null,
+    generated_at: "2026-06-01T12:00:00Z",
+    generated_in_transition_id: "transition-1",
+    id: "notif-1",
+    is_read: false,
+    message_text: "A notification.",
+    nation_id: null,
+    notification_type: "building.suspended",
+    recipient_user_id: "user-1",
+    settlement_id: "settlement-1",
+    world_id: "world-1",
+    ...overrides,
+  };
+}
+
+function createSettlementFilterClient(
+  notifications: readonly NotificationRowFixture[],
+): unknown {
+  const snapshotBuilder: Record<string, unknown> = {};
+  snapshotBuilder.select = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.eq = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.not = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.order = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.limit = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.maybeSingle = vi.fn().mockResolvedValue({
+    data: { turn_transition_id: "transition-1" },
+    error: null,
+  });
+
+  const row = {
+    finished_at: "2026-06-01T12:00:00Z",
+    from_turn_number: 5,
+    id: "transition-1",
+    notifications,
+    settlement_turn_resource_snapshots: [],
+    settlement_turn_snapshots: [],
+    started_at: "2026-06-01T11:55:00Z",
+    status: "completed",
+    to_turn_number: 6,
+    turn_log_entries: [],
+    world_id: "world-1",
+  };
+
+  const transitionBuilder: Record<string, unknown> = {};
+  transitionBuilder.select = vi.fn(() => transitionBuilder);
+  transitionBuilder.eq = vi.fn(() => transitionBuilder);
+  transitionBuilder.maybeSingle = vi
+    .fn()
+    .mockResolvedValue({ data: row, error: null });
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "settlement_turn_snapshots") {
+        return snapshotBuilder;
+      }
+      if (table === "turn_transitions") {
+        return transitionBuilder;
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+  };
 }

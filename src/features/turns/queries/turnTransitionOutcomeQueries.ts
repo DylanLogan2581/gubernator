@@ -275,7 +275,7 @@ async function getLatestSettlementTransitionOutcome(
   return toTurnTransitionOutcome({
     ...row,
     notifications: row.notifications.filter(
-      (n) => n.settlement_id === settlementId || n.settlement_id === null,
+      (n) => n.settlement_id === settlementId,
     ),
     settlement_turn_resource_snapshots:
       row.settlement_turn_resource_snapshots.filter(

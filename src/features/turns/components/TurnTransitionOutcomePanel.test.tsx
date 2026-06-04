@@ -200,6 +200,59 @@ describe("TurnTransitionOutcomePanel", () => {
     ).toBeDefined();
     expect(screen.getByText("Turn 5 → 6 · 2026-06-01")).toBeDefined();
   });
+
+  it("excludes world-scope notifications from the settlement-scoped panel", async () => {
+    const row: TestTransitionRow = {
+      ...createTransitionRow(),
+      notifications: [
+        createRawNotification({
+          id: "notif-world",
+          settlement_id: null,
+          message_text: "World-scope event.",
+        }),
+        createRawNotification({
+          id: "notif-settlement",
+          settlement_id: "settlement-1",
+          message_text: "Settlement-scope event.",
+        }),
+      ],
+    };
+    requireSupabaseClient.mockReturnValue(
+      createSettlementClientWithRow("settlement-1", row),
+    );
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <TurnTransitionOutcomePanel scope="settlement" id="settlement-1" />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("heading", { name: "Last transition" });
+    expect(screen.queryByText("World-scope event.")).toBeNull();
+    expect(screen.getByText("Settlement-scope event.")).toBeDefined();
+  });
+
+  it("shows world-scope notifications on the world-scope panel", async () => {
+    const row: TestTransitionRow = {
+      ...createTransitionRow(),
+      notifications: [
+        createRawNotification({
+          id: "notif-world",
+          settlement_id: null,
+          message_text: "World-scope event.",
+        }),
+      ],
+    };
+    requireSupabaseClient.mockReturnValue(createWorldClient(row));
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <TurnTransitionOutcomePanel scope="world" id="world-1" />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("World-scope event.")).toBeDefined();
+  });
 });
 
 // -- Fixtures --
@@ -364,6 +417,74 @@ function createSettlementClient(row: TestTransitionRow | null): unknown {
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
+  };
+}
+
+function createSettlementClientWithRow(
+  _settlementId: string,
+  row: TestTransitionRow,
+): unknown {
+  const snapshotBuilder: Record<string, unknown> = {};
+  snapshotBuilder.select = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.eq = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.not = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.order = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.limit = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.maybeSingle = vi.fn().mockResolvedValue({
+    data: { turn_transition_id: row.id },
+    error: null,
+  });
+
+  const transitionBuilder: Record<string, unknown> = {};
+  transitionBuilder.select = vi.fn(() => transitionBuilder);
+  transitionBuilder.eq = vi.fn(() => transitionBuilder);
+  transitionBuilder.maybeSingle = vi
+    .fn()
+    .mockResolvedValue({ data: row, error: null });
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "settlement_turn_snapshots") {
+        return snapshotBuilder;
+      }
+      if (table === "turn_transitions") {
+        return transitionBuilder;
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+  };
+}
+
+type RawNotification = {
+  readonly citizen_id: null;
+  readonly generated_at: string;
+  readonly generated_in_transition_id: string;
+  readonly id: string;
+  readonly is_read: boolean;
+  readonly message_text: string;
+  readonly nation_id: null;
+  readonly notification_type: string;
+  readonly recipient_user_id: string;
+  readonly settlement_id: string | null;
+  readonly world_id: string;
+};
+
+function createRawNotification(
+  overrides: Partial<RawNotification> = {},
+): RawNotification {
+  return {
+    citizen_id: null,
+    generated_at: "2026-06-01T12:00:00Z",
+    generated_in_transition_id: "transition-1",
+    id: "notif-1",
+    is_read: false,
+    message_text: "A notification occurred.",
+    nation_id: null,
+    notification_type: "building.suspended",
+    recipient_user_id: "user-1",
+    settlement_id: "settlement-1",
+    world_id: "world-1",
+    ...overrides,
   };
 }
 
