@@ -122,8 +122,8 @@ export type { PhaseManagedPopulationsOutput } from "./phases/phaseManagedPopulat
 export { phaseCitizenConsumption } from "./phases/phaseCitizenConsumption.ts";
 export type { PhaseCitizenConsumptionOutput } from "./phases/phaseCitizenConsumption.ts";
 
-export { phasePartnerships } from "./phases/phasePartnerships.ts";
-export type { PhasePartnershipsOutput } from "./phases/phasePartnerships.ts";
+export { phasePartnerships } from "./phases/phasePartnerships/index.ts";
+export type { PhasePartnershipsOutput } from "./phases/phasePartnerships/index.ts";
 
 export { phaseHomelessness } from "./phases/phaseHomelessness.ts";
 export type { PhaseHomelessnessOutput } from "./phases/phaseHomelessness.ts";

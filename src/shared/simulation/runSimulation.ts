@@ -11,7 +11,7 @@ import { phaseEvents } from "./phases/phaseEvents.ts";
 import { phaseHomelessness } from "./phases/phaseHomelessness.ts";
 import { phaseLogsAndSnapshots } from "./phases/phaseLogsAndSnapshots.ts";
 import { phaseManagedPopulations } from "./phases/phaseManagedPopulations.ts";
-import { phasePartnerships } from "./phases/phasePartnerships.ts";
+import { phasePartnerships } from "./phases/phasePartnerships/index.ts";
 import { phasePassiveEffects } from "./phases/phasePassiveEffects.ts";
 import { phaseStandardJobs } from "./phases/phaseStandardJobs.ts";
 import { phaseStockpileClamp } from "./phases/phaseStockpileClamp.ts";

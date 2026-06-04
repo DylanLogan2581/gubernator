@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { phasePartnerships } from "./phasePartnerships.ts";
+import { phasePartnerships } from "./phasePartnerships/index.ts";
 
 import type {
   CitizenDeath,
