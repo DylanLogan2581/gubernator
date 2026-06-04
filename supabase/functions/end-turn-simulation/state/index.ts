@@ -1,6 +1,6 @@
 // Orchestrates the full SimulationInputState load from PostgREST.
 
-import { getRequiredRuntimeEnv } from "../env.ts";
+import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../env.ts";
 import { createErrorResponse } from "../http.ts";
 import {
   parseWorldCalendarConfig,
@@ -83,7 +83,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     return createStateUnavailableResult();
   }
 
-  const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
   const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
 
   if (supabaseUrl === undefined || supabaseAnonKey === undefined) {

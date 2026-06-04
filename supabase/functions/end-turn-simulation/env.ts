@@ -28,5 +28,11 @@ export function getRequiredRuntimeEnv(name: string): string | undefined {
     return undefined;
   }
 
+  return value;
+}
+
+export function getRequiredRuntimeUrl(name: string): string | undefined {
+  const value = getRequiredRuntimeEnv(name);
+  if (value === undefined) return undefined;
   return value.replace(/\/$/, "");
 }

@@ -1,4 +1,4 @@
-import { getRequiredRuntimeEnv } from "./env.ts";
+import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
 import { createErrorResponse } from "./http.ts";
 import { isRecord } from "./utils.ts";
 
@@ -16,7 +16,7 @@ export async function resolveSupabaseSimulationAuthContext(
     return createAuthErrorResult();
   }
 
-  const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
   const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
 
   if (supabaseUrl === undefined || supabaseAnonKey === undefined) {

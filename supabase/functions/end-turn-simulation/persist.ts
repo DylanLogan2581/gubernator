@@ -1,4 +1,4 @@
-import { getRequiredRuntimeEnv } from "./env.ts";
+import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
 import { createErrorResponse } from "./http.ts";
 import { isRecord } from "./utils.ts";
 
@@ -53,7 +53,7 @@ export async function startTurnTransition(
   body: EndTurnSimulationRequestBody,
   authContext: EndTurnSimulationAuthContext,
 ): Promise<StartTurnTransitionResult> {
-  const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
   const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
 
   if (
@@ -117,7 +117,7 @@ export async function persistSimulationTransition(
   authContext: EndTurnSimulationAuthContext,
   transitionId: string,
 ): Promise<EndTurnSimulationPersistResult> {
-  const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
   const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
 
   if (
