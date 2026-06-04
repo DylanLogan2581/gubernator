@@ -188,6 +188,49 @@ set
 where
   id = 'd5400000-0000-0000-0000-000000000003';
 
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    'd5300000-0000-0000-0000-000000000001',
+    'd5200000-0000-0000-0000-000000000001',
+    3,
+    4,
+    'd5100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'd5300000-0000-0000-0000-000000000002',
+    'd5200000-0000-0000-0000-000000000002',
+    5,
+    6,
+    'd5100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'd5300000-0000-0000-0000-000000000003',
+    'd5200000-0000-0000-0000-000000000003',
+    7,
+    8,
+    'd5100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'd5300000-0000-0000-0000-000000000004',
+    'd5200000-0000-0000-0000-000000000004',
+    9,
+    10,
+    'd5100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
 -- ---------------------------------------------------------------------------
 -- Authenticate as super admin so the RPC's auth check passes
 -- ---------------------------------------------------------------------------
@@ -209,7 +252,8 @@ select
           public.apply_turn_transition (
             'd5200000-0000-0000-0000-000000000001',
             3,
-            '{}'::jsonb
+            '{}'::jsonb,
+            'd5300000-0000-0000-0000-000000000001'::uuid
           ) ->> 'currentTurnNumber'
         )::integer
     ),
@@ -239,7 +283,8 @@ select
   public.apply_turn_transition (
     'd5200000-0000-0000-0000-000000000002',
     5,
-    '{}'::jsonb
+    '{}'::jsonb,
+    'd5300000-0000-0000-0000-000000000002'::uuid
   );
 
 -- Test 3: settlement with auto_ready_enabled=true gets is_ready_current_turn=true
@@ -294,7 +339,8 @@ select
   public.apply_turn_transition (
     'd5200000-0000-0000-0000-000000000003',
     7,
-    '{"readinessSummary": {"allReady": true, "readyCount": 2}}'::jsonb
+    '{"readinessSummary": {"allReady": true, "readyCount": 2}}'::jsonb,
+    'd5300000-0000-0000-0000-000000000003'::uuid
   );
 
 -- Test 6: transition row has status='completed' and finished_at IS NOT NULL
@@ -336,7 +382,8 @@ select
   public.apply_turn_transition (
     'd5200000-0000-0000-0000-000000000004',
     9,
-    '{}'::jsonb
+    '{}'::jsonb,
+    'd5300000-0000-0000-0000-000000000004'::uuid
   );
 
 -- Test 8: second call with the same p_expected_turn_number raises P0001
@@ -346,7 +393,8 @@ select
     select public.apply_turn_transition(
       'd5200000-0000-0000-0000-000000000004',
       9,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     'P0001',

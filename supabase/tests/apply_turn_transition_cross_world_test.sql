@@ -394,6 +394,25 @@ values
     'approved'
   );
 
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    'e1300000-0000-0000-0000-000000000001',
+    'e1200000-0000-0000-0000-000000000001',
+    5,
+    6,
+    'e1100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
 -- ===========================================================================
 -- All tests run as world admin of World A only
 -- ===========================================================================
@@ -422,7 +441,8 @@ select
             'quantityAfter',  10
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -448,7 +468,8 @@ select
             'progressWorkerTurns', 6
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -474,7 +495,8 @@ select
             'currentTierId',       'e1610000-0000-0000-0000-000000000001'
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -500,7 +522,8 @@ select
             'missedUpkeepCount', 1
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -526,7 +549,8 @@ select
             'toStatus',          null
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -552,7 +576,8 @@ select
             'toStatus',                    null
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -578,7 +603,8 @@ select
             'pauseReason',  'shortfall'
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -603,7 +629,8 @@ select
             'bornOnTurnNumber',  1
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -632,7 +659,8 @@ select
             'parentBCitizenId',  null
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -658,7 +686,8 @@ select
             'deathCause',         'no food'
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -686,7 +715,8 @@ select
             'endedOnTurnNumber',   null
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -710,7 +740,8 @@ select
             'citizenId', 'e1c00000-0000-0000-0000-000000000001'
           )
         )
-      )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'P0001',
@@ -728,7 +759,8 @@ select
     select public.apply_turn_transition(
       'e1200000-0000-0000-0000-000000000001',
       5,
-      '{}'::jsonb
+      '{}'::jsonb,
+      'e1300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'empty payload for World A succeeds without cross-world rejection'

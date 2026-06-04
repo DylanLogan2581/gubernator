@@ -126,6 +126,41 @@ values
     'ATTSS Settlement 4'
   );
 
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    'c3300000-0000-0000-0000-000000000001',
+    'c3200000-0000-0000-0000-000000000001',
+    3,
+    4,
+    'c3100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'c3300000-0000-0000-0000-000000000002',
+    'c3200000-0000-0000-0000-000000000002',
+    5,
+    6,
+    'c3100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'c3300000-0000-0000-0000-000000000003',
+    'c3200000-0000-0000-0000-000000000003',
+    7,
+    8,
+    'c3100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
 -- ---------------------------------------------------------------------------
 -- Authenticate as super admin so the RPC's auth check passes
 -- ---------------------------------------------------------------------------
@@ -208,7 +243,8 @@ select
           )
         )
       )
-    )
+    ),
+    'c3300000-0000-0000-0000-000000000001'::uuid
   );
 
 -- Test 1: one snapshot row was inserted for the settlement
@@ -357,7 +393,8 @@ select
           )
         )
       )
-    )
+    ),
+    'c3300000-0000-0000-0000-000000000002'::uuid
   );
 
 -- Test 4: two settlements produce two snapshot rows (one per settlement)
@@ -419,7 +456,8 @@ select
           )
         )
       )
-    )
+    ),
+    'c3300000-0000-0000-0000-000000000003'::uuid
   );
 
 -- Manually re-insert the same snapshot to simulate a retry hitting ON CONFLICT.

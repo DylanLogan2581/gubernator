@@ -142,6 +142,7 @@ function stubFullCycle(
     "/auth/v1/user": { body: { id: USER_ID }, status: 200 },
     "rpc/is_super_admin": { body: false, status: 200 },
     "rpc/is_world_admin": { body: true, status: 200 },
+    "rpc/start_turn_transition": { body: TRANSITION_ID, status: 200 },
     "rpc/apply_turn_transition": { body: makeSuccessSummary(), status: 200 },
     ...makeStateResponses(),
     ...overrides,

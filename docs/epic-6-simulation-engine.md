@@ -34,17 +34,25 @@ RPC call.
 │                                                                      │
 │  authorize.ts  — is_super_admin / is_world_admin gate               │
 │  state.ts      — load SimulationInputState from DB                  │
-│  transition.ts — runSimulation() → ApplyTurnTransitionPayload       │
-│  persist.ts    — POST /rest/v1/rpc/apply_turn_transition            │
+│  persist.ts    — POST /rest/v1/rpc/start_turn_transition  ──────┐  │
+│                  ← returns transitionId (UUID)                   │  │
+│  transition.ts — runSimulation(transitionId) →                   │  │
+│                  ApplyTurnTransitionPayload                       │  │
+│  persist.ts    — POST /rest/v1/rpc/apply_turn_transition ────────┘  │
 └────────────────────────────┬─────────────────────────────────────────┘
-                             │ PostgREST RPC
+                             │ PostgREST RPC (two calls)
                              ▼
 ┌──────────────────────────────────────────────────────────────────────┐
+│  start_turn_transition (SECURITY DEFINER RPC)                        │
+│  • Validates auth, archived, and stale-turn                          │
+│  • Inserts turn_transitions row (status='running')                   │
+│  • Returns the row's UUID — used as engine RNG seed                 │
+├──────────────────────────────────────────────────────────────────────┤
 │  apply_turn_transition (SECURITY DEFINER RPC)                        │
-│  • Re-validates auth and world-lock                                  │
+│  • Looks up the running transition row by p_transition_id            │
 │  • Applies all patch phases (§C28–§C35)                              │
 │  • Advances current_turn_number                                      │
-│  • Returns ApplyTurnTransitionSummary JSON                           │
+│  • Marks transition completed; returns ApplyTurnTransitionSummary    │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -112,6 +120,41 @@ environment.
 
 ---
 
+## RPC contract
+
+The edge function uses a **two-step protocol**: reserve the transition row first, run the
+engine with the returned UUID as its RNG seed, then apply the result using the same UUID.
+This ensures `turn_transitions.id` and the engine seed are always identical, making engine
+output reproducible from the stored row.
+
+---
+
+## `start_turn_transition` RPC
+
+### Signature
+
+```sql
+function public.start_turn_transition (p_world_id uuid, p_expected_turn_number integer) returns uuid language plpgsql security definer
+set
+  search_path = '';
+```
+
+### Behaviour
+
+1. Validates both params are non-null.
+2. Re-checks caller is `is_super_admin()` or `is_world_admin(p_world_id)`; raises
+   `insufficient_privilege` (42501) otherwise.
+3. Acquires a `FOR UPDATE` row lock on `worlds` to serialize concurrent callers.
+4. Raises `P0001` if the world is archived or `p_expected_turn_number` does not match
+   `current_turn_number`.
+5. Inserts a `turn_transitions` row with `status = 'running'`. On `unique_violation`
+   (concurrent caller already inserted the row) it reuses the existing running row.
+6. Returns the `turn_transitions.id` UUID. The edge function passes this to
+   `planSimulationTransition` as the engine RNG seed and later to `apply_turn_transition`
+   as `p_transition_id`.
+
+---
+
 ## `apply_turn_transition` RPC contract
 
 ### Signature
@@ -120,7 +163,8 @@ environment.
 function public.apply_turn_transition (
   p_world_id uuid,
   p_expected_turn_number integer,
-  p_payload jsonb
+  p_payload jsonb,
+  p_transition_id uuid
 ) returns jsonb language plpgsql security definer
 set
   search_path = '';
@@ -168,12 +212,17 @@ RPC, so the RPC check is defense-in-depth rather than the primary gate.
 
 ### Idempotency and concurrency
 
-The RPC acquires a `FOR UPDATE` row lock on `worlds` at the start of the transaction.
-This serializes concurrent end-turn calls for the same world.
+Both RPCs acquire a `FOR UPDATE` row lock on `worlds` at the start of the transaction,
+serializing concurrent end-turn calls for the same world.
 
-A `unique_violation` on the `turn_transitions` insert (from a prior in-flight call) is
-caught and converted to a re-use of the existing running transition row, allowing the
-current call to proceed to completion if the prior call was interrupted mid-transaction.
+`start_turn_transition` catches a `unique_violation` on the `turn_transitions` insert and
+reuses the existing running row, returning the same UUID. This lets the edge function retry
+the full two-step call after an interruption between `start_turn_transition` and
+`apply_turn_transition`.
+
+`apply_turn_transition` verifies the supplied `p_transition_id` is in `status = 'running'`
+before proceeding. A stale second call (same `p_expected_turn_number` after the world turn
+already advanced) raises `P0001`.
 
 Snapshot inserts (`settlement_turn_resource_snapshots`, `settlement_turn_snapshots`)
 use `ON CONFLICT … DO NOTHING` with partial unique indexes, making those phases

@@ -466,6 +466,16 @@ describe("end-turn-simulation integration", () => {
       .single();
     expect(world?.current_turn_number).toBe(SEED_TURN + 1);
 
+    // The transitionId from the response must correspond to the completed
+    // turn_transitions row — engine seed and stored id are the same UUID.
+    const { data: transitionRow } = await svc
+      .from("turn_transitions")
+      .select("id,status")
+      .eq("id", transitionId)
+      .single();
+    expect(transitionRow?.id).toBe(transitionId);
+    expect(transitionRow?.status).toBe("completed");
+
     // At least one settlement snapshot per settlement for this transition.
     for (const settlementId of SETTLEMENT_IDS) {
       const { count } = await svc

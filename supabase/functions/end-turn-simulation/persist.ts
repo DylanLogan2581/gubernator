@@ -6,6 +6,7 @@ import type { ApplyTurnTransitionPayload } from "./transition.ts";
 import type {
   ApplyTurnTransitionSummary,
   EndTurnSimulationAuthContext,
+  EndTurnSimulationErrorResponse,
   EndTurnSimulationPersistResult,
   EndTurnSimulationRequestBody,
 } from "./types.ts";
@@ -14,6 +15,17 @@ type SupabaseRpcError = {
   readonly code: string;
   readonly message: string;
 };
+
+type StartTurnTransitionResult =
+  | {
+      readonly ok: true;
+      readonly transitionId: string;
+    }
+  | {
+      readonly error: EndTurnSimulationErrorResponse;
+      readonly ok: false;
+      readonly status: number;
+    };
 
 function isSupabaseRpcError(value: unknown): value is SupabaseRpcError {
   return (
@@ -36,10 +48,73 @@ function isApplyTurnTransitionSummary(
   );
 }
 
+export async function startTurnTransition(
+  body: EndTurnSimulationRequestBody,
+  authContext: EndTurnSimulationAuthContext,
+): Promise<StartTurnTransitionResult> {
+  const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
+  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+
+  if (
+    supabaseUrl === undefined ||
+    supabaseAnonKey === undefined ||
+    authContext.authorizationHeader === undefined
+  ) {
+    return createStartUnavailableResult();
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${supabaseUrl}/rest/v1/rpc/start_turn_transition`, {
+      body: JSON.stringify({
+        p_expected_turn_number: body.expectedTurnNumber,
+        p_world_id: body.worldId,
+      }),
+      headers: {
+        apikey: supabaseAnonKey,
+        authorization: authContext.authorizationHeader,
+        "content-type": "application/json",
+      },
+      method: "POST",
+    });
+  } catch {
+    return createStartUnavailableResult();
+  }
+
+  if (!response.ok) {
+    let errorBody: unknown;
+    try {
+      errorBody = await response.json();
+    } catch {
+      return createStartUnavailableResult();
+    }
+
+    if (isSupabaseRpcError(errorBody)) {
+      return rpcErrorToStartResult(errorBody);
+    }
+
+    return createStartUnavailableResult();
+  }
+
+  let transitionId: unknown;
+  try {
+    transitionId = await response.json();
+  } catch {
+    return createStartUnavailableResult();
+  }
+
+  if (typeof transitionId !== "string") {
+    return createStartUnavailableResult();
+  }
+
+  return { ok: true, transitionId };
+}
+
 export async function persistSimulationTransition(
   body: EndTurnSimulationRequestBody,
   payload: ApplyTurnTransitionPayload,
   authContext: EndTurnSimulationAuthContext,
+  transitionId: string,
 ): Promise<EndTurnSimulationPersistResult> {
   const supabaseUrl = getRequiredRuntimeEnv("SUPABASE_URL");
   const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
@@ -58,6 +133,7 @@ export async function persistSimulationTransition(
       body: JSON.stringify({
         p_expected_turn_number: body.expectedTurnNumber,
         p_payload: payload,
+        p_transition_id: transitionId,
         p_world_id: body.worldId,
       }),
       headers: {
@@ -98,6 +174,56 @@ export async function persistSimulationTransition(
   }
 
   return { ok: true, summary: responseBody };
+}
+
+function rpcErrorToStartResult(
+  error: SupabaseRpcError,
+): StartTurnTransitionResult {
+  if (error.code === "42501") {
+    return {
+      error: createErrorResponse({
+        code: "unauthorized",
+        message: "End turn is unavailable for this world.",
+      }),
+      ok: false,
+      status: 403,
+    };
+  }
+
+  if (error.code === "P0001") {
+    if (error.message.includes("archived")) {
+      return {
+        error: createErrorResponse({
+          code: "end_turn_world_archived",
+          message: "World is archived and cannot be advanced.",
+        }),
+        ok: false,
+        status: 409,
+      };
+    }
+
+    if (error.message.includes("stale")) {
+      return {
+        error: createErrorResponse({
+          code: "end_turn_stale_expected_turn",
+          message: "Expected current turn no longer matches the world state.",
+        }),
+        ok: false,
+        status: 409,
+      };
+    }
+
+    return {
+      error: createErrorResponse({
+        code: "end_turn_transition_failed",
+        message: "End turn persistence failed after the transition started.",
+      }),
+      ok: false,
+      status: 500,
+    };
+  }
+
+  return createStartUnavailableResult();
 }
 
 function rpcErrorToResult(
@@ -148,6 +274,17 @@ function rpcErrorToResult(
   }
 
   return createTransitionUnavailableResult();
+}
+
+function createStartUnavailableResult(): StartTurnTransitionResult {
+  return {
+    error: createErrorResponse({
+      code: "end_turn_transition_unavailable",
+      message: "End turn transition could not be started.",
+    }),
+    ok: false,
+    status: 500,
+  };
 }
 
 function createTransitionUnavailableResult(): EndTurnSimulationPersistResult {

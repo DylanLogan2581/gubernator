@@ -192,6 +192,41 @@ values
     'running'
   );
 
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    'c1300000-0000-0000-0000-000000000002',
+    'c1200000-0000-0000-0000-000000000001',
+    4,
+    5,
+    'c1100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'c1300000-0000-0000-0000-000000000003',
+    'c1200000-0000-0000-0000-000000000001',
+    5,
+    6,
+    'c1100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'c1300000-0000-0000-0000-000000000004',
+    'c1200000-0000-0000-0000-000000000001',
+    6,
+    7,
+    'c1100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
 -- ===========================================================================
 -- SUPER ADMIN: happy path
 -- ===========================================================================
@@ -208,7 +243,8 @@ select
         public.apply_turn_transition (
           'c1200000-0000-0000-0000-000000000001',
           4,
-          '{}'::jsonb
+          '{}'::jsonb,
+          'c1300000-0000-0000-0000-000000000002'::uuid
         ) ->> 'transitionId'
     ) is not null,
     'super admin can call apply_turn_transition and receives a transitionId'
@@ -244,7 +280,8 @@ select
         public.apply_turn_transition (
           'c1200000-0000-0000-0000-000000000001',
           5,
-          '{}'::jsonb
+          '{}'::jsonb,
+          'c1300000-0000-0000-0000-000000000003'::uuid
         ) ->> 'transitionId'
     ) is not null,
     'world owner can call apply_turn_transition'
@@ -264,7 +301,8 @@ select
         public.apply_turn_transition (
           'c1200000-0000-0000-0000-000000000001',
           6,
-          '{}'::jsonb
+          '{}'::jsonb,
+          'c1300000-0000-0000-0000-000000000004'::uuid
         ) ->> 'transitionId'
     ) is not null,
     'world admin can call apply_turn_transition'
@@ -282,7 +320,8 @@ select
     select public.apply_turn_transition(
       'c1200000-0000-0000-0000-000000000001',
       4,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     '42501',
@@ -302,7 +341,8 @@ select
     select public.apply_turn_transition(
       'c1200000-0000-0000-0000-000000000001',
       4,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     '42501',
@@ -327,7 +367,8 @@ select
     select public.apply_turn_transition(
       'c1200000-0000-0000-0000-000000000001',
       99,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     'P0001',
@@ -344,7 +385,8 @@ select
     select public.apply_turn_transition(
       'c1200000-0000-0000-0000-000000000002',
       2,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     'P0001',
@@ -358,7 +400,7 @@ select
 select
   throws_ok (
     $test$
-    select public.apply_turn_transition(null, 4, '{}'::jsonb)
+    select public.apply_turn_transition(null, 4, '{}'::jsonb, '00000000-0000-0000-0000-000000000999'::uuid)
   $test$,
     'P0001',
     null,
@@ -371,7 +413,8 @@ select
     select public.apply_turn_transition(
       'c1200000-0000-0000-0000-000000000001',
       null,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     'P0001',
@@ -385,7 +428,8 @@ select
     select public.apply_turn_transition(
       'c1200000-0000-0000-0000-000000000001',
       4,
-      null
+      null,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     'P0001',
@@ -412,7 +456,8 @@ select
           public.apply_turn_transition (
             'c1200000-0000-0000-0000-000000000003',
             8,
-            '{}'::jsonb
+            '{}'::jsonb,
+            'c1300000-0000-0000-0000-000000000001'::uuid
           ) ->> 'transitionId'
         )::uuid
     ),
@@ -443,7 +488,7 @@ select
   ok (
     has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
       'EXECUTE'
     ),
     'authenticated role has EXECUTE on apply_turn_transition'

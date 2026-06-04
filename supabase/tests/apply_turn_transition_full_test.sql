@@ -452,6 +452,41 @@ values
     'approved'
   );
 
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    'd6300000-0000-0000-0000-000000000001',
+    'd6200000-0000-0000-0000-000000000001',
+    5,
+    6,
+    'd6100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'd6300000-0000-0000-0000-000000000002',
+    'd6200000-0000-0000-0000-000000000001',
+    6,
+    7,
+    'd6100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'd6300000-0000-0000-0000-000000000003',
+    'd6200000-0000-0000-0000-000000000003',
+    7,
+    8,
+    'd6100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
 -- ===========================================================================
 -- AUTH FAILURE TESTS (World 1 is still at turn 5; failures don't advance it)
 -- ===========================================================================
@@ -470,7 +505,8 @@ select
     select public.apply_turn_transition(
       'd6200000-0000-0000-0000-000000000001',
       5,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     '42501',
@@ -490,7 +526,8 @@ select
     select public.apply_turn_transition(
       'd6200000-0000-0000-0000-000000000001',
       5,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     '42501',
@@ -510,7 +547,8 @@ select
     select public.apply_turn_transition(
       'd6200000-0000-0000-0000-000000000001',
       5,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     '42501',
@@ -532,7 +570,8 @@ select
     select public.apply_turn_transition(
       'd6200000-0000-0000-0000-000000000001',
       5,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     '42501',
@@ -557,7 +596,8 @@ select
     select public.apply_turn_transition(
       'd6200000-0000-0000-0000-000000000002',
       2,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     'P0001',
@@ -574,7 +614,8 @@ select
     select public.apply_turn_transition(
       'd6200000-0000-0000-0000-000000000001',
       99,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     'P0001',
@@ -718,7 +759,8 @@ begin
           )
         )
       )
-    )
+    ),
+    'd6300000-0000-0000-0000-000000000001'::uuid
   );
   -- Stash the result so assertions can access it without re-calling the RPC.
   perform set_config('attfe.last_result', v_result::text, true);
@@ -1033,7 +1075,8 @@ select
     select public.apply_turn_transition(
       'd6200000-0000-0000-0000-000000000001',
       5,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
     )
   $test$,
     'P0001',
@@ -1058,7 +1101,8 @@ select
         public.apply_turn_transition (
           'd6200000-0000-0000-0000-000000000001',
           6,
-          '{}'::jsonb
+          '{}'::jsonb,
+          'd6300000-0000-0000-0000-000000000002'::uuid
         ) ->> 'transitionId'
     ) is not null,
     'world admin (explicit world_admins row) can call apply_turn_transition'
@@ -1141,7 +1185,8 @@ select
           )
         )
       )
-    )
+    ),
+    'd6300000-0000-0000-0000-000000000003'::uuid
   );
 
 reset role;
@@ -1234,7 +1279,8 @@ select
           )
         )
       )
-    )
+    ),
+    'd6300000-0000-0000-0000-000000000003'::uuid
   );
 
 reset role;

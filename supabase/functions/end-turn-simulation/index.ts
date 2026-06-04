@@ -5,7 +5,7 @@ import {
   createJsonResponse,
   getAllowedOrigins,
 } from "./http.ts";
-import { persistSimulationTransition } from "./persist.ts";
+import { persistSimulationTransition, startTurnTransition } from "./persist.ts";
 import { resolveSupabaseSimulationAuthContext } from "./session.ts";
 import { resolveSupabaseEndTurnSimulationInput } from "./state.ts";
 import { planSimulationTransition } from "./transition.ts";
@@ -89,7 +89,18 @@ export async function handleEndTurnSimulationRequest(
     return respond(stateResult.error, stateResult.status);
   }
 
-  const transitionResult = planSimulationTransition(stateResult.input);
+  const startResult = await startTurnTransition(
+    validateResult.body,
+    authContextResult.context,
+  );
+  if (!startResult.ok) {
+    return respond(startResult.error, startResult.status);
+  }
+
+  const transitionResult = planSimulationTransition(
+    stateResult.input,
+    startResult.transitionId,
+  );
   if (!transitionResult.ok) {
     return respond(transitionResult.error, transitionResult.status);
   }
@@ -98,6 +109,7 @@ export async function handleEndTurnSimulationRequest(
     validateResult.body,
     transitionResult.payload,
     authContextResult.context,
+    startResult.transitionId,
   );
   if (!persistResult.ok) {
     return respond(persistResult.error, persistResult.status);

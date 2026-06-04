@@ -120,10 +120,12 @@ function makeEmptyResult(): SimulationResult {
 // planSimulationTransition
 // ---------------------------------------------------------------------------
 
+const FIXED_TRANSITION_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+
 describe("planSimulationTransition", () => {
   it("returns ok:false with status 409 for an archived world", () => {
     const input = makeBaseInput({ isWorldArchived: true });
-    const result = planSimulationTransition(input);
+    const result = planSimulationTransition(input, FIXED_TRANSITION_ID);
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.status).toBe(409);
@@ -131,24 +133,22 @@ describe("planSimulationTransition", () => {
     }
   });
 
-  it("returns ok:true with a transitionId UUID and a payload for a live world", () => {
+  it("returns ok:true and echoes the transitionId from the caller", () => {
     const input = makeBaseInput();
-    const result = planSimulationTransition(input);
+    const result = planSimulationTransition(input, FIXED_TRANSITION_ID);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.transitionId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-      );
+      expect(result.transitionId).toBe(FIXED_TRANSITION_ID);
       expect(result.payload).toBeDefined();
     }
   });
 
-  it("generates a different transitionId on each call", () => {
+  it("uses the provided transitionId as the RNG seed (same id → same payload)", () => {
     const input = makeBaseInput();
-    const r1 = planSimulationTransition(input);
-    const r2 = planSimulationTransition(input);
+    const r1 = planSimulationTransition(input, FIXED_TRANSITION_ID);
+    const r2 = planSimulationTransition(input, FIXED_TRANSITION_ID);
     if (r1.ok && r2.ok) {
-      expect(r1.transitionId).not.toBe(r2.transitionId);
+      expect(r1.transitionId).toBe(r2.transitionId);
     }
   });
 });

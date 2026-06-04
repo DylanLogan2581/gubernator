@@ -203,6 +203,41 @@ values
     'running'
   );
 
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    'a5300000-0000-0000-0000-000000000002',
+    'a5200000-0000-0000-0000-000000000001',
+    5,
+    6,
+    'a5100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'a5300000-0000-0000-0000-000000000003',
+    'a5200000-0000-0000-0000-000000000002',
+    5,
+    6,
+    'a5100000-0000-0000-0000-000000000001',
+    'running'
+  ),
+  (
+    'a5300000-0000-0000-0000-000000000004',
+    'a5200000-0000-0000-0000-000000000003',
+    5,
+    6,
+    'a5100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
 -- Pre-seeded snapshot for idempotency test — simulates a partial run that already
 -- wrote this row; ON CONFLICT DO NOTHING should suppress the duplicate on retry.
 insert into
@@ -272,7 +307,8 @@ select
           0
         )
       )
-    )
+    ),
+    'a5300000-0000-0000-0000-000000000002'::uuid
   );
 
 select
@@ -405,7 +441,8 @@ select
           0
         )
       )
-    )
+    ),
+    'a5300000-0000-0000-0000-000000000003'::uuid
   );
 
 select
@@ -484,7 +521,8 @@ select
           0
         )
       )
-    )
+    ),
+    'a5300000-0000-0000-0000-000000000004'::uuid
   );
 
 select
@@ -544,7 +582,8 @@ select
             'tradeOut',       0
           )
         )
-      )
+      ),
+      'a5300000-0000-0000-0000-000000000001'::uuid
     )
     $test$,
     'ON CONFLICT idempotency: retry with pre-existing snapshot raises no exception'

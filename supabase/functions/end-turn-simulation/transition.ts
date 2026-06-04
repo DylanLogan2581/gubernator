@@ -138,9 +138,8 @@ export type SimulationTransitionResult =
 
 export function planSimulationTransition(
   input: SimulationInputState,
+  transitionId: string,
 ): SimulationTransitionResult {
-  const transitionId = crypto.randomUUID();
-
   let result: SimulationResult;
   try {
     result = runSimulation(input, transitionId);
