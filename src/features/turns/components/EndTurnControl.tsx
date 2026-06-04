@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { StepForward } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -10,7 +9,7 @@ import {
   formatSettlementReadinessPercentage,
   settlementReadinessSummaryQueryOptions,
 } from "@/features/settlements";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { endTurnTransitionMutationOptions } from "../mutations/endTurnTransitionMutations";
 import {
@@ -106,7 +105,7 @@ function EndTurnControlContent({
       },
       {
         onError: (error) => {
-          toast.error(getErrorDescription(error));
+          notifyMutationError(error, "End turn failed.");
         },
         onSuccess: (result) => {
           setIsConfirming(false);

@@ -439,7 +439,7 @@ describe("EndTurnControl", () => {
     expect(options?.description).toContain("4 deposit updates");
   });
 
-  it("toasts a refresh-safe message for stale-turn failures", async () => {
+  it("toasts an error message for stale-turn failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
@@ -463,13 +463,10 @@ describe("EndTurnControl", () => {
     await vi.waitFor(() => {
       expect(toastError).toHaveBeenCalledTimes(1);
     });
-    expect(toastError).toHaveBeenCalledWith(
-      "This turn has already changed. Refresh the page to review the latest world state.",
-    );
-    expect(toastError).not.toHaveBeenCalledWith("Internal stale detail");
+    expect(toastError).toHaveBeenCalledWith("Internal stale detail");
   });
 
-  it("toasts a safe message for unauthorized failures", async () => {
+  it("toasts an error message for unauthorized failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
@@ -493,15 +490,10 @@ describe("EndTurnControl", () => {
     await vi.waitFor(() => {
       expect(toastError).toHaveBeenCalledTimes(1);
     });
-    expect(toastError).toHaveBeenCalledWith(
-      "End turn is unavailable for this world.",
-    );
-    expect(toastError).not.toHaveBeenCalledWith(
-      "Internal authorization detail",
-    );
+    expect(toastError).toHaveBeenCalledWith("Internal authorization detail");
   });
 
-  it("toasts a safe message for transition persistence failures", async () => {
+  it("toasts an error message for transition persistence failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
@@ -525,10 +517,7 @@ describe("EndTurnControl", () => {
     await vi.waitFor(() => {
       expect(toastError).toHaveBeenCalledTimes(1);
     });
-    expect(toastError).toHaveBeenCalledWith(
-      "End turn could not be saved. Refresh the page before trying again.",
-    );
-    expect(toastError).not.toHaveBeenCalledWith("Internal transition detail");
+    expect(toastError).toHaveBeenCalledWith("Internal transition detail");
   });
 
   it("shows inline error in the dialog body after a mutation failure", async () => {
