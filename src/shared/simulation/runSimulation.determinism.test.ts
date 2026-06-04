@@ -633,7 +633,6 @@ function buildFullInput(): SimulationInputState {
     partnerships: PARTNERSHIPS,
     populationRules: POPULATION_RULES,
     settlementBuildings: SETTLEMENT_BUILDINGS,
-    settlementId: S1,
     settlements: SETTLEMENTS,
     stockpiles: STOCKPILES,
     systemResourceIds: { foodId: FOOD_ID, freshWaterId: WATER_ID },

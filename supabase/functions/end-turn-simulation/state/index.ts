@@ -281,7 +281,6 @@ export async function resolveSupabaseEndTurnSimulationInput(
     ).rows
       .filter(isBuildingRow)
       .map(toSimBuilding),
-    settlementId: worldId,
     settlements,
     stockpiles: (
       stockpilesResult as Extract<typeof stockpilesResult, { ok: true }>

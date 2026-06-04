@@ -66,7 +66,6 @@ function makeInput(
     partnerships: [],
     populationRules: BASE_POPULATION_RULES,
     settlementBuildings: [],
-    settlementId: "s1",
     settlements: [{ id: "s1", name: "Testville" }],
     stockpiles: [],
     systemResourceIds: { foodId: "food", freshWaterId: "water" },

@@ -77,7 +77,6 @@ function makeBaseInput(
     partnerships: [],
     populationRules: makeMinimalPopulationRules(),
     settlementBuildings: [],
-    settlementId: SETTLEMENT_ID,
     settlements: [{ id: SETTLEMENT_ID, name: "Test Settlement" }],
     stockpiles: [],
     systemResourceIds: { foodId: FOOD_ID, freshWaterId: WATER_ID },

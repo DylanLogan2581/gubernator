@@ -332,7 +332,6 @@ export type SimulationInputState = {
   readonly partnerships: readonly SimPartnership[];
   readonly populationRules: WorldPopulationRules;
   readonly settlementBuildings: readonly SimSettlementBuilding[];
-  readonly settlementId: string;
   readonly settlements: readonly SimSettlement[];
   readonly stockpiles: readonly SimStockpile[];
   readonly systemResourceIds: {

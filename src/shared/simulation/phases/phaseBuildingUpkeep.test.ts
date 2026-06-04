@@ -115,7 +115,6 @@ function makeContext(
     partnerships: [],
     populationRules: POPULATION_RULES,
     settlementBuildings: [],
-    settlementId: "s1",
     settlements: [],
     stockpiles: [],
     systemResourceIds: { foodId: "food", freshWaterId: "fresh-water" },

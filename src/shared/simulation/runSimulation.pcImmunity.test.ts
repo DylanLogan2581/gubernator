@@ -115,7 +115,6 @@ function baseInput(
     partnerships: [],
     populationRules: ZERO_POP_RULES,
     settlementBuildings: [],
-    settlementId: "s1",
     settlements: [makeSettlement("s1")],
     stockpiles: [],
     systemResourceIds: { foodId: "food", freshWaterId: "water" },

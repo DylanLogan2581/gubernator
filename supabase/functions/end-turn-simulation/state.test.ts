@@ -395,8 +395,6 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(input.worldId).toBe(WORLD_ID);
     expect(input.turnNumber).toBe(5);
     expect(input.isWorldArchived).toBe(false);
-    expect(input.settlementId).toBe(WORLD_ID);
-
     // Calendar config
     expect(input.calendarConfig.weekdays).toHaveLength(1);
     expect(input.calendarConfig.months).toHaveLength(1);
