@@ -332,6 +332,7 @@ function TradeRouteRow({
     <>
       <tr
         id={`trade-route-${route.id}`}
+        aria-live={isResumedThisTransition ? "polite" : undefined}
         className={`border-b border-border last:border-0${isResumedThisTransition ? " animate-pulse bg-success [animation-iteration-count:4]" : ""}`}
       >
         <td className="py-2 pr-4 font-medium">{counterpart}</td>
@@ -346,6 +347,9 @@ function TradeRouteRow({
             pauseReason={route.pauseReasonLastTransition}
             status={route.status}
           />
+          {isResumedThisTransition ? (
+            <span className="sr-only">resumed this turn</span>
+          ) : null}
           {route.replacementForTradeRouteId !== null ? (
             <a
               href={`#trade-route-${route.replacementForTradeRouteId}`}

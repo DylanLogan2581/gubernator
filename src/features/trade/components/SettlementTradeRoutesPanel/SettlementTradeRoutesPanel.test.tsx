@@ -295,6 +295,7 @@ function createClient({
     eq: vi.fn(() => transitionsSelectBuilder),
     order: vi.fn(() => transitionsSelectBuilder),
     limit: vi.fn(() => transitionsSelectBuilder),
+    returns: vi.fn(() => transitionsSelectBuilder),
     maybeSingle: vi
       .fn()
       .mockResolvedValue({ data: resolvedTransition, error: null }),
@@ -1223,6 +1224,42 @@ describe("SettlementTradeRoutesPanel", () => {
     await screen.findByText("Outgoing (1)");
     const row = document.getElementById(`trade-route-${ROUTE_ID_1}`);
     expect(row?.className).toContain("animate-pulse");
+  });
+
+  it("shows sr-only 'resumed this turn' label on resumed rows", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "active",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+        transitionRow: createTransitionRow([
+          {
+            id: "log-1",
+            settlement_id: SETTLEMENT_ID,
+            world_id: WORLD_ID,
+            citizen_id: null,
+            nation_id: null,
+            resource_id: null,
+            log_category: "trade_route.resumed",
+            payload_jsonb: {
+              destinationSettlementId: DEST_SETTLEMENT_ID,
+              quantityTransferred: 10,
+              resourceId: RESOURCE_ID_1,
+              tradeRouteId: ROUTE_ID_1,
+            },
+          },
+        ]),
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    expect(screen.getByText("resumed this turn")).toBeDefined();
   });
 
   it("does not apply resumed highlight to routes not in latest transition log", async () => {
