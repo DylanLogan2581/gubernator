@@ -1,6 +1,6 @@
 import { type UseQueryOptions } from "@tanstack/react-query";
 
-import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { normalizeSupabaseError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -50,7 +50,7 @@ export function managedPopulationSnapshotsBySettlementQueryOptions(
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): UseQueryOptions<
   ManagedPopSnapshotCounts,
-  AuthUiError,
+  Error,
   ManagedPopSnapshotCounts,
   SnapshotsBySettlementQueryKey
 > {
