@@ -198,10 +198,15 @@ function EndTurnControlContent({
         <EndTurnConfirmationDialog
           currentDateLabel={currentDateLabel}
           currentTurnNumber={currentTurnNumber}
+          errorMessage={
+            endTurnMutation.isError
+              ? getErrorDescription(endTurnMutation.error)
+              : undefined
+          }
           isPending={endTurnMutation.isPending}
           nextDateLabel={nextDateLabel}
           nextTurnNumber={nextTurnNumber}
-          onCancel={() => {
+          onClose={() => {
             setIsConfirming(false);
           }}
           onConfirm={submitEndTurn}

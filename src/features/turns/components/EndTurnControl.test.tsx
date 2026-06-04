@@ -530,6 +530,63 @@ describe("EndTurnControl", () => {
     );
     expect(toastError).not.toHaveBeenCalledWith("Internal transition detail");
   });
+
+  it("shows inline error in the dialog body after a mutation failure", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      invokeResult: createFunctionErrorResult({
+        code: "end_turn_transition_failed",
+        message: "Internal transition detail",
+      }),
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
+    );
+
+    await vi.waitFor(() => {
+      expect(toastError).toHaveBeenCalledTimes(1);
+    });
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Confirm turn transition",
+    });
+    expect(dialog).toBeDefined();
+    expect(dialog).toHaveTextContent(
+      "End turn could not be saved. Refresh the page before trying again.",
+    );
+  });
+
+  it("closes the dialog when Escape is pressed", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Confirm turn transition" }),
+    ).toBeDefined();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
 });
 
 type ClientFixture = {

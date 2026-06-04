@@ -1,6 +1,14 @@
-import { StepForward, TriangleAlert, X } from "lucide-react";
+import { StepForward, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { SettlementReadinessSummary } from "@/features/settlements";
 
 import { getReadinessSummaryDescription } from "../utils/endTurnDescriptions";
@@ -24,56 +32,41 @@ const TRANSITION_PHASES = [
 export function EndTurnConfirmationDialog({
   currentDateLabel,
   currentTurnNumber,
+  errorMessage,
   isPending,
   nextDateLabel,
   nextTurnNumber,
-  onCancel,
+  onClose,
   onConfirm,
   readinessSummary,
 }: {
   readonly currentDateLabel: string;
   readonly currentTurnNumber: number;
+  readonly errorMessage?: string;
   readonly isPending: boolean;
   readonly nextDateLabel: string;
   readonly nextTurnNumber: number;
-  readonly onCancel: () => void;
+  readonly onClose: () => void;
   readonly onConfirm: () => void;
   readonly readinessSummary: SettlementReadinessSummary;
 }): JSX.Element {
   const hasNotReadySettlements = readinessSummary.notReadySettlementCount > 0;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
-      <div
-        aria-labelledby="end-turn-confirmation-title"
-        aria-modal="true"
-        className="grid w-full max-w-lg gap-5 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h3
-              id="end-turn-confirmation-title"
-              className="text-lg font-semibold tracking-normal"
-            >
-              Confirm turn transition
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              This runs the full simulation and advances world state. It cannot
-              be undone.
-            </p>
-          </div>
-          <Button
-            aria-label="Cancel turn transition"
-            disabled={isPending}
-            onClick={onCancel}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Confirm turn transition</DialogTitle>
+          <DialogDescription>
+            This runs the full simulation and advances world state. It cannot be
+            undone.
+          </DialogDescription>
+        </DialogHeader>
 
         <dl className="grid gap-3 sm:grid-cols-2">
           <EndTurnMetric
@@ -115,10 +108,23 @@ export function EndTurnConfirmationDialog({
           </p>
         ) : null}
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {errorMessage !== undefined ? (
+          <p
+            className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            <TriangleAlert
+              className="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <DialogFooter>
           <Button
             disabled={isPending}
-            onClick={onCancel}
+            onClick={onClose}
             type="button"
             variant="outline"
           >
@@ -128,8 +134,8 @@ export function EndTurnConfirmationDialog({
             <StepForward aria-hidden="true" />
             {isPending ? "Running..." : "Confirm turn transition"}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
