@@ -10,6 +10,9 @@ import type { TurnCalendarConfig } from "../../../src/shared/turnCalendarPrimiti
 
 const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function parseEndTurnSimulationRequestBody(
   request: Request,
 ): Promise<
@@ -96,7 +99,10 @@ function validateEndTurnSimulationRequestBody(
     validationErrors.push("body");
   }
 
-  if (typeof body.worldId !== "string" || body.worldId.trim().length === 0) {
+  if (
+    typeof body.worldId !== "string" ||
+    !UUID_REGEX.test(body.worldId.trim())
+  ) {
     validationErrors.push("worldId");
   }
 
@@ -118,7 +124,7 @@ function isEndTurnSimulationRequestBody(
     isRecord(body) &&
     hasOnlyExpectedFields(body, expectedRequestFields) &&
     typeof body.worldId === "string" &&
-    body.worldId.trim().length > 0 &&
+    UUID_REGEX.test(body.worldId.trim()) &&
     typeof body.expectedTurnNumber === "number" &&
     Number.isSafeInteger(body.expectedTurnNumber) &&
     body.expectedTurnNumber >= 0
