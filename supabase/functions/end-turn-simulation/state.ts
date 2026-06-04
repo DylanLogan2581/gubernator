@@ -134,11 +134,6 @@ export async function resolveSupabaseEndTurnSimulationInput(
   const inFilter =
     settlementIds.length > 0 ? `in.(${settlementIds.join(",")})` : "in.()";
 
-  const tradeRouteOrFilter =
-    settlementIds.length > 0
-      ? `(origin_settlement_id.in.(${settlementIds.join(",")}),destination_settlement_id.in.(${settlementIds.join(",")}))`
-      : "(origin_settlement_id.in.(),destination_settlement_id.in.())";
-
   const [
     resourcesResult,
     stockpilesResult,
@@ -276,7 +271,8 @@ export async function resolveSupabaseEndTurnSimulationInput(
       supabaseUrl,
       table: "trade_routes",
       params: {
-        or: tradeRouteOrFilter,
+        origin_settlement_id: inFilter,
+        destination_settlement_id: inFilter,
         status: "in.(active,paused)",
         order: "id.asc",
         select:
