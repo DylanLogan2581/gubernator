@@ -8,6 +8,7 @@ export type EndTurnSimulationErrorCode =
   | "end_turn_calendar_config_invalid"
   | "end_turn_running_transition"
   | "end_turn_stale_expected_turn"
+  | "end_turn_state_drifted"
   | "end_turn_state_unavailable"
   | "end_turn_transition_failed"
   | "end_turn_transition_unavailable"

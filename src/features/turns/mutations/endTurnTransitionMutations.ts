@@ -39,6 +39,7 @@ type EndTurnTransitionFunctionErrorCode =
   | "end_turn_calendar_config_invalid"
   | "end_turn_running_transition"
   | "end_turn_stale_expected_turn"
+  | "end_turn_state_drifted"
   | "end_turn_state_unavailable"
   | "end_turn_transition_failed"
   | "end_turn_transition_unavailable"
@@ -257,6 +258,7 @@ function normalizeEndTurnTransitionErrorCode(
 ): EndTurnTransitionExpectedErrorCode {
   switch (code as EndTurnTransitionFunctionErrorCode) {
     case "end_turn_stale_expected_turn":
+    case "end_turn_state_drifted":
       return "end_turn_stale_turn";
     case "auth_context_unavailable":
     case "unauthenticated":

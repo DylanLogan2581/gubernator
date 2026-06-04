@@ -263,6 +263,18 @@ function rpcErrorToResult(
       };
     }
 
+    if (error.message.includes("state diverged")) {
+      return {
+        error: createErrorResponse({
+          code: "end_turn_state_drifted",
+          message:
+            "World state changed during end-turn processing. Refresh and retry.",
+        }),
+        ok: false,
+        status: 409,
+      };
+    }
+
     return {
       error: createErrorResponse({
         code: "end_turn_transition_failed",
