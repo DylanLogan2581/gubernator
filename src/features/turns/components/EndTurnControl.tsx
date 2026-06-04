@@ -9,12 +9,13 @@ import {
   formatSettlementReadinessPercentage,
   settlementReadinessSummaryQueryOptions,
 } from "@/features/settlements";
+import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { endTurnTransitionMutationOptions } from "../mutations/endTurnTransitionMutations";
 import {
   getControlDescription,
-  getErrorDescription,
+  getErrorDescription as getEndTurnMutationErrorDescription,
 } from "../utils/endTurnDescriptions";
 
 import { EndTurnConfirmationDialog } from "./EndTurnConfirmationDialog";
@@ -199,7 +200,7 @@ function EndTurnControlContent({
           currentTurnNumber={currentTurnNumber}
           errorMessage={
             endTurnMutation.isError
-              ? getErrorDescription(endTurnMutation.error)
+              ? getEndTurnMutationErrorDescription(endTurnMutation.error)
               : undefined
           }
           isPending={endTurnMutation.isPending}

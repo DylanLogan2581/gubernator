@@ -554,6 +554,62 @@ describe("EndTurnControl", () => {
     );
   });
 
+  it("shows the actual error message when the readiness query fails", async () => {
+    const clientFixture = createClientFixture({
+      settlementQueryError: new Error("Row-level security check failed"),
+      settlementRows: [],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    expect(
+      await screen.findByText("Row-level security check failed"),
+    ).toBeDefined();
+    expect(
+      screen.getByText("End-turn readiness could not be loaded"),
+    ).toBeDefined();
+    expect(
+      screen.queryByText(
+        "Try refreshing the page. If the problem continues, contact an administrator.",
+      ),
+    ).toBeNull();
+  });
+
+  it("shows the specialized error message for mutation failures in the dialog", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      invokeResult: createFunctionErrorResult({
+        code: "end_turn_transition_failed",
+        message: "Internal transition detail",
+      }),
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
+    );
+
+    await vi.waitFor(() => {
+      expect(toastError).toHaveBeenCalledTimes(1);
+    });
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Confirm turn transition",
+    });
+    expect(dialog).toHaveTextContent(
+      "End turn could not be saved. Refresh the page before trying again.",
+    );
+    expect(dialog).not.toHaveTextContent("Internal transition detail");
+  });
+
   it("closes the dialog when Escape is pressed", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
@@ -656,9 +712,11 @@ function createClientFixture({
     },
     error: null,
   },
+  settlementQueryError,
   settlementRows,
 }: {
   readonly invokeResult?: FunctionInvokeResult;
+  readonly settlementQueryError?: Error;
   readonly settlementRows: readonly TestSettlementReadinessRow[];
 }): ClientFixture {
   const invoke = vi.fn().mockReturnValue(invokeResult);
@@ -667,7 +725,10 @@ function createClientFixture({
     client: {
       from: vi.fn((table: string) => {
         if (table === "settlements") {
-          return createSettlementsQueryBuilder(settlementRows);
+          return createSettlementsQueryBuilder(
+            settlementRows,
+            settlementQueryError,
+          );
         }
 
         throw new Error(`Unexpected table ${table}`);
@@ -712,10 +773,15 @@ function createSettlementRow(
 
 function createSettlementsQueryBuilder(
   rows: readonly TestSettlementReadinessRow[],
+  queryError?: Error,
 ): unknown {
+  const resolvedValue =
+    queryError !== undefined
+      ? { data: null, error: { message: queryError.message } }
+      : { data: rows, error: null };
   const builder = {
     eq: vi.fn(() => builder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    returns: vi.fn().mockResolvedValue(resolvedValue),
     select: vi.fn(() => builder),
   };
 
