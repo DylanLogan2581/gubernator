@@ -128,13 +128,13 @@ export function phaseDepositExtraction(
       const spaceAvailable = Math.max(0, cap - currentQty);
       const actualExtracted = Math.min(cappedByDeposit, spaceAvailable);
 
-      resourceDeltas.push({
-        delta: -actualExtracted,
-        resourceId: res.resourceId,
-      });
       extractedByResource[res.resourceId] = actualExtracted;
 
       if (actualExtracted > 0) {
+        resourceDeltas.push({
+          delta: -actualExtracted,
+          resourceId: res.resourceId,
+        });
         allDeltas.push({
           delta: actualExtracted,
           resourceId: res.resourceId,
