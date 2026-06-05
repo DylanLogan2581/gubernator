@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (18);
+  plan (21);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -764,6 +764,152 @@ select
     )
     $test$,
     'settlement manager can lower count'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- get_settlement_standard_job_counts: alive filter (defense-in-depth)
+--
+-- Set up: NPC 001 and NPC 002 assigned to ba5...001 (standard, capacity=5).
+-- Mark NPC 001 as dead (status = 'dead') without touching citizen_assignments —
+-- simulating a missed cleanup (the scenario the alive filter guards against).
+-- Verify that get_settlement_standard_job_counts reports current_count = 1,
+-- not 2.
+-- ===========================================================================
+delete from public.citizen_assignments
+where
+  citizen_id in (
+    'ba600000-0000-0000-0000-000000000001',
+    'ba600000-0000-0000-0000-000000000002',
+    'ba600000-0000-0000-0000-000000000003',
+    'ba600000-0000-0000-0000-000000000004',
+    'ba600000-0000-0000-0000-000000000005',
+    'ba600000-0000-0000-0000-000000000007'
+  );
+
+insert into
+  public.citizen_assignments (
+    citizen_id,
+    assignment_type,
+    job_id,
+    assigned_on_turn_number
+  )
+values
+  (
+    'ba600000-0000-0000-0000-000000000001',
+    'standard_job',
+    'ba500000-0000-0000-0000-000000000001',
+    1
+  ),
+  (
+    'ba600000-0000-0000-0000-000000000002',
+    'standard_job',
+    'ba500000-0000-0000-0000-000000000001',
+    1
+  );
+
+-- Mark NPC 001 as dead without deleting their assignment (simulates missed cleanup).
+update public.citizens
+set
+  status = 'dead'
+where
+  id = 'ba600000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        r.current_count
+      from
+        public.get_settlement_standard_job_counts ('ba400000-0000-0000-0000-000000000001') r
+      where
+        r.job_id = 'ba500000-0000-0000-0000-000000000001'
+    ),
+    1,
+    'get_settlement_standard_job_counts: dead NPC assignment does not inflate count'
+  );
+
+reset role;
+
+-- Restore NPC 001 to alive for cleanliness.
+update public.citizens
+set
+  status = 'alive'
+where
+  id = 'ba600000-0000-0000-0000-000000000001';
+
+-- ===========================================================================
+-- get_settlement_standard_job_counts: alive count after all NPCs marked dead
+-- ===========================================================================
+update public.citizens
+set
+  status = 'dead'
+where
+  id in (
+    'ba600000-0000-0000-0000-000000000001',
+    'ba600000-0000-0000-0000-000000000002'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        r.current_count
+      from
+        public.get_settlement_standard_job_counts ('ba400000-0000-0000-0000-000000000001') r
+      where
+        r.job_id = 'ba500000-0000-0000-0000-000000000001'
+    ),
+    0,
+    'get_settlement_standard_job_counts: all assigned NPCs dead yields count = 0'
+  );
+
+reset role;
+
+-- Restore for safety.
+update public.citizens
+set
+  status = 'alive'
+where
+  id in (
+    'ba600000-0000-0000-0000-000000000001',
+    'ba600000-0000-0000-0000-000000000002'
+  );
+
+-- ===========================================================================
+-- get_settlement_standard_job_counts: alive NPC still counted correctly
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        r.current_count
+      from
+        public.get_settlement_standard_job_counts ('ba400000-0000-0000-0000-000000000001') r
+      where
+        r.job_id = 'ba500000-0000-0000-0000-000000000001'
+    ),
+    2,
+    'get_settlement_standard_job_counts: alive assigned NPCs are counted correctly'
   );
 
 reset role;

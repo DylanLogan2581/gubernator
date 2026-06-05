@@ -503,3 +503,86 @@ describe("runSimulation — readinessSummary", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// assignmentClears: deaths in phase 8 (starvation) and phase 10 (homelessness)
+// ---------------------------------------------------------------------------
+
+describe("runSimulation — assignmentClears for citizen deaths", () => {
+  it("includes starvation victim in assignmentClears when citizen has a job assignment", () => {
+    // 1 NPC assigned to a job, no food → starves; their assignment must be cleared.
+    const input = makeInput({
+      settlements: [makeSettlement("s1")],
+      citizens: [makeNpc("npc-starve", "s1")],
+      citizenAssignments: [makeAssignment("npc-starve", "farming")],
+      jobs: [
+        makeJob("farming", [], [{ resourceId: "grain", amountPerWorker: 1 }]),
+      ],
+      stockpiles: [makeStockpile("s1", "grain", 0)],
+      populationRules: {
+        ...BASE_POPULATION_RULES,
+        foodConsumptionPerCitizen: 1,
+        waterConsumptionPerCitizen: 0,
+        starvationSeverityMultiplier: 1,
+      },
+    });
+
+    const result = runSimulation(input, "t-assignment-clear-starvation");
+
+    expect(result.citizenDeaths.some((d) => d.citizenId === "npc-starve")).toBe(
+      true,
+    );
+    expect(
+      result.assignmentClears.some((a) => a.citizenId === "npc-starve"),
+    ).toBe(true);
+  });
+
+  it("includes homelessness victim in assignmentClears when citizen has a job assignment", () => {
+    // 1 NPC assigned to a job, pop cap = 0 → dies of homelessness; assignment must be cleared.
+    const input = makeInput({
+      settlements: [makeSettlement("s1")],
+      citizens: [makeNpc("npc-homeless", "s1")],
+      citizenAssignments: [makeAssignment("npc-homeless", "farming")],
+      jobs: [makeJob("farming", [], [])],
+      stockpiles: [],
+      populationRules: {
+        ...BASE_POPULATION_RULES,
+        homelessnessDecliningRate: 1,
+      },
+    });
+
+    const result = runSimulation(input, "t-assignment-clear-homelessness");
+
+    expect(
+      result.citizenDeaths.some((d) => d.citizenId === "npc-homeless"),
+    ).toBe(true);
+    expect(
+      result.assignmentClears.some((a) => a.citizenId === "npc-homeless"),
+    ).toBe(true);
+  });
+
+  it("does not emit a duplicate assignmentClear when a citizen dies and has no assignment", () => {
+    // NPC with no assignment starves; the resulting assignmentClear for them is fine
+    // (the SQL delete is a no-op) but we should not emit more clears than deaths.
+    const input = makeInput({
+      settlements: [makeSettlement("s1")],
+      citizens: [makeNpc("npc-unassigned", "s1")],
+      citizenAssignments: [],
+      jobs: [],
+      stockpiles: [],
+      populationRules: {
+        ...BASE_POPULATION_RULES,
+        foodConsumptionPerCitizen: 1,
+        waterConsumptionPerCitizen: 0,
+        starvationSeverityMultiplier: 1,
+      },
+    });
+
+    const result = runSimulation(input, "t-assignment-clear-no-dupe");
+
+    const clearsForCitizen = result.assignmentClears.filter(
+      (a) => a.citizenId === "npc-unassigned",
+    );
+    expect(clearsForCitizen.length).toBe(1);
+  });
+});

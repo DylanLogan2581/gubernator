@@ -355,6 +355,13 @@ export function runSimulation(
       ...p2.assignmentClears,
       ...p3.assignmentClears,
       ...p7.assignmentClears,
+      // Citizens who die in phase 8 (starvation) or phase 10 (homelessness)
+      // must have their citizen_assignments rows deleted so job counts stay
+      // accurate after the transition completes.
+      ...allDeaths.map((d) => ({
+        citizenId: d.citizenId,
+        reason: "citizen_died",
+      })),
     ],
     buildingStateChanges: p4.buildingStateChanges,
     buildingsCreated: p3.buildingsCreated,
