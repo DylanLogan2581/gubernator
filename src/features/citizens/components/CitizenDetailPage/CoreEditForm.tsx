@@ -170,8 +170,8 @@ export function CitizenCoreSection({
           onChange={(event) => setSex(event.currentTarget.value)}
         >
           <option value=""></option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
         </select>
       </label>
       <div className="flex flex-wrap gap-2">

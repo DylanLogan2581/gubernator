@@ -177,15 +177,19 @@ export function CreatePlayerCharacterDialog({
 
           <label className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Sex</span>
-            <Input
+            <select
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
               disabled={mutation.isPending}
-              placeholder="Optional"
               value={fields.sex}
               onChange={(event) => {
                 const value = event.currentTarget.value;
                 setFields((current) => ({ ...current, sex: value }));
               }}
-            />
+            >
+              <option value=""></option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
           </label>
 
           <label className="grid gap-1 text-sm" htmlFor={userId}>
