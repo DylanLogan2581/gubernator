@@ -1,9 +1,8 @@
 -- Migration: drop_snapshot_world_admin_write_policies
 --
--- Aligns RLS with docs/epic-6-simulation-engine.md §RLS expectations:
--- "Direct INSERT, UPDATE, and DELETE through the table API are blocked for all
--- roles including World Admin; mutations route exclusively through
--- apply_turn_transition."
+-- Aligns RLS with the Epic 6 simulation engine spec: direct INSERT, UPDATE,
+-- and DELETE through the table API are blocked for all roles including World
+-- Admin; mutations route exclusively through apply_turn_transition.
 --
 -- Changes:
 --   1. Drop world-admin UPDATE and DELETE policies on both snapshot tables.
