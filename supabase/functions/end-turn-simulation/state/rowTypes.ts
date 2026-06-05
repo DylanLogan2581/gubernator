@@ -138,13 +138,18 @@ export type SupabaseManagedPopRow = {
   readonly status: string;
 };
 
+export type SupabaseTradeRouteLegRow = {
+  readonly direction: string;
+  readonly quantity_per_transition: number;
+  readonly resource_id: string;
+};
+
 export type SupabaseTradeRouteRow = {
   readonly id: string;
   readonly origin_settlement_id: string;
   readonly destination_settlement_id: string;
-  readonly resource_id: string;
-  readonly quantity_per_transition: number;
   readonly status: string;
+  readonly trade_route_legs: readonly SupabaseTradeRouteLegRow[];
 };
 
 export type SupabaseCitizenRow = {
@@ -371,9 +376,15 @@ export function isTradeRouteRow(v: unknown): v is SupabaseTradeRouteRow {
     typeof v.id === "string" &&
     typeof v.origin_settlement_id === "string" &&
     typeof v.destination_settlement_id === "string" &&
-    typeof v.resource_id === "string" &&
-    typeof v.quantity_per_transition === "number" &&
-    typeof v.status === "string"
+    typeof v.status === "string" &&
+    Array.isArray(v.trade_route_legs) &&
+    (v.trade_route_legs as unknown[]).every(
+      (leg) =>
+        isRecord(leg) &&
+        typeof leg.direction === "string" &&
+        typeof leg.resource_id === "string" &&
+        typeof leg.quantity_per_transition === "number",
+    )
   );
 }
 

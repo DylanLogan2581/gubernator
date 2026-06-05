@@ -8,12 +8,17 @@ const DEST_ID = "22222222-2222-2222-2222-222222222222";
 const RESOURCE_ID = "33333333-3333-3333-3333-333333333333";
 const CITIZEN_ID = "44444444-4444-4444-4444-444444444444";
 
+const VALID_LEG = {
+  direction: "send" as const,
+  quantity: 10,
+  resourceId: RESOURCE_ID,
+};
+
 const VALID_BASE = {
   newRoutePayload: {
     destinationSettlementId: DEST_ID,
+    legs: [VALID_LEG],
     originSettlementId: ORIGIN_ID,
-    quantityPerTransition: 10,
-    resourceId: RESOURCE_ID,
   },
   oldRouteId: OLD_ROUTE_ID,
   proposingCitizenId: CITIZEN_ID,
@@ -26,12 +31,31 @@ describe("replaceTradeRouteInputSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts multiple legs", () => {
+    const result = replaceTradeRouteInputSchema.safeParse({
+      ...VALID_BASE,
+      newRoutePayload: {
+        ...VALID_BASE.newRoutePayload,
+        legs: [
+          { direction: "send", quantity: 10, resourceId: RESOURCE_ID },
+          {
+            direction: "receive",
+            quantity: 5,
+            resourceId: "55555555-5555-5555-5555-555555555555",
+          },
+        ],
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("accepts fractional quantity", () => {
     const result = replaceTradeRouteInputSchema.safeParse({
       ...VALID_BASE,
       newRoutePayload: {
         ...VALID_BASE.newRoutePayload,
-        quantityPerTransition: 0.5,
+        legs: [{ ...VALID_LEG, quantity: 0.5 }],
       },
     });
 
@@ -53,12 +77,24 @@ describe("replaceTradeRouteInputSchema", () => {
     }
   });
 
+  it("rejects empty legs array", () => {
+    const result = replaceTradeRouteInputSchema.safeParse({
+      ...VALID_BASE,
+      newRoutePayload: {
+        ...VALID_BASE.newRoutePayload,
+        legs: [],
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("rejects quantity of zero", () => {
     const result = replaceTradeRouteInputSchema.safeParse({
       ...VALID_BASE,
       newRoutePayload: {
         ...VALID_BASE.newRoutePayload,
-        quantityPerTransition: 0,
+        legs: [{ ...VALID_LEG, quantity: 0 }],
       },
     });
 
@@ -70,7 +106,7 @@ describe("replaceTradeRouteInputSchema", () => {
       ...VALID_BASE,
       newRoutePayload: {
         ...VALID_BASE.newRoutePayload,
-        quantityPerTransition: -1,
+        legs: [{ ...VALID_LEG, quantity: -1 }],
       },
     });
 
@@ -117,12 +153,12 @@ describe("replaceTradeRouteInputSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects invalid resourceId in payload", () => {
+  it("rejects invalid resourceId in leg", () => {
     const result = replaceTradeRouteInputSchema.safeParse({
       ...VALID_BASE,
       newRoutePayload: {
         ...VALID_BASE.newRoutePayload,
-        resourceId: "not-a-uuid",
+        legs: [{ ...VALID_LEG, resourceId: "not-a-uuid" }],
       },
     });
 

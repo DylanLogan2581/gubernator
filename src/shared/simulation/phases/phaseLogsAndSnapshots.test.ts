@@ -596,16 +596,26 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
             id: "tr-1",
             originSettlementId: "s1",
             destinationSettlementId: "s2",
-            resourceId: "res-1",
-            quantityPerTransition: 10,
+            legs: [
+              {
+                direction: "send",
+                quantityPerTransition: 10,
+                resourceId: "res-1",
+              },
+            ],
             status: "active",
           },
           {
             id: "tr-2",
             originSettlementId: "s2",
             destinationSettlementId: "s2",
-            resourceId: "res-2",
-            quantityPerTransition: 5,
+            legs: [
+              {
+                direction: "send",
+                quantityPerTransition: 5,
+                resourceId: "res-2",
+              },
+            ],
             status: "active", // no outcome provided — not included
           },
         ],
@@ -809,8 +819,13 @@ describe("phaseLogsAndSnapshots — resource snapshot", () => {
             id: "tr-1",
             originSettlementId: "s1",
             destinationSettlementId: "s2",
-            resourceId: "wood",
-            quantityPerTransition: 5,
+            legs: [
+              {
+                direction: "send",
+                quantityPerTransition: 5,
+                resourceId: "wood",
+              },
+            ],
             status: "active",
           },
         ],

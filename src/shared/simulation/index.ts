@@ -52,6 +52,7 @@ export type {
   SimTierCostEntry,
   SimTierEffect,
   SimTradeRoute,
+  SimTradeRouteLeg,
   SimTradeRouteStatus,
   SimWorkerInputEntry,
   SimulationContext,

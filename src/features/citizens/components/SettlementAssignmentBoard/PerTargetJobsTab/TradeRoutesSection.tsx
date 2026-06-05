@@ -4,7 +4,7 @@ import { useState, type JSX, type ReactNode } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
-import { type TradeRoute } from "@/features/trade";
+import { type TradeRoute, type TradeRouteLeg } from "@/features/trade";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { setPerTargetAssignmentMutationOptions } from "../../../mutations/perTargetAssignmentMutations";
@@ -52,14 +52,15 @@ export function TradeRoutesSection({
             localEnd === "origin"
               ? route.destinationSettlementName
               : route.originSettlementName;
+          const resourcesLabel = legsLabel(route.legs);
           const localLabel =
             localEnd === "origin"
-              ? `Trader (sending): ${route.resourceName} → ${route.destinationSettlementName}`
-              : `Trader (receiving): ${route.resourceName} from ${route.originSettlementName}`;
+              ? `Trader: ${resourcesLabel} → ${route.destinationSettlementName}`
+              : `Trader: ${resourcesLabel} from ${route.originSettlementName}`;
           const localTooltip =
             localEnd === "origin"
-              ? `Sending ${route.resourceName} to ${route.destinationSettlementName}`
-              : `Receiving ${route.resourceName} from ${route.originSettlementName}`;
+              ? `Trading ${resourcesLabel} with ${route.destinationSettlementName}`
+              : `Trading ${resourcesLabel} with ${route.originSettlementName}`;
           const LocalIcon =
             localEnd === "origin" ? ArrowUpFromLine : ArrowDownToLine;
           const localKey = `${route.id}:${localEnd}`;
@@ -67,12 +68,9 @@ export function TradeRoutesSection({
 
           return (
             <div key={route.id} className="grid gap-1.5">
-              <p
-                aria-label={`${route.resourceName} travels from ${route.originSettlementName} to ${route.destinationSettlementName}`}
-                className="text-xs font-medium text-muted-foreground"
-              >
-                {route.resourceName}: {route.originSettlementName} →{" "}
-                {route.destinationSettlementName}
+              <p className="text-xs font-medium text-muted-foreground">
+                {route.originSettlementName} → {route.destinationSettlementName}
+                {route.legs.length > 0 ? ` (${resourcesLabel})` : null}
               </p>
               <TradeRouteLocalEndRow
                 aliveCitizens={aliveCitizens}
@@ -100,7 +98,6 @@ export function TradeRoutesSection({
                 destinationSettlementName={route.destinationSettlementName}
                 originSettlementName={route.originSettlementName}
                 remoteSettlementName={remoteSettlementName}
-                resourceName={route.resourceName}
                 tradeRouteEnd={remoteEnd}
               />
             </div>
@@ -224,26 +221,29 @@ function TradeRouteLocalEndRow({
   );
 }
 
+function legsLabel(legs: readonly TradeRouteLeg[]): string {
+  if (legs.length === 0) return "No resources";
+  return legs.map((l) => l.resourceName).join(", ");
+}
+
 function TradeRouteRemoteEndRow({
   assignedCount,
   destinationSettlementName,
   originSettlementName,
   remoteSettlementName,
-  resourceName,
   tradeRouteEnd,
 }: {
   readonly assignedCount: number;
   readonly destinationSettlementName: string;
   readonly originSettlementName: string;
   readonly remoteSettlementName: string;
-  readonly resourceName: string;
   readonly tradeRouteEnd: "destination" | "origin";
 }): JSX.Element {
   const isSending = tradeRouteEnd === "origin";
   const RemoteIcon = isSending ? ArrowUpFromLine : ArrowDownToLine;
   const remoteTooltip = isSending
-    ? `Sending ${resourceName} to ${destinationSettlementName}`
-    : `Receiving ${resourceName} from ${originSettlementName}`;
+    ? `Sending to ${destinationSettlementName}`
+    : `Receiving from ${originSettlementName}`;
   const endLabel = isSending
     ? "Trader (sending — remote)"
     : "Trader (receiving — remote)";

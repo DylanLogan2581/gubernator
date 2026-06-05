@@ -55,14 +55,22 @@ const ROUTE_ID_1 = "00000000-0000-0000-0000-000000000010";
 const ROUTE_ID_2 = "00000000-0000-0000-0000-000000000011";
 const DEST_SETTLEMENT_ID = "00000000-0000-0000-0000-000000000020";
 const RESOURCE_ID_1 = "00000000-0000-0000-0000-000000000030";
+const LEG_ID_1 = "00000000-0000-0000-0000-000000000031";
 const CITIZEN_ID_1 = "00000000-0000-0000-0000-000000000040";
+
+type TestTradeRouteLegRow = {
+  readonly id: string;
+  readonly direction: string;
+  readonly resource_id: string;
+  readonly quantity_per_transition: number;
+  readonly resource: { readonly name: string };
+};
 
 type TestTradeRouteRow = {
   readonly id: string;
   readonly origin_settlement_id: string;
   readonly destination_settlement_id: string;
-  readonly resource_id: string;
-  readonly quantity_per_transition: number;
+  readonly trade_route_legs: readonly TestTradeRouteLegRow[];
   readonly status: string;
   readonly proposed_by_citizen_id: string;
   readonly origin_approval_status: string;
@@ -81,7 +89,6 @@ type TestTradeRouteRow = {
     readonly name: string;
     readonly nation: { readonly name: string };
   };
-  readonly resource: { readonly name: string };
 };
 
 function createRouteRow(
@@ -91,8 +98,15 @@ function createRouteRow(
     id: ROUTE_ID_1,
     origin_settlement_id: SETTLEMENT_ID,
     destination_settlement_id: DEST_SETTLEMENT_ID,
-    resource_id: RESOURCE_ID_1,
-    quantity_per_transition: 10,
+    trade_route_legs: [
+      {
+        id: LEG_ID_1,
+        direction: "send",
+        resource_id: RESOURCE_ID_1,
+        quantity_per_transition: 10,
+        resource: { name: "Grain" },
+      },
+    ],
     status: "proposed",
     proposed_by_citizen_id: CITIZEN_ID_1,
     origin_approval_status: "pending",
@@ -111,7 +125,6 @@ function createRouteRow(
       name: "Far Settlement",
       nation: { name: "Far Nation" },
     },
-    resource: { name: "Grain" },
     ...overrides,
   };
 }
@@ -421,8 +434,7 @@ describe("SettlementTradeRoutesPanel", () => {
 
     await screen.findByText("Outgoing (1)");
     expect(screen.getByText("Far Settlement (Far Nation)")).toBeDefined();
-    expect(screen.getByText("Grain")).toBeDefined();
-    expect(screen.getByText("10")).toBeDefined();
+    expect(screen.getByText(/Grain/)).toBeDefined();
     expect(screen.getByText("Proposed")).toBeDefined();
   });
 
@@ -1008,13 +1020,13 @@ describe("SettlementTradeRoutesPanel", () => {
     });
     await user.selectOptions(destSelect, DEST_SETTLEMENT_ID);
 
-    const resourceSelect = within(dialog).getByRole("combobox", {
-      name: "Resource",
+    const resourceSelect = await within(dialog).findByRole("combobox", {
+      name: "Leg 1 resource",
     });
     await user.selectOptions(resourceSelect, RESOURCE_ID_1);
 
     const qtyInput = within(dialog).getByRole("textbox", {
-      name: "Quantity per turn",
+      name: "Leg 1 quantity per turn",
     });
     await user.clear(qtyInput);
     await user.type(qtyInput, "25");
@@ -1027,8 +1039,9 @@ describe("SettlementTradeRoutesPanel", () => {
         expect.objectContaining({
           p_origin: SETTLEMENT_ID,
           p_destination: DEST_SETTLEMENT_ID,
-          p_resource_id: RESOURCE_ID_1,
-          p_quantity: 25,
+          p_legs: [
+            { direction: "send", quantity: 25, resourceId: RESOURCE_ID_1 },
+          ],
           p_proposed_by_citizen_id: CITIZEN_ID_1,
         }),
       );
@@ -1097,7 +1110,7 @@ describe("SettlementTradeRoutesPanel", () => {
     });
 
     const qtyInput = within(dialog).getByRole("textbox", {
-      name: "New quantity per turn",
+      name: "Leg 1 quantity per turn",
     });
     await user.clear(qtyInput);
     await user.type(qtyInput, "20");
@@ -1119,9 +1132,9 @@ describe("SettlementTradeRoutesPanel", () => {
     expect(
       (
         replaceCall?.[1] as {
-          p_new_payload?: { quantity_per_transition?: number };
+          p_new_payload?: { legs?: { quantity?: number }[] };
         }
-      )?.p_new_payload?.quantity_per_transition,
+      )?.p_new_payload?.legs?.[0]?.quantity,
     ).toBe(20);
 
     await waitFor(() => {

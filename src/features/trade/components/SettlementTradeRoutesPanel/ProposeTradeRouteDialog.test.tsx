@@ -153,13 +153,13 @@ describe("ProposeTradeRouteDialog", () => {
     });
     await user.selectOptions(destSelect, DEST_SETTLEMENT_ID);
 
-    const resourceSelect = within(dialog).getByRole("combobox", {
-      name: "Resource",
+    const resourceSelect = await within(dialog).findByRole("combobox", {
+      name: "Leg 1 resource",
     });
     await user.selectOptions(resourceSelect, RESOURCE_ID);
 
     const qtyInput = within(dialog).getByRole("textbox", {
-      name: "Quantity per turn",
+      name: "Leg 1 quantity per turn",
     });
     await user.clear(qtyInput);
     await user.type(qtyInput, "25");
@@ -226,13 +226,13 @@ describe("ProposeTradeRouteDialog", () => {
     });
     await user.selectOptions(destSelect, DEST_SETTLEMENT_ID);
 
-    const resourceSelect = within(dialog).getByRole("combobox", {
-      name: "Resource",
+    const resourceSelect = await within(dialog).findByRole("combobox", {
+      name: "Leg 1 resource",
     });
     await user.selectOptions(resourceSelect, RESOURCE_ID);
 
     const qtyInput = within(dialog).getByRole("textbox", {
-      name: "Quantity per turn",
+      name: "Leg 1 quantity per turn",
     });
     await user.clear(qtyInput);
     await user.type(qtyInput, "10");

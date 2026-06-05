@@ -1,15 +1,16 @@
 import { z } from "zod";
 
+import { tradeRouteLegInputSchema } from "./proposeTradeRouteSchemas";
+
 const newRoutePayloadSchema = z
   .strictObject({
     destinationSettlementId: z.guid(
       "Destination settlement id must be a valid UUID.",
     ),
+    legs: z
+      .array(tradeRouteLegInputSchema)
+      .min(1, "Trade route must have at least one leg."),
     originSettlementId: z.guid("Origin settlement id must be a valid UUID."),
-    quantityPerTransition: z
-      .number()
-      .positive("Quantity per transition must be greater than zero."),
-    resourceId: z.guid("Resource id must be a valid UUID."),
   })
   .superRefine((value, ctx): void => {
     if (value.originSettlementId === value.destinationSettlementId) {

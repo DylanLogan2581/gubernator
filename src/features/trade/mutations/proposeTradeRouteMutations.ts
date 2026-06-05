@@ -84,10 +84,9 @@ async function proposeTradeRoute(
   const { data, error } = await client
     .rpc("propose_trade_route", {
       p_destination: values.destinationSettlementId,
+      p_legs: values.legs,
       p_origin: values.originSettlementId,
       p_proposed_by_citizen_id: values.proposingCitizenId,
-      p_quantity: values.quantityPerTransition,
-      p_resource_id: values.resourceId,
     })
     .maybeSingle<{
       readonly destination_settlement_id: string;

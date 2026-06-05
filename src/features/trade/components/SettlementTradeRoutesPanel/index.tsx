@@ -27,6 +27,7 @@ import { ReplaceTradeRouteDialog } from "./ReplaceTradeRouteDialog";
 import type {
   TradeRoute,
   TradeRouteApprovalStatus,
+  TradeRouteLeg,
   TradeRouteStatus,
 } from "../../types/tradeRouteTypes";
 
@@ -165,6 +166,7 @@ export function SettlementTradeRoutesPanel({
             settlementId={settlementId}
             side="origin"
             traderCountByRoute={traderCountByRoute}
+            worldId={worldId}
           />
           <TradeRoutesDirection
             activeCharacterId={activeCharacter?.id ?? null}
@@ -176,6 +178,7 @@ export function SettlementTradeRoutesPanel({
             settlementId={settlementId}
             side="destination"
             traderCountByRoute={traderCountByRoute}
+            worldId={worldId}
           />
         </div>
       )}
@@ -193,6 +196,7 @@ function TradeRoutesDirection({
   settlementId,
   side,
   traderCountByRoute,
+  worldId,
 }: {
   readonly activeCharacterId: string | null;
   readonly canManageRoutes: boolean;
@@ -203,6 +207,7 @@ function TradeRoutesDirection({
   readonly settlementId: string;
   readonly side: "destination" | "origin";
   readonly traderCountByRoute: ReadonlyMap<string, number>;
+  readonly worldId: string;
 }): JSX.Element | null {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -237,10 +242,7 @@ function TradeRoutesDirection({
                   {side === "origin" ? "Destination" : "Origin"}
                 </th>
                 <th className="pb-2 font-medium" scope="col">
-                  Resource
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Qty/turn
+                  Resources
                 </th>
                 <th className="pb-2 font-medium" scope="col">
                   Status
@@ -265,6 +267,7 @@ function TradeRoutesDirection({
                   settlementId={settlementId}
                   side={side}
                   traderCount={traderCountByRoute.get(route.id) ?? 0}
+                  worldId={worldId}
                 />
               ))}
             </tbody>
@@ -284,6 +287,7 @@ function TradeRouteRow({
   settlementId,
   side,
   traderCount,
+  worldId,
 }: {
   readonly activeCharacterId: string | null;
   readonly canManageRoutes: boolean;
@@ -293,6 +297,7 @@ function TradeRouteRow({
   readonly settlementId: string;
   readonly side: "destination" | "origin";
   readonly traderCount: number;
+  readonly worldId: string;
 }): JSX.Element {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -331,11 +336,8 @@ function TradeRouteRow({
         className={`border-b border-border last:border-0${isResumedThisTransition ? " animate-pulse bg-success [animation-iteration-count:4]" : ""}`}
       >
         <td className="py-2 pr-4 font-medium">{counterpart}</td>
-        <td className="py-2 pr-4 text-muted-foreground">
-          {route.resourceName}
-        </td>
-        <td className="py-2 pr-4 tabular-nums">
-          {route.quantityPerTransition.toLocaleString()}
+        <td className="py-2 pr-4">
+          <LegsSummary legs={route.legs} viewerSide={side} />
         </td>
         <td className="py-2 pr-4">
           <StatusBadge
@@ -465,6 +467,7 @@ function TradeRouteRow({
           counterpart={counterpart}
           queryClient={queryClient}
           route={route}
+          worldId={worldId}
           onClose={() => {
             setShowReplaceDialog(false);
           }}
@@ -474,8 +477,47 @@ function TradeRouteRow({
   );
 }
 
+function LegsSummary({
+  legs,
+  viewerSide,
+}: {
+  readonly legs: readonly TradeRouteLeg[];
+  readonly viewerSide: "destination" | "origin";
+}): JSX.Element {
+  if (legs.length === 0) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  const items = legs.map((leg) => {
+    // From the viewer's perspective:
+    // - origin viewer: "send" legs are negative (outgoing), "receive" legs are positive (incoming)
+    // - destination viewer: "send" legs are positive (incoming), "receive" legs are negative (outgoing)
+    const isNegative =
+      (viewerSide === "origin" && leg.direction === "send") ||
+      (viewerSide === "destination" && leg.direction === "receive");
+    const sign = isNegative ? "−" : "+";
+    const colorClass = isNegative
+      ? "text-destructive"
+      : "text-success-foreground";
+    return { colorClass, leg, sign };
+  });
+
+  return (
+    <span className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs tabular-nums">
+      {items.map(({ colorClass, leg, sign }) => (
+        <span key={leg.id} className={`font-medium ${colorClass}`}>
+          {sign}
+          {leg.quantityPerTransition.toLocaleString()} {leg.resourceName}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const PAUSE_REASON_LABELS: Record<string, string> = {
   insufficient_destination_space: "Insufficient space at destination",
+  insufficient_destination_stock: "Insufficient stock at destination",
+  insufficient_origin_space: "Insufficient space at origin",
   insufficient_origin_stock: "Insufficient stock at origin",
   insufficient_trader_destination: "Insufficient traders at destination",
   insufficient_trader_origin: "Insufficient traders at origin",

@@ -7,6 +7,16 @@ export type TradeRouteStatus =
 
 export type TradeRouteApprovalStatus = "approved" | "pending" | "rejected";
 
+export type TradeRouteLegDirection = "receive" | "send";
+
+export type TradeRouteLeg = {
+  readonly direction: TradeRouteLegDirection;
+  readonly id: string;
+  readonly quantityPerTransition: number;
+  readonly resourceId: string;
+  readonly resourceName: string;
+};
+
 export type TradeRoute = {
   readonly createdAt: string;
   readonly destinationApprovalStatus: TradeRouteApprovalStatus;
@@ -15,6 +25,7 @@ export type TradeRoute = {
   readonly destinationSettlementId: string;
   readonly destinationSettlementName: string;
   readonly id: string;
+  readonly legs: readonly TradeRouteLeg[];
   readonly originApprovalStatus: TradeRouteApprovalStatus;
   readonly originApprovedByCitizenId: string | null;
   readonly originNationName: string;
@@ -22,10 +33,7 @@ export type TradeRoute = {
   readonly originSettlementName: string;
   readonly pauseReasonLastTransition: string | null;
   readonly proposedByCitizenId: string;
-  readonly quantityPerTransition: number;
   readonly replacementForTradeRouteId: string | null;
-  readonly resourceId: string;
-  readonly resourceName: string;
   readonly status: TradeRouteStatus;
   readonly updatedAt: string;
 };

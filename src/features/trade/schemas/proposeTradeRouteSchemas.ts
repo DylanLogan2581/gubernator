@@ -1,16 +1,28 @@
 import { z } from "zod";
 
+export const tradeRouteLegInputSchema = z.strictObject({
+  direction: z.enum(["send", "receive"], {
+    message: "Direction must be 'send' or 'receive'.",
+  }),
+  quantity: z
+    .number()
+    .positive("Quantity per transition must be greater than zero."),
+  resourceId: z.guid("Resource id must be a valid UUID."),
+});
+
+export type TradeRouteLegInput = z.input<typeof tradeRouteLegInputSchema>;
+export type TradeRouteLegValues = z.output<typeof tradeRouteLegInputSchema>;
+
 export const proposeTradeRouteInputSchema = z
   .strictObject({
     destinationSettlementId: z.guid(
       "Destination settlement id must be a valid UUID.",
     ),
+    legs: z
+      .array(tradeRouteLegInputSchema)
+      .min(1, "Trade route must have at least one leg."),
     originSettlementId: z.guid("Origin settlement id must be a valid UUID."),
     proposingCitizenId: z.guid("Proposing citizen id must be a valid UUID."),
-    quantityPerTransition: z
-      .number()
-      .positive("Quantity per transition must be greater than zero."),
-    resourceId: z.guid("Resource id must be a valid UUID."),
   })
   .superRefine((value, ctx): void => {
     if (value.originSettlementId === value.destinationSettlementId) {

@@ -205,10 +205,14 @@ type TradeRouteRowFixture = {
   readonly origin_settlement_id: string;
   readonly pause_reason_last_transition: null;
   readonly proposed_by_citizen_id: string;
-  readonly quantity_per_transition: number;
+  readonly trade_route_legs: readonly {
+    readonly id: string;
+    readonly direction: string;
+    readonly resource_id: string;
+    readonly quantity_per_transition: number;
+    readonly resource: { readonly name: string };
+  }[];
   readonly replacement_for_trade_route_id: null;
-  readonly resource: { readonly name: string };
-  readonly resource_id: string;
   readonly status: "active" | "cancelled" | "paused" | "proposed" | "replaced";
   readonly updated_at: string;
 };
@@ -372,10 +376,16 @@ function createTradeRouteRow(
     origin_settlement_id: "settlement-1",
     pause_reason_last_transition: null,
     proposed_by_citizen_id: "citizen-1",
-    quantity_per_transition: 10,
+    trade_route_legs: [
+      {
+        id: "leg-1",
+        direction: "send",
+        resource_id: "res-1",
+        quantity_per_transition: 10,
+        resource: { name: "Grain" },
+      },
+    ],
     replacement_for_trade_route_id: null,
-    resource: { name: "Grain" },
-    resource_id: "res-1",
     status: "active",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
@@ -1153,7 +1163,6 @@ describe("SettlementAssignmentBoard", () => {
               name: "Riverside",
               nation: { name: "Empire" },
             },
-            resource: { name: "Grain" },
             status: "active",
           }),
         ],
@@ -1162,10 +1171,8 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard({ activeTab: "per-target" });
 
-    expect(await screen.findByText(/Grain.*Hillfort.*Riverside/)).toBeDefined();
-    expect(
-      screen.getByText("Trader (sending): Grain → Riverside"),
-    ).toBeDefined();
+    await screen.findByText(/Hillfort.*Riverside|Riverside.*Hillfort/);
+    expect(screen.getByText("Trader: Grain → Riverside")).toBeDefined();
     expect(
       screen.getByText(/Trader \(receiving — remote\): Riverside/),
     ).toBeDefined();

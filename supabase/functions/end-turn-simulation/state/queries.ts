@@ -418,7 +418,7 @@ export function fetchTradeRoutes(
       status: "in.(active,paused)",
       order: "id.asc",
       select:
-        "id,origin_settlement_id,destination_settlement_id,resource_id,quantity_per_transition,status",
+        "id,origin_settlement_id,destination_settlement_id,status,trade_route_legs(direction,resource_id,quantity_per_transition)",
     },
   });
 }

@@ -1,6 +1,6 @@
 // Phase: trade routes — processes active and paused routes with all-or-nothing
-// transfers. Pauses on any shortfall; resumes paused routes that satisfy all
-// checks.
+// transfers across all legs. Pauses on any shortfall; resumes paused routes
+// that satisfy all checks.
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
@@ -63,14 +63,8 @@ export function phaseTradeRoutes(
   for (const route of tradeRoutes) {
     if (route.status !== "active" && route.status !== "paused") continue;
 
-    const {
-      id,
-      originSettlementId,
-      destinationSettlementId,
-      resourceId,
-      quantityPerTransition,
-      status,
-    } = route;
+    const { id, originSettlementId, destinationSettlementId, legs, status } =
+      route;
 
     const wasPaused = status === "paused";
     const originName =
@@ -78,6 +72,12 @@ export function phaseTradeRoutes(
     const destinationName =
       settlementById.get(destinationSettlementId)?.name ??
       destinationSettlementId;
+
+    // Total quantity across all legs for trader capacity checks.
+    const totalQty = legs.reduce(
+      (sum, leg) => sum + leg.quantityPerTransition,
+      0,
+    );
 
     const pause = (pauseReason: string, previouslyPaused: boolean): void => {
       allOutcomes.push({
@@ -91,8 +91,6 @@ export function phaseTradeRoutes(
         payload: {
           destinationSettlementId,
           pauseReason,
-          quantityPerTransition,
-          resourceId,
           tradeRouteId: id,
         },
         phase: "tradeRoutes",
@@ -110,53 +108,112 @@ export function phaseTradeRoutes(
 
     // Check trader capacity at origin.
     const originCapacity = traderCapacity.get(`${id}:origin`) ?? 0;
-    if (originCapacity < quantityPerTransition) {
+    if (originCapacity < totalQty) {
       pause("insufficient_trader_origin", wasPaused);
       continue;
     }
 
     // Check trader capacity at destination.
     const destCapacity = traderCapacity.get(`${id}:destination`) ?? 0;
-    if (destCapacity < quantityPerTransition) {
+    if (destCapacity < totalQty) {
       pause("insufficient_trader_destination", wasPaused);
       continue;
     }
 
-    // Check origin stock.
-    const originKey = `${originSettlementId}:${resourceId}`;
-    const originQty = stockpileQty.get(originKey) ?? 0;
-    if (originQty < quantityPerTransition) {
-      pause("insufficient_origin_stock", wasPaused);
+    // Check every leg can be satisfied before committing any transfer.
+    let pauseReason: string | null = null;
+    for (const leg of legs) {
+      if (leg.direction === "send") {
+        // Send: origin → destination
+        const originKey = `${originSettlementId}:${leg.resourceId}`;
+        const originQty = stockpileQty.get(originKey) ?? 0;
+        if (originQty < leg.quantityPerTransition) {
+          pauseReason = "insufficient_origin_stock";
+          break;
+        }
+        const destKey = `${destinationSettlementId}:${leg.resourceId}`;
+        const destQty = stockpileQty.get(destKey) ?? 0;
+        const destCap = stockpileCap.get(destKey) ?? 0;
+        if (destCap - destQty < leg.quantityPerTransition) {
+          pauseReason = "insufficient_destination_space";
+          break;
+        }
+      } else {
+        // Receive: destination → origin
+        const destKey = `${destinationSettlementId}:${leg.resourceId}`;
+        const destQty = stockpileQty.get(destKey) ?? 0;
+        if (destQty < leg.quantityPerTransition) {
+          pauseReason = "insufficient_destination_stock";
+          break;
+        }
+        const originKey = `${originSettlementId}:${leg.resourceId}`;
+        const originQty = stockpileQty.get(originKey) ?? 0;
+        const originCap = stockpileCap.get(originKey) ?? 0;
+        if (originCap - originQty < leg.quantityPerTransition) {
+          pauseReason = "insufficient_origin_space";
+          break;
+        }
+      }
+    }
+
+    if (pauseReason !== null) {
+      pause(pauseReason, wasPaused);
       continue;
     }
 
-    // Check destination space using current (post-phase-4) storage cap.
-    const destKey = `${destinationSettlementId}:${resourceId}`;
-    const destQty = stockpileQty.get(destKey) ?? 0;
-    const destCap = stockpileCap.get(destKey) ?? 0;
-    if (destCap - destQty < quantityPerTransition) {
-      pause("insufficient_destination_space", wasPaused);
-      continue;
+    // All checks passed — perform all-or-nothing transfers.
+    let totalTransferred = 0;
+    for (const leg of legs) {
+      totalTransferred += leg.quantityPerTransition;
+      if (leg.direction === "send") {
+        const originKey = `${originSettlementId}:${leg.resourceId}`;
+        const destKey = `${destinationSettlementId}:${leg.resourceId}`;
+        allDeltas.push({
+          delta: -leg.quantityPerTransition,
+          resourceId: leg.resourceId,
+          settlementId: originSettlementId,
+        });
+        allDeltas.push({
+          delta: leg.quantityPerTransition,
+          resourceId: leg.resourceId,
+          settlementId: destinationSettlementId,
+        });
+        stockpileQty.set(
+          originKey,
+          (stockpileQty.get(originKey) ?? 0) - leg.quantityPerTransition,
+        );
+        stockpileQty.set(
+          destKey,
+          (stockpileQty.get(destKey) ?? 0) + leg.quantityPerTransition,
+        );
+      } else {
+        const destKey = `${destinationSettlementId}:${leg.resourceId}`;
+        const originKey = `${originSettlementId}:${leg.resourceId}`;
+        allDeltas.push({
+          delta: -leg.quantityPerTransition,
+          resourceId: leg.resourceId,
+          settlementId: destinationSettlementId,
+        });
+        allDeltas.push({
+          delta: leg.quantityPerTransition,
+          resourceId: leg.resourceId,
+          settlementId: originSettlementId,
+        });
+        stockpileQty.set(
+          destKey,
+          (stockpileQty.get(destKey) ?? 0) - leg.quantityPerTransition,
+        );
+        stockpileQty.set(
+          originKey,
+          (stockpileQty.get(originKey) ?? 0) + leg.quantityPerTransition,
+        );
+      }
     }
-
-    // All checks passed — perform all-or-nothing transfer.
-    allDeltas.push({
-      delta: -quantityPerTransition,
-      resourceId,
-      settlementId: originSettlementId,
-    });
-    allDeltas.push({
-      delta: quantityPerTransition,
-      resourceId,
-      settlementId: destinationSettlementId,
-    });
-    stockpileQty.set(originKey, originQty - quantityPerTransition);
-    stockpileQty.set(destKey, destQty + quantityPerTransition);
 
     allOutcomes.push({
       delivered: true,
       pauseReason: null,
-      quantityTransferred: quantityPerTransition,
+      quantityTransferred: totalTransferred,
       tradeRouteId: id,
     });
 
@@ -165,8 +222,7 @@ export function phaseTradeRoutes(
         category: "trade_route.resumed",
         payload: {
           destinationSettlementId,
-          quantityTransferred: quantityPerTransition,
-          resourceId,
+          quantityTransferred: totalTransferred,
           tradeRouteId: id,
         },
         phase: "tradeRoutes",
@@ -184,8 +240,7 @@ export function phaseTradeRoutes(
         payload: {
           destinationSettlementId,
           originSettlementId,
-          quantityTransferred: quantityPerTransition,
-          resourceId,
+          quantityTransferred: totalTransferred,
           tradeRouteId: id,
         },
         phase: "tradeRoutes",

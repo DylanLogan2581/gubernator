@@ -377,9 +377,10 @@ const TRADE_ROUTES: readonly SimTradeRoute[] = [
   {
     destinationSettlementId: S2,
     id: ROUTE_1,
+    legs: [
+      { direction: "send", quantityPerTransition: 10, resourceId: STONE_ID },
+    ],
     originSettlementId: S1,
-    quantityPerTransition: 10,
-    resourceId: STONE_ID,
     status: "active",
   },
 ];

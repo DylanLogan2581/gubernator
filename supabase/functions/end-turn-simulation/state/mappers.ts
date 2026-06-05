@@ -263,9 +263,12 @@ export function toSimTradeRoute(row: SupabaseTradeRouteRow): SimTradeRoute {
   return {
     destinationSettlementId: row.destination_settlement_id,
     id: row.id,
+    legs: row.trade_route_legs.map((leg) => ({
+      direction: leg.direction as "receive" | "send",
+      quantityPerTransition: leg.quantity_per_transition,
+      resourceId: leg.resource_id,
+    })),
     originSettlementId: row.origin_settlement_id,
-    quantityPerTransition: row.quantity_per_transition,
-    resourceId: row.resource_id,
     status: row.status as SimTradeRoute["status"],
   };
 }

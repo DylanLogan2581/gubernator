@@ -251,12 +251,17 @@ export type SimTradeRouteStatus =
   | "proposed"
   | "replaced";
 
+export type SimTradeRouteLeg = {
+  readonly direction: "receive" | "send";
+  readonly quantityPerTransition: number;
+  readonly resourceId: string;
+};
+
 export type SimTradeRoute = {
   readonly destinationSettlementId: string;
   readonly id: string;
+  readonly legs: readonly SimTradeRouteLeg[];
   readonly originSettlementId: string;
-  readonly quantityPerTransition: number;
-  readonly resourceId: string;
   readonly status: SimTradeRouteStatus;
 };
 

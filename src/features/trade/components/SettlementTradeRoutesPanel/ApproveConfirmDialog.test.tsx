@@ -42,9 +42,15 @@ function makeRoute(status: TradeRoute["status"] = "proposed"): TradeRoute {
     destinationSettlementId: DEST_SETTLEMENT_ID,
     destinationSettlementName: "Far Settlement",
     destinationNationName: "Far Nation",
-    resourceId: "00000000-0000-0000-0000-000000000030",
-    resourceName: "Grain",
-    quantityPerTransition: 10,
+    legs: [
+      {
+        id: "00000000-0000-0000-0000-000000000031",
+        direction: "send" as const,
+        quantityPerTransition: 10,
+        resourceId: "00000000-0000-0000-0000-000000000030",
+        resourceName: "Grain",
+      },
+    ],
     status,
     originApprovalStatus: "pending" as const,
     destinationApprovalStatus: "pending" as const,

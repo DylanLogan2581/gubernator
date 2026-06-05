@@ -293,9 +293,14 @@ function makeAllSuccessResponses(): Record<
           destination_settlement_id: SETTLEMENT_ID,
           id: TRADE_ROUTE_ID,
           origin_settlement_id: SETTLEMENT_ID,
-          quantity_per_transition: 10,
-          resource_id: FOOD_ID,
           status: "active",
+          trade_route_legs: [
+            {
+              direction: "send",
+              quantity_per_transition: 10,
+              resource_id: FOOD_ID,
+            },
+          ],
         },
       ],
       status: 200,
@@ -528,7 +533,9 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     const route = input.tradeRoutes[0];
     expect(route.id).toBe(TRADE_ROUTE_ID);
     expect(route.status).toBe("active");
-    expect(route.quantityPerTransition).toBe(10);
+    expect(route.legs).toHaveLength(1);
+    expect(route.legs[0]?.direction).toBe("send");
+    expect(route.legs[0]?.quantityPerTransition).toBe(10);
 
     // Citizens (alive only)
     expect(input.citizens).toHaveLength(2);

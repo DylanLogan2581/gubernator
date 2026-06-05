@@ -41,9 +41,15 @@ const baseRoute: TradeRoute = {
   destinationNationName: "Nation B",
   destinationApprovalStatus: "approved",
   destinationApprovedByCitizenId: null,
-  resourceId: "resource-grain",
-  resourceName: "Grain",
-  quantityPerTransition: 10,
+  legs: [
+    {
+      id: "leg-1",
+      direction: "send",
+      quantityPerTransition: 10,
+      resourceId: "resource-grain",
+      resourceName: "Grain",
+    },
+  ],
   proposedByCitizenId: "citizen-1",
   pauseReasonLastTransition: null,
   replacementForTradeRouteId: null,
@@ -70,9 +76,7 @@ describe("TradeRoutesSection — sending (origin) variant", () => {
       </Wrapper>,
     );
 
-    expect(
-      screen.getByText("Trader (sending): Grain → Brindlewood"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Trader: Grain → Brindlewood")).toBeInTheDocument();
   });
 
   it("renders ArrowUpFromLine icon with sending tooltip on local row", () => {
@@ -83,7 +87,7 @@ describe("TradeRoutesSection — sending (origin) variant", () => {
     );
 
     const tooltipSpan = document.querySelector(
-      "[title='Sending Grain to Brindlewood']",
+      "[title='Trading Grain with Brindlewood']",
     );
     expect(tooltipSpan).toBeInTheDocument();
     const icon = tooltipSpan?.querySelector("svg");
@@ -102,18 +106,14 @@ describe("TradeRoutesSection — sending (origin) variant", () => {
     ).toBeInTheDocument();
   });
 
-  it("block header has aria-label describing resource flow", () => {
+  it("block header shows origin to destination", () => {
     render(
       <Wrapper>
         <TradeRoutesSection {...defaultProps} settlementId="settlement-a" />
       </Wrapper>,
     );
 
-    expect(
-      screen.getByRole("paragraph", {
-        name: "Grain travels from Ashford to Brindlewood",
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Ashford → Brindlewood/)).toBeInTheDocument();
   });
 });
 
@@ -129,9 +129,7 @@ describe("TradeRoutesSection — receiving (destination) variant", () => {
       </Wrapper>,
     );
 
-    expect(
-      screen.getByText("Trader (receiving): Grain from Ashford"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Trader: Grain from Ashford")).toBeInTheDocument();
   });
 
   it("renders ArrowDownToLine icon with receiving tooltip on local row", () => {
@@ -142,7 +140,7 @@ describe("TradeRoutesSection — receiving (destination) variant", () => {
     );
 
     const tooltipSpan = document.querySelector(
-      "[title='Receiving Grain from Ashford']",
+      "[title='Trading Grain with Ashford']",
     );
     expect(tooltipSpan).toBeInTheDocument();
     const icon = tooltipSpan?.querySelector("svg");

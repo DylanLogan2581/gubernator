@@ -1466,6 +1466,51 @@ export type Database = {
           },
         ];
       };
+      trade_route_legs: {
+        Row: {
+          created_at: string;
+          direction: string;
+          id: string;
+          quantity_per_transition: number;
+          resource_id: string;
+          trade_route_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          direction: string;
+          id?: string;
+          quantity_per_transition: number;
+          resource_id: string;
+          trade_route_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          direction?: string;
+          id?: string;
+          quantity_per_transition?: number;
+          resource_id?: string;
+          trade_route_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "trade_route_legs_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_route_legs_trade_route_id_fkey";
+            columns: ["trade_route_id"];
+            isOneToOne: false;
+            referencedRelation: "trade_routes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       trade_routes: {
         Row: {
           created_at: string;
@@ -1478,9 +1523,7 @@ export type Database = {
           origin_settlement_id: string;
           pause_reason_last_transition: string | null;
           proposed_by_citizen_id: string;
-          quantity_per_transition: number;
           replacement_for_trade_route_id: string | null;
-          resource_id: string;
           status: string;
           updated_at: string;
         };
@@ -1495,9 +1538,7 @@ export type Database = {
           origin_settlement_id: string;
           pause_reason_last_transition?: string | null;
           proposed_by_citizen_id: string;
-          quantity_per_transition: number;
           replacement_for_trade_route_id?: string | null;
-          resource_id: string;
           status?: string;
           updated_at?: string;
         };
@@ -1512,9 +1553,7 @@ export type Database = {
           origin_settlement_id?: string;
           pause_reason_last_transition?: string | null;
           proposed_by_citizen_id?: string;
-          quantity_per_transition?: number;
           replacement_for_trade_route_id?: string | null;
-          resource_id?: string;
           status?: string;
           updated_at?: string;
         };
@@ -1559,13 +1598,6 @@ export type Database = {
             columns: ["replacement_for_trade_route_id"];
             isOneToOne: false;
             referencedRelation: "trade_routes";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "trade_routes_resource_id_fkey";
-            columns: ["resource_id"];
-            isOneToOne: false;
-            referencedRelation: "resources";
             referencedColumns: ["id"];
           },
         ];
@@ -2568,10 +2600,9 @@ export type Database = {
       propose_trade_route: {
         Args: {
           p_destination: string;
+          p_legs: Json;
           p_origin: string;
           p_proposed_by_citizen_id: string;
-          p_quantity: number;
-          p_resource_id: string;
         };
         Returns: {
           destination_settlement_id: string;
