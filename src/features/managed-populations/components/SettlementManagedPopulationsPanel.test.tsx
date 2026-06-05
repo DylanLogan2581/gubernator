@@ -240,6 +240,7 @@ type TestSnapshotRow = {
 
 function createClient({
   instanceRows = [],
+  instancesMock,
   typeRows = [],
   resourceRows = [],
   assignmentRows = [],
@@ -248,6 +249,7 @@ function createClient({
   rpcMock,
 }: {
   readonly instanceRows?: readonly TestInstanceRow[];
+  readonly instancesMock?: ReturnType<typeof vi.fn>;
   readonly typeRows?: readonly TestTypeRow[];
   readonly resourceRows?: readonly TestResourceRow[];
   readonly assignmentRows?: readonly TestAssignmentRow[];
@@ -258,7 +260,9 @@ function createClient({
   const instancesSelectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => instancesSelectBuilder),
     order: vi.fn(() => instancesSelectBuilder),
-    returns: vi.fn().mockResolvedValue({ data: instanceRows, error: null }),
+    returns:
+      instancesMock ??
+      vi.fn().mockResolvedValue({ data: instanceRows, error: null }),
   };
 
   const typesSelectBuilder: Record<string, unknown> = {
@@ -612,6 +616,75 @@ describe("SettlementManagedPopulationsPanel", () => {
         undefined,
       );
     });
+  });
+
+  it("new instance appears in panel immediately after successful create without reload", async () => {
+    const user = userEvent.setup();
+    const newRow = createInstanceRow({
+      id: INSTANCE_ID_1,
+      name: "West Herd",
+      status: "active",
+      current_count: 50,
+    });
+
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "create_managed_population_instance") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: INSTANCE_ID_1, settlement_id: SETTLEMENT_ID },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    // First call (initial load): empty list. Subsequent calls (after invalidation): new row.
+    const instancesMock = vi
+      .fn()
+      .mockResolvedValueOnce({ data: [], error: null })
+      .mockResolvedValue({ data: [newRow], error: null });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instancesMock,
+        typeRows: [createTypeRow()],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    await screen.findByText("No managed populations");
+    await user.click(
+      screen.getByRole("button", { name: "Add managed population" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Add managed population",
+    });
+
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "Name" }),
+      "West Herd",
+    );
+    const typeSelect = await within(dialog).findByRole("combobox", {
+      name: "Population type",
+    });
+    await user.selectOptions(typeSelect, TYPE_ID_1);
+
+    const countInput = within(dialog).getByRole("spinbutton", {
+      name: "Initial count",
+    });
+    await user.clear(countInput);
+    await user.type(countInput, "50");
+
+    await user.click(within(dialog).getByRole("button", { name: "Add" }));
+
+    // The new row should appear without a manual reload.
+    expect(await screen.findByText("West Herd")).toBeDefined();
+    // The empty state should be gone.
+    expect(screen.queryByText("No managed populations")).toBeNull();
   });
 
   it("remove blocked when active husbandry assignments exist (button disabled)", async () => {

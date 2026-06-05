@@ -61,10 +61,10 @@ export function createManagedPopulationInstanceMutationOptions({
       ...managedPopulationsQueryKeys.all,
       "create-managed-population-instance",
     ],
-    onSuccess: async (result): Promise<void> => {
+    onSuccess: async (_result, variables): Promise<void> => {
       await queryClient.invalidateQueries({
         queryKey: managedPopulationsQueryKeys.instancesBySettlement(
-          result.settlementId,
+          variables.settlementId,
         ),
       });
     },
