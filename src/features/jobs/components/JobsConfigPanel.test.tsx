@@ -264,10 +264,10 @@ describe("JobsConfigPanel", () => {
     );
 
     expect(
-      within(dialog).getByText(
+      within(dialog).queryByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
-    ).toBeDefined();
+    ).toBeNull();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -305,10 +305,10 @@ describe("JobsConfigPanel", () => {
     );
 
     expect(
-      within(dialog).getByText(
+      within(dialog).queryByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
-    ).toBeDefined();
+    ).toBeNull();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -346,10 +346,10 @@ describe("JobsConfigPanel", () => {
     );
 
     expect(
-      within(dialog).getByText(
+      within(dialog).queryByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
-    ).toBeDefined();
+    ).toBeNull();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 

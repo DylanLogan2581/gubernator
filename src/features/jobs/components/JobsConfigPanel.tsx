@@ -1212,16 +1212,6 @@ function CreateJobForm({
                     />
                   </>
                 ) : null}
-
-                {selectedType === "deposit" ||
-                selectedType === "husbandry" ||
-                selectedType === "culling" ? (
-                  <p className="text-sm text-muted-foreground">
-                    You can link this job to a deposit type or managed
-                    population type after creating it from the relevant
-                    configuration tab.
-                  </p>
-                ) : null}
               </>
             ) : null}
           </div>
