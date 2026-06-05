@@ -25,4 +25,18 @@ describe("generateLocalId", () => {
     );
     expect(generateLocalId()).toBe("00000000-0000-0000-0000-000000000000");
   });
+
+  it("falls back to crypto.getRandomValues when crypto.randomUUID is undefined", () => {
+    const saved = crypto.randomUUID.bind(crypto);
+    delete (crypto as { randomUUID?: typeof crypto.randomUUID }).randomUUID;
+    try {
+      const id = generateLocalId();
+      expect(typeof id).toBe("string");
+      expect(id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+    } finally {
+      crypto.randomUUID = saved;
+    }
+  });
 });
