@@ -1339,4 +1339,189 @@ describe("SettlementTradeRoutesPanel", () => {
     const row = document.getElementById(`trade-route-${ROUTE_ID_1}`);
     expect(row?.className).not.toContain("animate-pulse");
   });
+
+  it("hides cancelled and replaced routes by default", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "active",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+          createRouteRow({
+            id: ROUTE_ID_2,
+            status: "cancelled",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    expect(screen.queryByText("Cancelled")).toBeNull();
+  });
+
+  it("shows cancelled toggle with count after routes load", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({ status: "active" }),
+          createRouteRow({
+            id: ROUTE_ID_2,
+            status: "cancelled",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    expect(screen.getByRole("button", { name: "Cancelled (1)" })).toBeDefined();
+  });
+
+  it("toggling Cancelled tab reveals cancelled and replaced routes", async () => {
+    const user = userEvent.setup();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "active",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+          createRouteRow({
+            id: ROUTE_ID_2,
+            status: "cancelled",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+
+    await user.click(screen.getByRole("button", { name: "Cancelled (1)" }));
+
+    await screen.findByText("Outgoing (1)");
+    expect(screen.getByText("Cancelled")).toBeDefined();
+    expect(screen.queryByText("Active")).toBeNull();
+  });
+
+  it("cancelled view is read-only — no approve/reject/cancel/replace buttons", async () => {
+    const user = userEvent.setup();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            id: ROUTE_ID_2,
+            status: "cancelled",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+      }),
+    );
+    useActivePlayerCharacter.mockReturnValue({
+      activeCharacter: {
+        id: CITIZEN_ID_1,
+        roleType: "nation_manager",
+        roleNationId: NATION_ID,
+        roleSettlementId: null,
+        status: "alive",
+      },
+    });
+
+    renderPanel();
+
+    await screen.findByText("Cancelled (1)");
+
+    await user.click(screen.getByRole("button", { name: "Cancelled (1)" }));
+
+    await screen.findByText("Outgoing (1)");
+    expect(
+      screen.queryByRole("button", { name: /Approve trade route/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Reject trade route/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Cancel trade route/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Replace trade route/ }),
+    ).toBeNull();
+  });
+
+  it("cancelled view shows empty state when no cancelled routes", async () => {
+    const user = userEvent.setup();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "active",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+
+    await user.click(screen.getByRole("button", { name: "Cancelled (0)" }));
+
+    expect(await screen.findByText("No cancelled trade routes")).toBeDefined();
+  });
+
+  it("propose button is hidden in cancelled view", async () => {
+    const user = userEvent.setup();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            id: ROUTE_ID_2,
+            status: "cancelled",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+      }),
+    );
+    useActivePlayerCharacter.mockReturnValue({
+      activeCharacter: {
+        id: CITIZEN_ID_1,
+        roleType: "nation_manager",
+        roleNationId: NATION_ID,
+        roleSettlementId: null,
+        status: "alive",
+      },
+    });
+
+    renderPanel();
+
+    await screen.findByText("Cancelled (1)");
+
+    await user.click(screen.getByRole("button", { name: "Cancelled (1)" }));
+
+    await screen.findByText("Outgoing (1)");
+    expect(
+      screen.queryByRole("button", { name: "Propose trade route" }),
+    ).toBeNull();
+  });
 });

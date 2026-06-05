@@ -31,6 +31,21 @@ import type {
   TradeRouteStatus,
 } from "../../types/tradeRouteTypes";
 
+const ACTIVE_STATUSES = new Set(["proposed", "active", "paused"]);
+const CANCELLED_STATUSES = new Set(["cancelled", "replaced"]);
+
+const CANCELLED_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "numeric",
+  timeZone: "UTC",
+  year: "2-digit",
+});
+
+function formatCancelledDate(timestamp: string): string {
+  const ms = Date.parse(timestamp);
+  return Number.isNaN(ms) ? timestamp : CANCELLED_DATE_FORMATTER.format(ms);
+}
+
 type SettlementTradeRoutesPanelProps = {
   readonly canAdmin: boolean;
   readonly canManage: boolean;
@@ -50,6 +65,7 @@ export function SettlementTradeRoutesPanel({
   const queryClient = useQueryClient();
   const { activeCharacter } = useActivePlayerCharacter();
   const [showProposeDialog, setShowProposeDialog] = useState(false);
+  const [showCancelled, setShowCancelled] = useState(false);
 
   const routesQuery = useQuery(
     tradeRoutesForSettlementQueryOptions(settlementId),
@@ -96,9 +112,17 @@ export function SettlementTradeRoutesPanel({
     }
   }
 
-  const routes = routesQuery.data ?? [];
-  const outgoing = routes.filter((r) => r.originSettlementId === settlementId);
-  const incoming = routes.filter(
+  const allRoutes = routesQuery.data ?? [];
+  const activeRoutes = allRoutes.filter((r) => ACTIVE_STATUSES.has(r.status));
+  const cancelledRoutes = allRoutes.filter((r) =>
+    CANCELLED_STATUSES.has(r.status),
+  );
+  const visibleRoutes = showCancelled ? cancelledRoutes : activeRoutes;
+
+  const outgoing = visibleRoutes.filter(
+    (r) => r.originSettlementId === settlementId,
+  );
+  const incoming = visibleRoutes.filter(
     (r) => r.destinationSettlementId === settlementId,
   );
 
@@ -107,28 +131,44 @@ export function SettlementTradeRoutesPanel({
       aria-labelledby="settlement-trade-routes-heading"
       className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2
           id="settlement-trade-routes-heading"
           className="text-base font-medium"
         >
           Trade Routes
         </h2>
-        {canManageRoutes &&
-        !routesQuery.isPending &&
-        activeCharacter !== null ? (
-          <Button
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setShowProposeDialog(true);
-            }}
-          >
-            <Plus aria-hidden="true" />
-            Propose trade route
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {!routesQuery.isPending && !routesQuery.isError ? (
+            <Button
+              aria-pressed={showCancelled}
+              size="sm"
+              type="button"
+              variant={showCancelled ? "secondary" : "ghost"}
+              onClick={() => {
+                setShowCancelled((v) => !v);
+              }}
+            >
+              Cancelled ({cancelledRoutes.length})
+            </Button>
+          ) : null}
+          {canManageRoutes &&
+          !routesQuery.isPending &&
+          activeCharacter !== null &&
+          !showCancelled ? (
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowProposeDialog(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Propose trade route
+            </Button>
+          ) : null}
+        </div>
       </div>
       {showProposeDialog && activeCharacter !== null ? (
         <ProposeTradeRouteDialog
@@ -151,14 +191,20 @@ export function SettlementTradeRoutesPanel({
         />
       ) : outgoing.length === 0 && incoming.length === 0 ? (
         <EmptyState
-          title="No trade routes"
-          description="This settlement has no active or proposed trade routes."
+          title={
+            showCancelled ? "No cancelled trade routes" : "No trade routes"
+          }
+          description={
+            showCancelled
+              ? "This settlement has no cancelled or replaced trade routes."
+              : "This settlement has no active or proposed trade routes."
+          }
         />
       ) : (
         <div className="grid gap-4">
           <TradeRoutesDirection
             activeCharacterId={activeCharacter?.id ?? null}
-            canManageRoutes={canManageRoutes}
+            canManageRoutes={showCancelled ? false : canManageRoutes}
             label="Outgoing"
             queryClient={queryClient}
             resumedRouteIds={resumedRouteIds}
@@ -170,7 +216,7 @@ export function SettlementTradeRoutesPanel({
           />
           <TradeRoutesDirection
             activeCharacterId={activeCharacter?.id ?? null}
-            canManageRoutes={canManageRoutes}
+            canManageRoutes={showCancelled ? false : canManageRoutes}
             label="Incoming"
             queryClient={queryClient}
             resumedRouteIds={resumedRouteIds}
@@ -344,6 +390,11 @@ function TradeRouteRow({
             pauseReason={route.pauseReasonLastTransition}
             status={route.status}
           />
+          {CANCELLED_STATUSES.has(route.status) ? (
+            <span className="block text-xs text-muted-foreground">
+              {formatCancelledDate(route.updatedAt)}
+            </span>
+          ) : null}
           {isResumedThisTransition ? (
             <span className="sr-only">resumed this turn</span>
           ) : null}
