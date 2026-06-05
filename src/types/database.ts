@@ -2900,6 +2900,15 @@ export type Database = {
           settlement_id: string;
         }[];
       };
+      set_construction_project_workers: {
+        Args: { p_project_id: string; p_target_count: number };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
+      };
       set_deposit_instance_max_workers: {
         Args: {
           p_deposit_instance_id: string;

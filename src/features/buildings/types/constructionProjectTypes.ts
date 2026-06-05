@@ -35,3 +35,10 @@ export type CancelConstructionProjectResult = {
 export type ReorderConstructionProjectsResult = {
   readonly updatedCount: number;
 };
+
+export type SetConstructionProjectWorkersResult = {
+  readonly after: number;
+  readonly addedCitizenIds: readonly string[];
+  readonly before: number;
+  readonly removedCitizenIds: readonly string[];
+};

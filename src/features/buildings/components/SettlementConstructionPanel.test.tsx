@@ -186,6 +186,15 @@ function createTierRow(overrides: Partial<TestTierRow> = {}): TestTierRow {
   };
 }
 
+type TestCitizenAggRow = {
+  readonly id: string;
+  readonly citizen_type: string;
+  readonly status: string;
+  readonly citizen_assignments: ReadonlyArray<{
+    readonly assignment_type: string;
+  }>;
+};
+
 type TestResourceRow = {
   readonly id: string;
   readonly name: string;
@@ -242,6 +251,7 @@ function createTransitionRow(
 function createClient({
   blueprintRows = [],
   buildingRows = [],
+  citizenRows = [],
   latestSnapshotRow = null,
   latestTransitionRow = null,
   projectRows = [],
@@ -251,6 +261,7 @@ function createClient({
 }: {
   readonly blueprintRows?: readonly TestBlueprintRow[];
   readonly buildingRows?: readonly TestBuildingRow[];
+  readonly citizenRows?: readonly TestCitizenAggRow[];
   readonly latestSnapshotRow?: TestSnapshotLookupRow | null;
   readonly latestTransitionRow?: TestTransitionRow | null;
   readonly projectRows?: readonly TestProjectRow[];
@@ -327,6 +338,9 @@ function createClient({
       }
       if (table === "building_blueprint_tiers") {
         return { select: vi.fn(() => tiersSelectBuilder) };
+      }
+      if (table === "citizens") {
+        return createSimpleQueryBuilder(citizenRows);
       }
       if (table === "resources") {
         return createSimpleQueryBuilder(resourceRows);
@@ -713,6 +727,194 @@ describe("SettlementConstructionPanel", () => {
     expect(screen.getByText("2")).toBeDefined();
   });
 
+  it("calls set_construction_project_workers when bumping worker count up", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "get_settlement_construction_project_counts") {
+        return {
+          returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+      if (fn === "set_construction_project_workers") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              before: 0,
+              after: 3,
+              added_citizen_ids: ["c1", "c2", "c3"],
+              removed_citizen_ids: [],
+            },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [
+          {
+            id: "c1",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [],
+          },
+          {
+            id: "c2",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [],
+          },
+          {
+            id: "c3",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: [],
+          },
+        ],
+        projectRows: [createProjectRow({ status: "queued" })],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canManage: true, isArchived: false });
+    await screen.findByText("Barracks");
+
+    const input = screen.getByRole("spinbutton", {
+      name: "Target workers for Barracks",
+    });
+    await user.clear(input);
+    await user.type(input, "3");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Apply" })).not.toBeDisabled();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith("set_construction_project_workers", {
+        p_project_id: PROJECT_ID_1,
+        p_target_count: 3,
+      });
+    });
+    expect(toastSuccess).toHaveBeenCalledWith(
+      "Worker assignment updated.",
+      undefined,
+    );
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("calls set_construction_project_workers when bumping worker count down", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "get_settlement_construction_project_counts") {
+        return {
+          returns: vi.fn().mockResolvedValue({
+            data: [
+              {
+                construction_project_id: PROJECT_ID_1,
+                status: "in_progress",
+                queue_position: 1,
+                current_count: 3,
+                building_blueprint_id: BLUEPRINT_ID,
+                target_tier_id: TIER_ID,
+              },
+            ],
+            error: null,
+          }),
+        };
+      }
+      if (fn === "set_construction_project_workers") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              before: 3,
+              after: 1,
+              added_citizen_ids: [],
+              removed_citizen_ids: ["c2", "c3"],
+            },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        projectRows: [createProjectRow({ status: "in_progress" })],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canManage: true, isArchived: false });
+    await screen.findByText("Barracks");
+
+    const input = screen.getByRole("spinbutton", {
+      name: "Target workers for Barracks",
+    });
+
+    // After the project-counts query resolves, assignedWorkerCount becomes 3
+    // while localCount stays "0", making isDirty=true and isRaising=false.
+    // We then type "1" to explicitly lower to 1.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Apply" })).not.toBeDisabled();
+    });
+    await user.clear(input);
+    await user.type(input, "1");
+
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith("set_construction_project_workers", {
+        p_project_id: PROJECT_ID_1,
+        p_target_count: 1,
+      });
+    });
+    expect(toastSuccess).toHaveBeenCalledWith(
+      "Worker assignment updated.",
+      undefined,
+    );
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("disables Apply with tooltip when raising worker count with no unassigned NPCs", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "get_settlement_construction_project_counts") {
+        return {
+          returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        citizenRows: [],
+        projectRows: [createProjectRow({ status: "queued" })],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canManage: true, isArchived: false });
+    await screen.findByText("Barracks");
+
+    const input = screen.getByRole("spinbutton", {
+      name: "Target workers for Barracks",
+    });
+    await user.clear(input);
+    await user.type(input, "3");
+
+    const applyButton = screen.getByRole("button", { name: "Apply" });
+    expect(applyButton).toBeDisabled();
+
+    const wrapper = applyButton.closest("[title]");
+    expect(wrapper?.getAttribute("title")).toBe("No unassigned NPCs available");
+  });
+
   it("calls cancel RPC and shows success with unassigned count", async () => {
     const user = userEvent.setup();
     const rpcMock = vi.fn((fn: string) => {
@@ -768,12 +970,14 @@ describe("SettlementConstructionPanel", () => {
 function renderPanel({
   canManage,
   isArchived,
+  queryClient = createQueryClient(),
 }: {
   readonly canManage: boolean;
   readonly isArchived: boolean;
+  readonly queryClient?: QueryClient;
 }): void {
   render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={queryClient}>
       <SettlementConstructionPanel
         canManage={canManage}
         isArchived={isArchived}

@@ -20,7 +20,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  citizenAggregateStatsForSettlementQueryOptions,
+  settlementConstructionProjectCountsQueryOptions,
+} from "@/features/citizens";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import {
   useSettlementTransitionOutcome,
@@ -33,6 +38,7 @@ import { parseConstructionPausedPayload } from "@/shared/simulation";
 import { cancelConstructionProjectMutationOptions } from "../mutations/cancelConstructionProjectMutations";
 import { createConstructionProjectMutationOptions } from "../mutations/createConstructionProjectMutations";
 import { reorderConstructionProjectsMutationOptions } from "../mutations/reorderConstructionProjectsMutations";
+import { setConstructionProjectWorkersMutationOptions } from "../mutations/setConstructionProjectWorkersMutations";
 import {
   blueprintsByWorldQueryOptions,
   tiersByBlueprintQueryOptions,
@@ -180,6 +186,13 @@ function QueueContent({
     (ACTIVE_STATUSES as readonly string[]).includes(p.status),
   );
 
+  const projectCountsQuery = useQuery(
+    settlementConstructionProjectCountsQueryOptions(settlementId),
+  );
+  const aggregateQuery = useQuery(
+    citizenAggregateStatsForSettlementQueryOptions(settlementId),
+  );
+
   if (activeProjects.length === 0) {
     return (
       <EmptyState
@@ -188,6 +201,14 @@ function QueueContent({
       />
     );
   }
+
+  const assignedByProject = new Map(
+    (projectCountsQuery.data ?? []).map((c) => [
+      c.constructionProjectId,
+      c.currentCount,
+    ]),
+  );
+  const unassignedNpcCount = aggregateQuery.data?.unassignedNpcCount ?? 0;
 
   return (
     <table className="w-full text-sm">
@@ -206,10 +227,18 @@ function QueueContent({
             Workers (this turn)
           </th>
           <th className="pb-2 font-medium" scope="col">
+            Assigned
+          </th>
+          <th className="pb-2 font-medium" scope="col">
             Progress
           </th>
           {canAct ? (
-            <th className="w-36 pb-2" scope="col" aria-label="Actions" />
+            <>
+              <th className="pb-2 font-medium" scope="col">
+                Set workers
+              </th>
+              <th className="w-36 pb-2" scope="col" aria-label="Actions" />
+            </>
           ) : null}
         </tr>
       </thead>
@@ -217,6 +246,7 @@ function QueueContent({
         {activeProjects.map((project, index) => (
           <ProjectRow
             key={project.id}
+            assignedWorkerCount={assignedByProject.get(project.id) ?? 0}
             canAct={canAct}
             isFirst={index === 0}
             isLast={index === activeProjects.length - 1}
@@ -225,6 +255,7 @@ function QueueContent({
             projects={activeProjects}
             queryClient={queryClient}
             settlementId={settlementId}
+            unassignedNpcCount={unassignedNpcCount}
           />
         ))}
       </tbody>
@@ -265,6 +296,7 @@ function statusBadgeLabel(status: ConstructionProjectStatus): string {
 }
 
 function ProjectRow({
+  assignedWorkerCount,
   canAct,
   isFirst,
   isLast,
@@ -273,7 +305,9 @@ function ProjectRow({
   projects,
   queryClient,
   settlementId,
+  unassignedNpcCount,
 }: {
+  readonly assignedWorkerCount: number;
   readonly canAct: boolean;
   readonly isFirst: boolean;
   readonly isLast: boolean;
@@ -282,10 +316,15 @@ function ProjectRow({
   readonly projects: readonly ConstructionProject[];
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly unassignedNpcCount: number;
 }): JSX.Element {
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [localCount, setLocalCount] = useState(String(assignedWorkerCount));
   const reorderMutation = useMutation(
     reorderConstructionProjectsMutationOptions({ queryClient }),
+  );
+  const workersMutation = useMutation(
+    setConstructionProjectWorkersMutationOptions({ queryClient }),
   );
 
   function buildPositions(
@@ -311,6 +350,30 @@ function ProjectRow({
     }
   }
 
+  const parsedCount = parseInt(localCount, 10);
+  const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
+  const isDirty = isValid && parsedCount !== assignedWorkerCount;
+  const isRaising = isValid && parsedCount > assignedWorkerCount;
+  const applyDisabled =
+    workersMutation.isPending ||
+    !isDirty ||
+    (isRaising && unassignedNpcCount === 0);
+
+  async function handleApplyWorkers(): Promise<void> {
+    if (!isValid) return;
+    try {
+      const result = await workersMutation.mutateAsync({
+        projectId: project.id,
+        settlementId,
+        targetCount: parsedCount,
+      });
+      setLocalCount(String(result.after));
+      notifyMutationSuccess("Worker assignment updated.");
+    } catch (error) {
+      notifyMutationError(error, "Failed to update worker assignment.");
+    }
+  }
+
   const pauseReason: string | null = logData?.pauseReason ?? null;
 
   const statusBadge = (
@@ -320,6 +383,19 @@ function ProjectRow({
     >
       {statusBadgeLabel(project.status)}
     </Badge>
+  );
+
+  const applyButton = (
+    <Button
+      disabled={applyDisabled}
+      size="sm"
+      type="button"
+      onClick={() => {
+        void handleApplyWorkers();
+      }}
+    >
+      Apply
+    </Button>
   );
 
   return (
@@ -337,50 +413,78 @@ function ProjectRow({
         <td className="py-2 pr-4 tabular-nums text-muted-foreground">
           {logData !== null ? logData.workers.toString() : "—"}
         </td>
+        <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+          {assignedWorkerCount}
+        </td>
         <td className="py-2 pr-4 text-muted-foreground">
           {project.progressWorkerTurns} / {project.workerTurnsRequired}{" "}
           worker-turns
         </td>
         {canAct ? (
-          <td className="w-36 py-2">
-            <div className="flex items-center justify-end gap-1">
-              <Button
-                aria-label={`Move ${project.blueprintName} up in queue`}
-                disabled={isFirst || reorderMutation.isPending}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  void handleMove("up");
-                }}
-              >
-                <ChevronUp aria-hidden="true" className="h-4 w-4" />
-              </Button>
-              <Button
-                aria-label={`Move ${project.blueprintName} down in queue`}
-                disabled={isLast || reorderMutation.isPending}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  void handleMove("down");
-                }}
-              >
-                <ChevronDown aria-hidden="true" className="h-4 w-4" />
-              </Button>
-              <Button
-                aria-label={`Cancel ${project.blueprintName}`}
-                size="sm"
-                type="button"
-                variant="destructive"
-                onClick={() => {
-                  setConfirmCancelOpen(true);
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </td>
+          <>
+            <td className="py-2 pr-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  aria-label={`Target workers for ${project.blueprintName}`}
+                  className="w-20"
+                  disabled={workersMutation.isPending}
+                  inputMode="numeric"
+                  min="0"
+                  type="number"
+                  value={localCount}
+                  onChange={(e) => {
+                    setLocalCount(e.currentTarget.value);
+                  }}
+                />
+                {isRaising && unassignedNpcCount === 0 ? (
+                  <span title="No unassigned NPCs available">
+                    {applyButton}
+                  </span>
+                ) : (
+                  applyButton
+                )}
+              </div>
+            </td>
+            <td className="w-36 py-2">
+              <div className="flex items-center justify-end gap-1">
+                <Button
+                  aria-label={`Move ${project.blueprintName} up in queue`}
+                  disabled={isFirst || reorderMutation.isPending}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    void handleMove("up");
+                  }}
+                >
+                  <ChevronUp aria-hidden="true" className="h-4 w-4" />
+                </Button>
+                <Button
+                  aria-label={`Move ${project.blueprintName} down in queue`}
+                  disabled={isLast || reorderMutation.isPending}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    void handleMove("down");
+                  }}
+                >
+                  <ChevronDown aria-hidden="true" className="h-4 w-4" />
+                </Button>
+                <Button
+                  aria-label={`Cancel ${project.blueprintName}`}
+                  size="sm"
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    setConfirmCancelOpen(true);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </td>
+          </>
         ) : null}
       </tr>
       {confirmCancelOpen ? (

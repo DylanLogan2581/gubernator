@@ -1,4 +1,8 @@
-// Phase: construction — distributes settlement-wide worker pool across project queue.
+// Phase: construction — distributes construction workers across project queue.
+//
+// Workers with a non-null constructionProjectId are assigned to that specific
+// project. Workers with constructionProjectId = null form a settlement-wide
+// pool that fills projects without explicit assignments, in queue order.
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
@@ -42,14 +46,33 @@ export function phaseConstruction(
     stockpileQty.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
   }
 
-  // Count construction pool per settlement from all construction_project assignments.
-  const poolBySettlement = new Map<string, number>();
+  // Separate per-project workers (non-null constructionProjectId) from pool
+  // workers (null constructionProjectId). Per-project workers go to their
+  // assigned project; pool workers fill projects without explicit assignments.
+  const perProjectWorkerIds = new Map<string, string[]>();
+  const poolWorkersBySid = new Map<string, string[]>();
+
   for (const assignment of citizenAssignments) {
     if (assignment.assignmentType !== "construction_project") continue;
     const citizen = citizenById.get(assignment.citizenId);
     if (citizen === undefined || citizen.settlementId === null) continue;
     const sid = citizen.settlementId;
-    poolBySettlement.set(sid, (poolBySettlement.get(sid) ?? 0) + 1);
+
+    if (assignment.constructionProjectId !== null) {
+      let arr = perProjectWorkerIds.get(assignment.constructionProjectId);
+      if (arr === undefined) {
+        arr = [];
+        perProjectWorkerIds.set(assignment.constructionProjectId, arr);
+      }
+      arr.push(assignment.citizenId);
+    } else {
+      let arr = poolWorkersBySid.get(sid);
+      if (arr === undefined) {
+        arr = [];
+        poolWorkersBySid.set(sid, arr);
+      }
+      arr.push(assignment.citizenId);
+    }
   }
 
   // Collect actionable projects per settlement, sorted by queue_position ascending.
@@ -70,21 +93,6 @@ export function phaseConstruction(
     arr.sort((a, b) => a.queuePosition - b.queuePosition);
   }
 
-  // Build map of construction pool citizen IDs per settlement.
-  const constructionWorkersBySettlement = new Map<string, string[]>();
-  for (const assignment of citizenAssignments) {
-    if (assignment.assignmentType !== "construction_project") continue;
-    const citizen = citizenById.get(assignment.citizenId);
-    if (citizen === undefined || citizen.settlementId === null) continue;
-    const sid = citizen.settlementId;
-    const arr = constructionWorkersBySettlement.get(sid);
-    if (arr === undefined) {
-      constructionWorkersBySettlement.set(sid, [assignment.citizenId]);
-    } else {
-      arr.push(assignment.citizenId);
-    }
-  }
-
   const allAssignmentClears: AssignmentClear[] = [];
   const allLogs: SimulationLogEntry[] = [];
   const allNotifications: SimulationNotification[] = [];
@@ -94,20 +102,31 @@ export function phaseConstruction(
 
   for (const settlement of settlements) {
     const sid = settlement.id;
-    let pool = poolBySettlement.get(sid) ?? 0;
-    if (pool === 0) continue;
-
+    const poolWorkers = poolWorkersBySid.get(sid) ?? [];
+    let remainingPool = poolWorkers.length;
     const projects = projectsBySettlement.get(sid) ?? [];
 
     for (const project of projects) {
-      if (pool === 0) break;
+      const explicitWorkers = perProjectWorkerIds.get(project.id) ?? [];
+      const explicitCount = explicitWorkers.length;
+
+      let workers: number;
+      let useExplicit: boolean;
+
+      if (explicitCount > 0) {
+        workers = explicitCount;
+        useExplicit = true;
+      } else if (remainingPool > 0) {
+        workers = remainingPool;
+        useExplicit = false;
+      } else {
+        continue;
+      }
 
       const tier = buildingTierById.get(project.targetTierId);
       if (tier === undefined) continue;
 
-      const workers = pool;
-
-      // Check whether the stockpile can cover construction costs × allocated workers.
+      // Check whether the stockpile can cover construction costs × workers.
       let canPay = true;
       for (const cost of tier.constructionCostsJson) {
         const required = cost.amount * workers;
@@ -143,6 +162,11 @@ export function phaseConstruction(
         continue;
       }
 
+      // Deduct pool count only after a successful resource check.
+      if (!useExplicit) {
+        remainingPool -= workers;
+      }
+
       // Deduct construction costs from stockpile.
       const costsDeducted: Record<string, number> = {};
       for (const cost of tier.constructionCostsJson) {
@@ -159,7 +183,6 @@ export function phaseConstruction(
 
       const newProgress = project.progressWorkerTurns + workers;
       const isComplete = newProgress >= project.workerTurnsRequired;
-      pool -= workers;
 
       const toStatus = isComplete
         ? "complete"
@@ -175,8 +198,9 @@ export function phaseConstruction(
       });
 
       if (isComplete) {
-        for (const citizenId of constructionWorkersBySettlement.get(sid) ??
-          []) {
+        // Release only the workers that contributed to this project.
+        const workersToRelease = useExplicit ? explicitWorkers : poolWorkers;
+        for (const citizenId of workersToRelease) {
           allAssignmentClears.push({
             citizenId,
             reason: "construction_project_completed",

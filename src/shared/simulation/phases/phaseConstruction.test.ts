@@ -584,6 +584,140 @@ describe("phaseConstruction", () => {
     expect(result.assignmentClears).toHaveLength(0);
   });
 
+  it("per-project workers go to their assigned project regardless of queue order", () => {
+    // c1, c2 assigned explicitly to p2 (queue 2); no pool workers, p1 has no explicit.
+    // Expected: p2 gets 2 workers, p1 gets nothing.
+    const tier = makeTier("t1", "bp1", 5);
+    const p1 = makeProject("p1", "s1", "t1", "bp1", { queuePosition: 1 });
+    const p2 = makeProject("p2", "s1", "t1", "bp1", {
+      queuePosition: 2,
+      workerTurnsRequired: 2,
+    });
+    const ctx = makeContext({
+      settlements: [makeSettlement("s1")],
+      buildingTiers: [tier],
+      constructionProjects: [p1, p2],
+      citizens: [makeCitizen("c1", "s1"), makeCitizen("c2", "s1")],
+      citizenAssignments: [
+        makeConstructionAssignment("c1", "p2"),
+        makeConstructionAssignment("c2", "p2"),
+      ],
+    });
+
+    const result = phaseConstruction(ctx);
+
+    // p1 gets no workers
+    expect(
+      result.constructionUpdates.find((u) => u.projectId === "p1"),
+    ).toBeUndefined();
+
+    // p2 gets its 2 explicit workers and completes
+    const p2Update = result.constructionUpdates.find(
+      (u) => u.projectId === "p2",
+    );
+    expect(p2Update?.progressWorkerTurnsDelta).toBe(2);
+    expect(p2Update?.toStatus).toBe("complete");
+
+    // Only c1 and c2 are cleared
+    expect(result.assignmentClears).toHaveLength(2);
+    const clearedIds = result.assignmentClears.map((a) => a.citizenId);
+    expect(clearedIds).toContain("c1");
+    expect(clearedIds).toContain("c2");
+  });
+
+  it("pool workers fill projects without explicit assignments; explicit workers go to their project", () => {
+    // c1, c2 = pool workers (null project id); c3, c4 = assigned to p2 explicitly.
+    // Queue: p1 (gets pool), p2 (gets explicit), p3 (no workers).
+    const tier = makeTier("t1", "bp1", 10);
+    const p1 = makeProject("p1", "s1", "t1", "bp1", { queuePosition: 1 });
+    const p2 = makeProject("p2", "s1", "t1", "bp1", { queuePosition: 2 });
+    const p3 = makeProject("p3", "s1", "t1", "bp1", { queuePosition: 3 });
+    const ctx = makeContext({
+      settlements: [makeSettlement("s1")],
+      buildingTiers: [tier],
+      constructionProjects: [p1, p2, p3],
+      citizens: [
+        makeCitizen("c1", "s1"),
+        makeCitizen("c2", "s1"),
+        makeCitizen("c3", "s1"),
+        makeCitizen("c4", "s1"),
+      ],
+      citizenAssignments: [
+        makeConstructionAssignment("c1", null),
+        makeConstructionAssignment("c2", null),
+        makeConstructionAssignment("c3", "p2"),
+        makeConstructionAssignment("c4", "p2"),
+      ],
+    });
+
+    const result = phaseConstruction(ctx);
+
+    const p1Update = result.constructionUpdates.find(
+      (u) => u.projectId === "p1",
+    );
+    const p2Update = result.constructionUpdates.find(
+      (u) => u.projectId === "p2",
+    );
+
+    // p1 gets 2 pool workers
+    expect(p1Update?.progressWorkerTurnsDelta).toBe(2);
+    expect(p1Update?.toStatus).toBe("in_progress");
+
+    // p2 gets 2 explicit workers
+    expect(p2Update?.progressWorkerTurnsDelta).toBe(2);
+    expect(p2Update?.toStatus).toBe("in_progress");
+
+    // p3 gets nothing
+    expect(
+      result.constructionUpdates.find((u) => u.projectId === "p3"),
+    ).toBeUndefined();
+  });
+
+  it("completing a project with explicit workers clears only those workers, not pool workers", () => {
+    // p1 (queue 1) has 2 pool workers; p2 (queue 2) has 2 explicit workers.
+    // p2 completes; only c3, c4 (explicit) should be cleared.
+    // Pool workers c1, c2 are NOT cleared because they didn't work on p2.
+    const tier1 = makeTier("t1", "bp1", 20); // won't complete
+    const tier2 = makeTier("t2", "bp2", 2); // completes in one turn
+    const p1 = makeProject("p1", "s1", "t1", "bp1", { queuePosition: 1 });
+    const p2 = makeProject("p2", "s1", "t2", "bp2", {
+      queuePosition: 2,
+      workerTurnsRequired: 2,
+    });
+    const ctx = makeContext({
+      settlements: [makeSettlement("s1")],
+      buildingTiers: [tier1, tier2],
+      constructionProjects: [p1, p2],
+      citizens: [
+        makeCitizen("c1", "s1"),
+        makeCitizen("c2", "s1"),
+        makeCitizen("c3", "s1"),
+        makeCitizen("c4", "s1"),
+      ],
+      citizenAssignments: [
+        makeConstructionAssignment("c1", null),
+        makeConstructionAssignment("c2", null),
+        makeConstructionAssignment("c3", "p2"),
+        makeConstructionAssignment("c4", "p2"),
+      ],
+    });
+
+    const result = phaseConstruction(ctx);
+
+    const p2Update = result.constructionUpdates.find(
+      (u) => u.projectId === "p2",
+    );
+    expect(p2Update?.toStatus).toBe("complete");
+
+    // Only c3, c4 (explicit workers for p2) are cleared
+    expect(result.assignmentClears).toHaveLength(2);
+    const clearedIds = result.assignmentClears.map((a) => a.citizenId);
+    expect(clearedIds).toContain("c3");
+    expect(clearedIds).toContain("c4");
+    expect(clearedIds).not.toContain("c1");
+    expect(clearedIds).not.toContain("c2");
+  });
+
   it("idle pool members with null constructionProjectId still count toward pool size", () => {
     // Per §11.2: idle pool members keep assignment with constructionProjectId=null
     const tier = makeTier("t1", "bp1", 1);
