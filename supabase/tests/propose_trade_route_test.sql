@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (14);
+  plan (17);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -379,6 +379,7 @@ reset role;
 
 -- Verify trade route and notifications as superuser to bypass notification RLS
 -- (notifications are only visible to recipient; superuser sees all rows).
+-- The proposer (fc6...003) is in Nation A (origin), so origin is auto-approved.
 select
   is (
     (
@@ -390,11 +391,30 @@ select
         tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
         and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
         and tr.status = 'proposed'
-        and tr.origin_approval_status = 'pending'
+        and tr.origin_approval_status = 'approved'
         and tr.destination_approval_status = 'pending'
     ),
     1,
-    'trade route inserted with status=proposed and both approval statuses=pending'
+    'trade route inserted with origin auto-approved (proposer side) and destination pending'
+  );
+
+select
+  is (
+    (
+      select
+        tr.origin_approved_by_citizen_id
+      from
+        public.trade_routes tr
+      where
+        tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
+        and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
+        and tr.status = 'proposed'
+        and tr.origin_approval_status = 'approved'
+      limit
+        1
+    ),
+    'fc600000-0000-0000-0000-000000000003'::uuid,
+    'origin_approved_by_citizen_id is set to the proposing citizen'
   );
 
 -- ---------------------------------------------------------------------------
@@ -471,7 +491,8 @@ select
   );
 
 -- ===========================================================================
--- ADMIN OVERRIDE: world admin can propose with a citizen from a wrong nation
+-- ADMIN OVERRIDE: world admin can propose with a citizen from a wrong nation;
+-- both sides stay pending because the citizen belongs to neither endpoint nation.
 -- ===========================================================================
 set
   local role authenticated;
@@ -494,6 +515,25 @@ select
   );
 
 reset role;
+
+-- Admin-proposed route uses a citizen outside either endpoint nation → both pending.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.trade_routes tr
+      where
+        tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
+        and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
+        and tr.status = 'proposed'
+        and tr.origin_approval_status = 'pending'
+        and tr.destination_approval_status = 'pending'
+    ),
+    1,
+    'admin route with foreign citizen leaves both sides pending'
+  );
 
 -- ===========================================================================
 -- SECURITY DEFINER check

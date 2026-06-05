@@ -520,13 +520,16 @@ describe("SettlementTradeRoutesPanel", () => {
     ).toBeNull();
   });
 
-  it("shows approve/reject buttons on proposed routes for managers", async () => {
+  it("shows approve/reject buttons for outgoing route when origin side is still pending", async () => {
+    // This can happen when an admin proposes with a citizen outside either endpoint nation.
     requireSupabaseClient.mockReturnValue(
       createClient({
         routeRows: [
           createRouteRow({
             status: "proposed",
             origin_settlement_id: SETTLEMENT_ID,
+            origin_approval_status: "pending",
+            destination_approval_status: "pending",
           }),
         ],
       }),
@@ -552,6 +555,47 @@ describe("SettlementTradeRoutesPanel", () => {
     expect(
       screen.getByRole("button", {
         name: "Reject trade route with Far Settlement (Far Nation)",
+      }),
+    ).toBeDefined();
+  });
+
+  it("hides approve/reject for outgoing route when proposer's origin side is auto-approved", async () => {
+    // After propose_trade_route auto-approves the proposer's side, origin_approval_status
+    // becomes 'approved'. The proposer's settlement view should only show Cancel.
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({
+            status: "proposed",
+            origin_settlement_id: SETTLEMENT_ID,
+            origin_approval_status: "approved",
+            destination_approval_status: "pending",
+          }),
+        ],
+      }),
+    );
+    useActivePlayerCharacter.mockReturnValue({
+      activeCharacter: {
+        id: CITIZEN_ID_1,
+        roleType: "nation_manager",
+        roleNationId: NATION_ID,
+        roleSettlementId: null,
+        status: "alive",
+      },
+    });
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    expect(
+      screen.queryByRole("button", { name: /Approve trade route/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Reject trade route/ }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", {
+        name: "Cancel trade route with Far Settlement (Far Nation)",
       }),
     ).toBeDefined();
   });
