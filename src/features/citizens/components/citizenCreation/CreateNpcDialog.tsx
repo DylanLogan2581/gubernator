@@ -58,7 +58,8 @@ export function CreateNpcDialog({
   settlementId,
   worldId,
 }: CreateNpcDialogProps): JSX.Element {
-  const nameId = useId();
+  const givenNameId = useId();
+  const surnameId = useId();
   const [fields, setFields] = useState(EMPTY_COMMON_FIELDS);
   const [kinshipError, setKinshipError] = useState<string | undefined>(
     undefined,
@@ -98,7 +99,7 @@ export function CreateNpcDialog({
   const nameGenerationHint: string | null = (() => {
     if (namingConfig === undefined) return null;
     if (relevantPoolIsEmpty(namingConfig, fields.sex)) {
-      return "Name pool is empty. Add names in world naming settings.";
+      return "Given name pool is empty. Add names in world naming settings.";
     }
     return null;
   })();
@@ -112,23 +113,29 @@ export function CreateNpcDialog({
     if (namingConfig === undefined) return;
     const parentA = parentChoices.find((c) => c.id === fields.parentACitizenId);
     const parentB = parentChoices.find((c) => c.id === fields.parentBCitizenId);
-    const name = generateNpcName({
+    const result = generateNpcName({
       config: namingConfig,
       rng: createSeededRng(generateLocalId()),
       sex: fields.sex !== "" ? fields.sex : null,
-      parentAName: parentA?.name ?? null,
-      parentBName: parentB?.name ?? null,
+      parentAGivenName: parentA?.givenName ?? null,
+      parentASurname: parentA?.surname ?? null,
+      parentBGivenName: parentB?.givenName ?? null,
+      parentBSurname: parentB?.surname ?? null,
     });
-    if (name !== "") {
-      setFields((current) => ({ ...current, name }));
+    if (result.givenName !== "") {
+      setFields((current) => ({
+        ...current,
+        givenName: result.givenName,
+        surname: result.surname ?? "",
+      }));
     }
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    const trimmedName = fields.name.trim();
-    if (trimmedName === "") {
+    const trimmedGivenName = fields.givenName.trim();
+    if (trimmedGivenName === "") {
       return;
     }
 
@@ -148,7 +155,8 @@ export function CreateNpcDialog({
       setKinshipError(undefined);
       mutation.mutate(
         {
-          name: trimmedName,
+          givenName: trimmedGivenName,
+          surname: fields.surname.trim() !== "" ? fields.surname.trim() : null,
           npcFlaw: flavor.flaw !== "" ? flavor.flaw : null,
           npcGoal: flavor.goal !== "" ? flavor.goal : null,
           npcSecretContradiction:
@@ -220,19 +228,19 @@ export function CreateNpcDialog({
           </DialogHeader>
 
           <div className="grid gap-1 text-sm">
-            <label className="text-muted-foreground" htmlFor={nameId}>
-              Name
+            <label className="text-muted-foreground" htmlFor={givenNameId}>
+              Given name
             </label>
             <div className="flex gap-2">
               <Input
-                id={nameId}
+                id={givenNameId}
                 disabled={mutation.isPending}
                 maxLength={textInputLimits.citizenNameMax}
                 required
-                value={fields.name}
+                value={fields.givenName}
                 onChange={(event) => {
                   const value = event.currentTarget.value;
-                  setFields((current) => ({ ...current, name: value }));
+                  setFields((current) => ({ ...current, givenName: value }));
                 }}
               />
               <Button
@@ -252,6 +260,22 @@ export function CreateNpcDialog({
                 {nameGenerationHint}
               </p>
             ) : null}
+          </div>
+
+          <div className="grid gap-1 text-sm">
+            <label className="text-muted-foreground" htmlFor={surnameId}>
+              Surname
+            </label>
+            <Input
+              id={surnameId}
+              disabled={mutation.isPending}
+              maxLength={textInputLimits.citizenNameMax}
+              value={fields.surname}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setFields((current) => ({ ...current, surname: value }));
+              }}
+            />
           </div>
 
           <label className="grid gap-1 text-sm">

@@ -310,24 +310,26 @@ function makeAllSuccessResponses(): Record<
         {
           born_on_turn_number: 1,
           citizen_type: "npc",
+          given_name: "Alice",
           id: CITIZEN_ID,
-          name: "Alice",
           parent_a_citizen_id: null,
           parent_b_citizen_id: null,
           settlement_id: SETTLEMENT_ID,
           sex: "female",
           status: "alive",
+          surname: null,
         },
         {
           born_on_turn_number: 2,
           citizen_type: "npc",
+          given_name: "Bob",
           id: PARTNER_ID,
-          name: "Bob",
           parent_a_citizen_id: null,
           parent_b_citizen_id: null,
           settlement_id: SETTLEMENT_ID,
           sex: "male",
           status: "alive",
+          surname: null,
         },
       ],
       status: 200,
@@ -542,7 +544,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     const citizen = input.citizens.find((c) => c.id === CITIZEN_ID);
     if (citizen === undefined)
       throw new Error(`citizen ${CITIZEN_ID} not found`);
-    expect(citizen.name).toBe("Alice");
+    expect(citizen.givenName).toBe("Alice");
     expect(citizen.citizenType).toBe("npc");
     expect(citizen.bornOnTurnNumber).toBe(1);
     expect(citizen.parentACitizenId).toBeNull();

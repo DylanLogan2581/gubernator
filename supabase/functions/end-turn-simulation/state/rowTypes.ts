@@ -9,6 +9,7 @@ export type SupabaseWorldRow = {
   readonly status: "active" | "archived";
   readonly current_turn_number: number;
   readonly calendar_config_json: unknown;
+  readonly naming_config_json: unknown;
   readonly npc_flavor_config_json: unknown;
   readonly partnership_seek_chance: number;
   readonly fertility_chance: number;
@@ -156,7 +157,8 @@ export type SupabaseCitizenRow = {
   readonly id: string;
   readonly settlement_id: string | null;
   readonly citizen_type: string;
-  readonly name: string;
+  readonly given_name: string;
+  readonly surname: string | null;
   readonly sex: string | null;
   readonly status: string;
   readonly born_on_turn_number: number | null;
@@ -394,7 +396,8 @@ export function isCitizenRow(v: unknown): v is SupabaseCitizenRow {
     typeof v.id === "string" &&
     (v.settlement_id === null || typeof v.settlement_id === "string") &&
     typeof v.citizen_type === "string" &&
-    typeof v.name === "string" &&
+    typeof v.given_name === "string" &&
+    (v.surname === null || typeof v.surname === "string") &&
     (v.sex === null || typeof v.sex === "string") &&
     typeof v.status === "string" &&
     (v.born_on_turn_number === null ||

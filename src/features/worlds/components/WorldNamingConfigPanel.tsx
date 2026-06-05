@@ -97,8 +97,8 @@ function WorldNamingConfigPanelContent({
   const canEdit = canAdmin && !isArchived;
 
   const hasEmptyPool =
-    draftConfig.male_names.length === 0 ||
-    draftConfig.female_names.length === 0;
+    draftConfig.male_given_names.length === 0 ||
+    draftConfig.female_given_names.length === 0;
   const showEmptyPoolWarning =
     draftConfig.convention !== "manual" && hasEmptyPool;
 
@@ -106,8 +106,9 @@ function WorldNamingConfigPanelContent({
     event.preventDefault();
     const sanitizedConfig: WorldNamingConfig = {
       ...draftConfig,
-      female_names: sanitizePoolEntries(draftConfig.female_names),
-      male_names: sanitizePoolEntries(draftConfig.male_names),
+      female_given_names: sanitizePoolEntries(draftConfig.female_given_names),
+      male_given_names: sanitizePoolEntries(draftConfig.male_given_names),
+      surnames: sanitizePoolEntries(draftConfig.surnames),
     };
     setDraftConfig(sanitizedConfig);
     saveMutation.mutate(
@@ -181,18 +182,26 @@ function WorldNamingConfigPanelContent({
           ) : null}
 
           <PoolEditor
-            label="Male name pool"
-            entries={draftConfig.male_names}
-            onChange={(maleNames) =>
-              setDraftConfig((c) => ({ ...c, male_names: maleNames }))
+            label="Male given name pool"
+            entries={draftConfig.male_given_names}
+            onChange={(entries) =>
+              setDraftConfig((c) => ({ ...c, male_given_names: entries }))
             }
           />
 
           <PoolEditor
-            label="Female name pool"
-            entries={draftConfig.female_names}
-            onChange={(femaleNames) =>
-              setDraftConfig((c) => ({ ...c, female_names: femaleNames }))
+            label="Female given name pool"
+            entries={draftConfig.female_given_names}
+            onChange={(entries) =>
+              setDraftConfig((c) => ({ ...c, female_given_names: entries }))
+            }
+          />
+
+          <PoolEditor
+            label="Surname pool"
+            entries={draftConfig.surnames}
+            onChange={(entries) =>
+              setDraftConfig((c) => ({ ...c, surnames: entries }))
             }
           />
 
@@ -276,19 +285,27 @@ function NamingConfigReadOnlySummary({
   return (
     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       <ReadoutItem
-        label="Male name pool"
+        label="Male given name pool"
         value={
-          config.male_names.length === 1
+          config.male_given_names.length === 1
             ? "1 entry"
-            : `${String(config.male_names.length)} entries`
+            : `${String(config.male_given_names.length)} entries`
         }
       />
       <ReadoutItem
-        label="Female name pool"
+        label="Female given name pool"
         value={
-          config.female_names.length === 1
+          config.female_given_names.length === 1
             ? "1 entry"
-            : `${String(config.female_names.length)} entries`
+            : `${String(config.female_given_names.length)} entries`
+        }
+      />
+      <ReadoutItem
+        label="Surname pool"
+        value={
+          config.surnames.length === 1
+            ? "1 entry"
+            : `${String(config.surnames.length)} entries`
         }
       />
       <ReadoutItem label="Convention" value={config.convention} />

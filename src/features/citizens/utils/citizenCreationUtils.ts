@@ -6,14 +6,16 @@ import {
 } from "../mutations/citizensMutations";
 
 export type CitizenCreationCommonFields = {
-  readonly name: string;
+  readonly givenName: string;
+  readonly surname: string;
   readonly sex: string;
   readonly parentACitizenId: string;
   readonly parentBCitizenId: string;
 };
 
 export const EMPTY_COMMON_FIELDS: CitizenCreationCommonFields = {
-  name: "",
+  givenName: "",
+  surname: "",
   sex: "",
   parentACitizenId: "",
   parentBCitizenId: "",

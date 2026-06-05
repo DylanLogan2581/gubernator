@@ -6,8 +6,9 @@ import { worldNamingConfigSchema } from "./worldNamingConfigSchemas";
 
 const validConfig = {
   convention: "random" as const,
-  female_names: ["Alice"],
-  male_names: ["Bob"],
+  female_given_names: ["Alice"],
+  male_given_names: ["Bob"],
+  surnames: ["Smith"],
 };
 
 describe("worldNamingConfigSchema", () => {
@@ -20,8 +21,9 @@ describe("worldNamingConfigSchema", () => {
   it("accepts empty name pools", () => {
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
-      female_names: [],
-      male_names: [],
+      female_given_names: [],
+      male_given_names: [],
+      surnames: [],
     });
 
     expect(result.success).toBe(true);
@@ -56,7 +58,7 @@ describe("worldNamingConfigSchema", () => {
   it("rejects duplicate entries in the male name pool", () => {
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
-      male_names: ["Alice", "Alice"],
+      male_given_names: ["Alice", "Alice"],
     });
 
     expect(result.success).toBe(false);
@@ -65,7 +67,7 @@ describe("worldNamingConfigSchema", () => {
   it("rejects duplicate entries in the female name pool", () => {
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
-      female_names: ["Bob", "Bob"],
+      female_given_names: ["Bob", "Bob"],
     });
 
     expect(result.success).toBe(false);
@@ -79,7 +81,7 @@ describe("worldNamingConfigSchema", () => {
 
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
-      male_names: maxPool,
+      male_given_names: maxPool,
     });
 
     expect(result.success).toBe(true);
@@ -93,7 +95,7 @@ describe("worldNamingConfigSchema", () => {
 
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
-      male_names: oversizedPool,
+      male_given_names: oversizedPool,
     });
 
     expect(result.success).toBe(false);
@@ -104,7 +106,7 @@ describe("worldNamingConfigSchema", () => {
 
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
-      male_names: [maxEntry],
+      male_given_names: [maxEntry],
     });
 
     expect(result.success).toBe(true);
@@ -115,7 +117,7 @@ describe("worldNamingConfigSchema", () => {
 
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
-      male_names: [tooLongEntry],
+      male_given_names: [tooLongEntry],
     });
 
     expect(result.success).toBe(false);
@@ -124,7 +126,7 @@ describe("worldNamingConfigSchema", () => {
   it("rejects an empty string entry in a pool", () => {
     const result = worldNamingConfigSchema.safeParse({
       ...validConfig,
-      male_names: [""],
+      male_given_names: [""],
     });
 
     expect(result.success).toBe(false);

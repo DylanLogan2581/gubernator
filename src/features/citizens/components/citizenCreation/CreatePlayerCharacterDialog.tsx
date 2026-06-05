@@ -47,7 +47,8 @@ export function CreatePlayerCharacterDialog({
   settlementId,
   worldId,
 }: CreatePlayerCharacterDialogProps): JSX.Element {
-  const nameId = useId();
+  const givenNameId = useId();
+  const surnameId = useId();
   const userId = useId();
   const [fields, setFields] = useState({
     ...EMPTY_COMMON_FIELDS,
@@ -71,8 +72,8 @@ export function CreatePlayerCharacterDialog({
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    const trimmedName = fields.name.trim();
-    if (trimmedName === "") {
+    const trimmedGivenName = fields.givenName.trim();
+    if (trimmedGivenName === "") {
       return;
     }
     if (fields.userId === "") {
@@ -96,7 +97,8 @@ export function CreatePlayerCharacterDialog({
       setFormError(undefined);
       mutation.mutate(
         {
-          name: trimmedName,
+          givenName: trimmedGivenName,
+          surname: fields.surname.trim() !== "" ? fields.surname.trim() : null,
           parentACitizenId,
           parentBCitizenId,
           personalityText: null,
@@ -160,17 +162,31 @@ export function CreatePlayerCharacterDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <label className="grid gap-1 text-sm" htmlFor={nameId}>
-            <span className="text-muted-foreground">Name</span>
+          <label className="grid gap-1 text-sm" htmlFor={givenNameId}>
+            <span className="text-muted-foreground">Given name</span>
             <Input
-              id={nameId}
+              id={givenNameId}
               disabled={mutation.isPending}
               maxLength={textInputLimits.citizenNameMax}
               required
-              value={fields.name}
+              value={fields.givenName}
               onChange={(event) => {
                 const value = event.currentTarget.value;
-                setFields((current) => ({ ...current, name: value }));
+                setFields((current) => ({ ...current, givenName: value }));
+              }}
+            />
+          </label>
+
+          <label className="grid gap-1 text-sm" htmlFor={surnameId}>
+            <span className="text-muted-foreground">Surname</span>
+            <Input
+              id={surnameId}
+              disabled={mutation.isPending}
+              maxLength={textInputLimits.citizenNameMax}
+              value={fields.surname}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setFields((current) => ({ ...current, surname: value }));
               }}
             />
           </label>

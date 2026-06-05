@@ -277,13 +277,14 @@ export function toSimCitizen(row: SupabaseCitizenRow): SimCitizen {
   return {
     bornOnTurnNumber: row.born_on_turn_number,
     citizenType: row.citizen_type as SimCitizen["citizenType"],
+    givenName: row.given_name,
     id: row.id,
-    name: row.name,
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
     settlementId: row.settlement_id,
     sex: row.sex,
     status: row.status as SimCitizen["status"],
+    surname: row.surname,
   };
 }
 

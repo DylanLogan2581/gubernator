@@ -74,6 +74,7 @@ type CitizenRowFixture = {
     | "manual_admin"
     | "unknown"
     | null;
+  readonly given_name: string;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -92,6 +93,7 @@ type CitizenRowFixture = {
   readonly sex: string | null;
   readonly skills_text: string | null;
   readonly status: "alive" | "dead";
+  readonly surname: string | null;
   readonly updated_at: string;
   readonly user_id: string | null;
   readonly world_id: string;
@@ -632,6 +634,7 @@ function createCitizenRow(
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
     death_cause_category: null,
+    given_name: "Citizen",
     id: "c-1",
     name: "Citizen",
     npc_flaw: null,
@@ -650,6 +653,7 @@ function createCitizenRow(
     sex: null,
     skills_text: null,
     status: "alive",
+    surname: null,
     updated_at: "2026-05-01T00:00:00.000Z",
     user_id: null,
     world_id: "world-1",
@@ -664,6 +668,7 @@ function toCitizenType(row: CitizenRowFixture): Citizen {
     createdAt: row.created_at,
     deathCause: row.death_cause,
     deathCauseCategory: row.death_cause_category,
+    givenName: row.given_name,
     id: row.id,
     name: row.name,
     npcFlaw: row.npc_flaw,
@@ -682,6 +687,7 @@ function toCitizenType(row: CitizenRowFixture): Citizen {
     sex: row.sex,
     skillsText: row.skills_text,
     status: row.status,
+    surname: row.surname,
     updatedAt: row.updated_at,
     userId: row.user_id,
     worldId: row.world_id,

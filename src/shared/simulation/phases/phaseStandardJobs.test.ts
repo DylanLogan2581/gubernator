@@ -47,13 +47,14 @@ function makeCitizen(id: string, settlementId: string): SimCitizen {
   return {
     bornOnTurnNumber: null,
     citizenType: "npc",
+    givenName: id,
     id,
-    name: id,
     parentACitizenId: null,
     parentBCitizenId: null,
     settlementId,
     sex: null,
     status: "alive",
+    surname: null,
   };
 }
 

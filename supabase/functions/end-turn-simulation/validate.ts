@@ -5,7 +5,10 @@ import type {
   EndTurnSimulationErrorResponse,
   EndTurnSimulationRequestBody,
 } from "./types.ts";
-import type { NpcFlavorConfig } from "../_shared/simulation/simulationTypes.ts";
+import type {
+  NpcFlavorConfig,
+  SimNamingConfig,
+} from "../_shared/simulation/simulationTypes.ts";
 import type { TurnCalendarConfig } from "../_shared/turnCalendarPrimitives.ts";
 
 const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
@@ -284,6 +287,24 @@ export function parseWorldNpcFlavorConfig(
     flaws: value.flaws,
     goals: value.goals,
     traits: value.traits,
+  };
+}
+
+export function parseWorldNamingConfig(value: unknown): SimNamingConfig | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.convention !== "string" ||
+    !isStringArray(value.male_given_names) ||
+    !isStringArray(value.female_given_names) ||
+    !isStringArray(value.surnames)
+  ) {
+    return null;
+  }
+  return {
+    convention: value.convention,
+    female_given_names: value.female_given_names,
+    male_given_names: value.male_given_names,
+    surnames: value.surnames,
   };
 }
 

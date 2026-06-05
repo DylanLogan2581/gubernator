@@ -21,6 +21,7 @@ export type Citizen = {
   readonly createdAt: string;
   readonly deathCause: string | null;
   readonly deathCauseCategory: DeathCauseCategory | null;
+  readonly givenName: string;
   readonly id: string;
   readonly name: string;
   readonly npcFlaw: string | null;
@@ -39,6 +40,7 @@ export type Citizen = {
   readonly sex: string | null;
   readonly skillsText: string | null;
   readonly status: CitizenStatus;
+  readonly surname: string | null;
   readonly updatedAt: string;
   readonly userId: string | null;
   readonly worldId: string;

@@ -5,6 +5,7 @@ import type {
   CitizenBirth,
   NpcFlavorConfig,
   SimCitizen,
+  SimNamingConfig,
   SimPartnership,
   SimSettlement,
   SimulationLogEntry,
@@ -43,6 +44,59 @@ function pickNpcFlavor(
   };
 }
 
+function generateBirthName(
+  rng: SeededRng,
+  namingConfig: SimNamingConfig | null | undefined,
+  sex: string,
+  parentA: SimCitizen,
+  parentB: SimCitizen,
+): { givenName: string; surname: string | null } {
+  if (namingConfig === null || namingConfig === undefined) {
+    return { givenName: "", surname: null };
+  }
+
+  const normalized = sex.trim().toLowerCase();
+  const pool =
+    normalized === "male"
+      ? namingConfig.male_given_names
+      : normalized === "female"
+        ? namingConfig.female_given_names
+        : [
+            ...namingConfig.male_given_names,
+            ...namingConfig.female_given_names,
+          ];
+
+  if (pool.length === 0) return { givenName: "", surname: null };
+
+  const givenName = pool[Math.floor(rng() * pool.length)] ?? "";
+
+  let surname: string | null;
+  switch (namingConfig.convention) {
+    case "random":
+      surname = pickFromPool(rng, namingConfig.surnames);
+      break;
+    case "patronymic":
+      surname = nonEmpty(parentA.givenName);
+      break;
+    case "matronymic":
+      surname = nonEmpty(parentB.givenName);
+      break;
+    case "inherited family name":
+      surname = nonEmpty(parentA.surname) ?? nonEmpty(parentB.surname);
+      break;
+    default:
+      surname = null;
+  }
+
+  return { givenName, surname };
+}
+
+function nonEmpty(value: string | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
+}
+
 export type FertilityResult = {
   readonly citizenBirths: CitizenBirth[];
   readonly logs: SimulationLogEntry[];
@@ -60,6 +114,7 @@ export function applyFertilityForSettlement(
   minimumPartnershipAgeTurns: number,
   maximumFertilityAgeTurns: number | null,
   npcFlavorConfig: NpcFlavorConfig | null | undefined,
+  namingConfig: SimNamingConfig | null | undefined,
   turnNumber: number,
   rng: SeededRng,
 ): FertilityResult {
@@ -105,13 +160,22 @@ export function applyFertilityForSettlement(
 
     const sex = rng() < 0.5 ? "male" : "female";
     const flavor = pickNpcFlavor(rng, npcFlavorConfig);
+    const { givenName, surname } = generateBirthName(
+      rng,
+      namingConfig,
+      sex,
+      citizenA,
+      citizenB,
+    );
 
     citizenBirths.push({
       ...flavor,
+      givenName,
       parentACitizenId: partnership.citizenAId,
       parentBCitizenId: partnership.citizenBId,
       sex,
       settlementId: sid,
+      surname,
     });
     logs.push({
       category: "citizen.born",

@@ -24,18 +24,22 @@ export function CitizenCoreSection({
   readonly queryClient: QueryClient;
 }): JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(citizen.name);
+  const [givenName, setGivenName] = useState(citizen.givenName);
+  const [surname, setSurname] = useState(citizen.surname ?? "");
   const [sex, setSex] = useState(citizen.sex ?? "");
-  const [nameError, setNameError] = useState<string | undefined>(undefined);
+  const [givenNameError, setGivenNameError] = useState<string | undefined>(
+    undefined,
+  );
 
   const updateMutation = useMutation(
     updateCitizenCoreMutationOptions({ queryClient }),
   );
 
   function resetForm(): void {
-    setName(citizen.name);
+    setGivenName(citizen.givenName);
+    setSurname(citizen.surname ?? "");
     setSex(citizen.sex ?? "");
-    setNameError(undefined);
+    setGivenNameError(undefined);
     updateMutation.reset();
   }
 
@@ -46,18 +50,19 @@ export function CitizenCoreSection({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setNameError(undefined);
+    setGivenNameError(undefined);
     updateMutation.reset();
 
-    if (name.trim().length === 0) {
-      setNameError("Citizen name is required.");
+    if (givenName.trim().length === 0) {
+      setGivenNameError("Given name is required.");
       return;
     }
 
     updateMutation.mutate(
       {
         citizenId: citizen.id,
-        name,
+        givenName,
+        surname: surname.trim() !== "" ? surname : undefined,
         sex,
         worldId: citizen.worldId,
       },
@@ -95,7 +100,8 @@ export function CitizenCoreSection({
           ) : null}
         </div>
         <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Readout label="Name" value={citizen.name} />
+          <Readout label="Given name" value={citizen.givenName} />
+          <Readout label="Surname" value={citizen.surname} />
           <Readout label="Sex" value={citizen.sex} />
           <Readout
             label="Born on turn"
@@ -134,32 +140,43 @@ export function CitizenCoreSection({
         </Button>
       </div>
       <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Name</span>
+        <span className="text-muted-foreground">Given name</span>
         <Input
-          aria-invalid={nameError === undefined ? undefined : true}
+          aria-invalid={givenNameError === undefined ? undefined : true}
           aria-describedby={
-            nameError === undefined ? undefined : "citizen-core-name-error"
+            givenNameError === undefined
+              ? undefined
+              : "citizen-core-given-name-error"
           }
           disabled={updateMutation.isPending}
           maxLength={textInputLimits.citizenNameMax}
           required
-          value={name}
+          value={givenName}
           onChange={(event) => {
-            setName(event.currentTarget.value);
-            if (nameError !== undefined) {
-              setNameError(undefined);
+            setGivenName(event.currentTarget.value);
+            if (givenNameError !== undefined) {
+              setGivenNameError(undefined);
             }
           }}
         />
-        {nameError === undefined ? null : (
+        {givenNameError === undefined ? null : (
           <p
-            id="citizen-core-name-error"
+            id="citizen-core-given-name-error"
             role="alert"
             className="text-sm text-destructive"
           >
-            {nameError}
+            {givenNameError}
           </p>
         )}
+      </label>
+      <label className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Surname</span>
+        <Input
+          disabled={updateMutation.isPending}
+          maxLength={textInputLimits.citizenNameMax}
+          value={surname}
+          onChange={(event) => setSurname(event.currentTarget.value)}
+        />
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Sex</span>

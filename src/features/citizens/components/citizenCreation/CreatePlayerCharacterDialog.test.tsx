@@ -41,6 +41,7 @@ type CitizenRow = {
   readonly citizen_type: "npc" | "player_character";
   readonly created_at: string;
   readonly death_cause: string | null;
+  readonly given_name: string;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -59,6 +60,7 @@ type CitizenRow = {
   readonly sex: string | null;
   readonly skills_text: string | null;
   readonly status: "alive" | "dead";
+  readonly surname: string | null;
   readonly updated_at: string;
   readonly user_id: string | null;
   readonly world_id: string;
@@ -80,6 +82,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     citizen_type: "player_character",
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
+    given_name: "New Character",
     id: NEW_CITIZEN_ID,
     name: "New Character",
     npc_flaw: null,
@@ -98,6 +101,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     sex: null,
     skills_text: null,
     status: "alive",
+    surname: null,
     updated_at: "2026-05-01T00:00:00.000Z",
     user_id: USER_ID,
     world_id: WORLD_ID,
@@ -222,7 +226,7 @@ describe("CreatePlayerCharacterDialog", () => {
     renderDialog();
 
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.click(
@@ -242,7 +246,7 @@ describe("CreatePlayerCharacterDialog", () => {
     await screen.findAllByRole("option", { name: "Alice" });
 
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.selectOptions(
@@ -276,7 +280,7 @@ describe("CreatePlayerCharacterDialog", () => {
     await screen.findAllByRole("option", { name: "Alice" });
 
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.selectOptions(
@@ -310,7 +314,7 @@ describe("CreatePlayerCharacterDialog", () => {
 
     await screen.findByRole("option", { name: "testuser" });
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.selectOptions(
@@ -340,7 +344,7 @@ describe("CreatePlayerCharacterDialog", () => {
 
     await screen.findByRole("option", { name: "testuser" });
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.selectOptions(
@@ -355,7 +359,7 @@ describe("CreatePlayerCharacterDialog", () => {
       expect(rpcMock).toHaveBeenCalledWith(
         "create_player_character",
         expect.objectContaining({
-          p_name: "Newborn",
+          p_given_name: "Newborn",
           p_settlement_id: SETTLEMENT_ID,
           p_world_id: WORLD_ID,
           p_user_id: USER_ID,

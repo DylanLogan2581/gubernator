@@ -132,7 +132,7 @@ describe("WorldNamingConfigPanel", () => {
       createClient({
         worldRows: [
           createWorldRow({
-            naming_config_json: createNamingConfig({ male_names: [] }),
+            naming_config_json: createNamingConfig({ male_given_names: [] }),
           }),
         ],
       }),
@@ -157,7 +157,7 @@ describe("WorldNamingConfigPanel", () => {
       createClient({
         worldRows: [
           createWorldRow({
-            naming_config_json: createNamingConfig({ female_names: [] }),
+            naming_config_json: createNamingConfig({ female_given_names: [] }),
           }),
         ],
       }),
@@ -184,8 +184,8 @@ describe("WorldNamingConfigPanel", () => {
           createWorldRow({
             naming_config_json: createNamingConfig({
               convention: "manual",
-              female_names: [],
-              male_names: [],
+              female_given_names: [],
+              male_given_names: [],
             }),
           }),
         ],
@@ -234,8 +234,8 @@ describe("WorldNamingConfigPanel", () => {
         worldRows: [
           createWorldRow({
             naming_config_json: createNamingConfig({
-              female_names: [],
-              male_names: [],
+              female_given_names: [],
+              male_given_names: [],
             }),
           }),
         ],
@@ -354,7 +354,7 @@ describe("WorldNamingConfigPanel", () => {
       createClient({
         worldRows: [
           createWorldRow({
-            naming_config_json: createNamingConfig({ male_names: [] }),
+            naming_config_json: createNamingConfig({ male_given_names: [] }),
           }),
         ],
       }),
@@ -462,8 +462,9 @@ function createNamingConfig(
 ): WorldNamingConfig {
   return {
     convention: "random",
-    female_names: ["Alice"],
-    male_names: ["Bob"],
+    female_given_names: ["Alice"],
+    male_given_names: ["Bob"],
+    surnames: [],
     ...overrides,
   };
 }

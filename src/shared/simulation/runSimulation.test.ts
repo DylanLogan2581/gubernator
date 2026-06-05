@@ -75,13 +75,14 @@ function makeNpc(id: string, settlementId: string): SimCitizen {
   return {
     bornOnTurnNumber: 1,
     citizenType: "npc",
+    givenName: id,
     id,
-    name: id,
     parentACitizenId: null,
     parentBCitizenId: null,
     settlementId,
     sex: "female",
     status: "alive",
+    surname: null,
   };
 }
 

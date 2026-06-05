@@ -4,6 +4,7 @@ import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../env.ts";
 import { createErrorResponse } from "../http.ts";
 import {
   parseWorldCalendarConfig,
+  parseWorldNamingConfig,
   parseWorldNpcFlavorConfig,
 } from "../validate.ts";
 
@@ -138,6 +139,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
   const settlementIds = settlements.map((s) => s.id);
 
   const populationRules = toWorldPopulationRules(worldRow);
+  const namingConfig = parseWorldNamingConfig(worldRow.naming_config_json);
   const npcFlavorConfig = parseWorldNpcFlavorConfig(
     worldRow.npc_flavor_config_json,
   );
@@ -269,6 +271,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     ).rows
       .filter(isManagedPopRow)
       .map(toSimManagedPop),
+    namingConfig,
     npcFlavorConfig,
     partnerships: (
       partnershipsResult as Extract<typeof partnershipsResult, { ok: true }>

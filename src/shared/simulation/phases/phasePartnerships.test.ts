@@ -58,9 +58,10 @@ function makeNpc(
   return {
     bornOnTurnNumber,
     citizenType: "npc",
+    givenName: id,
     id,
-    name: id,
     parentACitizenId: null,
+    surname: null,
     parentBCitizenId: null,
     settlementId,
     sex,
@@ -79,9 +80,10 @@ function makeNpcWithParents(
   return {
     bornOnTurnNumber,
     citizenType: "npc",
+    givenName: id,
     id,
-    name: id,
     parentACitizenId: parentA,
+    surname: null,
     parentBCitizenId: parentB,
     settlementId,
     sex,

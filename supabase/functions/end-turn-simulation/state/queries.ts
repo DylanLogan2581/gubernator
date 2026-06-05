@@ -92,6 +92,7 @@ export async function fetchWorldRow(
       "status",
       "current_turn_number",
       "calendar_config_json",
+      "naming_config_json",
       "npc_flavor_config_json",
       "partnership_seek_chance",
       "fertility_chance",
@@ -261,7 +262,7 @@ export function fetchCitizens(
       status: "eq.alive",
       order: "id.asc",
       select:
-        "id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id",
+        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id",
     },
   });
 }

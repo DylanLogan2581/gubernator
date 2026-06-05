@@ -8,13 +8,25 @@ const settlementIdSchema = z.guid("Settlement id must be a valid UUID.");
 const nationIdSchema = z.guid("Nation id must be a valid UUID.");
 const userIdSchema = z.guid("User id must be a valid UUID.");
 
-const citizenNameSchema = z
+const givenNameSchema = z
   .string()
-  .max(textInputLimits.citizenNameMax, "Citizen name is too long.")
+  .max(textInputLimits.citizenNameMax, "Given name is too long.")
   .refine(
     (value): boolean => value.trim().length > 0,
-    "Citizen name is required.",
+    "Given name is required.",
   );
+
+const surnameSchema = z
+  .union([
+    z.string().max(textInputLimits.citizenNameMax, "Surname is too long."),
+    z.null(),
+  ])
+  .optional()
+  .transform((value): string | null => {
+    if (value === null || value === undefined) return null;
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? null : trimmed;
+  });
 
 const optionalTrimmedTextSchema = z
   .union([z.string(), z.null()])
@@ -72,7 +84,7 @@ const citizenRoleTypeSchema = z.enum([
 
 const baseCitizenWriteShape = {
   bornOnTurnNumber: optionalIntegerSchema,
-  name: citizenNameSchema,
+  givenName: givenNameSchema,
   npcFlaw: optionalNpcTextSchema,
   npcGoal: optionalNpcTextSchema,
   npcSecretContradiction: optionalNpcTextSchema,
@@ -85,6 +97,7 @@ const baseCitizenWriteShape = {
   settlementId: optionalSettlementIdSchema,
   sex: optionalTrimmedTextSchema,
   skillsText: optionalNpcTextSchema,
+  surname: surnameSchema,
   worldId: worldIdSchema,
 };
 
@@ -109,8 +122,9 @@ export const createPlayerCharacterInputSchema = z
 
 export const updateCitizenCoreInputSchema = z.strictObject({
   citizenId: citizenIdSchema,
-  name: citizenNameSchema,
+  givenName: givenNameSchema,
   sex: optionalTrimmedTextSchema,
+  surname: surnameSchema,
   worldId: worldIdSchema,
 });
 

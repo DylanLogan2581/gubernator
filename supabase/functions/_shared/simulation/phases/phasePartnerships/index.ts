@@ -34,6 +34,7 @@ export function phasePartnerships(
 ): PhasePartnershipsOutput {
   const {
     citizens: inputCitizens,
+    namingConfig,
     npcFlavorConfig,
     partnerships,
     populationRules,
@@ -123,6 +124,7 @@ export function phasePartnerships(
       minimumPartnershipAgeTurns,
       maximumFertilityAgeTurns,
       npcFlavorConfig,
+      namingConfig,
       turnNumber,
       rng,
     );

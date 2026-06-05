@@ -26,6 +26,7 @@ const exampleResult: SimulationResult = {
   ],
   citizenBirths: [
     {
+      givenName: "Newborn",
       npcFlaw: null,
       npcGoal: "a seat on the council",
       npcSecretContradiction: null,
@@ -35,6 +36,7 @@ const exampleResult: SimulationResult = {
       parentBCitizenId: "c-3",
       sex: "female",
       settlementId: "s-1",
+      surname: null,
     },
   ],
   citizenPatches: [{ bornOnTurnNumber: 5, citizenId: "c-99" }],

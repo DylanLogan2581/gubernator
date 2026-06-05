@@ -150,7 +150,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
         citizens: [
           {
             id: "npc1",
-            name: "npc1",
+            givenName: "npc1",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",
@@ -161,7 +162,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
           },
           {
             id: "npc2",
-            name: "npc2",
+            givenName: "npc2",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",
@@ -172,7 +174,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
           },
           {
             id: "pc1",
-            name: "pc1",
+            givenName: "pc1",
+            surname: null,
             citizenType: "player_character",
             status: "alive",
             settlementId: "s1",
@@ -196,7 +199,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
         citizens: [
           {
             id: "npc1",
-            name: "npc1",
+            givenName: "npc1",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",
@@ -207,7 +211,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
           },
           {
             id: "npc2",
-            name: "npc2",
+            givenName: "npc2",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",
@@ -239,7 +244,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
         citizens: [
           {
             id: "npc1",
-            name: "npc1",
+            givenName: "npc1",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",
@@ -266,7 +272,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
         citizens: [
           {
             id: "npc1",
-            name: "npc1",
+            givenName: "npc1",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",
@@ -282,6 +289,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
         ...acc,
         citizenBirths: [
           {
+            givenName: "Newborn",
             settlementId: "s1",
             parentACitizenId: "npc1",
             parentBCitizenId: "npc1",
@@ -291,6 +299,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
             npcSecretContradiction: null,
             npcTrait1: null,
             npcTrait2: null,
+            surname: null,
           },
         ],
       });
@@ -452,7 +461,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
         citizens: [
           {
             id: "npc1",
-            name: "npc1",
+            givenName: "npc1",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",
@@ -463,7 +473,8 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
           },
           {
             id: "npc2",
-            name: "npc2",
+            givenName: "npc2",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",
@@ -800,7 +811,8 @@ describe("phaseLogsAndSnapshots — resource snapshot", () => {
         citizens: [
           {
             id: "npc1",
-            name: "npc1",
+            givenName: "npc1",
+            surname: null,
             citizenType: "npc",
             status: "alive",
             settlementId: "s1",

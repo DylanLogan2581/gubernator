@@ -76,6 +76,7 @@ type CitizenRow = {
   readonly created_at: string;
   readonly death_cause: string | null;
   readonly death_cause_category: DeathCauseCategory | null;
+  readonly given_name: string;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -94,6 +95,7 @@ type CitizenRow = {
   readonly sex: string | null;
   readonly skills_text: string | null;
   readonly status: CitizenStatus;
+  readonly surname: string | null;
   readonly updated_at: string;
   readonly user_id: string | null;
   readonly world_id: string;
@@ -112,7 +114,7 @@ type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
 };
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,death_cause_category,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,death_cause_category,created_at,updated_at";
 
 const CITIZEN_AGGREGATE_SELECT =
   "id,citizen_type,status,citizen_assignments(assignment_type)";
@@ -454,6 +456,7 @@ export function toCitizen(row: CitizenRow): Citizen {
     createdAt: row.created_at,
     deathCause: row.death_cause,
     deathCauseCategory: row.death_cause_category,
+    givenName: row.given_name,
     id: row.id,
     name: row.name,
     npcFlaw: row.npc_flaw,
@@ -472,6 +475,7 @@ export function toCitizen(row: CitizenRow): Citizen {
     sex: row.sex,
     skillsText: row.skills_text,
     status: row.status,
+    surname: row.surname,
     updatedAt: row.updated_at,
     userId: row.user_id,
     worldId: row.world_id,

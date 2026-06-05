@@ -33,7 +33,8 @@ describe("createNpcMutationOptions", () => {
 
     const result = executeMutation(queryClient, options, {
       bornOnTurnNumber: null,
-      name: "   ",
+      givenName: "   ",
+      surname: null,
       npcFlaw: null,
       npcGoal: null,
       npcSecretContradiction: null,
@@ -64,7 +65,8 @@ describe("createNpcMutationOptions", () => {
 
     const result = (await executeMutation(queryClient, options, {
       bornOnTurnNumber: 5,
-      name: "  Aldra  ",
+      givenName: "  Aldra  ",
+      surname: null,
       npcFlaw: "  pride  ",
       npcGoal: "council seat",
       npcSecretContradiction: null,
@@ -85,7 +87,7 @@ describe("createNpcMutationOptions", () => {
       "create_npc",
       expect.objectContaining({
         p_born_on_turn_number: 5,
-        p_name: "Aldra",
+        p_given_name: "Aldra",
         p_npc_flaw: "pride",
         p_npc_goal: "council seat",
         p_npc_trait_1: "earnest",
@@ -105,7 +107,8 @@ describe("createNpcMutationOptions", () => {
 
     const result = executeMutation(queryClient, options, {
       bornOnTurnNumber: null,
-      name: "Aldra",
+      givenName: "Aldra",
+      surname: null,
       npcFlaw: null,
       npcGoal: null,
       npcSecretContradiction: null,
@@ -138,7 +141,8 @@ describe("createNpcMutationOptions", () => {
     await expect(
       executeMutation(queryClient, options, {
         bornOnTurnNumber: null,
-        name: "Aldra",
+        givenName: "Aldra",
+        surname: null,
         npcFlaw: null,
         npcGoal: null,
         npcSecretContradiction: null,
@@ -169,7 +173,8 @@ describe("createPlayerCharacterMutationOptions", () => {
 
     const result = executeMutation(queryClient, options, {
       bornOnTurnNumber: null,
-      name: "Brann",
+      givenName: "Brann",
+      surname: null,
       npcFlaw: null,
       npcGoal: null,
       npcSecretContradiction: null,
@@ -203,7 +208,8 @@ describe("createPlayerCharacterMutationOptions", () => {
 
     await executeMutation(queryClient, options, {
       bornOnTurnNumber: null,
-      name: "Brann",
+      givenName: "Brann",
+      surname: null,
       npcFlaw: null,
       npcGoal: null,
       npcSecretContradiction: null,
@@ -223,7 +229,7 @@ describe("createPlayerCharacterMutationOptions", () => {
     expect(rpc).toHaveBeenCalledWith(
       "create_player_character",
       expect.objectContaining({
-        p_name: "Brann",
+        p_given_name: "Brann",
         p_parent_a_citizen_id: PARENT_A_ID,
         p_parent_b_citizen_id: PARENT_B_ID,
         p_settlement_id: SETTLEMENT_ID,
@@ -248,7 +254,8 @@ describe("updateCitizenCoreMutationOptions", () => {
     await expect(
       executeMutation(queryClient, options, {
         citizenId: CITIZEN_ID,
-        name: "   ",
+        givenName: "   ",
+        surname: null,
         sex: null,
         worldId: WORLD_ID,
       }),
@@ -270,14 +277,16 @@ describe("updateCitizenCoreMutationOptions", () => {
 
     await executeMutation(queryClient, options, {
       citizenId: CITIZEN_ID,
-      name: " Aldra ",
+      givenName: " Aldra ",
+      surname: null,
       sex: " f ",
       worldId: WORLD_ID,
     });
 
     expect(calls.from).toHaveBeenCalledWith("citizens");
     expect(calls.update).toHaveBeenCalledWith({
-      name: "Aldra",
+      given_name: "Aldra",
+      surname: null,
       sex: "f",
     });
     expect(calls.eqId).toHaveBeenCalledWith("id", CITIZEN_ID);
@@ -301,7 +310,8 @@ describe("updateCitizenCoreMutationOptions", () => {
     await expect(
       executeMutation(queryClient, options, {
         citizenId: CITIZEN_ID,
-        name: "Aldra",
+        givenName: "Aldra",
+        surname: null,
         sex: null,
         worldId: WORLD_ID,
       }),
@@ -408,6 +418,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
     death_cause_category: null,
+    given_name: "Aldra",
     id: CITIZEN_ID,
     name: "Aldra",
     npc_flaw: null,
@@ -426,6 +437,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     sex: null,
     skills_text: null,
     status: "alive",
+    surname: null,
     updated_at: "2026-05-01T00:00:00.000Z",
     user_id: null,
     world_id: WORLD_ID,

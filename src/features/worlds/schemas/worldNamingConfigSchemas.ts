@@ -29,8 +29,9 @@ const namePoolSchema = z
 
 export const worldNamingConfigSchema = z.object({
   convention: nameConventionSchema,
-  female_names: namePoolSchema,
-  male_names: namePoolSchema,
+  female_given_names: namePoolSchema,
+  male_given_names: namePoolSchema,
+  surnames: namePoolSchema,
 });
 
 export type WorldNamingConfig = z.infer<typeof worldNamingConfigSchema>;

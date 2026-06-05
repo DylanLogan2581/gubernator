@@ -64,6 +64,7 @@ type TradeRouteOutcomeEntry = {
 
 type CitizenBirthEntry = {
   readonly bornOnTurnNumber: number;
+  readonly givenName: string;
   readonly npcFlaw: string | null;
   readonly npcGoal: string | null;
   readonly npcSecretContradiction: string | null;
@@ -73,6 +74,7 @@ type CitizenBirthEntry = {
   readonly parentBCitizenId: string | null;
   readonly sex: string;
   readonly settlementId: string;
+  readonly surname: string | null;
 };
 
 type CitizenDeathEntry = {
@@ -263,6 +265,7 @@ export function mapSimulationResultToPayload(
   // §C32a: citizenBirths — add bornOnTurnNumber from the new turn.
   const citizenBirths: CitizenBirthEntry[] = result.citizenBirths.map((b) => ({
     bornOnTurnNumber: newTurnNumber,
+    givenName: b.givenName,
     npcFlaw: b.npcFlaw,
     npcGoal: b.npcGoal,
     npcSecretContradiction: b.npcSecretContradiction,
@@ -272,6 +275,7 @@ export function mapSimulationResultToPayload(
     parentBCitizenId: b.parentBCitizenId ?? null,
     sex: b.sex,
     settlementId: b.settlementId,
+    surname: b.surname,
   }));
 
   // §C32b: citizenDeaths — rename category → deathCauseCategory, detail → deathCause.

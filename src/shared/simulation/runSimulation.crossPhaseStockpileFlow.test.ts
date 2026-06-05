@@ -93,13 +93,14 @@ function makeNpc(
   return {
     bornOnTurnNumber: 1,
     citizenType: "npc",
+    givenName: id,
     id,
-    name: id,
     parentACitizenId: null,
     parentBCitizenId: null,
     settlementId,
     sex,
     status: "alive",
+    surname: null,
   };
 }
 
@@ -338,16 +339,17 @@ describe("cross-phase stockpile flow", () => {
       const c1 = {
         bornOnTurnNumber: 1,
         citizenType: "npc" as const,
+        givenName: "c1",
         id: "c1",
-        name: "c1",
         parentACitizenId: null,
         parentBCitizenId: null,
         settlementId: "s1",
         sex: "male",
         status: "alive" as const,
+        surname: null,
       };
-      const c2 = { ...c1, id: "c2", name: "c2", bornOnTurnNumber: 2 };
-      const c3 = { ...c1, id: "c3", name: "c3", bornOnTurnNumber: 3 };
+      const c2 = { ...c1, id: "c2", givenName: "c2", bornOnTurnNumber: 2 };
+      const c3 = { ...c1, id: "c3", givenName: "c3", bornOnTurnNumber: 3 };
 
       const input = makeInput({
         buildingBlueprints: [blueprint],
@@ -397,16 +399,17 @@ describe("cross-phase stockpile flow", () => {
       const c1 = {
         bornOnTurnNumber: 1,
         citizenType: "npc" as const,
+        givenName: "c1",
         id: "c1",
-        name: "c1",
         parentACitizenId: null,
         parentBCitizenId: null,
         settlementId: "s1",
         sex: "male",
         status: "alive" as const,
+        surname: null,
       };
-      const c2 = { ...c1, id: "c2", name: "c2", bornOnTurnNumber: 2 };
-      const c3 = { ...c1, id: "c3", name: "c3", bornOnTurnNumber: 3 };
+      const c2 = { ...c1, id: "c2", givenName: "c2", bornOnTurnNumber: 2 };
+      const c3 = { ...c1, id: "c3", givenName: "c3", bornOnTurnNumber: 3 };
 
       const input = makeInput({
         buildingBlueprints: [blueprint],

@@ -196,8 +196,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -214,6 +215,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -226,8 +228,9 @@ export type Database = {
           death_cause_category?:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id?: string;
-          name: string;
+          name?: string | null;
           npc_flaw?: string | null;
           npc_goal?: string | null;
           npc_secret_contradiction?: string | null;
@@ -244,6 +247,7 @@ export type Database = {
           sex?: string | null;
           skills_text?: string | null;
           status?: string;
+          surname?: string | null;
           updated_at?: string;
           user_id?: string | null;
           world_id: string;
@@ -256,8 +260,9 @@ export type Database = {
           death_cause_category?:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name?: string;
           id?: string;
-          name?: string;
+          name?: string | null;
           npc_flaw?: string | null;
           npc_goal?: string | null;
           npc_secret_contradiction?: string | null;
@@ -274,6 +279,7 @@ export type Database = {
           sex?: string | null;
           skills_text?: string | null;
           status?: string;
+          surname?: string | null;
           updated_at?: string;
           user_id?: string | null;
           world_id?: string;
@@ -1997,8 +2003,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2015,6 +2022,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2065,22 +2073,23 @@ export type Database = {
       };
       create_citizen_internal: {
         Args: {
-          p_born_on_turn_number: number;
+          p_born_on_turn_number?: number;
           p_citizen_type: string;
-          p_name: string;
-          p_npc_flaw: string;
-          p_npc_goal: string;
-          p_npc_secret_contradiction: string;
-          p_npc_trait_1: string;
-          p_npc_trait_2: string;
-          p_parent_a_citizen_id: string;
-          p_parent_b_citizen_id: string;
-          p_personality_text: string;
-          p_profile_photo_url: string;
+          p_given_name: string;
+          p_npc_flaw?: string;
+          p_npc_goal?: string;
+          p_npc_secret_contradiction?: string;
+          p_npc_trait_1?: string;
+          p_npc_trait_2?: string;
+          p_parent_a_citizen_id?: string;
+          p_parent_b_citizen_id?: string;
+          p_personality_text?: string;
+          p_profile_photo_url?: string;
           p_settlement_id: string;
-          p_sex: string;
-          p_skills_text: string;
-          p_user_id: string;
+          p_sex?: string;
+          p_skills_text?: string;
+          p_surname?: string;
+          p_user_id?: string;
           p_world_id: string;
         };
         Returns: {
@@ -2091,8 +2100,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2109,6 +2119,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2201,7 +2212,7 @@ export type Database = {
       create_npc: {
         Args: {
           p_born_on_turn_number?: number;
-          p_name?: string;
+          p_given_name: string;
           p_npc_flaw?: string;
           p_npc_goal?: string;
           p_npc_secret_contradiction?: string;
@@ -2214,6 +2225,7 @@ export type Database = {
           p_settlement_id?: string;
           p_sex?: string;
           p_skills_text?: string;
+          p_surname?: string;
           p_world_id: string;
         };
         Returns: {
@@ -2224,8 +2236,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2242,6 +2255,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2285,7 +2299,7 @@ export type Database = {
       create_player_character: {
         Args: {
           p_born_on_turn_number?: number;
-          p_name?: string;
+          p_given_name: string;
           p_parent_a_citizen_id?: string;
           p_parent_b_citizen_id?: string;
           p_personality_text?: string;
@@ -2293,7 +2307,8 @@ export type Database = {
           p_settlement_id?: string;
           p_sex?: string;
           p_skills_text?: string;
-          p_user_id?: string;
+          p_surname?: string;
+          p_user_id: string;
           p_world_id: string;
         };
         Returns: {
@@ -2304,8 +2319,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2322,6 +2338,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2592,8 +2609,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2610,6 +2628,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2637,8 +2656,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2655,6 +2675,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2999,8 +3020,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -3017,6 +3039,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -3376,8 +3399,9 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -3394,6 +3418,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;

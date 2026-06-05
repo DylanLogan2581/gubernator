@@ -272,6 +272,13 @@ export type NpcFlavorConfig = {
   readonly traits: readonly string[];
 };
 
+export type SimNamingConfig = {
+  readonly convention: string;
+  readonly female_given_names: readonly string[];
+  readonly male_given_names: readonly string[];
+  readonly surnames: readonly string[];
+};
+
 export type SimCitizenType = "npc" | "player_character";
 
 export type SimCitizenStatus = "alive" | "dead";
@@ -279,13 +286,14 @@ export type SimCitizenStatus = "alive" | "dead";
 export type SimCitizen = {
   readonly bornOnTurnNumber: number | null;
   readonly citizenType: SimCitizenType;
+  readonly givenName: string;
   readonly id: string;
-  readonly name: string;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
   readonly settlementId: string | null;
   readonly sex: string | null;
   readonly status: SimCitizenStatus;
+  readonly surname: string | null;
 };
 
 export type SimAssignmentType =
@@ -333,6 +341,7 @@ export type SimulationInputState = {
   readonly jobs: readonly SimJob[];
   readonly managedPopulationTypes: readonly SimManagedPopulationType[];
   readonly managedPopulations: readonly SimManagedPopulation[];
+  readonly namingConfig?: SimNamingConfig | null;
   readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];
   readonly populationRules: WorldPopulationRules;
@@ -415,6 +424,7 @@ export type CitizenDeath = {
 };
 
 export type CitizenBirth = {
+  readonly givenName: string;
   readonly npcFlaw: string | null;
   readonly npcGoal: string | null;
   readonly npcSecretContradiction: string | null;
@@ -424,6 +434,7 @@ export type CitizenBirth = {
   readonly parentBCitizenId: string;
   readonly sex: string;
   readonly settlementId: string;
+  readonly surname: string | null;
 };
 
 export type CitizenPatch = {
