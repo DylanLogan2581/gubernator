@@ -2765,6 +2765,40 @@ export type Database = {
           settlement_id: string;
         }[];
       };
+      rename_world: {
+        Args: { p_name: string; p_world_id: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          owner_id: string;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       reorder_construction_projects: {
         Args: { p_positions: Json; p_settlement_id: string };
         Returns: {
@@ -3123,6 +3157,40 @@ export type Database = {
           resource_id: string;
           settlement_id: string;
         }[];
+      };
+      set_world_current_turn_number: {
+        Args: { p_turn_number: number; p_world_id: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          owner_id: string;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       settlement_alive_citizen_count: {
         Args: { p_settlement_id: string };

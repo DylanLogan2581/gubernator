@@ -21,6 +21,7 @@ const CONFIGURATION_TABS = [
   "naming",
   "npc-flavor",
   "population-rules",
+  "world-settings",
 ] as const;
 
 type ConfigurationTab = (typeof CONFIGURATION_TABS)[number];

@@ -6,6 +6,7 @@ export { WorldListPage } from "./components/WorldListPage";
 export { WorldNamingConfigPanel } from "./components/WorldNamingConfigPanel";
 export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
 export { WorldPopulationRulesConfigPanel } from "./components/WorldPopulationRulesConfigPanel";
+export { WorldSettingsPanel } from "./components/WorldSettingsPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
 export {
   currentUserAdminWorldIdsQueryOptions,
@@ -58,6 +59,12 @@ export {
   restoreWorldMutationOptions,
   trashWorldMutationOptions,
 } from "./mutations/worldAdminMutations";
+export {
+  WorldSettingsError,
+  isWorldSettingsError,
+  renameWorldMutationOptions,
+  setWorldCurrentTurnNumberMutationOptions,
+} from "./mutations/worldSettingsMutations";
 export type {
   NameConvention,
   WorldNamingConfig,
