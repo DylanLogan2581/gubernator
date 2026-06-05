@@ -113,13 +113,16 @@ function assignmentTargetLabel(assignment: CitizenAssignment): string | null {
     case "trade_route": {
       if (assignment.tradeRoute === null) return null;
       const end = assignment.tradeRouteEnd;
+      const resources = assignment.tradeRoute.legs
+        .map((leg) => leg.resourceName)
+        .join(", ");
       if (end === "origin") {
-        return `${assignment.tradeRoute.resourceName} → ${assignment.tradeRoute.destinationSettlementName} — Trader (origin)`;
+        return `${resources} → ${assignment.tradeRoute.destinationSettlementName} — Trader (origin)`;
       }
       if (end === "destination") {
-        return `${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.resourceName} — Trader (destination)`;
+        return `${assignment.tradeRoute.originSettlementName} → ${resources} — Trader (destination)`;
       }
-      return `${assignment.tradeRoute.resourceName}: ${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.destinationSettlementName}`;
+      return `${resources}: ${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.destinationSettlementName}`;
     }
   }
 }

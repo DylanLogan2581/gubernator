@@ -138,7 +138,10 @@ type TestAssignmentRow = {
   readonly managed_population_instance: null;
   readonly trade_route: {
     readonly id: string;
-    readonly resources: { readonly name: string };
+    readonly trade_route_legs: readonly {
+      readonly direction: string;
+      readonly resource: { readonly name: string };
+    }[];
     readonly origin: { readonly name: string };
     readonly destination: { readonly name: string };
   } | null;
@@ -161,7 +164,7 @@ function createAssignmentRow(
     managed_population_instance: null,
     trade_route: {
       id: ROUTE_ID_1,
-      resources: { name: "Grain" },
+      trade_route_legs: [{ direction: "send", resource: { name: "Grain" } }],
       origin: { name: "Home Settlement" },
       destination: { name: "Far Settlement" },
     },

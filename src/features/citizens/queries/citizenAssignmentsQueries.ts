@@ -62,7 +62,10 @@ type CitizenAssignmentRow = {
     readonly destination: { readonly name: string };
     readonly id: string;
     readonly origin: { readonly name: string };
-    readonly resources: { readonly name: string };
+    readonly trade_route_legs: readonly {
+      readonly direction: string;
+      readonly resource: { readonly name: string };
+    }[];
   } | null;
   readonly trade_route_end: string | null;
   readonly updated_at: string;
@@ -80,7 +83,7 @@ const CITIZEN_ASSIGNMENT_SELECT = [
   "construction_project:construction_projects(id,building_blueprints(name),building_blueprint_tiers(tier_number))",
   "deposit_instance:deposit_instances(id,name,deposit_types(name,job:job_definitions!deposit_types_job_id_fk(name)))",
   "managed_population_instance:managed_population_instances(id,name,managed_population_types(husbandry_job:husbandry_job_id(name),culling_job:culling_job_id(name)))",
-  "trade_route:trade_routes(id,resources(name),origin:origin_settlement_id(name),destination:destination_settlement_id(name))",
+  "trade_route:trade_routes(id,trade_route_legs(direction,resource:resources(name)),origin:origin_settlement_id(name),destination:destination_settlement_id(name))",
 ].join(",");
 
 const CITIZEN_ASSIGNMENT_IN_SETTLEMENT_SELECT = `${CITIZEN_ASSIGNMENT_SELECT},citizens!inner(settlement_id)`;
@@ -188,8 +191,11 @@ export function toCitizenAssignment(
         : {
             destinationSettlementName: row.trade_route.destination.name,
             id: row.trade_route.id,
+            legs: row.trade_route.trade_route_legs.map((leg) => ({
+              direction: leg.direction as "receive" | "send",
+              resourceName: leg.resource.name,
+            })),
             originSettlementName: row.trade_route.origin.name,
-            resourceName: row.trade_route.resources.name,
           },
     tradeRouteEnd: row.trade_route_end,
     updatedAt: row.updated_at,
