@@ -34,6 +34,7 @@ const BLUEPRINT_ID = "00000000-0000-0000-0000-000000000020";
 const TIER_ID = "00000000-0000-0000-0000-000000000030";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000040";
 const JOB_ID = "00000000-0000-0000-0000-000000000050";
+const NEW_BUILDING_ID = "00000000-0000-0000-0000-000000000060";
 
 type TestBuildingRow = {
   readonly activated_on_turn_number: number;
@@ -53,6 +54,7 @@ type TestBuildingRow = {
   readonly deactivated_in_transition_id: null;
   readonly id: string;
   readonly missed_upkeep_count: number;
+  readonly name: string | null;
   readonly settlement_id: string;
   readonly source_project_id: null;
   readonly state: string;
@@ -75,6 +77,7 @@ function createBuildingRow(
     deactivated_in_transition_id: null,
     id: BUILDING_ID_1,
     missed_upkeep_count: 0,
+    name: null,
     settlement_id: SETTLEMENT_ID,
     source_project_id: null,
     state: "active",
@@ -164,7 +167,33 @@ type TestTransitionRow = {
   readonly world_id: string;
 };
 
+type TestBlueprintRow = {
+  readonly created_at: string;
+  readonly description: string | null;
+  readonly grace_period_turns: number;
+  readonly id: string;
+  readonly is_trashed: boolean;
+  readonly max_instances_per_settlement: number | null;
+  readonly name: string;
+  readonly slug: string;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+type TestTierRow = {
+  readonly building_blueprint_id: string;
+  readonly construction_costs_json: readonly unknown[];
+  readonly created_at: string;
+  readonly effects_json: readonly unknown[];
+  readonly id: string;
+  readonly tier_number: number;
+  readonly updated_at: string;
+  readonly upkeep_costs_json: readonly unknown[];
+  readonly worker_turns_required: number;
+};
+
 function createClient({
+  blueprintRows = [],
   buildingRows = [],
   citizenRows = [],
   jobRows = [],
@@ -173,7 +202,9 @@ function createClient({
   populationCap = 0,
   resourceRows = [],
   rpcMock,
+  tierRows = [],
 }: {
+  readonly blueprintRows?: readonly TestBlueprintRow[];
   readonly buildingRows?: readonly TestBuildingRow[];
   readonly citizenRows?: readonly TestCitizenRow[];
   readonly jobRows?: readonly TestJobRow[];
@@ -182,6 +213,7 @@ function createClient({
   readonly populationCap?: number;
   readonly resourceRows?: readonly TestResourceRow[];
   readonly rpcMock?: ReturnType<typeof vi.fn>;
+  readonly tierRows?: readonly TestTierRow[];
 } = {}): unknown {
   const buildingsSelectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => buildingsSelectBuilder),
@@ -250,6 +282,12 @@ function createClient({
       }
       if (table === "turn_transitions") {
         return { select: vi.fn(() => transitionBuilder) };
+      }
+      if (table === "building_blueprints") {
+        return createSimpleQueryBuilder(blueprintRows);
+      }
+      if (table === "building_blueprint_tiers") {
+        return createSimpleQueryBuilder(tierRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -692,6 +730,147 @@ describe("SettlementBuildingsPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     expect(await screen.findByText("No buildings")).toBeDefined();
+  });
+
+  it("shows Add building button for admins when not archived", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    expect(
+      await screen.findByRole("button", { name: "Add building" }),
+    ).toBeDefined();
+  });
+
+  it("hides Add building button from non-admin users", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("No buildings");
+    expect(screen.queryByRole("button", { name: "Add building" })).toBeNull();
+  });
+
+  it("hides Add building button when the world is archived", async () => {
+    requireSupabaseClient.mockReturnValue(createClient({ buildingRows: [] }));
+
+    renderPanel({ canAdmin: true, isArchived: true });
+
+    await screen.findByText("No buildings");
+    expect(screen.queryByRole("button", { name: "Add building" })).toBeNull();
+  });
+
+  it("opens the Add building dialog when admin clicks the button", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ blueprintRows: [], buildingRows: [] }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Add building" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Add building" }),
+    ).toBeDefined();
+  });
+
+  it("calls add_settlement_building_as_admin RPC and shows success toast on submit", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "settlement_population_cap") {
+        return Promise.resolve({ data: 0, error: null });
+      }
+      if (fn === "add_settlement_building_as_admin") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: NEW_BUILDING_ID },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    const blueprintRow: TestBlueprintRow = {
+      created_at: "2026-05-01T00:00:00.000Z",
+      description: null,
+      grace_period_turns: 3,
+      id: BLUEPRINT_ID,
+      is_trashed: false,
+      max_instances_per_settlement: null,
+      name: "Barracks",
+      slug: "barracks",
+      updated_at: "2026-05-01T00:00:00.000Z",
+      world_id: WORLD_ID,
+    };
+
+    const tierRow: TestTierRow = {
+      building_blueprint_id: BLUEPRINT_ID,
+      construction_costs_json: [],
+      created_at: "2026-05-01T00:00:00.000Z",
+      effects_json: [],
+      id: TIER_ID,
+      tier_number: 1,
+      updated_at: "2026-05-01T00:00:00.000Z",
+      upkeep_costs_json: [],
+      worker_turns_required: 10,
+    };
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [blueprintRow],
+        buildingRows: [],
+        rpcMock,
+        tierRows: [tierRow],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Add building" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", { name: "Add building" });
+
+    // Select a blueprint
+    const blueprintSelect = within(dialog).getByRole("combobox", {
+      name: "Blueprint",
+    });
+    await user.selectOptions(blueprintSelect, BLUEPRINT_ID);
+
+    // Select a tier (appears after blueprint is selected)
+    const tierSelect = await within(dialog).findByRole("combobox", {
+      name: "Tier",
+    });
+    await user.selectOptions(tierSelect, TIER_ID);
+
+    // Submit
+    await user.click(
+      within(dialog).getByRole("button", { name: "Add building" }),
+    );
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith(
+        "add_settlement_building_as_admin",
+        expect.objectContaining({
+          p_blueprint_id: BLUEPRINT_ID,
+          p_settlement_id: SETTLEMENT_ID,
+          p_tier_id: TIER_ID,
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Building added.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
   });
 });
 

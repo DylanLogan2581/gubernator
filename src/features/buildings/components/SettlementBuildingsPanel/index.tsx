@@ -4,11 +4,12 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
-import { type JSX } from "react";
+import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -26,6 +27,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { settlementBuildingsBySettlementQueryOptions } from "../../queries/settlementBuildingsQueries";
 import { settlementPopulationCapQueryOptions } from "../../queries/settlementPopulationCapQueries";
 
+import { AddBuildingDialog } from "./AddBuildingDialog";
 import { BuildingRow } from "./BuildingRow";
 
 import type {
@@ -46,6 +48,7 @@ export function SettlementBuildingsPanel({
   settlementId,
   worldId,
 }: SettlementBuildingsPanelProps): JSX.Element {
+  const [addOpen, setAddOpen] = useState(false);
   const buildingsQuery = useQuery(
     settlementBuildingsBySettlementQueryOptions(settlementId),
   );
@@ -60,6 +63,7 @@ export function SettlementBuildingsPanel({
 
   const capValue = capQuery.data ?? 0;
   const citizenCount = citizensQuery.data?.statusBreakdown.alive ?? 0;
+  const canAdd = canAdmin && !isArchived;
 
   const resourceNames = new Map(
     (resourcesQuery.data ?? []).map((r) => [r.id, r.name]),
@@ -72,9 +76,25 @@ export function SettlementBuildingsPanel({
       className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="settlement-buildings-heading" className="text-base font-medium">
-          Buildings
-        </h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2
+            id="settlement-buildings-heading"
+            className="text-base font-medium"
+          >
+            Buildings
+          </h2>
+          {canAdd ? (
+            <Button
+              size="sm"
+              type="button"
+              onClick={() => {
+                setAddOpen(true);
+              }}
+            >
+              Add building
+            </Button>
+          ) : null}
+        </div>
         <p className="text-sm text-muted-foreground">
           {capQuery.isPending || citizensQuery.isPending ? (
             "Loading population cap…"
@@ -118,6 +138,17 @@ export function SettlementBuildingsPanel({
           settlementId={settlementId}
         />
       )}
+
+      {addOpen ? (
+        <AddBuildingDialog
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+          onClose={() => {
+            setAddOpen(false);
+          }}
+        />
+      ) : null}
     </section>
   );
 }

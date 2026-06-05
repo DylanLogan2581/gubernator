@@ -33,11 +33,16 @@ export type SettlementBuilding = {
   readonly effectsJson: readonly TierEffect[];
   readonly id: string;
   readonly missedUpkeepCount: number;
+  readonly name: string | null;
   readonly settlementId: string;
   readonly sourceProjectId: string | null;
   readonly state: SettlementBuildingState;
   readonly tierNumber: number;
   readonly updatedAt: string;
+};
+
+export type AddSettlementBuildingResult = {
+  readonly settlementBuildingId: string;
 };
 
 export type ManualDeconstructBuildingResult = {

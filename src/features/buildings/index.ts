@@ -20,6 +20,11 @@ export type {
   TierFormErrors,
 } from "./utils/tierEditorUtils";
 export {
+  AddSettlementBuildingMutationError,
+  addSettlementBuildingMutationOptions,
+  isAddSettlementBuildingMutationError,
+} from "./mutations/addSettlementBuildingMutations";
+export {
   BuildingMutationError,
   createBlueprintMutationOptions,
   createTierMutationOptions,
@@ -81,6 +86,7 @@ export {
 export { cancelConstructionProjectInputSchema } from "./schemas/cancelConstructionProjectSchemas";
 export { createConstructionProjectInputSchema } from "./schemas/createConstructionProjectSchemas";
 export { reorderConstructionProjectsInputSchema } from "./schemas/reorderConstructionProjectsSchemas";
+export { addSettlementBuildingInputSchema } from "./schemas/addSettlementBuildingSchemas";
 export { manualDeconstructBuildingInputSchema } from "./schemas/manualDeconstructBuildingSchemas";
 export { setConstructionProjectWorkersInputSchema } from "./schemas/setConstructionProjectWorkersSchemas";
 export { validateBlueprintTierReferencesAgainstWorld } from "./utils/validateBuildingReferences";
@@ -89,6 +95,7 @@ export type { BuildingMutationIssue } from "./mutations/buildingsMutations";
 export type { CancelConstructionProjectMutationIssue } from "./mutations/cancelConstructionProjectMutations";
 export type { ConstructionProjectMutationIssue } from "./mutations/createConstructionProjectMutations";
 export type { ReorderConstructionProjectsMutationIssue } from "./mutations/reorderConstructionProjectsMutations";
+export type { AddSettlementBuildingMutationIssue } from "./mutations/addSettlementBuildingMutations";
 export type { ManualDeconstructBuildingMutationIssue } from "./mutations/settlementBuildingsMutations";
 export type { SetConstructionProjectWorkersMutationIssue } from "./mutations/setConstructionProjectWorkersMutations";
 export type {
@@ -127,6 +134,10 @@ export type {
   ReorderConstructionProjectsValues,
 } from "./schemas/reorderConstructionProjectsSchemas";
 export type {
+  AddSettlementBuildingInput,
+  AddSettlementBuildingValues,
+} from "./schemas/addSettlementBuildingSchemas";
+export type {
   ManualDeconstructBuildingInput,
   ManualDeconstructBuildingValues,
 } from "./schemas/manualDeconstructBuildingSchemas";
@@ -155,6 +166,7 @@ export type {
 } from "./types/constructionProjectTypes";
 export type { BuildingReferenceIssue } from "./utils/validateBuildingReferences";
 export type {
+  AddSettlementBuildingResult,
   EffectsDigest,
   ManualDeconstructBuildingResult,
   SettlementBuilding,

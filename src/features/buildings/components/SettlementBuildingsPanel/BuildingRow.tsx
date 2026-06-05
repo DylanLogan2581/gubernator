@@ -166,7 +166,7 @@ export function BuildingRow({
   return (
     <>
       <tr className="border-b border-border last:border-0">
-        <td className="py-2 pr-4">{building.blueprintName}</td>
+        <td className="py-2 pr-4">{building.name ?? building.blueprintName}</td>
         <td className="py-2 pr-4">Tier {building.tierNumber}</td>
         <td className="py-2 pr-4 text-muted-foreground">{effectsSummary}</td>
         <td className="w-16 py-2 pr-2">
