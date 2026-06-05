@@ -5,8 +5,8 @@ import type {
   EndTurnSimulationErrorResponse,
   EndTurnSimulationRequestBody,
 } from "./types.ts";
-import type { NpcFlavorConfig } from "../../../src/shared/simulation/simulationTypes.ts";
-import type { TurnCalendarConfig } from "../../../src/shared/turnCalendarPrimitives.ts";
+import type { NpcFlavorConfig } from "../_shared/simulation/simulationTypes.ts";
+import type { TurnCalendarConfig } from "../_shared/turnCalendarPrimitives.ts";
 
 const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
 

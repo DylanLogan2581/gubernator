@@ -8,7 +8,7 @@ import {
 import type {
   SimulationInputState,
   SimulationResult,
-} from "../../../src/shared/simulation/simulationTypes.ts";
+} from "../_shared/simulation/simulationTypes.ts";
 
 // ---------------------------------------------------------------------------
 // Minimal fixtures

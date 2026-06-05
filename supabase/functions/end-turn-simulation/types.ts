@@ -72,7 +72,7 @@ export type EndTurnSimulationHandlerOptions = {
   readonly allowedOrigins?: readonly string[];
 };
 
-import type { SimulationInputState } from "../../../src/shared/simulation/simulationTypes.ts";
+import type { SimulationInputState } from "../_shared/simulation/simulationTypes.ts";
 
 export type EndTurnSimulationStateResult =
   | {

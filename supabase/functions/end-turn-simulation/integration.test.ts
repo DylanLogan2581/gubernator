@@ -268,7 +268,8 @@ describe("end-turn-simulation integration", () => {
     // (404) when the container was started before end-turn-simulation was
     // registered; in that case skip rather than fail.
     // Fix: run `npx supabase stop && npx supabase start` to reload functions,
-    // and ensure src/shared/simulation/ files are mounted in the edge runtime.
+    // and ensure supabase/functions/_shared/simulation/ files are mounted in
+    // the edge runtime.
     try {
       const fnProbe = await fetch(
         `${LOCAL_URL}/functions/v1/end-turn-simulation`,

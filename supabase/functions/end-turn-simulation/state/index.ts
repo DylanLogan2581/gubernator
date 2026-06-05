@@ -67,7 +67,7 @@ import type {
   EndTurnSimulationStateResult,
 } from "../types.ts";
 import type { FetchContext, FetchReason } from "./queries.ts";
-import type { SimulationInputState } from "../../../../src/shared/simulation/simulationTypes.ts";
+import type { SimulationInputState } from "../../_shared/simulation/simulationTypes.ts";
 
 // ---------------------------------------------------------------------------
 // Public entry point

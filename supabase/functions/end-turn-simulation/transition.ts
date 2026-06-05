@@ -4,7 +4,7 @@
 import {
   runSimulation,
   SimulationRejectionError,
-} from "../../../src/shared/simulation/runSimulation.ts";
+} from "../_shared/simulation/runSimulation.ts";
 
 import type { EndTurnSimulationErrorResponse } from "./types.ts";
 import type {
@@ -19,7 +19,7 @@ import type {
   SimulationLogEntry,
   SimulationNotification,
   SimulationResult,
-} from "../../../src/shared/simulation/simulationTypes.ts";
+} from "../_shared/simulation/simulationTypes.ts";
 
 // ---------------------------------------------------------------------------
 // Payload entry types — match the apply_turn_transition JSONB contract
