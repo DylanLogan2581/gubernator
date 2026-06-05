@@ -34,6 +34,7 @@ export type AccessibleWorld = {
   readonly inWorldDateLabel: string;
   readonly isArchived: boolean;
   readonly isHidden: boolean;
+  readonly isTrashed: boolean;
   readonly name: string;
   readonly nextInWorldDateLabel: string;
   readonly nextTurnNumber: number;

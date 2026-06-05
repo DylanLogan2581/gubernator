@@ -19,6 +19,7 @@ type WorldRow = Pick<
   | "current_turn_number"
   | "id"
   | "incest_prevention_depth"
+  | "is_trashed"
   | "name"
   | "owner_id"
   | "status"
@@ -47,7 +48,9 @@ export function toAccessibleWorld(
 
   return {
     archivedAt: world.archived_at,
-    canAccess: accessContext.canAccessWorld(accessTarget),
+    canAccess: world.is_trashed
+      ? false
+      : accessContext.canAccessWorld(accessTarget),
     canAdmin: accessContext.canAdminWorld(accessTarget),
     canManage: accessContext.canManageWorld(accessTarget),
     createdAt: world.created_at,
@@ -60,6 +63,7 @@ export function toAccessibleWorld(
     ),
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
+    isTrashed: world.is_trashed,
     name: world.name,
     nextInWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,

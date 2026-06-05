@@ -476,6 +476,7 @@ type TestWorldRow = {
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
+  readonly is_trashed: boolean;
   readonly name: string;
   readonly owner_id: string;
   readonly status: string;
@@ -511,6 +512,7 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 1,
     id: "00000000-0000-0000-0000-000000000001",
+    is_trashed: false,
     name: "World",
     owner_id: "user-1",
     status: "active",
@@ -569,10 +571,16 @@ function createWorldsQueryBuilder(
           error,
         });
 
+  const order = vi.fn().mockReturnValue(result);
+
   return {
     select: vi.fn(() => ({
       order: vi.fn().mockReturnValue(result),
       eq: vi.fn((column: string, value: string) => {
+        if (column === "is_trashed") {
+          return { order };
+        }
+
         const data =
           rows instanceof Promise || column !== "id"
             ? null

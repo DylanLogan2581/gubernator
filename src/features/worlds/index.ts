@@ -16,6 +16,7 @@ export {
   WorldNotFoundError,
   accessibleWorldsQueryOptions,
   isWorldNotFoundError,
+  trashedWorldsQueryOptions,
   worldRouteAccessQueryOptions,
 } from "./queries/worldQueries";
 export { worldQueryKeys } from "./queries/worldQueryKeys";
@@ -49,6 +50,14 @@ export {
   isSaveWorldPopulationRulesError,
   saveWorldPopulationRulesMutationOptions,
 } from "./mutations/worldPopulationRulesMutations";
+export {
+  WorldAdminError,
+  createWorldMutationOptions,
+  hardDeleteWorldMutationOptions,
+  isWorldAdminError,
+  restoreWorldMutationOptions,
+  trashWorldMutationOptions,
+} from "./mutations/worldAdminMutations";
 export type {
   NameConvention,
   WorldNamingConfig,

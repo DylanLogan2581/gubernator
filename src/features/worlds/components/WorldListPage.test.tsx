@@ -229,6 +229,7 @@ type TestWorldRow = {
   readonly current_turn_number: number;
   readonly id: string;
   readonly incest_prevention_depth: number;
+  readonly is_trashed: boolean;
   readonly name: string;
   readonly owner_id: string;
   readonly status: string;
@@ -260,6 +261,7 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     current_turn_number: 1,
     id: "00000000-0000-0000-0000-000000000001",
     incest_prevention_depth: 4,
+    is_trashed: false,
     name: "World",
     owner_id: "user-1",
     status: "active",
@@ -317,9 +319,9 @@ function createWorldsQueryBuilder(
       ? rows
       : Promise.resolve({ data: rows, error: null });
 
+  const order = vi.fn().mockReturnValue(result);
+  const eq = vi.fn(() => ({ order }));
   return {
-    select: vi.fn(() => ({
-      order: vi.fn().mockReturnValue(result),
-    })),
+    select: vi.fn(() => ({ eq })),
   };
 }

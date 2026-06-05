@@ -14,6 +14,13 @@ export const worldQueryKeys = {
       ...accessContext.worldAdminWorldIds,
       ...accessContext.playerCharacterWorldIds,
     ] as const,
+  trashedWorlds: (accessContext: WorldPermissionContext) =>
+    [
+      ...worldQueryKeys.all,
+      "trashed",
+      accessContext.userId,
+      accessContext.isSuperAdmin,
+    ] as const,
   byId: (worldId: string, accessContext: WorldPermissionContext) =>
     [
       ...worldQueryKeys.all,

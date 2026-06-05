@@ -123,6 +123,7 @@ function createWorldRow(
     readonly current_turn_number: number;
     readonly id: string;
     readonly incest_prevention_depth: number;
+    readonly is_trashed: boolean;
     readonly name: string;
     readonly owner_id: string;
     readonly status: string;
@@ -136,6 +137,7 @@ function createWorldRow(
   readonly current_turn_number: number;
   readonly id: string;
   readonly incest_prevention_depth: number;
+  readonly is_trashed: boolean;
   readonly name: string;
   readonly owner_id: string;
   readonly status: string;
@@ -149,6 +151,7 @@ function createWorldRow(
     current_turn_number: 3,
     id: "world-1",
     incest_prevention_depth: 4,
+    is_trashed: false,
     name: "Verdant Reach",
     owner_id: "user-2",
     status: "active",

@@ -1844,6 +1844,7 @@ export type Database = {
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
+          is_trashed: boolean;
           maximum_fertility_age_turns: number | null;
           minimum_partnership_age_turns: number;
           mourning_period_turns: number;
@@ -1868,6 +1869,7 @@ export type Database = {
           homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
+          is_trashed?: boolean;
           maximum_fertility_age_turns?: number | null;
           minimum_partnership_age_turns?: number;
           mourning_period_turns?: number;
@@ -1892,6 +1894,7 @@ export type Database = {
           homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
+          is_trashed?: boolean;
           maximum_fertility_age_turns?: number | null;
           minimum_partnership_age_turns?: number;
           mourning_period_turns?: number;
@@ -2330,6 +2333,40 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      create_world: {
+        Args: { p_name: string; p_visibility?: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          owner_id: string;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       current_app_user_id: { Args: never; Returns: string };
       current_user_active_player_character_id: {
         Args: { p_world_id: string };
@@ -2463,6 +2500,12 @@ export type Database = {
         Returns: {
           id: string;
           world_id: string;
+        }[];
+      };
+      hard_delete_world: {
+        Args: { p_world_id: string };
+        Returns: {
+          id: string;
         }[];
       };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
@@ -2878,6 +2921,40 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      restore_world: {
+        Args: { p_world_id: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          owner_id: string;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       revoke_citizen_role: {
         Args: { p_citizen_id: string };
         Returns: {
@@ -3186,6 +3263,40 @@ export type Database = {
       start_turn_transition: {
         Args: { p_expected_turn_number: number; p_world_id: string };
         Returns: string;
+      };
+      trash_world: {
+        Args: { p_world_id: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          owner_id: string;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       unlink_user_from_citizen: {
         Args: { p_citizen_id: string };
