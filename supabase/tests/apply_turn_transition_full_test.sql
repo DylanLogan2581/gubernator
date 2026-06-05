@@ -43,7 +43,7 @@
 begin;
 
 select
-  plan (34);
+  plan (42);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -432,8 +432,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -444,12 +442,25 @@ values
     'd6800000-0000-0000-0000-000000000001',
     'd6400000-0000-0000-0000-000000000001',
     'd6400000-0000-0000-0000-000000000002',
-    'd6600000-0000-0000-0000-000000000001',
-    10,
     'active',
     'd6500000-0000-0000-0000-000000000001',
     'approved',
     'approved'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'd6800000-0000-0000-0000-000000000001',
+    'send',
+    'd6600000-0000-0000-0000-000000000001',
+    10
   );
 
 insert into
@@ -925,13 +936,16 @@ select
     'patchCounts.overshootStamped = 0'
   );
 
+-- readinessReset reflects the unconditional UPDATE in §C35b, which touches
+-- every settlement in the world (here: 2 settlements under the one seeded
+-- nation). The test world has no fixtures that should be filtered out.
 select
   is (
     (
       current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'readinessReset'
     )::integer,
-    0,
-    'patchCounts.readinessReset = 0'
+    2,
+    'patchCounts.readinessReset = 2 (settlements in the seeded world)'
   );
 
 -- ---------------------------------------------------------------------------
@@ -1282,6 +1296,18 @@ set
   current_turn_number = 7
 where
   id = 'd6200000-0000-0000-0000-000000000003';
+
+-- Also rewind the stockpile to its pre-first-call value so the second call's
+-- payload (quantityBefore=200) matches actual state. The stockpile
+-- revalidation introduced in 20260604000003 enforces drift detection on every
+-- entry into apply_turn_transition and would reject a payload that asserts a
+-- different before-value than the live row.
+update public.settlement_resource_stockpiles
+set
+  quantity = 200
+where
+  settlement_id = 'd6400000-0000-0000-0000-000000000003'
+  and resource_id = 'd6600000-0000-0000-0000-000000000003';
 
 set
   local role authenticated;

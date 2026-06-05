@@ -277,7 +277,7 @@ where
   id = '00000000-0000-0000-000e-000000000102';
 
 select
-  plan (75);
+  plan (70);
 
 -- ===========================================================================
 -- Existing Epic 2 assertions: world calendar, nation, settlement readiness.
@@ -792,88 +792,11 @@ select
   );
 
 -- ===========================================================================
--- Existing Epic 2 turn-advancement assertions.
+-- Epic 2 turn-advancement assertions removed: the legacy
+-- advance_world_turn_if_current RPC was dropped in §C35 (migration
+-- 20260603000010). Turn advancement and readiness reset are now covered by
+-- apply_turn_transition_advance_world_turn_test.sql.
 -- ===========================================================================
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.advance_world_turn_if_current (
-          '00000000-0000-0000-0000-000000000101',
-          0,
-          '00000000-0000-0000-0000-000000000001'
-        )
-    ),
-    1,
-    'seeded world can be advanced through the privileged RPC by its admin'
-  );
-
-select
-  is (
-    (
-      select
-        current_turn_number
-      from
-        public.worlds
-      where
-        id = '00000000-0000-0000-0000-000000000101'
-    ),
-    1,
-    'seeded world advances exactly one turn'
-  );
-
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.settlements
-      where
-        nation_id = '00000000-0000-0000-0000-000000000201'
-        and auto_ready_enabled = false
-        and is_ready_current_turn = false
-        and ready_set_at is null
-    ),
-    2,
-    'end-turn reset clears manual readiness for seeded settlements'
-  );
-
-select
-  ok (
-    exists (
-      select
-        1
-      from
-        public.settlements
-      where
-        id = '00000000-0000-0000-0000-000000000301'
-        and is_ready_current_turn = false
-        and ready_set_at is null
-        and last_ready_at = '2026-05-03 12:00:00+00'::timestamptz
-    ),
-    'end-turn reset preserves seeded manual readiness history'
-  );
-
-select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.settlements
-      where
-        nation_id = '00000000-0000-0000-0000-000000000201'
-        and auto_ready_enabled = true
-        and is_ready_current_turn = true
-        and ready_set_at is null
-    ),
-    1,
-    'end-turn reset reapplies auto-readiness for seeded settlements'
-  );
-
 -- ===========================================================================
 -- Epic 4 resource seeding assertions: every seeded world must have Food and
 -- Fresh Water seeded as system resources by the worlds_seed_system_resources

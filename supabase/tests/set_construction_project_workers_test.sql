@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (14);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -68,14 +68,6 @@ where
   id = 'bce10000-0000-0000-0000-000000000001';
 
 insert into
-  public.world_admins (world_id, user_id)
-values
-  (
-    'bce20000-0000-0000-0000-000000000001',
-    'bce10000-0000-0000-0000-000000000002'
-  );
-
-insert into
   public.worlds (id, name, owner_id, visibility, status)
 values
   (
@@ -84,6 +76,14 @@ values
     'bce10000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'bce20000-0000-0000-0000-000000000001',
+    'bce10000-0000-0000-0000-000000000002'
   );
 
 insert into

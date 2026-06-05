@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (28);
+  plan (23);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -357,8 +357,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -369,8 +367,6 @@ values
     'ffa00000-0000-0000-0000-000000000001',
     'ff400000-0000-0000-0000-000000000001',
     'ff400000-0000-0000-0000-000000000002',
-    'ff500000-0000-0000-0000-000000000001',
-    10,
     'active',
     'ffb00000-0000-0000-0000-000000000001',
     'approved',
@@ -380,12 +376,31 @@ values
     'ffa00000-0000-0000-0000-000000000002',
     'ff400000-0000-0000-0000-000000000001',
     'ff400000-0000-0000-0000-000000000002',
-    'ff500000-0000-0000-0000-000000000001',
-    5,
     'proposed',
     'ffb00000-0000-0000-0000-000000000001',
     'pending',
     'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'ffa00000-0000-0000-0000-000000000001',
+    'send',
+    'ff500000-0000-0000-0000-000000000001',
+    10
+  ),
+  (
+    'ffa00000-0000-0000-0000-000000000002',
+    'send',
+    'ff500000-0000-0000-0000-000000000001',
+    5
   );
 
 -- ===========================================================================
@@ -670,7 +685,17 @@ select
 
 -- ===========================================================================
 -- BOUNDARY: deposit at exactly max_workers (max=2, target=2)
+-- Clear all existing NPC assignments so the 3 NPCs are unassigned and the
+-- target of 2 fits inside available NPCs.
 -- ===========================================================================
+delete from public.citizen_assignments
+where
+  citizen_id in (
+    'ffb00000-0000-0000-0000-000000000001',
+    'ffb00000-0000-0000-0000-000000000002',
+    'ffb00000-0000-0000-0000-000000000003'
+  );
+
 select
   lives_ok (
     $test$

@@ -242,8 +242,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -254,12 +252,25 @@ values
     'eb000000-0000-0000-0000-000000000001',
     'e3000000-0000-0000-0000-000000000001',
     'e3000000-0000-0000-0000-000000000002',
-    'ea000000-0000-0000-0000-000000000001',
-    10,
     'proposed',
     'e4000000-0000-0000-0000-000000000001',
     'pending',
     'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'eb000000-0000-0000-0000-000000000001',
+    'send',
+    'ea000000-0000-0000-0000-000000000001',
+    10
   );
 
 -- ===========================================================================

@@ -19,7 +19,7 @@
 begin;
 
 select
-  plan (15);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -241,8 +241,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     proposed_by_citizen_id,
     status,
     origin_approval_status,
@@ -253,8 +251,6 @@ values
     'c7000000-0000-0000-0000-000000000001',
     'c4000000-0000-0000-0000-000000000001',
     'c4000000-0000-0000-0000-000000000002',
-    'c5000000-0000-0000-0000-000000000001',
-    100,
     'c6000000-0000-0000-0000-000000000001',
     'proposed',
     'pending',
@@ -266,8 +262,6 @@ values
     'c7000000-0000-0000-0000-000000000002',
     'c4000000-0000-0000-0000-000000000003',
     'c4000000-0000-0000-0000-000000000004',
-    'c5000000-0000-0000-0000-000000000001',
-    50,
     'c6000000-0000-0000-0000-000000000001',
     'proposed',
     'pending',
@@ -411,15 +405,11 @@ select
       id,
       origin_settlement_id,
       destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
       proposed_by_citizen_id
     ) values (
       'c7000000-0000-0000-0000-000000000010',
       'c4000000-0000-0000-0000-000000000001',
       'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000001',
-      200,
       'c6000000-0000-0000-0000-000000000001'
     )
   $test$,
@@ -430,10 +420,10 @@ select
   lives_ok (
     $test$
     update public.trade_routes
-    set quantity_per_transition = 250
+    set pause_reason_last_transition = 'stockpile_empty'
     where id = 'c7000000-0000-0000-0000-000000000010'
   $test$,
-    'world admin can update quantity_per_transition'
+    'world admin can update pause_reason_last_transition'
   );
 
 reset role;
@@ -454,15 +444,11 @@ select
       id,
       origin_settlement_id,
       destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
       proposed_by_citizen_id
     ) values (
       'c7000000-0000-0000-0000-000000000011',
       'c4000000-0000-0000-0000-000000000001',
       'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000001',
-      75,
       'c6000000-0000-0000-0000-000000000001'
     )
   $test$,
@@ -521,14 +507,10 @@ select
     insert into public.trade_routes (
       origin_settlement_id,
       destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
       proposed_by_citizen_id
     ) values (
       'c4000000-0000-0000-0000-000000000001',
       'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000001',
-      100,
       'c6000000-0000-0000-0000-000000000001'
     )
   $test$,
@@ -538,32 +520,6 @@ select
   );
 
 reset role;
-
--- ===========================================================================
--- CONSTRAINT: cross-world resource rejected by trigger (errcode = 23503)
--- Runs as postgres so RLS does not mask the trigger error.
--- ===========================================================================
-select
-  throws_ok (
-    $test$
-    insert into public.trade_routes (
-      origin_settlement_id,
-      destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
-      proposed_by_citizen_id
-    ) values (
-      'c4000000-0000-0000-0000-000000000001',
-      'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000002',
-      100,
-      'c6000000-0000-0000-0000-000000000001'
-    )
-  $test$,
-    '23503',
-    null,
-    'cross-world resource is rejected by the same-world trigger'
-  );
 
 -- ===========================================================================
 -- CONSTRAINT: approver citizen from wrong nation rejected (errcode = 23503)
@@ -592,45 +548,16 @@ select
     insert into public.trade_routes (
       origin_settlement_id,
       destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
       proposed_by_citizen_id
     ) values (
       'c4000000-0000-0000-0000-000000000001',
       'c4000000-0000-0000-0000-000000000001',
-      'c5000000-0000-0000-0000-000000000001',
-      100,
       'c6000000-0000-0000-0000-000000000001'
     )
   $test$,
     '23514',
     null,
     'self-referential settlement pair is rejected by the distinct_settlements check'
-  );
-
--- ===========================================================================
--- CONSTRAINT: quantity_per_transition = 0 rejected (23514)
--- ===========================================================================
-select
-  throws_ok (
-    $test$
-    insert into public.trade_routes (
-      origin_settlement_id,
-      destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
-      proposed_by_citizen_id
-    ) values (
-      'c4000000-0000-0000-0000-000000000001',
-      'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000001',
-      0,
-      'c6000000-0000-0000-0000-000000000001'
-    )
-  $test$,
-    '23514',
-    null,
-    'quantity_per_transition = 0 is rejected by the positive check'
   );
 
 select

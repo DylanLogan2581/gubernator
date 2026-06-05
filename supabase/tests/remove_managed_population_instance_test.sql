@@ -312,7 +312,7 @@ select
       where
         mpi.id = 'fb800000-0000-0000-0000-000000000002'
     ),
-    0,
+    0::numeric,
     'managed population instance current_count is 0 after successful removal'
   );
 
@@ -351,7 +351,7 @@ select
       where
         mpi.id = 'fb800000-0000-0000-0000-000000000001'
     ),
-    0,
+    0::numeric,
     'managed population instance current_count is 0 after admin success'
   );
 

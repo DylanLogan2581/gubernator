@@ -368,15 +368,22 @@ select
     'world admin cannot directly update a snapshot row (grant revoked; append-only)'
   );
 
+delete from public.settlement_turn_snapshots
+where
+  id = 'd7000000-0000-0000-0000-000000000001';
+
 select
-  throws_ok (
-    $test$
-    delete from public.settlement_turn_snapshots
-    where id = 'd7000000-0000-0000-0000-000000000001'
-    $test$,
-    '42501',
-    null,
-    'world admin cannot directly delete a snapshot row (policy dropped)'
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.settlement_turn_snapshots
+      where
+        id = 'd7000000-0000-0000-0000-000000000001'
+    ),
+    1,
+    'world admin cannot directly delete a snapshot row (RLS silently filters; row remains)'
   );
 
 reset role;

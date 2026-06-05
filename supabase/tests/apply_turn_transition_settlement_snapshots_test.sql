@@ -463,6 +463,10 @@ select
 -- Manually re-insert the same snapshot to simulate a retry hitting ON CONFLICT.
 -- We look up the transition id written above and attempt a duplicate insert.
 -- The ON CONFLICT DO NOTHING must keep the count at 1.
+-- INSERT was revoked from authenticated in 20260604000004; reset to postgres
+-- so the duplicate insert can reach the ON CONFLICT path under test.
+reset role;
+
 insert into
   public.settlement_turn_snapshots (
     turn_transition_id,

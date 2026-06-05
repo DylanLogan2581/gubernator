@@ -532,10 +532,12 @@ select
   );
 
 -- ===========================================================================
--- REJECTION: non-standard job (construction)
+-- ACCEPTANCE: construction-typed job
+-- §20260604000008 merged construction into set_bulk_standard_job_assignment so
+-- the single RPC handles both standard and construction job types.
 -- ===========================================================================
 select
-  throws_ok (
+  lives_ok (
     $test$
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
@@ -543,9 +545,7 @@ select
       1
     )
     $test$,
-    'P0001',
-    null,
-    'non-standard job (construction) is rejected with P0001'
+    'construction-typed job is accepted by the merged RPC'
   );
 
 -- ===========================================================================
@@ -812,7 +812,9 @@ values
 -- Mark NPC 001 as dead without deleting their assignment (simulates missed cleanup).
 update public.citizens
 set
-  status = 'dead'
+  status = 'dead',
+  death_cause_category = 'manual_admin',
+  death_cause = 'test fixture'
 where
   id = 'ba600000-0000-0000-0000-000000000001';
 
@@ -841,7 +843,9 @@ reset role;
 -- Restore NPC 001 to alive for cleanliness.
 update public.citizens
 set
-  status = 'alive'
+  status = 'alive',
+  death_cause_category = null,
+  death_cause = null
 where
   id = 'ba600000-0000-0000-0000-000000000001';
 
@@ -850,7 +854,9 @@ where
 -- ===========================================================================
 update public.citizens
 set
-  status = 'dead'
+  status = 'dead',
+  death_cause_category = 'manual_admin',
+  death_cause = 'test fixture'
 where
   id in (
     'ba600000-0000-0000-0000-000000000001',
@@ -882,7 +888,9 @@ reset role;
 -- Restore for safety.
 update public.citizens
 set
-  status = 'alive'
+  status = 'alive',
+  death_cause_category = null,
+  death_cause = null
 where
   id in (
     'ba600000-0000-0000-0000-000000000001',

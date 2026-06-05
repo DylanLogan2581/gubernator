@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (17);
+  plan (16);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -226,8 +226,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000001',
-      'fc500000-0000-0000-0000-000000000001',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -245,8 +248,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      0,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 0
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -264,8 +270,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000003',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000003',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -283,8 +292,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000002',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000002',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -311,8 +323,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000004'
     )
     $test$,
@@ -339,8 +354,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -367,8 +385,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      25.5,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 25.5
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -506,8 +527,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      5,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 5
+      )),
       'fc600000-0000-0000-0000-000000000004'
     )
     $test$,
