@@ -256,6 +256,17 @@ export function runSimulation(
 
   const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths];
 
+  // Phase 10 (homelessness) runs after phase 9 (partnerships), so a citizen
+  // can be selected for partnership formation and then die of homelessness in
+  // the same turn. apply_turn_transition rejects "active" partnership entries
+  // whose partners are already dead (guard added in epic-6). Drop any "formed"
+  // change where either partner appears in allDeaths so the payload stays valid.
+  const allDeathIds = new Set(allDeaths.map((d) => d.citizenId));
+  const partnershipChanges = p9.partnershipChanges.filter((pc) => {
+    if (pc.type !== "formed") return true;
+    return !allDeathIds.has(pc.citizenAId) && !allDeathIds.has(pc.citizenBId);
+  });
+
   // Classify deltas for the snapshot builder.
   // productionDeltas: positive deltas from production phases.
   // consumptionDeltas: negative deltas from consumption phases.
@@ -355,7 +366,7 @@ export function runSimulation(
     logEntries,
     managedPopulationUpdates: p7.managedPopulationUpdates,
     notifications,
-    partnershipChanges: p9.partnershipChanges,
+    partnershipChanges,
     readinessSummary: computeReadinessSummary(input),
     resourceSnapshots: p13.resourceSnapshots,
     settlementSnapshots: p13.settlementSnapshots,
