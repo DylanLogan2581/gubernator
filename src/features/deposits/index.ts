@@ -19,6 +19,11 @@ export {
   setDepositInstanceMaxWorkersMutationOptions,
 } from "./mutations/setDepositInstanceMaxWorkersMutations";
 export {
+  SetDepositInstanceResourceQuantitiesMutationError,
+  isSetDepositInstanceResourceQuantitiesMutationError,
+  setDepositInstanceResourceQuantitiesMutationOptions,
+} from "./mutations/setDepositInstanceResourceQuantitiesMutations";
+export {
   DepositTypeMutationError,
   createDepositTypeMutationOptions,
   hardDeleteDepositTypeMutationOptions,
@@ -40,6 +45,7 @@ export {
 } from "./schemas/createDepositInstanceSchemas";
 export { removeDepositInstanceInputSchema } from "./schemas/removeDepositInstanceSchemas";
 export { setDepositInstanceMaxWorkersInputSchema } from "./schemas/setDepositInstanceMaxWorkersSchemas";
+export { setDepositInstanceResourceQuantitiesInputSchema } from "./schemas/setDepositInstanceResourceQuantitiesSchemas";
 export {
   createDepositTypeInputSchema,
   hardDeleteDepositTypeInputSchema,
@@ -54,6 +60,7 @@ export type { CreateDepositInstanceMutationIssue } from "./mutations/createDepos
 export type { DepositTypeMutationIssue } from "./mutations/depositsMutations";
 export type { RemoveDepositInstanceMutationIssue } from "./mutations/removeDepositInstanceMutations";
 export type { SetDepositInstanceMaxWorkersMutationIssue } from "./mutations/setDepositInstanceMaxWorkersMutations";
+export type { SetDepositInstanceResourceQuantitiesMutationIssue } from "./mutations/setDepositInstanceResourceQuantitiesMutations";
 export type {
   CreateDepositInstanceInput,
   CreateDepositInstanceValues,
@@ -68,6 +75,10 @@ export type {
   SetDepositInstanceMaxWorkersInput,
   SetDepositInstanceMaxWorkersValues,
 } from "./schemas/setDepositInstanceMaxWorkersSchemas";
+export type {
+  SetDepositInstanceResourceQuantitiesInput,
+  SetDepositInstanceResourceQuantitiesValues,
+} from "./schemas/setDepositInstanceResourceQuantitiesSchemas";
 export type {
   CreateDepositTypeInput,
   CreateDepositTypeValues,
@@ -89,6 +100,7 @@ export type {
   DepositInstanceStatus,
   RemoveDepositInstanceResult,
   SetDepositInstanceMaxWorkersResult,
+  SetDepositInstanceResourceQuantitiesResult,
 } from "./types/depositInstanceTypes";
 export type {
   DepositType,

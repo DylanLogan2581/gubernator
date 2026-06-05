@@ -1947,6 +1947,7 @@ export type Database = {
         Args: {
           p_expected_turn_number: number;
           p_payload: Json;
+          p_transition_id: string;
           p_world_id: string;
         };
         Returns: Json;
@@ -2910,6 +2911,20 @@ export type Database = {
           unassigned_citizen_ids: string[];
         }[];
       };
+      set_deposit_instance_resource_quantities: {
+        Args: {
+          p_deposit_instance_resource_id: string;
+          p_initial_quantity: number;
+          p_remaining_quantity: number;
+        };
+        Returns: {
+          deposit_instance_id: string;
+          deposit_instance_resource_id: string;
+          initial_quantity: number;
+          remaining_quantity: number;
+          settlement_id: string;
+        }[];
+      };
       set_per_target_assignment: {
         Args: {
           p_assignment_type: string;
@@ -2957,7 +2972,15 @@ export type Database = {
         Args: { p_settlement_id: string };
         Returns: number;
       };
+      settlement_alive_citizen_count_internal: {
+        Args: { p_settlement_id: string };
+        Returns: number;
+      };
       settlement_effective_storage_cap: {
+        Args: { p_resource_id: string; p_settlement_id: string };
+        Returns: number;
+      };
+      settlement_effective_storage_cap_internal: {
         Args: { p_resource_id: string; p_settlement_id: string };
         Returns: number;
       };
@@ -3080,6 +3103,10 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      start_turn_transition: {
+        Args: { p_expected_turn_number: number; p_world_id: string };
+        Returns: string;
       };
       unlink_user_from_citizen: {
         Args: { p_citizen_id: string };

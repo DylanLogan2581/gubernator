@@ -40,3 +40,11 @@ export type RemoveDepositInstanceResult = {
   readonly depositInstanceId: string;
   readonly settlementId: string;
 };
+
+export type SetDepositInstanceResourceQuantitiesResult = {
+  readonly depositInstanceId: string;
+  readonly depositInstanceResourceId: string;
+  readonly initialQuantity: number;
+  readonly remainingQuantity: number;
+  readonly settlementId: string;
+};

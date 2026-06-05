@@ -1,5 +1,5 @@
 import { type QueryClient } from "@tanstack/react-query";
-import { Minus } from "lucide-react";
+import { Minus, Pencil } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { type TurnTransitionOutcome } from "@/features/turns";
 import { parseDepositDepletedPayload } from "@/shared/simulation";
 
+import { EditResourceQuantitiesDialog } from "./EditResourceQuantitiesDialog";
 import { MaxWorkersEditDialog } from "./MaxWorkersEditDialog";
 import { RemoveDepositConfirmDialog } from "./RemoveDepositConfirmDialog";
 
@@ -45,6 +46,7 @@ export function DepositInstanceRow({
   queryClient,
   settlementId,
 }: DepositInstanceRowProps): JSX.Element {
+  const [showEditQuantities, setShowEditQuantities] = useState(false);
   const [showMaxWorkersEdit, setShowMaxWorkersEdit] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
@@ -116,6 +118,20 @@ export function DepositInstanceRow({
                   Max
                 </Button>
               ) : null}
+              {canAdmin && instance.resources.length > 0 ? (
+                <Button
+                  aria-label={`Edit resource quantities for ${instance.name}`}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditQuantities(true);
+                  }}
+                >
+                  <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
+                  Qtys
+                </Button>
+              ) : null}
               {canAdmin ? (
                 assignedCount > 0 ? (
                   <span title="Cannot remove: deposit has assigned workers.">
@@ -147,6 +163,16 @@ export function DepositInstanceRow({
           </td>
         ) : null}
       </tr>
+      {showEditQuantities ? (
+        <EditResourceQuantitiesDialog
+          instance={instance}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          onClose={() => {
+            setShowEditQuantities(false);
+          }}
+        />
+      ) : null}
       {showMaxWorkersEdit ? (
         <MaxWorkersEditDialog
           assignedCount={assignedCount}
