@@ -301,6 +301,7 @@ function createClient({
 
   const transitionSelectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => transitionSelectBuilder),
+    returns: vi.fn(() => transitionSelectBuilder),
     maybeSingle: vi.fn().mockResolvedValue({
       data: transitionRow ?? null,
       error: null,
@@ -340,7 +341,9 @@ describe("SettlementManagedPopulationsPanel", () => {
     toastSuccess.mockReset();
   });
 
-  it("renders grouped by status — active, extinct", async () => {
+  it("shows only active instances by default — extinct hidden", async () => {
+    const user = userEvent.setup();
+
     requireSupabaseClient.mockReturnValue(
       createClient({
         instanceRows: [
@@ -353,6 +356,7 @@ describe("SettlementManagedPopulationsPanel", () => {
             id: INSTANCE_ID_2,
             name: "South Herd",
             status: "extinct",
+            current_count: 0,
           }),
         ],
         typeRows: [createTypeRow()],
@@ -362,9 +366,12 @@ describe("SettlementManagedPopulationsPanel", () => {
     renderPanel({ canAdmin: false, canManage: false });
 
     await screen.findByText("North Herd");
-    expect(screen.getByText("South Herd")).toBeDefined();
-    expect(screen.getByText("Active (1)")).toBeDefined();
-    expect(screen.getByText("Extinct (1)")).toBeDefined();
+    expect(screen.queryByText("South Herd")).toBeNull();
+
+    // toggling to extinct view hides active and reveals extinct
+    await user.click(screen.getByRole("button", { name: "Show extinct" }));
+    expect(await screen.findByText("South Herd")).toBeDefined();
+    expect(screen.queryByText("North Herd")).toBeNull();
   });
 
   it("renders empty state when no instances", async () => {
@@ -778,6 +785,8 @@ describe("SettlementManagedPopulationsPanel", () => {
   });
 
   it("shows Extinct badge for instances with status=extinct", async () => {
+    const user = userEvent.setup();
+
     requireSupabaseClient.mockReturnValue(
       createClient({
         instanceRows: [
@@ -794,11 +803,17 @@ describe("SettlementManagedPopulationsPanel", () => {
 
     renderPanel({ canAdmin: false, canManage: false });
 
+    // extinct instances are hidden by default — toggle to reveal
+    await screen.findByText("No managed populations");
+    await user.click(screen.getByRole("button", { name: "Show extinct" }));
+
     await screen.findByText("South Herd");
     expect(screen.getByRole("generic", { name: "Extinct" })).toBeDefined();
   });
 
   it("shows Extinct badge with turn tooltip when managed_population.extinct log entry exists", async () => {
+    const user = userEvent.setup();
+
     requireSupabaseClient.mockReturnValue(
       createClient({
         instanceRows: [
@@ -833,9 +848,15 @@ describe("SettlementManagedPopulationsPanel", () => {
 
     renderPanel({ canAdmin: false, canManage: false });
 
+    // extinct instances are hidden by default — toggle to reveal
+    await screen.findByText("No managed populations");
+    await user.click(screen.getByRole("button", { name: "Show extinct" }));
+
     await screen.findByText("South Herd");
-    const badge = screen.getByRole("generic", { name: "Extinct" });
-    expect(badge.getAttribute("title")).toBe("Turn 5");
+    await waitFor(() => {
+      const badge = screen.getByRole("generic", { name: "Extinct" });
+      expect(badge.getAttribute("title")).toBe("Turn 5");
+    });
   });
 
   it("shows snapshot-based growth trend when two snapshots are available", async () => {

@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Plus, Skull } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -31,10 +31,7 @@ import { activeManagedPopulationTypesByWorldQueryOptions } from "../../queries/m
 import { AddManagedPopulationDialog } from "./AddManagedPopulationDialog";
 import { ManagedPopulationInstanceRow } from "./ManagedPopulationInstanceRow";
 
-import type {
-  ManagedPopulationInstance,
-  ManagedPopulationInstanceStatus,
-} from "../../types/managedPopulationInstanceTypes";
+import type { ManagedPopulationInstance } from "../../types/managedPopulationInstanceTypes";
 import type { ManagedPopulationType } from "../../types/managedPopulationTypes";
 
 type SettlementManagedPopulationsPanelProps = {
@@ -53,6 +50,7 @@ export function SettlementManagedPopulationsPanel({
   worldId,
 }: SettlementManagedPopulationsPanelProps): JSX.Element {
   const queryClient = useQueryClient();
+  const [showExtinct, setShowExtinct] = useState(false);
 
   const instancesQuery = useQuery(
     managedPopulationInstancesBySettlementQueryOptions(settlementId),
@@ -100,6 +98,11 @@ export function SettlementManagedPopulationsPanel({
     }
   }
 
+  const allInstances = instancesQuery.data ?? [];
+  const activeInstances = allInstances.filter((i) => i.status === "active");
+  const extinctInstances = allInstances.filter((i) => i.status === "extinct");
+  const displayedInstances = showExtinct ? extinctInstances : activeInstances;
+
   return (
     <section
       aria-labelledby="settlement-managed-populations-heading"
@@ -110,7 +113,11 @@ export function SettlementManagedPopulationsPanel({
         instancesLoaded={!instancesQuery.isPending}
         queryClient={queryClient}
         settlementId={settlementId}
+        showExtinct={showExtinct}
         worldId={worldId}
+        onToggleExtinct={() => {
+          setShowExtinct((prev) => !prev);
+        }}
       />
 
       {instancesQuery.isPending ? (
@@ -120,17 +127,23 @@ export function SettlementManagedPopulationsPanel({
           description={getErrorDescription(instancesQuery.error)}
           title="Managed populations could not be loaded"
         />
-      ) : instancesQuery.data.length === 0 ? (
+      ) : displayedInstances.length === 0 ? (
         <EmptyState
-          description="This settlement has no managed population instances."
-          title="No managed populations"
+          description={
+            showExtinct
+              ? "This settlement has no extinct population instances."
+              : "This settlement has no managed population instances."
+          }
+          title={
+            showExtinct ? "No extinct populations" : "No managed populations"
+          }
         />
       ) : (
-        <ManagedPopulationsGroups
-          canAdmin={canAdmin && !isArchived}
-          canManage={(canManage || canAdmin) && !isArchived}
+        <ManagedPopulationsTable
+          canAdmin={canAdmin && !isArchived && !showExtinct}
+          canManage={(canManage || canAdmin) && !isArchived && !showExtinct}
           husbandryCountByInstance={husbandryCountByInstance}
-          instances={instancesQuery.data}
+          instances={displayedInstances}
           latestOutcome={latestOutcome}
           queryClient={queryClient}
           resourceById={resourceById}
@@ -152,13 +165,17 @@ function ManagedPopulationsPanelHeader({
   instancesLoaded,
   queryClient,
   settlementId,
+  showExtinct,
   worldId,
+  onToggleExtinct,
 }: {
   readonly canAdmin: boolean;
   readonly instancesLoaded: boolean;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly showExtinct: boolean;
   readonly worldId: string;
+  readonly onToggleExtinct: () => void;
 }): JSX.Element {
   const [showAddDialog, setShowAddDialog] = useState(false);
 
@@ -171,19 +188,34 @@ function ManagedPopulationsPanelHeader({
         >
           Managed Populations
         </h2>
-        {canAdmin && instancesLoaded ? (
-          <Button
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setShowAddDialog(true);
-            }}
-          >
-            <Plus aria-hidden="true" />
-            Add managed population
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {canAdmin && instancesLoaded && !showExtinct ? (
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowAddDialog(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Add managed population
+            </Button>
+          ) : null}
+          {instancesLoaded ? (
+            <Button
+              aria-label={showExtinct ? "Hide extinct" : "Show extinct"}
+              aria-pressed={showExtinct}
+              size="icon-sm"
+              title={showExtinct ? "Hide extinct" : "Show extinct"}
+              type="button"
+              variant={showExtinct ? "secondary" : "ghost"}
+              onClick={onToggleExtinct}
+            >
+              <Skull aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
       </div>
       {showAddDialog ? (
         <AddManagedPopulationDialog
@@ -199,17 +231,7 @@ function ManagedPopulationsPanelHeader({
   );
 }
 
-type StatusGroup = {
-  readonly label: string;
-  readonly status: ManagedPopulationInstanceStatus;
-};
-
-const STATUS_GROUPS: readonly StatusGroup[] = [
-  { label: "Active", status: "active" },
-  { label: "Extinct", status: "extinct" },
-];
-
-function ManagedPopulationsGroups({
+function ManagedPopulationsTable({
   canAdmin,
   canManage,
   husbandryCountByInstance,
@@ -230,150 +252,49 @@ function ManagedPopulationsGroups({
   readonly snapshotCounts: ManagedPopSnapshotCounts;
   readonly typeById: ReadonlyMap<string, ManagedPopulationType>;
 }): JSX.Element {
-  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-
-  function toggleGroup(label: string): void {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) {
-        next.delete(label);
-      } else {
-        next.add(label);
-      }
-      return next;
-    });
-  }
-
   return (
-    <div className="grid gap-3">
-      {STATUS_GROUPS.map((group) => {
-        const groupInstances = instances.filter(
-          (inst) => inst.status === group.status,
-        );
-        if (groupInstances.length === 0) return null;
-        const isCollapsed = collapsedGroups.has(group.label);
-        const panelId = `managed-populations-group-${group.label.toLowerCase()}`;
-        return (
-          <ManagedPopulationsStatusGroup
-            key={group.label}
-            canAdmin={canAdmin && group.status === "active"}
-            canManage={canManage && group.status === "active"}
-            husbandryCountByInstance={husbandryCountByInstance}
-            instances={groupInstances}
-            isCollapsed={isCollapsed}
-            label={group.label}
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b border-border text-left text-muted-foreground">
+          <th className="pb-2 font-medium" scope="col">
+            Name
+          </th>
+          <th className="pb-2 font-medium" scope="col">
+            Type
+          </th>
+          <th className="pb-2 font-medium" scope="col">
+            Count
+          </th>
+          <th className="pb-2 font-medium" scope="col">
+            Cull qty
+          </th>
+          <th className="pb-2 font-medium" scope="col">
+            Husbandry / workers
+          </th>
+          <th className="pb-2 font-medium" scope="col">
+            Maintenance/turn
+          </th>
+          {canAdmin ? (
+            <th aria-label="Actions" className="w-32 pb-2" scope="col" />
+          ) : null}
+        </tr>
+      </thead>
+      <tbody>
+        {instances.map((instance) => (
+          <ManagedPopulationInstanceRow
+            key={instance.id}
+            canAdmin={canAdmin}
+            canManage={canManage}
+            husbandryCount={husbandryCountByInstance.get(instance.id) ?? 0}
+            instance={instance}
             latestOutcome={latestOutcome}
-            panelId={panelId}
             queryClient={queryClient}
             resourceById={resourceById}
             snapshotCounts={snapshotCounts}
-            typeById={typeById}
-            onToggle={() => {
-              toggleGroup(group.label);
-            }}
+            type={typeById.get(instance.managedPopulationTypeId)}
           />
-        );
-      })}
-    </div>
-  );
-}
-
-function ManagedPopulationsStatusGroup({
-  canAdmin,
-  canManage,
-  husbandryCountByInstance,
-  instances,
-  isCollapsed,
-  label,
-  latestOutcome,
-  onToggle,
-  panelId,
-  queryClient,
-  resourceById,
-  snapshotCounts,
-  typeById,
-}: {
-  readonly canAdmin: boolean;
-  readonly canManage: boolean;
-  readonly husbandryCountByInstance: ReadonlyMap<string, number>;
-  readonly instances: readonly ManagedPopulationInstance[];
-  readonly isCollapsed: boolean;
-  readonly label: string;
-  readonly latestOutcome: TurnTransitionOutcome | null;
-  readonly onToggle: () => void;
-  readonly panelId: string;
-  readonly queryClient: QueryClient;
-  readonly resourceById: ReadonlyMap<string, Resource>;
-  readonly snapshotCounts: ManagedPopSnapshotCounts;
-  readonly typeById: ReadonlyMap<string, ManagedPopulationType>;
-}): JSX.Element {
-  return (
-    <div className="grid gap-1">
-      <button
-        aria-controls={panelId}
-        aria-expanded={!isCollapsed}
-        className="flex cursor-pointer items-center gap-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        type="button"
-        onClick={onToggle}
-      >
-        {isCollapsed ? (
-          <ChevronRight aria-hidden="true" className="h-4 w-4" />
-        ) : (
-          <ChevronDown aria-hidden="true" className="h-4 w-4" />
-        )}
-        {label} ({instances.length})
-      </button>
-      {!isCollapsed ? (
-        <div id={panelId}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="pb-2 font-medium" scope="col">
-                  Name
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Type
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Count
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Cull qty
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Husbandry / workers
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Maintenance/turn
-                </th>
-                {canAdmin ? (
-                  <th aria-label="Actions" className="w-32 pb-2" scope="col" />
-                ) : null}
-              </tr>
-            </thead>
-            <tbody>
-              {instances.map((instance) => (
-                <ManagedPopulationInstanceRow
-                  key={instance.id}
-                  canAdmin={canAdmin}
-                  canManage={canManage}
-                  husbandryCount={
-                    husbandryCountByInstance.get(instance.id) ?? 0
-                  }
-                  instance={instance}
-                  latestOutcome={latestOutcome}
-                  queryClient={queryClient}
-                  resourceById={resourceById}
-                  snapshotCounts={snapshotCounts}
-                  type={typeById.get(instance.managedPopulationTypeId)}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-    </div>
+        ))}
+      </tbody>
+    </table>
   );
 }

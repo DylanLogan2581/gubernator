@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (8);
+  plan (10);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -302,6 +302,20 @@ select
     'managed population instance status is extinct after successful removal'
   );
 
+select
+  is (
+    (
+      select
+        mpi.current_count
+      from
+        public.managed_population_instances mpi
+      where
+        mpi.id = 'fb800000-0000-0000-0000-000000000002'
+    ),
+    0,
+    'managed population instance current_count is 0 after successful removal'
+  );
+
 -- ===========================================================================
 -- ADMIN SUCCESS: world owner can remove an active instance
 -- ===========================================================================
@@ -325,6 +339,20 @@ select
     ),
     'extinct',
     'managed population instance status is extinct after admin success'
+  );
+
+select
+  is (
+    (
+      select
+        mpi.current_count
+      from
+        public.managed_population_instances mpi
+      where
+        mpi.id = 'fb800000-0000-0000-0000-000000000001'
+    ),
+    0,
+    'managed population instance current_count is 0 after admin success'
   );
 
 reset role;
