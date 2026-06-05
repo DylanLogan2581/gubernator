@@ -65,6 +65,7 @@ describe("SettlementReadinessListPanel", () => {
   });
 
   it("shows settlement readiness rows", async () => {
+    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClientFixture({
         settlementRows: [
@@ -101,6 +102,7 @@ describe("SettlementReadinessListPanel", () => {
         name: "Settlement readiness list",
       }),
     ).toBeDefined();
+    await user.click(screen.getByRole("button", { name: /Nation A/ }));
     expectSettlementRow("Amberhold", "Auto-ready", "Never");
     expectSettlementRow("Briarwatch", "Ready", "5/2/26, 12:00 PM");
     expectSettlementRow("Dawnport", "Not ready", "5/1/26, 9:30 AM");
@@ -112,6 +114,7 @@ describe("SettlementReadinessListPanel", () => {
   });
 
   it("links settlement names to their detail pages", async () => {
+    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClientFixture({
         settlementRows: [
@@ -119,6 +122,7 @@ describe("SettlementReadinessListPanel", () => {
             id: "settlement-1",
             name: "Amberhold",
             nation_id: "nation-1",
+            nations: { id: "nation-1", name: "Nation A" },
           }),
         ],
       }).client,
@@ -126,6 +130,7 @@ describe("SettlementReadinessListPanel", () => {
 
     renderSettlementReadinessListPanel();
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     const link = await screen.findByRole("link", { name: "Amberhold" });
     expect(link).toHaveAttribute(
       "href",
@@ -196,6 +201,7 @@ describe("SettlementReadinessListPanel", () => {
 
     renderSettlementReadinessListPanel();
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     await user.click(
       await screen.findByRole("switch", {
         name: "Not ready",
@@ -240,6 +246,7 @@ describe("SettlementReadinessListPanel", () => {
 
     renderSettlementReadinessListPanel();
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     await user.click(
       await screen.findByRole("switch", {
         name: "Ready",
@@ -269,6 +276,7 @@ describe("SettlementReadinessListPanel", () => {
 
     renderSettlementReadinessListPanel({ isArchived: true });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     const switchControl = await screen.findByRole("switch", {
       name: "Not ready",
     });
@@ -300,6 +308,7 @@ describe("SettlementReadinessListPanel", () => {
 
     renderSettlementReadinessListPanel();
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     const switchControl = await screen.findByRole("switch", {
       name: "Ready (auto-ready)",
     });
@@ -320,6 +329,7 @@ describe("SettlementReadinessListPanel", () => {
   });
 
   it("shows auto-ready controls for world admins", async () => {
+    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClientFixture({
         settlementRows: [
@@ -335,12 +345,14 @@ describe("SettlementReadinessListPanel", () => {
       accessContext: createWorldAdminAccessContext(),
     });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     expect(
       await screen.findByRole("switch", { name: "Auto-ready" }),
     ).toBeDefined();
   });
 
   it("shows auto-ready controls for super admins", async () => {
+    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClientFixture({
         settlementRows: [
@@ -356,12 +368,14 @@ describe("SettlementReadinessListPanel", () => {
       accessContext: createSuperAdminAccessContext(),
     });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     expect(
       await screen.findByRole("switch", { name: "Auto-ready" }),
     ).toBeDefined();
   });
 
   it("hides auto-ready controls from unauthorized users", async () => {
+    const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClientFixture({
         settlementRows: [
@@ -379,6 +393,7 @@ describe("SettlementReadinessListPanel", () => {
       canManage: false,
     });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     expect(await screen.findByText("Amberhold")).toBeDefined();
     expect(screen.queryByRole("switch", { name: "Auto-ready" })).toBeNull();
   });
@@ -401,6 +416,7 @@ describe("SettlementReadinessListPanel", () => {
       canManage: false,
     });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     expect(await screen.findByText("Amberhold")).toBeDefined();
     expect(screen.queryByRole("switch", { name: "Not ready" })).toBeNull();
     expect(screen.queryByRole("switch", { name: "Ready" })).toBeNull();
@@ -439,6 +455,8 @@ describe("SettlementReadinessListPanel", () => {
       canManage: false,
     });
 
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     expect(await screen.findByText("Amberhold")).toBeDefined();
     expect(screen.queryByRole("switch")).toBeNull();
     expect(screen.getByLabelText("Ready")).toBeDefined();
@@ -474,6 +492,7 @@ describe("SettlementReadinessListPanel", () => {
       canManage: true,
     });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     await user.click(await screen.findByRole("switch", { name: "Not ready" }));
 
     expect(clientFixture.update).toHaveBeenCalledWith(
@@ -503,6 +522,7 @@ describe("SettlementReadinessListPanel", () => {
       isArchived: true,
     });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     const switchControl = await screen.findByRole("switch", {
       name: "Auto-ready",
     });
@@ -544,6 +564,7 @@ describe("SettlementReadinessListPanel", () => {
       accessContext: createWorldAdminAccessContext(),
     });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     await user.click(
       await screen.findByRole("switch", {
         name: "Auto-ready",
@@ -590,6 +611,7 @@ describe("SettlementReadinessListPanel", () => {
       accessContext: createSuperAdminAccessContext(),
     });
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     await user.click(
       await screen.findByRole("switch", {
         name: "Auto-ready",
@@ -626,6 +648,7 @@ describe("SettlementReadinessListPanel", () => {
 
     renderSettlementReadinessListPanel();
 
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     await user.click(
       await screen.findByRole("switch", {
         name: "Not ready",
@@ -638,6 +661,137 @@ describe("SettlementReadinessListPanel", () => {
       );
     });
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  describe("nation accordion grouping", () => {
+    it("shows one accordion row per nation with ready/total counts and percentage", async () => {
+      const user = userEvent.setup();
+      requireSupabaseClient.mockReturnValue(
+        createClientFixture({
+          settlementRows: [
+            createSettlementRow({
+              id: "s1",
+              is_ready_current_turn: true,
+              name: "Amberhold",
+              nation_id: "nation-1",
+              nations: { id: "nation-1", name: "Ironhaven" },
+              ready_set_at: "2026-05-02T12:00:00.000Z",
+            }),
+            createSettlementRow({
+              id: "s2",
+              name: "Briarwatch",
+              nation_id: "nation-1",
+              nations: { id: "nation-1", name: "Ironhaven" },
+            }),
+            createSettlementRow({
+              id: "s3",
+              name: "Cinderford",
+              nation_id: "nation-2",
+              nations: { id: "nation-2", name: "Stormkeep" },
+            }),
+          ],
+        }).client,
+      );
+
+      renderSettlementReadinessListPanel();
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Settlement readiness list",
+        }),
+      ).toBeDefined();
+
+      // Nation triggers appear without expanding
+      expect(screen.getByText("Ironhaven")).toBeDefined();
+      expect(screen.getByText("Stormkeep")).toBeDefined();
+
+      // Stormkeep (0% ready) sorts first
+      const [firstTrigger, secondTrigger] = screen.getAllByRole("button", {
+        name: /ready/i,
+      });
+      expect(firstTrigger).toHaveTextContent("Stormkeep");
+      expect(firstTrigger).toHaveTextContent("0/1 ready");
+      expect(firstTrigger).toHaveTextContent("0%");
+      expect(secondTrigger).toHaveTextContent("Ironhaven");
+      expect(secondTrigger).toHaveTextContent("1/2 ready");
+      expect(secondTrigger).toHaveTextContent("50%");
+
+      // Expand Ironhaven and verify its settlements appear
+      await user.click(secondTrigger);
+      expect(await screen.findByText("Amberhold")).toBeDefined();
+      expect(screen.getByText("Briarwatch")).toBeDefined();
+    });
+
+    it("shows the empty state when there are 0 settlements", async () => {
+      requireSupabaseClient.mockReturnValue(
+        createClientFixture({ settlementRows: [] }).client,
+      );
+
+      renderSettlementReadinessListPanel();
+
+      expect(await screen.findByText("No settlements yet")).toBeDefined();
+    });
+
+    it("shows 100% in the summary for an all-ready nation", async () => {
+      requireSupabaseClient.mockReturnValue(
+        createClientFixture({
+          settlementRows: [
+            createSettlementRow({
+              auto_ready_enabled: true,
+              id: "s1",
+              name: "Amberhold",
+              nation_id: "nation-1",
+              nations: { id: "nation-1", name: "Ironhaven" },
+            }),
+            createSettlementRow({
+              id: "s2",
+              is_ready_current_turn: true,
+              name: "Briarwatch",
+              nation_id: "nation-1",
+              nations: { id: "nation-1", name: "Ironhaven" },
+              ready_set_at: "2026-05-02T12:00:00.000Z",
+            }),
+          ],
+        }).client,
+      );
+
+      renderSettlementReadinessListPanel();
+
+      const trigger = await screen.findByRole("button", {
+        name: /Ironhaven/,
+      });
+      expect(trigger).toHaveTextContent("2/2 ready");
+      expect(trigger).toHaveTextContent("100%");
+    });
+
+    it("shows 0% in the summary for a none-ready nation", async () => {
+      requireSupabaseClient.mockReturnValue(
+        createClientFixture({
+          settlementRows: [
+            createSettlementRow({
+              id: "s1",
+              name: "Amberhold",
+              nation_id: "nation-1",
+              nations: { id: "nation-1", name: "Ironhaven" },
+            }),
+            createSettlementRow({
+              id: "s2",
+              name: "Briarwatch",
+              nation_id: "nation-1",
+              nations: { id: "nation-1", name: "Ironhaven" },
+            }),
+          ],
+        }).client,
+      );
+
+      renderSettlementReadinessListPanel();
+
+      const trigger = await screen.findByRole("button", {
+        name: /Ironhaven/,
+      });
+      expect(trigger).toHaveTextContent("0/2 ready");
+      expect(trigger).toHaveTextContent("0%");
+    });
   });
 });
 
@@ -681,6 +835,7 @@ type TestSettlementReadinessListRow = {
   readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: { readonly id: string; readonly name: string };
   readonly ready_set_at: string | null;
 };
 type TestSettlementReadinessAccessRow = {
@@ -731,6 +886,7 @@ function createSettlementRow(
     last_ready_at: null,
     name: "Settlement",
     nation_id: "nation-1",
+    nations: { id: "nation-1", name: "Nation A" },
     ready_set_at: null,
     ...overrides,
   };

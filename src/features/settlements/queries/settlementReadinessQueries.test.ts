@@ -19,6 +19,7 @@ describe("settlementReadinessListQueryOptions", () => {
           last_ready_at: null,
           name: "Amberhold",
           nation_id: "nation-1",
+          nations: { id: "nation-1", name: "Ironhaven" },
           ready_set_at: null,
         },
         {
@@ -28,6 +29,7 @@ describe("settlementReadinessListQueryOptions", () => {
           last_ready_at: "2026-05-02T12:00:00.000Z",
           name: "Briarwatch",
           nation_id: "nation-2",
+          nations: { id: "nation-2", name: "Stormkeep" },
           ready_set_at: "2026-05-02T12:00:00.000Z",
         },
       ]),
@@ -49,6 +51,7 @@ describe("settlementReadinessListQueryOptions", () => {
         lastReadyAt: null,
         name: "Amberhold",
         nationId: "nation-1",
+        nationName: "Ironhaven",
         readySetAt: null,
       },
       {
@@ -59,6 +62,7 @@ describe("settlementReadinessListQueryOptions", () => {
         lastReadyAt: "2026-05-02T12:00:00.000Z",
         name: "Briarwatch",
         nationId: "nation-2",
+        nationName: "Stormkeep",
         readySetAt: "2026-05-02T12:00:00.000Z",
       },
     ]);
@@ -145,7 +149,7 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(builder.select).toHaveBeenCalledWith(
-      "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner()",
+      "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner(id,name)",
     );
     expect(builder.eq).toHaveBeenCalledWith("nations.world_id", "world-1");
     expect(builder.order).toHaveBeenCalledWith("name", { ascending: true });
@@ -209,6 +213,7 @@ type TestSettlementReadinessRow = {
   readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: { readonly id: string; readonly name: string };
   readonly ready_set_at: string | null;
 };
 
@@ -257,6 +262,7 @@ function createRow(
     last_ready_at: null,
     name: "Amberhold",
     nation_id: "nation-1",
+    nations: { id: "nation-1", name: "Nation A" },
     ready_set_at: null,
     ...overrides,
   };

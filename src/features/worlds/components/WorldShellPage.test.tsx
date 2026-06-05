@@ -90,9 +90,8 @@ describe("WorldShellPage", () => {
     expect(screen.getByText("private")).toBeDefined();
     expect(await screen.findByText("Settlement readiness")).toBeDefined();
     expect(screen.getByText("Settlement readiness list")).toBeDefined();
-    expect(screen.getByText("Amberhold")).toBeDefined();
+    expect(screen.getByText("Nation A")).toBeDefined();
     expect(screen.getByText("Total settlements")).toBeDefined();
-    expect(screen.getAllByText("Not ready").length).toBeGreaterThan(0);
     expect(
       screen.getByRole("link", { name: "Back to worlds" }),
     ).toHaveAttribute("href", "/worlds");
@@ -367,6 +366,7 @@ type TestSettlementReadinessRow = {
   readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: { readonly id: string; readonly name: string };
   readonly ready_set_at: string | null;
 };
 
@@ -459,6 +459,7 @@ function createSettlementRow(
     last_ready_at: null,
     name: "Settlement",
     nation_id: "nation-1",
+    nations: { id: "nation-1", name: "Nation A" },
     ready_set_at: null,
     ...overrides,
   };

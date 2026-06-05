@@ -140,6 +140,7 @@ type ReadinessRow = {
   readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: { readonly id: string; readonly name: string };
   readonly ready_set_at: string | null;
 };
 
@@ -186,6 +187,7 @@ function createReadinessRow(
     last_ready_at: null,
     name: "Hometown",
     nation_id: NATION_ID,
+    nations: { id: NATION_ID, name: "Homeland" },
     ready_set_at: null,
     ...overrides,
   };

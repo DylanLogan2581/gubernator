@@ -293,7 +293,7 @@ describe("world shell route", () => {
     expect(screen.getByText("Planning turn")).toBeDefined();
     expect(screen.getByText("12")).toBeDefined();
     expect(await screen.findByText("Settlement readiness list")).toBeDefined();
-    expect(screen.getByText("Amberhold")).toBeDefined();
+    expect(screen.getByText("Nation A")).toBeDefined();
     expect(screen.queryByText(/citizen/i)).toBeNull();
   });
 
@@ -490,6 +490,7 @@ type TestSettlementReadinessRow = {
   readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: { readonly id: string; readonly name: string };
   readonly ready_set_at: string | null;
 };
 
@@ -532,6 +533,7 @@ function createSettlementRow(
     last_ready_at: null,
     name: "Settlement",
     nation_id: "nation-1",
+    nations: { id: "nation-1", name: "Nation A" },
     ready_set_at: null,
     ...overrides,
   };

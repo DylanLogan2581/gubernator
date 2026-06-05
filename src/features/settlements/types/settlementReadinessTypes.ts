@@ -6,6 +6,7 @@ export type SettlementReadinessListItem = {
   readonly lastReadyAt: string | null;
   readonly name: string;
   readonly nationId: string;
+  readonly nationName: string;
   readonly readySetAt: string | null;
 };
 
