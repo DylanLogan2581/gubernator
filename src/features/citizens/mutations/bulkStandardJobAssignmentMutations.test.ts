@@ -236,10 +236,13 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     ).rejects.toBeInstanceOf(AuthUiError);
   });
 
-  it("maps P0001 'job type must be standard' to AuthUiError", async () => {
+  it("maps P0001 'job type must be standard or construction' to AuthUiError", async () => {
     const { client } = createRpcClient({
       data: null,
-      error: { code: "P0001", message: "job type must be standard" },
+      error: {
+        code: "P0001",
+        message: "job type must be standard or construction",
+      },
     });
     const queryClient = createQueryClient();
     const options = setBulkStandardJobAssignmentMutationOptions({

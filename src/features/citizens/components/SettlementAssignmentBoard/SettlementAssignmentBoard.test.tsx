@@ -79,15 +79,6 @@ type JobCountRowFixture = {
   readonly world_id: string;
 };
 
-type ProjectCountRowFixture = {
-  readonly construction_project_id: string;
-  readonly status: string;
-  readonly queue_position: number;
-  readonly current_count: number;
-  readonly building_blueprint_id: string;
-  readonly target_tier_id: string;
-};
-
 type MutationResultFixture = {
   readonly after: number;
   readonly added_citizen_ids: string[];
@@ -253,20 +244,6 @@ function createJobCountRow(
     job_name: "Farmer",
     job_slug: "farmer",
     world_id: "world-1",
-    ...overrides,
-  };
-}
-
-function createProjectCountRow(
-  overrides: Partial<ProjectCountRowFixture> = {},
-): ProjectCountRowFixture {
-  return {
-    building_blueprint_id: "bp-1",
-    construction_project_id: "proj-1",
-    current_count: 2,
-    queue_position: 1,
-    status: "in_progress",
-    target_tier_id: "tier-1",
     ...overrides,
   };
 }
@@ -455,9 +432,7 @@ function createClient(config: {
   // Bulk-tab config
   readonly aggregates?: readonly AggregateRowFixture[];
   readonly jobCounts?: readonly JobCountRowFixture[];
-  readonly projectCounts?: readonly ProjectCountRowFixture[];
   readonly jobMutationResult?: MutationResultFixture;
-  readonly constructionPoolMutationResult?: MutationResultFixture;
   // Per-target config
   readonly citizenRows?: readonly CitizenRowFixture[];
   readonly citizenAssignmentRows?: readonly CitizenAssignmentRowFixture[];
@@ -504,17 +479,9 @@ function createClient(config: {
       if (name === "get_settlement_standard_job_counts") {
         return createRpcBuilder(config.jobCounts ?? []);
       }
-      if (name === "get_settlement_construction_project_counts") {
-        return createRpcBuilder(config.projectCounts ?? []);
-      }
       if (name === "set_bulk_standard_job_assignment") {
         return createMaybeSingleBuilder(
           config.jobMutationResult ?? defaultMutationResult,
-        );
-      }
-      if (name === "set_bulk_construction_pool") {
-        return createMaybeSingleBuilder(
-          config.constructionPoolMutationResult ?? defaultMutationResult,
         );
       }
       if (name === "set_per_target_assignment") {
@@ -628,7 +595,6 @@ describe("SettlementAssignmentBoard", () => {
             capacity: 10,
           }),
         ],
-        projectCounts: [],
         citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
@@ -667,7 +633,6 @@ describe("SettlementAssignmentBoard", () => {
             capacity: 10,
           }),
         ],
-        projectCounts: [],
         citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [],
@@ -734,7 +699,6 @@ describe("SettlementAssignmentBoard", () => {
             job_name: "Miner",
           }),
         ],
-        projectCounts: [],
       }),
     );
 
@@ -746,57 +710,23 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.getByText("1 / 5")).toBeDefined();
   });
 
-  it("shows construction pool row with editable count when there are active projects", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        aggregates: [
-          createAggregateRow({
-            id: "c-1",
-            citizen_type: "npc",
-            status: "alive",
-            citizen_assignments: [{ assignment_type: "construction_project" }],
-          }),
-          createAggregateRow({
-            id: "c-2",
-            citizen_type: "npc",
-            status: "alive",
-            citizen_assignments: [{ assignment_type: "construction_project" }],
-          }),
-        ],
-        jobCounts: [],
-        projectCounts: [
-          createProjectCountRow({
-            construction_project_id: "proj-1",
-            status: "in_progress",
-          }),
-        ],
-      }),
-    );
-
-    renderBoard({ canManage: true });
-
-    expect(await screen.findByText("Construction pool")).toBeDefined();
-    expect(screen.getByText("2")).toBeDefined();
-    expect(
-      screen.getByRole("spinbutton", {
-        name: "Target count for Construction pool",
-      }),
-    ).toBeDefined();
-  });
-
-  it("hides construction section when all projects are terminal", async () => {
+  it("shows construction job as a regular row in the merged table", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [],
-        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [
-          createProjectCountRow({
-            construction_project_id: "proj-complete",
-            status: "complete",
+        jobCounts: [
+          createJobCountRow({
+            job_id: "11111111-1111-1111-1111-111111111111",
+            job_name: "Farmer",
+            current_count: 3,
+            capacity: 10,
           }),
-          createProjectCountRow({
-            construction_project_id: "proj-cancelled",
-            status: "cancelled",
+          createJobCountRow({
+            job_id: "22222222-2222-2222-2222-222222222222",
+            job_name: "Stone Mason",
+            job_slug: "stone-mason",
+            current_count: 2,
+            capacity: 4,
           }),
         ],
       }),
@@ -804,8 +734,9 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard();
 
-    await screen.findByText("Farmer");
-    expect(screen.queryByText("Construction pool")).toBeNull();
+    expect(await screen.findByText("Farmer")).toBeDefined();
+    expect(await screen.findByText("Stone Mason")).toBeDefined();
+    expect(screen.getByText("2 / 4")).toBeDefined();
   });
 
   it("shows inline editor with Apply button when canManage and not archived", async () => {
@@ -813,7 +744,6 @@ describe("SettlementAssignmentBoard", () => {
       createClient({
         aggregates: [],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [],
       }),
     );
 
@@ -828,7 +758,6 @@ describe("SettlementAssignmentBoard", () => {
       createClient({
         aggregates: [],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [],
       }),
     );
 
@@ -843,7 +772,6 @@ describe("SettlementAssignmentBoard", () => {
       createClient({
         aggregates: [],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [],
       }),
     );
 
@@ -877,7 +805,6 @@ describe("SettlementAssignmentBoard", () => {
           }),
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [],
       }),
     );
 
@@ -899,7 +826,6 @@ describe("SettlementAssignmentBoard", () => {
           createJobCountRow({ job_id: "job-1", job_name: "Archer" }),
           createJobCountRow({ job_id: "job-2", job_name: "Baker" }),
         ],
-        projectCounts: [],
       }),
     );
 
@@ -917,7 +843,6 @@ describe("SettlementAssignmentBoard", () => {
       createClient({
         aggregates: [],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [],
       }),
     );
 
@@ -959,7 +884,6 @@ describe("SettlementAssignmentBoard", () => {
           }),
         ],
         jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [],
       }),
     );
 
@@ -974,11 +898,10 @@ describe("SettlementAssignmentBoard", () => {
     expect(unassignedRow).not.toHaveTextContent("3 /");
   });
 
-  it("standard jobs Unassigned row and construction pool row show different counts", async () => {
+  it("construction workers are not counted as unassigned", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [
-          // 2 truly-unassigned NPCs
           createAggregateRow({
             id: "c-1",
             citizen_type: "npc",
@@ -989,34 +912,16 @@ describe("SettlementAssignmentBoard", () => {
             id: "c-2",
             citizen_type: "npc",
             status: "alive",
-            citizen_assignments: null,
-          }),
-          // 3 NPCs assigned to construction (not counted in unassignedNpcCount)
-          createAggregateRow({
-            id: "c-3",
-            citizen_type: "npc",
-            status: "alive",
-            citizen_assignments: [{ assignment_type: "construction_project" }],
-          }),
-          createAggregateRow({
-            id: "c-4",
-            citizen_type: "npc",
-            status: "alive",
-            citizen_assignments: [{ assignment_type: "construction_project" }],
-          }),
-          createAggregateRow({
-            id: "c-5",
-            citizen_type: "npc",
-            status: "alive",
             citizen_assignments: [{ assignment_type: "construction_project" }],
           }),
         ],
-        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
-        projectCounts: [
-          createProjectCountRow({
-            construction_project_id: "proj-1",
-            current_count: 3,
-            status: "in_progress",
+        jobCounts: [
+          createJobCountRow({ job_name: "Farmer" }),
+          createJobCountRow({
+            job_id: "22222222-2222-2222-2222-222222222222",
+            job_name: "Stone Mason",
+            current_count: 1,
+            capacity: 4,
           }),
         ],
       }),
@@ -1024,26 +929,11 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard();
 
-    // Wait for data to load
-    await screen.findByText("Farmer");
-    await screen.findByText("Construction pool");
-
+    await screen.findByText("Stone Mason");
     const rows = screen.getAllByRole("row");
-
-    // Standard jobs table: rows[0] = header, rows[1] = Unassigned, rows[2] = Farmer
-    const standardUnassignedRow = rows[1];
-    expect(standardUnassignedRow).toHaveTextContent("Unassigned");
-    expect(standardUnassignedRow).toHaveTextContent("2");
-
-    // Construction table: rows[3] = header, rows[4] = Construction pool
-    const constructionPoolRow = rows[4];
-    expect(constructionPoolRow).toHaveTextContent("Construction pool");
-    // Pool count = assignmentTypeBreakdown.construction_project = 3
-    expect(constructionPoolRow).toHaveTextContent("3");
-
-    // The two counts are different
-    expect(standardUnassignedRow).not.toHaveTextContent("3 /");
-    expect(constructionPoolRow).not.toHaveTextContent("2 /");
+    const unassignedRow = rows[1];
+    // Only 1 truly unassigned NPC; the construction worker is assigned
+    expect(unassignedRow).toHaveTextContent("1");
   });
 
   it("disables Apply button when raising count and no citizens are unassigned", async () => {
@@ -1058,7 +948,6 @@ describe("SettlementAssignmentBoard", () => {
             capacity: 10,
           }),
         ],
-        projectCounts: [],
       }),
     );
 
@@ -1095,7 +984,6 @@ describe("SettlementAssignmentBoard", () => {
             capacity: 10,
           }),
         ],
-        projectCounts: [],
       }),
     );
 
@@ -1125,7 +1013,6 @@ describe("SettlementAssignmentBoard", () => {
             capacity: 10,
           }),
         ],
-        projectCounts: [],
       }),
     );
 
@@ -1452,8 +1339,8 @@ describe("SettlementAssignmentBoard", () => {
     expect(bobCheckbox).not.toBeChecked();
   });
 
-  it("after bulk construction pool Apply, invalidates settlementList and settlementAggregateStats", async () => {
-    const PROJ_UUID = "11111111-1111-1111-1111-111111111111";
+  it("after construction job Apply, invalidates settlementJobCounts, settlementList, and settlementAggregateStats", async () => {
+    const CITIZEN_UUID = "11111111-1111-1111-1111-111111111111";
     const SETTLEMENT_UUID = "22222222-2222-2222-2222-222222222222";
 
     const user = userEvent.setup();
@@ -1467,18 +1354,19 @@ describe("SettlementAssignmentBoard", () => {
       createClient({
         aggregates: [
           createAggregateRow({
-            id: PROJ_UUID,
+            id: CITIZEN_UUID,
             citizen_type: "npc",
             status: "alive",
             citizen_assignments: null,
           }),
         ],
-        jobCounts: [],
-        projectCounts: [
-          createProjectCountRow({
-            construction_project_id: PROJ_UUID,
+        jobCounts: [
+          createJobCountRow({
+            job_id: "33333333-3333-3333-3333-333333333333",
+            job_name: "Stone Mason",
+            job_slug: "stone-mason",
             current_count: 0,
-            status: "in_progress",
+            capacity: 4,
           }),
         ],
       }),
@@ -1497,21 +1385,22 @@ describe("SettlementAssignmentBoard", () => {
       </QueryClientProvider>,
     );
 
-    await screen.findByText("Construction pool");
+    await screen.findByText("Stone Mason");
 
     const input = screen.getByRole("spinbutton", {
-      name: "Target count for Construction pool",
+      name: "Target count for Stone Mason",
     });
     await user.clear(input);
     await user.type(input, "1");
     await user.click(screen.getByRole("button", { name: "Apply" }));
 
-    // Wait for the success toast — fired only after mutateAsync and onSuccess both resolve
     await waitFor(() => {
       expect(vi.mocked(toast.success)).toHaveBeenCalled();
     });
 
-    // onSuccess has completed; all invalidateQueries calls have been made
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: citizensQueryKeys.settlementJobCounts(SETTLEMENT_UUID),
+    });
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: citizensQueryKeys.settlementList(SETTLEMENT_UUID),
     });
