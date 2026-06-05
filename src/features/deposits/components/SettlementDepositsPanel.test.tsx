@@ -306,6 +306,7 @@ function createClient({
   // turn_transitions: returns the transition row when queried by id.
   const transitionSelectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => transitionSelectBuilder),
+    returns: vi.fn(() => transitionSelectBuilder),
     maybeSingle: vi.fn().mockResolvedValue({
       data: transitionRow ?? null,
       error: null,

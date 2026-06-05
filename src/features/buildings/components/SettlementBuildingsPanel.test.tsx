@@ -250,6 +250,7 @@ function createClient({
 
   const transitionBuilder: Record<string, unknown> = {
     eq: vi.fn(() => transitionBuilder),
+    returns: vi.fn(() => transitionBuilder),
     maybeSingle: vi.fn().mockResolvedValue({
       data: latestTransitionRow,
       error: null,
