@@ -3,36 +3,33 @@ import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { type ManagedPopulationInstance } from "@/features/managed-populations";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import { setPerTargetAssignmentMutationOptions } from "../../../mutations/perTargetAssignmentMutations";
+import { setPerTargetBulkAssignmentMutationOptions } from "../../../mutations/perTargetBulkAssignmentMutations";
 
-import { AssignDialog } from "./AssignDialog";
-import { CitizenTags, CollapsibleSection, TargetRowShell } from "./Shared";
+import { CollapsibleSection } from "./Shared";
 
-import type { Citizen } from "../../../types/citizenTypes";
 import type { QueryClient } from "@tanstack/react-query";
 
 type PopulationSectionProps = {
-  readonly aliveCitizens: readonly Citizen[];
   readonly canEdit: boolean;
-  readonly citizenMap: ReadonlyMap<string, Citizen>;
   readonly populations: readonly ManagedPopulationInstance[];
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly unassignedNpcCount: number;
 };
 
 export function HusbandrySection({
-  aliveCitizens,
-  assignedByHusbandry,
   canEdit,
-  citizenMap,
+  countByHusbandry,
   populations,
   queryClient,
   settlementId,
+  unassignedNpcCount,
 }: PopulationSectionProps & {
-  readonly assignedByHusbandry: ReadonlyMap<string, readonly string[]>;
+  readonly countByHusbandry: ReadonlyMap<string, number>;
 }): JSX.Element {
   return (
     <CollapsibleSection title="Husbandry">
@@ -42,35 +39,52 @@ export function HusbandrySection({
           description="This settlement has no active managed population instances."
         />
       ) : (
-        populations.map((pop) => (
-          <PopulationTargetRow
-            key={pop.id}
-            aliveCitizens={aliveCitizens}
-            assignedIds={assignedByHusbandry.get(pop.id) ?? []}
-            assignmentType="husbandry"
-            canEdit={canEdit}
-            citizenMap={citizenMap}
-            jobName={pop.husbandryJobName}
-            population={pop}
-            queryClient={queryClient}
-            settlementId={settlementId}
-          />
-        ))
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-muted-foreground">
+              <th className="pb-2 font-medium" scope="col">
+                Population / Job
+              </th>
+              <th className="pb-2 font-medium" scope="col">
+                Assigned / Capacity
+              </th>
+              {canEdit ? (
+                <th className="pb-2 font-medium" scope="col">
+                  Set count
+                </th>
+              ) : null}
+            </tr>
+          </thead>
+          <tbody>
+            {populations.map((pop) => (
+              <PopulationTargetRow
+                key={pop.id}
+                assignmentType="husbandry"
+                canEdit={canEdit}
+                currentCount={countByHusbandry.get(pop.id) ?? 0}
+                jobName={pop.husbandryJobName}
+                population={pop}
+                queryClient={queryClient}
+                settlementId={settlementId}
+                unassignedNpcCount={unassignedNpcCount}
+              />
+            ))}
+          </tbody>
+        </table>
       )}
     </CollapsibleSection>
   );
 }
 
 export function CullingSection({
-  aliveCitizens,
-  assignedByCulling,
   canEdit,
-  citizenMap,
+  countByCulling,
   populations,
   queryClient,
   settlementId,
+  unassignedNpcCount,
 }: PopulationSectionProps & {
-  readonly assignedByCulling: ReadonlyMap<string, readonly string[]>;
+  readonly countByCulling: ReadonlyMap<string, number>;
 }): JSX.Element {
   return (
     <CollapsibleSection title="Culling">
@@ -80,130 +94,129 @@ export function CullingSection({
           description="This settlement has no active managed population instances."
         />
       ) : (
-        populations.map((pop) => (
-          <PopulationTargetRow
-            key={pop.id}
-            aliveCitizens={aliveCitizens}
-            assignedIds={assignedByCulling.get(pop.id) ?? []}
-            assignmentType="culling"
-            canEdit={canEdit}
-            citizenMap={citizenMap}
-            jobName={pop.cullingJobName}
-            population={pop}
-            queryClient={queryClient}
-            settlementId={settlementId}
-          />
-        ))
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-muted-foreground">
+              <th className="pb-2 font-medium" scope="col">
+                Population / Job
+              </th>
+              <th className="pb-2 font-medium" scope="col">
+                Assigned / Capacity
+              </th>
+              {canEdit ? (
+                <th className="pb-2 font-medium" scope="col">
+                  Set count
+                </th>
+              ) : null}
+            </tr>
+          </thead>
+          <tbody>
+            {populations.map((pop) => (
+              <PopulationTargetRow
+                key={pop.id}
+                assignmentType="culling"
+                canEdit={canEdit}
+                currentCount={countByCulling.get(pop.id) ?? 0}
+                jobName={pop.cullingJobName}
+                population={pop}
+                queryClient={queryClient}
+                settlementId={settlementId}
+                unassignedNpcCount={unassignedNpcCount}
+              />
+            ))}
+          </tbody>
+        </table>
       )}
     </CollapsibleSection>
   );
 }
 
 function PopulationTargetRow({
-  aliveCitizens,
-  assignedIds,
   assignmentType,
   canEdit,
-  citizenMap,
+  currentCount,
   jobName,
   population,
   queryClient,
   settlementId,
+  unassignedNpcCount,
 }: {
-  readonly aliveCitizens: readonly Citizen[];
-  readonly assignedIds: readonly string[];
   readonly assignmentType: "culling" | "husbandry";
   readonly canEdit: boolean;
-  readonly citizenMap: ReadonlyMap<string, Citizen>;
+  readonly currentCount: number;
   readonly jobName: string;
   readonly population: ManagedPopulationInstance;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly unassignedNpcCount: number;
 }): JSX.Element {
-  const [showDialog, setShowDialog] = useState(false);
+  const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
-    setPerTargetAssignmentMutationOptions({ queryClient }),
+    setPerTargetBulkAssignmentMutationOptions({ queryClient }),
   );
 
   const label = `${population.name} — ${jobName}`;
-  const capacityHint = `${assignedIds.length.toString()} assigned`;
 
-  async function handleAssign(citizenIds: string[]): Promise<void> {
+  const parsedCount = parseInt(localCount, 10);
+  const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
+  const isDirty = isValid && parsedCount !== currentCount;
+  const isRaising = isValid && parsedCount > currentCount;
+  const noNpcs = isRaising && unassignedNpcCount === 0;
+  const applyDisabled = mutation.isPending || !isDirty || noNpcs;
+  const applyTooltip = noNpcs ? "No unassigned NPCs available" : undefined;
+
+  async function handleApply(): Promise<void> {
+    if (!isValid) return;
     try {
-      await mutation.mutateAsync({
+      const result = await mutation.mutateAsync({
         assignmentType,
-        citizenIds,
         settlementId,
+        targetCount: parsedCount,
         targetId: population.id,
       });
-      setShowDialog(false);
+      setLocalCount(String(result.after));
       notifyMutationSuccess("Assignment updated.");
     } catch (error) {
       notifyMutationError(error, "Failed to update assignment.");
     }
   }
 
-  function handleRemove(citizenId: string): void {
-    const newIds = assignedIds.filter((id) => id !== citizenId);
-    void mutation
-      .mutateAsync({
-        assignmentType,
-        citizenIds: newIds,
-        settlementId,
-        targetId: population.id,
-      })
-      .then(() => {
-        notifyMutationSuccess("Assignment updated.");
-      })
-      .catch((error: unknown) => {
-        notifyMutationError(error, "Failed to update assignment.");
-      });
-  }
-
   return (
-    <>
-      <TargetRowShell
-        assignButton={
-          canEdit ? (
-            <Button
+    <tr className="border-b border-border last:border-0">
+      <td className="py-2 pr-4 font-medium">{label}</td>
+      <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+        {currentCount} / <span aria-label="no upper bound">∞</span>
+      </td>
+      {canEdit ? (
+        <td className="py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              aria-label={`Target count for ${label}`}
+              className="w-20"
               disabled={mutation.isPending}
-              size="sm"
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowDialog(true);
+              inputMode="numeric"
+              min="0"
+              type="number"
+              value={localCount}
+              onChange={(e) => {
+                setLocalCount(e.currentTarget.value);
               }}
-            >
-              Assign citizens
-            </Button>
-          ) : undefined
-        }
-        capacityHint={capacityHint}
-        label={label}
-      >
-        <CitizenTags
-          assignedIds={assignedIds}
-          canEdit={canEdit}
-          citizenMap={citizenMap}
-          isPending={mutation.isPending}
-          labelPrefix={label}
-          onRemove={handleRemove}
-        />
-      </TargetRowShell>
-      {showDialog ? (
-        <AssignDialog
-          aliveCitizens={aliveCitizens}
-          currentCitizenIds={assignedIds}
-          isPending={mutation.isPending}
-          title={`Assign workers to ${label}`}
-          onClose={() => {
-            setShowDialog(false);
-          }}
-          onSubmit={(ids) => {
-            void handleAssign(ids);
-          }}
-        />
+            />
+            <span title={applyTooltip}>
+              <Button
+                disabled={applyDisabled}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  void handleApply();
+                }}
+              >
+                Apply
+              </Button>
+            </span>
+          </div>
+        </td>
       ) : null}
-    </>
+    </tr>
   );
 }

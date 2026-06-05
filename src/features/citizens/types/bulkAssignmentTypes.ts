@@ -34,3 +34,10 @@ export type PerTargetAssignmentResult = {
   readonly assignedCount: number;
   readonly replacedCount: number;
 };
+
+export type PerTargetBulkAssignmentResult = {
+  readonly after: number;
+  readonly addedCitizenIds: readonly string[];
+  readonly before: number;
+  readonly removedCitizenIds: readonly string[];
+};

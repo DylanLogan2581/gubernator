@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -56,12 +57,11 @@ const baseRoute: TradeRoute = {
 };
 
 const defaultProps = {
-  aliveCitizens: [],
-  assignedByTradeRouteEnd: new Map<string, readonly string[]>(),
   canEdit: false,
-  citizenMap: new Map(),
+  countByTradeRouteEnd: new Map<string, number>(),
   queryClient: new QueryClient(),
   tradeRoutes: [baseRoute],
+  unassignedNpcCount: 3,
 };
 
 describe("TradeRoutesSection — sending (origin) variant", () => {
@@ -114,6 +114,97 @@ describe("TradeRoutesSection — sending (origin) variant", () => {
     );
 
     expect(screen.getByText(/Ashford → Brindlewood/)).toBeInTheDocument();
+  });
+
+  it("does not render Apply button when canEdit is false", () => {
+    render(
+      <Wrapper>
+        <TradeRoutesSection {...defaultProps} settlementId="settlement-a" />
+      </Wrapper>,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Apply" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders numeric input and Apply button when canEdit is true", () => {
+    render(
+      <Wrapper>
+        <TradeRoutesSection
+          {...defaultProps}
+          canEdit
+          settlementId="settlement-a"
+        />
+      </Wrapper>,
+    );
+
+    expect(
+      screen.getByRole("spinbutton", {
+        name: /Target count for Trader: Grain → Brindlewood/,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
+  });
+
+  it("Apply is disabled when input matches current count", () => {
+    render(
+      <Wrapper>
+        <TradeRoutesSection
+          {...defaultProps}
+          canEdit
+          settlementId="settlement-a"
+        />
+      </Wrapper>,
+    );
+
+    const applyButton = screen.getByRole("button", { name: "Apply" });
+    expect(applyButton).toBeDisabled();
+  });
+
+  it("Apply is disabled with tooltip when unassignedNpcCount is 0 and raising", async () => {
+    const user = userEvent.setup();
+    render(
+      <Wrapper>
+        <TradeRoutesSection
+          {...defaultProps}
+          canEdit
+          settlementId="settlement-a"
+          unassignedNpcCount={0}
+        />
+      </Wrapper>,
+    );
+
+    const input = screen.getByRole("spinbutton", {
+      name: /Target count for Trader: Grain → Brindlewood/,
+    });
+    await user.clear(input);
+    await user.type(input, "2");
+
+    const applyButton = screen.getByRole("button", { name: "Apply" });
+    expect(applyButton).toBeDisabled();
+    const tooltipSpan = applyButton.closest("span[title]");
+    expect(tooltipSpan).toHaveAttribute(
+      "title",
+      "No unassigned NPCs available",
+    );
+  });
+
+  it("shows assigned count / ∞ for the local end", () => {
+    const countByTradeRouteEnd = new Map([["route-1:origin", 2]]);
+    render(
+      <Wrapper>
+        <TradeRoutesSection
+          {...defaultProps}
+          countByTradeRouteEnd={countByTradeRouteEnd}
+          settlementId="settlement-a"
+        />
+      </Wrapper>,
+    );
+
+    expect(
+      screen.getByText((_, el) => el?.textContent === "2 / ∞"),
+    ).toBeInTheDocument();
   });
 });
 

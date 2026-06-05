@@ -1127,7 +1127,6 @@ export type Database = {
           deactivated_in_transition_id: string | null;
           id: string;
           missed_upkeep_count: number;
-          name: string | null;
           settlement_id: string;
           source_project_id: string | null;
           state: string;
@@ -1141,7 +1140,6 @@ export type Database = {
           deactivated_in_transition_id?: string | null;
           id?: string;
           missed_upkeep_count?: number;
-          name?: string | null;
           settlement_id: string;
           source_project_id?: string | null;
           state: string;
@@ -1155,7 +1153,6 @@ export type Database = {
           deactivated_in_transition_id?: string | null;
           id?: string;
           missed_upkeep_count?: number;
-          name?: string | null;
           settlement_id?: string;
           source_project_id?: string | null;
           state?: string;
@@ -1469,51 +1466,6 @@ export type Database = {
           },
         ];
       };
-      trade_route_legs: {
-        Row: {
-          created_at: string;
-          direction: string;
-          id: string;
-          quantity_per_transition: number;
-          resource_id: string;
-          trade_route_id: string;
-          updated_at: string;
-        };
-        Insert: {
-          created_at?: string;
-          direction: string;
-          id?: string;
-          quantity_per_transition: number;
-          resource_id: string;
-          trade_route_id: string;
-          updated_at?: string;
-        };
-        Update: {
-          created_at?: string;
-          direction?: string;
-          id?: string;
-          quantity_per_transition?: number;
-          resource_id?: string;
-          trade_route_id?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "trade_route_legs_resource_id_fkey";
-            columns: ["resource_id"];
-            isOneToOne: false;
-            referencedRelation: "resources";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "trade_route_legs_trade_route_id_fkey";
-            columns: ["trade_route_id"];
-            isOneToOne: false;
-            referencedRelation: "trade_routes";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       trade_routes: {
         Row: {
           created_at: string;
@@ -1526,7 +1478,9 @@ export type Database = {
           origin_settlement_id: string;
           pause_reason_last_transition: string | null;
           proposed_by_citizen_id: string;
+          quantity_per_transition: number;
           replacement_for_trade_route_id: string | null;
+          resource_id: string;
           status: string;
           updated_at: string;
         };
@@ -1541,7 +1495,9 @@ export type Database = {
           origin_settlement_id: string;
           pause_reason_last_transition?: string | null;
           proposed_by_citizen_id: string;
+          quantity_per_transition: number;
           replacement_for_trade_route_id?: string | null;
+          resource_id: string;
           status?: string;
           updated_at?: string;
         };
@@ -1556,7 +1512,9 @@ export type Database = {
           origin_settlement_id?: string;
           pause_reason_last_transition?: string | null;
           proposed_by_citizen_id?: string;
+          quantity_per_transition?: number;
           replacement_for_trade_route_id?: string | null;
+          resource_id?: string;
           status?: string;
           updated_at?: string;
         };
@@ -1601,6 +1559,13 @@ export type Database = {
             columns: ["replacement_for_trade_route_id"];
             isOneToOne: false;
             referencedRelation: "trade_routes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
             referencedColumns: ["id"];
           },
         ];
@@ -1946,17 +1911,6 @@ export type Database = {
       };
     };
     Functions: {
-      add_settlement_building_as_admin: {
-        Args: {
-          p_blueprint_id: string;
-          p_name?: string;
-          p_settlement_id: string;
-          p_tier_id: string;
-        };
-        Returns: {
-          id: string;
-        }[];
-      };
       apply_turn_transition: {
         Args: {
           p_expected_turn_number: number;
@@ -2466,47 +2420,6 @@ export type Database = {
         }[];
       };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
-      internal_apply_turn_transition_advance_world_turn: {
-        Args: { p_expected_turn_number: number; p_world_id: string };
-        Returns: number;
-      };
-      internal_apply_turn_transition_citizen_partnership_patches: {
-        Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
-        Returns: Record<string, unknown>;
-      };
-      internal_apply_turn_transition_construction_patches: {
-        Args: {
-          p_payload: Json;
-          p_to_turn_number: number;
-          p_transition_id: string;
-        };
-        Returns: Record<string, unknown>;
-      };
-      internal_apply_turn_transition_deposit_managed_pop_patches: {
-        Args: { p_payload: Json };
-        Returns: Record<string, unknown>;
-      };
-      internal_apply_turn_transition_log_entries_and_notifications: {
-        Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
-        Returns: Record<string, unknown>;
-      };
-      internal_apply_turn_transition_settlement_snapshots: {
-        Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
-        Returns: number;
-      };
-      internal_apply_turn_transition_stockpile_deltas: {
-        Args: {
-          p_expected_turn_number: number;
-          p_payload: Json;
-          p_transition_id: string;
-          p_world_id: string;
-        };
-        Returns: number;
-      };
-      internal_apply_turn_transition_trade_route_patches: {
-        Args: { p_payload: Json };
-        Returns: number;
-      };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
       is_nation_manager_of: { Args: { p_nation_id: string }; Returns: boolean };
@@ -2653,34 +2566,20 @@ export type Database = {
         Args: { p_nation_id: string };
         Returns: boolean;
       };
-      propose_trade_route:
-        | {
-            Args: {
-              p_destination: string;
-              p_legs: Json;
-              p_origin: string;
-              p_proposed_by_citizen_id: string;
-            };
-            Returns: {
-              destination_settlement_id: string;
-              id: string;
-              origin_settlement_id: string;
-            }[];
-          }
-        | {
-            Args: {
-              p_destination: string;
-              p_origin: string;
-              p_proposed_by_citizen_id: string;
-              p_quantity: number;
-              p_resource_id: string;
-            };
-            Returns: {
-              destination_settlement_id: string;
-              id: string;
-              origin_settlement_id: string;
-            }[];
-          };
+      propose_trade_route: {
+        Args: {
+          p_destination: string;
+          p_origin: string;
+          p_proposed_by_citizen_id: string;
+          p_quantity: number;
+          p_resource_id: string;
+        };
+        Returns: {
+          destination_settlement_id: string;
+          id: string;
+          origin_settlement_id: string;
+        }[];
+      };
       reassign_partner: {
         Args: {
           p_change_reason: string;
@@ -2970,15 +2869,6 @@ export type Database = {
           settlement_id: string;
         }[];
       };
-      set_construction_project_workers: {
-        Args: { p_project_id: string; p_target_count: number };
-        Returns: {
-          added_citizen_ids: string[];
-          after: number;
-          before: number;
-          removed_citizen_ids: string[];
-        }[];
-      };
       set_deposit_instance_max_workers: {
         Args: {
           p_deposit_instance_id: string;
@@ -2988,20 +2878,6 @@ export type Database = {
         Returns: {
           max_workers: number;
           unassigned_citizen_ids: string[];
-        }[];
-      };
-      set_deposit_instance_resource_quantities: {
-        Args: {
-          p_deposit_instance_resource_id: string;
-          p_initial_quantity: number;
-          p_remaining_quantity: number;
-        };
-        Returns: {
-          deposit_instance_id: string;
-          deposit_instance_resource_id: string;
-          initial_quantity: number;
-          remaining_quantity: number;
-          settlement_id: string;
         }[];
       };
       set_per_target_assignment: {
@@ -3015,6 +2891,21 @@ export type Database = {
         Returns: {
           assigned_count: number;
           replaced_count: number;
+        }[];
+      };
+      set_per_target_bulk_assignment: {
+        Args: {
+          p_assignment_type: string;
+          p_settlement_id: string;
+          p_target_count: number;
+          p_target_id: string;
+          p_trade_route_end?: string;
+        };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
         }[];
       };
       set_settlement_auto_ready: {

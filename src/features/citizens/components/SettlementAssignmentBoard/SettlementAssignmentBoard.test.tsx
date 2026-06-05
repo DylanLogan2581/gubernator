@@ -90,34 +90,6 @@ type MutationResultFixture = {
 // Per-target fixture types
 // ---------------------------------------------------------------------------
 
-type CitizenRowFixture = {
-  readonly born_on_turn_number: number | null;
-  readonly citizen_type: "npc" | "player_character";
-  readonly created_at: string;
-  readonly death_cause: null;
-  readonly id: string;
-  readonly name: string;
-  readonly npc_flaw: null;
-  readonly npc_goal: null;
-  readonly npc_secret_contradiction: null;
-  readonly npc_trait_1: null;
-  readonly npc_trait_2: null;
-  readonly parent_a_citizen_id: null;
-  readonly parent_b_citizen_id: null;
-  readonly personality_text: null;
-  readonly profile_photo_url: null;
-  readonly role_nation_id: null;
-  readonly role_settlement_id: null;
-  readonly role_type: "none";
-  readonly settlement_id: string;
-  readonly sex: null;
-  readonly skills_text: null;
-  readonly status: "alive" | "dead";
-  readonly updated_at: string;
-  readonly user_id: null;
-  readonly world_id: string;
-};
-
 type CitizenAssignmentRowFixture = {
   readonly assigned_on_turn_number: number;
   readonly assignment_type: "culling" | "deposit" | "husbandry" | "trade_route";
@@ -218,8 +190,10 @@ type TradeRouteRowFixture = {
 };
 
 type PerTargetMutationResultFixture = {
-  readonly assigned_count: number;
-  readonly replaced_count: number;
+  readonly after: number;
+  readonly added_citizen_ids: readonly string[];
+  readonly before: number;
+  readonly removed_citizen_ids: readonly string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -255,39 +229,6 @@ function createJobCountRow(
 // ---------------------------------------------------------------------------
 // Per-target factory functions
 // ---------------------------------------------------------------------------
-
-function createCitizenRow(
-  overrides: Partial<CitizenRowFixture> = {},
-): CitizenRowFixture {
-  return {
-    born_on_turn_number: null,
-    citizen_type: "npc",
-    created_at: "2026-01-01T00:00:00Z",
-    death_cause: null,
-    id: "citizen-1",
-    name: "Alice",
-    npc_flaw: null,
-    npc_goal: null,
-    npc_secret_contradiction: null,
-    npc_trait_1: null,
-    npc_trait_2: null,
-    parent_a_citizen_id: null,
-    parent_b_citizen_id: null,
-    personality_text: null,
-    profile_photo_url: null,
-    role_nation_id: null,
-    role_settlement_id: null,
-    role_type: "none",
-    settlement_id: "settlement-1",
-    sex: null,
-    skills_text: null,
-    status: "alive",
-    updated_at: "2026-01-01T00:00:00Z",
-    user_id: null,
-    world_id: "world-1",
-    ...overrides,
-  };
-}
 
 function createCitizenAssignmentRow(
   overrides: Partial<CitizenAssignmentRowFixture> = {},
@@ -444,7 +385,6 @@ function createClient(config: {
   readonly jobCounts?: readonly JobCountRowFixture[];
   readonly jobMutationResult?: MutationResultFixture;
   // Per-target config
-  readonly citizenRows?: readonly CitizenRowFixture[];
   readonly citizenAssignmentRows?: readonly CitizenAssignmentRowFixture[];
   readonly depositInstanceRows?: readonly DepositInstanceRowFixture[];
   readonly populationInstanceRows?: readonly PopulationInstanceRowFixture[];
@@ -459,16 +399,15 @@ function createClient(config: {
   };
 
   const defaultPerTargetResult: PerTargetMutationResultFixture = {
-    assigned_count: 1,
-    replaced_count: 0,
+    after: 1,
+    added_citizen_ids: [],
+    before: 0,
+    removed_citizen_ids: [],
   };
 
   return {
     from: vi.fn((table: string) => {
       if (table === "citizens") {
-        if (config.citizenRows !== undefined) {
-          return createTableBuilder(config.citizenRows);
-        }
         return createAggregateBuilder(config.aggregates ?? []);
       }
       if (table === "citizen_assignments") {
@@ -494,7 +433,7 @@ function createClient(config: {
           config.jobMutationResult ?? defaultMutationResult,
         );
       }
-      if (name === "set_per_target_assignment") {
+      if (name === "set_per_target_bulk_assignment") {
         return createMaybeSingleBuilder(
           config.perTargetMutationResult ?? defaultPerTargetResult,
         );
@@ -605,7 +544,6 @@ describe("SettlementAssignmentBoard", () => {
             capacity: 10,
           }),
         ],
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
           createDepositInstanceRow({
@@ -643,7 +581,6 @@ describe("SettlementAssignmentBoard", () => {
             capacity: 10,
           }),
         ],
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [],
         populationInstanceRows: [],
@@ -1047,7 +984,6 @@ describe("SettlementAssignmentBoard", () => {
   it("shows deposit section with deposit name and capacity hint on per-target tab", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
           createDepositInstanceRow({
@@ -1071,7 +1007,6 @@ describe("SettlementAssignmentBoard", () => {
   it("shows deposit capacity as assigned count only when max_workers is null", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
           createDepositInstanceRow({
@@ -1088,13 +1023,12 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard({ activeTab: "per-target" });
 
     expect(await screen.findByText("Coal Seam — Miner")).toBeDefined();
-    expect(screen.getByText("0 assigned")).toBeDefined();
+    expect(screen.getByLabelText("no upper bound")).toBeInTheDocument();
   });
 
   it("shows husbandry section with population name and job name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [],
         populationInstanceRows: [
@@ -1120,7 +1054,6 @@ describe("SettlementAssignmentBoard", () => {
   it("shows culling section with population name and culling job name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [],
         populationInstanceRows: [
@@ -1146,7 +1079,6 @@ describe("SettlementAssignmentBoard", () => {
   it("shows trade route section with origin and destination labels", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [],
         populationInstanceRows: [],
@@ -1178,12 +1110,9 @@ describe("SettlementAssignmentBoard", () => {
     ).toBeDefined();
   });
 
-  it("shows assigned citizen name as tag on deposit row", async () => {
+  it("shows assigned count on deposit row", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [
-          createCitizenRow({ id: "citizen-1", name: "Alice", status: "alive" }),
-        ],
         citizenAssignmentRows: [
           createCitizenAssignmentRow({
             citizen_id: "citizen-1",
@@ -1205,13 +1134,15 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard({ activeTab: "per-target" });
 
-    expect(await screen.findByText("Alice")).toBeDefined();
+    expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
+    expect(
+      screen.getByText((_, el) => el?.textContent === "1 / ∞"),
+    ).toBeDefined();
   });
 
-  it("shows Assign citizens button when canManage and not archived on per-target tab", async () => {
+  it("shows Apply button when canManage and not archived on per-target tab", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
           createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
@@ -1228,15 +1159,12 @@ describe("SettlementAssignmentBoard", () => {
     });
 
     await screen.findByText("Iron Vein — Miner");
-    expect(
-      screen.getByRole("button", { name: "Assign citizens" }),
-    ).toBeDefined();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeDefined();
   });
 
-  it("hides Assign citizens button on per-target tab when canManage is false", async () => {
+  it("hides Apply button on per-target tab when canManage is false", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
           createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
@@ -1253,15 +1181,12 @@ describe("SettlementAssignmentBoard", () => {
     });
 
     await screen.findByText("Iron Vein — Miner");
-    expect(
-      screen.queryByRole("button", { name: "Assign citizens" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
-  it("hides Assign citizens button on per-target tab when isArchived is true", async () => {
+  it("hides Apply button on per-target tab when isArchived is true", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
           createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
@@ -1274,15 +1199,12 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard({ activeTab: "per-target", canManage: true, isArchived: true });
 
     await screen.findByText("Iron Vein — Miner");
-    expect(
-      screen.queryByRole("button", { name: "Assign citizens" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
   it("filters out non-active deposits and populations from per-target sections", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
           createDepositInstanceRow({
@@ -1307,43 +1229,59 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.queryByText("Depleted Vein")).toBeNull();
   });
 
-  it("shows assign dialog with alive citizens pre-selected when Assign citizens is clicked", async () => {
+  it("clicking Apply on deposit row calls per-target bulk assignment and shows success toast", async () => {
+    const SETTLEMENT_UUID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    const DEPOSIT_UUID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+    const NPC_UUID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
     const user = userEvent.setup();
+    vi.mocked(toast.success).mockClear();
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [
-          createCitizenRow({ id: "citizen-1", name: "Alice", status: "alive" }),
-          createCitizenRow({ id: "citizen-2", name: "Bob", status: "alive" }),
-        ],
-        citizenAssignmentRows: [
-          createCitizenAssignmentRow({
-            citizen_id: "citizen-1",
-            assignment_type: "deposit",
-            deposit_instance: {
-              id: "dep-1",
-              name: "Iron Vein",
-              deposit_types: { name: "Iron", job: { name: "Miner" } },
-            },
+        aggregates: [
+          createAggregateRow({
+            id: NPC_UUID,
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: null,
           }),
         ],
+        citizenAssignmentRows: [],
         depositInstanceRows: [
-          createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
+          createDepositInstanceRow({
+            id: DEPOSIT_UUID,
+            name: "Iron Vein",
+            settlement_id: SETTLEMENT_UUID,
+          }),
         ],
+        perTargetMutationResult: {
+          after: 1,
+          added_citizen_ids: [NPC_UUID],
+          before: 0,
+          removed_citizen_ids: [],
+        },
         populationInstanceRows: [],
         tradeRouteRows: [],
       }),
     );
 
-    renderBoard({ activeTab: "per-target", canManage: true });
+    renderBoard({
+      activeTab: "per-target",
+      canManage: true,
+      settlementId: SETTLEMENT_UUID,
+    });
 
     await screen.findByText("Iron Vein — Miner");
-    await user.click(screen.getByRole("button", { name: "Assign citizens" }));
+    const input = screen.getByRole("spinbutton", {
+      name: "Target count for Iron Vein — Miner",
+    });
+    await user.clear(input);
+    await user.type(input, "1");
+    await user.click(screen.getByRole("button", { name: "Apply" }));
 
-    expect(screen.getByRole("dialog")).toBeDefined();
-    const aliceCheckbox = screen.getByRole("checkbox", { name: /Alice/ });
-    const bobCheckbox = screen.getByRole("checkbox", { name: /Bob/ });
-    expect(aliceCheckbox).toBeChecked();
-    expect(bobCheckbox).not.toBeChecked();
+    await waitFor(() => {
+      expect(vi.mocked(toast.success)).toHaveBeenCalled();
+    });
   });
 
   it("after construction job Apply, invalidates settlementJobCounts, settlementList, and settlementAggregateStats", async () => {
@@ -1416,24 +1354,11 @@ describe("SettlementAssignmentBoard", () => {
     });
   });
 
-  it("filters player characters out of the assign dialog, showing only NPCs", async () => {
+  it("Apply button is disabled with tooltip when no unassigned NPCs and count is raised", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizenRows: [
-          createCitizenRow({
-            id: "npc-1",
-            name: "Alice",
-            citizen_type: "npc",
-            status: "alive",
-          }),
-          createCitizenRow({
-            id: "pc-1",
-            name: "HeroPC",
-            citizen_type: "player_character",
-            status: "alive",
-          }),
-        ],
+        aggregates: [],
         citizenAssignmentRows: [],
         depositInstanceRows: [
           createDepositInstanceRow({ id: "dep-1", name: "Iron Vein" }),
@@ -1446,10 +1371,17 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard({ activeTab: "per-target", canManage: true });
 
     await screen.findByText("Iron Vein — Miner");
-    await user.click(screen.getByRole("button", { name: "Assign citizens" }));
+    const input = screen.getByRole("spinbutton", {
+      name: "Target count for Iron Vein — Miner",
+    });
+    await user.clear(input);
+    await user.type(input, "1");
 
-    expect(screen.getByRole("dialog")).toBeDefined();
-    expect(screen.getByRole("checkbox", { name: /Alice/ })).toBeDefined();
-    expect(screen.queryByRole("checkbox", { name: /HeroPC/ })).toBeNull();
+    const applyButton = screen.getByRole("button", { name: "Apply" });
+    expect(applyButton).toBeDisabled();
+    expect(applyButton.closest("span[title]")).toHaveAttribute(
+      "title",
+      "No unassigned NPCs available",
+    );
   });
 });

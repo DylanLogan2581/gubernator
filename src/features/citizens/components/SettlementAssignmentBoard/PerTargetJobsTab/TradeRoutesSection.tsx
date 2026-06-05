@@ -4,35 +4,32 @@ import { useState, type JSX, type ReactNode } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { type TradeRoute, type TradeRouteLeg } from "@/features/trade";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import { setPerTargetAssignmentMutationOptions } from "../../../mutations/perTargetAssignmentMutations";
+import { setPerTargetBulkAssignmentMutationOptions } from "../../../mutations/perTargetBulkAssignmentMutations";
 
-import { AssignDialog } from "./AssignDialog";
-import { CitizenTags, CollapsibleSection, TargetRowShell } from "./Shared";
+import { CollapsibleSection } from "./Shared";
 
-import type { Citizen } from "../../../types/citizenTypes";
 import type { QueryClient } from "@tanstack/react-query";
 
 type TradeRoutesSectionProps = {
-  readonly aliveCitizens: readonly Citizen[];
-  readonly assignedByTradeRouteEnd: ReadonlyMap<string, readonly string[]>;
   readonly canEdit: boolean;
-  readonly citizenMap: ReadonlyMap<string, Citizen>;
+  readonly countByTradeRouteEnd: ReadonlyMap<string, number>;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
   readonly tradeRoutes: readonly TradeRoute[];
+  readonly unassignedNpcCount: number;
 };
 
 export function TradeRoutesSection({
-  aliveCitizens,
-  assignedByTradeRouteEnd,
   canEdit,
-  citizenMap,
+  countByTradeRouteEnd,
   queryClient,
   settlementId,
   tradeRoutes,
+  unassignedNpcCount,
 }: TradeRoutesSectionProps): JSX.Element {
   return (
     <CollapsibleSection title="Trade routes">
@@ -73,10 +70,8 @@ export function TradeRoutesSection({
                 {route.legs.length > 0 ? ` (${resourcesLabel})` : null}
               </p>
               <TradeRouteLocalEndRow
-                aliveCitizens={aliveCitizens}
-                assignedIds={assignedByTradeRouteEnd.get(localKey) ?? []}
                 canEdit={canEdit}
-                citizenMap={citizenMap}
+                currentCount={countByTradeRouteEnd.get(localKey) ?? 0}
                 icon={
                   <span title={localTooltip}>
                     <LocalIcon
@@ -90,11 +85,10 @@ export function TradeRoutesSection({
                 routeId={route.id}
                 settlementId={settlementId}
                 tradeRouteEnd={localEnd}
+                unassignedNpcCount={unassignedNpcCount}
               />
               <TradeRouteRemoteEndRow
-                assignedCount={
-                  (assignedByTradeRouteEnd.get(remoteKey) ?? []).length
-                }
+                assignedCount={countByTradeRouteEnd.get(remoteKey) ?? 0}
                 destinationSettlementName={route.destinationSettlementName}
                 originSettlementName={route.originSettlementName}
                 remoteSettlementName={remoteSettlementName}
@@ -109,115 +103,96 @@ export function TradeRoutesSection({
 }
 
 function TradeRouteLocalEndRow({
-  aliveCitizens,
-  assignedIds,
   canEdit,
-  citizenMap,
+  currentCount,
   icon,
   label,
   queryClient,
   routeId,
   settlementId,
   tradeRouteEnd,
+  unassignedNpcCount,
 }: {
-  readonly aliveCitizens: readonly Citizen[];
-  readonly assignedIds: readonly string[];
   readonly canEdit: boolean;
-  readonly citizenMap: ReadonlyMap<string, Citizen>;
+  readonly currentCount: number;
   readonly icon?: ReactNode;
   readonly label: string;
   readonly queryClient: QueryClient;
   readonly routeId: string;
   readonly settlementId: string;
   readonly tradeRouteEnd: "destination" | "origin";
+  readonly unassignedNpcCount: number;
 }): JSX.Element {
-  const [showDialog, setShowDialog] = useState(false);
+  const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
-    setPerTargetAssignmentMutationOptions({ queryClient }),
+    setPerTargetBulkAssignmentMutationOptions({ queryClient }),
   );
 
-  const capacityHint = `${assignedIds.length.toString()} assigned`;
+  const parsedCount = parseInt(localCount, 10);
+  const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
+  const isDirty = isValid && parsedCount !== currentCount;
+  const isRaising = isValid && parsedCount > currentCount;
+  const noNpcs = isRaising && unassignedNpcCount === 0;
+  const applyDisabled = mutation.isPending || !isDirty || noNpcs;
+  const applyTooltip = noNpcs ? "No unassigned NPCs available" : undefined;
 
-  async function handleAssign(citizenIds: string[]): Promise<void> {
+  async function handleApply(): Promise<void> {
+    if (!isValid) return;
     try {
-      await mutation.mutateAsync({
+      const result = await mutation.mutateAsync({
         assignmentType: "trade_route",
-        citizenIds,
         settlementId,
+        targetCount: parsedCount,
         targetId: routeId,
         tradeRouteEnd,
       });
-      setShowDialog(false);
+      setLocalCount(String(result.after));
       notifyMutationSuccess("Trade route assignment updated.");
     } catch (error) {
       notifyMutationError(error, "Failed to update trade route assignment.");
     }
   }
 
-  function handleRemove(citizenId: string): void {
-    const newIds = assignedIds.filter((id) => id !== citizenId);
-    void mutation
-      .mutateAsync({
-        assignmentType: "trade_route",
-        citizenIds: newIds,
-        settlementId,
-        targetId: routeId,
-        tradeRouteEnd,
-      })
-      .then(() => {
-        notifyMutationSuccess("Trade route assignment updated.");
-      })
-      .catch((error: unknown) => {
-        notifyMutationError(error, "Failed to update trade route assignment.");
-      });
-  }
-
   return (
-    <>
-      <TargetRowShell
-        assignButton={
-          canEdit ? (
-            <Button
+    <div className="rounded border border-border bg-background p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <span className="text-sm font-medium">{label}</span>
+          <span className="tabular-nums text-xs text-muted-foreground">
+            {currentCount} / <span aria-label="no upper bound">∞</span>
+          </span>
+        </div>
+        {canEdit ? (
+          <div className="flex items-center gap-2">
+            <Input
+              aria-label={`Target count for ${label}`}
+              className="w-20"
               disabled={mutation.isPending}
-              size="sm"
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowDialog(true);
+              inputMode="numeric"
+              min="0"
+              type="number"
+              value={localCount}
+              onChange={(e) => {
+                setLocalCount(e.currentTarget.value);
               }}
-            >
-              Assign citizens
-            </Button>
-          ) : undefined
-        }
-        capacityHint={capacityHint}
-        icon={icon}
-        label={label}
-      >
-        <CitizenTags
-          assignedIds={assignedIds}
-          canEdit={canEdit}
-          citizenMap={citizenMap}
-          isPending={mutation.isPending}
-          labelPrefix={label}
-          onRemove={handleRemove}
-        />
-      </TargetRowShell>
-      {showDialog ? (
-        <AssignDialog
-          aliveCitizens={aliveCitizens}
-          currentCitizenIds={assignedIds}
-          isPending={mutation.isPending}
-          title={`Assign traders — ${label}`}
-          onClose={() => {
-            setShowDialog(false);
-          }}
-          onSubmit={(ids) => {
-            void handleAssign(ids);
-          }}
-        />
-      ) : null}
-    </>
+            />
+            <span title={applyTooltip}>
+              <Button
+                disabled={applyDisabled}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  void handleApply();
+                }}
+              >
+                Apply
+              </Button>
+            </span>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
