@@ -160,6 +160,26 @@ describe("resolveSupabaseEndTurnSimulationAuthorization", () => {
       }
     });
 
+    it("returns ok: true for super admin without an explicit world_admins row (is_world_admin not called)", async () => {
+      stubDenoEnv();
+      const fetchMock = stubFetch({
+        "rpc/is_super_admin": { body: true, status: 200 },
+        "/rest/v1/worlds": { body: [{ id: WORLD_ID }], status: 200 },
+        // no "rpc/is_world_admin" stub — calling it would return 500
+      });
+
+      const result = await resolveSupabaseEndTurnSimulationAuthorization(
+        { expectedTurnNumber: 1, worldId: WORLD_ID },
+        { authorizationHeader: "Bearer user-jwt-token", userId: "user-1" },
+      );
+
+      expect(result.ok).toBe(true);
+      const worldAdminCall = (
+        fetchMock.mock.calls as [string, RequestInit][]
+      ).find(([url]) => url.includes("is_world_admin"));
+      expect(worldAdminCall).toBeUndefined();
+    });
+
     it("returns 401 session_expired when worlds check returns 401", async () => {
       stubDenoEnv();
       stubFetch({

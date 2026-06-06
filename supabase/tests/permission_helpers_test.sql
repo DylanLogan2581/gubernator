@@ -13,7 +13,7 @@
 begin;
 
 select
-  plan (26);
+  plan (29);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -239,6 +239,66 @@ select
     public.is_world_admin ('f2000000-0000-0000-0000-000000000002'),
     false,
     'is_world_admin returns false when admin of a different world'
+  );
+
+reset role;
+
+-- Super admin without an explicit world_admins row
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  is (
+    public.is_world_admin ('f1000000-0000-0000-0000-000000000001'),
+    true,
+    'is_world_admin returns true for super admin without an explicit world_admins row'
+  );
+
+reset role;
+
+-- Super admin in suspended status returns false
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'dd000000-0000-0000-0000-000000000004';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  is (
+    public.is_world_admin ('f1000000-0000-0000-0000-000000000001'),
+    false,
+    'is_world_admin returns false for a suspended super admin'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'active'
+where
+  id = 'dd000000-0000-0000-0000-000000000004';
+
+-- Non-super-admin without a world_admins row returns false
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"cc000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  is (
+    public.is_world_admin ('f2000000-0000-0000-0000-000000000002'),
+    false,
+    'is_world_admin returns false for a non-super-admin without a world_admins row'
   );
 
 reset role;
