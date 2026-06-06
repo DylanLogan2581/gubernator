@@ -2027,6 +2027,25 @@ export type Database = {
           id: string;
         }[];
       };
+      admin_clear_user_active_player_character: {
+        Args: { p_user_id: string; p_world_id: string };
+        Returns: undefined;
+      };
+      admin_set_user_active_player_character: {
+        Args: { p_citizen_id: string; p_user_id: string; p_world_id: string };
+        Returns: {
+          citizen_id: string;
+          updated_at: string;
+          user_id: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "user_active_player_characters";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       apply_turn_transition: {
         Args: {
           p_expected_turn_number: number;
@@ -3480,7 +3499,11 @@ export type Database = {
         };
       };
       start_turn_transition: {
-        Args: { p_expected_turn_number: number; p_world_id: string };
+        Args: {
+          p_expected_turn_number: number;
+          p_initiated_by_user_id: string;
+          p_world_id: string;
+        };
         Returns: string;
       };
       trash_world: {

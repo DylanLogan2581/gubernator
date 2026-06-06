@@ -1,6 +1,7 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { toCitizen, type Citizen, type CitizenRow } from "@/features/citizens";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -8,6 +9,7 @@ import {
 
 import { superadminQueryKeys } from "./superadminQueryKeys";
 
+import type { ActivePlayerCharacterRow } from "./activePlayerCharacterQueries";
 import type {
   SuperadminUser,
   SuperadminWorld,
@@ -117,4 +119,100 @@ async function getWorldAdminsForUser(
   }
 
   return data;
+}
+
+type UserLivingPlayerCharactersQueryKey = ReturnType<
+  typeof superadminQueryKeys.userLivingPlayerCharacters
+>;
+type UserActivePlayerCharacterRowsQueryKey = ReturnType<
+  typeof superadminQueryKeys.userActivePlayerCharacterRows
+>;
+
+type UserLivingPlayerCharactersQueryOptions = UseQueryOptions<
+  readonly Citizen[],
+  AuthUiError,
+  readonly Citizen[],
+  UserLivingPlayerCharactersQueryKey
+>;
+
+type UserActivePlayerCharacterRowsQueryOptions = UseQueryOptions<
+  readonly ActivePlayerCharacterRow[],
+  AuthUiError,
+  readonly ActivePlayerCharacterRow[],
+  UserActivePlayerCharacterRowsQueryKey
+>;
+
+const ADMIN_LIVING_PC_SELECT =
+  "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,created_at,updated_at";
+
+export function adminUserLivingPlayerCharactersQueryOptions(
+  userId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): UserLivingPlayerCharactersQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getAdminUserLivingPlayerCharacters(client, userId),
+    queryKey: superadminQueryKeys.userLivingPlayerCharacters(userId),
+  });
+}
+
+export function adminUserActivePlayerCharacterRowsQueryOptions(
+  userId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): UserActivePlayerCharacterRowsQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getAdminUserActivePlayerCharacterRows(client, userId),
+    queryKey: superadminQueryKeys.userActivePlayerCharacterRows(userId),
+  });
+}
+
+async function getAdminUserLivingPlayerCharacters(
+  client: GubernatorSupabaseClient,
+  userId: string,
+): Promise<readonly Citizen[]> {
+  const { data, error } = await client
+    .from("citizens")
+    .select(ADMIN_LIVING_PC_SELECT)
+    .eq("user_id", userId)
+    .eq("citizen_type", "player_character")
+    .eq("status", "alive")
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .returns<CitizenRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toCitizen);
+}
+
+type ActivePlayerCharacterRowRecord = {
+  readonly citizen_id: string;
+  readonly updated_at: string;
+  readonly user_id: string;
+  readonly world_id: string;
+};
+
+async function getAdminUserActivePlayerCharacterRows(
+  client: GubernatorSupabaseClient,
+  userId: string,
+): Promise<readonly ActivePlayerCharacterRow[]> {
+  const { data, error } = await client
+    .from("user_active_player_characters")
+    .select("citizen_id,updated_at,user_id,world_id")
+    .eq("user_id", userId)
+    .returns<ActivePlayerCharacterRowRecord[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map((row) => ({
+    citizenId: row.citizen_id,
+    updatedAt: row.updated_at,
+    userId: row.user_id,
+    worldId: row.world_id,
+  }));
 }

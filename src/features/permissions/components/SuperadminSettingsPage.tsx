@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings, Shield, UserPlus, Globe2 } from "lucide-react";
+import { Settings, Shield, UserPlus, Globe2, UserCog } from "lucide-react";
 import { useState, type ChangeEvent, type JSX, type ReactNode } from "react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
@@ -13,6 +13,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 
 import { allUsersForSuperadminQueryOptions } from "../queries/superadminQueries";
 
+import { ActivePlayerCharacterAdminDialog } from "./ActivePlayerCharacterAdminDialog";
 import { CreateUserDialog } from "./CreateUserDialog";
 import { ToggleSuperadminDialog } from "./ToggleSuperadminDialog";
 import { WorldAdminGrantDialog } from "./WorldAdminGrantDialog";
@@ -23,7 +24,8 @@ type DialogState =
   | { readonly kind: "none" }
   | { readonly kind: "create-user" }
   | { readonly kind: "toggle-superadmin"; readonly user: SuperadminUser }
-  | { readonly kind: "world-admin"; readonly user: SuperadminUser };
+  | { readonly kind: "world-admin"; readonly user: SuperadminUser }
+  | { readonly kind: "active-player-character"; readonly user: SuperadminUser };
 
 export function SuperadminSettingsPage(): JSX.Element {
   const queryClient = useQueryClient();
@@ -159,6 +161,9 @@ export function SuperadminSettingsPage(): JSX.Element {
                 onManageWorldAdmin={() => {
                   setDialog({ kind: "world-admin", user });
                 }}
+                onManageActivePlayerCharacter={() => {
+                  setDialog({ kind: "active-player-character", user });
+                }}
               />
             ))}
           </tbody>
@@ -197,12 +202,23 @@ export function SuperadminSettingsPage(): JSX.Element {
           }}
         />
       )}
+
+      {dialog.kind === "active-player-character" && (
+        <ActivePlayerCharacterAdminDialog
+          queryClient={queryClient}
+          targetUser={dialog.user}
+          onClose={() => {
+            setDialog({ kind: "none" });
+          }}
+        />
+      )}
     </SuperadminFrame>
   );
 }
 
 type UserRowProps = {
   readonly currentUserId: string;
+  readonly onManageActivePlayerCharacter: () => void;
   readonly onManageWorldAdmin: () => void;
   readonly onToggleSuperadmin: () => void;
   readonly user: SuperadminUser;
@@ -210,6 +226,7 @@ type UserRowProps = {
 
 function UserRow({
   currentUserId,
+  onManageActivePlayerCharacter,
   onManageWorldAdmin,
   onToggleSuperadmin,
   user,
@@ -260,6 +277,16 @@ function UserRow({
           >
             <Globe2 className="size-3.5" aria-hidden="true" />
             Worlds
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onManageActivePlayerCharacter}
+            title="Manage active player character (recovery)"
+          >
+            <UserCog className="size-3.5" aria-hidden="true" />
+            Active PC
           </Button>
           <Button
             type="button"

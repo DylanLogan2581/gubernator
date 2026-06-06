@@ -12,9 +12,11 @@
 -- from its user; an ON DELETE CASCADE on citizen_id handles citizen deletion.
 --
 -- RLS limits both reads and writes to the row's own user_id. Super admins get
--- a read-only path for support purposes; super admin writes are deliberately
--- not allowed so a support operator cannot silently change which character a
--- user resumes as.
+-- a read-only path via the select policy. Direct super admin writes are
+-- deliberately not permitted via RLS; the explicit SECURITY DEFINER RPCs
+-- admin_set_user_active_player_character and
+-- admin_clear_user_active_player_character (added in 20260610000001) are the
+-- only admin write paths and enforce the same validation invariants.
 -- ---------------------------------------------------------------------------
 -- user_active_player_characters
 -- ---------------------------------------------------------------------------
@@ -136,8 +138,8 @@ select
     or public.is_super_admin ()
   );
 
--- Writes: only the row's own user. Super admin writes are intentionally not
--- permitted so support cannot silently change a user's active character.
+-- Writes: only the row's own user. Super admin writes via RLS are intentionally
+-- not permitted; use admin_set/clear_user_active_player_character RPCs instead.
 create policy "user_active_player_characters_insert_own" on public.user_active_player_characters for insert to authenticated
 with
   check (user_id = public.current_app_user_id ());
