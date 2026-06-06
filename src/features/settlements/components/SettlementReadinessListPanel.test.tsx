@@ -705,19 +705,19 @@ describe("SettlementReadinessListPanel", () => {
       expect(screen.getByText("Ironhaven")).toBeDefined();
       expect(screen.getByText("Stormkeep")).toBeDefined();
 
-      // Stormkeep (0% ready) sorts first
+      // Nations sort alphabetically: Ironhaven before Stormkeep
       const [firstTrigger, secondTrigger] = screen.getAllByRole("button", {
         name: /ready/i,
       });
-      expect(firstTrigger).toHaveTextContent("Stormkeep");
-      expect(firstTrigger).toHaveTextContent("0/1 ready");
-      expect(firstTrigger).toHaveTextContent("0%");
-      expect(secondTrigger).toHaveTextContent("Ironhaven");
-      expect(secondTrigger).toHaveTextContent("1/2 ready");
-      expect(secondTrigger).toHaveTextContent("50%");
+      expect(firstTrigger).toHaveTextContent("Ironhaven");
+      expect(firstTrigger).toHaveTextContent("1/2 ready");
+      expect(firstTrigger).toHaveTextContent("50%");
+      expect(secondTrigger).toHaveTextContent("Stormkeep");
+      expect(secondTrigger).toHaveTextContent("0/1 ready");
+      expect(secondTrigger).toHaveTextContent("0%");
 
       // Expand Ironhaven and verify its settlements appear
-      await user.click(secondTrigger);
+      await user.click(firstTrigger);
       expect(await screen.findByText("Amberhold")).toBeDefined();
       expect(screen.getByText("Briarwatch")).toBeDefined();
     });
@@ -791,6 +791,44 @@ describe("SettlementReadinessListPanel", () => {
       });
       expect(trigger).toHaveTextContent("0/2 ready");
       expect(trigger).toHaveTextContent("0%");
+    });
+
+    it("renders nations alphabetically regardless of readiness mix", async () => {
+      requireSupabaseClient.mockReturnValue(
+        createClientFixture({
+          settlementRows: [
+            createSettlementRow({
+              id: "s1",
+              is_ready_current_turn: true,
+              name: "Amberhold",
+              nation_id: "nation-3",
+              nations: { id: "nation-3", name: "Thornveil" },
+              ready_set_at: "2026-05-02T12:00:00.000Z",
+            }),
+            createSettlementRow({
+              id: "s2",
+              name: "Briarwatch",
+              nation_id: "nation-1",
+              nations: { id: "nation-1", name: "Ashford" },
+            }),
+            createSettlementRow({
+              id: "s3",
+              is_ready_current_turn: true,
+              name: "Cinderford",
+              nation_id: "nation-2",
+              nations: { id: "nation-2", name: "Mirewood" },
+              ready_set_at: "2026-05-02T12:00:00.000Z",
+            }),
+          ],
+        }).client,
+      );
+
+      renderSettlementReadinessListPanel();
+
+      const triggers = await screen.findAllByRole("button", { name: /ready/i });
+      expect(triggers[0]).toHaveTextContent("Ashford");
+      expect(triggers[1]).toHaveTextContent("Mirewood");
+      expect(triggers[2]).toHaveTextContent("Thornveil");
     });
   });
 });

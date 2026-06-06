@@ -53,5 +53,9 @@ export function groupSettlementsByNation(
         totalCount: summary.totalSettlementCount,
       };
     })
-    .sort((a, b) => a.readyPercentage - b.readyPercentage);
+    .sort((a, b) =>
+      a.nationName.localeCompare(b.nationName, undefined, {
+        sensitivity: "base",
+      }),
+    );
 }

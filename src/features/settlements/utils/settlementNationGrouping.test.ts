@@ -53,28 +53,71 @@ describe("groupSettlementsByNation", () => {
     expect(nationNames).toContain("Beta");
   });
 
-  it("sorts nations by ready percentage ascending so the holdup appears first", () => {
+  it("sorts nations alphabetically by name", () => {
     const items = [
-      createItem({
-        autoReadyEnabled: false,
-        id: "s1",
-        isReadyCurrentTurn: true,
-        nationId: "n1",
-        nationName: "AllReady",
-      }),
-      createItem({
-        autoReadyEnabled: false,
-        id: "s2",
-        isReadyCurrentTurn: false,
-        nationId: "n2",
-        nationName: "NoneReady",
-      }),
+      createItem({ id: "s1", nationId: "n2", nationName: "Zebra" }),
+      createItem({ id: "s2", nationId: "n1", nationName: "Alpha" }),
     ];
 
     const groups = groupSettlementsByNation(items);
 
-    expect(groups[0].nationId).toBe("n2");
-    expect(groups[1].nationId).toBe("n1");
+    expect(groups[0].nationId).toBe("n1");
+    expect(groups[0].nationName).toBe("Alpha");
+    expect(groups[1].nationId).toBe("n2");
+    expect(groups[1].nationName).toBe("Zebra");
+  });
+
+  it("sorts nation names case-insensitively", () => {
+    const items = [
+      createItem({ id: "s1", nationId: "n1", nationName: "zebra" }),
+      createItem({ id: "s2", nationId: "n2", nationName: "Alpha" }),
+    ];
+
+    const groups = groupSettlementsByNation(items);
+
+    expect(groups[0].nationName).toBe("Alpha");
+    expect(groups[1].nationName).toBe("zebra");
+  });
+
+  it("does not reorder nations when readiness changes", () => {
+    const baseItems = [
+      createItem({
+        id: "s1",
+        isReadyCurrentTurn: false,
+        nationId: "n1",
+        nationName: "Beta",
+      }),
+      createItem({
+        id: "s2",
+        isReadyCurrentTurn: false,
+        nationId: "n2",
+        nationName: "Alpha",
+      }),
+    ];
+
+    const groupsBefore = groupSettlementsByNation(baseItems);
+
+    const updatedItems = [
+      createItem({
+        id: "s1",
+        isReadyCurrentTurn: true,
+        nationId: "n1",
+        nationName: "Beta",
+      }),
+      createItem({
+        id: "s2",
+        isReadyCurrentTurn: false,
+        nationId: "n2",
+        nationName: "Alpha",
+      }),
+    ];
+
+    const groupsAfter = groupSettlementsByNation(updatedItems);
+
+    expect(groupsBefore[0].nationId).toBe("n2");
+    expect(groupsBefore[1].nationId).toBe("n1");
+    expect(groupsAfter[0].nationId).toBe("n2");
+    expect(groupsAfter[1].nationId).toBe("n1");
   });
 
   it("computes 100% ready count and percentage for an all-ready nation", () => {
