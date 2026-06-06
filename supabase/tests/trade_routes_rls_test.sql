@@ -7,19 +7,21 @@
 -- character settlement belongs to that nation.
 --
 -- Writes: INSERT (propose) is open to world admins and nation managers on
--- either side. Direct UPDATE of approval columns and status is blocked by
--- column-level grants (42501) for all authenticated callers; Cards 20–23
--- supply SECURITY DEFINER RPCs for the approval lifecycle.
+-- either side. Direct UPDATE of approval columns, status, and
+-- pause_reason_last_transition is blocked by column-level grants (42501) for
+-- all authenticated callers; Cards 20–23 supply SECURITY DEFINER RPCs for the
+-- approval lifecycle. Quantity changes go through replace_trade_route;
+-- quantity_per_transition lives on trade_route_legs (SELECT-only grant).
 --
 -- UUID ranges (all numeric/hex, unique to this file):
 --   c1xxxxxx = users          c2xxxxxx = worlds
 --   c3xxxxxx = nations        c4xxxxxx = settlements
 --   c5xxxxxx = resources      c6xxxxxx = citizens
---   c7xxxxxx = trade_routes
+--   c7xxxxxx = trade_routes   c8xxxxxx = trade_route_legs
 begin;
 
 select
-  plan (13);
+  plan (15);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -268,6 +270,25 @@ values
     'pending'
   );
 
+-- A single leg for the visible route — used by the quantity_per_transition
+-- column-grant tests below.
+insert into
+  public.trade_route_legs (
+    id,
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'c8000000-0000-0000-0000-000000000001',
+    'c7000000-0000-0000-0000-000000000001',
+    'send',
+    'c5000000-0000-0000-0000-000000000001',
+    50
+  );
+
 -- ===========================================================================
 -- ANONYMOUS: cannot read trade_routes
 -- ===========================================================================
@@ -417,13 +438,27 @@ select
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     update public.trade_routes
     set pause_reason_last_transition = 'stockpile_empty'
     where id = 'c7000000-0000-0000-0000-000000000010'
   $test$,
-    'world admin can update pause_reason_last_transition'
+    '42501',
+    null,
+    'world admin cannot directly update pause_reason_last_transition (simulation-only field)'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.trade_route_legs
+    set quantity_per_transition = 9999
+    where id = 'c8000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'world admin cannot directly update quantity_per_transition on trade_route_legs'
   );
 
 reset role;
@@ -488,6 +523,18 @@ select
     '42501',
     null,
     'origin nation manager cannot directly update status'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.trade_route_legs
+    set quantity_per_transition = 9999
+    where id = 'c8000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'origin nation manager cannot directly update quantity_per_transition on trade_route_legs'
   );
 
 reset role;
