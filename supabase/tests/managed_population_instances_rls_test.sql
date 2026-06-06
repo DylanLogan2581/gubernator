@@ -4,7 +4,7 @@
 begin;
 
 select
-  plan (15);
+  plan (22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -209,7 +209,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -240,7 +240,8 @@ values
     'f4000000-0000-0000-0000-000000000001'
   );
 
--- Seed one instance as postgres so read tests have a visible row.
+-- Seed one instance as postgres so read and denial tests have a visible row.
+-- configured_cull_quantity=20 is referenced in the manager update no-op tests.
 insert into
   public.managed_population_instances (
     id,
@@ -263,7 +264,7 @@ values
   );
 
 -- ===========================================================================
--- ANONYMOUS: cannot read managed_population_instances
+-- 1. ANONYMOUS: cannot read managed_population_instances
 -- ===========================================================================
 set
   local role anon;
@@ -286,7 +287,7 @@ select
 reset role;
 
 -- ===========================================================================
--- OUTSIDER: cannot read instances in an inaccessible private world
+-- 2. OUTSIDER: cannot read instances in an inaccessible private world
 -- ===========================================================================
 set
   local role authenticated;
@@ -312,7 +313,7 @@ select
 reset role;
 
 -- ===========================================================================
--- WORLD OWNER: can read instances in their world
+-- 3. WORLD OWNER: can read instances in their world
 -- ===========================================================================
 set
   local role authenticated;
@@ -336,7 +337,7 @@ select
 reset role;
 
 -- ===========================================================================
--- WORLD ADMIN: can insert, update, and delete (including extinct status)
+-- 4-7. WORLD ADMIN: can insert, update, delete, and insert with extinct status
 -- ===========================================================================
 set
   local role authenticated;
@@ -403,7 +404,7 @@ select
 reset role;
 
 -- ===========================================================================
--- SUPER ADMIN: can insert instances in any world
+-- 8-10. SUPER ADMIN: can insert, update, and delete in any world
 -- ===========================================================================
 set
   local role authenticated;
@@ -429,10 +430,29 @@ select
     'super admin can insert a managed_population_instance'
   );
 
+select
+  lives_ok (
+    $test$
+    update public.managed_population_instances
+    set configured_cull_quantity = 50
+    where id = 'f7000000-0000-0000-0000-000000000012'
+  $test$,
+    'super admin can update a managed_population_instance'
+  );
+
+select
+  lives_ok (
+    $test$
+    delete from public.managed_population_instances
+    where id = 'f7000000-0000-0000-0000-000000000012'
+  $test$,
+    'super admin can delete a managed_population_instance'
+  );
+
 reset role;
 
 -- ===========================================================================
--- NATION MANAGER: can insert with status='active'
+-- 11-13. NATION MANAGER: cannot insert, update, or delete via table API
 -- ===========================================================================
 set
   local role authenticated;
@@ -441,7 +461,7 @@ set
   local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000005","role":"authenticated"}';
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.managed_population_instances (
       id, settlement_id, managed_population_type_id,
@@ -455,13 +475,55 @@ select
       75, 15, 'active'
     )
   $test$,
-    'nation manager can insert a managed_population_instance with status=active'
+    '42501',
+    null,
+    'nation manager cannot insert a managed_population_instance via table API'
+  );
+
+-- Attempt direct UPDATE (no UPDATE policy for manager → silently 0 rows).
+-- Verify the seeded row is unchanged (configured_cull_quantity remains 20).
+update public.managed_population_instances
+set
+  configured_cull_quantity = 99
+where
+  id = 'f7000000-0000-0000-0000-000000000001';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.managed_population_instances
+      where
+        id = 'f7000000-0000-0000-0000-000000000001'
+        and configured_cull_quantity = 20
+    ),
+    'nation manager direct UPDATE via table API is a no-op (RLS)'
+  );
+
+-- Attempt direct DELETE (no DELETE policy for manager → silently 0 rows).
+delete from public.managed_population_instances
+where
+  id = 'f7000000-0000-0000-0000-000000000001';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.managed_population_instances
+      where
+        id = 'f7000000-0000-0000-0000-000000000001'
+    ),
+    'nation manager direct DELETE via table API is a no-op (RLS)'
   );
 
 reset role;
 
 -- ===========================================================================
--- SETTLEMENT MANAGER: can insert with status='active' and update cull quantity
+-- 14-16. SETTLEMENT MANAGER: cannot insert, update, or delete via table API
 -- ===========================================================================
 set
   local role authenticated;
@@ -470,7 +532,7 @@ set
   local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000006","role":"authenticated"}';
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.managed_population_instances (
       id, settlement_id, managed_population_type_id,
@@ -484,23 +546,55 @@ select
       60, 10, 'active'
     )
   $test$,
-    'settlement manager can insert a managed_population_instance with status=active'
+    '42501',
+    null,
+    'settlement manager cannot insert a managed_population_instance via table API'
   );
 
+-- Attempt direct UPDATE (no UPDATE policy for manager → silently 0 rows).
+-- Verify the seeded row is unchanged (configured_cull_quantity remains 20).
+update public.managed_population_instances
+set
+  configured_cull_quantity = 50
+where
+  id = 'f7000000-0000-0000-0000-000000000001';
+
 select
-  lives_ok (
-    $test$
-    update public.managed_population_instances
-    set configured_cull_quantity = 5
-    where id = 'f7000000-0000-0000-0000-000000000014'
-  $test$,
-    'settlement manager can update configured_cull_quantity'
+  ok (
+    exists (
+      select
+        1
+      from
+        public.managed_population_instances
+      where
+        id = 'f7000000-0000-0000-0000-000000000001'
+        and configured_cull_quantity = 20
+    ),
+    'settlement manager direct UPDATE via table API is a no-op (RLS)'
+  );
+
+-- Attempt direct DELETE (no DELETE policy for manager → silently 0 rows).
+delete from public.managed_population_instances
+where
+  id = 'f7000000-0000-0000-0000-000000000001';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.managed_population_instances
+      where
+        id = 'f7000000-0000-0000-0000-000000000001'
+    ),
+    'settlement manager direct DELETE via table API is a no-op (RLS)'
   );
 
 reset role;
 
 -- ===========================================================================
--- MANAGER: cannot insert with status='extinct'
+-- 17. MANAGER: cannot insert with any status (42501 for both active and extinct)
 -- ===========================================================================
 set
   local role authenticated;
@@ -530,7 +624,48 @@ select
 reset role;
 
 -- ===========================================================================
--- CROSS-WORLD: type from outsider world rejected by same-world trigger
+-- 18-19. set_configured_cull_quantity RPC continues to work for managers
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000005","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.set_configured_cull_quantity(
+      'f7000000-0000-0000-0000-000000000001',
+      10
+    )
+  $test$,
+    'nation manager can set configured_cull_quantity via RPC'
+  );
+
+reset role;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.set_configured_cull_quantity(
+      'f7000000-0000-0000-0000-000000000001',
+      5
+    )
+  $test$,
+    'settlement manager can set configured_cull_quantity via RPC'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- 20. CROSS-WORLD: type from outsider world rejected by same-world trigger
 -- ===========================================================================
 -- Run as postgres to isolate the trigger (not RLS).
 select
@@ -553,7 +688,7 @@ select
   );
 
 -- ===========================================================================
--- CONSTRAINT: current_count = -1 is rejected
+-- 21. CONSTRAINT: current_count = -1 is rejected
 -- ===========================================================================
 select
   throws_ok (
@@ -575,7 +710,7 @@ select
   );
 
 -- ===========================================================================
--- CONSTRAINT DROPPED: configured_cull_quantity > current_count is now allowed
+-- 22. CONSTRAINT DROPPED: configured_cull_quantity > current_count is now allowed
 -- at the table level; enforcement is via set_configured_cull_quantity RPC and
 -- client-side validation only (constraint dropped in 20260602000005).
 -- ===========================================================================
