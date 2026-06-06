@@ -87,19 +87,17 @@ where
   id = '11000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '12000000-0000-0000-0000-000000000001',
     'CP Private World',
-    '11000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     '12000000-0000-0000-0000-000000000002',
     'CP Outsider World',
-    '11000000-0000-0000-0000-000000000003',
     'private',
     'active'
   );
@@ -183,7 +181,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

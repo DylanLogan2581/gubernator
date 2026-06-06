@@ -53,19 +53,11 @@ where
 --   World 8: dead-partner guard (raises P0001)
 --   World 9: non-existent citizen death guard (raises P0001)
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'a9200000-0000-0000-0000-000000000001',
     'ATTCP Birth World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -73,7 +65,6 @@ values
   (
     'a9200000-0000-0000-0000-000000000002',
     'ATTCP Death World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -81,7 +72,6 @@ values
   (
     'a9200000-0000-0000-0000-000000000003',
     'ATTCP PC Death World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -89,7 +79,6 @@ values
   (
     'a9200000-0000-0000-0000-000000000004',
     'ATTCP Assignment Clear World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -97,7 +86,6 @@ values
   (
     'a9200000-0000-0000-0000-000000000005',
     'ATTCP Partnership Form World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -105,7 +93,6 @@ values
   (
     'a9200000-0000-0000-0000-000000000006',
     'ATTCP Partnership Widow World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -113,7 +100,6 @@ values
   (
     'a9200000-0000-0000-0000-000000000007',
     'ATTCP Backfill World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -121,7 +107,6 @@ values
   (
     'a9200000-0000-0000-0000-000000000008',
     'ATTCP Dead Partner World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -129,7 +114,6 @@ values
   (
     'a9200000-0000-0000-0000-000000000009',
     'ATTCP Ghost Death World',
-    'a9100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -242,7 +226,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values
@@ -332,7 +316,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )

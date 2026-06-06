@@ -50,6 +50,7 @@ describe("WorldShellPage", () => {
   it("renders planning turn and full fantasy date for authorized world context", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000101" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -57,7 +58,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 7,
             id: "00000000-0000-0000-0000-000000000101",
             name: "Eastern Marches",
-            owner_id: "user-1",
             visibility: "private",
           }),
         ],
@@ -110,7 +110,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 3,
             id: "00000000-0000-0000-0000-000000000202",
             name: "Archived Realm",
-            owner_id: "user-1",
             status: "archived",
           }),
         ],
@@ -141,7 +140,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 2,
             id: "00000000-0000-0000-0000-000000000303",
             name: "Broken Calendar Realm",
-            owner_id: "user-1",
           }),
         ],
       }),
@@ -185,7 +183,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 1,
             id: "00000000-0000-0000-0000-000000000505",
             name: "Test World",
-            owner_id: "user-1",
           }),
         ],
       }),
@@ -217,7 +214,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 1,
             id: "00000000-0000-0000-0000-000000000707",
             name: "Panel-Free World",
-            owner_id: "user-1",
           }),
         ],
       }),
@@ -242,7 +238,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 1,
             id: "00000000-0000-0000-0000-000000000606",
             name: "Admin World",
-            owner_id: "user-1",
           }),
         ],
       }),
@@ -266,7 +261,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 1,
             id: "00000000-0000-0000-0000-000000000801",
             name: "Navigation World",
-            owner_id: "user-1",
           }),
         ],
         nationRows: [
@@ -304,6 +298,7 @@ describe("WorldShellPage", () => {
   it("renders the Configuration card for world admins", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000901" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
@@ -311,7 +306,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 1,
             id: "00000000-0000-0000-0000-000000000901",
             name: "Admin World",
-            owner_id: "user-1",
           }),
         ],
       }),
@@ -335,7 +329,6 @@ describe("WorldShellPage", () => {
             current_turn_number: 1,
             id: "00000000-0000-0000-0000-000000000902",
             name: "Non-Admin World",
-            owner_id: "different-user",
             visibility: "public",
           }),
         ],
@@ -454,7 +447,6 @@ type TestWorldRow = {
   readonly id: string;
   readonly incest_prevention_depth: number;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -505,7 +497,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     id: "00000000-0000-0000-0000-000000000001",
     incest_prevention_depth: 4,
     name: "World",
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",

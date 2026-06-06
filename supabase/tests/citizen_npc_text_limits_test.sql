@@ -31,12 +31,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f8000000-0000-0000-0000-000000000001',
     'Citizen Text Limits World',
-    'f7000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

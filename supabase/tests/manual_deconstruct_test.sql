@@ -68,12 +68,11 @@ where
   id = 'aa100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'aa200000-0000-0000-0000-000000000001',
     'MDT World',
-    'aa100000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -110,7 +109,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -377,7 +376,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 select

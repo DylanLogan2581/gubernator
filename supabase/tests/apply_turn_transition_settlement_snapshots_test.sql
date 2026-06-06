@@ -44,19 +44,11 @@ where
 --   World 2 (turn 5): two-settlement count test
 --   World 3 (turn 7): idempotency / ON CONFLICT test
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'c3200000-0000-0000-0000-000000000001',
     'ATTSS Single Settlement World',
-    'c3100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -64,7 +56,6 @@ values
   (
     'c3200000-0000-0000-0000-000000000002',
     'ATTSS Multi Settlement World',
-    'c3100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -72,7 +63,6 @@ values
   (
     'c3200000-0000-0000-0000-000000000003',
     'ATTSS Idempotency World',
-    'c3100000-0000-0000-0000-000000000001',
     7,
     'private',
     'active'

@@ -52,7 +52,7 @@ describe("WorldNpcFlavorConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -86,7 +86,7 @@ describe("WorldNpcFlavorConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -285,7 +285,6 @@ type TestWorldRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly npc_flavor_config_json: WorldNpcFlavorConfig;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -295,7 +294,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     archived_at: null,
     id: WORLD_ID,
     npc_flavor_config_json: createNpcFlavorConfig(),
-    owner_id: "user-1",
     status: "active",
     visibility: "private",
     ...overrides,

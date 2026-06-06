@@ -34,14 +34,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'ab100000-0000-0000-0000-000000000001',
     'Smoke Test World',
-    'ab000000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'ab100000-0000-0000-0000-000000000001',
+    'ab000000-0000-0000-0000-000000000001'
   );
 
 -- Resources: one active (soft_delete → restore), one pre-trashed (hard_delete).

@@ -61,21 +61,31 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'fc200000-0000-0000-0000-000000000001',
     'PTR World',
-    'fc100000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'fc200000-0000-0000-0000-000000000002',
     'PTR World 2',
-    'fc100000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'fc200000-0000-0000-0000-000000000001',
+    'fc100000-0000-0000-0000-000000000001'
+  ),
+  (
+    'fc200000-0000-0000-0000-000000000002',
+    'fc100000-0000-0000-0000-000000000001'
   );
 
 -- Nation A and Nation B in World 1; Nation B has no managers (fallback target)
@@ -153,7 +163,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

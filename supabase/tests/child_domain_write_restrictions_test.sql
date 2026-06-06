@@ -55,37 +55,27 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '81000000-0000-0000-0000-000000000001',
     'Child Domain World',
-    '80000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     '81000000-0000-0000-0000-000000000002',
     'Child Domain Other World',
-    '80000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    visibility,
-    status,
-    archived_at
-  )
+  public.worlds (id, name, visibility, status, archived_at)
 values
   (
     '81000000-0000-0000-0000-000000000003',
     'Child Domain Archived World',
-    '80000000-0000-0000-0000-000000000001',
     'private',
     'archived',
     now()

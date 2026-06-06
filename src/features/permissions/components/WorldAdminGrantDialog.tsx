@@ -127,7 +127,6 @@ export function WorldAdminGrantDialog({
               <p className="text-sm text-muted-foreground">No worlds found.</p>
             )}
             {worldsQuery.data.map((world) => {
-              const isOwner = world.owner_id === targetUser.id;
               const isAdmin = adminWorldIds.has(world.id);
               const isPending = pendingWorldIds.has(world.id);
 
@@ -138,15 +137,10 @@ export function WorldAdminGrantDialog({
                 >
                   <span className="text-sm font-medium">{world.name}</span>
                   <div className="flex items-center gap-2">
-                    {isOwner && (
-                      <span className="text-xs text-muted-foreground">
-                        Owner
-                      </span>
-                    )}
                     <input
                       type="checkbox"
                       checked={isAdmin}
-                      disabled={isPending || isOwner}
+                      disabled={isPending}
                       onChange={() => {
                         handleToggle(world.id, isAdmin);
                       }}

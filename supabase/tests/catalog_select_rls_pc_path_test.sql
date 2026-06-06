@@ -73,12 +73,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'd5100000-0000-0000-0000-000000000001',
     'Catalog PC Test Private World',
-    'd5000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

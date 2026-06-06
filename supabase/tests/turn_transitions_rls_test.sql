@@ -81,19 +81,11 @@ where
   id = '81000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     '82000000-0000-0000-0000-000000000001',
     'Turn Transitions Private World',
-    '81000000-0000-0000-0000-000000000001',
     4,
     'private',
     'active'
@@ -101,7 +93,6 @@ values
   (
     '82000000-0000-0000-0000-000000000002',
     'Turn Transitions Public World',
-    '81000000-0000-0000-0000-000000000001',
     2,
     'public',
     'active'
@@ -109,7 +100,6 @@ values
   (
     '82000000-0000-0000-0000-000000000003',
     'Turn Transitions Outsider World',
-    '81000000-0000-0000-0000-000000000003',
     6,
     'private',
     'active'
@@ -147,7 +137,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

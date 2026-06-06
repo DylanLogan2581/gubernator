@@ -74,12 +74,11 @@ where
 
 -- Create a test world owned by sa_user1.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'bb100000-0000-0000-0000-000000000001',
     'Test World SA',
-    'bb000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

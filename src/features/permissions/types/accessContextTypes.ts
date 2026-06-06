@@ -1,6 +1,5 @@
 export type WorldAccessTarget = {
   readonly id: string;
-  readonly ownerId?: string;
   readonly visibility?: string;
 };
 

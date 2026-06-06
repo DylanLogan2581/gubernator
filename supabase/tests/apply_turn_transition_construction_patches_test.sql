@@ -49,19 +49,11 @@ where
 --   World 5: multi-project batch
 --   World 6: building recovery (suspended → active)
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'a6200000-0000-0000-0000-000000000001',
     'ATTCP Project Advance World',
-    'a6100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -69,7 +61,6 @@ values
   (
     'a6200000-0000-0000-0000-000000000002',
     'ATTCP Project Complete World',
-    'a6100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -77,7 +68,6 @@ values
   (
     'a6200000-0000-0000-0000-000000000003',
     'ATTCP Building Suspend World',
-    'a6100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -85,7 +75,6 @@ values
   (
     'a6200000-0000-0000-0000-000000000004',
     'ATTCP Building Autodeconstruct World',
-    'a6100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -93,7 +82,6 @@ values
   (
     'a6200000-0000-0000-0000-000000000005',
     'ATTCP Multi Batch World',
-    'a6100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -101,7 +89,6 @@ values
   (
     'a6200000-0000-0000-0000-000000000006',
     'ATTCP Building Recovery World',
-    'a6100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -109,7 +96,6 @@ values
   (
     'a6200000-0000-0000-0000-000000000007',
     'ATTCP Assignment Clear World',
-    'a6100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -475,7 +461,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values

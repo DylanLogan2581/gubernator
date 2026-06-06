@@ -45,14 +45,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'fb200000-0000-0000-0000-000000000001',
     'RMPI World',
-    'fb100000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'fb200000-0000-0000-0000-000000000001',
+    'fb100000-0000-0000-0000-000000000001'
   );
 
 insert into

@@ -33,12 +33,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'ee100000-0000-0000-0000-000000000001',
     'UA Test World',
-    'ee000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

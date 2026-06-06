@@ -90,26 +90,23 @@ where
   id = '71000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '72000000-0000-0000-0000-000000000001',
     'Settlements Private World',
-    '71000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     '72000000-0000-0000-0000-000000000002',
     'Settlements Public World',
-    '71000000-0000-0000-0000-000000000001',
     'public',
     'active'
   ),
   (
     '72000000-0000-0000-0000-000000000003',
     'Settlements Outsider World',
-    '71000000-0000-0000-0000-000000000003',
     'private',
     'active'
   );
@@ -117,6 +114,10 @@ values
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    '72000000-0000-0000-0000-000000000001',
+    '71000000-0000-0000-0000-000000000001'
+  ),
   (
     '72000000-0000-0000-0000-000000000001',
     '71000000-0000-0000-0000-000000000002'
@@ -189,7 +190,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

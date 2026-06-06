@@ -61,12 +61,11 @@ where
   id = 'fe100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'fe200000-0000-0000-0000-000000000001',
     'FEPTA World',
-    'fe100000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -317,7 +316,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

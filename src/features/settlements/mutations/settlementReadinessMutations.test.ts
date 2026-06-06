@@ -49,7 +49,7 @@ describe("setSettlementReadinessMutationOptions", () => {
     expect(options.mutationKey).toEqual(["settlements", "set-readiness"]);
     expect(clientFixture.from).toHaveBeenCalledWith("settlements");
     expect(clientFixture.readSelect).toHaveBeenCalledWith(
-      "id,nations!inner(world_id,worlds!inner(archived_at,id,owner_id,status,visibility))",
+      "id,nations!inner(world_id,worlds!inner(archived_at,id,status,visibility))",
     );
     expect(clientFixture.readEqId).toHaveBeenCalledWith("id", "settlement-1");
     expect(clientFixture.readEqWorldId).toHaveBeenCalledWith(
@@ -286,7 +286,6 @@ describe("setSettlementAutoReadyMutationOptions", () => {
     const clientFixture = createClient({
       readResult: {
         data: createAccessRow({
-          owner_id: "user-2",
           visibility: "public",
         }),
         error: null,
@@ -384,7 +383,6 @@ type SettlementReadinessAccessRow = {
 type SettlementReadinessWorldAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -457,7 +455,6 @@ function createAccessRow(
       worlds: {
         archived_at: null,
         id: "world-1",
-        owner_id: "user-1",
         status: "active",
         visibility: "private",
         ...worldOverrides,
@@ -470,7 +467,7 @@ function createAdminAccessContext(): WorldPermissionContext {
   return createAccessContext({
     isSuperAdmin: false,
     userId: "user-1",
-    worldAdminWorldIds: [],
+    worldAdminWorldIds: ["world-1"],
   });
 }
 

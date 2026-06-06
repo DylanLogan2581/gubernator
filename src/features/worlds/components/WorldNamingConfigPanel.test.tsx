@@ -52,7 +52,7 @@ describe("WorldNamingConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -86,7 +86,7 @@ describe("WorldNamingConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -270,7 +270,7 @@ describe("WorldNamingConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -440,7 +440,6 @@ type TestWorldRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly naming_config_json: WorldNamingConfig;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -450,7 +449,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     archived_at: null,
     id: WORLD_ID,
     naming_config_json: createNamingConfig(),
-    owner_id: "user-1",
     status: "active",
     visibility: "private",
     ...overrides,

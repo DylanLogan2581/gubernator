@@ -45,7 +45,6 @@ type SettlementReadinessAccessRow = {
 type SettlementReadinessWorldAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -89,7 +88,7 @@ export type SettlementAutoReadyMutationResult = {
 };
 
 const SETTLEMENT_READINESS_ACCESS_SELECT =
-  "id,nations!inner(world_id,worlds!inner(archived_at,id,owner_id,status,visibility))";
+  "id,nations!inner(world_id,worlds!inner(archived_at,id,status,visibility))";
 
 export class SetSettlementReadinessError extends Error {
   readonly code: SetSettlementReadinessErrorCode;

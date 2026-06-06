@@ -39,7 +39,7 @@ describe("saveWorldCalendarConfigMutationOptions", () => {
     ]);
     expect(clientFixture.from).toHaveBeenCalledWith("worlds");
     expect(clientFixture.select).toHaveBeenCalledWith(
-      "archived_at,id,owner_id,status,visibility",
+      "archived_at,id,status,visibility",
     );
     expect(clientFixture.readEq).toHaveBeenCalledWith("id", "world-1");
     expect(clientFixture.update).toHaveBeenCalledWith({
@@ -93,7 +93,6 @@ describe("saveWorldCalendarConfigMutationOptions", () => {
     const clientFixture = createClient({
       readResult: {
         data: createWorldRow({
-          owner_id: "user-2",
           visibility: "public",
         }),
         error: null,
@@ -225,7 +224,6 @@ type SupabaseResult<TData> =
 type WorldCalendarSaveAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -280,7 +278,6 @@ function createWorldRow(
   return {
     archived_at: null,
     id: "world-1",
-    owner_id: "user-1",
     status: "active",
     visibility: "private",
     ...overrides,
@@ -291,7 +288,7 @@ function createAdminAccessContext(): WorldPermissionContext {
   return createAccessContext({
     isSuperAdmin: false,
     userId: "user-1",
-    worldAdminWorldIds: [],
+    worldAdminWorldIds: ["world-1"],
   });
 }
 

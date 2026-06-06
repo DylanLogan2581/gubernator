@@ -78,12 +78,11 @@ where
   id = 'c1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'c2000000-0000-0000-0000-000000000001',
     'WA Test World',
-    'c1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

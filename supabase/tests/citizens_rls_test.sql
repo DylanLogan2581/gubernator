@@ -111,7 +111,7 @@ where
 --          visibility paths can be exercised without also satisfying
 --          user_has_player_character_in_world for World A.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     -- World A is public so the citizens RLS subquery against settlements
@@ -120,7 +120,6 @@ values
     -- policy has no public-world visibility arm of its own, so this does not
     -- broaden citizen visibility for unrelated users.
     'c2000000-0000-0000-0000-000000000001',
-    'Citizens World A',
     'c1000000-0000-0000-0000-000000000001',
     'public',
     'active'
@@ -128,14 +127,12 @@ values
   (
     'c2000000-0000-0000-0000-000000000002',
     'Citizens World B',
-    'c1000000-0000-0000-0000-000000000006',
     'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000003',
     'Citizens World C',
-    'c1000000-0000-0000-0000-000000000001',
     'public',
     'active'
   );
@@ -198,7 +195,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -224,7 +221,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -250,7 +247,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -274,7 +271,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -296,7 +293,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values

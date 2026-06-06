@@ -21,7 +21,6 @@ type WorldRow = Pick<
   | "incest_prevention_depth"
   | "is_trashed"
   | "name"
-  | "owner_id"
   | "status"
   | "updated_at"
   | "visibility"
@@ -35,7 +34,6 @@ export function toAccessibleWorld(
 ): AccessibleWorld {
   const accessTarget = {
     id: world.id,
-    ownerId: world.owner_id,
     visibility: world.visibility,
   };
   const planningTurnNumber = resolvePlanningTurnNumber(
@@ -70,7 +68,6 @@ export function toAccessibleWorld(
       nextPlanningTurnNumber,
     ),
     nextTurnNumber,
-    ownerId: world.owner_id,
     planningTurnNumber,
     slug: createWorldSlug(world.name, world.id),
     status: world.status,

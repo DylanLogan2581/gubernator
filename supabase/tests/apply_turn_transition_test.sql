@@ -77,19 +77,11 @@ where
   id = 'c1100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'c1200000-0000-0000-0000-000000000001',
     'ATT Active World',
-    'c1100000-0000-0000-0000-000000000002',
     4,
     'private',
     'active'
@@ -97,7 +89,6 @@ values
   (
     'c1200000-0000-0000-0000-000000000002',
     'ATT Archived World',
-    'c1100000-0000-0000-0000-000000000002',
     2,
     'private',
     'active'
@@ -105,7 +96,6 @@ values
   (
     'c1200000-0000-0000-0000-000000000003',
     'ATT Retry World',
-    'c1100000-0000-0000-0000-000000000002',
     8,
     'private',
     'active'
@@ -151,7 +141,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

@@ -43,19 +43,17 @@ values
 -- World-alpha is owned by the alpha user; world-beta is owned by the beta user.
 -- Alpha has no admin rights in world-beta, making it the cross-world target.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '92000000-0000-0000-0000-000000000001',
     'GF Alpha World',
-    '91000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     '92000000-0000-0000-0000-000000000002',
     'GF Beta World',
-    '91000000-0000-0000-0000-000000000002',
     'private',
     'active'
   );

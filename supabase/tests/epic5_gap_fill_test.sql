@@ -107,21 +107,27 @@ values
 
 -- Worlds
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a5100000-0000-0000-0000-000000000001',
     'A5 World Alpha',
-    'a5000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'a5100000-0000-0000-0000-000000000002',
     'A5 World Beta',
-    'a5000000-0000-0000-0000-000000000002',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'a5100000-0000-0000-0000-000000000001',
+    'a5000000-0000-0000-0000-000000000001'
   );
 
 -- Nations: nation_1 and nation_2 are visible; nation_hmix and nation_hduo are
@@ -318,7 +324,7 @@ insert into
     settlement_id,
     citizen_type,
     user_id,
-    name,
+    given_name,
     status,
     role_type,
     role_nation_id,

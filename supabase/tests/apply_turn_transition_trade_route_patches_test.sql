@@ -46,19 +46,11 @@ where
 --   World 2: paused route resumes
 --   World 3: route unchanged (not included in tradeRouteOutcomes)
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'a8200000-0000-0000-0000-000000000001',
     'ATTTR Shortfall World',
-    'a8100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -66,7 +58,6 @@ values
   (
     'a8200000-0000-0000-0000-000000000002',
     'ATTTR Resume World',
-    'a8100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -74,7 +65,6 @@ values
   (
     'a8200000-0000-0000-0000-000000000003',
     'ATTTR Noop World',
-    'a8100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -165,7 +155,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values

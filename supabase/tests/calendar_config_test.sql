@@ -74,11 +74,10 @@ select
 select
   lives_ok (
     $test$
-    insert into public.worlds (id, name, owner_id, visibility, status)
+    insert into public.worlds (id, name, visibility, status)
     values (
       '52000000-0000-0000-0000-000000000001',
       'Default Calendar World',
-      '51000000-0000-0000-0000-000000000001',
       'private',
       'active'
     )
@@ -89,10 +88,9 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (name, owner_id, calendar_config_json)
+    insert into public.worlds (name, calendar_config_json)
     values (
       'Invalid Weekday World',
-      '51000000-0000-0000-0000-000000000001',
       jsonb_set(public.default_calendar_config(), '{weekdays,0,index}', '1'::jsonb)
     )
   $test$,
@@ -104,10 +102,9 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (name, owner_id, calendar_config_json)
+    insert into public.worlds (name, calendar_config_json)
     values (
       'Invalid Month World',
-      '51000000-0000-0000-0000-000000000001',
       jsonb_set(public.default_calendar_config(), '{months,0,dayCount}', '0'::jsonb)
     )
   $test$,
@@ -119,10 +116,9 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (name, owner_id, calendar_config_json)
+    insert into public.worlds (name, calendar_config_json)
     values (
       'Invalid Start Month World',
-      '51000000-0000-0000-0000-000000000001',
       jsonb_set(public.default_calendar_config(), '{startingMonthIndex}', '99'::jsonb)
     )
   $test$,
@@ -134,10 +130,9 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (name, owner_id, calendar_config_json)
+    insert into public.worlds (name, calendar_config_json)
     values (
       'Invalid Start Day World',
-      '51000000-0000-0000-0000-000000000001',
       jsonb_set(public.default_calendar_config(), '{startingDayOfMonth}', '31'::jsonb)
     )
   $test$,
@@ -149,10 +144,9 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (name, owner_id, calendar_config_json)
+    insert into public.worlds (name, calendar_config_json)
     values (
       'Invalid Template World',
-      '51000000-0000-0000-0000-000000000001',
       jsonb_set(public.default_calendar_config(), '{dateFormatTemplate}', '"Year"'::jsonb)
     )
   $test$,
@@ -164,10 +158,9 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (name, owner_id, calendar_config_json)
+    insert into public.worlds (name, calendar_config_json)
     values (
       'Invalid Template Token World',
-      '51000000-0000-0000-0000-000000000001',
       jsonb_set(public.default_calendar_config(), '{dateFormatTemplate}', '"{month} {era}"'::jsonb)
     )
   $test$,

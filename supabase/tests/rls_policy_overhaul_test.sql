@@ -75,34 +75,35 @@ where
 
 -- Private world owned by owner.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'e0000000-0000-0000-0000-000000000001',
     'Private World',
-    'a0000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'e0000000-0000-0000-0000-000000000002',
     'Public World',
-    'a0000000-0000-0000-0000-000000000001',
     'public',
     'active'
   ),
   (
     'e0000000-0000-0000-0000-000000000003',
     'Hidden World',
-    'a0000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
--- Grant world admin on private world to world admin user.
+-- Grant world admin on private world to owner and world admin user.
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    'e0000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001'
+  ),
   (
     'e0000000-0000-0000-0000-000000000001',
     'b0000000-0000-0000-0000-000000000002'

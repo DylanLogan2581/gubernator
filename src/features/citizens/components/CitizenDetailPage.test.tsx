@@ -251,7 +251,6 @@ describe("CitizenDetailPage", () => {
           name: "Brann",
           user_id: USER_ID,
         }),
-        worldOwnerId: OTHER_USER_ID,
         worldVisibility: "public",
       }),
     );
@@ -284,7 +283,6 @@ describe("CitizenDetailPage", () => {
           name: "Cael",
           user_id: null,
         }),
-        worldOwnerId: OTHER_USER_ID,
         worldVisibility: "public",
       }),
     );
@@ -318,7 +316,6 @@ describe("CitizenDetailPage", () => {
           name: "Renn",
           user_id: OTHER_USER_ID,
         }),
-        worldOwnerId: OTHER_USER_ID,
         worldVisibility: "public",
       }),
     );
@@ -355,7 +352,6 @@ describe("CitizenDetailPage", () => {
           settlement_id: null,
           user_id: null,
         }),
-        worldOwnerId: OTHER_USER_ID,
         worldVisibility: "public",
       }),
     );
@@ -838,7 +834,6 @@ function createClient({
   jobRows = [],
   usersRows = [USER_ROW],
   usersQueryFails = false,
-  worldOwnerId = USER_ID,
   worldVisibility = "private",
 }: {
   readonly adminRows: ReadonlyArray<{ readonly world_id: string }>;
@@ -848,7 +843,6 @@ function createClient({
   readonly jobRows?: readonly unknown[];
   readonly usersRows?: readonly (typeof USER_ROW)[];
   readonly usersQueryFails?: boolean;
-  readonly worldOwnerId?: string;
   readonly worldVisibility?: string;
 }): unknown {
   const worldRow = {
@@ -859,7 +853,6 @@ function createClient({
     id: WORLD_ID,
     incest_prevention_depth: 4,
     name: "Test World",
-    owner_id: worldOwnerId,
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: worldVisibility,

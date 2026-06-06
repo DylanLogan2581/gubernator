@@ -36,19 +36,17 @@ values
 -- World 1: where blueprints and tiers live.
 -- World 2: provides cross-world resources and jobs for rejection tests.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'c2000000-0000-0000-0000-000000000001',
     'BTV Main World',
-    'c1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000002',
     'BTV Other World',
-    'c1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

@@ -63,19 +63,11 @@ where
   id = 'a1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'a2000000-0000-0000-0000-000000000001',
     'Notifications Private World',
-    'a1000000-0000-0000-0000-000000000001',
     4,
     'private',
     'active'
@@ -83,7 +75,6 @@ values
   (
     'a2000000-0000-0000-0000-000000000002',
     'Notifications Outsider World',
-    'a1000000-0000-0000-0000-000000000003',
     2,
     'private',
     'active'

@@ -85,19 +85,11 @@ where
   id = 'e1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'RSnap Private World',
-    'e1000000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -105,7 +97,6 @@ values
   (
     'e2000000-0000-0000-0000-000000000002',
     'RSnap Outsider World',
-    'e1000000-0000-0000-0000-000000000003',
     1,
     'private',
     'active'
@@ -114,6 +105,10 @@ values
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    'e2000000-0000-0000-0000-000000000001',
+    'e1000000-0000-0000-0000-000000000001'
+  ),
   (
     'e2000000-0000-0000-0000-000000000001',
     'e1000000-0000-0000-0000-000000000002'
@@ -159,7 +154,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type

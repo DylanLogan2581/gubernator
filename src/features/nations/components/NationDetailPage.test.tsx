@@ -79,7 +79,8 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -100,7 +101,8 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ name: "Highmark" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -117,9 +119,7 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ name: "Highmark" })],
         session: { user: { id: "user-2" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
       }),
     );
 
@@ -145,7 +145,8 @@ describe("NationDetailPage", () => {
             nation_id: nationId,
           },
         ],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -164,9 +165,7 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-2" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
       }),
     );
 
@@ -187,7 +186,8 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -207,9 +207,7 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-2" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
       }),
     );
 
@@ -229,9 +227,7 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-3" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "private" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "private" })],
       }),
     );
 
@@ -267,7 +263,8 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -297,9 +294,7 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-2" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
       }),
     );
 
@@ -329,7 +324,8 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -372,7 +368,8 @@ describe("NationDetailPage", () => {
         respondToBilateralResult: respondToBilateral,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -421,7 +418,8 @@ describe("NationDetailPage", () => {
         respondToBilateralResult: respondToBilateral,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -457,7 +455,8 @@ describe("NationDetailPage", () => {
         relationshipsUpsertResult: upsertMock,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -499,7 +498,8 @@ describe("NationDetailPage", () => {
         relationshipsUpsertResult: upsertMock,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -545,7 +545,8 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -575,7 +576,8 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -617,7 +619,8 @@ describe("NationDetailPage", () => {
         relationshipsUpsertResult: upsertMock,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -652,7 +655,8 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ id: nationId, name: "Highmark" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -702,7 +706,8 @@ describe("NationDetailPage", () => {
         relationshipsUpsertResult: upsertMock,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -770,7 +775,6 @@ type TestWorldRow = {
   readonly current_turn_number: number;
   readonly id: string;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -917,7 +921,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     current_turn_number: 1,
     id: worldId,
     name: "World",
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "private",

@@ -845,7 +845,6 @@ type TestSettlementReadinessAccessRow = {
     readonly worlds: {
       readonly archived_at: string | null;
       readonly id: string;
-      readonly owner_id: string;
       readonly status: string;
       readonly visibility: string;
     };
@@ -1061,7 +1060,6 @@ function createAccessRow(): TestSettlementReadinessAccessRow {
       worlds: {
         archived_at: null,
         id: "world-1",
-        owner_id: "user-1",
         status: "active",
         visibility: "private",
       },
@@ -1073,7 +1071,7 @@ function createAdminAccessContext(): WorldPermissionContext {
   return createAccessContext({
     isSuperAdmin: false,
     userId: "user-1",
-    worldAdminWorldIds: [],
+    worldAdminWorldIds: ["world-1"],
   });
 }
 

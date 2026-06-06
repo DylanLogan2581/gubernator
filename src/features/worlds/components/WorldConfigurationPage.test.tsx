@@ -274,7 +274,6 @@ type TestWorldRow = {
   readonly incest_prevention_depth: number;
   readonly name: string;
   readonly npc_flavor_config_json: WorldNpcFlavorConfig;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -302,7 +301,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     incest_prevention_depth: 4,
     name: "Test World",
     npc_flavor_config_json: createNpcFlavorConfig(),
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",

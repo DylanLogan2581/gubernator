@@ -31,19 +31,11 @@ values
   );
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'b2000000-0000-0000-0000-000000000001',
     'Sim Enum Test World',
-    'b1000000-0000-0000-0000-000000000001',
     1,
     'private',
     'active'

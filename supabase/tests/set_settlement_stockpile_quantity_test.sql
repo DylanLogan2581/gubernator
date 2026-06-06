@@ -90,19 +90,17 @@ where
   id = 'd1000000-0000-0000-0000-000000000003';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'd2000000-0000-0000-0000-000000000001',
     'SSSQ Private World',
-    'd1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'd2000000-0000-0000-0000-000000000002',
     'SSSQ Other World',
-    'd1000000-0000-0000-0000-000000000007',
     'private',
     'active'
   );
@@ -177,7 +175,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

@@ -1918,7 +1918,6 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
-          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -1943,7 +1942,6 @@ export type Database = {
           name: string;
           naming_config_json?: Json;
           npc_flavor_config_json?: Json;
-          owner_id: string;
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
@@ -1968,7 +1966,6 @@ export type Database = {
           name?: string;
           naming_config_json?: Json;
           npc_flavor_config_json?: Json;
-          owner_id?: string;
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
@@ -1976,15 +1973,7 @@ export type Database = {
           visibility?: string;
           water_consumption_per_citizen?: number;
         };
-        Relationships: [
-          {
-            foreignKeyName: "worlds_owner_id_fkey";
-            columns: ["owner_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
     };
     Views: {
@@ -2449,7 +2438,6 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
-          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -2896,7 +2884,6 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
-          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -3093,7 +3080,6 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
-          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -3333,7 +3319,6 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
-          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -3525,7 +3510,6 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
-          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;

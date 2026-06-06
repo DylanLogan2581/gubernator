@@ -68,7 +68,8 @@ describe("NationListPage", () => {
       createClient({
         nationRows: [],
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
       }),
     );
 
@@ -84,7 +85,8 @@ describe("NationListPage", () => {
       createClient({
         nationRows: [],
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
       }),
     );
 
@@ -111,7 +113,8 @@ describe("NationListPage", () => {
           }),
         ],
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
       }),
     );
 
@@ -138,7 +141,8 @@ describe("NationListPage", () => {
           }),
         ],
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
       }),
     );
 
@@ -163,7 +167,8 @@ describe("NationListPage", () => {
           }),
         ],
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
       }),
     );
 
@@ -182,7 +187,8 @@ describe("NationListPage", () => {
       createClient({
         nationRows: [],
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
       }),
     );
 
@@ -201,7 +207,6 @@ describe("NationListPage", () => {
         worldRows: [
           createWorldRow({
             id: worldId,
-            owner_id: "user-1",
             visibility: "public",
           }),
         ],
@@ -223,7 +228,8 @@ describe("NationListPage", () => {
         },
         nationRows: [],
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
       }),
     );
 
@@ -261,7 +267,8 @@ describe("NationListPage", () => {
         },
         nationRows: [],
         session: { user: { id: "user-1" } },
-        worldRows: [createWorldRow({ id: worldId, owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
       }),
     );
 
@@ -335,7 +342,6 @@ type TestWorldRow = {
   readonly current_turn_number: number;
   readonly id: string;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -420,7 +426,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     current_turn_number: 1,
     id: worldId,
     name: "World",
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "private",

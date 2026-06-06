@@ -56,33 +56,40 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'ec573100-0000-0000-0000-000000000001',
     'EC573 Active World',
-    'ec573000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    visibility,
-    status,
-    archived_at
-  )
+  public.world_admins (world_id, user_id)
+values
+  (
+    'ec573100-0000-0000-0000-000000000001',
+    'ec573000-0000-0000-0000-000000000001'
+  );
+
+insert into
+  public.worlds (id, name, visibility, status, archived_at)
 values
   (
     'ec573100-0000-0000-0000-000000000002',
     'EC573 Archived World',
-    'ec573000-0000-0000-0000-000000000001',
     'private',
     'archived',
     now()
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'ec573100-0000-0000-0000-000000000002',
+    'ec573000-0000-0000-0000-000000000001'
   );
 
 insert into

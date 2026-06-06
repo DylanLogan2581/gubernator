@@ -254,7 +254,6 @@ function createClient({
     data: { id: SETTLEMENT_ID, nation_id: NATION_ID },
     error: null,
   },
-  worldOwnerId = USER_ID,
   worldVisibility = "private",
 }: {
   readonly adminRows?: ReadonlyArray<{ readonly world_id: string }>;
@@ -268,7 +267,6 @@ function createClient({
     readonly data: unknown;
     readonly error: unknown;
   };
-  readonly worldOwnerId?: string;
   readonly worldVisibility?: string;
 } = {}): unknown {
   const worldRow = {
@@ -279,7 +277,6 @@ function createClient({
     id: WORLD_ID,
     incest_prevention_depth: 4,
     name: "Test World",
-    owner_id: worldOwnerId,
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: worldVisibility,
@@ -302,7 +299,6 @@ function createClient({
       worlds: {
         archived_at: null,
         id: WORLD_ID,
-        owner_id: USER_ID,
         status: "active",
         visibility: "private",
       },
@@ -443,7 +439,7 @@ describe("SettlementDetailPage", () => {
 
   it("renders the world-unavailable state when the world cannot be accessed", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldOwnerId: "other-user", worldVisibility: "private" }),
+      createClient({ worldVisibility: "private" }),
     );
     renderPage();
     expect(await screen.findByText("World unavailable")).toBeDefined();
@@ -490,7 +486,7 @@ describe("SettlementDetailPage", () => {
 
   it("hides edit and delete controls from non-admin viewers", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldOwnerId: "other-user", worldVisibility: "public" }),
+      createClient({ worldVisibility: "public" }),
     );
     renderPage();
     await screen.findByRole("heading", { level: 1, name: "Hometown" });
@@ -626,7 +622,7 @@ describe("SettlementDetailPage", () => {
 
   it("passes canManageSettlement=true to construction and assignment panels for settlement/nation managers", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldOwnerId: "other-user", worldVisibility: "public" }),
+      createClient({ worldVisibility: "public" }),
     );
     useSettlementManageAuthorityMock.mockReturnValue({
       canManageSettlement: true,
@@ -644,7 +640,7 @@ describe("SettlementDetailPage", () => {
 
   it("passes canManageSettlement=false to construction and assignment panels for plain viewers", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldOwnerId: "other-user", worldVisibility: "public" }),
+      createClient({ worldVisibility: "public" }),
     );
     useSettlementManageAuthorityMock.mockReturnValue({
       canManageSettlement: false,

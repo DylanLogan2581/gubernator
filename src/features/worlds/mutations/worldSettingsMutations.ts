@@ -38,7 +38,6 @@ type WorldRow = {
   readonly incest_prevention_depth: number;
   readonly is_trashed: boolean;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;

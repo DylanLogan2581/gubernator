@@ -41,14 +41,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'ef100000-0000-0000-0000-000000000001',
     'EC Test World',
-    'ef000000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'ef100000-0000-0000-0000-000000000001',
+    'ef000000-0000-0000-0000-000000000001'
   );
 
 insert into

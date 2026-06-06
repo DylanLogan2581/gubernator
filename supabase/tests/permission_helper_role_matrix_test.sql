@@ -105,12 +105,11 @@ where
 -- (b1...01) so the world owner path does not accidentally satisfy a role
 -- that should otherwise fail.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'b2000000-0000-0000-0000-000000000001',
     'Matrix World W1',
-    'b1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -158,7 +157,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

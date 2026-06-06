@@ -45,19 +45,11 @@ where
 -- World 1: drift scenario — stockpile is mutated before RPC; expect P0001
 -- World 2: clean scenario — stockpile matches payload; expect success
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'f3200000-0000-0000-0000-000000000001',
     'ATTCD Drift World',
-    'f3100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -65,7 +57,6 @@ values
   (
     'f3200000-0000-0000-0000-000000000002',
     'ATTCD Clean World',
-    'f3100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'

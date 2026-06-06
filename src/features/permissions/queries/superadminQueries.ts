@@ -79,7 +79,7 @@ async function getAllWorlds(
 ): Promise<readonly SuperadminWorld[]> {
   const { data, error } = await client
     .from("worlds")
-    .select("id,name,owner_id")
+    .select("id,name")
     .eq("is_trashed", false)
     .order("name", { ascending: true });
 

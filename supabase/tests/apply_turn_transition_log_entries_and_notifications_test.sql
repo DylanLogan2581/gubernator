@@ -121,19 +121,11 @@ where
 --   World 5: retry dedup test
 --   World 6: §C32e overshoot-stamp test
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'b1200000-0000-0000-0000-000000000001',
     'ATLN World 1',
-    'b1100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -141,7 +133,6 @@ values
   (
     'b1200000-0000-0000-0000-000000000002',
     'ATLN World 2',
-    'b1100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -149,7 +140,6 @@ values
   (
     'b1200000-0000-0000-0000-000000000003',
     'ATLN World 3',
-    'b1100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -157,7 +147,6 @@ values
   (
     'b1200000-0000-0000-0000-000000000004',
     'ATLN World 4',
-    'b1100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -165,7 +154,6 @@ values
   (
     'b1200000-0000-0000-0000-000000000005',
     'ATLN World 5',
-    'b1100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -173,7 +161,6 @@ values
   (
     'b1200000-0000-0000-0000-000000000006',
     'ATLN World 6',
-    'b1100000-0000-0000-0000-000000000001',
     5,
     'private',
     'active'
@@ -264,7 +251,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -289,7 +276,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -315,7 +302,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -342,7 +329,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

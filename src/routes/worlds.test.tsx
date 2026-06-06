@@ -112,24 +112,22 @@ describe("worlds route list", () => {
   it("renders accessible worlds returned by the worlds query module", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Public World",
-            owner_id: "user-2",
             visibility: "public",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Hidden World",
-            owner_id: "user-1",
             visibility: "private",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000303",
             name: "Other Hidden World",
-            owner_id: "user-3",
             visibility: "private",
           }),
         ],
@@ -170,13 +168,11 @@ describe("worlds route list", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Suspended Owner World",
-            owner_id: "user-1",
             visibility: "private",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Public World",
-            owner_id: "user-2",
             visibility: "public",
           }),
         ],
@@ -226,12 +222,12 @@ describe("worlds route list", () => {
 
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000101" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Public World",
-            owner_id: "user-1",
             visibility: "private",
           }),
         ],
@@ -266,13 +262,13 @@ describe("world shell route", () => {
   it("renders basic world context for authorized users", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000404" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             current_turn_number: 12,
             id: "00000000-0000-0000-0000-000000000404",
             name: "Eastern Marches",
-            owner_id: "user-1",
             visibility: "private",
           }),
         ],
@@ -321,13 +317,13 @@ describe("world shell route", () => {
   it("shows read-only status messaging for archived worlds", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000505" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             archived_at: "2026-01-03T00:00:00.000Z",
             id: "00000000-0000-0000-0000-000000000505",
             name: "Archived Realm",
-            owner_id: "user-1",
             status: "archived",
           }),
         ],
@@ -355,7 +351,6 @@ describe("world shell route", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000505",
             name: "Deleted Owner World",
-            owner_id: "user-1",
             visibility: "private",
           }),
         ],
@@ -478,7 +473,6 @@ type TestWorldRow = {
   readonly id: string;
   readonly is_trashed: boolean;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -515,7 +509,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     id: "00000000-0000-0000-0000-000000000001",
     is_trashed: false,
     name: "World",
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",

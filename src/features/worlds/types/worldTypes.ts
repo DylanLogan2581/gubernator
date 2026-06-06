@@ -1,12 +1,10 @@
 export type WorldPermissionContext = {
   readonly canAccessWorld: (world: {
     readonly id: string;
-    readonly ownerId?: string;
     readonly visibility?: string;
   }) => boolean;
   readonly canAdminWorld: (world: {
     readonly id: string;
-    readonly ownerId?: string;
     readonly visibility?: string;
   }) => boolean;
   readonly isActiveUser: boolean;
@@ -33,7 +31,6 @@ export type AccessibleWorld = {
   readonly name: string;
   readonly nextInWorldDateLabel: string;
   readonly nextTurnNumber: number;
-  readonly ownerId: string;
   readonly planningTurnNumber: number;
   readonly slug: string;
   readonly status: string;

@@ -52,19 +52,11 @@ where
 --   World 4: managed population decline
 --   World 5: managed population extinction + worker unassignment
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'a7200000-0000-0000-0000-000000000001',
     'ATTDMP Extraction World',
-    'a7100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -72,7 +64,6 @@ values
   (
     'a7200000-0000-0000-0000-000000000002',
     'ATTDMP Depletion World',
-    'a7100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -80,7 +71,6 @@ values
   (
     'a7200000-0000-0000-0000-000000000003',
     'ATTDMP Growth World',
-    'a7100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -88,7 +78,6 @@ values
   (
     'a7200000-0000-0000-0000-000000000004',
     'ATTDMP Decline World',
-    'a7100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -96,7 +85,6 @@ values
   (
     'a7200000-0000-0000-0000-000000000005',
     'ATTDMP Extinction World',
-    'a7100000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -411,7 +399,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values

@@ -50,31 +50,22 @@ where
 
 -- World for trash / restore tests.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'wl200000-0000-0000-0000-000000000001',
     'WL Lifecycle World',
-    'wl100000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
 -- Pre-trashed world for hard_delete happy-path and denied tests.
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    visibility,
-    status,
-    is_trashed
-  )
+  public.worlds (id, name, visibility, status, is_trashed)
 values
   (
     'wl200000-0000-0000-0000-000000000002',
     'WL Trashed World',
-    'wl100000-0000-0000-0000-000000000001',
     'private',
     'active',
     true

@@ -65,26 +65,23 @@ where
 -- Inserting worlds fires the seed trigger, so Food and Fresh Water are
 -- created automatically for each world below.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a2000000-0000-0000-0000-000000000001',
     'Res Private World',
-    'a1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'a2000000-0000-0000-0000-000000000002',
     'Res Public World',
-    'a1000000-0000-0000-0000-000000000001',
     'public',
     'active'
   ),
   (
     'a2000000-0000-0000-0000-000000000003',
     'Res Outsider World',
-    'a1000000-0000-0000-0000-000000000003',
     'private',
     'active'
   );
@@ -92,6 +89,10 @@ values
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    'a2000000-0000-0000-0000-000000000001',
+    'a1000000-0000-0000-0000-000000000001'
+  ),
   (
     'a2000000-0000-0000-0000-000000000001',
     'a1000000-0000-0000-0000-000000000002'
@@ -433,12 +434,11 @@ select
 -- SEED TRIGGER: new world insert seeds Food and Fresh Water
 -- ===========================================================================
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a2000000-0000-0000-0000-000000000099',
     'Res Trigger Test World',
-    'a1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -513,11 +513,10 @@ set
 select
   lives_ok (
     $test$
-    insert into public.worlds (id, name, owner_id, visibility, status)
+    insert into public.worlds (id, name, visibility, status)
     values (
       'a2000000-0000-0000-0000-0000000000aa',
       'Res Non-Owner Insert World',
-      'a1000000-0000-0000-0000-000000000001',
       'private',
       'active'
     )

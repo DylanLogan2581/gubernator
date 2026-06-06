@@ -2,16 +2,16 @@
 -- Run with: npx supabase test db
 --
 -- Covers:
---   • Owner cannot mutate state-machine columns (current_turn_number, status,
---     archived_at, created_at, owner_id) through direct table updates.
---   • Owner can still mutate allowed metadata columns (name, visibility,
+--   • World admin cannot mutate state-machine columns (current_turn_number,
+--     status, archived_at, created_at) through direct table updates.
+--   • World admin can still mutate allowed metadata columns (name, visibility,
 --     calendar_config_json).
---   • Owner cannot insert worlds with state-machine columns pre-set.
---   • Owner can insert a world specifying only allowed metadata columns.
+--   • World admin cannot insert worlds with state-machine columns pre-set.
+--   • World admin can insert a world specifying only allowed metadata columns.
 begin;
 
 select
-  plan (13);
+  plan (12);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -47,18 +47,27 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '71000000-0000-0000-0000-000000000001',
     'Restricted World',
-    '70000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
+-- Give the test user explicit world admin access (mirrors what the trigger does
+-- for authenticated inserts; the fixture runs as postgres so auth.uid() is null).
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    '71000000-0000-0000-0000-000000000001',
+    '70000000-0000-0000-0000-000000000001'
+  );
+
 -- ===========================================================================
--- OWNER: state-machine columns are rejected by column-level privileges
+-- WORLD ADMIN: state-machine columns are rejected by column-level privileges
 -- ===========================================================================
 set
   local role authenticated;
@@ -82,7 +91,7 @@ select
   $test$,
     '42501',
     null,
-    'owner cannot update current_turn_number directly'
+    'world admin cannot update current_turn_number directly'
   );
 
 select
@@ -94,7 +103,7 @@ select
   $test$,
     '42501',
     null,
-    'owner cannot archive a world directly'
+    'world admin cannot archive a world directly'
   );
 
 select
@@ -106,7 +115,7 @@ select
   $test$,
     '42501',
     null,
-    'owner cannot set archived_at directly'
+    'world admin cannot set archived_at directly'
   );
 
 select
@@ -118,7 +127,7 @@ select
   $test$,
     '42501',
     null,
-    'owner cannot rewrite created_at'
+    'world admin cannot rewrite created_at'
   );
 
 select
@@ -130,23 +139,11 @@ select
   $test$,
     '42501',
     null,
-    'owner cannot rewrite updated_at directly'
-  );
-
-select
-  throws_ok (
-    $test$
-    update public.worlds
-    set owner_id = '70000000-0000-0000-0000-000000000002'
-    where id = '71000000-0000-0000-0000-000000000001'
-  $test$,
-    '42501',
-    null,
-    'owner cannot transfer ownership directly'
+    'world admin cannot rewrite updated_at directly'
   );
 
 -- ===========================================================================
--- OWNER: allowed metadata columns still work
+-- WORLD ADMIN: allowed metadata columns still work
 -- ===========================================================================
 select
   lives_ok (
@@ -155,7 +152,7 @@ select
     set name = 'Renamed Restricted World'
     where id = '71000000-0000-0000-0000-000000000001'
   $test$,
-    'owner can rename their world'
+    'world admin can rename the world'
   );
 
 select
@@ -165,7 +162,7 @@ select
     set visibility = 'public'
     where id = '71000000-0000-0000-0000-000000000001'
   $test$,
-    'owner can change world visibility'
+    'world admin can change world visibility'
   );
 
 select
@@ -175,37 +172,35 @@ select
     set calendar_config_json = public.default_calendar_config()
     where id = '71000000-0000-0000-0000-000000000001'
   $test$,
-    'owner can save calendar_config_json'
+    'world admin can save calendar_config_json'
   );
 
 -- ===========================================================================
--- OWNER: INSERT is restricted to metadata columns
+-- WORLD ADMIN: INSERT is restricted to metadata columns
 -- ===========================================================================
 select
   throws_ok (
     $test$
-    insert into public.worlds (id, name, owner_id, visibility, current_turn_number)
+    insert into public.worlds (id, name, visibility, current_turn_number)
     values (
       '71000000-0000-0000-0000-000000000002',
       'Pre-Advanced World',
-      '70000000-0000-0000-0000-000000000001',
       'private',
       5
     )
   $test$,
     '42501',
     null,
-    'owner cannot seed current_turn_number on insert'
+    'world admin cannot seed current_turn_number on insert'
   );
 
 select
   throws_ok (
     $test$
-    insert into public.worlds (id, name, owner_id, visibility, status, archived_at)
+    insert into public.worlds (id, name, visibility, status, archived_at)
     values (
       '71000000-0000-0000-0000-000000000003',
       'Pre-Archived World',
-      '70000000-0000-0000-0000-000000000001',
       'private',
       'archived',
       now()
@@ -213,21 +208,20 @@ select
   $test$,
     '42501',
     null,
-    'owner cannot create a pre-archived world'
+    'world admin cannot create a pre-archived world'
   );
 
 select
   lives_ok (
     $test$
-    insert into public.worlds (id, name, owner_id, visibility)
+    insert into public.worlds (id, name, visibility)
     values (
       '71000000-0000-0000-0000-000000000004',
       'Fresh World',
-      '70000000-0000-0000-0000-000000000001',
       'private'
     )
   $test$,
-    'owner can create a world with allowed metadata only'
+    'world admin can create a world with allowed metadata only'
   );
 
 reset role;

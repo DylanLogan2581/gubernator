@@ -1,7 +1,6 @@
 export type SuperadminWorld = {
   readonly id: string;
   readonly name: string;
-  readonly owner_id: string;
 };
 
 export type SuperadminUser = {

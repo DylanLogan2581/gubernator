@@ -34,11 +34,7 @@ export function createAccessContext({
       return false;
     }
 
-    return (
-      effectiveIsSuperAdmin ||
-      worldAdminWorldIdSet.has(world.id) ||
-      (userId !== null && world.ownerId === userId)
-    );
+    return effectiveIsSuperAdmin || worldAdminWorldIdSet.has(world.id);
   }
 
   function canAccessWorld(world: WorldAccessTarget): boolean {

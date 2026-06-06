@@ -39,14 +39,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'd2000000-0000-0000-0000-100000000001',
     'DCC World',
-    'd1000000-0000-0000-0000-100000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'd2000000-0000-0000-0000-100000000001',
+    'd1000000-0000-0000-0000-100000000001'
   );
 
 insert into

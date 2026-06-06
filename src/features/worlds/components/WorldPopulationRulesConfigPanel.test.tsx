@@ -50,7 +50,7 @@ describe("WorldPopulationRulesConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -84,7 +84,7 @@ describe("WorldPopulationRulesConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -254,7 +254,7 @@ describe("WorldPopulationRulesConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -319,7 +319,7 @@ describe("WorldPopulationRulesConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -409,7 +409,7 @@ describe("WorldPopulationRulesConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -496,7 +496,6 @@ type TestWorldRow = {
   readonly maximum_fertility_age_turns: number | null;
   readonly minimum_partnership_age_turns: number;
   readonly mourning_period_turns: number;
-  readonly owner_id: string;
   readonly partnership_seek_chance: number;
   readonly starvation_severity_multiplier: number;
   readonly status: string;
@@ -515,7 +514,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     maximum_fertility_age_turns: null,
     minimum_partnership_age_turns: 18,
     mourning_period_turns: 3,
-    owner_id: "user-1",
     partnership_seek_chance: 0.3,
     starvation_severity_multiplier: 1.0,
     status: "active",

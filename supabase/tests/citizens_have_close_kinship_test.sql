@@ -41,12 +41,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'Kinship Test World',
-    'e1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -76,7 +75,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values
@@ -113,7 +112,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     parent_a_citizen_id
   )
@@ -136,7 +135,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     parent_a_citizen_id
   )

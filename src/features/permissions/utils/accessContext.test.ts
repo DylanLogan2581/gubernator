@@ -62,24 +62,6 @@ describe("createAccessContext", () => {
     expect(context.canAccessWorld({ id: "world-2" })).toBe(false);
   });
 
-  it("treats world owners as world admins for frontend capability checks", () => {
-    const context = createAccessContext({
-      isSuperAdmin: false,
-      userId: "user-1",
-      worldAdminWorldIds: [],
-    });
-
-    expect(context.canAccessWorld({ id: "world-1", ownerId: "user-1" })).toBe(
-      true,
-    );
-    expect(context.canAdminWorld({ id: "world-1", ownerId: "user-1" })).toBe(
-      true,
-    );
-    expect(context.canAdminWorld({ id: "world-2", ownerId: "user-2" })).toBe(
-      false,
-    );
-  });
-
   it("does not grant private world capabilities to outsiders", () => {
     const context = createAccessContext({
       isSuperAdmin: false,
@@ -89,7 +71,6 @@ describe("createAccessContext", () => {
 
     const outsiderWorld = {
       id: "world-1",
-      ownerId: "user-2",
       visibility: "private",
     };
 

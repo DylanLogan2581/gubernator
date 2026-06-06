@@ -176,7 +176,6 @@ insert into
   public.worlds (
     id,
     name,
-    owner_id,
     current_turn_number,
     visibility,
     status,
@@ -186,7 +185,6 @@ values
   (
     '00000000-0000-0000-0000-000000000101',
     'Verdant Reach',
-    '00000000-0000-0000-0000-000000000001',
     0,
     'private',
     'active',
@@ -195,7 +193,6 @@ values
   (
     '00000000-0000-0000-0000-000000000102',
     'Linnford Concord',
-    '00000000-0000-0000-0000-000000000002',
     1,
     'private',
     'active',
@@ -204,7 +201,6 @@ values
   (
     '00000000-0000-0000-0000-000000000103',
     'Greyfell March',
-    '00000000-0000-0000-0000-000000000003',
     3,
     'private',
     'active',
@@ -213,7 +209,6 @@ values
   (
     '00000000-0000-0000-0000-000000000104',
     'Hollowmere Coast',
-    '00000000-0000-0000-0000-000000000002',
     0,
     'private',
     'active',
@@ -222,7 +217,6 @@ values
   (
     '00000000-0000-0000-0000-000000000105',
     'Stormhold Vale',
-    '00000000-0000-0000-0000-000000000003',
     2,
     'private',
     'active',
@@ -231,7 +225,6 @@ values
 on conflict (id) do update
 set
   name = excluded.name,
-  owner_id = excluded.owner_id,
   current_turn_number = excluded.current_turn_number,
   visibility = excluded.visibility,
   status = excluded.status,

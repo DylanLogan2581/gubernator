@@ -68,33 +68,40 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a1000000-0000-0000-0000-000000000001',
     'Role World',
-    'a0000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    visibility,
-    status,
-    archived_at
-  )
+  public.world_admins (world_id, user_id)
+values
+  (
+    'a1000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001'
+  );
+
+insert into
+  public.worlds (id, name, visibility, status, archived_at)
 values
   (
     'a1000000-0000-0000-0000-000000000002',
     'Role Archived World',
-    'a0000000-0000-0000-0000-000000000001',
     'private',
     'archived',
     now()
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'a1000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000001'
   );
 
 insert into
