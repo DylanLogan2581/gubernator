@@ -2530,6 +2530,18 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      get_citizen_admin_details: {
+        Args: { p_citizen_id: string };
+        Returns: {
+          npc_flaw: string;
+          npc_goal: string;
+          npc_secret_contradiction: string;
+          npc_trait_1: string;
+          npc_trait_2: string;
+          personality_text: string;
+          skills_text: string;
+        }[];
+      };
       get_settlement_construction_project_counts: {
         Args: { p_settlement_id: string };
         Returns: {

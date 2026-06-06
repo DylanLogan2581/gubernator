@@ -10,22 +10,26 @@ import { updateCitizenNpcFieldsMutationOptions } from "../../mutations/citizensM
 import { getCitizenMutationErrorDescription } from "./ErrorMessages";
 import { Readout } from "./Shared";
 
-import type { Citizen } from "../../types/citizenTypes";
+import type { CitizenAdminDetails } from "../../types/citizenTypes";
 
 export function CitizenNpcNotesSection({
+  adminDetails,
   canEdit,
-  citizen,
+  citizenId,
   queryClient,
+  worldId,
 }: {
+  readonly adminDetails: CitizenAdminDetails | null;
   readonly canEdit: boolean;
-  readonly citizen: Citizen;
+  readonly citizenId: string;
   readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
   const [personalityText, setPersonalityText] = useState(
-    citizen.personalityText ?? "",
+    adminDetails?.personalityText ?? "",
   );
-  const [skillsText, setSkillsText] = useState(citizen.skillsText ?? "");
+  const [skillsText, setSkillsText] = useState(adminDetails?.skillsText ?? "");
 
   const updateMutation = useMutation(
     updateCitizenNpcFieldsMutationOptions({ queryClient }),
@@ -33,8 +37,8 @@ export function CitizenNpcNotesSection({
 
   function closeEditor(): void {
     setIsEditing(false);
-    setPersonalityText(citizen.personalityText ?? "");
-    setSkillsText(citizen.skillsText ?? "");
+    setPersonalityText(adminDetails?.personalityText ?? "");
+    setSkillsText(adminDetails?.skillsText ?? "");
     updateMutation.reset();
   }
 
@@ -43,15 +47,15 @@ export function CitizenNpcNotesSection({
     updateMutation.reset();
     updateMutation.mutate(
       {
-        citizenId: citizen.id,
-        npcFlaw: citizen.npcFlaw ?? "",
-        npcGoal: citizen.npcGoal ?? "",
-        npcSecretContradiction: citizen.npcSecretContradiction ?? "",
-        npcTrait1: citizen.npcTrait1 ?? "",
-        npcTrait2: citizen.npcTrait2 ?? "",
+        citizenId,
+        npcFlaw: adminDetails?.npcFlaw ?? "",
+        npcGoal: adminDetails?.npcGoal ?? "",
+        npcSecretContradiction: adminDetails?.npcSecretContradiction ?? "",
+        npcTrait1: adminDetails?.npcTrait1 ?? "",
+        npcTrait2: adminDetails?.npcTrait2 ?? "",
         personalityText,
         skillsText,
-        worldId: citizen.worldId,
+        worldId,
       },
       {
         onError: (error) => {
@@ -87,8 +91,16 @@ export function CitizenNpcNotesSection({
           ) : null}
         </div>
         <dl className="flex flex-col gap-2">
-          <Readout label="Personality" value={citizen.personalityText} block />
-          <Readout label="Skills" value={citizen.skillsText} block />
+          <Readout
+            label="Personality"
+            value={adminDetails?.personalityText ?? null}
+            block
+          />
+          <Readout
+            label="Skills"
+            value={adminDetails?.skillsText ?? null}
+            block
+          />
         </dl>
       </section>
     );

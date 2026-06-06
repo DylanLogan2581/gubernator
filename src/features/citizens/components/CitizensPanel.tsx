@@ -368,9 +368,8 @@ function CitizensAggregateContent({
 
   return (
     <div className="grid gap-4">
-      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Stat label="Living citizens" value={aliveTotal} />
-        <Stat label="NPCs" value={stats.typeBreakdown.npc} />
         <Stat
           label="Player characters"
           value={stats.typeBreakdown.player_character}

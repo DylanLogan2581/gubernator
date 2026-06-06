@@ -46,21 +46,14 @@ type CitizenRowFixture = {
   readonly given_name: string;
   readonly id: string;
   readonly name: string;
-  readonly npc_flaw: string | null;
-  readonly npc_goal: string | null;
-  readonly npc_secret_contradiction: string | null;
-  readonly npc_trait_1: string | null;
-  readonly npc_trait_2: string | null;
   readonly parent_a_citizen_id: string | null;
   readonly parent_b_citizen_id: string | null;
-  readonly personality_text: string | null;
   readonly profile_photo_url: string | null;
   readonly role_nation_id: string | null;
   readonly role_settlement_id: string | null;
   readonly role_type: "none" | "nation_manager" | "settlement_manager";
   readonly settlement_id: string | null;
   readonly sex: string | null;
-  readonly skills_text: string | null;
   readonly status: "alive" | "dead";
   readonly surname: string | null;
   readonly updated_at: string;
@@ -423,21 +416,14 @@ function createCitizenRow(
     given_name: "Citizen",
     id: "c-1",
     name: "Citizen",
-    npc_flaw: null,
-    npc_goal: null,
-    npc_secret_contradiction: null,
-    npc_trait_1: null,
-    npc_trait_2: null,
     parent_a_citizen_id: null,
     parent_b_citizen_id: null,
-    personality_text: null,
     profile_photo_url: null,
     role_nation_id: null,
     role_settlement_id: null,
     role_type: "none",
     settlement_id: SETTLEMENT_ID,
     sex: null,
-    skills_text: null,
     status: "alive",
     surname: null,
     updated_at: "2026-05-01T00:00:00.000Z",
@@ -457,21 +443,14 @@ function toCitizen(row: CitizenRowFixture): Citizen {
     givenName: row.given_name,
     id: row.id,
     name: row.name,
-    npcFlaw: row.npc_flaw,
-    npcGoal: row.npc_goal,
-    npcSecretContradiction: row.npc_secret_contradiction,
-    npcTrait1: row.npc_trait_1,
-    npcTrait2: row.npc_trait_2,
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
-    personalityText: row.personality_text,
     profilePhotoUrl: row.profile_photo_url,
     roleNationId: row.role_nation_id,
     roleSettlementId: row.role_settlement_id,
     roleType: row.role_type,
     settlementId: row.settlement_id,
     sex: row.sex,
-    skillsText: row.skills_text,
     status: row.status,
     surname: row.surname,
     updatedAt: row.updated_at,

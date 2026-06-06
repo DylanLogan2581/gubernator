@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (46);
+  plan (55);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -415,6 +415,74 @@ select
     'world admin cannot read citizens outside administered world'
   );
 
+-- Column-level SELECT restriction: flavor columns are not readable via
+-- direct table SELECT even for world admins. Admins must use the
+-- get_citizen_admin_details RPC.
+select
+  throws_ok (
+    $test$
+    select
+      personality_text
+    from
+      public.citizens
+    where
+      id = 'c5000000-0000-0000-0000-000000000010'
+    $test$,
+    '42501',
+    null,
+    'world admin cannot select personality_text directly from the table API'
+  );
+
+select
+  throws_ok (
+    $test$
+    select
+      npc_secret_contradiction
+    from
+      public.citizens
+    where
+      id = 'c5000000-0000-0000-0000-000000000010'
+    $test$,
+    '42501',
+    null,
+    'world admin cannot select npc_secret_contradiction directly from the table API'
+  );
+
+-- Getter RPC: world admin can retrieve flavor columns for any citizen in the
+-- administered world.
+select
+  lives_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
+    $test$,
+    'world admin can call get_citizen_admin_details for a citizen in their world'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- SUPER ADMIN: getter RPC works across worlds
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000007","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000020')
+    $test$,
+    'super admin can call get_citizen_admin_details for a citizen in any world'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -430,7 +498,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -438,12 +506,12 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000010'
     ),
-    'nation manager can read NPC in a settlement within their nation'
+    'nation manager cannot read NPC in a settlement within their nation'
   );
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -451,7 +519,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000011'
     ),
-    'nation manager can read NPC in another settlement within their nation'
+    'nation manager cannot read NPC in another settlement within their nation'
   );
 
 select
@@ -480,6 +548,34 @@ select
     'nation manager cannot read NPC in another world'
   );
 
+-- Nation manager can still see player_character rows in their managed nation.
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.citizens
+      where
+        id = 'c5000000-0000-0000-0000-000000000003'
+    ),
+    'nation manager can read PC in a settlement within their nation'
+  );
+
+-- Getter RPC must be denied for non-admin callers.
+select
+  throws_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
+    $test$,
+    '42501',
+    null,
+    'nation manager cannot call get_citizen_admin_details'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -495,7 +591,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -503,7 +599,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000010'
     ),
-    'settlement manager can read NPC in their settlement'
+    'settlement manager cannot read NPC in their settlement'
   );
 
 select
@@ -532,6 +628,20 @@ select
     'settlement manager cannot read NPC in a settlement outside their nation'
   );
 
+-- Getter RPC must be denied for settlement managers.
+select
+  throws_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
+    $test$,
+    '42501',
+    null,
+    'settlement manager cannot call get_citizen_admin_details'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -554,8 +664,21 @@ select
       where
         world_id = 'c2000000-0000-0000-0000-000000000001'
     ),
-    5,
-    'PC holder can read every citizen in their world'
+    2,
+    'PC holder can read only player_character citizens in their world (NPCs hidden)'
+  );
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.citizens
+      where
+        id = 'c5000000-0000-0000-0000-000000000010'
+    ),
+    'PC holder cannot read NPC rows in their world'
   );
 
 select
@@ -569,6 +692,20 @@ select
         id = 'c5000000-0000-0000-0000-000000000020'
     ),
     'PC holder cannot read citizens in another world where they hold no PC'
+  );
+
+-- Getter RPC must be denied for PC holders.
+select
+  throws_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
+    $test$,
+    '42501',
+    null,
+    'PC holder cannot call get_citizen_admin_details'
   );
 
 reset role;

@@ -2,6 +2,8 @@ import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
 
 export const citizensQueryKeys = {
   all: authStateQueryCacheKeys.citizensAll,
+  adminDetails: (citizenId: string) =>
+    [...citizensQueryKeys.all, "admin-details", citizenId] as const,
   detail: (citizenId: string) =>
     [...citizensQueryKeys.all, "detail", citizenId] as const,
   activePartnershipForCitizen: (citizenId: string) =>

@@ -24,26 +24,29 @@ export type Citizen = {
   readonly givenName: string;
   readonly id: string;
   readonly name: string;
-  readonly npcFlaw: string | null;
-  readonly npcGoal: string | null;
-  readonly npcSecretContradiction: string | null;
-  readonly npcTrait1: string | null;
-  readonly npcTrait2: string | null;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
-  readonly personalityText: string | null;
   readonly profilePhotoUrl: string | null;
   readonly roleNationId: string | null;
   readonly roleSettlementId: string | null;
   readonly roleType: CitizenRoleType;
   readonly settlementId: string | null;
   readonly sex: string | null;
-  readonly skillsText: string | null;
   readonly status: CitizenStatus;
   readonly surname: string | null;
   readonly updatedAt: string;
   readonly userId: string | null;
   readonly worldId: string;
+};
+
+export type CitizenAdminDetails = {
+  readonly npcFlaw: string | null;
+  readonly npcGoal: string | null;
+  readonly npcSecretContradiction: string | null;
+  readonly npcTrait1: string | null;
+  readonly npcTrait2: string | null;
+  readonly personalityText: string | null;
+  readonly skillsText: string | null;
 };
 
 export type CitizenTypeBreakdown = Readonly<Record<CitizenType, number>>;

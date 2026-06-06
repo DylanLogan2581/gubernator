@@ -15,7 +15,10 @@ import {
 } from "@/features/worlds";
 import { getErrorDescription } from "@/lib/errorUtils";
 
-import { citizenByIdQueryOptions } from "../../queries/citizensQueries";
+import {
+  citizenAdminDetailsQueryOptions,
+  citizenByIdQueryOptions,
+} from "../../queries/citizensQueries";
 import { PartnershipHistoryPanel } from "../PartnershipHistoryPanel";
 
 import { CitizenAssignmentSection } from "./AssignmentSection";
@@ -29,7 +32,8 @@ import { CitizenNpcNotesSection } from "./NpcNotesSection";
 import { CitizenParentsSection } from "./ParentsSection";
 import { CitizenPlayerCharacterSection } from "./PlayerCharacterSection";
 
-import type { Citizen } from "../../types/citizenTypes";
+import type { Citizen, CitizenAdminDetails } from "../../types/citizenTypes";
+import type { QueryClient } from "@tanstack/react-query";
 import type { JSX } from "react";
 
 type CitizenDetailPageProps = {
@@ -244,19 +248,12 @@ function CitizenDetailLoaded({
       <CitizenAssignmentSection citizenId={citizen.id} />
 
       {citizen.citizenType === "npc" ? (
-        <>
-          <CitizenNpcNotesSection
-            canEdit={canEdit}
-            citizen={citizen}
-            queryClient={queryClient}
-          />
-          <CitizenNpcFlavorSection
-            canEdit={canEdit}
-            citizen={citizen}
-            queryClient={queryClient}
-            worldId={worldId}
-          />
-        </>
+        <CitizenNpcAdminSections
+          canEdit={canEdit}
+          citizenId={citizen.id}
+          queryClient={queryClient}
+          worldId={worldId}
+        />
       ) : null}
 
       {citizen.citizenType === "player_character" ? (
@@ -283,5 +280,55 @@ function CitizenDetailLoaded({
         />
       ) : null}
     </CitizenDetailFrame>
+  );
+}
+
+function CitizenNpcAdminSections({
+  canEdit,
+  citizenId,
+  queryClient,
+  worldId,
+}: {
+  readonly canEdit: boolean;
+  readonly citizenId: string;
+  readonly queryClient: QueryClient;
+  readonly worldId: string;
+}): JSX.Element {
+  const adminDetailsQuery = useQuery(
+    citizenAdminDetailsQueryOptions(citizenId),
+  );
+
+  if (adminDetailsQuery.isPending) {
+    return <LoadingState label="Loading NPC details…" />;
+  }
+
+  if (adminDetailsQuery.isError) {
+    return (
+      <ErrorState
+        title="NPC details could not be loaded"
+        description={getErrorDescription(adminDetailsQuery.error)}
+      />
+    );
+  }
+
+  const adminDetails: CitizenAdminDetails | null = adminDetailsQuery.data;
+
+  return (
+    <>
+      <CitizenNpcNotesSection
+        adminDetails={adminDetails}
+        canEdit={canEdit}
+        citizenId={citizenId}
+        queryClient={queryClient}
+        worldId={worldId}
+      />
+      <CitizenNpcFlavorSection
+        adminDetails={adminDetails}
+        canEdit={canEdit}
+        citizenId={citizenId}
+        queryClient={queryClient}
+        worldId={worldId}
+      />
+    </>
   );
 }

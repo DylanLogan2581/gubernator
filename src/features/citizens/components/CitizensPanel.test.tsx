@@ -194,18 +194,20 @@ describe("CitizensPanel", () => {
   });
 
   it("renders aggregate counts for non-admin roles without listing citizens", async () => {
+    // Non-admins receive only player_character rows from the DB after RLS
+    // restricts NPC visibility to world/super admins. The mock reflects that.
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [
           createAggregateRow({
             citizen_assignments: [{ assignment_type: "standard_job" }],
-            citizen_type: "npc",
+            citizen_type: "player_character",
             id: "c-1",
             status: "alive",
           }),
           createAggregateRow({
             citizen_assignments: [{ assignment_type: "husbandry" }],
-            citizen_type: "npc",
+            citizen_type: "player_character",
             id: "c-2",
             status: "alive",
           }),
@@ -217,7 +219,7 @@ describe("CitizensPanel", () => {
           }),
           createAggregateRow({
             citizen_assignments: null,
-            citizen_type: "npc",
+            citizen_type: "player_character",
             id: "c-4",
             status: "dead",
           }),
@@ -230,8 +232,7 @@ describe("CitizensPanel", () => {
     expect(await screen.findByText("Living citizens")).toBeDefined();
 
     expectMetric("Living citizens", "3");
-    expectMetric("NPCs", "3");
-    expectMetric("Player characters", "1");
+    expectMetric("Player characters", "4");
 
     expectBreakdownRow("Standard job", "1");
     expectBreakdownRow("Husbandry", "1");
