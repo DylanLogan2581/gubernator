@@ -1,10 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Globe2, LogIn } from "lucide-react";
+import { Globe2, LogIn, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import { currentSessionQueryOptions } from "../queries/authQueries";
+import {
+  currentAppUserQueryOptions,
+  currentSessionQueryOptions,
+} from "../queries/authQueries";
 import { SIGN_IN_DEFAULT_RETURN_PATH } from "../schemas/signInSchemas";
 
 import { SignOutControl } from "./SignOutControl";
@@ -13,6 +16,7 @@ import type { JSX } from "react";
 
 export function AuthNavigationControl(): JSX.Element | null {
   const currentSessionQuery = useQuery(currentSessionQueryOptions());
+  const currentAppUserQuery = useQuery(currentAppUserQueryOptions());
   const currentSession = currentSessionQuery.data ?? null;
 
   if (currentSessionQuery.isPending) {
@@ -30,8 +34,18 @@ export function AuthNavigationControl(): JSX.Element | null {
     );
   }
 
+  const isSuperAdmin = currentAppUserQuery.data?.is_super_admin === true;
+
   return (
     <div className="flex items-center gap-2">
+      {isSuperAdmin && (
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/superadmin">
+            <Settings aria-hidden="true" />
+            Admin
+          </Link>
+        </Button>
+      )}
       <Button asChild variant="ghost" size="sm">
         <Link to="/worlds">
           <Globe2 aria-hidden="true" />

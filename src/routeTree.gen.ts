@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorldsRouteImport } from './routes/worlds'
+import { Route as SuperadminRouteImport } from './routes/superadmin'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorldsIndexRouteImport } from './routes/worlds.index'
+import { Route as SuperadminIndexRouteImport } from './routes/superadmin.index'
 import { Route as WorldsWorldIdRouteImport } from './routes/worlds.$worldId'
 import { Route as WorldsWorldIdIndexRouteImport } from './routes/worlds.$worldId.index'
 import { Route as WorldsWorldIdNationsRouteImport } from './routes/worlds.$worldId.nations'
@@ -26,6 +28,11 @@ import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport
 const WorldsRoute = WorldsRouteImport.update({
   id: '/worlds',
   path: '/worlds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuperadminRoute = SuperadminRouteImport.update({
+  id: '/superadmin',
+  path: '/superadmin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -42,6 +49,11 @@ const WorldsIndexRoute = WorldsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => WorldsRoute,
+} as any)
+const SuperadminIndexRoute = SuperadminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SuperadminRoute,
 } as any)
 const WorldsWorldIdRoute = WorldsWorldIdRouteImport.update({
   id: '/$worldId',
@@ -98,8 +110,10 @@ const WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/superadmin': typeof SuperadminRouteWithChildren
   '/worlds': typeof WorldsRouteWithChildren
   '/worlds/$worldId': typeof WorldsWorldIdRouteWithChildren
+  '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
@@ -113,6 +127,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/superadmin': typeof SuperadminIndexRoute
   '/worlds': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
   '/worlds/$worldId': typeof WorldsWorldIdIndexRoute
@@ -125,8 +140,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/superadmin': typeof SuperadminRouteWithChildren
   '/worlds': typeof WorldsRouteWithChildren
   '/worlds/$worldId': typeof WorldsWorldIdRouteWithChildren
+  '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
@@ -142,8 +159,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/sign-in'
+    | '/superadmin'
     | '/worlds'
     | '/worlds/$worldId'
+    | '/superadmin/'
     | '/worlds/'
     | '/worlds/$worldId/configuration'
     | '/worlds/$worldId/nations'
@@ -157,6 +176,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/sign-in'
+    | '/superadmin'
     | '/worlds'
     | '/worlds/$worldId/configuration'
     | '/worlds/$worldId'
@@ -168,8 +188,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/sign-in'
+    | '/superadmin'
     | '/worlds'
     | '/worlds/$worldId'
+    | '/superadmin/'
     | '/worlds/'
     | '/worlds/$worldId/configuration'
     | '/worlds/$worldId/nations'
@@ -184,6 +206,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SignInRoute: typeof SignInRoute
+  SuperadminRoute: typeof SuperadminRouteWithChildren
   WorldsRoute: typeof WorldsRouteWithChildren
 }
 
@@ -194,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/worlds'
       fullPath: '/worlds'
       preLoaderRoute: typeof WorldsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/superadmin': {
+      id: '/superadmin'
+      path: '/superadmin'
+      fullPath: '/superadmin'
+      preLoaderRoute: typeof SuperadminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sign-in': {
@@ -216,6 +246,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/worlds/'
       preLoaderRoute: typeof WorldsIndexRouteImport
       parentRoute: typeof WorldsRoute
+    }
+    '/superadmin/': {
+      id: '/superadmin/'
+      path: '/'
+      fullPath: '/superadmin/'
+      preLoaderRoute: typeof SuperadminIndexRouteImport
+      parentRoute: typeof SuperadminRoute
     }
     '/worlds/$worldId': {
       id: '/worlds/$worldId'
@@ -283,6 +320,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SuperadminRouteChildren {
+  SuperadminIndexRoute: typeof SuperadminIndexRoute
+}
+
+const SuperadminRouteChildren: SuperadminRouteChildren = {
+  SuperadminIndexRoute: SuperadminIndexRoute,
+}
+
+const SuperadminRouteWithChildren = SuperadminRoute._addFileChildren(
+  SuperadminRouteChildren,
+)
+
 interface WorldsWorldIdNationsNationIdRouteChildren {
   WorldsWorldIdNationsNationIdIndexRoute: typeof WorldsWorldIdNationsNationIdIndexRoute
   WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
@@ -349,6 +398,7 @@ const WorldsRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SignInRoute: SignInRoute,
+  SuperadminRoute: SuperadminRouteWithChildren,
   WorldsRoute: WorldsRouteWithChildren,
 }
 export const routeTree = rootRouteImport

@@ -2545,6 +2545,10 @@ export type Database = {
           world_id: string;
         }[];
       };
+      grant_world_admin: {
+        Args: { p_user_id: string; p_world_id: string };
+        Returns: undefined;
+      };
       hard_delete_building_blueprint: {
         Args: { p_blueprint_id: string; p_world_id: string };
         Returns: {
@@ -3126,6 +3130,10 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      revoke_world_admin: {
+        Args: { p_user_id: string; p_world_id: string };
+        Returns: undefined;
+      };
       set_bulk_construction_assignment: {
         Args: { p_construction_project_id: string; p_target_count: number };
         Returns: {
@@ -3275,6 +3283,10 @@ export type Database = {
           resource_id: string;
           settlement_id: string;
         }[];
+      };
+      set_user_super_admin: {
+        Args: { p_user_id: string; p_value: boolean };
+        Returns: undefined;
       };
       set_world_current_turn_number: {
         Args: { p_turn_number: number; p_world_id: string };
