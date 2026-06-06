@@ -30,6 +30,7 @@ type EndTurnTransitionMutationOptions = UseMutationOptions<
 type EndTurnTransitionExpectedErrorCode =
   | "end_turn_archived_world"
   | "end_turn_running_transition"
+  | "end_turn_session_expired"
   | "end_turn_stale_turn"
   | "end_turn_transition_failed"
   | "end_turn_unauthorized";
@@ -48,6 +49,7 @@ type EndTurnTransitionFunctionErrorCode =
   | "invalid_request"
   | "method_not_allowed"
   | "not_implemented"
+  | "session_expired"
   | "unauthenticated"
   | "unauthorized";
 
@@ -277,6 +279,8 @@ function normalizeEndTurnTransitionErrorCode(
     case "end_turn_stale_expected_turn":
     case "end_turn_state_drifted":
       return "end_turn_stale_turn";
+    case "session_expired":
+      return "end_turn_session_expired";
     case "auth_context_unavailable":
     case "unauthenticated":
     case "unauthorized":

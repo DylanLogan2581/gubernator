@@ -17,6 +17,7 @@ export type EndTurnSimulationErrorCode =
   | "invalid_request"
   | "method_not_allowed"
   | "not_implemented"
+  | "session_expired"
   | "unauthorized"
   | "unauthenticated";
 

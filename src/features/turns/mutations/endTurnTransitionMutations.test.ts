@@ -157,6 +157,22 @@ describe("endTurnTransitionMutationOptions", () => {
     });
   });
 
+  it("normalizes session_expired errors", async () => {
+    const mutationPromise = executeMutationWithResult({
+      data: createErrorResponse({
+        code: "session_expired",
+        message: "Please sign in again.",
+      }),
+      error: null,
+    });
+
+    await expect(mutationPromise).rejects.toMatchObject({
+      code: "end_turn_session_expired",
+      message: "Please sign in again.",
+      worldId: "world-1",
+    });
+  });
+
   it("normalizes unauthenticated errors to unauthorized", async () => {
     const mutationPromise = executeMutationWithResult({
       data: createErrorResponse({

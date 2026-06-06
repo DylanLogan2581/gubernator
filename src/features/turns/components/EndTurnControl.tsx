@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { StepForward } from "lucide-react";
 import { useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { normalizeSignInReturnPath } from "@/features/auth";
 import {
   formatSettlementReadinessPercentage,
   settlementReadinessSummaryQueryOptions,
@@ -12,7 +14,10 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import { endTurnTransitionMutationOptions } from "../mutations/endTurnTransitionMutations";
+import {
+  endTurnTransitionMutationOptions,
+  isEndTurnTransitionError,
+} from "../mutations/endTurnTransitionMutations";
 import {
   getControlDescription,
   getErrorDescription as getEndTurnMutationErrorDescription,
@@ -74,6 +79,8 @@ function EndTurnControlContent({
   readonly worldId: string;
 }): JSX.Element {
   const [isConfirming, setIsConfirming] = useState(false);
+  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const readinessSummaryQuery = useQuery(
     settlementReadinessSummaryQueryOptions(worldId),
@@ -106,6 +113,16 @@ function EndTurnControlContent({
       },
       {
         onError: (error) => {
+          if (
+            isEndTurnTransitionError(error) &&
+            error.code === "end_turn_session_expired"
+          ) {
+            const returnTo = normalizeSignInReturnPath(
+              router.state.location.href,
+            );
+            void navigate({ to: "/sign-in", search: { returnTo } });
+            return;
+          }
           notifyMutationError(error, "End turn failed.");
         },
         onSuccess: (result) => {

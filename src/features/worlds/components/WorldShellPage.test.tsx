@@ -40,6 +40,10 @@ vi.mock("@tanstack/react-router", () => ({
           );
     return <a href={href}>{children}</a>;
   },
+  useNavigate: () => vi.fn(),
+  useRouter: () => ({
+    state: { location: { href: "/" } },
+  }),
 }));
 
 describe("WorldShellPage", () => {

@@ -8,7 +8,7 @@ import type {
 } from "./types.ts";
 
 type SupabaseAuthorizationFetchError = {
-  readonly safeDeny: boolean;
+  readonly status: number;
 };
 
 type SupabaseBooleanFetchResult =
@@ -122,18 +122,14 @@ async function fetchSupabaseRpcBoolean({
     });
   } catch {
     return {
-      error: {
-        safeDeny: false,
-      },
+      error: { status: 0 },
       ok: false,
     };
   }
 
   if (!response.ok) {
     return {
-      error: {
-        safeDeny: response.status >= 400 && response.status < 500,
-      },
+      error: { status: response.status },
       ok: false,
     };
   }
@@ -142,9 +138,7 @@ async function fetchSupabaseRpcBoolean({
 
   if (typeof payload !== "boolean") {
     return {
-      error: {
-        safeDeny: false,
-      },
+      error: { status: 0 },
       ok: false,
     };
   }
@@ -186,18 +180,14 @@ async function fetchSupabaseWorldExists({
     );
   } catch {
     return {
-      error: {
-        safeDeny: false,
-      },
+      error: { status: 0 },
       ok: false,
     };
   }
 
   if (!response.ok) {
     return {
-      error: {
-        safeDeny: response.status >= 400 && response.status < 500,
-      },
+      error: { status: response.status },
       ok: false,
     };
   }
@@ -206,9 +196,7 @@ async function fetchSupabaseWorldExists({
 
   if (!Array.isArray(payload)) {
     return {
-      error: {
-        safeDeny: false,
-      },
+      error: { status: 0 },
       ok: false,
     };
   }
@@ -222,11 +210,26 @@ async function fetchSupabaseWorldExists({
 function resultFromSupabaseAuthorizationFetchError(
   error: SupabaseAuthorizationFetchError,
 ): EndTurnSimulationAuthorizationResult {
-  if (error.safeDeny) {
+  if (error.status === 401) {
+    return createSessionExpiredResult();
+  }
+
+  if (error.status >= 400 && error.status < 500) {
     return createAuthorizationErrorResult();
   }
 
   return createAuthContextUnavailableResult();
+}
+
+function createSessionExpiredResult(): EndTurnSimulationAuthorizationResult {
+  return {
+    error: createErrorResponse({
+      code: "session_expired",
+      message: "Please sign in again.",
+    }),
+    ok: false,
+    status: 401,
+  };
 }
 
 function createAuthorizationErrorResult(): EndTurnSimulationAuthorizationResult {

@@ -122,6 +122,18 @@ describe("getErrorDescription", () => {
     );
   });
 
+  it("returns session expired message", () => {
+    expect(
+      getErrorDescription(
+        new EndTurnTransitionError({
+          code: "end_turn_session_expired",
+          message: "",
+          worldId: "w",
+        }),
+      ),
+    ).toBe("Your session has expired. Please sign in again.");
+  });
+
   it("returns stale turn message", () => {
     expect(
       getErrorDescription(

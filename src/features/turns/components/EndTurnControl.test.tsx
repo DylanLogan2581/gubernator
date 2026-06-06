@@ -5,11 +5,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EndTurnControl } from "./EndTurnControl";
 
-const { requireSupabaseClient, toastSuccess, toastError } = vi.hoisted(() => ({
-  requireSupabaseClient: vi.fn<() => unknown>(),
-  toastSuccess:
-    vi.fn<(message: string, options?: { description?: string }) => void>(),
-  toastError: vi.fn<(message: string) => void>(),
+const { navigateMock, requireSupabaseClient, toastSuccess, toastError } =
+  vi.hoisted(() => ({
+    navigateMock: vi.fn(),
+    requireSupabaseClient: vi.fn<() => unknown>(),
+    toastSuccess:
+      vi.fn<(message: string, options?: { description?: string }) => void>(),
+    toastError: vi.fn<(message: string) => void>(),
+  }));
+
+vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => navigateMock,
+  useRouter: () => ({
+    state: {
+      location: { href: "/worlds/world-1/turns" },
+    },
+  }),
 }));
 
 vi.mock("@/lib/supabase", () => ({
@@ -25,6 +36,7 @@ vi.mock("sonner", () => ({
 
 describe("EndTurnControl", () => {
   beforeEach(() => {
+    navigateMock.mockReset();
     requireSupabaseClient.mockReset();
     toastSuccess.mockReset();
     toastError.mockReset();
@@ -490,6 +502,37 @@ describe("EndTurnControl", () => {
       expect(toastError).toHaveBeenCalledTimes(1);
     });
     expect(toastError).toHaveBeenCalledWith("Internal stale detail");
+  });
+
+  it("navigates to sign-in when the session has expired", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      invokeResult: createFunctionErrorResult({
+        code: "session_expired",
+        message: "Please sign in again.",
+      }),
+      settlementRows: [],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
+    );
+
+    await vi.waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledTimes(1);
+    });
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: "/sign-in",
+      search: { returnTo: "/worlds/world-1/turns" },
+    });
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("toasts an error message for unauthorized failures", async () => {

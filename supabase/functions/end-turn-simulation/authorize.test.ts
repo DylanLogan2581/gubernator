@@ -96,5 +96,148 @@ describe("resolveSupabaseEndTurnSimulationAuthorization", () => {
         expect(result.status).toBe(403);
       }
     });
+
+    it("returns 401 session_expired when is_super_admin returns 401", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "rpc/is_super_admin": {
+          body: { message: "JWT expired" },
+          status: 401,
+        },
+      });
+
+      const result = await resolveSupabaseEndTurnSimulationAuthorization(
+        { expectedTurnNumber: 1, worldId: WORLD_ID },
+        { authorizationHeader: "Bearer expired-jwt", userId: "user-1" },
+      );
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBe(401);
+        expect(result.error.error.code).toBe("session_expired");
+      }
+    });
+
+    it("returns 403 unauthorized when is_super_admin returns 403", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "rpc/is_super_admin": {
+          body: { message: "Forbidden" },
+          status: 403,
+        },
+      });
+
+      const result = await resolveSupabaseEndTurnSimulationAuthorization(
+        { expectedTurnNumber: 1, worldId: WORLD_ID },
+        { authorizationHeader: "Bearer user-jwt-token", userId: "user-1" },
+      );
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBe(403);
+        expect(result.error.error.code).toBe("unauthorized");
+      }
+    });
+
+    it("returns 500 auth_context_unavailable when is_super_admin returns 500", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "rpc/is_super_admin": {
+          body: { message: "Internal error" },
+          status: 500,
+        },
+      });
+
+      const result = await resolveSupabaseEndTurnSimulationAuthorization(
+        { expectedTurnNumber: 1, worldId: WORLD_ID },
+        { authorizationHeader: "Bearer user-jwt-token", userId: "user-1" },
+      );
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBe(500);
+        expect(result.error.error.code).toBe("auth_context_unavailable");
+      }
+    });
+
+    it("returns 401 session_expired when worlds check returns 401", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "rpc/is_super_admin": { body: true, status: 200 },
+        "/rest/v1/worlds": {
+          body: { message: "JWT expired" },
+          status: 401,
+        },
+      });
+
+      const result = await resolveSupabaseEndTurnSimulationAuthorization(
+        { expectedTurnNumber: 1, worldId: WORLD_ID },
+        { authorizationHeader: "Bearer expired-jwt", userId: "user-1" },
+      );
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBe(401);
+        expect(result.error.error.code).toBe("session_expired");
+      }
+    });
+  });
+
+  describe("world-admin path", () => {
+    it("returns 401 session_expired when is_world_admin returns 401", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "rpc/is_super_admin": { body: false, status: 200 },
+        "rpc/is_world_admin": {
+          body: { message: "JWT expired" },
+          status: 401,
+        },
+      });
+
+      const result = await resolveSupabaseEndTurnSimulationAuthorization(
+        { expectedTurnNumber: 1, worldId: WORLD_ID },
+        { authorizationHeader: "Bearer expired-jwt", userId: "user-1" },
+      );
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBe(401);
+        expect(result.error.error.code).toBe("session_expired");
+      }
+    });
+
+    it("returns 403 unauthorized when is_world_admin returns false", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "rpc/is_super_admin": { body: false, status: 200 },
+        "rpc/is_world_admin": { body: false, status: 200 },
+      });
+
+      const result = await resolveSupabaseEndTurnSimulationAuthorization(
+        { expectedTurnNumber: 1, worldId: WORLD_ID },
+        { authorizationHeader: "Bearer user-jwt-token", userId: "user-1" },
+      );
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.status).toBe(403);
+        expect(result.error.error.code).toBe("unauthorized");
+      }
+    });
+
+    it("returns ok: true when user is world admin", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "rpc/is_super_admin": { body: false, status: 200 },
+        "rpc/is_world_admin": { body: true, status: 200 },
+      });
+
+      const result = await resolveSupabaseEndTurnSimulationAuthorization(
+        { expectedTurnNumber: 1, worldId: WORLD_ID },
+        { authorizationHeader: "Bearer user-jwt-token", userId: "user-1" },
+      );
+
+      expect(result.ok).toBe(true);
+    });
   });
 });

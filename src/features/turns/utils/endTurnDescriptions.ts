@@ -46,6 +46,8 @@ export function getErrorDescription(error: unknown): string {
         return "This world is archived. End turn is unavailable.";
       case "end_turn_running_transition":
         return "Another end-turn transition is already running. Refresh the page before trying again.";
+      case "end_turn_session_expired":
+        return "Your session has expired. Please sign in again.";
       case "end_turn_stale_turn":
         return "This turn has already changed. Refresh the page to review the latest world state.";
       case "end_turn_transition_failed":
