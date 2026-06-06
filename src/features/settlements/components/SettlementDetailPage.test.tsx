@@ -347,12 +347,6 @@ function createClient({
           })),
         };
       }
-      if (table === "citizens") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        return { select: vi.fn(() => b) };
-      }
       if (table === "worlds") {
         return {
           select: vi.fn(() => ({
@@ -402,6 +396,9 @@ function createClient({
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
       throw new Error(`Unexpected RPC call: ${fn}`);
     }),
   };
@@ -550,6 +547,9 @@ describe("SettlementDetailPage", () => {
 
   it("fires the set-readiness mutation when the manual readiness toggle is clicked", async () => {
     const rpcMock = vi.fn((fn: string, params: Record<string, unknown>) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
       if (fn === "set_settlement_readiness") {
         return {
           maybeSingle: vi.fn().mockResolvedValue({
@@ -586,6 +586,9 @@ describe("SettlementDetailPage", () => {
 
   it("fires the set-auto-ready mutation when the auto-ready toggle is clicked", async () => {
     const rpcMock = vi.fn((fn: string, params: Record<string, unknown>) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
       if (fn === "set_settlement_auto_ready") {
         return {
           maybeSingle: vi.fn().mockResolvedValue({

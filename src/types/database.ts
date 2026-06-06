@@ -2473,6 +2473,10 @@ export type Database = {
         Args: { p_world_id: string };
         Returns: string[];
       };
+      current_user_player_character_world_ids: {
+        Args: never;
+        Returns: string[];
+      };
       default_calendar_config: { Args: never; Returns: Json };
       default_naming_config: { Args: never; Returns: Json };
       default_npc_flavor_config: { Args: never; Returns: Json };

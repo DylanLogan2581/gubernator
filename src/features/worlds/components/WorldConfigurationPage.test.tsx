@@ -226,13 +226,6 @@ function createClient({
         return createWorldsQueryBuilder(worldRows);
       }
 
-      if (table === "citizens") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        return { select: vi.fn(() => b) };
-      }
-
       if (table === "resources") {
         const b: Record<string, unknown> = {};
         b.eq = vi.fn(() => b);
@@ -251,6 +244,12 @@ function createClient({
       }
 
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
     }),
   };
 }

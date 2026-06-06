@@ -47,7 +47,7 @@ export function currentUserPlayerCharacterWorldIdsQueryOptions(
   // The client is the configured Supabase singleton in app code; tests inject a fake.
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
-    queryFn: () => getCurrentUserPlayerCharacterWorldIds(client, userId),
+    queryFn: () => getCurrentUserPlayerCharacterWorldIds(client),
     queryKey: worldAccessQueryKeys.currentUserPlayerCharacterWorldIds(userId),
   });
 }
@@ -71,19 +71,14 @@ async function getCurrentUserAdminWorldIds(
 
 async function getCurrentUserPlayerCharacterWorldIds(
   client: GubernatorSupabaseClient,
-  userId: string,
 ): Promise<readonly string[]> {
-  const { data, error } = await client
-    .from("citizens")
-    .select("world_id")
-    .eq("user_id", userId)
-    .eq("citizen_type", "player_character")
-    .eq("status", "alive")
-    .order("world_id", { ascending: true });
+  const { data, error } = await client.rpc(
+    "current_user_player_character_world_ids",
+  );
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
   }
 
-  return [...new Set(data.map((row) => row.world_id))];
+  return data ?? [];
 }

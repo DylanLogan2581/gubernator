@@ -421,7 +421,7 @@ describe("CitizenDetailPage", () => {
     });
 
     it("unlinks a plain PC immediately without a confirmation dialog", async () => {
-      const rpcMock = vi.fn().mockReturnValue({
+      const unlinkResult = {
         maybeSingle: vi.fn().mockResolvedValue({
           data: createCitizenRow({
             citizen_type: "player_character",
@@ -429,6 +429,12 @@ describe("CitizenDetailPage", () => {
           }),
           error: null,
         }),
+      };
+      const rpcMock = vi.fn().mockImplementation((name: string) => {
+        if (name === "current_user_player_character_world_ids") {
+          return Promise.resolve({ data: [], error: null });
+        }
+        return unlinkResult;
       });
       const client = createClient({
         adminRows: [{ world_id: WORLD_ID }],
@@ -512,7 +518,12 @@ describe("CitizenDetailPage", () => {
     });
 
     it("cancels the unlink confirmation dialog without calling the mutation", async () => {
-      const rpcMock = vi.fn();
+      const rpcMock = vi.fn().mockImplementation((name: string) => {
+        if (name === "current_user_player_character_world_ids") {
+          return Promise.resolve({ data: [], error: null });
+        }
+        return undefined;
+      });
       const client = createClient({
         adminRows: [{ world_id: WORLD_ID }],
         citizen: createCitizenRow({
@@ -573,6 +584,9 @@ describe("CitizenDetailPage", () => {
         { id: OTHER_USER_ID, username: "otheruser" },
       ];
       const rpcMock = vi.fn().mockImplementation((name: string) => {
+        if (name === "current_user_player_character_world_ids") {
+          return Promise.resolve({ data: [], error: null });
+        }
         if (name === "search_users_for_admin_picker") {
           return Promise.resolve({ data: pickerRows, error: null });
         }
@@ -896,6 +910,9 @@ function createClient({
       throw new Error(`Unexpected table ${table}`);
     }),
     rpc: vi.fn().mockImplementation((name: string) => {
+      if (name === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
       if (name === "search_users_for_admin_picker") {
         if (usersQueryFails) {
           return Promise.resolve({

@@ -516,6 +516,12 @@ function createClient({
       }
       throw new Error(`Unexpected table ${table}`);
     }),
+    rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    }),
   };
 }
 
@@ -561,13 +567,7 @@ function createSettlementsBuilder(): unknown {
 
 function createCitizensBuilder(rows: readonly CitizenRowFixture[]): unknown {
   return {
-    select: vi.fn((columns: string) => {
-      if (columns === "world_id") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        return b;
-      }
+    select: vi.fn(() => {
       const filters: Record<string, unknown> = {};
       const builder: Record<string, unknown> = {
         eq: vi.fn((column: string, value: unknown) => {
