@@ -14,6 +14,7 @@ import { SettlementNamesetCard } from "@/features/namesets";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
+  useSettlementManageAuthority,
   type AccessContext,
 } from "@/features/permissions";
 import { SettlementStockpilesPanel } from "@/features/resources";
@@ -235,6 +236,11 @@ function SettlementDetailLoaded({
   const queryClient = useQueryClient();
   const { activeCharacter } = useActivePlayerCharacter();
   const isArchived = worldAccess.header.isArchived;
+  const { canManageSettlement } = useSettlementManageAuthority({
+    canAdmin: worldAccess.canAdmin,
+    nationId: settlement.nationId,
+    settlementId: settlement.id,
+  });
   const isNationManager =
     activeCharacter !== null &&
     activeCharacter.roleType === "nation_manager" &&
@@ -274,7 +280,7 @@ function SettlementDetailLoaded({
       <SettlementReadinessSection
         accessContext={accessContext}
         canAdmin={worldAccess.canAdmin}
-        canManage={worldAccess.canManage}
+        canManage={canManageSettlement}
         isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}
@@ -324,7 +330,7 @@ function SettlementDetailLoaded({
       />
 
       <SettlementConstructionPanel
-        canManage={worldAccess.canManage}
+        canManageSettlement={canManageSettlement}
         isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}
@@ -332,7 +338,7 @@ function SettlementDetailLoaded({
 
       <SettlementDepositsPanel
         canAdmin={worldAccess.canAdmin}
-        canManage={worldAccess.canManage}
+        canManage={canManageSettlement}
         isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}
@@ -340,7 +346,7 @@ function SettlementDetailLoaded({
 
       <SettlementManagedPopulationsPanel
         canAdmin={worldAccess.canAdmin}
-        canManage={worldAccess.canManage}
+        canManage={canManageSettlement}
         isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}
@@ -348,7 +354,6 @@ function SettlementDetailLoaded({
 
       <SettlementTradeRoutesPanel
         canAdmin={worldAccess.canAdmin}
-        canManage={worldAccess.canManage}
         isArchived={isArchived}
         nationId={settlement.nationId}
         settlementId={settlement.id}
@@ -357,7 +362,7 @@ function SettlementDetailLoaded({
 
       <SettlementAssignmentBoard
         activeTab={assignmentTab}
-        canManage={worldAccess.canManage}
+        canManageSettlement={canManageSettlement}
         isArchived={isArchived}
         nationId={settlement.nationId}
         settlementId={settlement.id}

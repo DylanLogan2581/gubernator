@@ -52,7 +52,7 @@ export function toAccessibleWorld(
       ? false
       : accessContext.canAccessWorld(accessTarget),
     canAdmin: accessContext.canAdminWorld(accessTarget),
-    canManage: accessContext.canManageWorld(accessTarget),
+    canManage: accessContext.canAdminWorld(accessTarget),
     createdAt: world.created_at,
     currentTurnNumber: world.current_turn_number,
     id: world.id,

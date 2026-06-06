@@ -12,7 +12,7 @@ type Tab = "bulk" | "per-target";
 
 type SettlementAssignmentBoardProps = {
   readonly activeTab: Tab;
-  readonly canManage: boolean;
+  readonly canManageSettlement: boolean;
   readonly isArchived: boolean;
   readonly nationId: string;
   readonly settlementId: string;
@@ -21,14 +21,14 @@ type SettlementAssignmentBoardProps = {
 
 export function SettlementAssignmentBoard({
   activeTab,
-  canManage,
+  canManageSettlement,
   isArchived,
   nationId,
   settlementId,
   worldId,
 }: SettlementAssignmentBoardProps): JSX.Element {
   const navigate = useNavigate();
-  const canEdit = canManage && !isArchived;
+  const canEdit = canManageSettlement && !isArchived;
 
   const settlementParams = { nationId, settlementId, worldId };
 

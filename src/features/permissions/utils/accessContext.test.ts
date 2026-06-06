@@ -39,7 +39,7 @@ describe("createAccessContext", () => {
     ).toBe(false);
   });
 
-  it("allows super admins to access and manage any world", () => {
+  it("allows super admins to access and admin any world", () => {
     const context = createAccessContext({
       isSuperAdmin: true,
       userId: "user-1",
@@ -48,10 +48,9 @@ describe("createAccessContext", () => {
 
     expect(context.canAccessWorld({ id: "world-1" })).toBe(true);
     expect(context.canAdminWorld({ id: "world-1" })).toBe(true);
-    expect(context.canManageWorld({ id: "world-1" })).toBe(true);
   });
 
-  it("allows explicit world admins to access and manage assigned worlds", () => {
+  it("allows explicit world admins to access and admin assigned worlds", () => {
     const context = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
@@ -60,7 +59,6 @@ describe("createAccessContext", () => {
 
     expect(context.canAccessWorld({ id: "world-1" })).toBe(true);
     expect(context.canAdminWorld({ id: "world-1" })).toBe(true);
-    expect(context.canManageWorld({ id: "world-1" })).toBe(true);
     expect(context.canAccessWorld({ id: "world-2" })).toBe(false);
   });
 
@@ -72,9 +70,6 @@ describe("createAccessContext", () => {
     });
 
     expect(context.canAccessWorld({ id: "world-1", ownerId: "user-1" })).toBe(
-      true,
-    );
-    expect(context.canManageWorld({ id: "world-1", ownerId: "user-1" })).toBe(
       true,
     );
     expect(context.canAdminWorld({ id: "world-1", ownerId: "user-1" })).toBe(
@@ -100,7 +95,6 @@ describe("createAccessContext", () => {
 
     expect(context.canAccessWorld(outsiderWorld)).toBe(false);
     expect(context.canAdminWorld(outsiderWorld)).toBe(false);
-    expect(context.canManageWorld(outsiderWorld)).toBe(false);
   });
 
   it("allows player-character world holders to access their worlds", () => {
@@ -113,7 +107,6 @@ describe("createAccessContext", () => {
 
     expect(context.canAccessWorld({ id: "world-pc" })).toBe(true);
     expect(context.canAdminWorld({ id: "world-pc" })).toBe(false);
-    expect(context.canManageWorld({ id: "world-pc" })).toBe(false);
     expect(context.canAccessWorld({ id: "world-other" })).toBe(false);
     expect(context.playerCharacterWorldIds).toEqual(["world-pc"]);
   });
@@ -137,9 +130,6 @@ describe("createAccessContext", () => {
     expect(
       context.canAccessWorld({ id: "public-world", visibility: "public" }),
     ).toBe(false);
-    expect(context.canManageWorld({ id: "world-2", ownerId: "user-1" })).toBe(
-      false,
-    );
     expect(context.canAdminWorld({ id: "world-1" })).toBe(false);
   });
 });

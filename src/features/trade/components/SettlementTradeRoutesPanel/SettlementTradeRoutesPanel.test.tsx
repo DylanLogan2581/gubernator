@@ -343,7 +343,6 @@ function createClient({
 function renderPanel(
   props: Partial<{
     canAdmin: boolean;
-    canManage: boolean;
     isArchived: boolean;
     nationId: string;
     settlementId: string;
@@ -358,7 +357,6 @@ function renderPanel(
     <QueryClientProvider client={queryClient}>
       <SettlementTradeRoutesPanel
         canAdmin={props.canAdmin ?? false}
-        canManage={props.canManage ?? false}
         isArchived={props.isArchived ?? false}
         nationId={props.nationId ?? NATION_ID}
         settlementId={props.settlementId ?? SETTLEMENT_ID}

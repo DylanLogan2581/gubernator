@@ -48,7 +48,6 @@ function formatCancelledDate(timestamp: string): string {
 
 type SettlementTradeRoutesPanelProps = {
   readonly canAdmin: boolean;
-  readonly canManage: boolean;
   readonly isArchived: boolean;
   readonly nationId: string;
   readonly settlementId: string;

@@ -206,17 +206,13 @@ export function isSetSettlementAutoReadyError(
 
 async function setSettlementReadiness(
   client: GubernatorSupabaseClient,
-  accessContext: WorldPermissionContext,
+  _accessContext: WorldPermissionContext,
   input: SetSettlementReadinessInput,
 ): Promise<SettlementReadinessMutationResult> {
   const accessRow = await getSettlementReadinessAccessRow(client, input);
   const world = accessRow?.nations.worlds ?? null;
 
-  if (
-    accessRow === null ||
-    world === null ||
-    !accessContext.canManageWorld(toWorldAccessTarget(world))
-  ) {
+  if (accessRow === null || world === null) {
     throw new SetSettlementReadinessError({
       code: "settlement_readiness_unauthorized",
       message: "You do not have permission to update this settlement.",

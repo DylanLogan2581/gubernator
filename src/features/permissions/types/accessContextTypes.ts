@@ -11,7 +11,6 @@ export type AccessContextPredicates = {
    */
   readonly canAdminWorld: (world: WorldAccessTarget) => boolean;
   readonly canAccessWorld: (world: WorldAccessTarget) => boolean;
-  readonly canManageWorld: (world: WorldAccessTarget) => boolean;
 };
 
 export type AccessContext = AccessContextPredicates & {

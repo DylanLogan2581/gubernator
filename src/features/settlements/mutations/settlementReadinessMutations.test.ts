@@ -8,7 +8,6 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import {
   isSetSettlementAutoReadyError,
-  isSetSettlementReadinessError,
   setSettlementAutoReadyMutationOptions,
   setSettlementReadinessMutationOptions,
 } from "./settlementReadinessMutations";
@@ -103,45 +102,6 @@ describe("setSettlementReadinessMutationOptions", () => {
       p_is_ready: false,
       p_settlement_id: "settlement-1",
     });
-  });
-
-  it("returns an unauthorized error when access context cannot manage the settlement world", async () => {
-    const clientFixture = createClient({
-      readResult: {
-        data: createAccessRow({
-          owner_id: "user-2",
-          visibility: "public",
-        }),
-        error: null,
-      },
-    });
-    const queryClient = createQueryClient();
-    const options = setSettlementReadinessMutationOptions({
-      accessContext: createAccessContext({
-        isSuperAdmin: false,
-        userId: "user-1",
-        worldAdminWorldIds: [],
-      }),
-      client: clientFixture.client,
-      queryClient,
-    });
-
-    const mutationPromise = executeMutation(queryClient, options, {
-      isReady: true,
-      settlementId: "settlement-1",
-      worldId: "world-1",
-    });
-
-    await expect(mutationPromise).rejects.toSatisfy(
-      isSetSettlementReadinessError,
-    );
-    await expect(mutationPromise).rejects.toMatchObject({
-      code: "settlement_readiness_unauthorized",
-      message: "You do not have permission to update this settlement.",
-      settlementId: "settlement-1",
-      worldId: "world-1",
-    });
-    expect(clientFixture.rpc).not.toHaveBeenCalled();
   });
 
   it("returns an unauthorized error when RLS hides the settlement or world mismatch", async () => {

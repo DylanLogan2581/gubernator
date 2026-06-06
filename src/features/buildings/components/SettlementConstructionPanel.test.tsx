@@ -368,7 +368,7 @@ describe("SettlementConstructionPanel", () => {
   it("shows empty state when no active projects", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ projectRows: [] }));
 
-    renderPanel({ canManage: false, isArchived: false });
+    renderPanel({ canManageSettlement: false, isArchived: false });
 
     expect(await screen.findByText("No active projects")).toBeDefined();
   });
@@ -388,7 +388,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: false, isArchived: false });
+    renderPanel({ canManageSettlement: false, isArchived: false });
 
     await screen.findByText("Barracks");
     expect(screen.getByText("Granary")).toBeDefined();
@@ -410,7 +410,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: false, isArchived: false });
+    renderPanel({ canManageSettlement: false, isArchived: false });
 
     expect(await screen.findByText("No active projects")).toBeDefined();
   });
@@ -430,7 +430,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: false, isArchived: false });
+    renderPanel({ canManageSettlement: false, isArchived: false });
 
     await screen.findByText("Barracks");
     expect(screen.getByText(/5 \/ 20 worker-turns/)).toBeDefined();
@@ -439,7 +439,7 @@ describe("SettlementConstructionPanel", () => {
   it("hides Start construction button from non-managers", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ projectRows: [] }));
 
-    renderPanel({ canManage: false, isArchived: false });
+    renderPanel({ canManageSettlement: false, isArchived: false });
 
     await screen.findByText("No active projects");
     expect(
@@ -450,7 +450,7 @@ describe("SettlementConstructionPanel", () => {
   it("shows Start construction button for managers on non-archived worlds", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ projectRows: [] }));
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
 
     await screen.findByText("No active projects");
     expect(
@@ -461,7 +461,7 @@ describe("SettlementConstructionPanel", () => {
   it("hides Start construction button when world is archived", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ projectRows: [] }));
 
-    renderPanel({ canManage: true, isArchived: true });
+    renderPanel({ canManageSettlement: true, isArchived: true });
 
     await screen.findByText("No active projects");
     expect(
@@ -492,7 +492,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
 
     await screen.findByText("No active projects");
     await user.click(
@@ -541,7 +541,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
 
     await screen.findByText("No active projects");
     await user.click(
@@ -581,7 +581,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
 
     await screen.findByText("No active projects");
     await user.click(
@@ -631,7 +631,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
 
     await screen.findByText("Barracks");
 
@@ -677,7 +677,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: false, isArchived: false });
+    renderPanel({ canManageSettlement: false, isArchived: false });
 
     await screen.findByText("Barracks");
     expect(screen.getByText("4")).toBeDefined();
@@ -692,7 +692,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: false, isArchived: false });
+    renderPanel({ canManageSettlement: false, isArchived: false });
 
     await screen.findByText("Barracks");
     expect(screen.getByText("—")).toBeDefined();
@@ -718,7 +718,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: false, isArchived: false });
+    renderPanel({ canManageSettlement: false, isArchived: false });
 
     await screen.findByText("Barracks");
     const badge = screen.getByText("paused");
@@ -779,7 +779,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
     await screen.findByText("Barracks");
 
     const input = screen.getByRole("spinbutton", {
@@ -850,7 +850,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
     await screen.findByText("Barracks");
 
     const input = screen.getByRole("spinbutton", {
@@ -900,7 +900,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
     await screen.findByText("Barracks");
 
     const input = screen.getByRole("spinbutton", {
@@ -940,7 +940,7 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManage: true, isArchived: false });
+    renderPanel({ canManageSettlement: true, isArchived: false });
 
     await screen.findByText("Barracks");
     await user.click(screen.getByRole("button", { name: "Cancel Barracks" }));
@@ -969,18 +969,18 @@ describe("SettlementConstructionPanel", () => {
 });
 
 function renderPanel({
-  canManage,
+  canManageSettlement,
   isArchived,
   queryClient = createQueryClient(),
 }: {
-  readonly canManage: boolean;
+  readonly canManageSettlement: boolean;
   readonly isArchived: boolean;
   readonly queryClient?: QueryClient;
 }): void {
   render(
     <QueryClientProvider client={queryClient}>
       <SettlementConstructionPanel
-        canManage={canManage}
+        canManageSettlement={canManageSettlement}
         isArchived={isArchived}
         settlementId={SETTLEMENT_ID}
         worldId={WORLD_ID}

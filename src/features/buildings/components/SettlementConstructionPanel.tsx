@@ -57,7 +57,7 @@ import type {
 import type { SettlementBuilding } from "../types/settlementBuildingTypes";
 
 type SettlementConstructionPanelProps = {
-  readonly canManage: boolean;
+  readonly canManageSettlement: boolean;
   readonly isArchived: boolean;
   readonly settlementId: string;
   readonly worldId: string;
@@ -100,7 +100,7 @@ const ACTIVE_STATUSES: readonly ConstructionProjectStatus[] = [
 ];
 
 export function SettlementConstructionPanel({
-  canManage,
+  canManageSettlement,
   isArchived,
   settlementId,
   worldId,
@@ -111,7 +111,7 @@ export function SettlementConstructionPanel({
   );
   const latestOutcome = useSettlementTransitionOutcome(settlementId);
   const queryClient = useQueryClient();
-  const canAct = canManage && !isArchived;
+  const canAct = canManageSettlement && !isArchived;
 
   return (
     <section

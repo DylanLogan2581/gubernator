@@ -450,7 +450,7 @@ function createClient(config: {
 function renderBoard(
   props: Partial<{
     activeTab: "bulk" | "per-target";
-    canManage: boolean;
+    canManageSettlement: boolean;
     isArchived: boolean;
     nationId: string;
     settlementId: string;
@@ -464,7 +464,7 @@ function renderBoard(
     <QueryClientProvider client={queryClient}>
       <SettlementAssignmentBoard
         activeTab={props.activeTab ?? "bulk"}
-        canManage={props.canManage ?? true}
+        canManageSettlement={props.canManageSettlement ?? true}
         isArchived={props.isArchived ?? false}
         nationId={props.nationId ?? "nation-1"}
         settlementId={props.settlementId ?? "settlement-1"}
@@ -589,7 +589,7 @@ describe("SettlementAssignmentBoard", () => {
     );
 
     const defaultProps = {
-      canManage: true,
+      canManageSettlement: true,
       isArchived: false,
       nationId: "nation-1",
       settlementId: "settlement-1",
@@ -686,7 +686,7 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.getByText("2 / 4")).toBeDefined();
   });
 
-  it("shows inline editor with Apply button when canManage and not archived", async () => {
+  it("shows inline editor with Apply button when canManageSettlement and not archived", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [],
@@ -694,7 +694,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true, isArchived: false });
+    renderBoard({ canManageSettlement: true, isArchived: false });
 
     await screen.findByText("Farmer");
     expect(screen.getByRole("button", { name: "Apply" })).toBeDefined();
@@ -708,13 +708,13 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true, isArchived: true });
+    renderBoard({ canManageSettlement: true, isArchived: true });
 
     await screen.findByText("Farmer");
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
-  it("hides the editor when canManage is false", async () => {
+  it("hides the editor when canManageSettlement is false", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [],
@@ -722,7 +722,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: false, isArchived: false });
+    renderBoard({ canManageSettlement: false, isArchived: false });
 
     await screen.findByText("Farmer");
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
@@ -793,7 +793,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true });
+    renderBoard({ canManageSettlement: true });
 
     await screen.findByText("Farmer");
     const rows = screen.getAllByRole("row");
@@ -898,7 +898,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true });
+    renderBoard({ canManageSettlement: true });
 
     await screen.findByText("Farmer");
 
@@ -934,7 +934,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true });
+    renderBoard({ canManageSettlement: true });
 
     await screen.findByText("Farmer");
 
@@ -963,7 +963,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ canManage: true });
+    renderBoard({ canManageSettlement: true });
 
     await screen.findByText("Farmer");
 
@@ -1140,7 +1140,7 @@ describe("SettlementAssignmentBoard", () => {
     ).toBeDefined();
   });
 
-  it("shows Apply button when canManage and not archived on per-target tab", async () => {
+  it("shows Apply button when canManageSettlement and not archived on per-target tab", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenAssignmentRows: [],
@@ -1154,7 +1154,7 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard({
       activeTab: "per-target",
-      canManage: true,
+      canManageSettlement: true,
       isArchived: false,
     });
 
@@ -1162,7 +1162,7 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.getByRole("button", { name: "Apply" })).toBeDefined();
   });
 
-  it("hides Apply button on per-target tab when canManage is false", async () => {
+  it("hides Apply button on per-target tab when canManageSettlement is false", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenAssignmentRows: [],
@@ -1176,7 +1176,7 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard({
       activeTab: "per-target",
-      canManage: false,
+      canManageSettlement: false,
       isArchived: false,
     });
 
@@ -1196,7 +1196,11 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target", canManage: true, isArchived: true });
+    renderBoard({
+      activeTab: "per-target",
+      canManageSettlement: true,
+      isArchived: true,
+    });
 
     await screen.findByText("Iron Vein — Miner");
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
@@ -1267,7 +1271,7 @@ describe("SettlementAssignmentBoard", () => {
 
     renderBoard({
       activeTab: "per-target",
-      canManage: true,
+      canManageSettlement: true,
       settlementId: SETTLEMENT_UUID,
     });
 
@@ -1321,7 +1325,7 @@ describe("SettlementAssignmentBoard", () => {
       <QueryClientProvider client={queryClient}>
         <SettlementAssignmentBoard
           activeTab="bulk"
-          canManage={true}
+          canManageSettlement={true}
           isArchived={false}
           nationId="nation-1"
           settlementId={SETTLEMENT_UUID}
@@ -1368,7 +1372,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target", canManage: true });
+    renderBoard({ activeTab: "per-target", canManageSettlement: true });
 
     await screen.findByText("Iron Vein — Miner");
     const input = screen.getByRole("spinbutton", {

@@ -18,7 +18,12 @@ export {
 export { currentAccessContextQueryOptions } from "./queries/permissionQueries";
 export { permissionQueryKeys } from "./queries/permissionQueryKeys";
 export { createAccessContext } from "./utils/accessContext";
+export {
+  checkCanManageNation,
+  checkCanManageSettlement,
+} from "./utils/manageAuthority";
 export { toWorldAccessTarget } from "./utils/worldAccessTarget";
+export { useSettlementManageAuthority } from "./hooks/useSettlementManageAuthority";
 export {
   allUsersForSuperadminQueryOptions,
   allWorldsForSuperadminQueryOptions,
@@ -34,6 +39,10 @@ export {
   isSuperadminMutationError,
 } from "./mutations/superadminMutations";
 
+export type {
+  NationManageInput,
+  SettlementManageInput,
+} from "./utils/manageAuthority";
 export type { ActiveCharacterSwitcherProps } from "./components/ActiveCharacterSwitcher";
 export type { PlayerCharacterChooserProps } from "./components/PlayerCharacterChooser";
 export type { RoleAssignmentControlsProps } from "./components/RoleAssignmentControls";

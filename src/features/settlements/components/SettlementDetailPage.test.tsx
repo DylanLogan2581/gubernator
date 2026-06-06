@@ -3,7 +3,10 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
+import type {
+  ActivePlayerCharacterContextValue,
+  SettlementManageInput,
+} from "@/features/permissions";
 
 import { SettlementDetailPage } from "./SettlementDetailPage";
 
@@ -33,17 +36,24 @@ const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
 }));
 
-const { useActivePlayerCharacterMock } = vi.hoisted(() => ({
-  useActivePlayerCharacterMock: vi.fn<() => ActivePlayerCharacterContextValue>(
-    () => ({
+const { useActivePlayerCharacterMock, useSettlementManageAuthorityMock } =
+  vi.hoisted(() => ({
+    useActivePlayerCharacterMock: vi.fn<
+      () => ActivePlayerCharacterContextValue
+    >(() => ({
       activeCharacter: null,
       clear: vi.fn(),
       isPending: false,
       selectableCharacters: [],
       switchTo: vi.fn(),
-    }),
-  ),
-}));
+    })),
+    useSettlementManageAuthorityMock: vi.fn<
+      (_input: Omit<SettlementManageInput, "activeCharacter">) => {
+        canManageSettlement: boolean;
+        canManageNation: boolean;
+      }
+    >(() => ({ canManageSettlement: true, canManageNation: true })),
+  }));
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -80,6 +90,16 @@ vi.mock("@/features/citizens", async () => {
   return {
     ...actual,
     CitizensPanel: () => <div data-testid="citizens-panel" />,
+    SettlementAssignmentBoard: ({
+      canManageSettlement,
+    }: {
+      readonly canManageSettlement: boolean;
+    }) => (
+      <div
+        data-testid="assignment-board"
+        data-can-manage={String(canManageSettlement)}
+      />
+    ),
   };
 });
 
@@ -90,6 +110,16 @@ vi.mock("@/features/buildings", async () => {
     SettlementBuildingsPanel: () => (
       <div data-testid="settlement-buildings-panel" />
     ),
+    SettlementConstructionPanel: ({
+      canManageSettlement,
+    }: {
+      readonly canManageSettlement: boolean;
+    }) => (
+      <div
+        data-testid="construction-panel"
+        data-can-manage={String(canManageSettlement)}
+      />
+    ),
   };
 });
 
@@ -98,6 +128,7 @@ vi.mock("@/features/permissions", async () => {
   return {
     ...actual,
     useActivePlayerCharacter: useActivePlayerCharacterMock,
+    useSettlementManageAuthority: useSettlementManageAuthorityMock,
   };
 });
 
@@ -394,6 +425,11 @@ describe("SettlementDetailPage", () => {
       selectableCharacters: [],
       switchTo: vi.fn(),
     });
+    useSettlementManageAuthorityMock.mockReset();
+    useSettlementManageAuthorityMock.mockReturnValue({
+      canManageSettlement: true,
+      canManageNation: true,
+    });
   });
 
   it("renders the loading state while the access context query is pending", () => {
@@ -586,6 +622,49 @@ describe("SettlementDetailPage", () => {
         expect.objectContaining({ p_settlement_id: SETTLEMENT_ID }),
       );
     });
+  });
+
+  it("passes canManageSettlement=true to construction and assignment panels for settlement/nation managers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldOwnerId: "other-user", worldVisibility: "public" }),
+    );
+    useSettlementManageAuthorityMock.mockReturnValue({
+      canManageSettlement: true,
+      canManageNation: true,
+    });
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+    expect(screen.getByTestId("construction-panel").dataset.canManage).toBe(
+      "true",
+    );
+    expect(screen.getByTestId("assignment-board").dataset.canManage).toBe(
+      "true",
+    );
+  });
+
+  it("passes canManageSettlement=false to construction and assignment panels for plain viewers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldOwnerId: "other-user", worldVisibility: "public" }),
+    );
+    useSettlementManageAuthorityMock.mockReturnValue({
+      canManageSettlement: false,
+      canManageNation: false,
+    });
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: null,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+    expect(screen.getByTestId("construction-panel").dataset.canManage).toBe(
+      "false",
+    );
+    expect(screen.getByTestId("assignment-board").dataset.canManage).toBe(
+      "false",
+    );
   });
 
   it("shows the delete confirmation dialog and navigates to the nation page on success", async () => {
