@@ -635,6 +635,47 @@ describe("CitizenDetailPage", () => {
     expect(screen.getByText("—")).toBeDefined();
   });
 
+  it("shows a 'Back to {name}' link pointing to the settlement for citizens with a settlement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({ citizen_type: "npc", name: "Theron" }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Theron" });
+    const backLink = await screen.findByRole("link", {
+      name: /Back to Hometown/i,
+    });
+    expect((backLink as HTMLAnchorElement).href).toContain(
+      `/worlds/${WORLD_ID}/nations/${NATION_ID}/settlements/${SETTLEMENT_ID}`,
+    );
+  });
+
+  it("shows a 'Back to world' fallback link for admin citizens without a settlement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "npc",
+          name: "Wanderer",
+          settlement_id: null,
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Wanderer" });
+    const backLink = screen.getByRole("link", { name: /Back to world/i });
+    expect((backLink as HTMLAnchorElement).href).toContain(
+      `/worlds/${WORLD_ID}`,
+    );
+    expect((backLink as HTMLAnchorElement).href).not.toContain("/nations/");
+  });
+
   it("renders a standard-job assignment with the job name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

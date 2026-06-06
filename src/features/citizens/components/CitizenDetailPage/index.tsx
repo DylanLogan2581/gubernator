@@ -7,6 +7,7 @@ import {
   currentAccessContextQueryOptions,
   type AccessContext,
 } from "@/features/permissions";
+import { settlementByIdQueryOptions } from "@/features/settlements";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -214,8 +215,22 @@ function CitizenDetailLoaded({
   const queryClient = useQueryClient();
   const canEdit = canAdmin && !isArchived;
 
+  const settlementQuery = useQuery({
+    ...settlementByIdQueryOptions(citizen.settlementId ?? ""),
+    enabled: citizen.settlementId !== null,
+  });
+  const settlement = settlementQuery.data ?? null;
+  const settlementNav =
+    settlement !== null
+      ? {
+          nationId: settlement.nationId,
+          settlementId: settlement.id,
+          settlementName: settlement.name,
+        }
+      : null;
+
   return (
-    <CitizenDetailFrame worldId={worldId}>
+    <CitizenDetailFrame settlementNav={settlementNav} worldId={worldId}>
       <CitizenDetailHeader citizen={citizen} />
 
       <CitizenCoreSection
