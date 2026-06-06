@@ -585,7 +585,7 @@ function EditJobForm({
   }
 
   const [baseCapacity, setBaseCapacity] = useState(
-    job.baseCapacity !== null ? String(job.baseCapacity) : "",
+    job.baseCapacity !== null ? String(job.baseCapacity) : "0",
   );
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState(
     job.traderCapacityPerWorker !== null
@@ -948,7 +948,7 @@ function CreateJobForm({
   const resources = resourcesQuery.data ?? [];
   const [selectedType, setSelectedType] = useState<JobType | null>(null);
   const [name, setName] = useState("");
-  const [baseCapacity, setBaseCapacity] = useState("");
+  const [baseCapacity, setBaseCapacity] = useState("0");
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>([]);
   const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>([]);

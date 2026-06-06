@@ -181,6 +181,55 @@ describe("createJobInputSchema — discrimination", () => {
   });
 });
 
+describe("createJobInputSchema — baseCapacity = 0", () => {
+  it("accepts a standard job with baseCapacity = 0", () => {
+    const result = createJobInputSchema.safeParse({
+      baseCapacity: 0,
+      jobType: "standard",
+      name: "Farm Worker",
+      slug: "farm-worker",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success && result.data.jobType === "standard") {
+      expect(result.data.baseCapacity).toBe(0);
+    }
+  });
+
+  it("accepts a construction job with baseCapacity = 0", () => {
+    const result = createJobInputSchema.safeParse({
+      baseCapacity: 0,
+      jobType: "construction",
+      name: "Builder",
+      slug: "builder",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success && result.data.jobType === "construction") {
+      expect(result.data.baseCapacity).toBe(0);
+    }
+  });
+
+  it("rejects a negative baseCapacity", () => {
+    const result = createJobInputSchema.safeParse({
+      baseCapacity: -1,
+      jobType: "standard",
+      name: "Farm Worker",
+      slug: "farm-worker",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success && result.error.issues[0]?.path[0] === "baseCapacity") {
+      expect(result.error.issues[0].message).toBe(
+        "Base capacity must be a non-negative integer.",
+      );
+    }
+  });
+});
+
 describe("createJobInputSchema — type-specific optional fields", () => {
   it("accepts a standard job without baseCapacity", () => {
     const result = createJobInputSchema.safeParse({

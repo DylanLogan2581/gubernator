@@ -565,9 +565,9 @@ select
     'non-husbandry/culling job with linked_managed_population_type_id rejected by check constraint'
   );
 
--- base_capacity = 0 rejected
+-- base_capacity = 0 accepted (constraint changed from > 0 to >= 0)
 select
-  throws_ok (
+  lives_ok (
     $test$
     insert into public.job_definitions (world_id, name, slug, job_type, base_capacity)
     values (
@@ -578,9 +578,7 @@ select
       0
     )
   $test$,
-    '23514',
-    null,
-    'base_capacity of zero rejected by check constraint'
+    'base_capacity of zero accepted by check constraint'
   );
 
 -- base_capacity negative rejected
