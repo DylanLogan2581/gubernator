@@ -1,11 +1,11 @@
 import { type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
-import { worldNamingConfigSchema } from "@/features/worlds";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { worldNamingConfigSchema } from "@/lib/worldNamingConfigSchemas";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 import type { Json } from "@/types/database";
 

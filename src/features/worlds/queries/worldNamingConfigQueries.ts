@@ -5,11 +5,10 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
-
 import {
   worldNamingConfigSchema,
   type WorldNamingConfig,
-} from "../schemas/worldNamingConfigSchemas";
+} from "@/lib/worldNamingConfigSchemas";
 
 import { worldQueryKeys } from "./worldQueryKeys";
 

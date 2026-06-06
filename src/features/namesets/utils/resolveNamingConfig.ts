@@ -1,4 +1,4 @@
-import type { WorldNamingConfig } from "@/features/worlds";
+import type { WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 import type { Nameset } from "../types/namesetTypes";
 

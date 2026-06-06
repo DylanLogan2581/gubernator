@@ -65,14 +65,6 @@ export {
   renameWorldMutationOptions,
   setWorldCurrentTurnNumberMutationOptions,
 } from "./mutations/worldSettingsMutations";
-export {
-  NAME_CONVENTIONS,
-  worldNamingConfigSchema,
-} from "./schemas/worldNamingConfigSchemas";
-export type {
-  NameConvention,
-  WorldNamingConfig,
-} from "./schemas/worldNamingConfigSchemas";
 export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
 export type { WorldPopulationRules } from "./schemas/worldPopulationRulesSchemas";
 export type {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { WorldNamingConfig } from "@/features/worlds";
 import { mulberry32 } from "@/lib/seededRng";
+import type { WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 import {
   generateNpcName,

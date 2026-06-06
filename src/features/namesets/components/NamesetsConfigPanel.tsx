@@ -23,13 +23,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { getErrorDescription } from "@/lib/errorUtils";
+import { notifyMutationSuccess } from "@/lib/notify";
 import {
   NAME_CONVENTIONS,
   type NameConvention,
   type WorldNamingConfig,
-} from "@/features/worlds";
-import { getErrorDescription } from "@/lib/errorUtils";
-import { notifyMutationSuccess } from "@/lib/notify";
+} from "@/lib/worldNamingConfigSchemas";
 
 import {
   createNamesetMutationOptions,

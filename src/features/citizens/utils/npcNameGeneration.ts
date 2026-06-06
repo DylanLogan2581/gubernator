@@ -1,5 +1,8 @@
-import type { NameConvention, WorldNamingConfig } from "@/features/worlds";
 import type { SeededRng } from "@/lib/seededRng";
+import type {
+  NameConvention,
+  WorldNamingConfig,
+} from "@/lib/worldNamingConfigSchemas";
 
 export type NpcNameResult = {
   readonly givenName: string;

@@ -10,12 +10,12 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
-
-import { worldQueryKeys } from "../queries/worldQueryKeys";
 import {
   worldNamingConfigSchema,
   type WorldNamingConfig,
-} from "../schemas/worldNamingConfigSchemas";
+} from "@/lib/worldNamingConfigSchemas";
+
+import { worldQueryKeys } from "../queries/worldQueryKeys";
 
 import type { WorldPermissionContext } from "../types/worldTypes";
 

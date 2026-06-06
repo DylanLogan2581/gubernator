@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { worldNamingConfigSchema } from "@/features/worlds";
+import { worldNamingConfigSchema } from "@/lib/worldNamingConfigSchemas";
 
 const NAMESET_NAME_MAX = 64;
 

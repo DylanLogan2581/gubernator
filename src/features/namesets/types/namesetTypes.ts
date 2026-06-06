@@ -1,4 +1,4 @@
-import type { WorldNamingConfig } from "@/features/worlds";
+import type { WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 export type Nameset = {
   readonly id: string;

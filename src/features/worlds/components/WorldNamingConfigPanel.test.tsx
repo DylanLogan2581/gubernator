@@ -7,10 +7,9 @@ import {
   createAccessContext,
   type AccessContext,
 } from "@/features/permissions";
+import type { WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
-
-import type { WorldNamingConfig } from "../schemas/worldNamingConfigSchemas";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),

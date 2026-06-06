@@ -13,14 +13,14 @@ import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
-
-import { saveWorldNamingConfigMutationOptions } from "../mutations/worldNamingConfigMutations";
-import { worldNamingConfigQueryOptions } from "../queries/worldNamingConfigQueries";
 import {
   NAME_CONVENTIONS,
   type NameConvention,
   type WorldNamingConfig,
-} from "../schemas/worldNamingConfigSchemas";
+} from "@/lib/worldNamingConfigSchemas";
+
+import { saveWorldNamingConfigMutationOptions } from "../mutations/worldNamingConfigMutations";
+import { worldNamingConfigQueryOptions } from "../queries/worldNamingConfigQueries";
 
 import type { WorldPermissionContext } from "../types/worldTypes";
 

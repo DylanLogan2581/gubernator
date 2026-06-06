@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { WorldNamingConfig } from "@/features/worlds";
+import type { WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 import { resolveNamingConfig } from "./resolveNamingConfig";
 
