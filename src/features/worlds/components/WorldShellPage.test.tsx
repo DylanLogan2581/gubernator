@@ -84,7 +84,9 @@ describe("WorldShellPage", () => {
       await screen.findByRole("heading", { name: "Eastern Marches" }),
     ).toBeDefined();
     expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(screen.getByText("7")).toBeDefined();
+    expect(
+      screen.getByText("Planning turn").nextElementSibling?.textContent,
+    ).toBe("7");
     expect(screen.getByText("In-world date")).toBeDefined();
     expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
     expect(screen.getByText("private")).toBeDefined();
@@ -121,7 +123,9 @@ describe("WorldShellPage", () => {
       await screen.findByRole("heading", { name: "Archived Realm" }),
     ).toBeDefined();
     expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(screen.getByText("3")).toBeDefined();
+    expect(
+      screen.getByText("Planning turn").nextElementSibling?.textContent,
+    ).toBe("3");
     expect(screen.getByText("Firstday, Ember 1, 100 AG")).toBeDefined();
     expect(screen.getByText("Read-only archive")).toBeDefined();
     expect(screen.getByText(/gameplay actions are read-only/i)).toBeDefined();
@@ -149,7 +153,9 @@ describe("WorldShellPage", () => {
       await screen.findByRole("heading", { name: "Broken Calendar Realm" }),
     ).toBeDefined();
     expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(screen.getByText("2")).toBeDefined();
+    expect(
+      screen.getByText("Planning turn").nextElementSibling?.textContent,
+    ).toBe("2");
     expect(screen.getByText("Calendar unavailable")).toBeDefined();
   });
 
@@ -249,6 +255,98 @@ describe("WorldShellPage", () => {
     ).toBeDefined();
     expect(screen.queryByRole("link", { name: /my character/i })).toBeNull();
   });
+
+  it("renders the Nations card as a navigable link", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 1,
+            id: "00000000-0000-0000-0000-000000000801",
+            name: "Navigation World",
+            owner_id: "user-1",
+          }),
+        ],
+        nationRows: [
+          createNationRow({
+            id: "nation-1",
+            name: "First Nation",
+            world_id: "00000000-0000-0000-0000-000000000801",
+          }),
+          createNationRow({
+            id: "nation-2",
+            name: "Second Nation",
+            world_id: "00000000-0000-0000-0000-000000000801",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000000801");
+
+    await screen.findByRole("heading", { name: "Navigation World" });
+
+    const nationsHeading = screen.getByRole("heading", {
+      name: "Nations",
+      level: 2,
+    });
+    expect(nationsHeading).toBeDefined();
+    const nationsLink = nationsHeading.closest("a");
+    expect(nationsLink).not.toBeNull();
+    expect(nationsLink).toHaveAttribute(
+      "href",
+      "/worlds/00000000-0000-0000-0000-000000000801/nations",
+    );
+  });
+
+  it("renders the Configuration card for world admins", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 1,
+            id: "00000000-0000-0000-0000-000000000901",
+            name: "Admin World",
+            owner_id: "user-1",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000000901");
+
+    await screen.findByRole("heading", { name: "Admin World" });
+    expect(
+      screen.getByRole("heading", { name: "Configuration", level: 2 }),
+    ).toBeDefined();
+  });
+
+  it("does not render the Configuration card for non-admins", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 1,
+            id: "00000000-0000-0000-0000-000000000902",
+            name: "Non-Admin World",
+            owner_id: "different-user",
+            visibility: "public",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000000902");
+
+    await screen.findByRole("heading", { name: "Non-Admin World" });
+    expect(screen.queryByRole("heading", { name: "Configuration" })).toBeNull();
+  });
 });
 
 function renderWorldShellPage(
@@ -283,11 +381,13 @@ function createQueryClient(): QueryClient {
 
 function createClient({
   adminRows = [],
+  nationRows = [],
   session,
   settlementRows = [],
   worldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly nationRows?: readonly TestNationRow[];
   readonly session: {
     readonly user: {
       readonly id: string;
@@ -318,6 +418,10 @@ function createClient({
 
       if (table === "settlements") {
         return createSettlementsQueryBuilder(settlementRows);
+      }
+
+      if (table === "nations") {
+        return createNationsQueryBuilder(nationRows);
       }
 
       if (table === "citizens") {
@@ -369,6 +473,16 @@ type TestSettlementReadinessRow = {
   readonly nations: { readonly id: string; readonly name: string };
   readonly ready_set_at: string | null;
 };
+type TestNationRow = {
+  readonly created_at: string;
+  readonly description: string | null;
+  readonly id: string;
+  readonly is_hidden: boolean;
+  readonly name: string;
+  readonly nameset_id: string | null;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
 
 function createUser(id: string): TestUser {
   return {
@@ -395,6 +509,22 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",
+    ...overrides,
+  };
+}
+
+function createNationRow(
+  overrides: Partial<TestNationRow> = {},
+): TestNationRow {
+  return {
+    created_at: "2026-01-01T00:00:00.000Z",
+    description: null,
+    id: "nation-1",
+    is_hidden: false,
+    name: "Test Nation",
+    nameset_id: null,
+    updated_at: "2026-01-01T00:00:00.000Z",
+    world_id: "00000000-0000-0000-0000-000000000001",
     ...overrides,
   };
 }
@@ -510,6 +640,17 @@ function createWorldsQueryBuilder(rows: readonly TestWorldRow[]): unknown {
 function createSettlementsQueryBuilder(
   rows: readonly TestSettlementReadinessRow[],
 ): unknown {
+  const builder = {
+    eq: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
+}
+
+function createNationsQueryBuilder(rows: readonly TestNationRow[]): unknown {
   const builder = {
     eq: vi.fn(() => builder),
     order: vi.fn(() => builder),

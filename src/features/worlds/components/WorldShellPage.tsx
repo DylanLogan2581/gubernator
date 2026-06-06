@@ -1,11 +1,18 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Archive, ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  Archive,
+  ArrowLeft,
+  ArrowRight,
+  Globe2,
+  Settings2,
+} from "lucide-react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { nationsListQueryOptions } from "@/features/nations";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
@@ -13,6 +20,7 @@ import {
 import {
   SettlementReadinessListPanel,
   SettlementReadinessSummaryPanel,
+  settlementReadinessSummaryQueryOptions,
 } from "@/features/settlements";
 import { EndTurnControl, TurnTransitionOutcomePanel } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -72,6 +80,10 @@ function WorldShellContent({
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
   const { activeCharacter } = useActivePlayerCharacter();
+  const nationsQuery = useQuery(nationsListQueryOptions(worldId));
+  const settlementSummaryQuery = useQuery(
+    settlementReadinessSummaryQueryOptions(worldId),
+  );
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
@@ -114,6 +126,14 @@ function WorldShellContent({
     );
   }
 
+  const nationCount = nationsQuery.data?.length ?? null;
+  const settlementCount =
+    settlementSummaryQuery.data?.totalSettlementCount ?? null;
+  const nationsSubhead =
+    nationCount !== null && settlementCount !== null
+      ? `${nationCount} ${nationCount === 1 ? "nation" : "nations"} · ${settlementCount} ${settlementCount === 1 ? "settlement" : "settlements"}`
+      : null;
+
   return (
     <WorldShellFrame>
       <section
@@ -122,12 +142,29 @@ function WorldShellContent({
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
-            <h1
-              id="world-shell-title"
-              className="text-2xl font-semibold tracking-normal"
-            >
-              {worldQuery.data.header.name}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1
+                id="world-shell-title"
+                className="text-2xl font-semibold tracking-normal"
+              >
+                {worldQuery.data.header.name}
+              </h1>
+              {activeCharacter !== null ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-auto text-xs"
+                >
+                  <Link
+                    to="/worlds/$worldId/citizens/$citizenId"
+                    params={{ citizenId: activeCharacter.id, worldId }}
+                  >
+                    My character
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
             <dl className="flex flex-wrap gap-4 text-sm text-muted-foreground">
               <div>
                 <dt className="font-medium text-foreground">Planning turn</dt>
@@ -164,6 +201,55 @@ function WorldShellContent({
           </p>
         ) : null}
       </section>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          to="/worlds/$worldId/nations"
+          params={{ worldId }}
+          className="flex flex-col gap-3 rounded-md border border-border bg-card p-6 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Globe2
+                className="size-5 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <h2 className="text-xl font-semibold">Nations</h2>
+            </div>
+            <ArrowRight
+              className="size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </div>
+          {nationsSubhead !== null ? (
+            <p className="text-sm text-muted-foreground">{nationsSubhead}</p>
+          ) : null}
+        </Link>
+        {worldQuery.data.canAdmin ? (
+          <Link
+            to="/worlds/$worldId/configuration"
+            params={{ worldId }}
+            search={{ tab: "resources" }}
+            className="flex flex-col gap-3 rounded-md border border-border bg-card p-6 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings2
+                  className="size-5 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <h2 className="text-xl font-semibold">Configuration</h2>
+              </div>
+              <ArrowRight
+                className="size-4 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              resources, jobs, buildings…
+            </p>
+          </Link>
+        ) : null}
+      </div>
       <EndTurnControl
         canAdmin={worldQuery.data.canAdmin}
         currentDateLabel={worldQuery.data.header.inWorldDateLabel}
@@ -174,37 +260,6 @@ function WorldShellContent({
         worldId={worldId}
       />
       <TurnTransitionOutcomePanel scope="world" id={worldId} />
-      <nav aria-label="World sections" className="flex flex-wrap gap-2">
-        <Button asChild variant="outline" size="sm" className="w-fit">
-          <Link to="/worlds/$worldId/nations" params={{ worldId }}>
-            Nations
-            <ArrowRight aria-hidden="true" />
-          </Link>
-        </Button>
-        {activeCharacter !== null ? (
-          <Button asChild variant="outline" size="sm" className="w-fit">
-            <Link
-              to="/worlds/$worldId/citizens/$citizenId"
-              params={{ citizenId: activeCharacter.id, worldId }}
-            >
-              My character
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </Button>
-        ) : null}
-        {worldQuery.data.canAdmin ? (
-          <Button asChild variant="outline" size="sm" className="w-fit">
-            <Link
-              to="/worlds/$worldId/configuration"
-              params={{ worldId }}
-              search={{ tab: "resources" }}
-            >
-              Configuration
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </Button>
-        ) : null}
-      </nav>
       <SettlementReadinessSummaryPanel worldId={worldId} />
       <SettlementReadinessListPanel
         accessContext={accessContext}
