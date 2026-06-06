@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { persistSimulationTransition } from "./persist";
+import { persistSimulationTransition, startTurnTransition } from "./persist";
 
 import type { ApplyTurnTransitionPayload } from "./transition";
 import type {
@@ -14,7 +14,9 @@ afterEach(() => {
 
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 const ANON_KEY = "test-anon-key";
+const SERVICE_KEY = "test-service-role-key";
 const USER_TOKEN = "test-user-access-token";
+const USER_ID = "00000000-0000-0000-0000-000000000001";
 const SUPABASE_URL = "http://localhost:54321";
 
 const TRANSITION_ID = "00000000-0000-0000-0000-000000000099";
@@ -28,7 +30,7 @@ function makeAuthContext(
 ): EndTurnSimulationAuthContext {
   return {
     authorizationHeader: `Bearer ${USER_TOKEN}`,
-    userId: "00000000-0000-0000-0000-000000000001",
+    userId: USER_ID,
     ...overrides,
   };
 }
@@ -71,13 +73,14 @@ function makeSuccessSummary(): Record<string, unknown> {
 
 function stubEnvAndFetch(
   fetchResponse: { body: unknown; status: number } | "fetch_throws",
-  anonKey: string = ANON_KEY,
+  serviceRoleKey: string = SERVICE_KEY,
 ): ReturnType<typeof vi.fn> {
   vi.stubGlobal("Deno", {
     env: {
       get: (name: string): string | undefined => {
         if (name === "SUPABASE_URL") return SUPABASE_URL;
-        if (name === "SUPABASE_ANON_KEY") return anonKey;
+        if (name === "SUPABASE_ANON_KEY") return ANON_KEY;
+        if (name === "SUPABASE_SERVICE_ROLE_KEY") return serviceRoleKey;
         return undefined;
       },
     },
@@ -109,7 +112,6 @@ describe("persistSimulationTransition — success", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -132,7 +134,6 @@ describe("persistSimulationTransition — success", () => {
     await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -148,7 +149,7 @@ describe("persistSimulationTransition — success", () => {
     expect(sentBody.p_payload).toBeDefined();
   });
 
-  it("uses anon key and caller JWT in apikey and authorization headers", async () => {
+  it("uses service-role key in apikey and authorization headers", async () => {
     const fetchMock = stubEnvAndFetch({
       body: makeSuccessSummary(),
       status: 200,
@@ -157,15 +158,14 @@ describe("persistSimulationTransition — success", () => {
     await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const headers = init.headers as Record<string, string>;
 
-    expect(headers["apikey"]).toBe(ANON_KEY);
-    expect(headers["authorization"]).toBe(`Bearer ${USER_TOKEN}`);
+    expect(headers["apikey"]).toBe(SERVICE_KEY);
+    expect(headers["authorization"]).toBe(`Bearer ${SERVICE_KEY}`);
   });
 });
 
@@ -174,7 +174,7 @@ describe("persistSimulationTransition — success", () => {
 // ---------------------------------------------------------------------------
 
 describe("persistSimulationTransition — missing env", () => {
-  it("returns end_turn_transition_unavailable when SUPABASE_ANON_KEY is absent", async () => {
+  it("returns end_turn_transition_unavailable when SUPABASE_SERVICE_ROLE_KEY is absent", async () => {
     vi.stubGlobal("Deno", {
       env: {
         get: (name: string): string | undefined => {
@@ -187,7 +187,6 @@ describe("persistSimulationTransition — missing env", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -196,15 +195,68 @@ describe("persistSimulationTransition — missing env", () => {
     expect(result.error.error.code).toBe("end_turn_transition_unavailable");
     expect(result.status).toBe(500);
   });
+});
 
-  it("returns end_turn_transition_unavailable when authorizationHeader is absent", async () => {
-    stubEnvAndFetch({ body: makeSuccessSummary(), status: 200 });
+// ---------------------------------------------------------------------------
+// startTurnTransition
+// ---------------------------------------------------------------------------
 
-    const result = await persistSimulationTransition(
+describe("startTurnTransition — success", () => {
+  it("returns ok: true with transitionId on 200 from start_turn_transition", async () => {
+    stubEnvAndFetch({
+      body: "00000000-0000-0000-0000-000000000099",
+      status: 200,
+    });
+
+    const result = await startTurnTransition(
       makeRequestBody(),
-      makeMinimalPayload(),
-      makeAuthContext({ authorizationHeader: undefined }),
-      TRANSITION_ID,
+      makeAuthContext(),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("type narrowing");
+    expect(result.transitionId).toBe("00000000-0000-0000-0000-000000000099");
+  });
+
+  it("sends p_world_id, p_expected_turn_number, and p_initiated_by_user_id using service-role key", async () => {
+    const fetchMock = stubEnvAndFetch({
+      body: "00000000-0000-0000-0000-000000000099",
+      status: 200,
+    });
+
+    await startTurnTransition(makeRequestBody(), makeAuthContext());
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+
+    expect(url).toContain("/rest/v1/rpc/start_turn_transition");
+    expect(url).toContain(SUPABASE_URL);
+
+    const sentBody = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(sentBody.p_world_id).toBe(WORLD_ID);
+    expect(sentBody.p_expected_turn_number).toBe(5);
+    expect(sentBody.p_initiated_by_user_id).toBe(USER_ID);
+
+    const headers = init.headers as Record<string, string>;
+    expect(headers["apikey"]).toBe(SERVICE_KEY);
+    expect(headers["authorization"]).toBe(`Bearer ${SERVICE_KEY}`);
+  });
+});
+
+describe("startTurnTransition — missing env", () => {
+  it("returns end_turn_transition_unavailable when SUPABASE_SERVICE_ROLE_KEY is absent", async () => {
+    vi.stubGlobal("Deno", {
+      env: {
+        get: (name: string): string | undefined => {
+          if (name === "SUPABASE_URL") return SUPABASE_URL;
+          return undefined;
+        },
+      },
+    });
+
+    const result = await startTurnTransition(
+      makeRequestBody(),
+      makeAuthContext(),
     );
 
     expect(result.ok).toBe(false);
@@ -228,7 +280,6 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -251,7 +302,6 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -274,7 +324,6 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -297,7 +346,6 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -319,7 +367,6 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -335,7 +382,6 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -354,7 +400,6 @@ describe("persistSimulationTransition — error code mapping", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -376,7 +421,6 @@ describe("persistSimulationTransition — caller token never leaked", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 
@@ -393,7 +437,6 @@ describe("persistSimulationTransition — caller token never leaked", () => {
     const result = await persistSimulationTransition(
       makeRequestBody(),
       makeMinimalPayload(),
-      makeAuthContext(),
       TRANSITION_ID,
     );
 

@@ -54,13 +54,11 @@ export async function startTurnTransition(
   authContext: EndTurnSimulationAuthContext,
 ): Promise<StartTurnTransitionResult> {
   const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
-  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+  const supabaseServiceRoleKey = getRequiredRuntimeEnv(
+    "SUPABASE_SERVICE_ROLE_KEY",
+  );
 
-  if (
-    supabaseUrl === undefined ||
-    supabaseAnonKey === undefined ||
-    authContext.authorizationHeader === undefined
-  ) {
+  if (supabaseUrl === undefined || supabaseServiceRoleKey === undefined) {
     return createStartUnavailableResult();
   }
 
@@ -69,11 +67,12 @@ export async function startTurnTransition(
     response = await fetch(`${supabaseUrl}/rest/v1/rpc/start_turn_transition`, {
       body: JSON.stringify({
         p_expected_turn_number: body.expectedTurnNumber,
+        p_initiated_by_user_id: authContext.userId,
         p_world_id: body.worldId,
       }),
       headers: {
-        apikey: supabaseAnonKey,
-        authorization: authContext.authorizationHeader,
+        apikey: supabaseServiceRoleKey,
+        authorization: `Bearer ${supabaseServiceRoleKey}`,
         "content-type": "application/json",
       },
       method: "POST",
@@ -114,17 +113,14 @@ export async function startTurnTransition(
 export async function persistSimulationTransition(
   body: EndTurnSimulationRequestBody,
   payload: ApplyTurnTransitionPayload,
-  authContext: EndTurnSimulationAuthContext,
   transitionId: string,
 ): Promise<EndTurnSimulationPersistResult> {
   const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
-  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+  const supabaseServiceRoleKey = getRequiredRuntimeEnv(
+    "SUPABASE_SERVICE_ROLE_KEY",
+  );
 
-  if (
-    supabaseUrl === undefined ||
-    supabaseAnonKey === undefined ||
-    authContext.authorizationHeader === undefined
-  ) {
+  if (supabaseUrl === undefined || supabaseServiceRoleKey === undefined) {
     return createTransitionUnavailableResult();
   }
 
@@ -138,8 +134,8 @@ export async function persistSimulationTransition(
         p_world_id: body.worldId,
       }),
       headers: {
-        apikey: supabaseAnonKey,
-        authorization: authContext.authorizationHeader,
+        apikey: supabaseServiceRoleKey,
+        authorization: `Bearer ${supabaseServiceRoleKey}`,
         "content-type": "application/json",
       },
       method: "POST",

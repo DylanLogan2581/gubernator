@@ -7,7 +7,7 @@
 begin;
 
 select
-  plan (13);
+  plan (14);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -192,21 +192,22 @@ values
   );
 
 -- ===========================================================================
--- SUPER ADMIN: happy path — returns a UUID and inserts a running transition
+-- SERVICE ROLE: happy path — returns a UUID and inserts a running transition
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   ok (
     (
       select
-        public.start_turn_transition ('f1200000-0000-0000-0000-000000000001', 4)
+        public.start_turn_transition (
+          'f1200000-0000-0000-0000-000000000001',
+          4,
+          'f1100000-0000-0000-0000-000000000002'
+        )
     ) is not null,
-    'super admin can call start_turn_transition and receives a non-null UUID'
+    'service_role can call start_turn_transition and receives a non-null UUID'
   );
 
 select
@@ -222,155 +223,7 @@ select
         and status = 'running'
     ),
     1,
-    'super admin call inserts exactly one running turn_transition row'
-  );
-
--- ===========================================================================
--- WORLD OWNER: implicit world admin via ownership
--- ===========================================================================
--- World 1 is still at turn 4 (start_turn_transition does not advance the world).
-set
-  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000002","role":"authenticated"}';
-
-select
-  ok (
-    (
-      select
-        public.start_turn_transition ('f1200000-0000-0000-0000-000000000001', 4)
-    ) is not null,
-    'world owner can call start_turn_transition and receives a non-null UUID'
-  );
-
--- ===========================================================================
--- WORLD ADMIN: explicit world_admins row
--- ===========================================================================
-set
-  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000003","role":"authenticated"}';
-
-select
-  ok (
-    (
-      select
-        public.start_turn_transition ('f1200000-0000-0000-0000-000000000001', 4)
-    ) is not null,
-    'world admin can call start_turn_transition and receives a non-null UUID'
-  );
-
--- ===========================================================================
--- MANAGER: nation_manager PC — not a world admin → 42501
--- ===========================================================================
-set
-  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000004","role":"authenticated"}';
-
-select
-  throws_ok (
-    $test$
-    select public.start_turn_transition(
-      'f1200000-0000-0000-0000-000000000001',
-      4
-    )
-  $test$,
-    '42501',
-    null,
-    'nation manager (non-world-admin) gets 42501 from start_turn_transition'
-  );
-
--- ===========================================================================
--- OUTSIDER: no world access → 42501
--- ===========================================================================
-set
-  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000005","role":"authenticated"}';
-
-select
-  throws_ok (
-    $test$
-    select public.start_turn_transition(
-      'f1200000-0000-0000-0000-000000000001',
-      4
-    )
-  $test$,
-    '42501',
-    null,
-    'outsider gets 42501 from start_turn_transition'
-  );
-
-reset role;
-
--- ===========================================================================
--- ARCHIVED WORLD: → P0001
--- ===========================================================================
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000001","role":"authenticated"}';
-
-select
-  throws_ok (
-    $test$
-    select public.start_turn_transition(
-      'f1200000-0000-0000-0000-000000000002',
-      2
-    )
-  $test$,
-    'P0001',
-    null,
-    'archived world raises P0001 from start_turn_transition'
-  );
-
--- ===========================================================================
--- STALE EXPECTED TURN: world is at turn 4, caller claims turn 99 → P0001
--- ===========================================================================
-select
-  throws_ok (
-    $test$
-    select public.start_turn_transition(
-      'f1200000-0000-0000-0000-000000000001',
-      99
-    )
-  $test$,
-    'P0001',
-    null,
-    'stale expected turn number raises P0001 from start_turn_transition'
-  );
-
--- ===========================================================================
--- NULL PARAM VALIDATION
--- ===========================================================================
-select
-  throws_ok (
-    $test$
-    select public.start_turn_transition(null, 4)
-  $test$,
-    'P0001',
-    null,
-    'null p_world_id raises P0001'
-  );
-
-select
-  throws_ok (
-    $test$
-    select public.start_turn_transition(
-      'f1200000-0000-0000-0000-000000000001',
-      null
-    )
-  $test$,
-    'P0001',
-    null,
-    'null p_expected_turn_number raises P0001'
-  );
-
--- ===========================================================================
--- IDEMPOTENT RETRY: unique_violation on existing running row → reuses it
--- ===========================================================================
-select
-  is (
-    (
-      select
-        public.start_turn_transition ('f1200000-0000-0000-0000-000000000003', 8)
-    ),
-    'f1300000-0000-0000-0000-000000000001'::uuid,
-    'start_turn_transition reuses the existing running transition id on unique_violation'
+    'service_role call inserts exactly one running turn_transition row'
   );
 
 -- World should NOT advance — start_turn_transition only reserves the row
@@ -382,25 +235,177 @@ select
       from
         public.worlds
       where
-        id = 'f1200000-0000-0000-0000-000000000003'
+        id = 'f1200000-0000-0000-0000-000000000001'
     ),
-    8,
+    4,
     'start_turn_transition does not advance the world turn number'
+  );
+
+-- ===========================================================================
+-- SERVICE ROLE: IDEMPOTENT RETRY — existing running row is reused
+-- ===========================================================================
+select
+  is (
+    (
+      select
+        public.start_turn_transition (
+          'f1200000-0000-0000-0000-000000000003',
+          8,
+          'f1100000-0000-0000-0000-000000000002'
+        )
+    ),
+    'f1300000-0000-0000-0000-000000000001'::uuid,
+    'start_turn_transition reuses the existing running transition id on unique_violation'
   );
 
 reset role;
 
 -- ===========================================================================
--- GRANT CHECK: authenticated role has EXECUTE; public does not
+-- SERVICE ROLE: ARCHIVED WORLD → P0001
+-- ===========================================================================
+set
+  local role service_role;
+
+select
+  throws_ok (
+    $test$
+    select public.start_turn_transition(
+      'f1200000-0000-0000-0000-000000000002',
+      2,
+      'f1100000-0000-0000-0000-000000000002'
+    )
+  $test$,
+    'P0001',
+    null,
+    'archived world raises P0001 from start_turn_transition'
+  );
+
+-- ===========================================================================
+-- SERVICE ROLE: STALE EXPECTED TURN → P0001
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.start_turn_transition(
+      'f1200000-0000-0000-0000-000000000001',
+      99,
+      'f1100000-0000-0000-0000-000000000002'
+    )
+  $test$,
+    'P0001',
+    null,
+    'stale expected turn number raises P0001 from start_turn_transition'
+  );
+
+-- ===========================================================================
+-- SERVICE ROLE: NULL PARAM VALIDATION
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.start_turn_transition(null, 4, 'f1100000-0000-0000-0000-000000000002')
+  $test$,
+    'P0001',
+    null,
+    'null p_world_id raises P0001'
+  );
+
+select
+  throws_ok (
+    $test$
+    select public.start_turn_transition(
+      'f1200000-0000-0000-0000-000000000001',
+      null,
+      'f1100000-0000-0000-0000-000000000002'
+    )
+  $test$,
+    'P0001',
+    null,
+    'null p_expected_turn_number raises P0001'
+  );
+
+select
+  throws_ok (
+    $test$
+    select public.start_turn_transition(
+      'f1200000-0000-0000-0000-000000000001',
+      4,
+      null
+    )
+  $test$,
+    'P0001',
+    null,
+    'null p_initiated_by_user_id raises P0001'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- AUTHENTICATED: super admin is rejected with 42501 (GRANT-level block)
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.start_turn_transition(
+      'f1200000-0000-0000-0000-000000000001',
+      4,
+      'f1100000-0000-0000-0000-000000000001'
+    )
+  $test$,
+    '42501',
+    null,
+    'authenticated super admin cannot directly call start_turn_transition'
+  );
+
+-- ===========================================================================
+-- AUTHENTICATED: world admin is rejected with 42501 (GRANT-level block)
+-- ===========================================================================
+set
+  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.start_turn_transition(
+      'f1200000-0000-0000-0000-000000000001',
+      4,
+      'f1100000-0000-0000-0000-000000000003'
+    )
+  $test$,
+    '42501',
+    null,
+    'authenticated world admin cannot directly call start_turn_transition'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- GRANT CHECK: service_role has EXECUTE; authenticated does not
 -- ===========================================================================
 select
   ok (
     has_function_privilege(
-      'authenticated',
-      'public.start_turn_transition(uuid, integer)',
+      'service_role',
+      'public.start_turn_transition(uuid, integer, uuid)',
       'EXECUTE'
     ),
-    'authenticated role has EXECUTE on start_turn_transition'
+    'service_role has EXECUTE on start_turn_transition'
+  );
+
+select
+  ok (
+    not has_function_privilege(
+      'authenticated',
+      'public.start_turn_transition(uuid, integer, uuid)',
+      'EXECUTE'
+    ),
+    'authenticated role does not have EXECUTE on start_turn_transition'
   );
 
 rollback;

@@ -113,6 +113,8 @@ function stubDenoEnv(): void {
       get: (name: string): string | undefined => {
         if (name === "SUPABASE_URL") return "http://localhost:54321";
         if (name === "SUPABASE_ANON_KEY") return "test-anon-key";
+        if (name === "SUPABASE_SERVICE_ROLE_KEY")
+          return "test-service-role-key";
         return undefined;
       },
     },

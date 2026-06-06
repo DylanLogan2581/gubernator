@@ -172,7 +172,7 @@ values
     null
   );
 
--- Pre-seeded running transition for idempotent-retry test (Retry World, turn 8→9)
+-- Pre-seeded running transitions
 insert into
   public.turn_transitions (
     id,
@@ -190,18 +190,7 @@ values
     9,
     'c1100000-0000-0000-0000-000000000002',
     'running'
-  );
-
-insert into
-  public.turn_transitions (
-    id,
-    world_id,
-    from_turn_number,
-    to_turn_number,
-    initiated_by_user_id,
-    status
-  )
-values
+  ),
   (
     'c1300000-0000-0000-0000-000000000002',
     'c1200000-0000-0000-0000-000000000001',
@@ -217,24 +206,13 @@ values
     6,
     'c1100000-0000-0000-0000-000000000001',
     'running'
-  ),
-  (
-    'c1300000-0000-0000-0000-000000000004',
-    'c1200000-0000-0000-0000-000000000001',
-    6,
-    7,
-    'c1100000-0000-0000-0000-000000000001',
-    'running'
   );
 
 -- ===========================================================================
--- SUPER ADMIN: happy path
+-- SERVICE ROLE: happy path — advances turn and returns transitionId
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   ok (
@@ -247,7 +225,7 @@ select
           'c1300000-0000-0000-0000-000000000002'::uuid
         ) ->> 'transitionId'
     ) is not null,
-    'super admin can call apply_turn_transition and receives a transitionId'
+    'service_role can call apply_turn_transition and receives a transitionId'
   );
 
 select
@@ -263,104 +241,48 @@ select
         and status = 'completed'
     ),
     1,
-    'super admin call creates a completed turn transition'
+    'service_role call creates a completed turn transition'
   );
 
 -- ===========================================================================
--- WORLD OWNER: implicit world admin via ownership
--- (world is now at turn 5 after super admin advanced it from 4)
+-- SERVICE ROLE: IDEMPOTENT RETRY — pre-existing running transition is reused
 -- ===========================================================================
-set
-  local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000002","role":"authenticated"}';
-
+-- World is now at turn 5 after service_role advanced it.
 select
-  ok (
+  is (
     (
       select
-        public.apply_turn_transition (
-          'c1200000-0000-0000-0000-000000000001',
-          5,
-          '{}'::jsonb,
-          'c1300000-0000-0000-0000-000000000003'::uuid
-        ) ->> 'transitionId'
-    ) is not null,
-    'world owner can call apply_turn_transition'
+        (
+          public.apply_turn_transition (
+            'c1200000-0000-0000-0000-000000000003',
+            8,
+            '{}'::jsonb,
+            'c1300000-0000-0000-0000-000000000001'::uuid
+          ) ->> 'transitionId'
+        )::uuid
+    ),
+    'c1300000-0000-0000-0000-000000000001'::uuid,
+    'retry with existing running transition reuses the same transition id'
   );
 
--- ===========================================================================
--- WORLD ADMIN: explicit world_admins row
--- (world is now at turn 6 after owner advanced it from 5)
--- ===========================================================================
-set
-  local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000003","role":"authenticated"}';
-
 select
-  ok (
+  is (
     (
       select
-        public.apply_turn_transition (
-          'c1200000-0000-0000-0000-000000000001',
-          6,
-          '{}'::jsonb,
-          'c1300000-0000-0000-0000-000000000004'::uuid
-        ) ->> 'transitionId'
-    ) is not null,
-    'world admin can call apply_turn_transition'
+        status
+      from
+        public.turn_transitions
+      where
+        id = 'c1300000-0000-0000-0000-000000000001'
+    ),
+    'completed',
+    'reused running transition is marked completed after retry call'
   );
 
 -- ===========================================================================
--- MANAGER: living PC with nation_manager role — not a world admin → 42501
+-- SERVICE ROLE: STALE EXPECTED TURN → P0001
 -- ===========================================================================
-set
-  local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000004","role":"authenticated"}';
-
-select
-  throws_ok (
-    $test$
-    select public.apply_turn_transition(
-      'c1200000-0000-0000-0000-000000000001',
-      4,
-      '{}'::jsonb,
-      '00000000-0000-0000-0000-000000000999'::uuid
-    )
-  $test$,
-    '42501',
-    null,
-    'manager (non-world-admin) gets 42501 from apply_turn_transition'
-  );
-
--- ===========================================================================
--- OUTSIDER: no world access → 42501
--- ===========================================================================
-set
-  local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000005","role":"authenticated"}';
-
-select
-  throws_ok (
-    $test$
-    select public.apply_turn_transition(
-      'c1200000-0000-0000-0000-000000000001',
-      4,
-      '{}'::jsonb,
-      '00000000-0000-0000-0000-000000000999'::uuid
-    )
-  $test$,
-    '42501',
-    null,
-    'outsider gets 42501 from apply_turn_transition'
-  );
-
-reset role;
-
--- ===========================================================================
--- STALE EXPECTED TURN: world is at turn 4, caller claims turn 99 → P0001
--- ===========================================================================
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000001","role":"authenticated"}';
-
+-- World 1 is now at turn 5, caller claims 99.
 select
   throws_ok (
     $test$
@@ -377,7 +299,7 @@ select
   );
 
 -- ===========================================================================
--- ARCHIVED WORLD: → P0001
+-- SERVICE ROLE: ARCHIVED WORLD → P0001
 -- ===========================================================================
 select
   throws_ok (
@@ -395,7 +317,7 @@ select
   );
 
 -- ===========================================================================
--- NULL PARAM VALIDATION
+-- SERVICE ROLE: NULL PARAM VALIDATION
 -- ===========================================================================
 select
   throws_ok (
@@ -440,7 +362,7 @@ select
 reset role;
 
 -- ===========================================================================
--- IDEMPOTENT RETRY: pre-existing running transition is reused; same id returned
+-- AUTHENTICATED: super admin is rejected with 42501 (GRANT-level block)
 -- ===========================================================================
 set
   local role authenticated;
@@ -449,49 +371,64 @@ set
   local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
-  is (
-    (
-      select
-        (
-          public.apply_turn_transition (
-            'c1200000-0000-0000-0000-000000000003',
-            8,
-            '{}'::jsonb,
-            'c1300000-0000-0000-0000-000000000001'::uuid
-          ) ->> 'transitionId'
-        )::uuid
-    ),
-    'c1300000-0000-0000-0000-000000000001'::uuid,
-    'retry with existing running transition reuses the same transition id'
+  throws_ok (
+    $test$
+    select public.apply_turn_transition(
+      'c1200000-0000-0000-0000-000000000001',
+      4,
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
+    )
+  $test$,
+    '42501',
+    null,
+    'authenticated super admin cannot directly call apply_turn_transition'
   );
 
+-- ===========================================================================
+-- AUTHENTICATED: world admin is rejected with 42501 (GRANT-level block)
+-- ===========================================================================
+set
+  local "request.jwt.claims" = '{"sub":"c1100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
 select
-  is (
-    (
-      select
-        status
-      from
-        public.turn_transitions
-      where
-        id = 'c1300000-0000-0000-0000-000000000001'
-    ),
-    'completed',
-    'reused running transition is marked completed after retry call'
+  throws_ok (
+    $test$
+    select public.apply_turn_transition(
+      'c1200000-0000-0000-0000-000000000001',
+      4,
+      '{}'::jsonb,
+      '00000000-0000-0000-0000-000000000999'::uuid
+    )
+  $test$,
+    '42501',
+    null,
+    'authenticated world admin cannot directly call apply_turn_transition'
   );
 
 reset role;
 
 -- ===========================================================================
--- GRANT CHECK: authenticated role has EXECUTE; public does not
+-- GRANT CHECK: service_role has EXECUTE; authenticated does not
 -- ===========================================================================
 select
   ok (
     has_function_privilege(
+      'service_role',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'EXECUTE'
+    ),
+    'service_role has EXECUTE on apply_turn_transition'
+  );
+
+select
+  ok (
+    not has_function_privilege(
       'authenticated',
       'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
       'EXECUTE'
     ),
-    'authenticated role has EXECUTE on apply_turn_transition'
+    'authenticated role does not have EXECUTE on apply_turn_transition'
   );
 
 rollback;
