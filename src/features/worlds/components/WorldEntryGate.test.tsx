@@ -34,6 +34,7 @@ vi.mock("@tanstack/react-router", () => ({
           );
     return <a href={href}>{children}</a>;
   },
+  useParams: vi.fn().mockReturnValue({}),
 }));
 
 const USER_ID = "00000000-0000-0000-0000-000000000001";

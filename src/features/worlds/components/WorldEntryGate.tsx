@@ -185,7 +185,11 @@ function WorldEntryDecision({
   if (selectableCharacters.length === 0) {
     if (worldAccess.canAdmin) {
       return (
-        <WorldEntryContent canAdmin worldId={worldId}>
+        <WorldEntryContent
+          canAdmin
+          worldId={worldId}
+          worldName={worldAccess.world.name}
+        >
           {children}
         </WorldEntryContent>
       );
@@ -200,7 +204,11 @@ function WorldEntryDecision({
 
   if (selectableCharacters.length === 1) {
     return (
-      <WorldEntryContent canAdmin={worldAccess.canAdmin} worldId={worldId}>
+      <WorldEntryContent
+        canAdmin={worldAccess.canAdmin}
+        worldId={worldId}
+        worldName={worldAccess.world.name}
+      >
         {children}
       </WorldEntryContent>
     );
@@ -208,7 +216,11 @@ function WorldEntryDecision({
 
   if (resumedCitizen !== null) {
     return (
-      <WorldEntryContent canAdmin={worldAccess.canAdmin} worldId={worldId}>
+      <WorldEntryContent
+        canAdmin={worldAccess.canAdmin}
+        worldId={worldId}
+        worldName={worldAccess.world.name}
+      >
         {children}
       </WorldEntryContent>
     );
@@ -221,14 +233,16 @@ function WorldEntryContent({
   canAdmin,
   children,
   worldId,
+  worldName,
 }: {
   readonly canAdmin: boolean;
   readonly children: ReactNode;
   readonly worldId: string;
+  readonly worldName: string;
 }): JSX.Element {
   return (
     <>
-      <WorldContextBar>
+      <WorldContextBar worldId={worldId} worldName={worldName}>
         <ActiveCharacterSwitcher canAdmin={canAdmin} worldId={worldId} />
       </WorldContextBar>
       {children}
