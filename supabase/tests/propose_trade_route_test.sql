@@ -463,8 +463,8 @@ select
         n.notification_type = 'trade_proposal_received'
         and n.world_id = 'fc200000-0000-0000-0000-000000000001'
     ),
-    3,
-    'three notifications created (two origin managers + one world-admin fallback)'
+    4,
+    'four notifications created (two origin managers + one world-admin fallback + seeded super admin)'
   );
 
 select

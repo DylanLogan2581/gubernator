@@ -394,8 +394,8 @@ select
         n.notification_type = 'trade_proposal_rejected'
         and n.trade_route_id = 'b1700000-0000-0000-0000-000000000001'
     ),
-    2,
-    'two trade_proposal_rejected notifications inserted (origin mgr, dest mgr)'
+    3,
+    'three trade_proposal_rejected notifications inserted (origin mgr, dest mgr, seeded super admin)'
   );
 
 select

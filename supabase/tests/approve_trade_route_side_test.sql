@@ -465,8 +465,8 @@ select
         n.notification_type = 'trade_proposal_accepted'
         and n.trade_route_id = 'af700000-0000-0000-0000-000000000001'
     ),
-    3,
-    'three trade_proposal_accepted notifications inserted (origin mgr, dest mgr, dual mgr)'
+    4,
+    'four trade_proposal_accepted notifications inserted (origin mgr, dest mgr, dual mgr, seeded super admin)'
   );
 
 select
