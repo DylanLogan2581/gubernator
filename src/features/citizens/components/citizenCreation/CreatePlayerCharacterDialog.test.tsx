@@ -67,12 +67,7 @@ type CitizenRow = {
 };
 
 type UserRow = {
-  readonly created_at: string;
-  readonly email: string;
   readonly id: string;
-  readonly is_super_admin: boolean;
-  readonly status: string;
-  readonly updated_at: string;
   readonly username: string;
 };
 
@@ -123,12 +118,7 @@ const CITIZEN_B_ROW = createCitizenRow({
 });
 
 const USER_ROW: UserRow = {
-  created_at: "2026-01-01T00:00:00.000Z",
-  email: "testuser@example.com",
   id: USER_ID,
-  is_super_admin: false,
-  status: "active",
-  updated_at: "2026-01-01T00:00:00.000Z",
   username: "testuser",
 };
 
@@ -146,18 +136,19 @@ function createClient(
     .fn()
     .mockResolvedValue({ data: citizenRows, error: null });
 
-  const usersChain: Record<string, unknown> = {};
-  usersChain.select = vi.fn(() => usersChain);
-  usersChain.eq = vi.fn(() => usersChain);
-  usersChain.order = vi.fn().mockResolvedValue({ data: userRows, error: null });
-
   return {
     from: vi.fn((table: string) => {
       if (table === "citizens") return citizensChain;
-      if (table === "users") return usersChain;
       throw new Error(`Unexpected table in mock: ${table}`);
     }),
-    rpc: rpcMock,
+    rpc: vi
+      .fn()
+      .mockImplementation((name: string, ...args: unknown[]): unknown => {
+        if (name === "search_users_for_admin_picker") {
+          return Promise.resolve({ data: userRows, error: null });
+        }
+        return (rpcMock as (...a: unknown[]) => unknown)(name, ...args);
+      }),
   };
 }
 

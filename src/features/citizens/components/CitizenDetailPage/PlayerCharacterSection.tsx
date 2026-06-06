@@ -174,7 +174,7 @@ function CitizenLinkedUserControl({
     citizen.userId === null
       ? null
       : linkedUser !== undefined
-        ? `${linkedUser.username} · ${linkedUser.email}`
+        ? linkedUser.username
         : citizen.userId;
 
   function unlinkRoleDescription(): string {
@@ -251,7 +251,7 @@ function CitizenLinkedUserControl({
                 </option>
                 {userChoices.map((appUser) => (
                   <option key={appUser.id} value={appUser.id}>
-                    {appUser.username} · {appUser.email}
+                    {appUser.username}
                   </option>
                 ))}
               </select>

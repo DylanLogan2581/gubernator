@@ -3134,6 +3134,13 @@ export type Database = {
         Args: { p_user_id: string; p_world_id: string };
         Returns: undefined;
       };
+      search_users_for_admin_picker: {
+        Args: { p_limit?: number; p_query?: string };
+        Returns: {
+          id: string;
+          username: string;
+        }[];
+      };
       set_bulk_construction_assignment: {
         Args: { p_construction_project_id: string; p_target_count: number };
         Returns: {

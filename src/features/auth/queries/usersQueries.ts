@@ -9,21 +9,19 @@ import { normalizeSupabaseError, type AuthUiError } from "../utils/authErrors";
 
 import { authQueryKeys } from "./authQueryKeys";
 
-import type { AppUser } from "../types/authTypes";
+import type { AdminPickerUser } from "../types/authTypes";
 
 type AvailableUsersQueryKey = ReturnType<typeof authQueryKeys.availableUsers>;
 type AvailableUsersQueryOptions = UseQueryOptions<
-  readonly AppUser[],
+  readonly AdminPickerUser[],
   AuthUiError,
-  readonly AppUser[],
+  readonly AdminPickerUser[],
   AvailableUsersQueryKey
 >;
 
-// Lists active application users for admin pickers such as the player
-// character creation dialog. The users table's RLS already gates raw row
-// visibility (any authenticated user may read profiles); the surface here
-// exists so the dialog has a stable query key and uniform shape rather than
-// hitting the table from the component.
+// Lists users for admin pickers (link user to citizen, create player character).
+// Calls the search_users_for_admin_picker SECURITY DEFINER RPC which returns
+// only id + username — never email or other sensitive columns.
 export function availableUsersQueryOptions(
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): AvailableUsersQueryOptions {
@@ -36,12 +34,10 @@ export function availableUsersQueryOptions(
 
 async function getAvailableUsers(
   client: GubernatorSupabaseClient,
-): Promise<readonly AppUser[]> {
-  const { data, error } = await client
-    .from("users")
-    .select("created_at,email,id,is_super_admin,status,updated_at,username")
-    .eq("status", "active")
-    .order("username", { ascending: true });
+): Promise<readonly AdminPickerUser[]> {
+  const { data, error } = await client.rpc("search_users_for_admin_picker", {
+    p_limit: 50,
+  });
 
   if (error !== null) {
     throw normalizeSupabaseError(error);

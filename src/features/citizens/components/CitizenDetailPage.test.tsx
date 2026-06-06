@@ -371,7 +371,7 @@ describe("CitizenDetailPage", () => {
   });
 
   describe("CitizenLinkedUserControl", () => {
-    it("shows a user picker with username · email options when the admin opens the link editor", async () => {
+    it("shows a user picker with username options when the admin opens the link editor", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
@@ -397,8 +397,8 @@ describe("CitizenDetailPage", () => {
       const options = Array.from((select as HTMLSelectElement).options).map(
         (o) => o.text,
       );
-      expect(options).toContain("user · user@example.com");
-      expect(options).toContain("otheruser · other@example.com");
+      expect(options).toContain("user");
+      expect(options).toContain("otheruser");
     });
 
     it("shows an error message when the users query fails", async () => {
@@ -547,7 +547,7 @@ describe("CitizenDetailPage", () => {
       );
     });
 
-    it("renders linked user as username · email when user data is available", async () => {
+    it("renders linked user as username when user data is available", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
@@ -563,7 +563,7 @@ describe("CitizenDetailPage", () => {
       renderPage();
 
       await screen.findByRole("heading", { level: 1, name: "Aldra" });
-      expect(await screen.findByText("user · user@example.com")).toBeDefined();
+      expect(await screen.findByText("user")).toBeDefined();
     });
 
     it("links the selected user when the form is submitted", async () => {
@@ -572,11 +572,20 @@ describe("CitizenDetailPage", () => {
         name: "Aldra",
         user_id: OTHER_USER_ID,
       });
-      const rpcMock = vi.fn().mockReturnValue({
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: linkedCitizenRow,
-          error: null,
-        }),
+      const pickerRows = [
+        { id: USER_ID, username: "user" },
+        { id: OTHER_USER_ID, username: "otheruser" },
+      ];
+      const rpcMock = vi.fn().mockImplementation((name: string) => {
+        if (name === "search_users_for_admin_picker") {
+          return Promise.resolve({ data: pickerRows, error: null });
+        }
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: linkedCitizenRow,
+            error: null,
+          }),
+        };
       });
       const client = createClient({
         adminRows: [{ world_id: WORLD_ID }],
@@ -892,6 +901,21 @@ function createClient({
         return createSettlementsBuilder();
       }
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn().mockImplementation((name: string) => {
+      if (name === "search_users_for_admin_picker") {
+        if (usersQueryFails) {
+          return Promise.resolve({
+            data: null,
+            error: { code: "42501", message: "Forbidden" },
+          });
+        }
+        return Promise.resolve({
+          data: usersRows.map((u) => ({ id: u.id, username: u.username })),
+          error: null,
+        });
+      }
+      return undefined;
     }),
   };
 }

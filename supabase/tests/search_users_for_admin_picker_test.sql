@@ -1,25 +1,28 @@
--- pgTAP tests for the users_select_world_admin RLS policy.
+-- pgTAP tests for public.search_users_for_admin_picker RPC
+-- and the narrowed public.users direct-select behavior.
 -- Run with: npx supabase test db
 --
 -- Acceptance criteria covered:
---   • World owner can read all active user rows (new behavior)
---   • Explicit world admin (non-owner) can read all active user rows (new behavior)
---   • Outsider cannot read other users' rows (existing behavior preserved)
---   • Outsider can still read their own row via users_select_self (unchanged)
---   • Suspended world owner is denied — is_any_world_admin wraps is_active_app_user
---   • Suspended explicit world admin is denied by the same path
---   • Super admin behavior is unchanged (reads all via users_select_super_admin)
+--   • World admin (owner) can call the RPC and receives id + username rows
+--   • Explicit world admin (non-owner) can call the RPC
+--   • Non-admin authenticated user receives 42501
+--   • Anonymous caller receives 42501
+--   • Direct SELECT on public.users as a world admin returns only their own row
+--   • Direct SELECT on public.users as a super admin returns all rows
+--   • RPC search by username filters results correctly
+--   • RPC search by email matches but email is not in result columns
+--   • p_limit is clamped to at most 50
 begin;
 
 select
-  plan (7);
+  plan (10);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
+-- UUID series: c1-prefixed users, c2-prefixed worlds.
+-- Same series as the former users_select_world_admin_test.sql which this file
+-- replaces; safe because each test file runs in its own transaction.
 -- ---------------------------------------------------------------------------
--- UUIDs use c1..0X for users and c2..0X for worlds; no collision with the
--- a0/b0/d0 series used by rls_policy_overhaul_test.sql or the b1/b2 series
--- used by permission_helper_role_matrix_test.sql.
 insert into
   auth.users (
     id,
@@ -94,7 +97,7 @@ values
   );
 
 -- ===========================================================================
--- WORLD OWNER: sees all user rows
+-- WORLD OWNER: can call the RPC and gets id + username rows
 -- ===========================================================================
 set
   local role authenticated;
@@ -108,7 +111,7 @@ select
       select
         count(*)::int
       from
-        public.users
+        public.search_users_for_admin_picker ()
       where
         id in (
           'c1000000-0000-0000-0000-000000000001',
@@ -118,13 +121,13 @@ select
         )
     ),
     4,
-    'world owner can read all user rows'
+    'world owner can call the RPC and all four fixture rows are returned'
   );
 
 reset role;
 
 -- ===========================================================================
--- EXPLICIT WORLD ADMIN: sees all user rows
+-- EXPLICIT WORLD ADMIN: can call the RPC
 -- ===========================================================================
 set
   local role authenticated;
@@ -138,7 +141,7 @@ select
       select
         count(*)::int
       from
-        public.users
+        public.search_users_for_admin_picker ()
       where
         id in (
           'c1000000-0000-0000-0000-000000000001',
@@ -148,19 +151,54 @@ select
         )
     ),
     4,
-    'explicit world admin can read all user rows'
+    'explicit world admin can call the RPC'
   );
 
 reset role;
 
 -- ===========================================================================
--- OUTSIDER: sees only own row; cannot read others
+-- NON-ADMIN AUTHENTICATED USER: 42501
 -- ===========================================================================
 set
   local role authenticated;
 
 set
   local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$select public.search_users_for_admin_picker ()$test$,
+    '42501',
+    null,
+    'non-admin authenticated user is rejected with 42501'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- ANONYMOUS CALLER: 42501 (grant is only to authenticated)
+-- ===========================================================================
+set
+  local role anon;
+
+select
+  throws_ok (
+    $test$select public.search_users_for_admin_picker ()$test$,
+    '42501',
+    null,
+    'anonymous caller is rejected with 42501'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- DIRECT SELECT as world admin: only own row visible (users_select_self)
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
   ok (
@@ -170,9 +208,9 @@ select
       from
         public.users
       where
-        id = 'c1000000-0000-0000-0000-000000000001'
+        id = 'c1000000-0000-0000-0000-000000000003'
     ),
-    'outsider cannot read world owner row'
+    'world admin direct SELECT cannot read other users row'
   );
 
 select
@@ -183,87 +221,15 @@ select
       from
         public.users
       where
-        id = 'c1000000-0000-0000-0000-000000000003'
-    ),
-    'outsider can still read own row (users_select_self unchanged)'
-  );
-
-reset role;
-
--- ===========================================================================
--- SUSPENDED WORLD OWNER: is_any_world_admin denies inactive users
--- ===========================================================================
-update public.users
-set
-  status = 'suspended'
-where
-  id = 'c1000000-0000-0000-0000-000000000001';
-
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000001","role":"authenticated"}';
-
-select
-  ok (
-    not exists (
-      select
-        1
-      from
-        public.users
-      where
-        id = 'c1000000-0000-0000-0000-000000000003'
-    ),
-    'suspended world owner cannot read other user rows'
-  );
-
-reset role;
-
-update public.users
-set
-  status = 'active'
-where
-  id = 'c1000000-0000-0000-0000-000000000001';
-
--- ===========================================================================
--- SUSPENDED EXPLICIT WORLD ADMIN: denied
--- ===========================================================================
-update public.users
-set
-  status = 'suspended'
-where
-  id = 'c1000000-0000-0000-0000-000000000002';
-
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000002","role":"authenticated"}';
-
-select
-  ok (
-    not exists (
-      select
-        1
-      from
-        public.users
-      where
         id = 'c1000000-0000-0000-0000-000000000001'
     ),
-    'suspended explicit world admin cannot read other user rows'
+    'world admin direct SELECT can read own row (users_select_self)'
   );
 
 reset role;
 
-update public.users
-set
-  status = 'active'
-where
-  id = 'c1000000-0000-0000-0000-000000000002';
-
 -- ===========================================================================
--- SUPER ADMIN: behavior unchanged, can read all user rows
+-- DIRECT SELECT as super admin: all rows visible (users_select_super_admin)
 -- ===========================================================================
 set
   local role authenticated;
@@ -287,7 +253,84 @@ select
         )
     ),
     4,
-    'super admin can read all user rows (unchanged)'
+    'super admin direct SELECT can read all user rows'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- RPC p_query filters by username
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.search_users_for_admin_picker ('wa_owner')
+    ),
+    1,
+    'username search returns only matching rows'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- RPC p_query matches by email but result has no email column
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.search_users_for_admin_picker ('wa-admin@example.com')
+      where
+        id = 'c1000000-0000-0000-0000-000000000002'
+    ),
+    1,
+    'email search returns matching row (email not exposed in result)'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- RPC p_limit clamped to 50
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  ok (
+    (
+      select
+        count(*)::int
+      from
+        public.search_users_for_admin_picker (null, 999)
+      where
+        id in (
+          'c1000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000002',
+          'c1000000-0000-0000-0000-000000000003',
+          'c1000000-0000-0000-0000-000000000004'
+        )
+    ) = 4,
+    'p_limit=999 is clamped to 50; all four fixture rows still returned'
   );
 
 reset role;

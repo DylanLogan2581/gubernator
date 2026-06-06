@@ -24,6 +24,7 @@ export {
 export { AuthUiError, normalizeSupabaseError } from "./utils/authErrors";
 
 export type {
+  AdminPickerUser,
   AppUser,
   AuthErrorDetails,
   SignInWithPasswordInput,
