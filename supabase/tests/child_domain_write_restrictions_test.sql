@@ -366,23 +366,21 @@ select
     'set_settlement_auto_ready enables auto-ready for admin caller'
   );
 
--- Archived worlds are no-ops via the RPC.
+-- Archived worlds raise P0001 via the RPC.
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.set_settlement_readiness ('83000000-0000-0000-0000-000000000003', true)
-    ),
-    0,
-    'set_settlement_readiness returns no rows for archived-world settlement'
+  throws_ok (
+    $test$
+    select public.set_settlement_readiness ('83000000-0000-0000-0000-000000000003', true)
+    $test$,
+    'P0001',
+    null,
+    'set_settlement_readiness raises P0001 for archived-world settlement'
   );
 
 reset role;
 
 -- ===========================================================================
--- NON-ADMIN: RPC is a no-op for callers without admin access.
+-- NON-ADMIN: RPC raises 42501 for callers without admin access.
 -- ===========================================================================
 set
   local role authenticated;
@@ -391,27 +389,23 @@ set
   local "request.jwt.claims" = '{"sub":"80000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.set_settlement_readiness ('83000000-0000-0000-0000-000000000001', false)
-    ),
-    0,
-    'set_settlement_readiness returns no rows for non-admin caller'
+  throws_ok (
+    $test$
+    select public.set_settlement_readiness ('83000000-0000-0000-0000-000000000001', false)
+    $test$,
+    '42501',
+    null,
+    'set_settlement_readiness raises 42501 for non-admin caller'
   );
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.set_settlement_auto_ready ('83000000-0000-0000-0000-000000000001', false)
-    ),
-    0,
-    'set_settlement_auto_ready returns no rows for non-admin caller'
+  throws_ok (
+    $test$
+    select public.set_settlement_auto_ready ('83000000-0000-0000-0000-000000000001', false)
+    $test$,
+    '42501',
+    null,
+    'set_settlement_auto_ready raises 42501 for non-admin caller'
   );
 
 reset role;
