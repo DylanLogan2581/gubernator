@@ -70,9 +70,17 @@ function makeStateResponses(): Record<
   return {
     "/rest/v1/worlds": { body: [makeWorldRow()], status: 200 },
     "/rest/v1/settlements": {
-      body: [{ id: SETTLEMENT_ID, name: "Settlement One", nations: {} }],
+      body: [
+        {
+          id: SETTLEMENT_ID,
+          name: "Settlement One",
+          nameset_id: null,
+          nations: { nameset_id: null },
+        },
+      ],
       status: 200,
     },
+    "/rest/v1/namesets": { body: [], status: 200 },
     "/rest/v1/resources": {
       body: [
         { id: FOOD_ID, slug: "food" },

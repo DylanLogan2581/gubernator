@@ -10,6 +10,7 @@ import {
 import { CitizensPanel, SettlementAssignmentBoard } from "@/features/citizens";
 import { SettlementDepositsPanel } from "@/features/deposits";
 import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
+import { SettlementNamesetCard } from "@/features/namesets";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
@@ -290,6 +291,16 @@ function SettlementDetailLoaded({
         queryClient={queryClient}
         settlement={settlement}
       />
+
+      {worldAccess.canAdmin ? (
+        <SettlementNamesetCard
+          canAdmin={worldAccess.canAdmin}
+          currentNamesetId={settlement.namesetId}
+          isArchived={isArchived}
+          settlementId={settlement.id}
+          worldId={worldId}
+        />
+      ) : null}
 
       <SettlementCoordinatesSection
         canEdit={canEditDetails}

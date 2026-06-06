@@ -4,6 +4,7 @@ export type Nation = {
   readonly id: string;
   readonly isHidden: boolean;
   readonly name: string;
+  readonly namesetId: string | null;
   readonly updatedAt: string;
   readonly worldId: string;
 };

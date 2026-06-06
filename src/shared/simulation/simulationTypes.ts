@@ -342,6 +342,9 @@ export type SimulationInputState = {
   readonly managedPopulationTypes: readonly SimManagedPopulationType[];
   readonly managedPopulations: readonly SimManagedPopulation[];
   readonly namingConfig?: SimNamingConfig | null;
+  readonly namingConfigBySettlementId?: Readonly<
+    Record<string, SimNamingConfig>
+  >;
   readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];
   readonly populationRules: WorldPopulationRules;

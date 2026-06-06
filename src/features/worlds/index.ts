@@ -65,6 +65,10 @@ export {
   renameWorldMutationOptions,
   setWorldCurrentTurnNumberMutationOptions,
 } from "./mutations/worldSettingsMutations";
+export {
+  NAME_CONVENTIONS,
+  worldNamingConfigSchema,
+} from "./schemas/worldNamingConfigSchemas";
 export type {
   NameConvention,
   WorldNamingConfig,

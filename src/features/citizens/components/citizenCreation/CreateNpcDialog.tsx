@@ -14,9 +14,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
-  worldNamingConfigQueryOptions,
-  worldNpcFlavorConfigQueryOptions,
-} from "@/features/worlds";
+  activeNamesetsByWorldQueryOptions,
+  resolveNamingConfig,
+} from "@/features/namesets";
+import { settlementByIdQueryOptions } from "@/features/settlements";
+import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
@@ -70,7 +72,8 @@ export function CreateNpcDialog({
     citizensInSettlementQueryOptions(settlementId),
   );
   const flavorConfigQuery = useQuery(worldNpcFlavorConfigQueryOptions(worldId));
-  const namingConfigQuery = useQuery(worldNamingConfigQueryOptions(worldId));
+  const namesetsQuery = useQuery(activeNamesetsByWorldQueryOptions(worldId));
+  const settlementQuery = useQuery(settlementByIdQueryOptions(settlementId));
   const mutation = useMutation(createNpcMutationOptions({ queryClient }));
 
   const generatedFlavor = useMemo(() => {
@@ -94,7 +97,20 @@ export function CreateNpcDialog({
     (citizen) => citizen.status === "alive",
   );
 
-  const namingConfig = namingConfigQuery.data;
+  const namingConfig =
+    namesetsQuery.data !== undefined
+      ? resolveNamingConfig(
+          namesetsQuery.data,
+          {
+            convention: "random",
+            female_given_names: [],
+            male_given_names: [],
+            surnames: [],
+          },
+          settlementQuery.data?.namesetId,
+          settlementQuery.data?.nation.namesetId,
+        )
+      : undefined;
 
   const nameGenerationHint: string | null = (() => {
     if (namingConfig === undefined) return null;

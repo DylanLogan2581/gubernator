@@ -12,13 +12,13 @@ import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { DepositsConfigPanel } from "@/features/deposits";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
+import { NamesetsConfigPanel } from "@/features/namesets";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
-import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
 import { WorldSettingsPanel } from "./WorldSettingsPanel";
@@ -32,7 +32,7 @@ const BASE_TABS = [
   { key: "deposits", label: "Deposits" },
   { key: "managed-populations", label: "Managed Populations" },
   { key: "calendar", label: "Calendar" },
-  { key: "naming", label: "Naming" },
+  { key: "namesets", label: "Namesets" },
   { key: "npc-flavor", label: "NPC Flavor" },
   { key: "population-rules", label: "Population Rules" },
 ] as const;
@@ -246,11 +246,10 @@ function WorldConfigurationContent({
     );
   }
 
-  if (activeTab === "naming") {
+  if (activeTab === "namesets") {
     return (
       <ConfigPanelShell>
-        <WorldNamingConfigPanel
-          accessContext={accessContext}
+        <NamesetsConfigPanel
           canAdmin={worldQuery.data.canAdmin}
           isArchived={worldQuery.data.header.isArchived}
           worldId={worldId}

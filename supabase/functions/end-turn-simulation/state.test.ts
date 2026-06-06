@@ -127,9 +127,14 @@ function makeAllSuccessResponses(): Record<
           name: "Settlement One",
           is_ready_current_turn: false,
           auto_ready_enabled: false,
-          nations: {},
+          nameset_id: null,
+          nations: { nameset_id: null },
         },
       ],
+      status: 200,
+    },
+    "/rest/v1/namesets": {
+      body: [],
       status: 200,
     },
     "/rest/v1/resources": {
@@ -724,11 +729,13 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
             name: "S1",
             is_ready_current_turn: false,
             auto_ready_enabled: false,
-            nations: {},
+            nameset_id: null,
+            nations: { nameset_id: null },
           },
         ],
         status: 200,
       },
+      "/rest/v1/namesets": { body: [], status: 200 },
       "/rest/v1/resources": {
         body: [
           { id: FOOD_ID, slug: "food" },

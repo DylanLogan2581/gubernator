@@ -28,6 +28,14 @@ export type SupabaseSettlementRow = {
   readonly id: string;
   readonly is_ready_current_turn: boolean;
   readonly name: string;
+  readonly nameset_id: string | null;
+  readonly nations: { readonly nameset_id: string | null } | null;
+};
+
+export type SupabaseNamesetRow = {
+  readonly id: string;
+  readonly config_json: unknown;
+  readonly is_default: boolean;
 };
 
 export type SupabaseResourceRow = {
@@ -225,7 +233,18 @@ export function isSettlementRow(v: unknown): v is SupabaseSettlementRow {
     typeof v.id === "string" &&
     typeof v.name === "string" &&
     typeof v.is_ready_current_turn === "boolean" &&
-    typeof v.auto_ready_enabled === "boolean"
+    typeof v.auto_ready_enabled === "boolean" &&
+    (v.nameset_id === null || typeof v.nameset_id === "string") &&
+    (v.nations === null ||
+      (isRecord(v.nations) &&
+        (v.nations.nameset_id === null ||
+          typeof v.nations.nameset_id === "string")))
+  );
+}
+
+export function isNamesetRow(v: unknown): v is SupabaseNamesetRow {
+  return (
+    isRecord(v) && typeof v.id === "string" && typeof v.is_default === "boolean"
   );
 }
 

@@ -405,6 +405,7 @@ function createNation(): Nation {
     id: NATION_ID,
     isHidden: false,
     name: "Aurelia",
+    namesetId: null,
     updatedAt: "2026-05-01T00:00:00.000Z",
     worldId: WORLD_ID,
   };

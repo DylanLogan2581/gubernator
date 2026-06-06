@@ -6,6 +6,7 @@ import { useEffect, type JSX } from "react";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { NationNamesetCard } from "@/features/namesets";
 import {
   currentAccessContextQueryOptions,
   type AccessContext,
@@ -256,6 +257,16 @@ function NationDetailLoaded({
 
       {canToggleHidden ? (
         <NationHiddenToggleSection nation={nation} queryClient={queryClient} />
+      ) : null}
+
+      {worldAccess.canAdmin ? (
+        <NationNamesetCard
+          canAdmin={worldAccess.canAdmin}
+          currentNamesetId={nation.namesetId}
+          isArchived={isArchived}
+          nationId={nation.id}
+          worldId={worldId}
+        />
       ) : null}
 
       <NationSettlementsSection nationId={nation.id} worldId={worldId} />

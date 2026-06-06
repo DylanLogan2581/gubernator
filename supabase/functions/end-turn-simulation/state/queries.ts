@@ -162,7 +162,23 @@ export function fetchSettlements(
       "nations.world_id": `eq.${worldId}`,
       order: "id.asc",
       select:
-        "id,name,is_ready_current_turn,auto_ready_enabled,nations!inner()",
+        "id,name,nameset_id,is_ready_current_turn,auto_ready_enabled,nations!inner(nameset_id,world_id)",
+    },
+  });
+}
+
+export function fetchNamesets(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "namesets",
+    params: {
+      world_id: `eq.${worldId}`,
+      is_trashed: "eq.false",
+      order: "id.asc",
+      select: "id,config_json,is_default",
     },
   });
 }

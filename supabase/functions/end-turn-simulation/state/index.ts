@@ -37,6 +37,7 @@ import {
   fetchJobs,
   fetchManagedPops,
   fetchManagedPopTypes,
+  fetchNamesets,
   fetchPartnerships,
   fetchProjects,
   fetchResources,
@@ -54,12 +55,15 @@ import {
   isJobRow,
   isManagedPopRow,
   isManagedPopTypeRow,
+  isNamesetRow,
   isPartnershipRow,
   isProjectRow,
   isResourceRow,
   isSettlementRow,
   isStockpileRow,
   isTradeRouteRow,
+  type SupabaseNamesetRow,
+  type SupabaseSettlementRow,
 } from "./rowTypes.ts";
 
 import type {
@@ -68,7 +72,10 @@ import type {
   EndTurnSimulationStateResult,
 } from "../types.ts";
 import type { FetchContext, FetchReason } from "./queries.ts";
-import type { SimulationInputState } from "../../_shared/simulation/simulationTypes.ts";
+import type {
+  SimNamingConfig,
+  SimulationInputState,
+} from "../../_shared/simulation/simulationTypes.ts";
 
 // ---------------------------------------------------------------------------
 // Public entry point
@@ -132,9 +139,8 @@ export async function resolveSupabaseEndTurnSimulationInput(
     };
   }
 
-  const settlements = settlementsResult.rows
-    .filter(isSettlementRow)
-    .map(toSimSettlement);
+  const settlementRows = settlementsResult.rows.filter(isSettlementRow);
+  const settlements = settlementRows.map(toSimSettlement);
 
   const settlementIds = settlements.map((s) => s.id);
 
@@ -164,6 +170,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     eventsResult,
     assignmentsResult,
     partnershipsResult,
+    namesetsResult,
   ] = await Promise.all([
     fetchResources(ctx, worldId),
     fetchStockpiles(ctx, settlementIds),
@@ -180,6 +187,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     fetchEvents(ctx, worldId),
     fetchAssignments(ctx, worldId),
     fetchPartnerships(ctx, worldId),
+    fetchNamesets(ctx, worldId),
   ]);
 
   const round2Results = [
@@ -198,6 +206,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     eventsResult,
     assignmentsResult,
     partnershipsResult,
+    namesetsResult,
   ];
 
   for (const result of round2Results) {
@@ -205,6 +214,20 @@ export async function resolveSupabaseEndTurnSimulationInput(
       return stateResultFromFetchError(result.reason);
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Build per-settlement naming config lookup from namesets
+  // -------------------------------------------------------------------------
+
+  const namesetRows = (
+    namesetsResult as Extract<typeof namesetsResult, { ok: true }>
+  ).rows.filter(isNamesetRow);
+
+  const namingConfigBySettlementId = resolveNamingConfigBySettlement(
+    settlementRows,
+    namesetRows,
+    namingConfig,
+  );
 
   // -------------------------------------------------------------------------
   // Map raw rows → Sim types
@@ -272,6 +295,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
       .filter(isManagedPopRow)
       .map(toSimManagedPop),
     namingConfig,
+    namingConfigBySettlementId,
     npcFlavorConfig,
     partnerships: (
       partnershipsResult as Extract<typeof partnershipsResult, { ok: true }>
@@ -319,6 +343,47 @@ function createStateUnavailableResult(): EndTurnSimulationStateResult {
     ok: false,
     status: 500,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Per-settlement naming config resolution
+// ---------------------------------------------------------------------------
+
+function resolveNamingConfigBySettlement(
+  settlementRows: readonly SupabaseSettlementRow[],
+  namesetRows: readonly SupabaseNamesetRow[],
+  worldFallback: SimNamingConfig | null,
+): Record<string, SimNamingConfig> {
+  const configById = new Map<string, SimNamingConfig>();
+  let defaultConfig: SimNamingConfig | null = null;
+
+  for (const ns of namesetRows) {
+    const config = parseWorldNamingConfig(ns.config_json);
+    if (config !== null) {
+      configById.set(ns.id, config);
+      if (ns.is_default) {
+        defaultConfig = config;
+      }
+    }
+  }
+
+  const result: Record<string, SimNamingConfig> = {};
+
+  for (const row of settlementRows) {
+    const resolved =
+      (row.nameset_id !== null ? configById.get(row.nameset_id) : undefined) ??
+      (row.nations?.nameset_id !== null && row.nations?.nameset_id !== undefined
+        ? configById.get(row.nations.nameset_id)
+        : undefined) ??
+      defaultConfig ??
+      worldFallback;
+
+    if (resolved !== null && resolved !== undefined) {
+      result[row.id] = resolved;
+    }
+  }
+
+  return result;
 }
 
 function stateResultFromFetchError(

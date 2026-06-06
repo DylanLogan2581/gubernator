@@ -812,6 +812,47 @@ export type Database = {
           },
         ];
       };
+      namesets: {
+        Row: {
+          config_json: Json;
+          created_at: string;
+          id: string;
+          is_default: boolean;
+          is_trashed: boolean;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          config_json?: Json;
+          created_at?: string;
+          id?: string;
+          is_default?: boolean;
+          is_trashed?: boolean;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          config_json?: Json;
+          created_at?: string;
+          id?: string;
+          is_default?: boolean;
+          is_trashed?: boolean;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "namesets_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_relationships: {
         Row: {
           created_at: string;
@@ -894,6 +935,7 @@ export type Database = {
           id: string;
           is_hidden: boolean;
           name: string;
+          nameset_id: string | null;
           updated_at: string;
           world_id: string;
         };
@@ -903,6 +945,7 @@ export type Database = {
           id?: string;
           is_hidden?: boolean;
           name: string;
+          nameset_id?: string | null;
           updated_at?: string;
           world_id: string;
         };
@@ -912,10 +955,18 @@ export type Database = {
           id?: string;
           is_hidden?: boolean;
           name?: string;
+          nameset_id?: string | null;
           updated_at?: string;
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "nations_nameset_id_fkey";
+            columns: ["nameset_id"];
+            isOneToOne: false;
+            referencedRelation: "namesets";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "nations_world_id_fkey";
             columns: ["world_id"];
@@ -1423,6 +1474,7 @@ export type Database = {
           is_ready_current_turn: boolean;
           last_ready_at: string | null;
           name: string;
+          nameset_id: string | null;
           nation_id: string;
           ready_set_at: string | null;
           ready_set_by_citizen_id: string | null;
@@ -1438,6 +1490,7 @@ export type Database = {
           is_ready_current_turn?: boolean;
           last_ready_at?: string | null;
           name: string;
+          nameset_id?: string | null;
           nation_id: string;
           ready_set_at?: string | null;
           ready_set_by_citizen_id?: string | null;
@@ -1453,12 +1506,20 @@ export type Database = {
           is_ready_current_turn?: boolean;
           last_ready_at?: string | null;
           name?: string;
+          nameset_id?: string | null;
           nation_id?: string;
           ready_set_at?: string | null;
           ready_set_by_citizen_id?: string | null;
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "settlements_nameset_id_fkey";
+            columns: ["nameset_id"];
+            isOneToOne: false;
+            referencedRelation: "namesets";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "settlements_nation_id_fkey";
             columns: ["nation_id"];
@@ -2512,6 +2573,13 @@ export type Database = {
           world_id: string;
         }[];
       };
+      hard_delete_nameset: {
+        Args: { p_nameset_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
       hard_delete_resource: {
         Args: { p_resource_id: string; p_world_id: string };
         Returns: {
@@ -2955,6 +3023,13 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      restore_nameset: {
+        Args: { p_nameset_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
       restore_resource: {
         Args: { p_resource_id: string; p_world_id: string };
         Returns: {
@@ -3123,6 +3198,14 @@ export type Database = {
           settlement_id: string;
         }[];
       };
+      set_nation_nameset: {
+        Args: { p_nameset_id: string; p_nation_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          nameset_id: string;
+          world_id: string;
+        }[];
+      };
       set_per_target_assignment: {
         Args: {
           p_assignment_type: string;
@@ -3158,6 +3241,18 @@ export type Database = {
           id: string;
           is_ready_current_turn: boolean;
           ready_set_at: string;
+        }[];
+      };
+      set_settlement_nameset: {
+        Args: {
+          p_nameset_id: string;
+          p_settlement_id: string;
+          p_world_id: string;
+        };
+        Returns: {
+          id: string;
+          nameset_id: string;
+          world_id: string;
         }[];
       };
       set_settlement_readiness: {
@@ -3214,6 +3309,13 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      set_world_default_nameset: {
+        Args: { p_nameset_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
       };
       settlement_alive_citizen_count: {
         Args: { p_settlement_id: string };
@@ -3329,6 +3431,13 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      soft_delete_nameset: {
+        Args: { p_nameset_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
       };
       soft_delete_resource: {
         Args: { p_resource_id: string; p_world_id: string };
