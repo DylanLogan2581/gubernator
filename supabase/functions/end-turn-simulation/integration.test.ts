@@ -264,24 +264,29 @@ describe("end-turn-simulation integration", () => {
       return;
     }
 
-    // Probe the edge function itself.  The runtime returns "Function not found"
-    // (404) when the container was started before end-turn-simulation was
-    // registered; in that case skip rather than fail.
+    // Probe the edge function itself. If the local API is reachable but the
+    // function or edge runtime is not, fail with the gateway response: proving
+    // the edge runtime is available is part of this integration test.
     // Fix: run `npx supabase stop && npx supabase start` to reload functions,
     // and ensure supabase/functions/_shared/simulation/ files are mounted in
     // the edge runtime.
+    let fnProbe: Response;
     try {
-      const fnProbe = await fetch(
-        `${LOCAL_URL}/functions/v1/end-turn-simulation`,
-        {
-          method: "OPTIONS",
-          signal: AbortSignal.timeout(5_000),
-        },
+      fnProbe = await fetch(`${LOCAL_URL}/functions/v1/end-turn-simulation`, {
+        method: "OPTIONS",
+        signal: AbortSignal.timeout(5_000),
+      });
+    } catch (error) {
+      throw new Error(
+        `end-turn-simulation edge probe failed before request completed: ${String(error)}`,
+        { cause: error },
       );
-      // 404 means the function is not registered in this runtime instance.
-      if (fnProbe.status === 404) return;
-    } catch {
-      return;
+    }
+    if (!fnProbe.ok) {
+      const responseText = await fnProbe.text();
+      throw new Error(
+        `end-turn-simulation edge probe failed: ${fnProbe.status} ${fnProbe.statusText} ${responseText}`,
+      );
     }
 
     // Use the service-role client (bypasses RLS) to reset world 101 to the
@@ -433,7 +438,13 @@ describe("end-turn-simulation integration", () => {
       },
     );
 
-    expect(response.status).toBe(200);
+    if (response.status !== 200) {
+      const responseText = await response.text();
+      throw new Error(
+        `end-turn-simulation request failed: ${response.status} ${response.statusText} ${responseText}`,
+      );
+    }
+
     const body: unknown = await response.json();
     expect(body).toMatchObject({
       ok: true,

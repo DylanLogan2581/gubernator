@@ -311,7 +311,7 @@ export function fetchAssignments(
       "citizens.world_id": `eq.${worldId}`,
       order: "citizen_id.asc",
       select:
-        "citizen_id,assignment_type,job_id,construction_project_id,deposit_instance_id,managed_population_instance_id,trade_route_id,trade_route_end,assigned_on_turn_number,citizens!inner()",
+        "citizen_id,assignment_type,job_id,construction_project_id,deposit_instance_id,managed_population_instance_id,trade_route_id,trade_route_end,assigned_on_turn_number,citizens!inner(world_id)",
     },
   });
 }
