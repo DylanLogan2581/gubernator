@@ -1,13 +1,17 @@
-import { type QueryClient } from "@tanstack/react-query";
+import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Minus, Pencil } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { type TurnTransitionOutcome } from "@/features/turns";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseDepositDepletedPayload } from "@/shared/simulation";
 
+import { restoreDepositInstanceMutationOptions } from "../../mutations/restoreDepositInstanceMutations";
+
 import { EditResourceQuantitiesDialog } from "./EditResourceQuantitiesDialog";
+import { HardDeleteDepositConfirmDialog } from "./HardDeleteDepositConfirmDialog";
 import { MaxWorkersEditDialog } from "./MaxWorkersEditDialog";
 import { RemoveDepositConfirmDialog } from "./RemoveDepositConfirmDialog";
 
@@ -49,6 +53,11 @@ export function DepositInstanceRow({
   const [showEditQuantities, setShowEditQuantities] = useState(false);
   const [showMaxWorkersEdit, setShowMaxWorkersEdit] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [showHardDeleteConfirm, setShowHardDeleteConfirm] = useState(false);
+
+  const restoreMutation = useMutation(
+    restoreDepositInstanceMutationOptions({ queryClient }),
+  );
 
   const isDepletion = instance.status === "depleted";
   const depletedTooltip = isDepletion
@@ -102,63 +111,110 @@ export function DepositInstanceRow({
           <span className="text-sm">{workersDisplay}</span>
         </td>
         {canAdmin || canManage ? (
-          <td className="w-36 py-2 text-right">
+          <td className="w-[18rem] py-2 text-right">
             <div className="flex items-center justify-end gap-2">
-              {canManage ? (
-                <Button
-                  aria-label={`Edit max workers for ${instance.name}`}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowMaxWorkersEdit(true);
-                  }}
-                >
-                  <Minus aria-hidden="true" className="h-3.5 w-3.5" />
-                  Max
-                </Button>
-              ) : null}
-              {canAdmin && instance.resources.length > 0 ? (
-                <Button
-                  aria-label={`Edit resource quantities for ${instance.name}`}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowEditQuantities(true);
-                  }}
-                >
-                  <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
-                  Qtys
-                </Button>
-              ) : null}
-              {canAdmin ? (
-                assignedCount > 0 ? (
-                  <span title="Cannot remove: deposit has assigned workers.">
+              {instance.status === "removed" ? (
+                canAdmin ? (
+                  <>
                     <Button
-                      aria-label={`Remove ${instance.name}`}
-                      disabled
+                      aria-label={`Restore ${instance.name}`}
+                      disabled={restoreMutation.isPending}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        restoreMutation.mutate(
+                          { depositInstanceId: instance.id },
+                          {
+                            onSuccess: () => {
+                              notifyMutationSuccess(
+                                `${instance.name} restored.`,
+                              );
+                            },
+                            onError: (error) => {
+                              notifyMutationError(
+                                error,
+                                "Failed to restore deposit instance.",
+                              );
+                            },
+                          },
+                        );
+                      }}
+                    >
+                      Restore
+                    </Button>
+                    <Button
+                      aria-label={`Permanently delete ${instance.name}`}
                       size="sm"
                       type="button"
                       variant="destructive"
+                      onClick={() => {
+                        setShowHardDeleteConfirm(true);
+                      }}
                     >
-                      Remove
+                      Delete permanently
                     </Button>
-                  </span>
-                ) : (
-                  <Button
-                    aria-label={`Remove ${instance.name}`}
-                    size="sm"
-                    type="button"
-                    variant="destructive"
-                    onClick={() => {
-                      setShowRemoveConfirm(true);
-                    }}
-                  >
-                    Remove
-                  </Button>
-                )
-              ) : null}
+                  </>
+                ) : null
+              ) : (
+                <>
+                  {canManage ? (
+                    <Button
+                      aria-label={`Edit max workers for ${instance.name}`}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowMaxWorkersEdit(true);
+                      }}
+                    >
+                      <Minus aria-hidden="true" className="h-3.5 w-3.5" />
+                      Max
+                    </Button>
+                  ) : null}
+                  {canAdmin && instance.resources.length > 0 ? (
+                    <Button
+                      aria-label={`Edit resource quantities for ${instance.name}`}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowEditQuantities(true);
+                      }}
+                    >
+                      <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
+                      Qtys
+                    </Button>
+                  ) : null}
+                  {canAdmin ? (
+                    assignedCount > 0 ? (
+                      <span title="Cannot remove: deposit has assigned workers.">
+                        <Button
+                          aria-label={`Remove ${instance.name}`}
+                          disabled
+                          size="sm"
+                          type="button"
+                          variant="destructive"
+                        >
+                          Remove
+                        </Button>
+                      </span>
+                    ) : (
+                      <Button
+                        aria-label={`Remove ${instance.name}`}
+                        size="sm"
+                        type="button"
+                        variant="destructive"
+                        onClick={() => {
+                          setShowRemoveConfirm(true);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    )
+                  ) : null}
+                </>
+              )}
             </div>
           </td>
         ) : null}
@@ -190,6 +246,15 @@ export function DepositInstanceRow({
           queryClient={queryClient}
           onClose={() => {
             setShowRemoveConfirm(false);
+          }}
+        />
+      ) : null}
+      {showHardDeleteConfirm ? (
+        <HardDeleteDepositConfirmDialog
+          instance={instance}
+          queryClient={queryClient}
+          onClose={() => {
+            setShowHardDeleteConfirm(false);
           }}
         />
       ) : null}

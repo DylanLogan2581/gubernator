@@ -2579,6 +2579,13 @@ export type Database = {
           world_id: string;
         }[];
       };
+      hard_delete_deposit_instance: {
+        Args: { p_deposit_instance_id: string };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
+      };
       hard_delete_deposit_type: {
         Args: { p_deposit_type_id: string; p_world_id: string };
         Returns: {
@@ -2978,6 +2985,13 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      restore_deposit_instance: {
+        Args: { p_deposit_instance_id: string };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
       };
       restore_deposit_type: {
         Args: { p_deposit_type_id: string; p_world_id: string };

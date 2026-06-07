@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -43,6 +43,7 @@ export function SettlementDepositsPanel({
   worldId,
 }: SettlementDepositsPanelProps): JSX.Element {
   const queryClient = useQueryClient();
+  const [showRemoved, setShowRemoved] = useState(false);
   const instancesQuery = useQuery(
     depositInstancesBySettlementQueryOptions(settlementId),
   );
@@ -64,6 +65,11 @@ export function SettlementDepositsPanel({
     }
   }
 
+  const visibleInstances =
+    instancesQuery.data?.filter(
+      (instance) => showRemoved || instance.status !== "removed",
+    ) ?? [];
+
   return (
     <section
       aria-labelledby="settlement-deposits-heading"
@@ -74,7 +80,11 @@ export function SettlementDepositsPanel({
         instancesLoaded={!instancesQuery.isPending}
         queryClient={queryClient}
         settlementId={settlementId}
+        showRemoved={showRemoved}
         worldId={worldId}
+        onToggleRemoved={() => {
+          setShowRemoved((prev) => !prev);
+        }}
       />
 
       {instancesQuery.isPending ? (
@@ -89,6 +99,11 @@ export function SettlementDepositsPanel({
           title="No deposits"
           description="This settlement has no deposit instances."
         />
+      ) : visibleInstances.length === 0 ? (
+        <EmptyState
+          description="This settlement has no active or depleted deposit instances."
+          title="No visible deposits"
+        />
       ) : (
         <DepositsGroups
           assignedCountByInstance={assignedCountByInstance}
@@ -98,6 +113,7 @@ export function SettlementDepositsPanel({
           latestOutcome={latestOutcome}
           queryClient={queryClient}
           settlementId={settlementId}
+          showRemoved={showRemoved}
         />
       )}
     </section>
@@ -109,13 +125,17 @@ function DepositsPanelHeader({
   instancesLoaded,
   queryClient,
   settlementId,
+  showRemoved,
   worldId,
+  onToggleRemoved,
 }: {
   readonly canAdmin: boolean;
   readonly instancesLoaded: boolean;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly showRemoved: boolean;
   readonly worldId: string;
+  readonly onToggleRemoved: () => void;
 }): JSX.Element {
   const [showAddDialog, setShowAddDialog] = useState(false);
 
@@ -125,19 +145,34 @@ function DepositsPanelHeader({
         <h2 id="settlement-deposits-heading" className="text-base font-medium">
           Deposits
         </h2>
-        {canAdmin && instancesLoaded ? (
-          <Button
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setShowAddDialog(true);
-            }}
-          >
-            <Plus aria-hidden="true" />
-            Add deposit instance
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {canAdmin && instancesLoaded ? (
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowAddDialog(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Add deposit instance
+            </Button>
+          ) : null}
+          {instancesLoaded ? (
+            <Button
+              aria-label={showRemoved ? "Hide removed" : "Show removed"}
+              aria-pressed={showRemoved}
+              size="icon-sm"
+              title={showRemoved ? "Hide removed" : "Show removed"}
+              type="button"
+              variant={showRemoved ? "secondary" : "ghost"}
+              onClick={onToggleRemoved}
+            >
+              <Trash aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
       </div>
       {showAddDialog ? (
         <AddDepositInstanceDialog
@@ -172,6 +207,7 @@ function DepositsGroups({
   latestOutcome,
   queryClient,
   settlementId,
+  showRemoved,
 }: {
   readonly assignedCountByInstance: ReadonlyMap<string, number>;
   readonly canAdmin: boolean;
@@ -180,6 +216,7 @@ function DepositsGroups({
   readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly showRemoved: boolean;
 }): JSX.Element {
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -197,9 +234,14 @@ function DepositsGroups({
     });
   }
 
+  const visibleGroups = STATUS_GROUPS.filter(
+    (g) => !g.statuses.includes("removed") || showRemoved,
+  );
+
   return (
     <div className="grid gap-3">
-      {STATUS_GROUPS.map((group) => {
+      {visibleGroups.map((group) => {
+        const isRemovedGroup = group.statuses.includes("removed");
         const groupInstances = instances.filter((inst) =>
           (group.statuses as readonly string[]).includes(inst.status),
         );
@@ -210,7 +252,9 @@ function DepositsGroups({
           <DepositsStatusGroup
             key={group.label}
             assignedCountByInstance={assignedCountByInstance}
-            canAdmin={canAdmin && group.statuses.includes("active")}
+            canAdmin={
+              canAdmin && (group.statuses.includes("active") || isRemovedGroup)
+            }
             canManage={canManage && group.statuses.includes("active")}
             instances={groupInstances}
             isCollapsed={isCollapsed}
@@ -288,7 +332,11 @@ function DepositsStatusGroup({
                   Workers
                 </th>
                 {canAdmin || canManage ? (
-                  <th className="w-36 pb-2" scope="col" aria-label="Actions" />
+                  <th
+                    aria-label="Actions"
+                    className="w-[18rem] pb-2"
+                    scope="col"
+                  />
                 ) : null}
               </tr>
             </thead>

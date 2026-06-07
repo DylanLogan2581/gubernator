@@ -372,6 +372,248 @@ describe("SettlementDepositsPanel", () => {
     expect(screen.getByText("Depleted (1)")).toBeDefined();
   });
 
+  it("hides removed section by default; toggle reveals it", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "North Mine",
+            status: "active",
+          }),
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Mine");
+    expect(screen.queryByText("Old Mine")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+    expect(await screen.findByText("Old Mine")).toBeDefined();
+    expect(screen.getByText("North Mine")).toBeDefined();
+  });
+
+  it("toggle button aria-pressed reflects current state", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({ instanceRows: [] }));
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("No deposits");
+    const btn = screen.getByRole("button", { name: "Show removed" });
+    expect(btn.getAttribute("aria-pressed")).toBe("false");
+
+    await user.click(btn);
+    expect(
+      screen
+        .getByRole("button", { name: "Hide removed" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+  });
+
+  it("shows an empty state when only removed deposits exist and the removed section is hidden", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("No visible deposits");
+    expect(screen.queryByText("Old Mine")).toBeNull();
+  });
+
+  it("keeps the add button visible while removed deposits are shown", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "North Mine",
+            status: "active",
+          }),
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    await screen.findByText("North Mine");
+    expect(
+      screen.getByRole("button", { name: "Add deposit instance" }),
+    ).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+
+    expect(
+      screen.getByRole("button", { name: "Add deposit instance" }),
+    ).toBeDefined();
+  });
+
+  it("calls restore RPC and shows success toast when Restore is clicked", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "restore_deposit_instance") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: INSTANCE_ID_2, settlement_id: SETTLEMENT_ID },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    // Wait for data to load (toggle button appears once instancesLoaded=true)
+    await screen.findByRole("button", { name: "Show removed" });
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+
+    await screen.findByText("Old Mine");
+    await user.click(screen.getByRole("button", { name: "Restore Old Mine" }));
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith("restore_deposit_instance", {
+        p_deposit_instance_id: INSTANCE_ID_2,
+      });
+    });
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Old Mine restored.",
+        undefined,
+      );
+    });
+  });
+
+  it("opens hard-delete dialog; cancel does not call RPC", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    await screen.findByRole("button", { name: "Show removed" });
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+
+    await screen.findByText("Old Mine");
+    await user.click(
+      screen.getByRole("button", { name: "Permanently delete Old Mine" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Permanently delete Old Mine?",
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("calls hard-delete RPC and shows success toast on confirm", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "hard_delete_deposit_instance") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: INSTANCE_ID_2, settlement_id: SETTLEMENT_ID },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    await screen.findByRole("button", { name: "Show removed" });
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+
+    await screen.findByText("Old Mine");
+    await user.click(
+      screen.getByRole("button", { name: "Permanently delete Old Mine" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Permanently delete Old Mine?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete permanently" }),
+    );
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith("hard_delete_deposit_instance", {
+        p_deposit_instance_id: INSTANCE_ID_2,
+      });
+    });
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Old Mine permanently deleted.",
+        undefined,
+      );
+    });
+  });
+
   it("shows deposit type name and resource remaining/initial in each row", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

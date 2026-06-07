@@ -48,3 +48,13 @@ export type SetDepositInstanceResourceQuantitiesResult = {
   readonly remainingQuantity: number;
   readonly settlementId: string;
 };
+
+export type RestoreDepositInstanceResult = {
+  readonly depositInstanceId: string;
+  readonly settlementId: string;
+};
+
+export type HardDeleteDepositInstanceResult = {
+  readonly depositInstanceId: string;
+  readonly settlementId: string;
+};
