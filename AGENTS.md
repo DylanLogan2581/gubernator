@@ -55,23 +55,22 @@ src/
     shared/              # small reusable cross-feature components
   features/
     auth/
-    worlds/
-    calendar/
-    turns/
-    permissions/
-    nations/
-    settlements/
-    citizens/
-    resources/
-    jobs/
     buildings/
+    calendar/
+    citizens/
     deposits/
+    home/
+    jobs/
     managed-populations/
-    trade/
-    events/
+    namesets/
+    nations/
     notifications/
-    reports/
-    templates/
+    permissions/
+    resources/
+    settlements/
+    trade/
+    turns/
+    worlds/
       # each feature contains: components/, hooks/, queries/, schemas/, types/, utils/
   hooks/
   lib/
@@ -147,6 +146,13 @@ resolve without an explicit import map.
 - Validate Edge Function input before privileged work.
 - Always use explicit `.ts` extensions in imports inside Edge Functions and any `src/shared` modules they import. Deno requires them; Vite resolves them automatically, so missing extensions only surface as runtime 503 errors in the edge runtime.
 - After changing a shared module imported by an Edge Function, clear the Deno module cache and restart the edge runtime — otherwise the runtime serves a stale module graph even though the file changed: `npm run functions:cache-clear`
+- `supabase/functions/_shared/` is a manual copy of the subset of `src/shared/` used by Edge Functions. After editing any file in `src/shared/`, also update the corresponding file under `supabase/functions/_shared/`. There is no automated sync — the two trees must stay identical for the shared subset.
+
+## Setup
+
+- Node 22 (see `.nvmrc`).
+- Copy `.env.example` to `.env` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (local values from `supabase status`).
+- Dev server: `npm run dev` (Vite, port 5173).
 
 ## Naming
 
@@ -169,6 +175,7 @@ resolve without an explicit import map.
 - Prefer `type`, `import type`, explicit return types, and exhaustive `switch` handling.
 - Avoid `any`, non-null assertions, `console.log`, `enum`, `for...in`, and `with`.
 - Avoid direct `window.location` writes, `localStorage`, `Date.now`, `new Date`, and `Math.random` in app code.
+- Avoid `crypto.randomUUID()`; use `generateLocalId()` from `@/lib/uid` instead.
 - Avoid `JSON.parse`, `JSON.stringify`, `setTimeout`, and `setInterval` in routes and components unless hidden behind helpers or hooks.
 
 ## Styling And UI
@@ -213,6 +220,8 @@ resolve without an explicit import map.
 - Shared test helpers belong in `src/test`.
 - Prefer fast unit tests for schemas, query helpers, and pure transformations.
 - If a change is hard to test automatically, note that clearly in the handoff.
+- `npm run test:integration` runs the end-turn-simulation Edge Function integration test (requires local Supabase).
+- `npm run test:db` (pgTAP) requires `npx supabase start && npx supabase db reset` first.
 
 ### Coverage Thresholds
 
@@ -249,6 +258,7 @@ Do not implement per-commit version bumps or per-commit tagging automation unles
 
 - Run `npm run lint` when practical.
 - Run `npm run build` when changes affect routing, typing, or bundling.
+  `npm run build` runs `tsc -b && tsc -p tsconfig.edge-functions.json && vite build` — the composite `tsc -b` uses `tsconfig.json` references. Do not try `tsc --noEmit` as a substitute; it will miss cross-project type errors.
 - Run Vitest for the affected area when tests exist.
 - If routes changed, make sure generated routing output is current.
 - If schema changed, confirm a migration exists and was updated appropriately.
