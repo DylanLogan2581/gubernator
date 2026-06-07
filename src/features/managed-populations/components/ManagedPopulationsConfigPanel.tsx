@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -837,6 +838,9 @@ function CreateManagedPopulationTypeForm({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create managed population type</DialogTitle>
+            <DialogDescription className="sr-only">
+              Define a managed population type and its resource behavior.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <PopulationTypeScalarFields

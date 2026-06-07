@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -513,6 +514,9 @@ function CreateWorldDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create world</DialogTitle>
+            <DialogDescription className="sr-only">
+              Create a world and choose its initial mode.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <label className="grid gap-1 text-sm">

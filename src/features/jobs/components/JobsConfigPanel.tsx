@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -1091,6 +1092,9 @@ function CreateJobForm({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create job</DialogTitle>
+            <DialogDescription className="sr-only">
+              Define a job type, worker capacity, and resource flow.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <fieldset>

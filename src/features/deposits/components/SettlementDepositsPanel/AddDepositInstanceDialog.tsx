@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -127,6 +128,9 @@ export function AddDepositInstanceDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add deposit instance</DialogTitle>
+            <DialogDescription className="sr-only">
+              Add a deposit instance to this settlement.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <label className="grid gap-1 text-sm">

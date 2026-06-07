@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -616,6 +617,9 @@ function CreateNamesetDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create nameset</DialogTitle>
+            <DialogDescription className="sr-only">
+              Define naming pools and conventions for this nameset.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <label className="grid gap-1 text-sm">

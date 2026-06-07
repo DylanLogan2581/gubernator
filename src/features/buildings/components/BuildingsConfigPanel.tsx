@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -614,6 +615,9 @@ function CreateBlueprintForm({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create blueprint</DialogTitle>
+            <DialogDescription className="sr-only">
+              Define a building blueprint and its construction tiers.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <label className="grid gap-1 text-sm">

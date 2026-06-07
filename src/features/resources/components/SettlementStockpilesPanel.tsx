@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -270,6 +271,9 @@ function EditStockpileDialog({
         >
           <DialogHeader>
             <DialogTitle>Edit {stockpile.resourceName} quantity</DialogTitle>
+            <DialogDescription className="sr-only">
+              Update this settlement stockpile quantity.
+            </DialogDescription>
           </DialogHeader>
           <label className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Quantity</span>

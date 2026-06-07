@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -225,6 +226,9 @@ export function PoolEditor({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Bulk import — {label}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Add multiple pool entries from pasted text.
+            </DialogDescription>
           </DialogHeader>
           <textarea
             aria-label="Bulk import entries — one per line"

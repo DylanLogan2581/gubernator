@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -80,6 +81,9 @@ export function AddBuildingDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add building</DialogTitle>
+          <DialogDescription className="sr-only">
+            Add a building from an available blueprint and tier.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3">

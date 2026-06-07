@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -155,6 +156,10 @@ export function ProposeTradeRouteDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Propose trade route</DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose a destination settlement and resource legs for a proposed
+              trade route.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <label className="grid gap-1 text-sm">
