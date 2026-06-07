@@ -120,7 +120,7 @@ values
   );
 
 insert into
-  public.citizens (id, world_id, citizen_type, name, status)
+  public.citizens (id, world_id, citizen_type, given_name, status)
 values
   (
     'e5000000-0000-0000-0000-000000000005',

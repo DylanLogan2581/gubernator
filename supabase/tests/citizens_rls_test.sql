@@ -808,7 +808,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, user_id
+      world_id, citizen_type, given_name, user_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -825,7 +825,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name
+      world_id, citizen_type, given_name
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'player_character',
@@ -841,7 +841,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, role_type
+      world_id, citizen_type, given_name, role_type
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -858,7 +858,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, role_type, role_nation_id, role_settlement_id
+      world_id, citizen_type, given_name, role_type, role_nation_id, role_settlement_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -877,7 +877,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, role_type
+      world_id, citizen_type, given_name, role_type
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -894,7 +894,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, role_type, role_nation_id
+      world_id, citizen_type, given_name, role_type, role_nation_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -912,7 +912,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, parent_a_citizen_id
+      world_id, citizen_type, given_name, parent_a_citizen_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -929,7 +929,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, parent_a_citizen_id
+      world_id, citizen_type, given_name, parent_a_citizen_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -946,7 +946,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, parent_b_citizen_id
+      world_id, citizen_type, given_name, parent_b_citizen_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -1047,7 +1047,7 @@ select
   lives_ok (
     $test$
     update public.citizens
-    set name = 'Renamed PC'
+    set given_name = 'Renamed PC'
     where id = 'c5000000-0000-0000-0000-000000000003'
   $test$,
     'PC can change their own name via the table API'
@@ -1135,7 +1135,7 @@ select
       n integer;
     begin
       update public.citizens
-      set name = 'Hacked Name'
+      set given_name = 'Hacked Name'
       where id = 'c5000000-0000-0000-0000-000000000004';
       get diagnostics n = row_count;
       if n != 0 then

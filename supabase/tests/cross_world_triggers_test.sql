@@ -158,7 +158,7 @@ select
   lives_ok (
     $test$
     insert into public.citizens (
-      world_id, settlement_id, citizen_type, name, status, parent_a_citizen_id
+      world_id, settlement_id, citizen_type, given_name, status, parent_a_citizen_id
     ) values (
       'd7000000-0000-0000-0000-000000000001',
       'd9000000-0000-0000-0000-0000000000a1',
@@ -175,7 +175,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, settlement_id, citizen_type, name, status, parent_a_citizen_id
+      world_id, settlement_id, citizen_type, given_name, status, parent_a_citizen_id
     ) values (
       'd7000000-0000-0000-0000-000000000001',
       'd9000000-0000-0000-0000-0000000000a1',
@@ -194,7 +194,7 @@ select
   lives_ok (
     $test$
     insert into public.citizens (
-      world_id, settlement_id, citizen_type, name, status, parent_b_citizen_id
+      world_id, settlement_id, citizen_type, given_name, status, parent_b_citizen_id
     ) values (
       'd7000000-0000-0000-0000-000000000001',
       'd9000000-0000-0000-0000-0000000000a1',
@@ -211,7 +211,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, settlement_id, citizen_type, name, status, parent_b_citizen_id
+      world_id, settlement_id, citizen_type, given_name, status, parent_b_citizen_id
     ) values (
       'd7000000-0000-0000-0000-000000000001',
       'd9000000-0000-0000-0000-0000000000a1',

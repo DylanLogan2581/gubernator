@@ -77,6 +77,10 @@ insert into
 values
   (
     '3b200000-0000-0000-0000-000000000001',
+    '3b100000-0000-0000-0000-000000000001'
+  ),
+  (
+    '3b200000-0000-0000-0000-000000000001',
     '3b100000-0000-0000-0000-000000000002'
   );
 
@@ -112,7 +116,14 @@ values
 
 -- Player-character citizen for the in-world user (user ...04).
 insert into
-  public.citizens (id, world_id, citizen_type, name, status, user_id)
+  public.citizens (
+    id,
+    world_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id
+  )
 values
   (
     '3b600000-0000-0000-0000-000000000001',
@@ -172,7 +183,7 @@ select
 reset role;
 
 -- ===========================================================================
--- TEST 3: WORLD OWNER — allowed, returns correct cap
+-- TEST 3: WORLD ADMIN — allowed, returns correct cap
 -- ===========================================================================
 set
   local role authenticated;
@@ -187,7 +198,7 @@ select
       '3b500000-0000-0000-0000-000000000001'
     ),
     100::numeric,
-    'world owner is allowed and receives the correct storage cap'
+    'world admin is allowed and receives the correct storage cap'
   );
 
 reset role;

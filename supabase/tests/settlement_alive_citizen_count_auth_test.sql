@@ -77,6 +77,10 @@ insert into
 values
   (
     '3a200000-0000-0000-0000-000000000001',
+    '3a100000-0000-0000-0000-000000000001'
+  ),
+  (
+    '3a200000-0000-0000-0000-000000000001',
     '3a100000-0000-0000-0000-000000000002'
   );
 
@@ -129,7 +133,14 @@ values
 
 -- Player-character citizen for the in-world user (user ...04).
 insert into
-  public.citizens (id, world_id, citizen_type, name, status, user_id)
+  public.citizens (
+    id,
+    world_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id
+  )
 values
   (
     '3a500000-0000-0000-0000-000000000003',
@@ -187,7 +198,7 @@ select
 reset role;
 
 -- ===========================================================================
--- TEST 3: WORLD OWNER — allowed, returns correct count
+-- TEST 3: WORLD ADMIN — allowed, returns correct count
 -- ===========================================================================
 set
   local role authenticated;
@@ -199,7 +210,7 @@ select
   is (
     public.settlement_alive_citizen_count ('3a400000-0000-0000-0000-000000000001'),
     2,
-    'world owner is allowed and receives the correct alive-citizen count'
+    'world admin is allowed and receives the correct alive-citizen count'
   );
 
 reset role;
