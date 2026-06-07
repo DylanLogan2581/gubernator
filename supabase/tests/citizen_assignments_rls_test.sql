@@ -55,6 +55,14 @@ values
   );
 
 insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'd2000000-0000-0000-0000-000000000001',
+    'd1000000-0000-0000-0000-000000000001'
+  );
+
+insert into
   public.nations (id, world_id, name)
 values
   (

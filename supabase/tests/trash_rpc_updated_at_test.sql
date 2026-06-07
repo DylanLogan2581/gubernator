@@ -42,6 +42,14 @@ values
     'active'
   );
 
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'ee100000-0000-0000-0000-000000000001',
+    'ee000000-0000-0000-0000-000000000001'
+  );
+
 -- Resources: active (for soft_delete), pre-trashed (for restore).
 insert into
   public.resources (id, world_id, name, slug, updated_at)

@@ -83,6 +83,24 @@ values
     '{"username":"partnerships_world_b_owner"}'::jsonb,
     now(),
     now()
+  ),
+  (
+    'e1000000-0000-0000-0000-000000000006',
+    'partnerships-world-a-pc-extra@example.com',
+    'x',
+    now(),
+    '{"username":"partnerships_world_a_pc_extra"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'e1000000-0000-0000-0000-000000000007',
+    'partnerships-world-a-pc-cross@example.com',
+    'x',
+    now(),
+    '{"username":"partnerships_world_a_pc_cross"}'::jsonb,
+    now(),
+    now()
   );
 
 update public.users
@@ -239,6 +257,37 @@ values
     'e1000000-0000-0000-0000-000000000003'
   );
 
+-- Extra World A player characters used for PC-holder partnership visibility.
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id
+  )
+values
+  (
+    'e5000000-0000-0000-0000-0000000000a9',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-0000000000a1',
+    'player_character',
+    'PC Extra in World A',
+    'alive',
+    'e1000000-0000-0000-0000-000000000006'
+  ),
+  (
+    'e5000000-0000-0000-0000-0000000000aa',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-0000000000a1',
+    'player_character',
+    'PC Cross in World A',
+    'alive',
+    'e1000000-0000-0000-0000-000000000007'
+  );
+
 -- NPCs in World B used as partnership participants.
 insert into
   public.citizens (
@@ -272,6 +321,14 @@ values
     'e4000000-0000-0000-0000-0000000000b1',
     'npc',
     'NPC B3 (cross-world partner side B)',
+    'alive'
+  ),
+  (
+    'e5000000-0000-0000-0000-0000000000b4',
+    'e2000000-0000-0000-0000-000000000002',
+    'e4000000-0000-0000-0000-0000000000b1',
+    'npc',
+    'NPC B4 (PC-visible cross-world partner side B)',
     'alive'
   );
 
@@ -327,6 +384,44 @@ values
     'e6000000-0000-0000-0000-000000000003',
     'e5000000-0000-0000-0000-0000000000b3',
     'e5000000-0000-0000-0000-0000000000a3',
+    'active',
+    1
+  );
+
+-- World A partnership involving two player characters. PC holders can see this
+-- without exposing NPC-only partnerships.
+insert into
+  public.partnerships (
+    id,
+    citizen_a_id,
+    citizen_b_id,
+    status,
+    formed_on_turn_number
+  )
+values
+  (
+    'e6000000-0000-0000-0000-000000000005',
+    'e5000000-0000-0000-0000-0000000000a4',
+    'e5000000-0000-0000-0000-0000000000a9',
+    'active',
+    1
+  );
+
+-- Cross-world partnership visible to a PC holder only through the World A
+-- player-character participant.
+insert into
+  public.partnerships (
+    id,
+    citizen_a_id,
+    citizen_b_id,
+    status,
+    formed_on_turn_number
+  )
+values
+  (
+    'e6000000-0000-0000-0000-000000000006',
+    'e5000000-0000-0000-0000-0000000000b4',
+    'e5000000-0000-0000-0000-0000000000aa',
     'active',
     1
   );
@@ -421,7 +516,7 @@ select
 reset role;
 
 -- ===========================================================================
--- WORLD A ADMIN (owner): sees partnerships whose citizen_a or citizen_b is in
+-- WORLD A ADMIN: sees partnerships whose citizen_a or citizen_b is in
 -- World A. PA1 is fully in World A; PCross is visible via citizen_b in A.
 -- The pure World B partnership PB1 stays hidden.
 -- ===========================================================================
@@ -473,7 +568,7 @@ select
 reset role;
 
 -- ===========================================================================
--- WORLD B ADMIN (owner): symmetric view from the other side. Sees PB1 (fully
+-- WORLD B ADMIN: symmetric view from the other side. Sees PB1 (fully
 -- in B) and PCross (via citizen_a in B), but not PA1.
 -- ===========================================================================
 set
@@ -524,9 +619,8 @@ select
 reset role;
 
 -- ===========================================================================
--- PC HOLDER: holds a PC in World A and inherits citizen read visibility into
--- that world via user_has_player_character_in_world. Sees PA1 (both
--- participants in A) and PCross (citizen_b in A), not PB1.
+-- PC HOLDER: holds a PC in World A. NPC-only partnerships stay hidden, but
+-- partnerships with a visible player-character participant are readable.
 -- ===========================================================================
 set
   local role authenticated;
@@ -542,9 +636,9 @@ select
       from
         public.partnerships
       where
-        id = 'e6000000-0000-0000-0000-000000000001'
+        id = 'e6000000-0000-0000-0000-000000000005'
     ),
-    'PC holder reads a partnership in their world (mirrors citizen visibility)'
+    'PC holder reads a partnership involving visible player characters in their world'
   );
 
 select
@@ -555,9 +649,9 @@ select
       from
         public.partnerships
       where
-        id = 'e6000000-0000-0000-0000-000000000003'
+        id = 'e6000000-0000-0000-0000-000000000006'
     ),
-    'PC holder reads a cross-world partnership via the citizen participant they can see'
+    'PC holder reads a cross-world partnership via a visible player-character participant'
   );
 
 select

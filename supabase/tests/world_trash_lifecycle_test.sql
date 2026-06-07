@@ -9,8 +9,8 @@ select
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
--- UUID ranges (all wl-prefixed, unique to this file):
---   wl1xxxxx = users          wl2xxxxx = worlds
+-- UUID ranges:
+--   aa1xxxxx = users          aa2xxxxx = worlds
 -- ---------------------------------------------------------------------------
 insert into
   auth.users (
@@ -24,7 +24,7 @@ insert into
   )
 values
   (
-    'wl100000-0000-0000-0000-000000000001',
+    'aa100000-0000-0000-0000-000000000001',
     'wl-superadmin@example.com',
     'x',
     now(),
@@ -33,7 +33,7 @@ values
     now()
   ),
   (
-    'wl100000-0000-0000-0000-000000000002',
+    'aa100000-0000-0000-0000-000000000002',
     'wl-user@example.com',
     'x',
     now(),
@@ -46,14 +46,14 @@ update public.users
 set
   is_super_admin = true
 where
-  id = 'wl100000-0000-0000-0000-000000000001';
+  id = 'aa100000-0000-0000-0000-000000000001';
 
 -- World for trash / restore tests.
 insert into
   public.worlds (id, name, visibility, status)
 values
   (
-    'wl200000-0000-0000-0000-000000000001',
+    'aa200000-0000-0000-0000-000000000001',
     'WL Lifecycle World',
     'private',
     'active'
@@ -64,7 +64,7 @@ insert into
   public.worlds (id, name, visibility, status, is_trashed)
 values
   (
-    'wl200000-0000-0000-0000-000000000002',
+    'aa200000-0000-0000-0000-000000000002',
     'WL Trashed World',
     'private',
     'active',
@@ -78,7 +78,7 @@ set
   local role authenticated;
 
 set
-  local "request.jwt.claims" = '{"sub":"wl100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local "request.jwt.claims" = '{"sub":"aa100000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 -- ---------------------------------------------------------------------------
 -- create_world — returns a row with the supplied name
@@ -104,7 +104,7 @@ select
       select
         w.is_trashed
       from
-        public.trash_world ('wl200000-0000-0000-0000-000000000001') as w
+        public.trash_world ('aa200000-0000-0000-0000-000000000001') as w
     ),
     true,
     'trash_world sets is_trashed = true on the returned row'
@@ -119,7 +119,7 @@ select
       select
         w.is_trashed
       from
-        public.trash_world ('wl200000-0000-0000-0000-000000000001') as w
+        public.trash_world ('aa200000-0000-0000-0000-000000000001') as w
     ),
     true,
     'trash_world is idempotent when world is already trashed'
@@ -134,7 +134,7 @@ select
       select
         w.is_trashed
       from
-        public.restore_world ('wl200000-0000-0000-0000-000000000001') as w
+        public.restore_world ('aa200000-0000-0000-0000-000000000001') as w
     ),
     false,
     'restore_world sets is_trashed = false on the returned row'
@@ -146,7 +146,7 @@ select
 select
   throws_ok (
     $$
-      select public.hard_delete_world ('wl200000-0000-0000-0000-000000000001')
+      select public.hard_delete_world ('aa200000-0000-0000-0000-000000000001')
     $$,
     'P0001',
     null,
@@ -157,7 +157,7 @@ select
 -- Non-super-admin caller — 42501 for all four RPCs
 -- ===========================================================================
 set
-  local "request.jwt.claims" = '{"sub":"wl100000-0000-0000-0000-000000000002","role":"authenticated"}';
+  local "request.jwt.claims" = '{"sub":"aa100000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select
   throws_ok (
@@ -172,7 +172,7 @@ select
 select
   throws_ok (
     $$
-      select public.trash_world ('wl200000-0000-0000-0000-000000000001')
+      select public.trash_world ('aa200000-0000-0000-0000-000000000001')
     $$,
     '42501',
     null,
@@ -182,7 +182,7 @@ select
 select
   throws_ok (
     $$
-      select public.restore_world ('wl200000-0000-0000-0000-000000000001')
+      select public.restore_world ('aa200000-0000-0000-0000-000000000001')
     $$,
     '42501',
     null,
@@ -192,7 +192,7 @@ select
 select
   throws_ok (
     $$
-      select public.hard_delete_world ('wl200000-0000-0000-0000-000000000002')
+      select public.hard_delete_world ('aa200000-0000-0000-0000-000000000002')
     $$,
     '42501',
     null,
@@ -203,7 +203,7 @@ select
 -- Null params — P0002 (super-admin caller, authorization not reached)
 -- ===========================================================================
 set
-  local "request.jwt.claims" = '{"sub":"wl100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local "request.jwt.claims" = '{"sub":"aa100000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
   throws_ok (
@@ -277,9 +277,9 @@ select
       select
         r.id
       from
-        public.hard_delete_world ('wl200000-0000-0000-0000-000000000002') as r
+        public.hard_delete_world ('aa200000-0000-0000-0000-000000000002') as r
     ),
-    'wl200000-0000-0000-0000-000000000002'::uuid,
+    'aa200000-0000-0000-0000-000000000002'::uuid,
     'hard_delete_world returns the id of the permanently deleted world'
   );
 

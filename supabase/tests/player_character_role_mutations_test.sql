@@ -324,9 +324,9 @@ select
     set role_type = 'settlement_manager'
     where id = 'a4000000-0000-0000-0000-000000000020'
   $test$,
-    '23514',
+    '42501',
     null,
-    'setting role_type without matching scope violates citizens_role_scope_check'
+    'authenticated role cannot set citizens.role_type directly'
   );
 
 select
@@ -336,9 +336,9 @@ select
     set role_nation_id = 'a2000000-0000-0000-0000-00000000000a'
     where id = 'a4000000-0000-0000-0000-000000000020'
   $test$,
-    '23514',
+    '42501',
     null,
-    'setting role_nation_id without matching role_type violates citizens_role_scope_check'
+    'authenticated role cannot set citizens.role_nation_id directly'
   );
 
 select
@@ -348,13 +348,13 @@ select
     set role_settlement_id = 'a3000000-0000-0000-0000-0000000000a1'
     where id = 'a4000000-0000-0000-0000-000000000020'
   $test$,
-    '23514',
+    '42501',
     null,
-    'setting role_settlement_id without matching role_type violates citizens_role_scope_check'
+    'authenticated role cannot set citizens.role_settlement_id directly'
   );
 
 -- ===========================================================================
--- World owner: link/unlink + assign/revoke (admin path).
+-- World admin: link/unlink + assign/revoke (admin path).
 -- ===========================================================================
 select
   ok (

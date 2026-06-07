@@ -82,6 +82,18 @@ values
   );
 
 insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    '81000000-0000-0000-0000-000000000001',
+    '80000000-0000-0000-0000-000000000001'
+  ),
+  (
+    '81000000-0000-0000-0000-000000000003',
+    '80000000-0000-0000-0000-000000000001'
+  );
+
+insert into
   public.nations (id, world_id, name)
 values
   (

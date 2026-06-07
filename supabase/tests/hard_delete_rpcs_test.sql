@@ -42,6 +42,14 @@ values
     'active'
   );
 
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'ed100000-0000-0000-0000-000000000001',
+    'ed000000-0000-0000-0000-000000000001'
+  );
+
 -- Resource: soft-deleted so hard_delete is allowed.
 insert into
   public.resources (id, world_id, name, slug, is_trashed)
@@ -159,7 +167,7 @@ values
   );
 
 -- ===========================================================================
--- All tests run as the world owner (authenticated, world admin via ownership).
+-- All tests run as an authenticated world admin.
 -- ===========================================================================
 set
   local role authenticated;

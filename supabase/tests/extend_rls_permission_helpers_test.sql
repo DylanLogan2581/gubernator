@@ -21,7 +21,7 @@ select
 -- Fixtures
 -- ---------------------------------------------------------------------------
 -- Users:
---   71...01 world owner (also a normal user)
+--   71...01 explicit world admin (also a normal user)
 --   71...02 world admin (explicit world_admins row)
 --   71...03 outsider (no access to the world)
 --   71...04 super admin
@@ -128,6 +128,10 @@ values
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    '72000000-0000-0000-0000-000000000001',
+    '71000000-0000-0000-0000-000000000001'
+  ),
   (
     '72000000-0000-0000-0000-000000000001',
     '71000000-0000-0000-0000-000000000002'
@@ -523,7 +527,7 @@ reset role;
 -- ===========================================================================
 -- current_user_has_world_access
 -- ===========================================================================
--- world owner: legacy path
+-- explicit world admin
 set
   local role authenticated;
 
@@ -534,7 +538,7 @@ select
   is (
     public.current_user_has_world_access ('72000000-0000-0000-0000-000000000001'),
     true,
-    'world owner retains world access (legacy path)'
+    'explicit world admin retains world access'
   );
 
 reset role;

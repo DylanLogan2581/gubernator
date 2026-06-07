@@ -3,7 +3,7 @@
 -- Run with: npx supabase test db
 --
 -- Acceptance criteria covered:
---   • World admin (owner) can call the RPC and receives id + username rows
+--   • World admin can call the RPC and receives id + username rows
 --   • Explicit world admin (non-owner) can call the RPC
 --   • Non-admin authenticated user receives 42501
 --   • Anonymous caller receives 42501
@@ -92,11 +92,15 @@ insert into
 values
   (
     'c2000000-0000-0000-0000-000000000001',
+    'c1000000-0000-0000-0000-000000000001'
+  ),
+  (
+    'c2000000-0000-0000-0000-000000000001',
     'c1000000-0000-0000-0000-000000000002'
   );
 
 -- ===========================================================================
--- WORLD OWNER: can call the RPC and gets id + username rows
+-- WORLD ADMIN: can call the RPC and gets id + username rows
 -- ===========================================================================
 set
   local role authenticated;
@@ -120,7 +124,7 @@ select
         )
     ),
     4,
-    'world owner can call the RPC and all four fixture rows are returned'
+    'world admin can call the RPC and all four fixture rows are returned'
   );
 
 reset role;
