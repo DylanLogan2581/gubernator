@@ -96,7 +96,7 @@ export function ResourceAmountListEditor({
               (r) => r.id === entry.resourceId,
             );
             return (
-              <li key={index} className="grid gap-1">
+              <li key={entry.resourceId} className="grid gap-1">
                 <div className="flex items-center gap-2">
                   <NativeSelect
                     aria-invalid={isDeletedResource}

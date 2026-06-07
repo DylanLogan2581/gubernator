@@ -16,6 +16,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
+import { generateLocalId } from "@/lib/uid";
 
 import { replaceTradeRouteMutationOptions } from "../../mutations/replaceTradeRouteMutations";
 
@@ -23,6 +24,7 @@ import type { TradeRoute } from "../../types/tradeRouteTypes";
 
 type LegDraft = {
   direction: "send" | "receive";
+  id: string;
   quantity: string;
   resourceId: string;
 };
@@ -41,6 +43,18 @@ type ReplaceTradeRouteDialogProps = {
   readonly worldId: string;
 };
 
+function createLegDraft(
+  overrides: Partial<Omit<LegDraft, "id">> = {},
+): LegDraft {
+  return {
+    direction: "send",
+    id: generateLocalId(),
+    quantity: "",
+    resourceId: "",
+    ...overrides,
+  };
+}
+
 export function ReplaceTradeRouteDialog({
   activeCharacterId,
   counterpart,
@@ -54,24 +68,23 @@ export function ReplaceTradeRouteDialog({
     replaceTradeRouteMutationOptions({ queryClient }),
   );
 
-  const [legs, setLegs] = useState<LegDraft[]>(
+  const [legs, setLegs] = useState<LegDraft[]>(() =>
     route.legs.length > 0
-      ? route.legs.map((l) => ({
-          direction: l.direction,
-          quantity: String(l.quantityPerTransition),
-          resourceId: l.resourceId,
-        }))
-      : [{ direction: "send", quantity: "", resourceId: "" }],
+      ? route.legs.map((l) =>
+          createLegDraft({
+            direction: l.direction,
+            quantity: String(l.quantityPerTransition),
+            resourceId: l.resourceId,
+          }),
+        )
+      : [createLegDraft()],
   );
   const [legErrors, setLegErrors] = useState<LegErrors[]>([]);
 
   const resources = resourcesQuery.data ?? [];
 
   function addLeg(): void {
-    setLegs((prev) => [
-      ...prev,
-      { direction: "send", quantity: "", resourceId: "" },
-    ]);
+    setLegs((prev) => [...prev, createLegDraft()]);
   }
 
   function removeLeg(index: number): void {
@@ -152,7 +165,7 @@ export function ReplaceTradeRouteDialog({
             <span className="text-sm text-muted-foreground">Resources</span>
             {legs.map((leg, index) => (
               <LegRow
-                key={index}
+                key={leg.id}
                 disabled={mutation.isPending}
                 errors={legErrors[index]}
                 index={index}

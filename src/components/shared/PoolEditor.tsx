@@ -42,6 +42,7 @@ export function PoolEditor({
 
   const shouldVirtualize = entries.length >= VIRTUALIZE_THRESHOLD;
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual owns scroll measurement callbacks that React Compiler cannot memoize safely.
   const virtualizer = useVirtualizer({
     count: shouldVirtualize ? entries.length : 0,
     getScrollElement: () => scrollContainerRef.current,
@@ -164,27 +165,30 @@ export function PoolEditor({
         </div>
       ) : (
         <ul className="grid gap-1.5">
-          {entries.map((entry, index) => (
-            <li key={index} className="flex gap-2">
-              <Input
-                value={entry}
-                ref={makeInputRef(index)}
-                onChange={(event) =>
-                  handleEntryChange(index, event.currentTarget.value)
-                }
-                onKeyDown={(event) => handleEntryKeyDown(event, index)}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Remove entry ${String(index + 1)}`}
-                onClick={() => handleRemoveEntry(index)}
-              >
-                <X aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
+          {entries.map((entry, index) => {
+            return (
+              // eslint-disable-next-line @eslint-react/no-array-index-key -- Pool entries are editable strings without durable row ids.
+              <li key={index} className="flex gap-2">
+                <Input
+                  value={entry}
+                  ref={makeInputRef(index)}
+                  onChange={(event) =>
+                    handleEntryChange(index, event.currentTarget.value)
+                  }
+                  onKeyDown={(event) => handleEntryKeyDown(event, index)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Remove entry ${String(index + 1)}`}
+                  onClick={() => handleRemoveEntry(index)}
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       )}
 

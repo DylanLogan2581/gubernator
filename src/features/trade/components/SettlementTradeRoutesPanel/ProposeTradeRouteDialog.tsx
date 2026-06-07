@@ -16,11 +16,13 @@ import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
+import { generateLocalId } from "@/lib/uid";
 
 import { proposeTradeRouteMutationOptions } from "../../mutations/proposeTradeRouteMutations";
 
 type LegDraft = {
   direction: "send" | "receive";
+  id: string;
   quantity: string;
   resourceId: string;
 };
@@ -44,6 +46,18 @@ type ProposeTradeRouteDialogProps = {
   readonly worldId: string;
 };
 
+function createLegDraft(
+  overrides: Partial<Omit<LegDraft, "id">> = {},
+): LegDraft {
+  return {
+    direction: "send",
+    id: generateLocalId(),
+    quantity: "",
+    resourceId: "",
+    ...overrides,
+  };
+}
+
 export function ProposeTradeRouteDialog({
   activeCharacterId,
   onClose,
@@ -58,9 +72,7 @@ export function ProposeTradeRouteDialog({
   );
 
   const [destinationSettlementId, setDestinationSettlementId] = useState("");
-  const [legs, setLegs] = useState<LegDraft[]>([
-    { direction: "send", quantity: "", resourceId: "" },
-  ]);
+  const [legs, setLegs] = useState<LegDraft[]>(() => [createLegDraft()]);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const settlements = (settlementsQuery.data ?? []).filter(
@@ -69,10 +81,7 @@ export function ProposeTradeRouteDialog({
   const resources = resourcesQuery.data ?? [];
 
   function addLeg(): void {
-    setLegs((prev) => [
-      ...prev,
-      { direction: "send", quantity: "", resourceId: "" },
-    ]);
+    setLegs((prev) => [...prev, createLegDraft()]);
   }
 
   function removeLeg(index: number): void {
@@ -190,7 +199,7 @@ export function ProposeTradeRouteDialog({
               <span className="text-sm text-muted-foreground">Resources</span>
               {legs.map((leg, index) => (
                 <LegRow
-                  key={index}
+                  key={leg.id}
                   disabled={mutation.isPending}
                   errors={errors.legs?.[index]}
                   index={index}
