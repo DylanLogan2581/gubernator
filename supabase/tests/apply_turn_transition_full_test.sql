@@ -7,14 +7,12 @@
 -- ┌─────────────────────────────────────────┬────────────────────┬───────┐
 -- │ Scenario                                │ Expected outcome   │ Tests │
 -- ├─────────────────────────────────────────┼────────────────────┼───────┤
--- │ Auth: nation manager                    │ 42501              │ 1     │
--- │ Auth: settlement manager                │ 42501              │ 1     │
--- │ Auth: outsider (no world access)        │ 42501              │ 1     │
--- │ Auth: anon role (no EXECUTE grant)      │ 42501              │ 1     │
--- │ Auth: archived world                    │ P0001              │ 1     │
--- │ Auth: stale expected turn               │ P0001              │ 1     │
--- │ Auth: super admin — full payload        │ success            │ 1     │
--- │ Auth: world admin — empty payload       │ success            │ 1     │
+-- │ Grant: authenticated role blocked       │ no EXECUTE         │ 3     │
+-- │ Grant: anon role blocked                │ no EXECUTE         │ 1     │
+-- │ Guard: archived world                   │ P0001              │ 1     │
+-- │ Guard: stale expected turn              │ P0001              │ 1     │
+-- │ Service-role full payload               │ success            │ 1     │
+-- │ Service-role empty payload              │ success            │ 1     │
 -- │ patchCounts reflect payload shape       │ exact match        │ 9     │
 -- │ Wholeness: resource snapshot rows = 2   │ count match        │ 1     │
 -- │ Wholeness: settlement snapshot rows = 2 │ count match        │ 1     │
@@ -489,107 +487,65 @@ values
   );
 
 -- ===========================================================================
--- AUTH FAILURE TESTS (World 1 is still at turn 5; failures don't advance it)
+-- GRANT TESTS (World 1 is still at turn 5; failures don't advance it)
 -- ===========================================================================
 -- ---------------------------------------------------------------------------
--- Test 1: Nation manager → 42501
+-- Test 1: Authenticated nation manager has no EXECUTE grant
 -- ---------------------------------------------------------------------------
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"d6100000-0000-0000-0000-000000000003","role":"authenticated"}';
-
 select
-  throws_ok (
-    $test$
-    select public.apply_turn_transition(
-      'd6200000-0000-0000-0000-000000000001',
-      5,
-      '{}'::jsonb,
-      '00000000-0000-0000-0000-000000000999'::uuid
-    )
-  $test$,
-    '42501',
-    null,
-    'nation manager (non-world-admin) gets 42501'
+  ok (
+    not has_function_privilege(
+      'authenticated',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'EXECUTE'
+    ),
+    'nation manager (non-world-admin) cannot execute apply_turn_transition'
   );
 
 -- ---------------------------------------------------------------------------
--- Test 2: Settlement manager → 42501
+-- Test 2: Authenticated settlement manager has no EXECUTE grant
 -- ---------------------------------------------------------------------------
-set
-  local "request.jwt.claims" = '{"sub":"d6100000-0000-0000-0000-000000000004","role":"authenticated"}';
-
 select
-  throws_ok (
-    $test$
-    select public.apply_turn_transition(
-      'd6200000-0000-0000-0000-000000000001',
-      5,
-      '{}'::jsonb,
-      '00000000-0000-0000-0000-000000000999'::uuid
-    )
-  $test$,
-    '42501',
-    null,
-    'settlement manager (non-world-admin) gets 42501'
+  ok (
+    not has_function_privilege(
+      'authenticated',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'EXECUTE'
+    ),
+    'settlement manager (non-world-admin) cannot execute apply_turn_transition'
   );
 
 -- ---------------------------------------------------------------------------
--- Test 3: Outsider → 42501
+-- Test 3: Authenticated outsider has no EXECUTE grant
 -- ---------------------------------------------------------------------------
-set
-  local "request.jwt.claims" = '{"sub":"d6100000-0000-0000-0000-000000000005","role":"authenticated"}';
-
 select
-  throws_ok (
-    $test$
-    select public.apply_turn_transition(
-      'd6200000-0000-0000-0000-000000000001',
-      5,
-      '{}'::jsonb,
-      '00000000-0000-0000-0000-000000000999'::uuid
-    )
-  $test$,
-    '42501',
-    null,
-    'outsider (no world access) gets 42501'
+  ok (
+    not has_function_privilege(
+      'authenticated',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'EXECUTE'
+    ),
+    'outsider (no world access) cannot execute apply_turn_transition'
   );
 
-reset role;
-
 -- ---------------------------------------------------------------------------
--- Test 4: Anon role — no EXECUTE grant → 42501
+-- Test 4: Anon role has no EXECUTE grant
 -- ---------------------------------------------------------------------------
-set
-  local role anon;
-
 select
-  throws_ok (
-    $test$
-    select public.apply_turn_transition(
-      'd6200000-0000-0000-0000-000000000001',
-      5,
-      '{}'::jsonb,
-      '00000000-0000-0000-0000-000000000999'::uuid
-    )
-  $test$,
-    '42501',
-    null,
+  ok (
+    not has_function_privilege(
+      'anon',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'EXECUTE'
+    ),
     'anon role cannot execute apply_turn_transition'
   );
-
-reset role;
 
 -- ---------------------------------------------------------------------------
 -- Test 5: Archived world → P0001
 -- ---------------------------------------------------------------------------
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"d6100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   throws_ok (
@@ -625,7 +581,7 @@ select
   );
 
 -- ===========================================================================
--- FULL END-TO-END CALL: super admin, rich payload on World 1 (turn 5 → 6)
+-- FULL END-TO-END CALL: service_role, rich payload on World 1 (turn 5 → 6)
 -- ===========================================================================
 -- Payload covers:
 --   stockpileDeltas        (2 entries: s1/r1, s2/r1)
@@ -776,7 +732,7 @@ select
     (
       current_setting('attfe.last_result', true)::jsonb ->> 'transitionId'
     ) is not null,
-    'super admin full payload call returns a transitionId'
+    'service_role full payload call returns a transitionId'
   );
 
 -- ---------------------------------------------------------------------------
@@ -1161,15 +1117,12 @@ select
   );
 
 -- ===========================================================================
--- WORLD ADMIN SUCCESS: user 002 is an explicit world admin for World 1
--- (world is now at turn 6 after the super admin call above)
+-- SERVICE_ROLE SUCCESS: empty payload on World 1
+-- (world is now at turn 6 after the service_role call above)
 -- ===========================================================================
 -- ---------------------------------------------------------------------------
--- Test 31: World admin can call apply_turn_transition
+-- Test 31: service_role can call apply_turn_transition
 -- ---------------------------------------------------------------------------
-set
-  local "request.jwt.claims" = '{"sub":"d6100000-0000-0000-0000-000000000002","role":"authenticated"}';
-
 select
   ok (
     (
@@ -1181,7 +1134,7 @@ select
           'd6300000-0000-0000-0000-000000000002'::uuid
         ) ->> 'transitionId'
     ) is not null,
-    'world admin (explicit world_admins row) can call apply_turn_transition'
+    'service_role can call apply_turn_transition with an empty payload'
   );
 
 reset role;
@@ -1194,10 +1147,7 @@ reset role;
 -- ON CONFLICT DO NOTHING keeps snapshot counts unchanged.
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"d6100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 -- First call (turn 7 → 8)
 select
@@ -1300,10 +1250,7 @@ where
   and resource_id = 'd6600000-0000-0000-0000-000000000003';
 
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"d6100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 -- Second call (retry — reuses existing transition row)
 select

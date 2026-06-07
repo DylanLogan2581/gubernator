@@ -519,13 +519,10 @@ values
   );
 
 -- ===========================================================================
--- All tests run as super admin
+-- All tests run as service_role
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"a7100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 -- ===========================================================================
 -- TEST SCENARIO 1: extraction decrement

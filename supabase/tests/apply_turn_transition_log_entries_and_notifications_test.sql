@@ -435,13 +435,10 @@ values
   );
 
 -- ===========================================================================
--- All tests run as super admin (world owner)
+-- All tests run as service_role
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 -- ===========================================================================
 -- TEST SCENARIO 1: Settlement-scoped notification fans out to settlement
@@ -553,10 +550,7 @@ select
 -- Expected: 1 notification (super admin / owner).
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   public.apply_turn_transition (
@@ -603,10 +597,7 @@ select
 -- Expected: 3 notifications.
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   public.apply_turn_transition (
@@ -683,10 +674,7 @@ select
 -- Expected: 2 notifications (super admin + world admin G); H is excluded.
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   public.apply_turn_transition (
@@ -747,10 +735,7 @@ select
 -- keeps count at 1.
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   public.apply_turn_transition (
@@ -799,10 +784,7 @@ where
   id = 'b1200000-0000-0000-0000-000000000005';
 
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   public.apply_turn_transition (
@@ -850,10 +832,7 @@ reset role;
 -- World 6: one overshoot entry + one non-overshoot entry, both null-stamped before the call.
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"b1100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 select
   public.apply_turn_transition (

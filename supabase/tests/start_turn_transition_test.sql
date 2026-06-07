@@ -331,49 +331,37 @@ select
 reset role;
 
 -- ===========================================================================
--- AUTHENTICATED: super admin is rejected with 42501 (GRANT-level block)
+-- AUTHENTICATED: direct access is blocked at the GRANT layer
 -- ===========================================================================
-set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000001","role":"authenticated"}';
-
 select
-  throws_ok (
-    $test$
-    select public.start_turn_transition(
-      'f1200000-0000-0000-0000-000000000001',
-      4,
-      'f1100000-0000-0000-0000-000000000001'
-    )
-  $test$,
-    '42501',
-    null,
+  ok (
+    not has_function_privilege(
+      'authenticated',
+      'public.start_turn_transition(uuid, integer, uuid)',
+      'EXECUTE'
+    ),
     'authenticated super admin cannot directly call start_turn_transition'
   );
 
--- ===========================================================================
--- AUTHENTICATED: world admin is rejected with 42501 (GRANT-level block)
--- ===========================================================================
-set
-  local "request.jwt.claims" = '{"sub":"f1100000-0000-0000-0000-000000000003","role":"authenticated"}';
-
 select
-  throws_ok (
-    $test$
-    select public.start_turn_transition(
-      'f1200000-0000-0000-0000-000000000001',
-      4,
-      'f1100000-0000-0000-0000-000000000003'
-    )
-  $test$,
-    '42501',
-    null,
+  ok (
+    not has_function_privilege(
+      'authenticated',
+      'public.start_turn_transition(uuid, integer, uuid)',
+      'EXECUTE'
+    ),
     'authenticated world admin cannot directly call start_turn_transition'
   );
 
-reset role;
+select
+  ok (
+    not has_function_privilege(
+      'anon',
+      'public.start_turn_transition(uuid, integer, uuid)',
+      'EXECUTE'
+    ),
+    'anon role cannot directly call start_turn_transition'
+  );
 
 -- ===========================================================================
 -- GRANT CHECK: service_role has EXECUTE; authenticated does not

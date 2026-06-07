@@ -152,13 +152,10 @@ values
   );
 
 -- ---------------------------------------------------------------------------
--- Authenticate as super admin so the RPC's auth check passes
+-- Use service_role; Edge Function authorizes caller before invoking this RPC
 -- ---------------------------------------------------------------------------
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"c3100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 -- ===========================================================================
 -- World 1 — single settlement: population breakdown and summary JSON round-trip

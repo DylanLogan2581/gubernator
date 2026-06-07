@@ -510,13 +510,10 @@ values
   );
 
 -- ===========================================================================
--- All tests run as super admin
+-- All tests run as service_role
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"a9100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 -- ===========================================================================
 -- TEST SCENARIO 1: citizen birth inserts NPC with flavor; no assignment row
@@ -534,8 +531,10 @@ select
         jsonb_build_object(
           'settlementId',
           'a9400000-0000-0000-0000-000000000001',
-          'name',
-          'ATTCP Newborn NPC',
+          'givenName',
+          'ATTCP Newborn',
+          'surname',
+          'NPC',
           'sex',
           'female',
           'bornOnTurnNumber',

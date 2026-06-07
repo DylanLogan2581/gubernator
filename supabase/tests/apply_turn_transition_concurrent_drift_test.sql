@@ -152,13 +152,10 @@ where
   and resource_id = 'f3600000-0000-0000-0000-000000000001';
 
 -- ===========================================================================
--- All tests run as super admin
+-- All tests run as service_role
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"f3100000-0000-0000-0000-000000000001","role":"authenticated"}';
+  local role service_role;
 
 -- ===========================================================================
 -- TEST 1: drift detected — payload claims quantityBefore = 0 but live value is 40

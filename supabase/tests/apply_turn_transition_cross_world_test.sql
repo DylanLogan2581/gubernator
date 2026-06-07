@@ -416,13 +416,10 @@ values
   );
 
 -- ===========================================================================
--- All tests run as world admin of World A only
+-- All tests run as service_role; payload still targets World A
 -- ===========================================================================
 set
-  local role authenticated;
-
-set
-  local "request.jwt.claims" = '{"sub":"e1100000-0000-0000-0000-000000000002","role":"authenticated"}';
+  local role service_role;
 
 -- ===========================================================================
 -- TEST 1: stockpileDeltas — foreign settlementId rejected
