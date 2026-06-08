@@ -36,6 +36,7 @@ import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 import { sortByName } from "@/lib/sortUtils";
+import { generateLocalId } from "@/lib/uid";
 
 import {
   createDepositTypeMutationOptions,
@@ -726,6 +727,7 @@ function EditDepositTypeForm({
   const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>(
     depositType.workerInputsJson.map((e) => ({
       amount: String(e.amountPerWorker),
+      id: generateLocalId(),
       resourceId: e.resourceId,
     })),
   );

@@ -37,6 +37,7 @@ import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 import { sortByName } from "@/lib/sortUtils";
+import { generateLocalId } from "@/lib/uid";
 
 import {
   createManagedPopulationTypeMutationOptions,
@@ -953,12 +954,14 @@ function EditManagedPopulationTypeForm({
   >(
     populationType.maintenanceRulesJson.map((e) => ({
       amount: String(e.amountPerNAnimals),
+      id: generateLocalId(),
       resourceId: e.resourceId,
     })),
   );
   const [cullingOutputs, setCullingOutputs] = useState<ResourceAmountEntry[]>(
     populationType.cullingOutputsJson.map((e) => ({
       amount: String(e.amountPerNAnimals),
+      id: generateLocalId(),
       resourceId: e.resourceId,
     })),
   );

@@ -38,6 +38,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
+import { generateLocalId } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
 import {
@@ -526,6 +527,7 @@ function JobCapacityDisplay({
 function entryToRow(entry: JobIoEntry): ResourceAmountEntry {
   return {
     amount: String(entry.amountPerWorker),
+    id: generateLocalId(),
     notes: entry.notes ?? "",
     resourceId: entry.resourceId,
   };

@@ -682,6 +682,9 @@ function CreateProjectDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Start construction</DialogTitle>
+          <DialogDescription>
+            Choose the blueprint and tier for the new construction project.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3">
