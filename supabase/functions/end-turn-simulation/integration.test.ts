@@ -25,6 +25,22 @@ const WORLD_ID = "00000000-0000-0000-0000-000000000101";
 const SEED_TURN = 0;
 const SUPER_ADMIN_EMAIL = "superadmin@gubernator.local";
 const SUPER_ADMIN_PASSWORD = "password123";
+const svc = createClient(LOCAL_URL, LOCAL_SERVICE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    persistSession: false,
+    storageKey: "end-turn-integration-service",
+  },
+});
+const anon = createClient(LOCAL_URL, LOCAL_ANON_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    persistSession: false,
+    storageKey: "end-turn-integration-anon",
+  },
+});
 
 // All five canonical settlements in Verdant Reach (world 101).
 const SETTLEMENT_IDS = [
@@ -291,10 +307,6 @@ describe("end-turn-simulation integration", () => {
 
     // Use the service-role client (bypasses RLS) to reset world 101 to the
     // canonical turn-0 state so the test is repeatable after previous runs.
-    const svc = createClient(LOCAL_URL, LOCAL_SERVICE_KEY, {
-      auth: { persistSession: false },
-    });
-
     // Delete any prior turn-0 transition for this world.  The FK cascade
     // removes the associated settlement_turn_snapshots, turn_log_entries, and
     // notifications so the assertions below start from a clean slate.
@@ -400,9 +412,6 @@ describe("end-turn-simulation integration", () => {
     if (assignErr !== null) return;
 
     // Sign in as the seeded super admin and capture the JWT.
-    const anon = createClient(LOCAL_URL, LOCAL_ANON_KEY, {
-      auth: { persistSession: false },
-    });
     const { data: authData, error: authErr } =
       await anon.auth.signInWithPassword({
         email: SUPER_ADMIN_EMAIL,
@@ -466,10 +475,6 @@ describe("end-turn-simulation integration", () => {
     // -----------------------------------------------------------------------
     // 2. Verify DB state using the service-role client (bypasses RLS).
     // -----------------------------------------------------------------------
-    const svc = createClient(LOCAL_URL, LOCAL_SERVICE_KEY, {
-      auth: { persistSession: false },
-    });
-
     // World turn must have incremented.
     const { data: world } = await svc
       .from("worlds")
@@ -535,13 +540,6 @@ describe("end-turn-simulation integration", () => {
     //    The Hearthwatch sheep-flock decline generates a managed_population.declining
     //    notification scoped to settlement 301; all super admins are always recipients.
     // -----------------------------------------------------------------------
-    const anon = createClient(LOCAL_URL, LOCAL_ANON_KEY, {
-      auth: { persistSession: false },
-    });
-    await anon.auth.signInWithPassword({
-      email: SUPER_ADMIN_EMAIL,
-      password: SUPER_ADMIN_PASSWORD,
-    });
     const { count: notifCount } = await anon
       .from("notifications")
       .select("id", { count: "exact", head: true })
