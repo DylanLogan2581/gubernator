@@ -9,6 +9,10 @@ import {
   type ResourceAmountEntry,
 } from "./ResourceAmountListEditor";
 
+vi.mock("@/lib/uid", () => ({
+  generateLocalId: vi.fn(() => "00000000-0000-0000-0000-0000000000aa"),
+}));
+
 const RESOURCE_ID_1 = "00000000-0000-0000-0000-000000000001";
 const RESOURCE_ID_2 = "00000000-0000-0000-0000-000000000002";
 
@@ -33,6 +37,7 @@ function createEntry(
 ): ResourceAmountEntry {
   return {
     amount: "1",
+    id: "00000000-0000-0000-0000-0000000000ab",
     resourceId: RESOURCE_ID_1,
     ...overrides,
   };
@@ -78,7 +83,11 @@ describe("ResourceAmountListEditor", () => {
     );
     await user.click(screen.getByRole("button", { name: "Add entry" }));
     expect(onChange).toHaveBeenCalledWith([
-      { amount: "1", resourceId: RESOURCE_ID_1 },
+      {
+        amount: "1",
+        id: "00000000-0000-0000-0000-0000000000aa",
+        resourceId: RESOURCE_ID_1,
+      },
     ]);
   });
 

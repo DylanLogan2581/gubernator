@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { type Resource } from "@/features/resources";
 import { sortByName } from "@/lib/sortUtils";
+import { generateLocalId } from "@/lib/uid";
 
 export type ResourceAmountEntry = {
+  readonly id: string;
   readonly resourceId: string;
   readonly amount: string;
   readonly notes?: string;
@@ -43,6 +45,7 @@ export function ResourceAmountListEditor({
       ...entries,
       {
         amount: "1",
+        id: generateLocalId(),
         ...(showNotes ? { notes: "" } : {}),
         resourceId: firstUnused.id,
       },
@@ -96,7 +99,7 @@ export function ResourceAmountListEditor({
               (r) => r.id === entry.resourceId,
             );
             return (
-              <li key={entry.resourceId} className="grid gap-1">
+              <li key={entry.id} className="grid gap-1">
                 <div className="flex items-center gap-2">
                   <NativeSelect
                     aria-invalid={isDeletedResource}
