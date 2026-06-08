@@ -111,18 +111,18 @@ export function MaxWorkersEditDialog({
           <>
             <DialogHeader>
               <DialogTitle>Unassign workers?</DialogTitle>
+              <DialogDescription>
+                Reducing max workers to{" "}
+                <span className="font-medium text-foreground">
+                  {String(parsedMax)}
+                </span>{" "}
+                will cascade-unassign{" "}
+                <span className="font-medium text-foreground">
+                  {String(cascadeCount)}
+                </span>{" "}
+                {cascadeCount === 1 ? "citizen" : "citizens"}.
+              </DialogDescription>
             </DialogHeader>
-            <DialogDescription>
-              Reducing max workers to{" "}
-              <span className="font-medium text-foreground">
-                {String(parsedMax)}
-              </span>{" "}
-              will cascade-unassign{" "}
-              <span className="font-medium text-foreground">
-                {String(cascadeCount)}
-              </span>{" "}
-              {cascadeCount === 1 ? "citizen" : "citizens"}.
-            </DialogDescription>
             <label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Removal strategy</span>
               <NativeSelect
@@ -166,6 +166,9 @@ export function MaxWorkersEditDialog({
           <form className="contents" noValidate onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>Edit max workers — {instance.name}</DialogTitle>
+              <DialogDescription>
+                Set the maximum number of citizens that can work this deposit.
+              </DialogDescription>
             </DialogHeader>
             <label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">
