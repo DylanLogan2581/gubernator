@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { generateLocalId } from "@/lib/uid";
 
 import { parseBulkPaste } from "./PoolEditorUtils";
 
@@ -34,6 +35,9 @@ export function PoolEditor({
   label,
   onChange,
 }: PoolEditorProps): JSX.Element {
+  const [entryKeys, setEntryKeys] = useState(() =>
+    createEntryKeys(entries.length),
+  );
   const [pendingFocusIndex, setPendingFocusIndex] = useState<number | null>(
     null,
   );
@@ -42,13 +46,25 @@ export function PoolEditor({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const shouldVirtualize = entries.length >= VIRTUALIZE_THRESHOLD;
+  const getEntryKey = (index: number): string =>
+    entryKeys[index] ?? `pending-${String(index)}`;
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual owns scroll measurement callbacks that React Compiler cannot memoize safely.
   const virtualizer = useVirtualizer({
     count: shouldVirtualize ? entries.length : 0,
+    getItemKey: getEntryKey,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => 40,
   });
+
+  useEffect(() => {
+    setEntryKeys((prev) => {
+      if (prev.length === entries.length) return prev;
+      if (prev.length < entries.length) {
+        return [...prev, ...createEntryKeys(entries.length - prev.length)];
+      }
+      return prev.slice(0, entries.length);
+    });
+  }, [entries.length]);
 
   useEffect(() => {
     if (pendingFocusIndex !== null && shouldVirtualize) {
@@ -58,6 +74,7 @@ export function PoolEditor({
 
   function handleAddEntry(): void {
     const newIndex = entries.length;
+    setEntryKeys((prev) => [...prev, generateLocalId()]);
     onChange([...entries, ""]);
     setPendingFocusIndex(newIndex);
   }
@@ -75,6 +92,7 @@ export function PoolEditor({
   function handleBulkApply(): void {
     const toAdd = parseBulkPaste(bulkText, entries);
     if (toAdd.length > 0) {
+      setEntryKeys((prev) => [...prev, ...createEntryKeys(toAdd.length)]);
       onChange([...entries, ...toAdd]);
     }
     setBulkText("");
@@ -97,6 +115,7 @@ export function PoolEditor({
   }
 
   function handleRemoveEntry(index: number): void {
+    setEntryKeys((prev) => prev.filter((_, i) => i !== index));
     onChange(entries.filter((_, i) => i !== index));
   }
 
@@ -166,30 +185,27 @@ export function PoolEditor({
         </div>
       ) : (
         <ul className="grid gap-1.5">
-          {entries.map((entry, index) => {
-            return (
-              // eslint-disable-next-line @eslint-react/no-array-index-key -- Pool entries are editable strings without durable row ids.
-              <li key={index} className="flex gap-2">
-                <Input
-                  value={entry}
-                  ref={makeInputRef(index)}
-                  onChange={(event) =>
-                    handleEntryChange(index, event.currentTarget.value)
-                  }
-                  onKeyDown={(event) => handleEntryKeyDown(event, index)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Remove entry ${String(index + 1)}`}
-                  onClick={() => handleRemoveEntry(index)}
-                >
-                  <X aria-hidden="true" />
-                </Button>
-              </li>
-            );
-          })}
+          {entries.map((entry, index) => (
+            <li key={getEntryKey(index)} className="flex gap-2">
+              <Input
+                value={entry}
+                ref={makeInputRef(index)}
+                onChange={(event) =>
+                  handleEntryChange(index, event.currentTarget.value)
+                }
+                onKeyDown={(event) => handleEntryKeyDown(event, index)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Remove entry ${String(index + 1)}`}
+                onClick={() => handleRemoveEntry(index)}
+              >
+                <X aria-hidden="true" />
+              </Button>
+            </li>
+          ))}
         </ul>
       )}
 
@@ -262,4 +278,8 @@ export function PoolEditor({
       </Dialog>
     </fieldset>
   );
+}
+
+function createEntryKeys(count: number): string[] {
+  return Array.from({ length: count }, () => generateLocalId());
 }
