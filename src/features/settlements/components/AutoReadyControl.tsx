@@ -43,7 +43,7 @@ export function AutoReadyControl({
             "after:absolute after:top-0.5 after:left-0.5 after:size-3.5 after:rounded-full after:bg-background after:shadow-sm after:transition-transform peer-checked:after:translate-x-4",
           )}
         />
-        <span>Auto-ready</span>
+        <span className="min-w-[8rem] tabular-nums">Auto-ready</span>
       </label>
       <p id={descriptionId} className="max-w-64 text-xs text-muted-foreground">
         {description}
