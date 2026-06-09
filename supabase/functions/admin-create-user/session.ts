@@ -1,18 +1,35 @@
-import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
+import {
+  getRequiredRuntimeEnv,
+  getRequiredRuntimeUrl,
+} from "../_shared/http/env.ts";
+import {
+  getAuthorizationHeader,
+  resolveAuthContext,
+} from "../_shared/http/session.ts";
+
 import { createErrorResponse } from "./http.ts";
 
 import type {
   AdminCreateUserAuthContext,
   AdminCreateUserAuthContextResult,
+  AdminCreateUserErrorResponse,
 } from "./types.ts";
 
 export async function resolveAdminCreateUserAuthContext(
   request: Request,
 ): Promise<AdminCreateUserAuthContextResult> {
-  const authorizationHeader = getAuthorizationHeader(request);
-
-  if (authorizationHeader === null) {
-    return createAuthErrorResult();
+  // Check auth header first, before any config access.
+  // This allows rejection of missing/invalid auth to be independent of env availability.
+  const authHeader = getAuthorizationHeader(request);
+  if (authHeader === null) {
+    return {
+      error: createErrorResponse({
+        code: "unauthenticated",
+        message: "An authenticated Supabase session is required.",
+      }),
+      ok: false,
+      status: 401,
+    };
   }
 
   const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
@@ -29,70 +46,33 @@ export async function resolveAdminCreateUserAuthContext(
     };
   }
 
-  const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      apikey: supabaseAnonKey,
-      authorization: authorizationHeader,
-    },
-    method: "GET",
+  const result = await resolveAuthContext<
+    AdminCreateUserAuthContext,
+    AdminCreateUserErrorResponse
+  >(request, {
+    fetchFn: fetch,
+    supabaseUrl,
+    supabaseAnonKey,
+    onAuthError: () => ({
+      ok: false,
+      error: createErrorResponse({
+        code: "unauthenticated",
+        message: "An authenticated Supabase session is required.",
+      }),
+      status: 401,
+    }),
+    onSuccess: (context) => ({
+      ok: true,
+      context: {
+        ...context,
+        authorizationHeader: authHeader,
+      } satisfies AdminCreateUserAuthContext,
+    }),
   });
 
-  if (!authResponse.ok) {
-    return createAuthErrorResult();
+  if (!result.ok) {
+    return result;
   }
 
-  const authPayload: unknown = await authResponse.json();
-
-  if (!isAuthUserPayload(authPayload)) {
-    return createAuthErrorResult();
-  }
-
-  return {
-    context: {
-      authorizationHeader,
-      userId: authPayload.id,
-    } satisfies AdminCreateUserAuthContext,
-    ok: true,
-  };
-}
-
-function getAuthorizationHeader(request: Request): string | null {
-  const authorizationHeader = request.headers.get("authorization");
-
-  if (authorizationHeader === null) {
-    return null;
-  }
-
-  const trimmedHeader = authorizationHeader.trim();
-
-  if (!trimmedHeader.toLowerCase().startsWith("bearer ")) {
-    return null;
-  }
-
-  const bearerToken = trimmedHeader.slice("bearer ".length).trim();
-
-  if (bearerToken.length === 0) {
-    return null;
-  }
-
-  return `Bearer ${bearerToken}`;
-}
-
-function isAuthUserPayload(value: unknown): value is { readonly id: string } {
-  if (typeof value !== "object" || value === null || !("id" in value)) {
-    return false;
-  }
-  const id = (value as Record<string, unknown>)["id"];
-  return typeof id === "string" && id.length > 0;
-}
-
-function createAuthErrorResult(): AdminCreateUserAuthContextResult {
-  return {
-    error: createErrorResponse({
-      code: "unauthenticated",
-      message: "An authenticated Supabase session is required.",
-    }),
-    ok: false,
-    status: 401,
-  };
+  return result;
 }

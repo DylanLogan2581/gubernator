@@ -1,6 +1,9 @@
 // Orchestrates the full SimulationInputState load from PostgREST.
 
-import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../env.ts";
+import {
+  getRequiredRuntimeEnv,
+  getRequiredRuntimeUrl,
+} from "../../_shared/http/env.ts";
 import { createErrorResponse } from "../http.ts";
 import {
   parseWorldCalendarConfig,

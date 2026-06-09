@@ -1,4 +1,11 @@
-import { getRequiredRuntimeEnv } from "./env.ts";
+import {
+  buildCorsHeaders as buildCorsHeadersShared,
+  parseAllowedOrigins,
+} from "../_shared/http/cors.ts";
+import {
+  createErrorResponse as createErrorResponseShared,
+  createJsonResponse as createJsonResponseShared,
+} from "../_shared/http/response.ts";
 
 import type {
   EndTurnSimulationErrorCode,
@@ -6,32 +13,14 @@ import type {
   EndTurnSimulationResponse,
 } from "./types.ts";
 
-const corsBaseHeaders = {
-  "access-control-allow-headers":
-    "authorization, x-client-info, apikey, content-type",
-  "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-max-age": "86400",
-} as const;
-
 export function getAllowedOrigins(): readonly string[] {
-  const value = getRequiredRuntimeEnv("END_TURN_SIMULATION_ALLOWED_ORIGINS");
-  if (value === undefined) return [];
-  return value
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean);
+  return parseAllowedOrigins("END_TURN_SIMULATION_ALLOWED_ORIGINS");
 }
 
 export function buildCorsHeaders(
   allowedOrigin: string | null,
 ): Record<string, string> {
-  if (allowedOrigin === null) {
-    return { ...corsBaseHeaders };
-  }
-  return {
-    ...corsBaseHeaders,
-    "access-control-allow-origin": allowedOrigin,
-  };
+  return buildCorsHeadersShared(allowedOrigin);
 }
 
 export function createJsonResponse(
@@ -39,13 +28,7 @@ export function createJsonResponse(
   status: number,
   allowedOrigin: string | null,
 ): Response {
-  return new Response(JSON.stringify(body), {
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...buildCorsHeaders(allowedOrigin),
-    },
-    status,
-  });
+  return createJsonResponseShared(body, status, allowedOrigin);
 }
 
 export function createErrorResponse({
@@ -57,22 +40,9 @@ export function createErrorResponse({
   readonly details?: readonly string[];
   readonly message: string;
 }): EndTurnSimulationErrorResponse {
-  if (details === undefined) {
-    return {
-      error: {
-        code,
-        message,
-      },
-      ok: false,
-    };
-  }
-
-  return {
-    error: {
-      code,
-      details,
-      message,
-    },
-    ok: false,
-  };
+  return createErrorResponseShared({
+    code,
+    details,
+    message,
+  });
 }

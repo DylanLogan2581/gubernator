@@ -5,9 +5,12 @@ import {
   logRequestSuccess,
   logRequestFailure,
 } from "../_shared/edgeRequestLogger.ts";
+import {
+  getRequiredRuntimeEnv,
+  getRequiredRuntimeUrl,
+} from "../_shared/http/env.ts";
 import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 
-import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
 import { createErrorResponse } from "./http.ts";
 import { isRecord } from "./utils.ts";
 

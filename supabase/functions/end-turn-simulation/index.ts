@@ -1,7 +1,7 @@
 import { logEndTurnSuccess } from "../_shared/auditLog.ts";
+import { getEdgeRuntime } from "../_shared/http/env.ts";
 
 import { resolveSupabaseEndTurnSimulationAuthorization } from "./authorize.ts";
-import { getEdgeRuntime } from "./env.ts";
 import {
   buildCorsHeaders,
   createErrorResponse,

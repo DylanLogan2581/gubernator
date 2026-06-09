@@ -1,6 +1,9 @@
 import { logAuthorizationDenial } from "../_shared/auditLog.ts";
+import {
+  getRequiredRuntimeEnv,
+  getRequiredRuntimeUrl,
+} from "../_shared/http/env.ts";
 
-import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
 import { createErrorResponse } from "./http.ts";
 
 import type {

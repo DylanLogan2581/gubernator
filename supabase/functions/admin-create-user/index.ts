@@ -2,13 +2,13 @@ import {
   logAdminCreateUserSuccess,
   logAuthorizationDenial,
 } from "../_shared/auditLog.ts";
-import { classifyHttpError, supabaseFetch } from "../_shared/supabaseFetch.ts";
-
 import {
   getEdgeRuntime,
   getRequiredRuntimeEnv,
   getRequiredRuntimeUrl,
-} from "./env.ts";
+} from "../_shared/http/env.ts";
+import { classifyHttpError, supabaseFetch } from "../_shared/supabaseFetch.ts";
+
 import {
   buildCorsHeaders,
   createErrorResponse,
