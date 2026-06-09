@@ -120,6 +120,7 @@ export async function handleEndTurnSimulationRequest(
       validateResult.body,
       transitionResult.payload,
       startResult.transitionId,
+      authContextResult.context.userId,
     );
     if (!persistResult.ok) {
       return respond(persistResult.error, persistResult.status);

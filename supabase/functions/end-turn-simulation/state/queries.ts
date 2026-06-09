@@ -49,7 +49,17 @@ async function fetchRows({
       `${ctx.supabaseUrl}/rest/v1/${table}?${searchParams}`,
       { headers: ctx.headers, method: "GET" },
     );
-  } catch {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "fetch_error",
+        table,
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+      }),
+    );
     return { ok: false, reason: "fetch_failed" };
   }
 

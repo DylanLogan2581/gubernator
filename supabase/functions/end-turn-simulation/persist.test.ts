@@ -113,6 +113,7 @@ describe("persistSimulationTransition — success", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(true);
@@ -135,6 +136,7 @@ describe("persistSimulationTransition — success", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -159,6 +161,7 @@ describe("persistSimulationTransition — success", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -188,6 +191,7 @@ describe("persistSimulationTransition — missing env", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(false);
@@ -281,6 +285,7 @@ describe("persistSimulationTransition — error code mapping", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(false);
@@ -303,6 +308,7 @@ describe("persistSimulationTransition — error code mapping", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(false);
@@ -325,6 +331,7 @@ describe("persistSimulationTransition — error code mapping", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(false);
@@ -347,6 +354,7 @@ describe("persistSimulationTransition — error code mapping", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(false);
@@ -368,6 +376,7 @@ describe("persistSimulationTransition — error code mapping", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(false);
@@ -383,6 +392,7 @@ describe("persistSimulationTransition — error code mapping", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(false);
@@ -401,6 +411,7 @@ describe("persistSimulationTransition — error code mapping", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     expect(result.ok).toBe(false);
@@ -422,6 +433,7 @@ describe("persistSimulationTransition — caller token never leaked", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     const serialized = JSON.stringify(result);
@@ -438,6 +450,7 @@ describe("persistSimulationTransition — caller token never leaked", () => {
       makeRequestBody(),
       makeMinimalPayload(),
       TRANSITION_ID,
+      USER_ID,
     );
 
     const serialized = JSON.stringify(result);
