@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -56,16 +57,42 @@ describe("TurnTransitionOutcomeContent", () => {
     expectMetric("Deposits depleted", "1");
   });
 
-  it("renders notifications grouped by type", () => {
+  it("renders notifications grouped by type in collapsed state", () => {
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
     expect(screen.getByText("Notifications")).toBeDefined();
     expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
+    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+
+    // Details elements should exist but be closed (not open)
+    const detailsElements = document.querySelectorAll("details");
+    expect(detailsElements.length).toBeGreaterThan(0);
+    detailsElements.forEach((details) => {
+      expect(details.hasAttribute("open")).toBe(false);
+    });
+  });
+
+  it("expands group to show notifications when details element is opened", async () => {
+    const user = userEvent.setup();
+    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+
+    const buildingsSuspendedSummary = screen.getByText(
+      "Buildings suspended (1)",
+    );
+    await user.click(buildingsSuspendedSummary);
+
     expect(
       screen.getByText("Ironforge mill suspended due to missing upkeep."),
     ).toBeDefined();
-    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
-    expect(screen.getByText("Iron vein exhausted.")).toBeDefined();
+  });
+
+  it("collapses groups by default", () => {
+    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+
+    const detailsElements = document.querySelectorAll(
+      "section details:not([open])",
+    );
+    expect(detailsElements.length).toBeGreaterThan(0);
   });
 
   it("renders 'no notifications' message when notifications are empty", () => {
@@ -102,6 +129,63 @@ describe("TurnTransitionOutcomeContent", () => {
 
     expectMetric("Births", "6");
     expectMetric("Deaths", "4");
+  });
+
+  it("filters groups when a category chip is clicked", async () => {
+    const user = userEvent.setup();
+    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+
+    // Initially both group summaries should be present
+    expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
+    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+
+    // Count the initial number of summary elements (one per group)
+    const initialSummaries = document.querySelectorAll("summary").length;
+    expect(initialSummaries).toBe(2);
+
+    // Click the "Buildings suspended" chip to deselect it
+    const buildingsChip = screen.getByRole("button", {
+      name: "Buildings suspended",
+    });
+    expect(buildingsChip).toHaveAttribute("aria-pressed", "true");
+    await user.click(buildingsChip);
+
+    // Now "Buildings suspended" chip should be deselected
+    expect(buildingsChip).toHaveAttribute("aria-pressed", "false");
+
+    // Only one summary should remain (Deposits depleted)
+    const summariesAfterFilter = document.querySelectorAll("summary");
+    expect(summariesAfterFilter.length).toBe(1);
+    expect(screen.queryByText("Buildings suspended (1)")).toBeNull();
+    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+  });
+
+  it("resets filter when All chip is clicked", async () => {
+    const user = userEvent.setup();
+    render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
+
+    // Deselect one category
+    const buildingsChip = screen.getByRole("button", {
+      name: "Buildings suspended",
+    });
+    await user.click(buildingsChip);
+    expect(buildingsChip).toHaveAttribute("aria-pressed", "false");
+
+    // Only one group should be visible
+    expect(screen.queryByText("Buildings suspended (1)")).toBeNull();
+    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+
+    // Click "All" to reset
+    const allChip = screen.getByRole("button", { name: "All" });
+    await user.click(allChip);
+
+    // All chips should be selected again
+    expect(allChip).toHaveAttribute("aria-pressed", "true");
+    expect(buildingsChip).toHaveAttribute("aria-pressed", "true");
+
+    // Both groups should be visible again
+    expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
+    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
   });
 
   it("shows finish date as date-only prefix from ISO string", () => {
@@ -517,8 +601,23 @@ function createPendingWorldClient(): unknown {
 // -- Assertion helpers --
 
 function expectMetric(label: string, value: string): void {
-  const term = screen.getByText(label);
-  const group = term.closest("div");
-  expect(group).not.toBeNull();
-  expect(group).toHaveTextContent(value);
+  // Find the metrics grid (first dl element, which contains the metrics)
+  const metricsGrid = document.querySelector("section dl");
+  expect(metricsGrid).not.toBeNull();
+
+  if (metricsGrid === null) {
+    return;
+  }
+
+  // Find the dt with matching label within the metrics grid
+  const dts = metricsGrid.querySelectorAll("dt");
+  let found = false;
+  dts.forEach((dt) => {
+    if (dt.textContent === label) {
+      const group = dt.closest("div");
+      expect(group).toHaveTextContent(value);
+      found = true;
+    }
+  });
+  expect(found).toBe(true);
 }

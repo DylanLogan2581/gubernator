@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -116,10 +117,51 @@ export function TurnTransitionOutcomeContent({
 }: {
   readonly outcome: TurnTransitionOutcome;
 }): JSX.Element {
-  const notificationGroups = groupNotificationsByType(outcome.notifications);
-  const deltas = computeDeltas(
-    outcome.settlementSnapshots,
-    outcome.notifications,
+  const notificationGroups = useMemo(
+    () => groupNotificationsByType(outcome.notifications),
+    [outcome.notifications],
+  );
+  const deltas = useMemo(
+    () => computeDeltas(outcome.settlementSnapshots, outcome.notifications),
+    [outcome.settlementSnapshots, outcome.notifications],
+  );
+
+  const allCategories = useMemo(
+    () =>
+      notificationGroups.map((g) => g.type).sort((a, b) => a.localeCompare(b)),
+    [notificationGroups],
+  );
+
+  const [selectedCategories, setSelectedCategories] =
+    useState<string[]>(allCategories);
+
+  const toggleCategory = (category: string): void => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category],
+    );
+  };
+
+  const resetFilter = (): void => {
+    setSelectedCategories(allCategories);
+  };
+
+  const filteredGroups = useMemo(
+    () =>
+      notificationGroups.filter((group) =>
+        selectedCategories.includes(group.type),
+      ),
+    [notificationGroups, selectedCategories],
+  );
+
+  const visibleGroups = useMemo(
+    () =>
+      filteredGroups.map((group) => ({
+        ...group,
+        notifications: sortNotificationsBySettlement(group.notifications),
+      })),
+    [filteredGroups],
   );
 
   return (
@@ -158,19 +200,21 @@ export function TurnTransitionOutcomeContent({
       {notificationGroups.length > 0 ? (
         <div className="space-y-3">
           <h3 className="text-sm font-medium">Notifications</h3>
-          {notificationGroups.map((group) => (
-            <div key={group.type} className="space-y-1">
-              <p className="text-sm font-medium">
-                {notificationTypeLabel(group.type)} (
-                {group.notifications.length.toString()})
-              </p>
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                {group.notifications.map((n) => (
-                  <li key={n.id}>{n.messageText}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <CategoryFilterChips
+            categories={allCategories}
+            selectedCategories={selectedCategories}
+            onToggle={toggleCategory}
+            onReset={resetFilter}
+          />
+          <div className="space-y-2">
+            {visibleGroups.map((group) => (
+              <NotificationGroupAccordion
+                key={group.type}
+                type={group.type}
+                notifications={group.notifications}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
@@ -178,6 +222,89 @@ export function TurnTransitionOutcomeContent({
         </p>
       )}
     </section>
+  );
+}
+
+// -- Components --
+
+function CategoryFilterChips({
+  categories,
+  selectedCategories,
+  onToggle,
+  onReset,
+}: {
+  readonly categories: string[];
+  readonly selectedCategories: string[];
+  readonly onToggle: (category: string) => void;
+  readonly onReset: () => void;
+}): JSX.Element {
+  const isAllSelected = selectedCategories.length === categories.length;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={onReset}
+        className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+          isAllSelected
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border bg-background text-foreground hover:border-primary"
+        }`}
+        aria-pressed={isAllSelected}
+      >
+        All
+      </button>
+      {categories.map((category) => (
+        <button
+          key={category}
+          type="button"
+          onClick={() => onToggle(category)}
+          className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            selectedCategories.includes(category)
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background text-foreground hover:border-primary"
+          }`}
+          aria-pressed={selectedCategories.includes(category)}
+        >
+          {notificationTypeLabel(category)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function NotificationGroupAccordion({
+  type,
+  notifications,
+}: {
+  readonly type: string;
+  readonly notifications: TurnTransitionNotification[];
+}): JSX.Element {
+  return (
+    <details className="group rounded-md border border-border">
+      <summary className="flex cursor-pointer items-center justify-between bg-muted/50 px-4 py-3 font-medium text-sm hover:bg-muted">
+        <span>
+          {notificationTypeLabel(type)} ({notifications.length.toString()})
+        </span>
+        <svg
+          className="h-4 w-4 transition-transform group-open:rotate-180"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </summary>
+      <ul className="space-y-1 border-t border-border px-4 py-3 text-sm text-muted-foreground">
+        {notifications.map((n) => (
+          <li key={n.id}>{n.messageText}</li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
@@ -226,6 +353,21 @@ function computeDeltas(
     (n) => n.notificationType === "deposit.depleted",
   ).length;
   return { births, buildingsSuspended, deaths, depositsDepleted };
+}
+
+function sortNotificationsBySettlement(
+  notifications: readonly TurnTransitionNotification[],
+): TurnTransitionNotification[] {
+  return [...notifications].sort((a, b) => {
+    // Sort by settlementId first, then by messageText
+    const settlementCmp = (a.settlementId ?? "").localeCompare(
+      b.settlementId ?? "",
+    );
+    if (settlementCmp !== 0) {
+      return settlementCmp;
+    }
+    return a.messageText.localeCompare(b.messageText);
+  });
 }
 
 const NOTIFICATION_LABELS: Readonly<Record<string, string>> = {
