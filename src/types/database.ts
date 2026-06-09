@@ -354,6 +354,7 @@ export type Database = {
         Row: {
           activated_on_turn_number: number | null;
           building_blueprint_id: string;
+          cancelled_at: string | null;
           completed_in_transition_id: string | null;
           created_at: string;
           id: string;
@@ -367,6 +368,7 @@ export type Database = {
         Insert: {
           activated_on_turn_number?: number | null;
           building_blueprint_id: string;
+          cancelled_at?: string | null;
           completed_in_transition_id?: string | null;
           created_at?: string;
           id?: string;
@@ -380,6 +382,7 @@ export type Database = {
         Update: {
           activated_on_turn_number?: number | null;
           building_blueprint_id?: string;
+          cancelled_at?: string | null;
           completed_in_transition_id?: string | null;
           created_at?: string;
           id?: string;
@@ -2209,6 +2212,7 @@ export type Database = {
         Returns: {
           activated_on_turn_number: number | null;
           building_blueprint_id: string;
+          cancelled_at: string | null;
           completed_in_transition_id: string | null;
           created_at: string;
           id: string;
@@ -2577,6 +2581,13 @@ export type Database = {
         Returns: {
           id: string;
           world_id: string;
+        }[];
+      };
+      hard_delete_construction_project: {
+        Args: { p_project_id: string };
+        Returns: {
+          project_id: string;
+          success: boolean;
         }[];
       };
       hard_delete_deposit_instance: {
@@ -3123,6 +3134,13 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      resume_construction_project: {
+        Args: { p_project_id: string };
+        Returns: {
+          _dummy: number;
+          project_id: string;
+        }[];
       };
       revoke_citizen_role: {
         Args: { p_citizen_id: string };

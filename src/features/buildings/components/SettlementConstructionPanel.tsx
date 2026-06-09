@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useId, useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -37,7 +37,9 @@ import { parseConstructionPausedPayload } from "@/shared/simulation";
 
 import { cancelConstructionProjectMutationOptions } from "../mutations/cancelConstructionProjectMutations";
 import { createConstructionProjectMutationOptions } from "../mutations/createConstructionProjectMutations";
+import { hardDeleteConstructionProjectMutationOptions } from "../mutations/hardDeleteConstructionProjectMutations";
 import { reorderConstructionProjectsMutationOptions } from "../mutations/reorderConstructionProjectsMutations";
+import { resumeConstructionProjectMutationOptions } from "../mutations/resumeConstructionProjectMutations";
 import { setConstructionProjectWorkersMutationOptions } from "../mutations/setConstructionProjectWorkersMutations";
 import {
   blueprintsByWorldQueryOptions,
@@ -106,6 +108,7 @@ export function SettlementConstructionPanel({
   worldId,
 }: SettlementConstructionPanelProps): JSX.Element {
   const [createOpen, setCreateOpen] = useState(false);
+  const [showCancelled, setShowCancelled] = useState(false);
   const projectsQuery = useQuery(
     constructionProjectsBySettlementQueryOptions(settlementId),
   );
@@ -125,17 +128,32 @@ export function SettlementConstructionPanel({
         >
           Construction Queue
         </h2>
-        {canAct ? (
+        <div className="flex items-center gap-2">
+          {canAct && !showCancelled ? (
+            <Button
+              size="sm"
+              type="button"
+              onClick={() => {
+                setCreateOpen(true);
+              }}
+            >
+              Start construction
+            </Button>
+          ) : null}
           <Button
-            size="sm"
             type="button"
+            variant={showCancelled ? "secondary" : "ghost"}
+            size="icon-sm"
+            aria-label={showCancelled ? "Hide cancelled" : "Show cancelled"}
+            aria-pressed={showCancelled}
+            title={showCancelled ? "Hide cancelled" : "Show cancelled"}
             onClick={() => {
-              setCreateOpen(true);
+              setShowCancelled((v) => !v);
             }}
           >
-            Start construction
+            <Trash2 aria-hidden="true" />
           </Button>
-        ) : null}
+        </div>
       </div>
 
       {projectsQuery.isPending ? (
@@ -152,6 +170,7 @@ export function SettlementConstructionPanel({
           logEntries={latestOutcome?.logEntries ?? []}
           queryClient={queryClient}
           settlementId={settlementId}
+          showCancelled={showCancelled}
         />
       )}
 
@@ -175,16 +194,22 @@ function QueueContent({
   logEntries,
   queryClient,
   settlementId,
+  showCancelled,
 }: {
   readonly allProjects: readonly ConstructionProject[];
   readonly canAct: boolean;
   readonly logEntries: readonly TurnTransitionLogEntry[];
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly showCancelled: boolean;
 }): JSX.Element {
   const activeProjects = allProjects.filter((p) =>
     (ACTIVE_STATUSES as readonly string[]).includes(p.status),
   );
+
+  const cancelledProjects = allProjects.filter((p) => p.status === "cancelled");
+
+  const projectsToShow = showCancelled ? cancelledProjects : activeProjects;
 
   const projectCountsQuery = useQuery(
     settlementConstructionProjectCountsQueryOptions(settlementId),
@@ -193,11 +218,15 @@ function QueueContent({
     citizenAggregateStatsForSettlementQueryOptions(settlementId),
   );
 
-  if (activeProjects.length === 0) {
+  if (projectsToShow.length === 0) {
     return (
       <EmptyState
-        title="No active projects"
-        description="No construction projects are currently queued."
+        title={showCancelled ? "No cancelled projects" : "No active projects"}
+        description={
+          showCancelled
+            ? "No construction projects have been cancelled."
+            : "No construction projects are currently queued."
+        }
       />
     );
   }
@@ -209,6 +238,42 @@ function QueueContent({
     ]),
   );
   const unassignedNpcCount = aggregateQuery.data?.unassignedNpcCount ?? 0;
+
+  if (showCancelled) {
+    return (
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border text-left text-muted-foreground">
+            <th className="pb-2 font-medium" scope="col">
+              Blueprint
+            </th>
+            <th className="pb-2 font-medium" scope="col">
+              Tier
+            </th>
+            <th className="pb-2 font-medium" scope="col">
+              Progress
+            </th>
+            {canAct ? (
+              <th className="w-64 pb-2" scope="col" aria-label="Actions" />
+            ) : null}
+          </tr>
+        </thead>
+        <tbody>
+          {cancelledProjects
+            .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+            .map((project) => (
+              <CancelledProjectRow
+                key={project.id}
+                canAct={canAct}
+                project={project}
+                queryClient={queryClient}
+                settlementId={settlementId}
+              />
+            ))}
+        </tbody>
+      </table>
+    );
+  }
 
   return (
     <table className="w-full text-sm">
@@ -570,6 +635,155 @@ function CancelConfirmDialog({
             }}
           >
             Cancel project
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CancelledProjectRow({
+  canAct,
+  project,
+  queryClient,
+  settlementId,
+}: {
+  readonly canAct: boolean;
+  readonly project: ConstructionProject;
+  readonly queryClient: QueryClient;
+  readonly settlementId: string;
+}): JSX.Element {
+  const [showDestroyDialog, setShowDestroyDialog] = useState(false);
+  const resumeMutation = useMutation(
+    resumeConstructionProjectMutationOptions({ queryClient, settlementId }),
+  );
+
+  async function handleResume(): Promise<void> {
+    try {
+      await resumeMutation.mutateAsync({
+        projectId: project.id,
+      });
+      notifyMutationSuccess("Construction project resumed.");
+    } catch (error) {
+      notifyMutationError(error, "Failed to resume construction project.");
+    }
+  }
+
+  return (
+    <>
+      <tr className="border-b border-border">
+        <td className="py-2">{project.blueprintName}</td>
+        <td className="py-2">{project.tierNumber}</td>
+        <td className="py-2">
+          {project.progressWorkerTurns} / {project.workerTurnsRequired}
+        </td>
+        {canAct ? (
+          <td className="flex items-center justify-end gap-2 py-2">
+            <Button
+              disabled={resumeMutation.isPending}
+              onClick={() => {
+                void handleResume();
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Resume
+            </Button>
+            <Button
+              disabled={resumeMutation.isPending}
+              onClick={() => {
+                setShowDestroyDialog(true);
+              }}
+              size="sm"
+              type="button"
+              variant="destructive"
+            >
+              Destroy
+            </Button>
+          </td>
+        ) : null}
+      </tr>
+      {showDestroyDialog ? (
+        <DestroyConfirmDialog
+          onClose={() => {
+            setShowDestroyDialog(false);
+          }}
+          project={project}
+          queryClient={queryClient}
+          settlementId={settlementId}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function DestroyConfirmDialog({
+  onClose,
+  project,
+  queryClient,
+  settlementId,
+}: {
+  readonly onClose: () => void;
+  readonly project: ConstructionProject;
+  readonly queryClient: QueryClient;
+  readonly settlementId: string;
+}): JSX.Element {
+  const destroyMutation = useMutation(
+    hardDeleteConstructionProjectMutationOptions({ queryClient, settlementId }),
+  );
+
+  async function handleConfirm(): Promise<void> {
+    try {
+      await destroyMutation.mutateAsync({
+        projectId: project.id,
+      });
+      notifyMutationSuccess("Construction project destroyed.");
+      onClose();
+    } catch (error) {
+      notifyMutationError(error, "Failed to destroy construction project.");
+    }
+  }
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Permanently destroy {project.blueprintName}?
+          </DialogTitle>
+        </DialogHeader>
+        <DialogDescription>
+          This will permanently delete the cancelled construction of{" "}
+          <span className="font-medium text-foreground">
+            {project.blueprintName}
+          </span>{" "}
+          (Tier {project.tierNumber}). This cannot be undone, and no resources
+          will be refunded.
+        </DialogDescription>
+        <DialogFooter>
+          <Button
+            disabled={destroyMutation.isPending}
+            onClick={onClose}
+            type="button"
+            variant="outline"
+          >
+            Keep
+          </Button>
+          <Button
+            disabled={destroyMutation.isPending}
+            type="button"
+            variant="destructive"
+            onClick={() => {
+              void handleConfirm();
+            }}
+          >
+            Destroy permanently
           </Button>
         </DialogFooter>
       </DialogContent>

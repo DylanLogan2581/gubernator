@@ -42,3 +42,13 @@ export type SetConstructionProjectWorkersResult = {
   readonly before: number;
   readonly removedCitizenIds: readonly string[];
 };
+
+export type ResumeConstructionProjectResult = {
+  readonly projectId: string;
+  readonly success: boolean;
+};
+
+export type HardDeleteConstructionProjectResult = {
+  readonly projectId: string;
+  readonly success: boolean;
+};
