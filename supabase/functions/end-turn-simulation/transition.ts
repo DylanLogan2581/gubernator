@@ -175,7 +175,26 @@ export function planSimulationTransition(
     throw error;
   }
 
-  const payload = mapSimulationResultToPayload(result, input);
+  let payload: ApplyTurnTransitionPayload;
+  try {
+    payload = mapSimulationResultToPayload(result, input);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Partnership")) {
+      return {
+        error: {
+          error: {
+            code: "end_turn_transition_failed",
+            message: error.message,
+          },
+          ok: false,
+        },
+        ok: false,
+        status: 422,
+      };
+    }
+    throw error;
+  }
+
   return { ok: true, payload, result, transitionId };
 }
 

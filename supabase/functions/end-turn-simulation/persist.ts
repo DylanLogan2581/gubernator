@@ -64,19 +64,29 @@ export async function startTurnTransition(
 
   let response: Response;
   try {
-    response = await fetch(`${supabaseUrl}/rest/v1/rpc/start_turn_transition`, {
-      body: JSON.stringify({
-        p_expected_turn_number: body.expectedTurnNumber,
-        p_initiated_by_user_id: authContext.userId,
-        p_world_id: body.worldId,
-      }),
-      headers: {
-        apikey: supabaseServiceRoleKey,
-        authorization: `Bearer ${supabaseServiceRoleKey}`,
-        "content-type": "application/json",
-      },
-      method: "POST",
-    });
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), 30000); // 30s timeout
+    try {
+      response = await fetch(
+        `${supabaseUrl}/rest/v1/rpc/start_turn_transition`,
+        {
+          body: JSON.stringify({
+            p_expected_turn_number: body.expectedTurnNumber,
+            p_initiated_by_user_id: authContext.userId,
+            p_world_id: body.worldId,
+          }),
+          headers: {
+            apikey: supabaseServiceRoleKey,
+            authorization: `Bearer ${supabaseServiceRoleKey}`,
+            "content-type": "application/json",
+          },
+          method: "POST",
+          signal: abortController.signal,
+        },
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch {
     return createStartUnavailableResult();
   }
@@ -126,20 +136,30 @@ export async function persistSimulationTransition(
 
   let response: Response;
   try {
-    response = await fetch(`${supabaseUrl}/rest/v1/rpc/apply_turn_transition`, {
-      body: JSON.stringify({
-        p_expected_turn_number: body.expectedTurnNumber,
-        p_payload: payload,
-        p_transition_id: transitionId,
-        p_world_id: body.worldId,
-      }),
-      headers: {
-        apikey: supabaseServiceRoleKey,
-        authorization: `Bearer ${supabaseServiceRoleKey}`,
-        "content-type": "application/json",
-      },
-      method: "POST",
-    });
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), 30000); // 30s timeout
+    try {
+      response = await fetch(
+        `${supabaseUrl}/rest/v1/rpc/apply_turn_transition`,
+        {
+          body: JSON.stringify({
+            p_expected_turn_number: body.expectedTurnNumber,
+            p_payload: payload,
+            p_transition_id: transitionId,
+            p_world_id: body.worldId,
+          }),
+          headers: {
+            apikey: supabaseServiceRoleKey,
+            authorization: `Bearer ${supabaseServiceRoleKey}`,
+            "content-type": "application/json",
+          },
+          method: "POST",
+          signal: abortController.signal,
+        },
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch {
     return createTransitionUnavailableResult();
   }
