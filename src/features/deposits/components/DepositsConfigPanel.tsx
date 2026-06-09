@@ -5,10 +5,11 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { ConfigListPanel } from "@/components/shared/ConfigListPanel";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -31,6 +32,9 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
+import { useRestoreRow } from "@/hooks/useRestoreRow";
+import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -68,7 +72,16 @@ export function DepositsConfigPanel({
 }: DepositsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const [showTrash, setShowTrash] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingDepositTypeId, setEditingDepositTypeId] = useState<
+    string | null
+  >(null);
   const depositTypesQuery = useQuery(depositTypesByWorldQueryOptions(worldId));
+  const depositJobsQuery = useQuery(jobsByTypeQueryOptions(worldId, "deposit"));
+
+  const createMutation = useMutation(
+    createDepositTypeMutationOptions({ queryClient }),
+  );
 
   if (depositTypesQuery.isPending) {
     return <LoadingState label="Loading deposit types…" />;
@@ -84,114 +97,63 @@ export function DepositsConfigPanel({
   }
 
   const allDepositTypes = depositTypesQuery.data;
-  const visibleDepositTypes = showTrash
-    ? allDepositTypes.filter((dt) => dt.isTrashed)
-    : allDepositTypes.filter((dt) => !dt.isTrashed);
-
-  return (
-    <DepositsConfigPanelContent
-      allDepositTypes={allDepositTypes}
-      canAdmin={canAdmin}
-      depositTypes={visibleDepositTypes}
-      isArchived={isArchived}
-      queryClient={queryClient}
-      showTrash={showTrash}
-      worldId={worldId}
-      onToggleTrash={() => {
-        setShowTrash((v) => !v);
-      }}
-    />
-  );
-}
-
-function DepositsConfigPanelContent({
-  allDepositTypes,
-  canAdmin,
-  depositTypes,
-  isArchived,
-  queryClient,
-  showTrash,
-  worldId,
-  onToggleTrash,
-}: {
-  readonly allDepositTypes: readonly DepositType[];
-  readonly canAdmin: boolean;
-  readonly depositTypes: readonly DepositType[];
-  readonly isArchived: boolean;
-  readonly onToggleTrash: () => void;
-  readonly queryClient: QueryClient;
-  readonly showTrash: boolean;
-  readonly worldId: string;
-}): JSX.Element {
-  const createMutation = useMutation(
-    createDepositTypeMutationOptions({ queryClient }),
-  );
-  const depositJobsQuery = useQuery(jobsByTypeQueryOptions(worldId, "deposit"));
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingDepositTypeId, setEditingDepositTypeId] = useState<
-    string | null
-  >(null);
   const canEdit = canAdmin && !isArchived;
-
   const depositJobs = depositJobsQuery.data ?? [];
 
   return (
     <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h2
-          id="world-deposits-title"
-          className="text-lg font-semibold tracking-normal"
-        >
-          Deposit Types
-        </h2>
-        <div className="flex items-center gap-2">
-          {canEdit && !showCreateForm && !showTrash ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowCreateForm(true);
+      <ConfigListPanel
+        title="Deposit Types"
+        addButtonLabel="Add deposit type"
+        emptyTrashTitle="No deposit types in trash"
+        emptyNormalTitle="No deposit types yet"
+        emptyNormalDescription="Add the first deposit type for this world."
+        canEdit={canEdit}
+        showTrash={showTrash}
+        showCreateForm={showCreateForm}
+        entities={allDepositTypes}
+        renderRow={(depositType) => {
+          if (editingDepositTypeId === depositType.id) {
+            return (
+              <EditDepositTypeForm
+                allDepositTypes={allDepositTypes}
+                depositJobs={depositJobs}
+                depositType={depositType}
+                queryClient={queryClient}
+                worldId={worldId}
+                onClose={() => {
+                  setEditingDepositTypeId(null);
+                }}
+              />
+            );
+          }
+          return (
+            <DepositTypeRow
+              canEdit={canEdit}
+              depositJobs={depositJobs}
+              depositType={depositType}
+              queryClient={queryClient}
+              worldId={worldId}
+              onEdit={() => {
+                setEditingDepositTypeId(depositType.id);
               }}
-            >
-              <Plus aria-hidden="true" />
-              Add deposit type
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant={showTrash ? "secondary" : "ghost"}
-            size="icon-sm"
-            aria-label={showTrash ? "Hide trash" : "Show trash"}
-            aria-pressed={showTrash}
-            title={showTrash ? "Hide trash" : "Show trash"}
-            onClick={onToggleTrash}
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-
-      {depositTypes.length > 0 ? (
-        <DepositTypeList
-          allDepositTypes={allDepositTypes}
-          canEdit={canEdit}
-          depositJobs={depositJobs}
-          depositTypes={depositTypes}
-          editingDepositTypeId={editingDepositTypeId}
-          queryClient={queryClient}
-          showTrash={showTrash}
-          worldId={worldId}
-          onEditingChange={setEditingDepositTypeId}
-        />
-      ) : showTrash ? (
-        <EmptyState title="No deposit types in trash" />
-      ) : (
-        <EmptyState
-          title="No deposit types yet"
-          description="Add the first deposit type for this world."
-        />
-      )}
+            />
+          );
+        }}
+        renderTrashedRow={(depositType) => (
+          <TrashedDepositTypeRow
+            depositType={depositType}
+            queryClient={queryClient}
+            worldId={worldId}
+          />
+        )}
+        onToggleTrash={() => {
+          setShowTrash((v) => !v);
+        }}
+        onToggleCreateForm={() => {
+          setShowCreateForm((v) => !v);
+        }}
+      />
 
       {canEdit && showCreateForm && !showTrash ? (
         <CreateDepositTypeForm
@@ -223,71 +185,6 @@ function DepositsConfigPanelContent({
   );
 }
 
-function DepositTypeList({
-  allDepositTypes,
-  canEdit,
-  depositJobs,
-  depositTypes,
-  editingDepositTypeId,
-  queryClient,
-  showTrash,
-  worldId,
-  onEditingChange,
-}: {
-  readonly allDepositTypes: readonly DepositType[];
-  readonly canEdit: boolean;
-  readonly depositJobs: readonly JobDefinition[];
-  readonly depositTypes: readonly DepositType[];
-  readonly editingDepositTypeId: string | null;
-  readonly onEditingChange: (id: string | null) => void;
-  readonly queryClient: QueryClient;
-  readonly showTrash: boolean;
-  readonly worldId: string;
-}): JSX.Element {
-  return (
-    <ul aria-label="Deposit types" className="grid gap-2">
-      {depositTypes.map((depositType) => {
-        if (showTrash) {
-          return (
-            <TrashedDepositTypeRow
-              key={depositType.id}
-              depositType={depositType}
-              queryClient={queryClient}
-              worldId={worldId}
-            />
-          );
-        }
-        return editingDepositTypeId === depositType.id ? (
-          <li key={depositType.id}>
-            <EditDepositTypeForm
-              allDepositTypes={allDepositTypes}
-              depositJobs={depositJobs}
-              depositType={depositType}
-              queryClient={queryClient}
-              worldId={worldId}
-              onClose={() => {
-                onEditingChange(null);
-              }}
-            />
-          </li>
-        ) : (
-          <DepositTypeRow
-            key={depositType.id}
-            canEdit={canEdit}
-            depositJobs={depositJobs}
-            depositType={depositType}
-            queryClient={queryClient}
-            worldId={worldId}
-            onEdit={() => {
-              onEditingChange(depositType.id);
-            }}
-          />
-        );
-      })}
-    </ul>
-  );
-}
-
 function DepositTypeRow({
   depositType,
   canEdit,
@@ -304,30 +201,13 @@ function DepositTypeRow({
   readonly worldId: string;
 }): JSX.Element {
   const linkedJob = depositJobs.find((j) => j.id === depositType.jobId);
-  const softDeleteMutation = useMutation(
+  const softDeleteMutation = useSoftDeleteRow(
     softDeleteDepositTypeMutationOptions({ queryClient }),
+    { successMessage: "Deposit type moved to trash." },
   );
 
-  function handleTrash(): void {
-    softDeleteMutation.mutate(
-      { depositTypeId: depositType.id, worldId },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to move deposit type to trash.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Deposit type moved to trash.");
-        },
-      },
-    );
-  }
-
   return (
-    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+    <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <span className="text-sm font-medium">{depositType.name}</span>
         <span className="text-xs text-muted-foreground">
@@ -349,13 +229,18 @@ function DepositTypeRow({
             aria-label={`Move ${depositType.name} to trash`}
             title="Move to trash"
             disabled={softDeleteMutation.isPending}
-            onClick={handleTrash}
+            onClick={() => {
+              softDeleteMutation.mutate({
+                depositTypeId: depositType.id,
+                worldId,
+              });
+            }}
           >
             <Trash2 aria-hidden="true" />
           </Button>
         ) : null}
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -368,52 +253,18 @@ function TrashedDepositTypeRow({
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
-  const restoreMutation = useMutation(
+  const restoreMutation = useRestoreRow(
     restoreDepositTypeMutationOptions({ queryClient }),
+    { successMessage: "Deposit type restored." },
   );
-  const hardDeleteMutation = useMutation(
+  const hardDeleteMutation = useHardDeleteRow(
     hardDeleteDepositTypeMutationOptions({ queryClient }),
+    { successMessage: "Deposit type permanently deleted." },
   );
   const isPending = restoreMutation.isPending || hardDeleteMutation.isPending;
 
-  function handleRestore(): void {
-    restoreMutation.mutate(
-      { depositTypeId: depositType.id, worldId },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to restore deposit type.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Deposit type restored.");
-        },
-      },
-    );
-  }
-
-  function handleHardDelete(): void {
-    hardDeleteMutation.mutate(
-      { depositTypeId: depositType.id, worldId },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to permanently delete deposit type.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Deposit type permanently deleted.");
-        },
-      },
-    );
-  }
-
   return (
-    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+    <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{depositType.name}</span>
@@ -429,7 +280,9 @@ function TrashedDepositTypeRow({
           variant="outline"
           size="sm"
           disabled={isPending}
-          onClick={handleRestore}
+          onClick={() => {
+            restoreMutation.mutate({ depositTypeId: depositType.id, worldId });
+          }}
         >
           Restore
         </Button>
@@ -445,13 +298,18 @@ function TrashedDepositTypeRow({
             variant="destructive"
             size="sm"
             disabled={isPending}
-            onClick={handleHardDelete}
+            onClick={() => {
+              hardDeleteMutation.mutate({
+                depositTypeId: depositType.id,
+                worldId,
+              });
+            }}
           >
             Delete permanently
           </Button>
         )}
       </div>
-    </li>
+    </div>
   );
 }
 

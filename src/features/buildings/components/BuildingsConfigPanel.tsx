@@ -9,11 +9,11 @@ import { Layers, Plus, Trash2, X } from "lucide-react";
 import { useState, type FormEvent, type JSX, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 
-import { EmptyState } from "@/components/shared/EmptyState";
+import { ConfigListPanel } from "@/components/shared/ConfigListPanel";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { SlugHint } from "@/components/shared/SlugHint";
-import { Badge } from "@/components/ui/badge";
+import { TrashedEntityRow } from "@/components/shared/TrashedEntityRow";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +33,9 @@ import {
   activeResourcesByWorldQueryOptions,
   type Resource,
 } from "@/features/resources";
+import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
+import { useRestoreRow } from "@/hooks/useRestoreRow";
+import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -106,6 +109,15 @@ export function BuildingsConfigPanel({
   );
 }
 
+type PendingTierDraft = {
+  readonly id: string;
+  readonly tierNumber: number;
+  readonly workerTurnsRequired?: number;
+  readonly constructionCostsJson?: TierCostEntryInput[];
+  readonly upkeepCostsJson?: TierCostEntryInput[];
+  readonly effectsJson?: TierEffectInput[];
+};
+
 function BlueprintListPanel({
   canAdmin,
   isArchived,
@@ -117,7 +129,19 @@ function BlueprintListPanel({
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [showTrash, setShowTrash] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingBlueprintId, setEditingBlueprintId] = useState<string | null>(
+    null,
+  );
+  const [isCreating, setIsCreating] = useState(false);
   const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
+
+  const createBlueprintMutation = useMutation(
+    createBlueprintMutationOptions({ queryClient }),
+  );
+  const createTierMutation = useMutation(
+    createTierMutationOptions({ queryClient }),
+  );
 
   if (blueprintsQuery.isPending) {
     return <LoadingState label="Loading blueprints…" />;
@@ -133,62 +157,6 @@ function BlueprintListPanel({
   }
 
   const allBlueprints = blueprintsQuery.data;
-  const visibleBlueprints = showTrash
-    ? allBlueprints.filter((bp) => bp.isTrashed)
-    : allBlueprints.filter((bp) => !bp.isTrashed);
-
-  return (
-    <BuildingsConfigPanelContent
-      blueprints={visibleBlueprints}
-      canAdmin={canAdmin}
-      isArchived={isArchived}
-      queryClient={queryClient}
-      showTrash={showTrash}
-      worldId={worldId}
-      onToggleTrash={() => {
-        setShowTrash((v) => !v);
-      }}
-    />
-  );
-}
-
-type PendingTierDraft = {
-  readonly id: string;
-  readonly tierNumber: number;
-  readonly workerTurnsRequired?: number;
-  readonly constructionCostsJson?: TierCostEntryInput[];
-  readonly upkeepCostsJson?: TierCostEntryInput[];
-  readonly effectsJson?: TierEffectInput[];
-};
-
-function BuildingsConfigPanelContent({
-  blueprints,
-  canAdmin,
-  isArchived,
-  queryClient,
-  showTrash,
-  worldId,
-  onToggleTrash,
-}: {
-  readonly blueprints: readonly BuildingBlueprint[];
-  readonly canAdmin: boolean;
-  readonly isArchived: boolean;
-  readonly onToggleTrash: () => void;
-  readonly queryClient: QueryClient;
-  readonly showTrash: boolean;
-  readonly worldId: string;
-}): JSX.Element {
-  const createBlueprintMutation = useMutation(
-    createBlueprintMutationOptions({ queryClient }),
-  );
-  const createTierMutation = useMutation(
-    createTierMutationOptions({ queryClient }),
-  );
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingBlueprintId, setEditingBlueprintId] = useState<string | null>(
-    null,
-  );
-  const [isCreating, setIsCreating] = useState(false);
   const canEdit = canAdmin && !isArchived;
 
   async function handleCreateWithTiers(
@@ -237,59 +205,55 @@ function BuildingsConfigPanelContent({
 
   return (
     <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h2
-          id="buildings-title"
-          className="text-lg font-semibold tracking-normal"
-        >
-          Buildings
-        </h2>
-        <div className="flex items-center gap-2">
-          {canEdit && !showCreateForm && !showTrash ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowCreateForm(true);
+      <ConfigListPanel
+        title="Buildings"
+        addButtonLabel="Add blueprint"
+        emptyTrashTitle="No buildings in trash"
+        emptyNormalTitle="No buildings yet"
+        emptyNormalDescription="Add the first building for this world."
+        canEdit={canEdit}
+        showTrash={showTrash}
+        showCreateForm={showCreateForm}
+        entities={allBlueprints}
+        renderRow={(blueprint) => {
+          if (editingBlueprintId === blueprint.id) {
+            return (
+              <EditBlueprintForm
+                blueprint={blueprint}
+                queryClient={queryClient}
+                worldId={worldId}
+                onClose={() => {
+                  setEditingBlueprintId(null);
+                }}
+              />
+            );
+          }
+          return (
+            <BlueprintRow
+              blueprint={blueprint}
+              canEdit={canEdit}
+              queryClient={queryClient}
+              worldId={worldId}
+              onEdit={() => {
+                setEditingBlueprintId(blueprint.id);
               }}
-            >
-              <Plus aria-hidden="true" />
-              Add blueprint
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant={showTrash ? "secondary" : "ghost"}
-            size="icon-sm"
-            aria-label={showTrash ? "Hide trash" : "Show trash"}
-            aria-pressed={showTrash}
-            title={showTrash ? "Hide trash" : "Show trash"}
-            onClick={onToggleTrash}
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-
-      {blueprints.length > 0 ? (
-        <BlueprintList
-          blueprints={blueprints}
-          canEdit={canEdit}
-          editingBlueprintId={editingBlueprintId}
-          queryClient={queryClient}
-          showTrash={showTrash}
-          worldId={worldId}
-          onEditingChange={setEditingBlueprintId}
-        />
-      ) : showTrash ? (
-        <EmptyState title="No buildings in trash" />
-      ) : (
-        <EmptyState
-          title="No buildings yet"
-          description="Add the first building for this world."
-        />
-      )}
+            />
+          );
+        }}
+        renderTrashedRow={(blueprint) => (
+          <TrashedBlueprintRow
+            blueprint={blueprint}
+            queryClient={queryClient}
+            worldId={worldId}
+          />
+        )}
+        onToggleTrash={() => {
+          setShowTrash((v) => !v);
+        }}
+        onToggleCreateForm={() => {
+          setShowCreateForm((v) => !v);
+        }}
+      />
 
       {canEdit && showCreateForm && !showTrash ? (
         <CreateBlueprintForm
@@ -307,64 +271,6 @@ function BuildingsConfigPanelContent({
   );
 }
 
-function BlueprintList({
-  blueprints,
-  canEdit,
-  editingBlueprintId,
-  queryClient,
-  showTrash,
-  worldId,
-  onEditingChange,
-}: {
-  readonly blueprints: readonly BuildingBlueprint[];
-  readonly canEdit: boolean;
-  readonly editingBlueprintId: string | null;
-  readonly onEditingChange: (id: string | null) => void;
-  readonly queryClient: QueryClient;
-  readonly showTrash: boolean;
-  readonly worldId: string;
-}): JSX.Element {
-  return (
-    <ul aria-label="Blueprints" className="grid gap-2">
-      {blueprints.map((blueprint) => {
-        if (showTrash) {
-          return (
-            <TrashedBlueprintRow
-              key={blueprint.id}
-              blueprint={blueprint}
-              queryClient={queryClient}
-              worldId={worldId}
-            />
-          );
-        }
-        return editingBlueprintId === blueprint.id ? (
-          <li key={blueprint.id}>
-            <EditBlueprintForm
-              blueprint={blueprint}
-              queryClient={queryClient}
-              worldId={worldId}
-              onClose={() => {
-                onEditingChange(null);
-              }}
-            />
-          </li>
-        ) : (
-          <BlueprintRow
-            key={blueprint.id}
-            blueprint={blueprint}
-            canEdit={canEdit}
-            queryClient={queryClient}
-            worldId={worldId}
-            onEdit={() => {
-              onEditingChange(blueprint.id);
-            }}
-          />
-        );
-      })}
-    </ul>
-  );
-}
-
 function BlueprintRow({
   blueprint,
   canEdit,
@@ -378,30 +284,13 @@ function BlueprintRow({
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
-  const softDeleteMutation = useMutation(
+  const softDeleteMutation = useSoftDeleteRow(
     softDeleteBlueprintMutationOptions({ queryClient }),
+    { successMessage: "Blueprint moved to trash." },
   );
 
-  function handleTrash(): void {
-    softDeleteMutation.mutate(
-      { blueprintId: blueprint.id, worldId },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to move blueprint to trash.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Blueprint moved to trash.");
-        },
-      },
-    );
-  }
-
   return (
-    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
+    <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <span className="text-sm font-medium">{blueprint.name}</span>
       </div>
@@ -429,13 +318,15 @@ function BlueprintRow({
             aria-label={`Move ${blueprint.name} to trash`}
             title="Move to trash"
             disabled={softDeleteMutation.isPending}
-            onClick={handleTrash}
+            onClick={() => {
+              softDeleteMutation.mutate({ blueprintId: blueprint.id, worldId });
+            }}
           >
             <Trash2 aria-hidden="true" />
           </Button>
         ) : null}
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -448,79 +339,27 @@ function TrashedBlueprintRow({
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
-  const restoreMutation = useMutation(
+  const restoreMutation = useRestoreRow(
     restoreBlueprintMutationOptions({ queryClient }),
+    { successMessage: "Blueprint restored." },
   );
-  const hardDeleteMutation = useMutation(
+  const hardDeleteMutation = useHardDeleteRow(
     hardDeleteBlueprintMutationOptions({ queryClient }),
+    { successMessage: "Blueprint permanently deleted." },
   );
   const isPending = restoreMutation.isPending || hardDeleteMutation.isPending;
 
-  function handleRestore(): void {
-    restoreMutation.mutate(
-      { blueprintId: blueprint.id, worldId },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to restore blueprint.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Blueprint restored.");
-        },
-      },
-    );
-  }
-
-  function handleHardDelete(): void {
-    hardDeleteMutation.mutate(
-      { blueprintId: blueprint.id, worldId },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to permanently delete blueprint.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Blueprint permanently deleted.");
-        },
-      },
-    );
-  }
-
   return (
-    <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
-      <div className="grid gap-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{blueprint.name}</span>
-          <Badge variant="outline">trashed</Badge>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={handleRestore}
-        >
-          Restore
-        </Button>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          disabled={isPending}
-          onClick={handleHardDelete}
-        >
-          Delete permanently
-        </Button>
-      </div>
-    </li>
+    <TrashedEntityRow
+      name={blueprint.name}
+      isPending={isPending}
+      onRestore={() => {
+        restoreMutation.mutate({ blueprintId: blueprint.id, worldId });
+      }}
+      onHardDelete={() => {
+        hardDeleteMutation.mutate({ blueprintId: blueprint.id, worldId });
+      }}
+    />
   );
 }
 
