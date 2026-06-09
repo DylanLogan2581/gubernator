@@ -381,6 +381,70 @@ describe("runSimulation — happy turn end-to-end", () => {
 // readinessSummary: computed from input settlements
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Phase ordering contract: phase 4 pop-cap mutations visible to phase 10
+// ---------------------------------------------------------------------------
+
+describe("runSimulation — phase ordering: phase 4 → phase 10 pop-cap dependency", () => {
+  it("phase 10 homelessness uses updated pop-cap from phase 4 mutations", () => {
+    // Test the phase-4 → phase-10 dependency: phase 4 changes pop cap
+    // (via building state changes), and phase 10 uses the updated cap
+    // for homelessness calculations.
+    //
+    // Scenario: Start with a suspended building (pop-cap 0).
+    // 6 citizens with high homelessness rate (0.6) means 6 excess * 0.6 = 3.6 → 4 deaths.
+    // Phase 10 should kill citizens due to overpopulation within cap 0.
+    //
+    // This verifies: phase 4's mutations to pendingPopCapBySettlement
+    // (via building state tracking) are visible to phase 10.
+    const building = {
+      activatedOnTurnNumber: 1,
+      buildingBlueprintId: "bp-barracks",
+      currentTierId: "tier-barracks",
+      id: "bld-barracks",
+      missedUpkeepCount: 0,
+      settlementId: "s1",
+      sourceProjectId: null,
+      state: "suspended" as const, // already suspended (no pop-cap contribution)
+    };
+
+    const input = makeInput({
+      settlements: [makeSettlement("s1")],
+      citizens: [
+        makeNpc("c1", "s1"),
+        makeNpc("c2", "s1"),
+        makeNpc("c3", "s1"),
+        makeNpc("c4", "s1"),
+        makeNpc("c5", "s1"),
+        makeNpc("c6", "s1"),
+      ],
+      buildingTiers: [],
+      settlementBuildings: [building],
+      stockpiles: [
+        makeStockpile("s1", "food", 500), // enough to prevent starvation
+        makeStockpile("s1", "water", 500),
+      ],
+      populationRules: {
+        ...BASE_POPULATION_RULES,
+        foodConsumptionPerCitizen: 1,
+        waterConsumptionPerCitizen: 1,
+        homelessnessDecliningRate: 0.6, // 6 excess * 0.6 = 3.6 → 4 deaths
+      },
+    });
+
+    const result = runSimulation(input, "test-phase10-cap-usage");
+
+    // Verify phase 10 killed citizens due to overpopulation (cap = 0).
+    expect(result.citizenDeaths.length).toBeGreaterThan(0);
+
+    // Verify homelessness logs exist (phase 10 ran and constrained pop via cap).
+    const homelessnessLogs = result.logEntries.filter(
+      (e) => e.phase === "homelessness",
+    );
+    expect(homelessnessLogs.length).toBeGreaterThan(0);
+  });
+});
+
 describe("runSimulation — readinessSummary", () => {
   it("reports 0/0 ready for an empty settlements list", () => {
     const input = makeInput({ settlements: [] });

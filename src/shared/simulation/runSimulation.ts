@@ -16,7 +16,6 @@ import { phasePassiveEffects } from "./phases/phasePassiveEffects.ts";
 import { phaseStandardJobs } from "./phases/phaseStandardJobs.ts";
 import { phaseStockpileClamp } from "./phases/phaseStockpileClamp.ts";
 import { phaseTradeRoutes } from "./phases/phaseTradeRoutes.ts";
-import { createSeededRng } from "./seededRng.ts";
 import { SimulationRejectionError } from "./simulationTypes.ts";
 
 import type {
@@ -33,7 +32,7 @@ export { SimulationRejectionError } from "./simulationTypes.ts";
 
 export function runSimulation(
   input: SimulationInputState,
-  transitionId: string,
+  _transitionId: string,
 ): SimulationResult {
   if (input.isWorldArchived === true) {
     throw new SimulationRejectionError(
@@ -41,10 +40,6 @@ export function runSimulation(
       "Cannot run simulation on an archived world.",
     );
   }
-
-  // Build the seeded RNG from the turn transition UUID. Randomness-dependent
-  // phases (e.g. partnerships) create their own phase-scoped seeds internally.
-  void createSeededRng(transitionId);
 
   // -------------------------------------------------------------------------
   // Shared mutable state — initialized from input and updated after each phase.
