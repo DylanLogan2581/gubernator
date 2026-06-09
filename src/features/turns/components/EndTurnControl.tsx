@@ -153,10 +153,6 @@ function EndTurnControlContent({
           >
             Run turn transition
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Run the full simulation and advance the world from turn{" "}
-            {currentTurnNumber}.
-          </p>
         </div>
         <Button
           disabled={isDisabled}

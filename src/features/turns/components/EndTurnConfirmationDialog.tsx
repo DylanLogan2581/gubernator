@@ -17,18 +17,6 @@ import { EndTurnMetric } from "./EndTurnMetric";
 
 import type { JSX } from "react";
 
-const TRANSITION_PHASES = [
-  "Jobs & resource production",
-  "Deposit extraction",
-  "Construction progress",
-  "Building upkeep",
-  "Trade routes",
-  "Managed populations",
-  "Citizen consumption",
-  "Partnerships",
-  "Homelessness",
-] as const;
-
 export function EndTurnConfirmationDialog({
   currentDateLabel,
   currentTurnNumber,
@@ -50,8 +38,6 @@ export function EndTurnConfirmationDialog({
   readonly onConfirm: () => void;
   readonly readinessSummary: SettlementReadinessSummary;
 }): JSX.Element {
-  const hasNotReadySettlements = readinessSummary.notReadySettlementCount > 0;
-
   return (
     <Dialog
       open
@@ -84,29 +70,6 @@ export function EndTurnConfirmationDialog({
             {getReadinessSummaryDescription(readinessSummary)}
           </p>
         </div>
-
-        <div className="rounded-md border border-border bg-background px-3 py-2">
-          <p className="text-sm font-medium">The transition will run:</p>
-          <ul className="mt-1 list-inside list-disc text-sm text-muted-foreground">
-            {TRANSITION_PHASES.map((phase) => (
-              <li key={phase}>{phase}</li>
-            ))}
-          </ul>
-        </div>
-
-        {hasNotReadySettlements ? (
-          <p
-            className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            role="alert"
-          >
-            <TriangleAlert
-              className="mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-            Some settlements are not ready. You can still confirm and advance
-            the turn.
-          </p>
-        ) : null}
 
         {errorMessage !== undefined ? (
           <p

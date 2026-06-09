@@ -26,7 +26,7 @@ export function getControlDescription({
     return "End-turn transition is running.";
   }
 
-  return "Submitting starts one end-turn transition for the current turn.";
+  return "";
 }
 
 export function getReadinessSummaryDescription(

@@ -39,14 +39,14 @@ describe("getControlDescription", () => {
     ).toBe("End-turn transition is running.");
   });
 
-  it("returns default submit description when ready", () => {
+  it("returns empty description when ready", () => {
     expect(
       getControlDescription({
         isArchived: false,
         isPending: false,
         isReadinessUnavailable: false,
       }),
-    ).toBe("Submitting starts one end-turn transition for the current turn.");
+    ).toBe("");
   });
 
   it("prefers archived over readiness unavailable", () => {

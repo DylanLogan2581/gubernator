@@ -56,14 +56,6 @@ describe("EndTurnControl", () => {
     expect(
       await screen.findByRole("heading", { name: "Run turn transition" }),
     ).toBeDefined();
-    expect(
-      screen.getByText(
-        "Run the full simulation and advance the world from turn 7",
-        {
-          exact: false,
-        },
-      ),
-    ).toBeDefined();
     expect(await screen.findByText("Current turn")).toBeDefined();
     expect(screen.getByText("7")).toBeDefined();
     expect(screen.getByText("Ready")).toBeDefined();
@@ -164,34 +156,6 @@ describe("EndTurnControl", () => {
     });
   });
 
-  it("shows the transition checklist in the confirmation dialog", async () => {
-    const user = userEvent.setup();
-    const clientFixture = createClientFixture({
-      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
-    });
-    requireSupabaseClient.mockReturnValue(clientFixture.client);
-
-    renderEndTurnControl();
-
-    await screen.findByText("Current turn");
-    await user.click(
-      await screen.findByRole("button", { name: "Run turn transition" }),
-    );
-
-    const dialog = await screen.findByRole("dialog", {
-      name: "Confirm turn transition",
-    });
-
-    expect(within(dialog).getByText("The transition will run:")).toBeDefined();
-    expect(
-      within(dialog).getByText("Jobs & resource production"),
-    ).toBeDefined();
-    expect(within(dialog).getByText("Construction progress")).toBeDefined();
-    expect(within(dialog).getByText("Building upkeep")).toBeDefined();
-    expect(within(dialog).getByText("Trade routes")).toBeDefined();
-    expect(within(dialog).getByText("Homelessness")).toBeDefined();
-  });
-
   it("shows numeric turn values in the confirmation dialog for turn zero", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
@@ -223,36 +187,6 @@ describe("EndTurnControl", () => {
     expect(screen.queryByText("Turn 1")).toBeNull();
     expect(screen.getByText("Firstday, Dawn 1, 100 AG")).toBeDefined();
     expect(screen.getByText("Secondday, Dawn 2, 100 AG")).toBeDefined();
-  });
-
-  it("warns about not-ready settlements without blocking confirmation", async () => {
-    const user = userEvent.setup();
-    const clientFixture = createClientFixture({
-      settlementRows: [
-        createSettlementRow({ auto_ready_enabled: true }),
-        createSettlementRow({ id: "settlement-2" }),
-      ],
-    });
-    requireSupabaseClient.mockReturnValue(clientFixture.client);
-
-    renderEndTurnControl();
-
-    await screen.findByText("Current turn");
-    await user.click(
-      await screen.findByRole("button", { name: "Run turn transition" }),
-    );
-
-    expect(await screen.findByText("Readiness summary")).toBeDefined();
-    expect(screen.getByText(/1 of 2 settlements ready/i)).toBeDefined();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      /some settlements are not ready/i,
-    );
-
-    await user.click(
-      screen.getByRole("button", { name: "Confirm turn transition" }),
-    );
-
-    expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
   });
 
   it("hides the control for non-admin users and cannot submit", () => {
