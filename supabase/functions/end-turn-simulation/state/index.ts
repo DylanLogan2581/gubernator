@@ -5,12 +5,12 @@ import {
   getRequiredRuntimeUrl,
 } from "../../_shared/http/env.ts";
 import { createErrorResponse } from "../http.ts";
+
 import {
   parseWorldCalendarConfig,
   parseWorldNamingConfig,
   parseWorldNpcFlavorConfig,
-} from "../validate.ts";
-
+} from "./configParsers.ts";
 import {
   toBlueprintsAndTiers,
   toDeposits,
