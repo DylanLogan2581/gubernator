@@ -4,13 +4,13 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { AlertTriangle, Plus, RotateCcw, Star, Trash2 } from "lucide-react";
+import { AlertTriangle, RotateCcw, Star, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
-import { EmptyState } from "@/components/shared/EmptyState";
-import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  ConfigCrudPanel,
+  handleCrudError,
+} from "@/components/shared/ConfigCrudPanel";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 import {
   NAME_CONVENTIONS,
@@ -74,147 +73,74 @@ export function NamesetsConfigPanel({
 }: NamesetsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const namesetsQuery = useQuery(namesetsByWorldQueryOptions(worldId));
-
-  if (namesetsQuery.isPending) {
-    return <LoadingState label="Loading namesets…" />;
-  }
-
-  if (namesetsQuery.isError) {
-    return (
-      <ErrorState
-        title="Namesets could not be loaded"
-        description={getErrorDescription(namesetsQuery.error)}
-      />
-    );
-  }
-
-  return (
-    <NamesetsConfigPanelContent
-      allNamesets={namesetsQuery.data}
-      canAdmin={canAdmin}
-      isArchived={isArchived}
-      queryClient={queryClient}
-      worldId={worldId}
-    />
-  );
-}
-
-function NamesetsConfigPanelContent({
-  allNamesets,
-  canAdmin,
-  isArchived,
-  queryClient,
-  worldId,
-}: {
-  readonly allNamesets: readonly Nameset[];
-  readonly canAdmin: boolean;
-  readonly isArchived: boolean;
-  readonly queryClient: QueryClient;
-  readonly worldId: string;
-}): JSX.Element {
+  const canEdit = canAdmin && !isArchived;
   const createMutation = useMutation(
     createNamesetMutationOptions({ queryClient }),
   );
-  const [showForm, setShowForm] = useState(false);
-  const [showTrash, setShowTrash] = useState(false);
-  const [editingNamesetId, setEditingNamesetId] = useState<string | null>(null);
-  const canEdit = canAdmin && !isArchived;
-
-  const namesets = showTrash
-    ? allNamesets.filter((ns) => ns.isTrashed)
-    : allNamesets.filter((ns) => !ns.isTrashed);
 
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h2
-          id="world-namesets-title"
-          className="text-lg font-semibold tracking-normal"
-        >
-          Namesets
-        </h2>
-        <div className="flex items-center gap-2">
-          {canEdit && !showForm && !showTrash ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowForm(true);
-              }}
-            >
-              <Plus aria-hidden="true" />
-              Add nameset
-            </Button>
+    <ConfigCrudPanel<Nameset>
+      addButtonLabel="Add nameset"
+      allData={namesetsQuery}
+      canEdit={canEdit}
+      emptyTitle="No namesets yet"
+      emptyDescription="Add the first nameset for this world."
+      headerTitle="Namesets"
+      isTrashed={(ns) => ns.isTrashed}
+      renderContent={({
+        canEdit: canEditProp,
+        editingId,
+        items,
+        queryClient: qc,
+        setEditingId,
+        setShowForm,
+        showForm,
+        showTrash,
+      }) => (
+        <>
+          <p className="text-sm text-muted-foreground">
+            {canEditProp
+              ? "Namesets bundle naming pools and a convention. Nations and settlements can override the world default."
+              : "Namesets define the naming pools and convention used for random NPC creation."}
+          </p>
+
+          {items.length > 0 ? (
+            <NamesetList
+              canEdit={canEditProp}
+              editingNamesetId={editingId}
+              namesets={items}
+              queryClient={qc}
+              showTrash={showTrash}
+              worldId={worldId}
+              onEditingChange={setEditingId}
+            />
           ) : null}
-          {canEdit ? (
-            <Button
-              type="button"
-              variant={showTrash ? "secondary" : "ghost"}
-              size="icon-sm"
-              aria-label={showTrash ? "Hide trash" : "Show trash"}
-              aria-pressed={showTrash}
-              title={showTrash ? "Hide trash" : "Show trash"}
-              onClick={() => {
-                setShowTrash((v) => !v);
-                setEditingNamesetId(null);
+
+          {canEditProp && showForm && !showTrash ? (
+            <CreateNamesetDialog
+              isPending={createMutation.isPending}
+              onCancel={() => {
                 setShowForm(false);
               }}
-            >
-              <Trash2 aria-hidden="true" />
-            </Button>
+              onSubmit={(name, configJson) => {
+                createMutation.mutate(
+                  { worldId, name, configJson },
+                  {
+                    onError: (error) => {
+                      handleCrudError(error, formatMutationError(error));
+                    },
+                    onSuccess: () => {
+                      notifyMutationSuccess("Nameset created.");
+                      setShowForm(false);
+                    },
+                  },
+                );
+              }}
+            />
           ) : null}
-        </div>
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        {canEdit
-          ? "Namesets bundle naming pools and a convention. Nations and settlements can override the world default."
-          : "Namesets define the naming pools and convention used for random NPC creation."}
-      </p>
-
-      {namesets.length > 0 ? (
-        <NamesetList
-          canEdit={canEdit}
-          editingNamesetId={editingNamesetId}
-          namesets={namesets}
-          queryClient={queryClient}
-          showTrash={showTrash}
-          worldId={worldId}
-          onEditingChange={setEditingNamesetId}
-        />
-      ) : (
-        <EmptyState
-          title={showTrash ? "No namesets in trash" : "No namesets yet"}
-          description={
-            showTrash ? undefined : "Add the first nameset for this world."
-          }
-        />
+        </>
       )}
-
-      {canEdit && showForm && !showTrash ? (
-        <CreateNamesetDialog
-          isPending={createMutation.isPending}
-          onCancel={() => {
-            setShowForm(false);
-          }}
-          onSubmit={(name, configJson) => {
-            createMutation.mutate(
-              { worldId, name, configJson },
-              {
-                onError: (error) => {
-                  toast.error(formatMutationError(error));
-                },
-                onSuccess: () => {
-                  notifyMutationSuccess("Nameset created.");
-                  setShowForm(false);
-                },
-              },
-            );
-          }}
-        />
-      ) : null}
-    </div>
+    />
   );
 }
 
@@ -301,11 +227,7 @@ function NamesetRow({
       { namesetId: nameset.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to move nameset to trash.",
-          );
+          handleCrudError(error, "Failed to move nameset to trash.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Nameset moved to trash.");
@@ -319,11 +241,7 @@ function NamesetRow({
       { namesetId: nameset.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to set default nameset.",
-          );
+          handleCrudError(error, "Failed to set default nameset.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Default nameset updated.");
@@ -423,11 +341,7 @@ function TrashedNamesetRow({
       { namesetId: nameset.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to restore nameset.",
-          );
+          handleCrudError(error, "Failed to restore nameset.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Nameset restored.");
@@ -441,11 +355,7 @@ function TrashedNamesetRow({
       { namesetId: nameset.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to delete nameset.",
-          );
+          handleCrudError(error, "Failed to delete nameset.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Nameset permanently deleted.");
@@ -531,7 +441,7 @@ function EditNamesetForm({
       notifyMutationSuccess("Nameset saved.");
       onClose();
     } catch (error) {
-      toast.error(formatMutationError(error));
+      handleCrudError(error, formatMutationError(error));
     }
   }
 

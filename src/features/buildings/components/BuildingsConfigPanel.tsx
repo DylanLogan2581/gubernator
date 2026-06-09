@@ -7,11 +7,11 @@ import {
 import { Link } from "@tanstack/react-router";
 import { Layers, Plus, Trash2, X } from "lucide-react";
 import { useState, type FormEvent, type JSX, type KeyboardEvent } from "react";
-import { toast } from "sonner";
 
-import { ConfigListPanel } from "@/components/shared/ConfigListPanel";
-import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  ConfigCrudPanel,
+  handleCrudError,
+} from "@/components/shared/ConfigCrudPanel";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { TrashedEntityRow } from "@/components/shared/TrashedEntityRow";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,6 @@ import {
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
-import { getErrorDescription } from "@/lib/errorUtils";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -128,36 +127,15 @@ function BlueprintListPanel({
   readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
-  const [showTrash, setShowTrash] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingBlueprintId, setEditingBlueprintId] = useState<string | null>(
-    null,
-  );
-  const [isCreating, setIsCreating] = useState(false);
   const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
-
+  const canEdit = canAdmin && !isArchived;
   const createBlueprintMutation = useMutation(
     createBlueprintMutationOptions({ queryClient }),
   );
   const createTierMutation = useMutation(
     createTierMutationOptions({ queryClient }),
   );
-
-  if (blueprintsQuery.isPending) {
-    return <LoadingState label="Loading blueprints…" />;
-  }
-
-  if (blueprintsQuery.isError) {
-    return (
-      <ErrorState
-        title="Blueprints could not be loaded"
-        description={getErrorDescription(blueprintsQuery.error)}
-      />
-    );
-  }
-
-  const allBlueprints = blueprintsQuery.data;
-  const canEdit = canAdmin && !isArchived;
+  const [isCreating, setIsCreating] = useState(false);
 
   async function handleCreateWithTiers(
     blueprintInput: CreateBlueprintInput,
@@ -183,8 +161,11 @@ function BlueprintListPanel({
         }
       }
       if (failures.length > 0) {
-        toast.error(
-          `Blueprint created, but tier${failures.length > 1 ? "s" : ""} ${failures.join(", ")} failed — use "Manage tiers →" to add them.`,
+        handleCrudError(
+          new Error(
+            `Blueprint created, but tier${failures.length > 1 ? "s" : ""} ${failures.join(", ")} failed — use "Manage tiers →" to add them.`,
+          ),
+          "Failed to create all blueprint tiers.",
         );
       } else {
         notifyMutationSuccess(
@@ -193,81 +174,93 @@ function BlueprintListPanel({
             : "Blueprint created.",
         );
       }
-      setShowCreateForm(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create blueprint.",
-      );
+      handleCrudError(error, "Failed to create blueprint.");
     } finally {
       setIsCreating(false);
     }
   }
 
   return (
-    <div className="grid gap-4">
-      <ConfigListPanel
-        title="Buildings"
-        addButtonLabel="Add blueprint"
-        emptyTrashTitle="No buildings in trash"
-        emptyNormalTitle="No buildings yet"
-        emptyNormalDescription="Add the first building for this world."
-        canEdit={canEdit}
-        showTrash={showTrash}
-        showCreateForm={showCreateForm}
-        entities={allBlueprints}
-        renderRow={(blueprint) => {
-          if (editingBlueprintId === blueprint.id) {
-            return (
-              <EditBlueprintForm
-                blueprint={blueprint}
-                queryClient={queryClient}
-                worldId={worldId}
-                onClose={() => {
-                  setEditingBlueprintId(null);
-                }}
-              />
-            );
-          }
-          return (
-            <BlueprintRow
-              blueprint={blueprint}
-              canEdit={canEdit}
-              queryClient={queryClient}
+    <ConfigCrudPanel<BuildingBlueprint>
+      addButtonLabel="Add blueprint"
+      allData={blueprintsQuery}
+      canEdit={canEdit}
+      emptyTitle="No buildings yet"
+      emptyDescription="Add the first building for this world."
+      headerTitle="Buildings"
+      isTrashed={(bp) => bp.isTrashed}
+      renderContent={({
+        canEdit: canEditProp,
+        editingId,
+        items,
+        queryClient: qc,
+        setEditingId,
+        setShowForm,
+        showForm,
+        showTrash,
+      }) => (
+        <>
+          {items.length > 0 ? (
+            <ul aria-label="Blueprints" className="grid gap-2">
+              {items.map((blueprint) => {
+                if (editingId === blueprint.id) {
+                  return (
+                    <li key={blueprint.id}>
+                      <EditBlueprintForm
+                        blueprint={blueprint}
+                        queryClient={qc}
+                        worldId={worldId}
+                        onClose={() => {
+                          setEditingId(null);
+                        }}
+                      />
+                    </li>
+                  );
+                }
+                if (showTrash) {
+                  return (
+                    <li key={blueprint.id}>
+                      <TrashedBlueprintRow
+                        blueprint={blueprint}
+                        queryClient={qc}
+                        worldId={worldId}
+                      />
+                    </li>
+                  );
+                }
+                return (
+                  <li key={blueprint.id}>
+                    <BlueprintRow
+                      blueprint={blueprint}
+                      canEdit={canEditProp}
+                      queryClient={qc}
+                      worldId={worldId}
+                      onEdit={() => {
+                        setEditingId(blueprint.id);
+                      }}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+
+          {canEditProp && showForm && !showTrash ? (
+            <CreateBlueprintForm
+              isPending={isCreating}
               worldId={worldId}
-              onEdit={() => {
-                setEditingBlueprintId(blueprint.id);
+              onCancel={() => {
+                setShowForm(false);
+              }}
+              onSubmit={(input, pendingTiers) => {
+                void handleCreateWithTiers(input, pendingTiers);
               }}
             />
-          );
-        }}
-        renderTrashedRow={(blueprint) => (
-          <TrashedBlueprintRow
-            blueprint={blueprint}
-            queryClient={queryClient}
-            worldId={worldId}
-          />
-        )}
-        onToggleTrash={() => {
-          setShowTrash((v) => !v);
-        }}
-        onToggleCreateForm={() => {
-          setShowCreateForm((v) => !v);
-        }}
-      />
-
-      {canEdit && showCreateForm && !showTrash ? (
-        <CreateBlueprintForm
-          isPending={isCreating}
-          worldId={worldId}
-          onCancel={() => {
-            setShowCreateForm(false);
-          }}
-          onSubmit={(input, pendingTiers) => {
-            void handleCreateWithTiers(input, pendingTiers);
-          }}
-        />
-      ) : null}
-    </div>
+          ) : null}
+        </>
+      )}
+    />
   );
 }
 
@@ -881,9 +874,7 @@ function EditBlueprintForm({
       notifyMutationSuccess("Blueprint saved.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save blueprint.",
-      );
+      handleCrudError(error, "Failed to save blueprint.");
     }
   }
 
@@ -896,11 +887,7 @@ function EditBlueprintForm({
       notifyMutationSuccess("Blueprint moved to trash.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to move blueprint to trash.",
-      );
+      handleCrudError(error, "Failed to move blueprint to trash.");
     }
   }
 

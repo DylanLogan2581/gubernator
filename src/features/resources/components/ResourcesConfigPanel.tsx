@@ -4,13 +4,13 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
-import { EmptyState } from "@/components/shared/EmptyState";
-import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  ConfigCrudPanel,
+  handleCrudError,
+} from "@/components/shared/ConfigCrudPanel";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { getErrorDescription } from "@/lib/errorUtils";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -58,145 +57,66 @@ export function ResourcesConfigPanel({
 }: ResourcesConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const resourcesQuery = useQuery(resourcesByWorldQueryOptions(worldId));
-
-  if (resourcesQuery.isPending) {
-    return <LoadingState label="Loading resources…" />;
-  }
-
-  if (resourcesQuery.isError) {
-    return (
-      <ErrorState
-        title="Resources could not be loaded"
-        description={getErrorDescription(resourcesQuery.error)}
-      />
-    );
-  }
-
-  return (
-    <ResourcesConfigPanelContent
-      canAdmin={canAdmin}
-      isArchived={isArchived}
-      queryClient={queryClient}
-      allResources={resourcesQuery.data}
-      worldId={worldId}
-    />
-  );
-}
-
-function ResourcesConfigPanelContent({
-  canAdmin,
-  isArchived,
-  queryClient,
-  allResources,
-  worldId,
-}: {
-  readonly canAdmin: boolean;
-  readonly isArchived: boolean;
-  readonly queryClient: QueryClient;
-  readonly allResources: readonly Resource[];
-  readonly worldId: string;
-}): JSX.Element {
+  const canEdit = canAdmin && !isArchived;
   const createMutation = useMutation(
     createResourceMutationOptions({ queryClient }),
   );
-  const [showForm, setShowForm] = useState(false);
-  const [showTrash, setShowTrash] = useState(false);
-  const [editingResourceId, setEditingResourceId] = useState<string | null>(
-    null,
-  );
-  const canEdit = canAdmin && !isArchived;
-
-  const resources = showTrash
-    ? allResources.filter((r) => r.isTrashed)
-    : allResources.filter((r) => !r.isTrashed);
 
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h2
-          id="world-resources-title"
-          className="text-lg font-semibold tracking-normal"
-        >
-          Resources
-        </h2>
-        <div className="flex items-center gap-2">
-          {canEdit && !showForm && !showTrash ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowForm(true);
-              }}
-            >
-              <Plus aria-hidden="true" />
-              Add resource
-            </Button>
+    <ConfigCrudPanel<Resource>
+      addButtonLabel="Add resource"
+      allData={resourcesQuery}
+      canEdit={canEdit}
+      emptyTitle="No resources yet"
+      emptyDescription="Add the first resource for this world."
+      headerTitle="Resources"
+      isTrashed={(resource) => resource.isTrashed}
+      renderContent={({
+        canEdit: canEditProp,
+        editingId,
+        items,
+        queryClient: qc,
+        setEditingId,
+        setShowForm,
+        showForm,
+        showTrash,
+      }) => (
+        <>
+          {items.length > 0 ? (
+            <ResourceList
+              canEdit={canEditProp}
+              editingResourceId={editingId}
+              queryClient={qc}
+              resources={items}
+              showTrash={showTrash}
+              worldId={worldId}
+              onEditingChange={setEditingId}
+            />
           ) : null}
-          {canEdit ? (
-            <Button
-              type="button"
-              variant={showTrash ? "secondary" : "ghost"}
-              size="icon-sm"
-              aria-label={showTrash ? "Hide trash" : "Show trash"}
-              aria-pressed={showTrash}
-              title={showTrash ? "Hide trash" : "Show trash"}
-              onClick={() => {
-                setShowTrash((v) => !v);
-                setEditingResourceId(null);
+
+          {canEditProp && showForm && !showTrash ? (
+            <CreateResourceForm
+              isPending={createMutation.isPending}
+              worldId={worldId}
+              onCancel={() => {
                 setShowForm(false);
               }}
-            >
-              <Trash2 aria-hidden="true" />
-            </Button>
+              onSubmit={(input) => {
+                createMutation.mutate(input, {
+                  onError: (error) => {
+                    handleCrudError(error, "Failed to create resource.");
+                  },
+                  onSuccess: () => {
+                    notifyMutationSuccess("Resource created.");
+                    setShowForm(false);
+                  },
+                });
+              }}
+            />
           ) : null}
-        </div>
-      </div>
-
-      {resources.length > 0 ? (
-        <ResourceList
-          canEdit={canEdit}
-          editingResourceId={editingResourceId}
-          queryClient={queryClient}
-          resources={resources}
-          showTrash={showTrash}
-          worldId={worldId}
-          onEditingChange={setEditingResourceId}
-        />
-      ) : (
-        <EmptyState
-          title={showTrash ? "No resources in trash" : "No resources yet"}
-          description={
-            showTrash ? undefined : "Add the first resource for this world."
-          }
-        />
+        </>
       )}
-
-      {canEdit && showForm && !showTrash ? (
-        <CreateResourceForm
-          isPending={createMutation.isPending}
-          worldId={worldId}
-          onCancel={() => {
-            setShowForm(false);
-          }}
-          onSubmit={(input) => {
-            createMutation.mutate(input, {
-              onError: (error) => {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to create resource.",
-                );
-              },
-              onSuccess: () => {
-                notifyMutationSuccess("Resource created.");
-                setShowForm(false);
-              },
-            });
-          }}
-        />
-      ) : null}
-    </div>
+    />
   );
 }
 
@@ -280,11 +200,7 @@ function ResourceRow({
       { resourceId: resource.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to move resource to trash.",
-          );
+          handleCrudError(error, "Failed to move resource to trash.");
         },
         onSuccess: (result) => {
           const description = buildCleanupDescription(result.cleanupSummary);
@@ -364,11 +280,7 @@ function TrashedResourceRow({
       { resourceId: resource.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to restore resource.",
-          );
+          handleCrudError(error, "Failed to restore resource.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Resource restored.");
@@ -382,11 +294,7 @@ function TrashedResourceRow({
       { resourceId: resource.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to delete resource.",
-          );
+          handleCrudError(error, "Failed to delete resource.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Resource permanently deleted.");
@@ -514,9 +422,7 @@ function EditResourceForm({
       notifyMutationSuccess("Resource saved.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save resource.",
-      );
+      handleCrudError(error, "Failed to save resource.");
     }
   }
 
@@ -533,11 +439,7 @@ function EditResourceForm({
       );
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to move resource to trash.",
-      );
+      handleCrudError(error, "Failed to move resource to trash.");
     }
   }
 

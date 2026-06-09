@@ -7,12 +7,12 @@ import {
 import { Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
-import { ConfigListPanel } from "@/components/shared/ConfigListPanel";
+import {
+  ConfigCrudPanel,
+  handleCrudError,
+} from "@/components/shared/ConfigCrudPanel";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -35,7 +35,6 @@ import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
-import { getErrorDescription } from "@/lib/errorUtils";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -71,117 +70,107 @@ export function DepositsConfigPanel({
   worldId,
 }: DepositsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
-  const [showTrash, setShowTrash] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingDepositTypeId, setEditingDepositTypeId] = useState<
-    string | null
-  >(null);
   const depositTypesQuery = useQuery(depositTypesByWorldQueryOptions(worldId));
   const depositJobsQuery = useQuery(jobsByTypeQueryOptions(worldId, "deposit"));
-
+  const canEdit = canAdmin && !isArchived;
   const createMutation = useMutation(
     createDepositTypeMutationOptions({ queryClient }),
   );
-
-  if (depositTypesQuery.isPending) {
-    return <LoadingState label="Loading deposit types…" />;
-  }
-
-  if (depositTypesQuery.isError) {
-    return (
-      <ErrorState
-        title="Deposit types could not be loaded"
-        description={getErrorDescription(depositTypesQuery.error)}
-      />
-    );
-  }
-
-  const allDepositTypes = depositTypesQuery.data;
-  const canEdit = canAdmin && !isArchived;
   const depositJobs = depositJobsQuery.data ?? [];
 
   return (
-    <div className="grid gap-4">
-      <ConfigListPanel
-        title="Deposit Types"
-        addButtonLabel="Add deposit type"
-        emptyTrashTitle="No deposit types in trash"
-        emptyNormalTitle="No deposit types yet"
-        emptyNormalDescription="Add the first deposit type for this world."
-        canEdit={canEdit}
-        showTrash={showTrash}
-        showCreateForm={showCreateForm}
-        entities={allDepositTypes}
-        renderRow={(depositType) => {
-          if (editingDepositTypeId === depositType.id) {
-            return (
-              <EditDepositTypeForm
-                allDepositTypes={allDepositTypes}
-                depositJobs={depositJobs}
-                depositType={depositType}
-                queryClient={queryClient}
-                worldId={worldId}
-                onClose={() => {
-                  setEditingDepositTypeId(null);
-                }}
-              />
-            );
-          }
-          return (
-            <DepositTypeRow
-              canEdit={canEdit}
+    <ConfigCrudPanel<DepositType>
+      addButtonLabel="Add deposit type"
+      allData={depositTypesQuery}
+      canEdit={canEdit}
+      emptyTitle="No deposit types yet"
+      emptyDescription="Add the first deposit type for this world."
+      headerTitle="Deposit Types"
+      isTrashed={(dt) => dt.isTrashed}
+      renderContent={({
+        canEdit: canEditProp,
+        editingId,
+        items,
+        queryClient: qc,
+        setEditingId,
+        setShowForm,
+        showForm,
+        showTrash,
+      }) => (
+        <>
+          {items.length > 0 ? (
+            <ul aria-label="Deposit types" className="grid gap-2">
+              {items.map((depositType) => {
+                if (editingId === depositType.id) {
+                  return (
+                    <li key={depositType.id}>
+                      <EditDepositTypeForm
+                        allDepositTypes={items}
+                        depositJobs={depositJobs}
+                        depositType={depositType}
+                        queryClient={qc}
+                        worldId={worldId}
+                        onClose={() => {
+                          setEditingId(null);
+                        }}
+                      />
+                    </li>
+                  );
+                }
+                if (showTrash) {
+                  return (
+                    <li key={depositType.id}>
+                      <TrashedDepositTypeRow
+                        depositType={depositType}
+                        queryClient={qc}
+                        worldId={worldId}
+                      />
+                    </li>
+                  );
+                }
+                return (
+                  <li key={depositType.id}>
+                    <DepositTypeRow
+                      canEdit={canEditProp}
+                      depositJobs={depositJobs}
+                      depositType={depositType}
+                      queryClient={qc}
+                      worldId={worldId}
+                      onEdit={() => {
+                        setEditingId(depositType.id);
+                      }}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+
+          {canEditProp && showForm && !showTrash ? (
+            <CreateDepositTypeForm
+              allDepositTypes={items}
               depositJobs={depositJobs}
-              depositType={depositType}
-              queryClient={queryClient}
+              isPending={createMutation.isPending}
               worldId={worldId}
-              onEdit={() => {
-                setEditingDepositTypeId(depositType.id);
+              onCancel={() => {
+                setShowForm(false);
+              }}
+              onSubmit={(input) => {
+                createMutation.mutate(input, {
+                  onError: (error) => {
+                    handleCrudError(error, "Failed to create deposit type.");
+                  },
+                  onSuccess: () => {
+                    notifyMutationSuccess("Deposit type created.");
+                    setShowForm(false);
+                  },
+                });
               }}
             />
-          );
-        }}
-        renderTrashedRow={(depositType) => (
-          <TrashedDepositTypeRow
-            depositType={depositType}
-            queryClient={queryClient}
-            worldId={worldId}
-          />
-        )}
-        onToggleTrash={() => {
-          setShowTrash((v) => !v);
-        }}
-        onToggleCreateForm={() => {
-          setShowCreateForm((v) => !v);
-        }}
-      />
-
-      {canEdit && showCreateForm && !showTrash ? (
-        <CreateDepositTypeForm
-          allDepositTypes={allDepositTypes}
-          depositJobs={depositJobs}
-          isPending={createMutation.isPending}
-          worldId={worldId}
-          onCancel={() => {
-            setShowCreateForm(false);
-          }}
-          onSubmit={(input) => {
-            createMutation.mutate(input, {
-              onError: (error) => {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to create deposit type.",
-                );
-              },
-              onSuccess: () => {
-                notifyMutationSuccess("Deposit type created.");
-                setShowCreateForm(false);
-              },
-            });
-          }}
-        />
-      ) : null}
-    </div>
+          ) : null}
+        </>
+      )}
+    />
   );
 }
 
@@ -658,9 +647,7 @@ function EditDepositTypeForm({
       notifyMutationSuccess("Deposit type saved.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save deposit type.",
-      );
+      handleCrudError(error, "Failed to save deposit type.");
     }
   }
 
@@ -673,11 +660,7 @@ function EditDepositTypeForm({
       notifyMutationSuccess("Deposit type moved to trash.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to move deposit type to trash.",
-      );
+      handleCrudError(error, "Failed to move deposit type to trash.");
     }
   }
 

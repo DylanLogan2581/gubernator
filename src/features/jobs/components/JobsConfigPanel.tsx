@@ -4,13 +4,14 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
+import {
+  ConfigCrudPanel,
+  handleCrudError,
+} from "@/components/shared/ConfigCrudPanel";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -34,7 +35,6 @@ import {
   type ManagedPopulationType,
 } from "@/features/managed-populations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
-import { getErrorDescription } from "@/lib/errorUtils";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -89,193 +89,115 @@ export function JobsConfigPanel({
   worldId,
 }: JobsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
-  const [showTrash, setShowTrash] = useState(false);
   const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
-
-  if (jobsQuery.isPending) {
-    return <LoadingState label="Loading jobs…" />;
-  }
-
-  if (jobsQuery.isError) {
-    return (
-      <ErrorState
-        title="Jobs could not be loaded"
-        description={getErrorDescription(jobsQuery.error)}
-      />
-    );
-  }
-
-  const allJobs = jobsQuery.data;
-  const visibleJobs = showTrash
-    ? allJobs.filter((job) => job.isTrashed)
-    : allJobs.filter((job) => !job.isTrashed);
+  const canEdit = canAdmin && !isArchived;
+  const [typeFilter, setTypeFilter] = useState<JobType | "all">("all");
+  const createMutation = useMutation(createJobMutationOptions({ queryClient }));
 
   return (
-    <JobsConfigPanelContent
-      canAdmin={canAdmin}
-      isArchived={isArchived}
-      jobs={visibleJobs}
-      queryClient={queryClient}
-      showTrash={showTrash}
-      worldId={worldId}
-      onToggleTrash={() => {
-        setShowTrash((v) => !v);
+    <ConfigCrudPanel<JobDefinition>
+      addButtonLabel="Add job"
+      allData={jobsQuery}
+      canEdit={canEdit}
+      emptyTitle="No jobs yet"
+      emptyDescription="Add the first job for this world."
+      headerTitle="Jobs"
+      isTrashed={(job) => job.isTrashed}
+      renderContent={({
+        canEdit: canEditProp,
+        editingId,
+        items,
+        queryClient: qc,
+        setEditingId,
+        setShowForm,
+        showForm,
+        showTrash,
+      }) => {
+        const filteredJobs =
+          typeFilter === "all"
+            ? items
+            : items.filter((job) => job.jobType === typeFilter);
+
+        return (
+          <>
+            <div
+              role="group"
+              aria-label="Filter by job type"
+              className="flex flex-wrap gap-1"
+            >
+              <button
+                type="button"
+                className={cn(
+                  "rounded px-2 py-1 text-xs font-medium transition-colors",
+                  typeFilter === "all"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80",
+                )}
+                onClick={() => {
+                  setTypeFilter("all");
+                }}
+              >
+                All types
+              </button>
+              {JOB_TYPES.map(({ label, value }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={cn(
+                    "rounded px-2 py-1 text-xs font-medium transition-colors",
+                    typeFilter === value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80",
+                  )}
+                  onClick={() => {
+                    setTypeFilter(value);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {filteredJobs.length > 0 ? (
+              <JobList
+                canEdit={canEditProp}
+                editingJobId={editingId}
+                jobs={filteredJobs}
+                queryClient={qc}
+                showTrash={showTrash}
+                worldId={worldId}
+                onEditingChange={setEditingId}
+              />
+            ) : showTrash ? null : typeFilter !== "all" ? (
+              <EmptyState
+                title={`No ${JOB_TYPE_LABELS[typeFilter].toLowerCase()} jobs`}
+              />
+            ) : null}
+
+            {canEditProp && showForm && !showTrash ? (
+              <CreateJobForm
+                isPending={createMutation.isPending}
+                worldId={worldId}
+                onCancel={() => {
+                  setShowForm(false);
+                }}
+                onSubmit={(input) => {
+                  createMutation.mutate(input, {
+                    onError: (error) => {
+                      handleCrudError(error, "Failed to create job.");
+                    },
+                    onSuccess: () => {
+                      notifyMutationSuccess("Job created.");
+                      setShowForm(false);
+                    },
+                  });
+                }}
+              />
+            ) : null}
+          </>
+        );
       }}
     />
-  );
-}
-
-function JobsConfigPanelContent({
-  canAdmin,
-  isArchived,
-  jobs,
-  queryClient,
-  showTrash,
-  worldId,
-  onToggleTrash,
-}: {
-  readonly canAdmin: boolean;
-  readonly isArchived: boolean;
-  readonly jobs: readonly JobDefinition[];
-  readonly onToggleTrash: () => void;
-  readonly queryClient: QueryClient;
-  readonly showTrash: boolean;
-  readonly worldId: string;
-}): JSX.Element {
-  const createMutation = useMutation(createJobMutationOptions({ queryClient }));
-  const [showForm, setShowForm] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<JobType | "all">("all");
-  const [editingJobId, setEditingJobId] = useState<string | null>(null);
-  const canEdit = canAdmin && !isArchived;
-
-  const filteredJobs =
-    typeFilter === "all"
-      ? jobs
-      : jobs.filter((job) => job.jobType === typeFilter);
-
-  return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h2
-          id="world-jobs-title"
-          className="text-lg font-semibold tracking-normal"
-        >
-          Jobs
-        </h2>
-        <div className="flex items-center gap-2">
-          {canEdit && !showForm && !showTrash ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowForm(true);
-              }}
-            >
-              <Plus aria-hidden="true" />
-              Add job
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant={showTrash ? "secondary" : "ghost"}
-            size="icon-sm"
-            aria-label={showTrash ? "Hide trash" : "Show trash"}
-            aria-pressed={showTrash}
-            title={showTrash ? "Hide trash" : "Show trash"}
-            onClick={onToggleTrash}
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-
-      <div
-        role="group"
-        aria-label="Filter by job type"
-        className="flex flex-wrap gap-1"
-      >
-        <button
-          type="button"
-          className={cn(
-            "rounded px-2 py-1 text-xs font-medium transition-colors",
-            typeFilter === "all"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:bg-muted/80",
-          )}
-          onClick={() => {
-            setTypeFilter("all");
-          }}
-        >
-          All types
-        </button>
-        {JOB_TYPES.map(({ label, value }) => (
-          <button
-            key={value}
-            type="button"
-            className={cn(
-              "rounded px-2 py-1 text-xs font-medium transition-colors",
-              typeFilter === value
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80",
-            )}
-            onClick={() => {
-              setTypeFilter(value);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {filteredJobs.length > 0 ? (
-        <JobList
-          canEdit={canEdit}
-          editingJobId={editingJobId}
-          jobs={filteredJobs}
-          queryClient={queryClient}
-          showTrash={showTrash}
-          worldId={worldId}
-          onEditingChange={setEditingJobId}
-        />
-      ) : showTrash ? (
-        <EmptyState title="No jobs in trash" />
-      ) : typeFilter !== "all" ? (
-        <EmptyState
-          title={`No ${JOB_TYPE_LABELS[typeFilter].toLowerCase()} jobs`}
-        />
-      ) : (
-        <EmptyState
-          title="No jobs yet"
-          description="Add the first job for this world."
-        />
-      )}
-
-      {canEdit && showForm && !showTrash ? (
-        <CreateJobForm
-          isPending={createMutation.isPending}
-          worldId={worldId}
-          onCancel={() => {
-            setShowForm(false);
-          }}
-          onSubmit={(input) => {
-            createMutation.mutate(input, {
-              onError: (error) => {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to create job.",
-                );
-              },
-              onSuccess: () => {
-                notifyMutationSuccess("Job created.");
-                setShowForm(false);
-              },
-            });
-          }}
-        />
-      ) : null}
-    </div>
   );
 }
 
@@ -359,11 +281,7 @@ function JobRow({
       { jobId: job.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to move job to trash.",
-          );
+          handleCrudError(error, "Failed to move job to trash.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Job moved to trash.");
@@ -427,9 +345,7 @@ function TrashedJobRow({
       { jobId: job.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error ? error.message : "Failed to restore job.",
-          );
+          handleCrudError(error, "Failed to restore job.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Job restored.");
@@ -443,11 +359,7 @@ function TrashedJobRow({
       { jobId: job.id, worldId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to permanently delete job.",
-          );
+          handleCrudError(error, "Failed to permanently delete job.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Job permanently deleted.");
@@ -731,9 +643,7 @@ function EditJobForm({
       notifyMutationSuccess("Job saved.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save job.",
-      );
+      handleCrudError(error, "Failed to save job.");
     }
   }
 
@@ -743,9 +653,7 @@ function EditJobForm({
       notifyMutationSuccess("Job moved to trash.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to move job to trash.",
-      );
+      handleCrudError(error, "Failed to move job to trash.");
     }
   }
 
