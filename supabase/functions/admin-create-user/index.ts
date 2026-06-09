@@ -2,6 +2,7 @@ import {
   logAdminCreateUserSuccess,
   logAuthorizationDenial,
 } from "../_shared/auditLog.ts";
+import { classifyHttpError, supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import {
   getEdgeRuntime,
@@ -167,15 +168,18 @@ async function checkIsSuperAdmin(
 
   let response: Response;
   try {
-    response = await fetch(`${supabaseUrl}/rest/v1/rpc/is_super_admin`, {
-      body: JSON.stringify({}),
-      headers: {
-        apikey: supabaseAnonKey,
-        authorization: authContext.authorizationHeader,
-        "content-type": "application/json",
+    response = await supabaseFetch(
+      `${supabaseUrl}/rest/v1/rpc/is_super_admin`,
+      {
+        body: JSON.stringify({}),
+        headers: {
+          apikey: supabaseAnonKey,
+          authorization: authContext.authorizationHeader,
+          "content-type": "application/json",
+        },
+        method: "POST",
       },
-      method: "POST",
-    });
+    );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     // eslint-disable-next-line no-restricted-syntax
@@ -191,7 +195,7 @@ async function checkIsSuperAdmin(
   }
 
   if (!response.ok) {
-    const safeDeny = response.status >= 400 && response.status < 500;
+    const { safeDeny } = classifyHttpError(response.status);
     return safeDeny ? { ok: true, value: false } : { ok: false };
   }
 
@@ -249,7 +253,7 @@ async function createAuthUser(
 
   let response: Response;
   try {
-    response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+    response = await supabaseFetch(`${supabaseUrl}/auth/v1/admin/users`, {
       body: JSON.stringify(adminPayload),
       headers: {
         apikey: serviceRoleKey,

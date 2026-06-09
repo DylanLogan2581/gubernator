@@ -5,6 +5,7 @@ import {
   logRequestSuccess,
   logRequestFailure,
 } from "../_shared/edgeRequestLogger.ts";
+import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
 import { createErrorResponse } from "./http.ts";
@@ -85,29 +86,23 @@ export async function startTurnTransition(
 
   let response: Response;
   try {
-    const abortController = new AbortController();
-    const timeout = setTimeout(() => abortController.abort(), 30000); // 30s timeout
-    try {
-      response = await fetch(
-        `${supabaseUrl}/rest/v1/rpc/start_turn_transition`,
-        {
-          body: JSON.stringify({
-            p_expected_turn_number: body.expectedTurnNumber,
-            p_initiated_by_user_id: authContext.userId,
-            p_world_id: body.worldId,
-          }),
-          headers: {
-            apikey: supabaseServiceRoleKey,
-            authorization: `Bearer ${supabaseServiceRoleKey}`,
-            "content-type": "application/json",
-          },
-          method: "POST",
-          signal: abortController.signal,
+    response = await supabaseFetch(
+      `${supabaseUrl}/rest/v1/rpc/start_turn_transition`,
+      {
+        body: JSON.stringify({
+          p_expected_turn_number: body.expectedTurnNumber,
+          p_initiated_by_user_id: authContext.userId,
+          p_world_id: body.worldId,
+        }),
+        headers: {
+          apikey: supabaseServiceRoleKey,
+          authorization: `Bearer ${supabaseServiceRoleKey}`,
+          "content-type": "application/json",
         },
-      );
-    } finally {
-      clearTimeout(timeout);
-    }
+        method: "POST",
+      },
+      30000,
+    );
   } catch {
     logCaughtError(
       requestId,
@@ -203,30 +198,24 @@ export async function persistSimulationTransition(
 
   let response: Response;
   try {
-    const abortController = new AbortController();
-    const timeout = setTimeout(() => abortController.abort(), 30000); // 30s timeout
-    try {
-      response = await fetch(
-        `${supabaseUrl}/rest/v1/rpc/apply_turn_transition`,
-        {
-          body: JSON.stringify({
-            p_expected_turn_number: body.expectedTurnNumber,
-            p_payload: payload,
-            p_transition_id: transitionId,
-            p_world_id: body.worldId,
-          }),
-          headers: {
-            apikey: supabaseServiceRoleKey,
-            authorization: `Bearer ${supabaseServiceRoleKey}`,
-            "content-type": "application/json",
-          },
-          method: "POST",
-          signal: abortController.signal,
+    response = await supabaseFetch(
+      `${supabaseUrl}/rest/v1/rpc/apply_turn_transition`,
+      {
+        body: JSON.stringify({
+          p_expected_turn_number: body.expectedTurnNumber,
+          p_payload: payload,
+          p_transition_id: transitionId,
+          p_world_id: body.worldId,
+        }),
+        headers: {
+          apikey: supabaseServiceRoleKey,
+          authorization: `Bearer ${supabaseServiceRoleKey}`,
+          "content-type": "application/json",
         },
-      );
-    } finally {
-      clearTimeout(timeout);
-    }
+        method: "POST",
+      },
+      30000,
+    );
   } catch {
     logCaughtError(
       requestId,

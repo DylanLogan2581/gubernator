@@ -1,3 +1,5 @@
+import { supabaseFetch } from "../_shared/supabaseFetch.ts";
+
 import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
 import { createErrorResponse } from "./http.ts";
 import { isRecord } from "./utils.ts";
@@ -30,13 +32,18 @@ export async function resolveSupabaseSimulationAuthContext(
     };
   }
 
-  const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      apikey: supabaseAnonKey,
-      authorization: authorizationHeader,
-    },
-    method: "GET",
-  });
+  let authResponse: Response;
+  try {
+    authResponse = await supabaseFetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        apikey: supabaseAnonKey,
+        authorization: authorizationHeader,
+      },
+      method: "GET",
+    });
+  } catch {
+    return createAuthErrorResult();
+  }
 
   if (!authResponse.ok) {
     return createAuthErrorResult();

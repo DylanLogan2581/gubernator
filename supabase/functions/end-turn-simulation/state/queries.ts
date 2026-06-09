@@ -1,3 +1,8 @@
+import {
+  classifyHttpError,
+  supabaseFetch,
+} from "../../_shared/supabaseFetch.ts";
+
 import { isWorldRow } from "./rowTypes.ts";
 
 import type { SupabaseWorldRow } from "./rowTypes.ts";
@@ -45,7 +50,7 @@ async function fetchRows({
   let response: Response;
 
   try {
-    response = await fetch(
+    response = await supabaseFetch(
       `${ctx.supabaseUrl}/rest/v1/${table}?${searchParams}`,
       { headers: ctx.headers, method: "GET" },
     );
@@ -68,7 +73,7 @@ async function fetchRows({
       ok: false,
       reason: {
         kind: "http_error",
-        safeDeny: response.status >= 400 && response.status < 500,
+        ...classifyHttpError(response.status),
       },
     };
   }
@@ -120,7 +125,7 @@ export async function fetchWorldRow(
   let response: Response;
 
   try {
-    response = await fetch(
+    response = await supabaseFetch(
       `${ctx.supabaseUrl}/rest/v1/worlds?${searchParams}`,
       { headers: ctx.headers, method: "GET" },
     );
@@ -133,7 +138,7 @@ export async function fetchWorldRow(
       ok: false,
       reason: {
         kind: "http_error",
-        safeDeny: response.status >= 400 && response.status < 500,
+        ...classifyHttpError(response.status),
       },
     };
   }
