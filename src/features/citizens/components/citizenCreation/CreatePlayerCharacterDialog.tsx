@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -162,8 +164,8 @@ export function CreatePlayerCharacterDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <label className="grid gap-1 text-sm" htmlFor={givenNameId}>
-            <span className="text-muted-foreground">Given name</span>
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={givenNameId}>Given name</Label>
             <Input
               id={givenNameId}
               disabled={mutation.isPending}
@@ -175,10 +177,10 @@ export function CreatePlayerCharacterDialog({
                 setFields((current) => ({ ...current, givenName: value }));
               }}
             />
-          </label>
+          </div>
 
-          <label className="grid gap-1 text-sm" htmlFor={surnameId}>
-            <span className="text-muted-foreground">Surname</span>
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={surnameId}>Surname</Label>
             <Input
               id={surnameId}
               disabled={mutation.isPending}
@@ -189,12 +191,11 @@ export function CreatePlayerCharacterDialog({
                 setFields((current) => ({ ...current, surname: value }));
               }}
             />
-          </label>
+          </div>
 
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Sex</span>
-            <select
-              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+          <div className="grid gap-1 text-sm">
+            <Label>Sex</Label>
+            <NativeSelect
               disabled={mutation.isPending}
               value={fields.sex}
               onChange={(event) => {
@@ -205,14 +206,13 @@ export function CreatePlayerCharacterDialog({
               <option value=""></option>
               <option value="male">Male</option>
               <option value="female">Female</option>
-            </select>
-          </label>
+            </NativeSelect>
+          </div>
 
-          <label className="grid gap-1 text-sm" htmlFor={userId}>
-            <span className="text-muted-foreground">User</span>
-            <select
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={userId}>User</Label>
+            <NativeSelect
               id={userId}
-              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
               disabled={mutation.isPending || usersQuery.isPending}
               required
               value={fields.userId}
@@ -228,8 +228,8 @@ export function CreatePlayerCharacterDialog({
                   {appUser.username}
                 </option>
               ))}
-            </select>
-          </label>
+            </NativeSelect>
+          </div>
 
           <ParentField
             citizens={parentChoices}
@@ -300,10 +300,9 @@ function ParentField({
   readonly value: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <select
-        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+    <div className="grid gap-1 text-sm">
+      <Label>{label}</Label>
+      <NativeSelect
         disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
@@ -314,7 +313,7 @@ function ParentField({
             {citizen.name}
           </option>
         ))}
-      </select>
-    </label>
+      </NativeSelect>
+    </div>
   );
 }

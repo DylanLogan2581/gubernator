@@ -1,3 +1,4 @@
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";
@@ -19,11 +20,15 @@ export function AutoReadyControl({
   const isDisabled = isArchived || isPending;
 
   return (
-    <label className="inline-flex w-fit items-center gap-2 text-sm font-medium text-foreground">
+    <Label
+      className="inline-flex w-fit items-center gap-2 text-sm font-medium text-foreground"
+      htmlFor="auto-ready-switch"
+    >
       <input
         checked={item.autoReadyEnabled}
         className="peer sr-only"
         disabled={isDisabled}
+        id="auto-ready-switch"
         onChange={(event) => {
           setAutoReady(event.currentTarget.checked);
         }}
@@ -38,6 +43,6 @@ export function AutoReadyControl({
         )}
       />
       <span className="min-w-[8rem] tabular-nums">Auto-ready</span>
-    </label>
+    </Label>
   );
 }

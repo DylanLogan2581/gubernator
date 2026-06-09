@@ -5,6 +5,7 @@ import { useState, type FormEvent, type JSX } from "react";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { updatePasswordMutationOptions } from "@/features/auth";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -58,9 +59,7 @@ function SetPasswordRoute(): JSX.Element {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
-            </label>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -76,9 +75,7 @@ function SetPasswordRoute(): JSX.Element {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="confirm-password" className="text-sm font-medium">
-              Confirm Password
-            </label>
+            <Label htmlFor="confirm-password">Confirm Password</Label>
             <Input
               id="confirm-password"
               type="password"

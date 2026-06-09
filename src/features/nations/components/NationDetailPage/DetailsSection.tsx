@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { textInputLimits } from "@/lib/inputLimits";
 
 import { updateNationDetailsMutationOptions } from "../../mutations/nationsMutations";
@@ -125,7 +126,7 @@ export function NationDetailsSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
+      <Label className="grid gap-1 text-sm" htmlFor="nation-detail-name">
         <span className="text-muted-foreground">Name</span>
         <Input
           aria-invalid={nameError === undefined ? undefined : true}
@@ -133,6 +134,7 @@ export function NationDetailsSection({
             nameError === undefined ? undefined : "nation-detail-name-error"
           }
           disabled={updateMutation.isPending}
+          id="nation-detail-name"
           maxLength={textInputLimits.nationNameMax}
           required
           value={name}
@@ -152,17 +154,18 @@ export function NationDetailsSection({
             {nameError}
           </p>
         )}
-      </label>
-      <label className="grid gap-1 text-sm">
+      </Label>
+      <Label className="grid gap-1 text-sm" htmlFor="nation-detail-desc">
         <span className="text-muted-foreground">Description</span>
         <textarea
           className="min-h-[6rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
+          id="nation-detail-desc"
           maxLength={textInputLimits.nationDescriptionMax}
           value={description}
           onChange={(event) => setDescription(event.currentTarget.value)}
         />
-      </label>
+      </Label>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />

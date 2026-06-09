@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 import { updateCitizenNpcFieldsMutationOptions } from "../../mutations/citizensMutations";
 
@@ -126,24 +127,26 @@ export function CitizenNpcNotesSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Personality</span>
+      <div className="grid gap-1 text-sm">
+        <Label htmlFor="personality">Personality</Label>
         <textarea
+          id="personality"
           className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
           value={personalityText}
           onChange={(event) => setPersonalityText(event.currentTarget.value)}
         />
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Skills</span>
+      </div>
+      <div className="grid gap-1 text-sm">
+        <Label htmlFor="skills">Skills</Label>
         <textarea
+          id="skills"
           className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
           value={skillsText}
           onChange={(event) => setSkillsText(event.currentTarget.value)}
         />
-      </label>
+      </div>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />

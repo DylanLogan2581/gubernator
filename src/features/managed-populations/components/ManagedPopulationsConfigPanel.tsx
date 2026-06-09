@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
@@ -53,10 +54,12 @@ import { managedPopulationTypesByWorldQueryOptions } from "../queries/managedPop
 import {
   createManagedPopulationTypeInputSchema,
   updateManagedPopulationTypeInputSchema,
-  type CreateManagedPopulationTypeInput,
-  type UpdateManagedPopulationTypeInput,
 } from "../schemas/managedPopulationSchemas";
 
+import type {
+  CreateManagedPopulationTypeInput,
+  UpdateManagedPopulationTypeInput,
+} from "../schemas/managedPopulationSchemas";
 import type { ManagedPopulationType } from "../types/managedPopulationTypes";
 
 type ManagedPopulationsConfigPanelProps = {
@@ -380,12 +383,13 @@ function PopulationTypeScalarFields({
 }): JSX.Element {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="grid gap-1 text-sm">
+      <Label className="grid gap-1 text-sm" htmlFor="population-name">
         <span className="text-muted-foreground">Name</span>
         <Input
           aria-invalid={fieldErrors.name !== undefined}
           aria-label="Name"
           disabled={isPending}
+          id="population-name"
           maxLength={managedPopulationInputLimits.populationTypeNameMax}
           value={name}
           onChange={(e) => {
@@ -396,7 +400,7 @@ function PopulationTypeScalarFields({
           <p className="text-xs text-destructive">{fieldErrors.name}</p>
         ) : null}
         <SlugHint slug={slug} error={fieldErrors.slug} />
-      </label>
+      </Label>
       {husbandryJobs.length === 0 ? (
         <div className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Husbandry job</span>
@@ -417,7 +421,7 @@ function PopulationTypeScalarFields({
           />
         </div>
       ) : (
-        <label className="grid gap-1 text-sm">
+        <Label className="grid gap-1 text-sm" htmlFor="husbandry-job">
           <span className="text-muted-foreground">Husbandry job</span>
           <NativeSelect
             aria-invalid={
@@ -427,6 +431,7 @@ function PopulationTypeScalarFields({
             }
             className="w-full"
             disabled={isPending}
+            id="husbandry-job"
             value={husbandryJobId}
             onChange={(e) => {
               onHusbandryJobChange(e.currentTarget.value);
@@ -448,7 +453,7 @@ function PopulationTypeScalarFields({
               {fieldErrors.husbandryJobId}
             </p>
           ) : null}
-        </label>
+        </Label>
       )}
       {cullingJobs.length === 0 ? (
         <div className="grid gap-1 text-sm">
@@ -470,7 +475,7 @@ function PopulationTypeScalarFields({
           />
         </div>
       ) : (
-        <label className="grid gap-1 text-sm">
+        <Label className="grid gap-1 text-sm" htmlFor="culling-job">
           <span className="text-muted-foreground">Culling job</span>
           <NativeSelect
             aria-invalid={
@@ -480,6 +485,7 @@ function PopulationTypeScalarFields({
             }
             className="w-full"
             disabled={isPending}
+            id="culling-job"
             value={cullingJobId}
             onChange={(e) => {
               onCullingJobChange(e.currentTarget.value);
@@ -501,15 +507,16 @@ function PopulationTypeScalarFields({
               {fieldErrors.cullingJobId}
             </p>
           ) : null}
-        </label>
+        </Label>
       )}
-      <label className="grid gap-1 text-sm">
+      <Label className="grid gap-1 text-sm" htmlFor="husbandry-workers">
         <span className="text-muted-foreground">
           Husbandry workers per N animals
         </span>
         <Input
           aria-invalid={fieldErrors.husbandryWorkersPerNAnimals !== undefined}
           disabled={isPending}
+          id="husbandry-workers"
           inputMode="numeric"
           placeholder="1"
           value={husbandryWorkersPerNAnimals}
@@ -522,7 +529,7 @@ function PopulationTypeScalarFields({
             {fieldErrors.husbandryWorkersPerNAnimals}
           </p>
         ) : null}
-      </label>
+      </Label>
       <div className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Growth rate</span>
         <PercentInput

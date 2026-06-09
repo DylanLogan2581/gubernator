@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   assignCitizenRoleMutationOptions,
   isPlayerCharacterRoleMutationError,
@@ -226,11 +228,12 @@ function CitizenRoleAssignmentForm({
           noValidate
           onSubmit={handleSubmit}
         >
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Role type</span>
-            <select
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor="role-type">Role type</Label>
+            <NativeSelect
+              id="role-type"
               aria-label="Role type"
-              className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+              className="bg-transparent px-2"
               disabled={isPending}
               value={roleType}
               onChange={(event) => {
@@ -241,8 +244,8 @@ function CitizenRoleAssignmentForm({
               <option value="none">None</option>
               <option value="nation_manager">Nation manager</option>
               <option value="settlement_manager">Settlement manager</option>
-            </select>
-          </label>
+            </NativeSelect>
+          </div>
           {managerScopeLabel(roleType) === "nation" ? (
             <ScopeDropdown
               label="Nation"
@@ -304,11 +307,12 @@ function ScopeDropdown({
   readonly optionValue: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <select
+    <div className="grid gap-1 text-sm">
+      <Label htmlFor="scope-dropdown">{label}</Label>
+      <NativeSelect
+        id="scope-dropdown"
         aria-label={label}
-        className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+        className="bg-transparent px-2"
         disabled
         value={optionValue}
       >
@@ -319,8 +323,8 @@ function ScopeDropdown({
             {optionLabel === "" ? "Not available" : optionLabel}
           </option>
         )}
-      </select>
-    </label>
+      </NativeSelect>
+    </div>
   );
 }
 

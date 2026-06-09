@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   activeNamesetsByWorldQueryOptions,
   resolveNamingConfig,
@@ -244,9 +246,7 @@ export function CreateNpcDialog({
           </DialogHeader>
 
           <div className="grid gap-1 text-sm">
-            <label className="text-muted-foreground" htmlFor={givenNameId}>
-              Given name
-            </label>
+            <Label htmlFor={givenNameId}>Given name</Label>
             <div className="flex gap-2">
               <Input
                 id={givenNameId}
@@ -279,9 +279,7 @@ export function CreateNpcDialog({
           </div>
 
           <div className="grid gap-1 text-sm">
-            <label className="text-muted-foreground" htmlFor={surnameId}>
-              Surname
-            </label>
+            <Label htmlFor={surnameId}>Surname</Label>
             <Input
               id={surnameId}
               disabled={mutation.isPending}
@@ -294,10 +292,9 @@ export function CreateNpcDialog({
             />
           </div>
 
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Sex</span>
-            <select
-              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+          <div className="grid gap-1 text-sm">
+            <Label>Sex</Label>
+            <NativeSelect
               disabled={mutation.isPending}
               value={fields.sex}
               onChange={(event) => {
@@ -308,8 +305,8 @@ export function CreateNpcDialog({
               <option value=""></option>
               <option value="male">Male</option>
               <option value="female">Female</option>
-            </select>
-          </label>
+            </NativeSelect>
+          </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <ParentField
@@ -358,8 +355,8 @@ export function CreateNpcDialog({
               </Button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Trait 1</span>
+              <div className="grid gap-1 text-sm">
+                <Label>Trait 1</Label>
                 <Input
                   disabled={mutation.isPending}
                   value={flavor.trait1}
@@ -367,9 +364,9 @@ export function CreateNpcDialog({
                     handleFlavorChange("trait1", event.currentTarget.value)
                   }
                 />
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Trait 2</span>
+              </div>
+              <div className="grid gap-1 text-sm">
+                <Label>Trait 2</Label>
                 <Input
                   disabled={mutation.isPending}
                   value={flavor.trait2}
@@ -377,12 +374,10 @@ export function CreateNpcDialog({
                     handleFlavorChange("trait2", event.currentTarget.value)
                   }
                 />
-              </label>
+              </div>
             </div>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">
-                Secret / contradiction
-              </span>
+            <div className="grid gap-1 text-sm">
+              <Label>Secret / contradiction</Label>
               <textarea
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
@@ -391,9 +386,9 @@ export function CreateNpcDialog({
                   handleFlavorChange("contradiction", event.currentTarget.value)
                 }
               />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Goal</span>
+            </div>
+            <div className="grid gap-1 text-sm">
+              <Label>Goal</Label>
               <textarea
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
@@ -402,9 +397,9 @@ export function CreateNpcDialog({
                   handleFlavorChange("goal", event.currentTarget.value)
                 }
               />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Flaw</span>
+            </div>
+            <div className="grid gap-1 text-sm">
+              <Label>Flaw</Label>
               <textarea
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
@@ -413,7 +408,7 @@ export function CreateNpcDialog({
                   handleFlavorChange("flaw", event.currentTarget.value)
                 }
               />
-            </label>
+            </div>
           </div>
 
           {fieldError === undefined ? null : (
@@ -463,10 +458,9 @@ function ParentField({
   readonly value: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <select
-        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+    <div className="grid gap-1 text-sm">
+      <Label>{label}</Label>
+      <NativeSelect
         disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
@@ -477,7 +471,7 @@ function ParentField({
             {citizen.name}
           </option>
         ))}
-      </select>
-    </label>
+      </NativeSelect>
+    </div>
   );
 }

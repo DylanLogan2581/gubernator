@@ -4,6 +4,7 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -108,9 +109,7 @@ function RenameWorldSection({
         onSubmit={handleSubmit}
       >
         <div className="grid gap-1.5">
-          <label htmlFor="world-name" className="text-sm font-medium">
-            World name
-          </label>
+          <Label htmlFor="world-name">World name</Label>
           <Input
             id="world-name"
             type="text"
@@ -210,9 +209,7 @@ function TurnOverrideSection({
         onSubmit={handleSubmit}
       >
         <div className="grid gap-1.5">
-          <label htmlFor="current-turn-number" className="text-sm font-medium">
-            Current turn number
-          </label>
+          <Label htmlFor="current-turn-number">Current turn number</Label>
           <Input
             id="current-turn-number"
             type="number"

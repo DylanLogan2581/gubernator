@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { notifyMutationSuccess } from "@/lib/notify";
 import {
   NAME_CONVENTIONS,
@@ -456,11 +457,12 @@ function EditNamesetForm({
     >
       <h3 className="text-sm font-medium">Edit nameset</h3>
 
-      <label className="grid gap-1 text-sm">
+      <Label className="grid gap-1 text-sm" htmlFor="edit-nameset-name">
         <span className="text-muted-foreground">Name</span>
         <Input
           aria-invalid={nameError !== undefined}
           disabled={isPending}
+          id="edit-nameset-name"
           maxLength={64}
           value={name}
           onChange={(e) => {
@@ -470,7 +472,7 @@ function EditNamesetForm({
         {nameError !== undefined ? (
           <p className="text-xs text-destructive">{nameError}</p>
         ) : null}
-      </label>
+      </Label>
 
       <NamingConfigFields config={config} onChange={setConfig} />
 
@@ -543,12 +545,13 @@ function CreateNamesetDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <label className="grid gap-1 text-sm">
+            <Label className="grid gap-1 text-sm" htmlFor="create-nameset-name">
               <span className="text-muted-foreground">Name</span>
               <Input
                 aria-invalid={nameError !== undefined}
                 aria-label="Nameset name"
                 disabled={isPending}
+                id="create-nameset-name"
                 maxLength={64}
                 placeholder="e.g. Norse, Latin, Default"
                 value={name}
@@ -559,7 +562,7 @@ function CreateNamesetDialog({
               {nameError !== undefined ? (
                 <p className="text-xs text-destructive">{nameError}</p>
               ) : null}
-            </label>
+            </Label>
             <NamingConfigFields config={config} onChange={setConfig} />
           </div>
           <DialogFooter>
@@ -637,9 +640,14 @@ function NamingConfigFields({
         <legend className="text-base font-semibold">Naming convention</legend>
         <div className="grid gap-1.5">
           {NAME_CONVENTIONS.map((convention) => (
-            <label key={convention} className="flex items-center gap-2 text-sm">
+            <Label
+              key={convention}
+              className="flex items-center gap-2 text-sm"
+              htmlFor={`convention-${convention}`}
+            >
               <input
                 type="radio"
+                id={`convention-${convention}`}
                 name={`convention-${convention}`}
                 className="h-4 w-4 accent-primary"
                 value={convention}
@@ -647,7 +655,7 @@ function NamingConfigFields({
                 onChange={() => onChange({ ...config, convention })}
               />
               <ConventionLabel convention={convention} />
-            </label>
+            </Label>
           ))}
         </div>
       </fieldset>

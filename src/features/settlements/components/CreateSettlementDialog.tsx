@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess, notifyMutationError } from "@/lib/notify";
@@ -103,9 +104,9 @@ export function CreateSettlementDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={nameId} className="text-sm font-medium">
+            <Label htmlFor={nameId}>
               Name <span className="text-destructive">*</span>
-            </label>
+            </Label>
             <Input
               id={nameId}
               type="text"
@@ -127,9 +128,7 @@ export function CreateSettlementDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={descriptionId} className="text-sm font-medium">
-              Description
-            </label>
+            <Label htmlFor={descriptionId}>Description</Label>
             <Textarea
               id={descriptionId}
               value={description}
@@ -152,9 +151,7 @@ export function CreateSettlementDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={coordXId} className="text-sm font-medium">
-                Coordinate X
-              </label>
+              <Label htmlFor={coordXId}>Coordinate X</Label>
               <Input
                 id={coordXId}
                 type="number"
@@ -169,9 +166,7 @@ export function CreateSettlementDialog({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={coordZId} className="text-sm font-medium">
-                Coordinate Z
-              </label>
+              <Label htmlFor={coordZId}>Coordinate Z</Label>
               <Input
                 id={coordZId}
                 type="number"

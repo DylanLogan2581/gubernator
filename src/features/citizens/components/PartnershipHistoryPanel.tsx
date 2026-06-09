@@ -9,6 +9,8 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   currentTurnStateQueryOptions,
   latestTurnTransitionStatusQueryOptions,
@@ -782,10 +784,10 @@ function PartnerPicker({
 }): JSX.Element {
   return (
     <div className="grid gap-1 text-sm">
-      <label className="grid gap-1">
-        <span className="text-muted-foreground">{label}</span>
-        <select
-          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+      <div className="grid gap-1">
+        <Label htmlFor="partner-select">{label}</Label>
+        <NativeSelect
+          id="partner-select"
           disabled={disabled}
           value={value}
           onChange={(event) => onChange(event.currentTarget.value)}
@@ -800,17 +802,21 @@ function PartnerPicker({
               </option>
             );
           })}
-        </select>
-      </label>
-      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        </NativeSelect>
+      </div>
+      <Label
+        htmlFor="include-other-settlements"
+        className="flex items-center gap-2 text-xs text-muted-foreground"
+      >
         <input
+          id="include-other-settlements"
           type="checkbox"
           checked={includeOtherSettlements}
           disabled={disabled}
           onChange={(event) => onToggleScope(event.currentTarget.checked)}
         />
         Include citizens from other settlements (cross-settlement)
-      </label>
+      </Label>
     </div>
   );
 }
@@ -827,16 +833,17 @@ function TurnNumberField({
   readonly value: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
+    <div className="grid gap-1 text-sm">
+      <Label htmlFor="turn-number">{label}</Label>
       <Input
+        id="turn-number"
         disabled={disabled}
         inputMode="numeric"
         pattern="[0-9]*"
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
-    </label>
+    </div>
   );
 }
 
@@ -850,15 +857,16 @@ function ChangeReasonField({
   readonly value: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">Change reason</span>
+    <div className="grid gap-1 text-sm">
+      <Label htmlFor="change-reason">Change reason</Label>
       <Input
+        id="change-reason"
         disabled={disabled}
         maxLength={1000}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
-    </label>
+    </div>
   );
 }
 

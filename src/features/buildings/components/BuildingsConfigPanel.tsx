@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   activeJobsByWorldQueryOptions,
@@ -452,11 +453,11 @@ function CreateBlueprintForm({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Name</span>
+            <div className="grid gap-1">
+              <Label htmlFor="blueprint-name">Name</Label>
               <Input
+                id="blueprint-name"
                 aria-invalid={fieldErrors.name !== undefined}
-                aria-label="Name"
                 disabled={isPending}
                 maxLength={buildingInputLimits.blueprintNameMax}
                 value={name}
@@ -468,10 +469,11 @@ function CreateBlueprintForm({
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
               <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Description</span>
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="blueprint-description">Description</Label>
               <Textarea
+                id="blueprint-description"
                 aria-invalid={fieldErrors.description !== undefined}
                 disabled={isPending}
                 maxLength={buildingInputLimits.blueprintDescriptionMax}
@@ -485,12 +487,11 @@ function CreateBlueprintForm({
                   {fieldErrors.description}
                 </p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">
-                Grace period (turns)
-              </span>
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="grace-period-turns">Grace period (turns)</Label>
               <Input
+                id="grace-period-turns"
                 aria-invalid={fieldErrors.gracePeriodTurns !== undefined}
                 disabled={isPending}
                 inputMode="numeric"
@@ -505,12 +506,13 @@ function CreateBlueprintForm({
                   {fieldErrors.gracePeriodTurns}
                 </p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="max-instances-settlement">
                 Max instances per settlement
-              </span>
+              </Label>
               <Input
+                id="max-instances-settlement"
                 aria-invalid={
                   fieldErrors.maxInstancesPerSettlement !== undefined
                 }
@@ -527,7 +529,7 @@ function CreateBlueprintForm({
                   {fieldErrors.maxInstancesPerSettlement}
                 </p>
               ) : null}
-            </label>
+            </div>
           </div>
 
           <div className="grid gap-2 border-t border-border pt-3">
@@ -716,9 +718,10 @@ function InlineTierDraftForm({
       role="group"
     >
       <span className="text-sm font-medium">New tier</span>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Tier number</span>
+      <div className="grid gap-1">
+        <Label htmlFor="inline-tier-number">Tier number</Label>
         <Input
+          id="inline-tier-number"
           aria-invalid={fieldErrors.tierNumber !== undefined}
           disabled={disabled}
           inputMode="numeric"
@@ -732,10 +735,13 @@ function InlineTierDraftForm({
         {fieldErrors.tierNumber !== undefined ? (
           <p className="text-xs text-destructive">{fieldErrors.tierNumber}</p>
         ) : null}
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Worker turns required</span>
+      </div>
+      <div className="grid gap-1">
+        <Label htmlFor="inline-worker-turns-required">
+          Worker turns required
+        </Label>
         <Input
+          id="inline-worker-turns-required"
           aria-invalid={fieldErrors.workerTurnsRequired !== undefined}
           disabled={disabled}
           inputMode="numeric"
@@ -751,7 +757,7 @@ function InlineTierDraftForm({
             {fieldErrors.workerTurnsRequired}
           </p>
         ) : null}
-      </label>
+      </div>
       <CostEditor
         activeResources={activeResources}
         disabled={disabled}
@@ -902,11 +908,11 @@ function EditBlueprintForm({
     >
       <h3 className="text-sm font-medium">Edit blueprint</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Name</span>
+        <div className="grid gap-1">
+          <Label htmlFor="edit-blueprint-name">Name</Label>
           <Input
+            id="edit-blueprint-name"
             aria-invalid={fieldErrors.name !== undefined}
-            aria-label="Name"
             disabled={isPending}
             maxLength={buildingInputLimits.blueprintNameMax}
             value={name}
@@ -918,10 +924,11 @@ function EditBlueprintForm({
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
           <SlugHint slug={slug} error={fieldErrors.slug} />
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Description</span>
+        </div>
+        <div className="grid gap-1">
+          <Label htmlFor="edit-blueprint-description">Description</Label>
           <Textarea
+            id="edit-blueprint-description"
             aria-invalid={fieldErrors.description !== undefined}
             disabled={isPending}
             maxLength={buildingInputLimits.blueprintDescriptionMax}
@@ -935,10 +942,11 @@ function EditBlueprintForm({
               {fieldErrors.description}
             </p>
           ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Grace period (turns)</span>
+        </div>
+        <div className="grid gap-1">
+          <Label htmlFor="edit-grace-period-turns">Grace period (turns)</Label>
           <Input
+            id="edit-grace-period-turns"
             aria-invalid={fieldErrors.gracePeriodTurns !== undefined}
             disabled={isPending}
             inputMode="numeric"
@@ -953,12 +961,13 @@ function EditBlueprintForm({
               {fieldErrors.gracePeriodTurns}
             </p>
           ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">
+        </div>
+        <div className="grid gap-1">
+          <Label htmlFor="edit-max-instances-settlement">
             Max instances per settlement
-          </span>
+          </Label>
           <Input
+            id="edit-max-instances-settlement"
             aria-invalid={fieldErrors.maxInstancesPerSettlement !== undefined}
             disabled={isPending}
             inputMode="numeric"
@@ -973,7 +982,7 @@ function EditBlueprintForm({
               {fieldErrors.maxInstancesPerSettlement}
             </p>
           ) : null}
-        </label>
+        </div>
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-2">

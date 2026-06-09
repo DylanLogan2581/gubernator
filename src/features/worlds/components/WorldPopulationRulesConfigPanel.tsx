@@ -12,6 +12,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { PercentInput } from "@/components/shared/PercentInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { saveWorldPopulationRulesMutationOptions } from "../mutations/worldPopulationRulesMutations";
@@ -311,7 +312,7 @@ function NumberRuleField({
   readonly value: number;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
+    <Label className="grid gap-1 text-sm">
       <span className="font-medium">{label}</span>
       <Input
         type="number"
@@ -322,7 +323,7 @@ function NumberRuleField({
         onChange={(event) => onChange(Number(event.currentTarget.value))}
       />
       <span className="text-xs text-muted-foreground">{hint}</span>
-    </label>
+    </Label>
   );
 }
 
@@ -338,11 +339,11 @@ function PercentRuleField({
   readonly value: number;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
+    <Label className="grid gap-1 text-sm">
       <span className="font-medium">{label}</span>
       <PercentInput value={value} onChange={onChange} />
       <span className="text-xs text-muted-foreground">{hint}</span>
-    </label>
+    </Label>
   );
 }
 
@@ -360,7 +361,7 @@ function NullableNumberRuleField({
   readonly value: number | null;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
+    <Label className="grid gap-1 text-sm">
       <span className="font-medium">{label}</span>
       <Input
         type="number"
@@ -373,7 +374,7 @@ function NullableNumberRuleField({
         }}
       />
       <span className="text-xs text-muted-foreground">{hint}</span>
-    </label>
+    </Label>
   );
 }
 

@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { jobsByTypeQueryOptions, type JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
@@ -52,10 +53,12 @@ import { depositTypesByWorldQueryOptions } from "../queries/depositsQueries";
 import {
   createDepositTypeInputSchema,
   updateDepositTypeInputSchema,
-  type CreateDepositTypeInput,
-  type UpdateDepositTypeInput,
 } from "../schemas/depositSchemas";
 
+import type {
+  CreateDepositTypeInput,
+  UpdateDepositTypeInput,
+} from "../schemas/depositSchemas";
 import type { DepositType } from "../types/depositTypes";
 
 type DepositsConfigPanelProps = {
@@ -412,9 +415,10 @@ function CreateDepositTypeForm({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <label className="grid gap-1 text-sm">
+            <Label htmlFor="deposit-create-name" className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Name</span>
               <Input
+                id="deposit-create-name"
                 aria-invalid={fieldErrors.name !== undefined}
                 aria-label="Name"
                 disabled={isPending}
@@ -428,7 +432,7 @@ function CreateDepositTypeForm({
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
               <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
-            </label>
+            </Label>
             {depositJobs.length === 0 ? (
               <div className="grid gap-1 text-sm">
                 <span className="text-muted-foreground">
@@ -451,11 +455,15 @@ function CreateDepositTypeForm({
                 />
               </div>
             ) : (
-              <label className="grid gap-1 text-sm">
+              <Label
+                htmlFor="deposit-create-job"
+                className="grid gap-1 text-sm"
+              >
                 <span className="text-muted-foreground">
                   Linked deposit job
                 </span>
                 <NativeSelect
+                  id="deposit-create-job"
                   aria-invalid={
                     fieldErrors.jobId !== undefined ||
                     jobLinkError !== undefined
@@ -481,13 +489,17 @@ function CreateDepositTypeForm({
                     {fieldErrors.jobId}
                   </p>
                 ) : null}
-              </label>
+              </Label>
             )}
-            <label className="grid gap-1 text-sm">
+            <Label
+              htmlFor="deposit-create-output"
+              className="grid gap-1 text-sm"
+            >
               <span className="text-muted-foreground">
                 Output units per worker
               </span>
               <Input
+                id="deposit-create-output"
                 aria-invalid={fieldErrors.outputUnitsPerWorker !== undefined}
                 disabled={isPending}
                 inputMode="numeric"
@@ -502,7 +514,7 @@ function CreateDepositTypeForm({
                   {fieldErrors.outputUnitsPerWorker}
                 </p>
               ) : null}
-            </label>
+            </Label>
             <ResourceAmountListEditor
               addLabel="Add input"
               amountLabel="amount per worker"
@@ -677,9 +689,10 @@ function EditDepositTypeForm({
     >
       <h3 className="text-sm font-medium">Edit deposit type</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
+        <Label htmlFor="deposit-edit-name" className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Name</span>
           <Input
+            id="deposit-edit-name"
             aria-invalid={fieldErrors.name !== undefined}
             aria-label="Name"
             disabled={isPending}
@@ -693,7 +706,7 @@ function EditDepositTypeForm({
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
           <SlugHint slug={slug} error={fieldErrors.slug} />
-        </label>
+        </Label>
         {depositJobs.length === 0 ? (
           <div className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Linked deposit job</span>
@@ -714,9 +727,10 @@ function EditDepositTypeForm({
             />
           </div>
         ) : (
-          <label className="grid gap-1 text-sm">
+          <Label htmlFor="deposit-edit-job" className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Linked deposit job</span>
             <NativeSelect
+              id="deposit-edit-job"
               aria-invalid={
                 fieldErrors.jobId !== undefined || jobLinkError !== undefined
               }
@@ -739,11 +753,12 @@ function EditDepositTypeForm({
             ) : fieldErrors.jobId !== undefined ? (
               <p className="text-xs text-destructive">{fieldErrors.jobId}</p>
             ) : null}
-          </label>
+          </Label>
         )}
-        <label className="grid gap-1 text-sm">
+        <Label htmlFor="deposit-edit-output" className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Output units per worker</span>
           <Input
+            id="deposit-edit-output"
             aria-invalid={fieldErrors.outputUnitsPerWorker !== undefined}
             disabled={isPending}
             inputMode="numeric"
@@ -758,7 +773,7 @@ function EditDepositTypeForm({
               {fieldErrors.outputUnitsPerWorker}
             </p>
           ) : null}
-        </label>
+        </Label>
         <ResourceAmountListEditor
           addLabel="Add input"
           amountLabel="amount per worker"

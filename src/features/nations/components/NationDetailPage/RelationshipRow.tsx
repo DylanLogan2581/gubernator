@@ -3,6 +3,8 @@ import { useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -140,15 +142,15 @@ export function NationRelationshipRow({
       {canControl ? (
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <label
+            <Label
               className="text-xs text-muted-foreground"
               htmlFor={`unilateral-${other.id}`}
             >
               Set stance
-            </label>
-            <select
+            </Label>
+            <NativeSelect
               id={`unilateral-${other.id}`}
-              className="h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+              className="h-8 px-2 text-xs md:text-xs"
               disabled={anyPending}
               value={isBilateral ? "neutral" : currentStance}
               onChange={(event) => {
@@ -177,7 +179,7 @@ export function NationRelationshipRow({
               <option value="friendly">Friendly</option>
               <option value="hostile">Hostile</option>
               <option value="at_war">At war</option>
-            </select>
+            </NativeSelect>
           </div>
           <div className="flex flex-wrap gap-2">
             {!isBilateral && outgoingPending === null ? (

@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { notifyMutationSuccess, notifyMutationError } from "@/lib/notify";
 
 import { createUserMutationOptions } from "../mutations/superadminMutations";
@@ -83,9 +84,7 @@ export function CreateUserDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={emailId} className="text-sm font-medium">
-              Email address
-            </label>
+            <Label htmlFor={emailId}>Email address</Label>
             <Input
               id={emailId}
               type="email"
@@ -100,9 +99,7 @@ export function CreateUserDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={usernameId} className="text-sm font-medium">
-              Username
-            </label>
+            <Label htmlFor={usernameId}>Username</Label>
             <Input
               id={usernameId}
               type="text"
@@ -126,16 +123,14 @@ export function CreateUserDialog({
               }}
               className="h-4 w-4 rounded border-border"
             />
-            <label htmlFor="send-magic-link" className="text-sm">
+            <Label htmlFor="send-magic-link">
               Send magic link instead of setting a password
-            </label>
+            </Label>
           </div>
 
           {!sendMagicLink && (
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={passwordId} className="text-sm font-medium">
-                Temporary password
-              </label>
+              <Label htmlFor={passwordId}>Temporary password</Label>
               <Input
                 id={passwordId}
                 type="password"

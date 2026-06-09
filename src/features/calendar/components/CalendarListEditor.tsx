@@ -1,8 +1,8 @@
 import { Plus, Trash2 } from "lucide-react";
 
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import { FieldError, NumberField } from "./CalendarFieldPrimitives";
 
@@ -73,17 +73,22 @@ export function CalendarListEditor<
                   onChange={(value) => onUpdate(index, field.key, value)}
                 />
               ) : (
-                <label key={field.key} className="grid gap-1 text-sm">
+                <Label
+                  key={field.key}
+                  htmlFor={`${legend}-${index}-${field.key}`}
+                  className="grid gap-1 text-sm"
+                >
                   <span className="text-muted-foreground">
                     {legend} {index + 1} {field.label}
                   </span>
                   <Input
+                    id={`${legend}-${index}-${field.key}`}
                     value={String(item[field.key])}
                     onChange={(event) =>
                       onUpdate(index, field.key, event.currentTarget.value)
                     }
                   />
-                </label>
+                </Label>
               ),
             )}
             <Button

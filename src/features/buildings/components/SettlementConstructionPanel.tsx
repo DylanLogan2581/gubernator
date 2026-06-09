@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
   citizenAggregateStatsForSettlementQueryOptions,
@@ -908,9 +909,7 @@ function CreateProjectDialog({
 
         <div className="grid gap-3">
           <div className="grid gap-1.5">
-            <label className="text-sm font-medium" htmlFor={blueprintSelectId}>
-              Blueprint
-            </label>
+            <Label htmlFor={blueprintSelectId}>Blueprint</Label>
             {blueprintsQuery.isPending ? (
               <p className="text-sm text-muted-foreground">
                 Loading blueprints…
@@ -947,9 +946,7 @@ function CreateProjectDialog({
 
           {selectedBlueprintId !== "" ? (
             <div className="grid gap-1.5">
-              <label className="text-sm font-medium" htmlFor={tierSelectId}>
-                Tier
-              </label>
+              <Label htmlFor={tierSelectId}>Tier</Label>
               {tiersQuery.isPending ? (
                 <p className="text-sm text-muted-foreground">Loading tiers…</p>
               ) : tiersQuery.isError ? (

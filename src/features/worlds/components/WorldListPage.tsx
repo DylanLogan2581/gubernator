@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
@@ -522,7 +523,7 @@ function CreateWorldDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <label className="grid gap-1 text-sm">
+            <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Name</span>
               <Input
                 aria-invalid={fieldErrors.name !== undefined}
@@ -538,8 +539,8 @@ function CreateWorldDialog({
               {fieldErrors.name !== undefined ? (
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
+            </Label>
+            <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Visibility</span>
               <NativeSelect
                 className="w-full"
@@ -552,7 +553,7 @@ function CreateWorldDialog({
                 <option value="private">Private</option>
                 <option value="public">Public</option>
               </NativeSelect>
-            </label>
+            </Label>
           </div>
           <DialogFooter>
             <Button

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import {
   markCitizenDeadMutationOptions,
@@ -91,16 +92,14 @@ export function CitizenLifecycleSection({
       {citizen.status === "alive" ? (
         isMarkingDead ? (
           <form className="grid gap-2" noValidate onSubmit={handleMarkDead}>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">
-                Cause of death (optional)
-              </span>
+            <div className="grid gap-1 text-sm">
+              <Label>Cause of death (optional)</Label>
               <Input
                 disabled={markDeadMutation.isPending || isArchived}
                 value={deathCause}
                 onChange={(event) => setDeathCause(event.currentTarget.value)}
               />
-            </label>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="submit"

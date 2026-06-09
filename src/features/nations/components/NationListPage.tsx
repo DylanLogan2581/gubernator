@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import {
@@ -304,13 +305,14 @@ function CreateNationSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
+      <Label className="grid gap-1 text-sm" htmlFor="nation-create-name">
         <span className="text-muted-foreground">Name</span>
         <Input
           aria-invalid={nameError === undefined ? undefined : true}
           aria-describedby={
             nameError === undefined ? undefined : "nation-name-error"
           }
+          id="nation-create-name"
           maxLength={textInputLimits.nationNameMax}
           required
           value={name}
@@ -330,16 +332,17 @@ function CreateNationSection({
             {nameError}
           </p>
         )}
-      </label>
-      <label className="grid gap-1 text-sm">
+      </Label>
+      <Label className="grid gap-1 text-sm" htmlFor="nation-create-desc">
         <span className="text-muted-foreground">Description (optional)</span>
         <textarea
           className="min-h-[5rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          id="nation-create-desc"
           maxLength={textInputLimits.nationDescriptionMax}
           value={description}
           onChange={(event) => setDescription(event.currentTarget.value)}
         />
-      </label>
+      </Label>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={createMutation.isPending}>
           <Plus aria-hidden="true" />

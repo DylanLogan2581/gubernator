@@ -5,6 +5,7 @@ import { useId, useState, type FormEvent, type JSX } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { type Resource } from "@/features/resources";
 import { type TurnTransitionOutcome } from "@/features/turns";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -96,9 +97,9 @@ function CullQuantityEditor({
       onSubmit={handleSubmit}
     >
       <div className="grid gap-0.5">
-        <label className="sr-only" htmlFor={inputId}>
+        <Label className="sr-only" htmlFor={inputId}>
           Cull quantity for {instance.name}
-        </label>
+        </Label>
         <Input
           aria-describedby={
             fieldError !== undefined ? `${inputId}-error` : undefined

@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
@@ -454,12 +455,13 @@ function EditResourceForm({
     >
       <h3 className="text-sm font-medium">Edit resource</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
+        <Label className="grid gap-1 text-sm" htmlFor="edit-resource-name">
           <span className="text-muted-foreground">Name</span>
           <Input
             aria-invalid={fieldErrors.name !== undefined}
             aria-label="Name"
             disabled={isPending}
+            id="edit-resource-name"
             maxLength={resourceInputLimits.resourceNameMax}
             value={name}
             onChange={(e) => {
@@ -470,12 +472,13 @@ function EditResourceForm({
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
           <SlugHint slug={slug} error={fieldErrors.slug} />
-        </label>
-        <label className="grid gap-1 text-sm">
+        </Label>
+        <Label className="grid gap-1 text-sm" htmlFor="edit-resource-cap">
           <span className="text-muted-foreground">Base stockpile cap</span>
           <Input
             aria-invalid={fieldErrors.baseStockpileCap !== undefined}
             disabled={isPending}
+            id="edit-resource-cap"
             inputMode="decimal"
             placeholder="0"
             value={baseStockpileCap}
@@ -488,12 +491,13 @@ function EditResourceForm({
               {fieldErrors.baseStockpileCap}
             </p>
           ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
+        </Label>
+        <Label className="grid gap-1 text-sm" htmlFor="edit-resource-decay">
           <span className="text-muted-foreground">Decay rate (%)</span>
           <Input
             aria-invalid={fieldErrors.decayRate !== undefined}
             disabled={isPending}
+            id="edit-resource-decay"
             inputMode="decimal"
             placeholder="0"
             value={decayRate}
@@ -504,7 +508,7 @@ function EditResourceForm({
           {fieldErrors.decayRate !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.decayRate}</p>
           ) : null}
-        </label>
+        </Label>
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-2">
@@ -622,12 +626,16 @@ function CreateResourceForm({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <label className="grid gap-1 text-sm">
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="create-resource-name"
+            >
               <span className="text-muted-foreground">Name</span>
               <Input
                 aria-invalid={fieldErrors.name !== undefined}
                 aria-label="Name"
                 disabled={isPending}
+                id="create-resource-name"
                 maxLength={resourceInputLimits.resourceNameMax}
                 value={name}
                 onChange={(e) => {
@@ -638,12 +646,13 @@ function CreateResourceForm({
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
               <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
-            </label>
-            <label className="grid gap-1 text-sm">
+            </Label>
+            <Label className="grid gap-1 text-sm" htmlFor="create-resource-cap">
               <span className="text-muted-foreground">Base stockpile cap</span>
               <Input
                 aria-invalid={fieldErrors.baseStockpileCap !== undefined}
                 disabled={isPending}
+                id="create-resource-cap"
                 inputMode="decimal"
                 placeholder="0"
                 value={baseStockpileCap}
@@ -656,7 +665,7 @@ function CreateResourceForm({
                   {fieldErrors.baseStockpileCap}
                 </p>
               ) : null}
-            </label>
+            </Label>
           </div>
           <DialogFooter>
             <Button

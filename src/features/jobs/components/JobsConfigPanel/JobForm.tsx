@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
@@ -206,11 +207,9 @@ export function CreateJobForm({
               <legend className="mb-2 text-base font-semibold">Job type</legend>
               <div className="flex flex-wrap gap-3">
                 {JOB_TYPES.map(({ label, value }) => (
-                  <label
-                    key={value}
-                    className="flex items-center gap-1.5 text-sm"
-                  >
+                  <Label key={value} htmlFor={`job-type-${value}`}>
                     <input
+                      id={`job-type-${value}`}
                       type="radio"
                       name="jobType"
                       value={value}
@@ -221,16 +220,17 @@ export function CreateJobForm({
                       }}
                     />
                     {label}
-                  </label>
+                  </Label>
                 ))}
               </div>
             </fieldset>
 
             {selectedType !== null ? (
               <>
-                <label className="grid gap-1 text-sm">
+                <Label htmlFor="create-job-name" className="grid gap-1 text-sm">
                   <span className="text-muted-foreground">Name</span>
                   <Input
+                    id="create-job-name"
                     aria-invalid={fieldErrors.name !== undefined}
                     aria-label="Name"
                     disabled={isPending}
@@ -246,13 +246,17 @@ export function CreateJobForm({
                     </p>
                   ) : null}
                   <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
-                </label>
+                </Label>
 
                 {selectedType === "standard" ||
                 selectedType === "construction" ? (
-                  <label className="grid gap-1 text-sm">
+                  <Label
+                    htmlFor="create-job-basecapacity"
+                    className="grid gap-1 text-sm"
+                  >
                     <span className="text-muted-foreground">Base capacity</span>
                     <Input
+                      id="create-job-basecapacity"
                       aria-invalid={fieldErrors.baseCapacity !== undefined}
                       disabled={isPending}
                       inputMode="numeric"
@@ -267,15 +271,19 @@ export function CreateJobForm({
                         {fieldErrors.baseCapacity}
                       </p>
                     ) : null}
-                  </label>
+                  </Label>
                 ) : null}
 
                 {selectedType === "trader" ? (
-                  <label className="grid gap-1 text-sm">
+                  <Label
+                    htmlFor="create-job-trader"
+                    className="grid gap-1 text-sm"
+                  >
                     <span className="text-muted-foreground">
                       Trader capacity per worker
                     </span>
                     <Input
+                      id="create-job-trader"
                       aria-invalid={
                         fieldErrors.traderCapacityPerWorker !== undefined
                       }
@@ -292,7 +300,7 @@ export function CreateJobForm({
                         {fieldErrors.traderCapacityPerWorker}
                       </p>
                     ) : null}
-                  </label>
+                  </Label>
                 ) : null}
 
                 {selectedType === "standard" ? (

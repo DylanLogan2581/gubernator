@@ -1,3 +1,4 @@
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
@@ -26,11 +27,15 @@ export function ManualReadinessControl({
 
   return (
     <>
-      <label className="inline-flex w-fit items-center gap-2 text-sm font-medium text-foreground">
+      <Label
+        className="inline-flex w-fit items-center gap-2 text-sm font-medium text-foreground"
+        htmlFor="readiness-switch"
+      >
         <input
           checked={state.isReadyForCurrentTurn}
           className="peer sr-only"
           disabled={isDisabled}
+          id="readiness-switch"
           onChange={(event) => {
             setReadiness(event.currentTarget.checked);
           }}
@@ -45,7 +50,7 @@ export function ManualReadinessControl({
           )}
         />
         <span className="min-w-[8rem] tabular-nums">Ready</span>
-      </label>
+      </Label>
       {population !== undefined && (
         <div className="text-sm text-muted-foreground">
           Population: {population.toLocaleString()}

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { textInputLimits } from "@/lib/inputLimits";
 
 import { updateSettlementDetailsMutationOptions } from "../../mutations/settlementsMutations";
@@ -126,7 +127,7 @@ export function SettlementDetailsSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
+      <Label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Name</span>
         <Input
           aria-invalid={nameError === undefined ? undefined : true}
@@ -153,8 +154,8 @@ export function SettlementDetailsSection({
             {nameError}
           </p>
         )}
-      </label>
-      <label className="grid gap-1 text-sm">
+      </Label>
+      <Label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Description</span>
         <textarea
           className="min-h-[6rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -163,7 +164,7 @@ export function SettlementDetailsSection({
           value={description}
           onChange={(event) => setDescription(event.currentTarget.value)}
         />
-      </label>
+      </Label>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />

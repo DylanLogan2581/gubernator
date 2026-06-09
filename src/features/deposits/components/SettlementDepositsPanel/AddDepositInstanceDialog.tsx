@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { depositInputLimits } from "@/lib/inputLimits";
@@ -133,9 +134,10 @@ export function AddDepositInstanceDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <label className="grid gap-1 text-sm">
+            <Label htmlFor="add-deposit-name" className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Name</span>
               <Input
+                id="add-deposit-name"
                 aria-invalid={nameError !== undefined}
                 aria-label="Name"
                 disabled={mutation.isPending}
@@ -148,8 +150,8 @@ export function AddDepositInstanceDialog({
               {nameError !== undefined ? (
                 <p className="text-xs text-destructive">{nameError}</p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
+            </Label>
+            <Label htmlFor="add-deposit-type" className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Deposit type</span>
               {depositTypes.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
@@ -157,6 +159,7 @@ export function AddDepositInstanceDialog({
                 </p>
               ) : (
                 <NativeSelect
+                  id="add-deposit-type"
                   aria-invalid={depositTypeError !== undefined}
                   aria-label="Deposit type"
                   className="w-full"
@@ -177,12 +180,16 @@ export function AddDepositInstanceDialog({
               {depositTypeError !== undefined ? (
                 <p className="text-xs text-destructive">{depositTypeError}</p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
+            </Label>
+            <Label
+              htmlFor="add-deposit-maxworkers"
+              className="grid gap-1 text-sm"
+            >
               <span className="text-muted-foreground">
                 Max workers (leave blank for unlimited)
               </span>
               <Input
+                id="add-deposit-maxworkers"
                 aria-invalid={maxWorkersError !== undefined}
                 aria-label="Max workers"
                 disabled={mutation.isPending}
@@ -196,7 +203,7 @@ export function AddDepositInstanceDialog({
               {maxWorkersError !== undefined ? (
                 <p className="text-xs text-destructive">{maxWorkersError}</p>
               ) : null}
-            </label>
+            </Label>
             <ResourceAmountListEditor
               addLabel="Add resource"
               amountLabel="initial quantity"

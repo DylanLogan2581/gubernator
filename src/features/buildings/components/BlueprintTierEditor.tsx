@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   activeJobsByWorldQueryOptions,
   type JobDefinition,
@@ -517,9 +518,10 @@ function CreateTierForm({
     >
       <h3 className="text-sm font-medium">New tier</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Tier number</span>
+        <div className="grid gap-1">
+          <Label htmlFor="tier-number">Tier number</Label>
           <Input
+            id="tier-number"
             aria-invalid={fieldErrors.tierNumber !== undefined}
             disabled={isPending}
             inputMode="numeric"
@@ -532,10 +534,11 @@ function CreateTierForm({
           {fieldErrors.tierNumber !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.tierNumber}</p>
           ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Worker turns required</span>
+        </div>
+        <div className="grid gap-1">
+          <Label htmlFor="worker-turns-required">Worker turns required</Label>
           <Input
+            id="worker-turns-required"
             aria-invalid={fieldErrors.workerTurnsRequired !== undefined}
             disabled={isPending}
             inputMode="numeric"
@@ -550,7 +553,7 @@ function CreateTierForm({
               {fieldErrors.workerTurnsRequired}
             </p>
           ) : null}
-        </label>
+        </div>
         <CostEditor
           activeResources={activeResources}
           disabled={isPending}
@@ -686,9 +689,12 @@ function EditTierForm({
     >
       <h3 className="text-sm font-medium">Edit tier {tier.tierNumber}</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Worker turns required</span>
+        <div className="grid gap-1">
+          <Label htmlFor="edit-worker-turns-required">
+            Worker turns required
+          </Label>
           <Input
+            id="edit-worker-turns-required"
             aria-invalid={fieldErrors.workerTurnsRequired !== undefined}
             disabled={updateMutation.isPending}
             inputMode="numeric"
@@ -703,7 +709,7 @@ function EditTierForm({
               {fieldErrors.workerTurnsRequired}
             </p>
           ) : null}
-        </label>
+        </div>
         <CostEditor
           activeResources={activeResources}
           disabled={updateMutation.isPending}

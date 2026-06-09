@@ -1,5 +1,6 @@
-
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 
 import { FieldError, NumberField } from "./CalendarFieldPrimitives";
 import { CalendarListEditor } from "./CalendarListEditor";
@@ -132,10 +133,13 @@ export function CalendarEditableFields({
       <fieldset className="grid gap-3">
         <legend className="text-sm font-medium">Starting date</legend>
         <div className="grid gap-3 sm:grid-cols-4">
-          <label className="grid gap-1 text-sm">
+          <Label
+            htmlFor="calendar-starting-month"
+            className="grid gap-1 text-sm"
+          >
             <span className="text-muted-foreground">Month</span>
-            <select
-              className="h-8 rounded-lg border border-input bg-background px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            <NativeSelect
+              id="calendar-starting-month"
               value={config.startingMonthIndex}
               onChange={(event) => {
                 const startingMonthIndex = Number(event.currentTarget.value);
@@ -159,8 +163,8 @@ export function CalendarEditableFields({
                   {month.name}
                 </option>
               ))}
-            </select>
-          </label>
+            </NativeSelect>
+          </Label>
           <NumberField
             describedBy={
               errors.startingDayOfMonth === undefined
@@ -181,9 +185,13 @@ export function CalendarEditableFields({
             value={config.startingYear}
             onChange={(value) => onChange({ ...config, startingYear: value })}
           />
-          <label className="grid gap-1 text-sm">
+          <Label
+            htmlFor="calendar-weekday-offset"
+            className="grid gap-1 text-sm"
+          >
             <span className="text-muted-foreground">Weekday offset</span>
-            <select
+            <NativeSelect
+              id="calendar-weekday-offset"
               aria-describedby={
                 errors.startingWeekdayOffset === undefined
                   ? undefined
@@ -192,7 +200,6 @@ export function CalendarEditableFields({
               aria-invalid={
                 errors.startingWeekdayOffset === undefined ? undefined : true
               }
-              className="h-8 rounded-lg border border-input bg-background px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               value={config.startingWeekdayOffset}
               onChange={(event) =>
                 onChange({
@@ -206,20 +213,21 @@ export function CalendarEditableFields({
                   {weekday.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             {errors.startingWeekdayOffset === undefined ? null : (
               <FieldError
                 id="calendar-weekday-offset-error"
                 message={errors.startingWeekdayOffset}
               />
             )}
-          </label>
+          </Label>
         </div>
       </fieldset>
 
-      <label className="grid gap-1 text-sm">
+      <Label htmlFor="calendar-date-format" className="grid gap-1 text-sm">
         <span className="font-medium">Date format template</span>
         <Input
+          id="calendar-date-format"
           aria-describedby={
             errors.dateFormatTemplate === undefined
               ? undefined
@@ -242,7 +250,7 @@ export function CalendarEditableFields({
             message={errors.dateFormatTemplate}
           />
         )}
-      </label>
+      </Label>
     </>
   );
 }

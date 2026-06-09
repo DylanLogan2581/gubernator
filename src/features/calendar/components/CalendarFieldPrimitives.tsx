@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import type { JSX } from "react";
-
 
 export function NumberField({
   describedBy,
@@ -21,9 +21,13 @@ export function NumberField({
   readonly value: number;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
+    <Label
+      htmlFor={describedBy ?? "number-field"}
+      className="grid gap-1 text-sm"
+    >
       <span className="text-muted-foreground">{label}</span>
       <Input
+        id={describedBy ?? "number-field"}
         aria-describedby={describedBy}
         aria-invalid={error === undefined ? undefined : true}
         max={max}
@@ -35,7 +39,7 @@ export function NumberField({
       {error === undefined || describedBy === undefined ? null : (
         <FieldError id={describedBy} message={error} />
       )}
-    </label>
+    </Label>
   );
 }
 

@@ -5,6 +5,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { nationByIdQueryOptions } from "@/features/nations";
 import { RoleAssignmentControls } from "@/features/permissions";
@@ -225,8 +227,8 @@ function CitizenLinkedUserControl({
       ) : null}
       {isEditing ? (
         <form className="grid gap-2" noValidate onSubmit={handleLink}>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">User</span>
+          <div className="grid gap-1 text-sm">
+            <Label>User</Label>
             {usersQuery.isError ? (
               <p
                 role="alert"
@@ -235,9 +237,8 @@ function CitizenLinkedUserControl({
                 Failed to load users. Please try again.
               </p>
             ) : (
-              <select
+              <NativeSelect
                 aria-invalid={inputError === undefined ? undefined : true}
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={linkMutation.isPending || usersQuery.isPending}
                 value={selectedUserId}
                 onChange={(event) => {
@@ -255,14 +256,14 @@ function CitizenLinkedUserControl({
                     {appUser.username}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             )}
             {inputError === undefined ? null : (
               <p role="alert" className="text-sm text-destructive">
                 {inputError}
               </p>
             )}
-          </label>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               type="submit"

@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -123,9 +124,10 @@ export function MaxWorkersEditDialog({
                 {cascadeCount === 1 ? "citizen" : "citizens"}.
               </DialogDescription>
             </DialogHeader>
-            <label className="grid gap-1 text-sm">
+            <Label htmlFor="removal-strategy" className="grid gap-1 text-sm">
               <span className="text-muted-foreground">Removal strategy</span>
               <NativeSelect
+                id="removal-strategy"
                 aria-label="Removal strategy"
                 className="w-full"
                 disabled={mutation.isPending}
@@ -140,7 +142,7 @@ export function MaxWorkersEditDialog({
                 <option value="npc_first">NPC first</option>
                 <option value="random">Random</option>
               </NativeSelect>
-            </label>
+            </Label>
             <DialogFooter>
               <Button
                 disabled={mutation.isPending}
@@ -170,11 +172,12 @@ export function MaxWorkersEditDialog({
                 Set the maximum number of citizens that can work this deposit.
               </DialogDescription>
             </DialogHeader>
-            <label className="grid gap-1 text-sm">
+            <Label htmlFor="edit-maxworkers" className="grid gap-1 text-sm">
               <span className="text-muted-foreground">
                 Max workers (leave blank for unlimited)
               </span>
               <Input
+                id="edit-maxworkers"
                 aria-invalid={fieldError !== undefined}
                 aria-label="Max workers"
                 disabled={mutation.isPending}
@@ -188,7 +191,7 @@ export function MaxWorkersEditDialog({
               {fieldError !== undefined ? (
                 <p className="text-xs text-destructive">{fieldError}</p>
               ) : null}
-            </label>
+            </Label>
             <DialogFooter>
               <Button
                 disabled={mutation.isPending}

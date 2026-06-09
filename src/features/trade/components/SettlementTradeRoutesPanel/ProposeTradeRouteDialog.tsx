@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
@@ -162,7 +163,7 @@ export function ProposeTradeRouteDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <label className="grid gap-1 text-sm">
+            <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">
                 Destination settlement
               </span>
@@ -198,7 +199,7 @@ export function ProposeTradeRouteDialog({
                   {errors.destinationSettlementId}
                 </p>
               ) : null}
-            </label>
+            </Label>
 
             <div className="grid gap-2">
               <span className="text-sm text-muted-foreground">Resources</span>

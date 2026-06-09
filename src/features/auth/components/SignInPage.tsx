@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { syncAuthStateQueryCache } from "@/lib/authStateQueryCache";
 
 import { signInMutationOptions } from "../mutations/authMutations";
@@ -104,9 +105,7 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
           onSubmit={handleSubmit}
         >
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="sign-in-email" className="text-sm font-medium">
-              Email
-            </label>
+            <Label htmlFor="sign-in-email">Email</Label>
             <Input
               id="sign-in-email"
               name="email"
@@ -129,9 +128,7 @@ export function SignInPage({ onSignInSuccess }: SignInPageProps): JSX.Element {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="sign-in-password" className="text-sm font-medium">
-              Password
-            </label>
+            <Label htmlFor="sign-in-password">Password</Label>
             <Input
               id="sign-in-password"
               name="password"

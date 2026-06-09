@@ -12,6 +12,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import {
   NAME_CONVENTIONS,
@@ -211,11 +212,13 @@ function WorldNamingConfigPanelContent({
             </legend>
             <div className="grid gap-1.5">
               {NAME_CONVENTIONS.map((convention) => (
-                <label
+                <Label
                   key={convention}
                   className="flex items-center gap-2 text-sm"
+                  htmlFor={`convention-${convention}`}
                 >
                   <input
+                    id={`convention-${convention}`}
                     type="radio"
                     name="convention"
                     className="h-4 w-4 accent-primary"
@@ -226,7 +229,7 @@ function WorldNamingConfigPanelContent({
                     }
                   />
                   <ConventionLabel convention={convention} />
-                </label>
+                </Label>
               ))}
             </div>
           </fieldset>

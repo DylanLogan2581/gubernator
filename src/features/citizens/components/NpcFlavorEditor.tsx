@@ -3,6 +3,7 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import { type NpcFlavor } from "../utils/npcFlavor";
 
@@ -138,14 +139,15 @@ function FlavorInputField({
   readonly value: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
+    <div className="grid gap-1 text-sm">
+      <Label htmlFor="flavor-input">{label}</Label>
       <Input
+        id="flavor-input"
         disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
-    </label>
+    </div>
   );
 }
 
@@ -161,14 +163,15 @@ function FlavorTextField({
   readonly value: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
+    <div className="grid gap-1 text-sm">
+      <Label htmlFor="flavor-text">{label}</Label>
       <textarea
+        id="flavor-text"
         className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
-    </label>
+    </div>
   );
 }

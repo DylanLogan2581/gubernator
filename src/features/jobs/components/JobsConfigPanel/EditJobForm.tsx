@@ -10,6 +10,7 @@ import {
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeDepositTypesByWorldQueryOptions } from "@/features/deposits";
 import {
@@ -235,9 +236,10 @@ export function EditJobForm({
     >
       <h3 className="text-sm font-medium">Edit job</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
+        <Label htmlFor="edit-job-name" className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Name</span>
           <Input
+            id="edit-job-name"
             aria-invalid={fieldErrors.name !== undefined}
             aria-label="Name"
             disabled={isPending}
@@ -251,12 +253,13 @@ export function EditJobForm({
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
           <SlugHint slug={slug} error={fieldErrors.slug} />
-        </label>
+        </Label>
 
         {job.jobType === "standard" || job.jobType === "construction" ? (
-          <label className="grid gap-1 text-sm">
+          <Label htmlFor="edit-job-basecapacity" className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Base capacity</span>
             <Input
+              id="edit-job-basecapacity"
               aria-invalid={fieldErrors.baseCapacity !== undefined}
               disabled={isPending}
               inputMode="numeric"
@@ -271,15 +274,16 @@ export function EditJobForm({
                 {fieldErrors.baseCapacity}
               </p>
             ) : null}
-          </label>
+          </Label>
         ) : null}
 
         {job.jobType === "trader" ? (
-          <label className="grid gap-1 text-sm">
+          <Label htmlFor="edit-job-trader" className="grid gap-1 text-sm">
             <span className="text-muted-foreground">
               Trader capacity per worker
             </span>
             <Input
+              id="edit-job-trader"
               aria-invalid={fieldErrors.traderCapacityPerWorker !== undefined}
               disabled={isPending}
               inputMode="numeric"
@@ -294,13 +298,14 @@ export function EditJobForm({
                 {fieldErrors.traderCapacityPerWorker}
               </p>
             ) : null}
-          </label>
+          </Label>
         ) : null}
 
         {job.jobType === "deposit" ? (
-          <label className="grid gap-1 text-sm">
+          <Label htmlFor="edit-job-deposit" className="grid gap-1 text-sm">
             <span className="text-muted-foreground">Linked deposit type</span>
             <NativeSelect
+              id="edit-job-deposit"
               className="w-full"
               disabled={isPending}
               value={linkedDepositTypeId}
@@ -315,15 +320,16 @@ export function EditJobForm({
                 </option>
               ))}
             </NativeSelect>
-          </label>
+          </Label>
         ) : null}
 
         {job.jobType === "husbandry" || job.jobType === "culling" ? (
-          <label className="grid gap-1 text-sm">
+          <Label htmlFor="edit-job-managedpop" className="grid gap-1 text-sm">
             <span className="text-muted-foreground">
               Linked managed population type
             </span>
             <NativeSelect
+              id="edit-job-managedpop"
               className="w-full"
               disabled={isPending}
               value={linkedManagedPopulationTypeId}
@@ -338,7 +344,7 @@ export function EditJobForm({
                 </option>
               ))}
             </NativeSelect>
-          </label>
+          </Label>
         ) : null}
 
         {job.jobType === "standard" ? (

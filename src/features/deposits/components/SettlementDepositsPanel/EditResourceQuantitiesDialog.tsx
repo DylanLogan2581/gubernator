@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { setDepositInstanceResourceQuantitiesMutationOptions } from "../../mutations/setDepositInstanceResourceQuantitiesMutations";
@@ -169,11 +170,15 @@ export function EditResourceQuantitiesDialog({
                   {row.resourceName}
                 </legend>
                 <div className="grid grid-cols-2 gap-3">
-                  <label className="grid gap-1 text-sm">
+                  <Label
+                    htmlFor={`edit-resource-initial-${index}`}
+                    className="grid gap-1 text-sm"
+                  >
                     <span className="text-muted-foreground">
                       Total (initial)
                     </span>
                     <Input
+                      id={`edit-resource-initial-${index}`}
                       aria-invalid={row.fieldError !== undefined}
                       aria-label={`Initial quantity for ${row.resourceName}`}
                       disabled={mutation.isPending}
@@ -185,10 +190,14 @@ export function EditResourceQuantitiesDialog({
                         });
                       }}
                     />
-                  </label>
-                  <label className="grid gap-1 text-sm">
+                  </Label>
+                  <Label
+                    htmlFor={`edit-resource-remaining-${index}`}
+                    className="grid gap-1 text-sm"
+                  >
                     <span className="text-muted-foreground">Remaining</span>
                     <Input
+                      id={`edit-resource-remaining-${index}`}
                       aria-invalid={row.fieldError !== undefined}
                       aria-label={`Remaining quantity for ${row.resourceName}`}
                       disabled={mutation.isPending}
@@ -200,7 +209,7 @@ export function EditResourceQuantitiesDialog({
                         });
                       }}
                     />
-                  </label>
+                  </Label>
                 </div>
                 {row.fieldError !== undefined ? (
                   <p className="text-xs text-destructive">{row.fieldError}</p>

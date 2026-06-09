@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Card } from "@/components/ui/card";
+import { NativeSelect } from "@/components/ui/native-select";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
@@ -213,9 +214,8 @@ function NamesetCardContent({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <select
+          <NativeSelect
             aria-label="Nameset override"
-            className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             disabled={disabled || namesets.length === 0}
             value={currentNamesetId ?? ""}
             onChange={(e) => {
@@ -238,7 +238,7 @@ function NamesetCardContent({
                 {ns.isDefault ? " (world default)" : ""}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
 
         <p className="text-xs text-muted-foreground">

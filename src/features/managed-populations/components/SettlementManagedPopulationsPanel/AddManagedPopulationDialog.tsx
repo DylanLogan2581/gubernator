@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -121,12 +122,13 @@ export function AddManagedPopulationDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <label className="grid gap-1 text-sm">
+            <Label className="grid gap-1 text-sm" htmlFor="add-pop-name">
               <span className="text-muted-foreground">Name</span>
               <Input
                 aria-invalid={nameError !== undefined}
                 aria-label="Name"
                 disabled={mutation.isPending}
+                id="add-pop-name"
                 maxLength={
                   managedPopulationInputLimits.populationInstanceNameMax
                 }
@@ -138,8 +140,8 @@ export function AddManagedPopulationDialog({
               {nameError !== undefined ? (
                 <p className="text-xs text-destructive">{nameError}</p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
+            </Label>
+            <Label className="grid gap-1 text-sm" htmlFor="add-pop-type">
               <span className="text-muted-foreground">Population type</span>
               {types.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
@@ -151,6 +153,7 @@ export function AddManagedPopulationDialog({
                   aria-label="Population type"
                   className="w-full"
                   disabled={mutation.isPending}
+                  id="add-pop-type"
                   value={typeId}
                   onChange={(e) => {
                     setTypeId(e.currentTarget.value);
@@ -167,13 +170,14 @@ export function AddManagedPopulationDialog({
               {typeError !== undefined ? (
                 <p className="text-xs text-destructive">{typeError}</p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
+            </Label>
+            <Label className="grid gap-1 text-sm" htmlFor="add-pop-count">
               <span className="text-muted-foreground">Initial count</span>
               <Input
                 aria-invalid={initialCountError !== undefined}
                 aria-label="Initial count"
                 disabled={mutation.isPending}
+                id="add-pop-count"
                 inputMode="numeric"
                 min={1}
                 type="number"
@@ -185,8 +189,8 @@ export function AddManagedPopulationDialog({
               {initialCountError !== undefined ? (
                 <p className="text-xs text-destructive">{initialCountError}</p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
+            </Label>
+            <Label className="grid gap-1 text-sm" htmlFor="add-pop-cull">
               <span className="text-muted-foreground">
                 Initial cull quantity
               </span>
@@ -194,6 +198,7 @@ export function AddManagedPopulationDialog({
                 aria-invalid={initialCullError !== undefined}
                 aria-label="Initial cull quantity"
                 disabled={mutation.isPending}
+                id="add-pop-cull"
                 inputMode="numeric"
                 min={0}
                 type="number"
@@ -205,7 +210,7 @@ export function AddManagedPopulationDialog({
               {initialCullError !== undefined ? (
                 <p className="text-xs text-destructive">{initialCullError}</p>
               ) : null}
-            </label>
+            </Label>
           </div>
           <DialogFooter>
             <Button

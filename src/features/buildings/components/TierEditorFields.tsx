@@ -3,6 +3,7 @@ import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
@@ -51,9 +52,9 @@ export function CostEditor({
       <legend className="text-sm text-muted-foreground">{label}</legend>
       {rows.map((row) => (
         <div key={row.id} className="flex items-center gap-2">
-          <label className="sr-only" htmlFor={`cost-resource-${row.id}`}>
+          <Label className="sr-only" htmlFor={`cost-resource-${row.id}`}>
             Resource
-          </label>
+          </Label>
           <NativeSelect
             aria-label="Resource"
             className="w-full"
@@ -159,9 +160,10 @@ export function EffectsEditor({
         >
           <div className="flex items-start gap-2">
             <div className="grid flex-1 gap-2">
-              <label className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Effect type</span>
+              <div className="grid gap-1">
+                <Label htmlFor={`effect-type-${row.id}`}>Effect type</Label>
                 <NativeSelect
+                  id={`effect-type-${row.id}`}
                   aria-label="Effect type"
                   className="w-full"
                   disabled={disabled}
@@ -186,13 +188,14 @@ export function EffectsEditor({
                     </option>
                   ))}
                 </NativeSelect>
-              </label>
+              </div>
 
               {row.effectType === "job_capacity_increase" ? (
                 <>
-                  <label className="grid gap-1 text-sm">
-                    <span className="text-muted-foreground">Job</span>
+                  <div className="grid gap-1">
+                    <Label htmlFor={`effect-job-${row.id}`}>Job</Label>
                     <NativeSelect
+                      id={`effect-job-${row.id}`}
                       aria-label="Job"
                       className="w-full"
                       disabled={disabled}
@@ -208,10 +211,11 @@ export function EffectsEditor({
                         </option>
                       ))}
                     </NativeSelect>
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    <span className="text-muted-foreground">Amount</span>
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor={`effect-amount-${row.id}`}>Amount</Label>
                     <Input
+                      id={`effect-amount-${row.id}`}
                       aria-label="Effect amount"
                       disabled={disabled}
                       inputMode="numeric"
@@ -221,16 +225,19 @@ export function EffectsEditor({
                         updateRow(row.id, { amount: e.currentTarget.value });
                       }}
                     />
-                  </label>
+                  </div>
                 </>
               ) : null}
 
               {row.effectType === "passive_resource_production" ||
               row.effectType === "resource_storage_increase" ? (
                 <>
-                  <label className="grid gap-1 text-sm">
-                    <span className="text-muted-foreground">Resource</span>
+                  <div className="grid gap-1">
+                    <Label htmlFor={`effect-resource-${row.id}`}>
+                      Resource
+                    </Label>
                     <NativeSelect
+                      id={`effect-resource-${row.id}`}
                       aria-label="Effect resource"
                       className="w-full"
                       disabled={disabled}
@@ -248,10 +255,13 @@ export function EffectsEditor({
                         </option>
                       ))}
                     </NativeSelect>
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    <span className="text-muted-foreground">Amount</span>
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor={`effect-amount-res-${row.id}`}>
+                      Amount
+                    </Label>
                     <Input
+                      id={`effect-amount-res-${row.id}`}
                       aria-label="Effect amount"
                       disabled={disabled}
                       inputMode="numeric"
@@ -261,14 +271,15 @@ export function EffectsEditor({
                         updateRow(row.id, { amount: e.currentTarget.value });
                       }}
                     />
-                  </label>
+                  </div>
                 </>
               ) : null}
 
               {row.effectType === "population_cap_increase" ? (
-                <label className="grid gap-1 text-sm">
-                  <span className="text-muted-foreground">Amount</span>
+                <div className="grid gap-1">
+                  <Label htmlFor={`effect-amount-pop-${row.id}`}>Amount</Label>
                   <Input
+                    id={`effect-amount-pop-${row.id}`}
                     aria-label="Effect amount"
                     disabled={disabled}
                     inputMode="numeric"
@@ -278,7 +289,7 @@ export function EffectsEditor({
                       updateRow(row.id, { amount: e.currentTarget.value });
                     }}
                   />
-                </label>
+                </div>
               ) : null}
             </div>
             <Button

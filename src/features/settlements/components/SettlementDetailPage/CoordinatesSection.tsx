@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import { updateSettlementCoordinatesMutationOptions } from "../../mutations/settlementsMutations";
 
@@ -278,7 +279,7 @@ function CoordinateField({
 }): JSX.Element {
   const errorId = `${id}-error`;
   return (
-    <label className="grid gap-1 text-sm" htmlFor={id}>
+    <Label className="grid gap-1 text-sm" htmlFor={id}>
       <span className="text-muted-foreground">{label}</span>
       <Input
         aria-describedby={error === undefined ? undefined : errorId}
@@ -295,6 +296,6 @@ function CoordinateField({
           {error}
         </p>
       )}
-    </label>
+    </Label>
   );
 }

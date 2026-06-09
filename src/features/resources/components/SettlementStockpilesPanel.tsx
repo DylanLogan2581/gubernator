@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -281,13 +282,14 @@ function EditStockpileDialog({
               Update this settlement stockpile quantity.
             </DialogDescription>
           </DialogHeader>
-          <label className="grid gap-1 text-sm">
+          <Label className="grid gap-1 text-sm" htmlFor="edit-stockpile-qty">
             <span className="text-muted-foreground">Quantity</span>
             <Input
               aria-invalid={fieldError !== undefined}
               aria-label="Quantity"
               autoFocus
               disabled={updateMutation.isPending}
+              id="edit-stockpile-qty"
               inputMode="decimal"
               placeholder="0"
               value={quantity}
@@ -298,7 +300,7 @@ function EditStockpileDialog({
             {fieldError !== undefined ? (
               <p className="text-xs text-destructive">{fieldError}</p>
             ) : null}
-          </label>
+          </Label>
           <DialogFooter>
             <Button
               disabled={updateMutation.isPending}

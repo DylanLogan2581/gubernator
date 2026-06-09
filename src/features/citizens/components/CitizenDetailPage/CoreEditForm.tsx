@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { textInputLimits } from "@/lib/inputLimits";
 
 import { updateCitizenCoreMutationOptions } from "../../mutations/citizensMutations";
@@ -137,8 +139,8 @@ export function CitizenCoreSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Given name</span>
+      <div className="grid gap-1 text-sm">
+        <Label>Given name</Label>
         <Input
           aria-invalid={givenNameError === undefined ? undefined : true}
           aria-describedby={
@@ -166,20 +168,19 @@ export function CitizenCoreSection({
             {givenNameError}
           </p>
         )}
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Surname</span>
+      </div>
+      <div className="grid gap-1 text-sm">
+        <Label>Surname</Label>
         <Input
           disabled={updateMutation.isPending}
           maxLength={textInputLimits.citizenNameMax}
           value={surname}
           onChange={(event) => setSurname(event.currentTarget.value)}
         />
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Sex</span>
-        <select
-          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+      </div>
+      <div className="grid gap-1 text-sm">
+        <Label>Sex</Label>
+        <NativeSelect
           disabled={updateMutation.isPending}
           value={sex}
           onChange={(event) => setSex(event.currentTarget.value)}
@@ -187,8 +188,8 @@ export function CitizenCoreSection({
           <option value=""></option>
           <option value="male">Male</option>
           <option value="female">Female</option>
-        </select>
-      </label>
+        </NativeSelect>
+      </div>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />
