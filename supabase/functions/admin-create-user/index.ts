@@ -50,7 +50,7 @@ export async function handleAdminCreateUserRequest(
   const origin = request.headers.get("origin");
 
   if (origin !== null && !allowedOrigins.includes(origin)) {
-    return new Response(null, { status: 403 });
+    return new Response("Origin not allowed", { status: 403 });
   }
 
   const allowedOrigin = origin;
