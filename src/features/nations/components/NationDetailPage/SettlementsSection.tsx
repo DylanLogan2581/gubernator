@@ -1,33 +1,53 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
+import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Button } from "@/components/ui/button";
+import { CreateSettlementDialog } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
 
 import type { NationSettlement } from "../../types/nationTypes";
-import type { JSX } from "react";
 
 export function NationSettlementsSection({
+  canAdmin = false,
   nationId,
   worldId,
 }: {
+  readonly canAdmin?: boolean;
   readonly nationId: string;
   readonly worldId: string;
 }): JSX.Element {
+  const queryClient = useQueryClient();
   const settlementsQuery = useQuery(nationSettlementsQueryOptions(nationId));
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   return (
     <section
       aria-labelledby="nation-settlements-heading"
       className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
     >
-      <h2 id="nation-settlements-heading" className="text-base font-medium">
-        Settlements
-      </h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="nation-settlements-heading" className="text-base font-medium">
+          Settlements
+        </h2>
+        {canAdmin && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setShowCreateDialog(true);
+            }}
+          >
+            <Plus aria-hidden="true" className="size-4" />
+            New settlement
+          </Button>
+        )}
+      </div>
       {settlementsQuery.isPending ? (
         <LoadingState label="Loading settlements…" />
       ) : settlementsQuery.isError ? (
@@ -50,6 +70,17 @@ export function NationSettlementsSection({
             />
           ))}
         </ul>
+      )}
+
+      {showCreateDialog && (
+        <CreateSettlementDialog
+          nationId={nationId}
+          worldId={worldId}
+          queryClient={queryClient}
+          onClose={() => {
+            setShowCreateDialog(false);
+          }}
+        />
       )}
     </section>
   );

@@ -269,7 +269,11 @@ function NationDetailLoaded({
         />
       ) : null}
 
-      <NationSettlementsSection nationId={nation.id} worldId={worldId} />
+      <NationSettlementsSection
+        canAdmin={worldAccess.canAdmin}
+        nationId={nation.id}
+        worldId={worldId}
+      />
 
       <NationRoleAssignmentSection
         canAdminWorld={worldAccess.canAdmin}
