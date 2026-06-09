@@ -25,6 +25,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
+import { nationsQueryKeys } from "../../queries/nationsQueryKeys";
 
 import type { NationSettlement } from "../../types/nationTypes";
 
@@ -146,6 +147,11 @@ function NationSettlementListItem({
         worldId,
       },
       {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({
+            queryKey: nationsQueryKeys.settlements(settlement.nationId),
+          });
+        },
         onSettled: () => {
           setIsPending(false);
         },
@@ -178,6 +184,7 @@ function NationSettlementListItem({
               isArchived={isArchived}
               item={settlement}
               isPending={isPending}
+              population={settlement.population}
               setReadiness={handleSetReadiness}
             />
           </div>

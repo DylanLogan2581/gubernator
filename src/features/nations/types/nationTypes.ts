@@ -18,5 +18,6 @@ export type NationSettlement = {
   readonly name: string;
   readonly nationId: string;
   readonly nationName: string;
+  readonly population: number;
   readonly readySetAt: string | null;
 };
