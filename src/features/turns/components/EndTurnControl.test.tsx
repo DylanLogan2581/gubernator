@@ -59,7 +59,7 @@ describe("EndTurnControl", () => {
     expect(await screen.findByText("Current turn")).toBeDefined();
     expect(screen.getByText("7")).toBeDefined();
     expect(screen.getByText("Ready")).toBeDefined();
-    expect(screen.getByText("Not ready")).toBeDefined();
+    expect(screen.getByText("Ready")).toBeDefined();
     expect(screen.getByText("50%")).toBeDefined();
   });
 

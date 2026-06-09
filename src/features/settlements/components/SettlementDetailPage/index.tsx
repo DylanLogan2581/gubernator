@@ -287,14 +287,14 @@ function SettlementDetailLoaded({
         worldId={worldId}
       />
 
-      <SettlementStockpilesPanel
-        canAdmin={worldAccess.canAdmin}
-        isArchived={isArchived}
-        settlementId={settlement.id}
-      />
-
       <SettlementDetailsSection
         canEdit={canEditDetails}
+        queryClient={queryClient}
+        settlement={settlement}
+      />
+
+      <SettlementCoordinatesSection
+        canEdit={canEditCoordinates}
         queryClient={queryClient}
         settlement={settlement}
       />
@@ -309,16 +309,19 @@ function SettlementDetailLoaded({
         />
       ) : null}
 
-      <SettlementCoordinatesSection
-        canEdit={canEditCoordinates}
-        queryClient={queryClient}
-        settlement={settlement}
-      />
-
       <CitizensPanel
         canAdmin={worldAccess.canAdmin}
         incestPreventionDepth={worldAccess.world.incestPreventionDepth}
         isArchived={isArchived}
+        settlementId={settlement.id}
+        worldId={worldId}
+      />
+
+      <SettlementAssignmentBoard
+        activeTab={assignmentTab}
+        canManageSettlement={canManageSettlement}
+        isArchived={isArchived}
+        nationId={settlement.nationId}
         settlementId={settlement.id}
         worldId={worldId}
       />
@@ -335,6 +338,12 @@ function SettlementDetailLoaded({
         isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}
+      />
+
+      <SettlementStockpilesPanel
+        canAdmin={worldAccess.canAdmin}
+        isArchived={isArchived}
+        settlementId={settlement.id}
       />
 
       <SettlementDepositsPanel
@@ -356,15 +365,6 @@ function SettlementDetailLoaded({
       <SettlementTradeRoutesPanel
         canManage={canManageSettlement}
         isArchived={isArchived}
-        settlementId={settlement.id}
-        worldId={worldId}
-      />
-
-      <SettlementAssignmentBoard
-        activeTab={assignmentTab}
-        canManageSettlement={canManageSettlement}
-        isArchived={isArchived}
-        nationId={settlement.nationId}
         settlementId={settlement.id}
         worldId={worldId}
       />

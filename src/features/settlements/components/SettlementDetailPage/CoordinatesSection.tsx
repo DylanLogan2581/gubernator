@@ -163,9 +163,6 @@ export function SettlementCoordinatesSection({
             </Button>
           ) : null}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Coordinates are informational only.
-        </p>
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <CoordinateReadout label="X" value={settlement.coordX} />
           <CoordinateReadout label="Z" value={settlement.coordZ} />

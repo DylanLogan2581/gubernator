@@ -52,11 +52,6 @@ export function CitizensPanel({
           <h2 id="citizens-panel-heading" className="text-base font-medium">
             Citizens
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {canAdmin
-              ? "Individual citizens in this settlement."
-              : "Population summary for this settlement."}
-          </p>
         </div>
         {canAdmin ? (
           <CitizensCreateActions

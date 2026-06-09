@@ -36,17 +36,10 @@ describe("ManualReadinessControl", () => {
       />,
     );
 
-    const labelSpans = screen.getAllByText(
-      /^(?:Not ready|Ready|Ready \(auto-ready\))$/,
-    );
-    // Find the span that's part of the label (not the toggle itself)
-    const labelTextSpan = labelSpans.find((span) =>
-      span.className.includes("min-w"),
-    );
-
+    const labelTextSpan = screen.getByText("Ready");
     expect(labelTextSpan).toBeDefined();
-    expect(labelTextSpan?.className).toContain("min-w-[8rem]");
-    expect(labelTextSpan?.className).toContain("tabular-nums");
+    expect(labelTextSpan.className).toContain("min-w-[8rem]");
+    expect(labelTextSpan.className).toContain("tabular-nums");
   });
 
   it("maintains label width when toggling ready states", async () => {
@@ -64,7 +57,7 @@ describe("ManualReadinessControl", () => {
     );
 
     const input = screen.getByRole("switch");
-    const labelBefore = screen.getByText("Not ready");
+    const labelBefore = screen.getByText("Ready");
 
     expect(labelBefore.className).toContain("min-w-[8rem]");
 
@@ -101,7 +94,7 @@ describe("ManualReadinessControl", () => {
       />,
     );
 
-    const label = screen.getByText("Ready (auto-ready)");
+    const label = screen.getByText("Ready");
     expect(label.className).toContain("min-w-[8rem]");
     expect(label.className).toContain("tabular-nums");
   });

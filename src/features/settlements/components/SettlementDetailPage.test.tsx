@@ -572,7 +572,7 @@ describe("SettlementDetailPage", () => {
     renderPage();
 
     const readinessToggle = await screen.findByRole("switch", {
-      name: "Not ready",
+      name: "Ready",
     });
     await userEvent.click(readinessToggle);
 

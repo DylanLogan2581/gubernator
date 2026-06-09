@@ -15,7 +15,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { citizenAggregateStatsForSettlementQueryOptions } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import {
@@ -25,7 +24,6 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementBuildingsBySettlementQueryOptions } from "../../queries/settlementBuildingsQueries";
-import { settlementPopulationCapQueryOptions } from "../../queries/settlementPopulationCapQueries";
 
 import { AddBuildingDialog } from "./AddBuildingDialog";
 import { BuildingRow } from "./BuildingRow";
@@ -52,17 +50,11 @@ export function SettlementBuildingsPanel({
   const buildingsQuery = useQuery(
     settlementBuildingsBySettlementQueryOptions(settlementId),
   );
-  const capQuery = useQuery(settlementPopulationCapQueryOptions(settlementId));
-  const citizensQuery = useQuery(
-    citizenAggregateStatsForSettlementQueryOptions(settlementId),
-  );
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
   const latestOutcome = useSettlementTransitionOutcome(settlementId);
   const queryClient = useQueryClient();
 
-  const capValue = capQuery.data ?? 0;
-  const citizenCount = citizensQuery.data?.statusBreakdown.alive ?? 0;
   const canAdd = canAdmin && !isArchived;
 
   const resourceNames = new Map(
@@ -95,23 +87,6 @@ export function SettlementBuildingsPanel({
             </Button>
           ) : null}
         </div>
-        <p className="text-sm text-muted-foreground">
-          {capQuery.isPending || citizensQuery.isPending ? (
-            "Loading population cap…"
-          ) : capQuery.isError || citizensQuery.isError ? (
-            "Population cap unavailable"
-          ) : (
-            <>
-              Population cap:{" "}
-              <span className="font-medium text-foreground">{capValue}</span>{" "}
-              (citizens:{" "}
-              <span className="font-medium text-foreground">
-                {citizenCount}
-              </span>
-              )
-            </>
-          )}
-        </p>
       </div>
 
       {buildingsQuery.isPending ? (

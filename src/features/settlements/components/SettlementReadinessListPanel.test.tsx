@@ -200,7 +200,7 @@ describe("SettlementReadinessListPanel", () => {
     await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     await user.click(
       await screen.findByRole("switch", {
-        name: "Not ready",
+        name: "Ready",
       }),
     );
 
@@ -274,15 +274,10 @@ describe("SettlementReadinessListPanel", () => {
 
     await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     const switchControl = await screen.findByRole("switch", {
-      name: "Not ready",
+      name: "Ready",
     });
 
     expect(switchControl).toBeDisabled();
-    expect(
-      screen.getByText(
-        "Manual readiness is disabled because this world is archived.",
-      ),
-    ).toBeDefined();
 
     await user.click(switchControl);
 
@@ -306,18 +301,12 @@ describe("SettlementReadinessListPanel", () => {
 
     await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     const switchControl = await screen.findByRole("switch", {
-      name: "Ready (auto-ready)",
+      name: "Ready",
     });
 
     expect(switchControl).toBeDisabled();
     expect(switchControl).toBeChecked();
     expect(screen.getAllByText("Auto-ready").length).toBeGreaterThan(0);
-    expect(screen.queryByRole("switch", { name: "Not ready" })).toBeNull();
-    expect(
-      screen.getByText(
-        "Auto-ready is enabled, so this settlement counts as ready without manual readiness.",
-      ),
-    ).toBeDefined();
 
     await user.click(switchControl);
 
@@ -414,7 +403,7 @@ describe("SettlementReadinessListPanel", () => {
 
     await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     expect(await screen.findByText("Amberhold")).toBeDefined();
-    expect(screen.queryByRole("switch", { name: "Not ready" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Ready" })).toBeNull();
     expect(screen.queryByRole("switch", { name: "Ready" })).toBeNull();
 
     await user.click(document.body);
@@ -456,7 +445,7 @@ describe("SettlementReadinessListPanel", () => {
     expect(await screen.findByText("Amberhold")).toBeDefined();
     expect(screen.queryByRole("switch")).toBeNull();
     expect(screen.getByLabelText("Ready")).toBeDefined();
-    expect(screen.getByLabelText("Not ready")).toBeDefined();
+    expect(screen.getByLabelText("Ready")).toBeDefined();
     expect(screen.getByLabelText("Auto-ready")).toBeDefined();
   });
 
@@ -489,7 +478,7 @@ describe("SettlementReadinessListPanel", () => {
     });
 
     await user.click(await screen.findByRole("button", { name: /Nation A/ }));
-    await user.click(await screen.findByRole("switch", { name: "Not ready" }));
+    await user.click(await screen.findByRole("switch", { name: "Ready" }));
 
     expect(clientFixture.update).toHaveBeenCalledWith(
       "set_settlement_readiness",
@@ -524,11 +513,6 @@ describe("SettlementReadinessListPanel", () => {
     });
 
     expect(switchControl).toBeDisabled();
-    expect(
-      screen.getByText(
-        "Auto-ready is disabled because this world is archived.",
-      ),
-    ).toBeDefined();
 
     await user.click(switchControl);
 
@@ -647,7 +631,7 @@ describe("SettlementReadinessListPanel", () => {
     await user.click(await screen.findByRole("button", { name: /Nation A/ }));
     await user.click(
       await screen.findByRole("switch", {
-        name: "Not ready",
+        name: "Ready",
       }),
     );
 

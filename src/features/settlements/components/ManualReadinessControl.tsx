@@ -2,11 +2,6 @@ import { cn } from "@/lib/utils";
 
 import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
 
-import {
-  getManualReadinessDescription,
-  getManualReadinessLabel,
-} from "./SettlementReadinessDisplayText";
-
 import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";
 import type { JSX } from "react";
 
@@ -24,42 +19,29 @@ export function ManualReadinessControl({
   setReadiness,
 }: ManualReadinessControlProps): JSX.Element {
   const state = deriveSettlementReadinessState(item);
-  const descriptionId = `settlement-readiness-${item.id}-description`;
   const isAutoReady = state.kind === "auto-ready";
   const isDisabled = isArchived || isAutoReady || isPending;
-  const description = getManualReadinessDescription({
-    isArchived,
-    isAutoReady,
-    isPending,
-  });
-  const label = getManualReadinessLabel(state);
 
   return (
-    <div className="grid gap-2">
-      <label className="inline-flex w-fit items-center gap-2 text-sm font-medium text-foreground">
-        <input
-          aria-describedby={descriptionId}
-          checked={state.isReadyForCurrentTurn}
-          className="peer sr-only"
-          disabled={isDisabled}
-          onChange={(event) => {
-            setReadiness(event.currentTarget.checked);
-          }}
-          role="switch"
-          type="checkbox"
-        />
-        <span
-          aria-hidden="true"
-          className={cn(
-            "relative h-5 w-9 rounded-full border border-border bg-muted transition-colors peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50 peer-disabled:opacity-50",
-            "after:absolute after:top-0.5 after:left-0.5 after:size-3.5 after:rounded-full after:bg-background after:shadow-sm after:transition-transform peer-checked:after:translate-x-4",
-          )}
-        />
-        <span className="min-w-[8rem] tabular-nums">{label}</span>
-      </label>
-      <p id={descriptionId} className="max-w-64 text-xs text-muted-foreground">
-        {description}
-      </p>
-    </div>
+    <label className="inline-flex w-fit items-center gap-2 text-sm font-medium text-foreground">
+      <input
+        checked={state.isReadyForCurrentTurn}
+        className="peer sr-only"
+        disabled={isDisabled}
+        onChange={(event) => {
+          setReadiness(event.currentTarget.checked);
+        }}
+        role="switch"
+        type="checkbox"
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          "relative h-5 w-9 rounded-full border border-border bg-muted transition-colors peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50 peer-disabled:opacity-50",
+          "after:absolute after:top-0.5 after:left-0.5 after:size-3.5 after:rounded-full after:bg-background after:shadow-sm after:transition-transform peer-checked:after:translate-x-4",
+        )}
+      />
+      <span className="min-w-[8rem] tabular-nums">Ready</span>
+    </label>
   );
 }
