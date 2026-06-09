@@ -16,6 +16,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorldsIndexRouteImport } from './routes/worlds.index'
 import { Route as SuperadminIndexRouteImport } from './routes/superadmin.index'
 import { Route as WorldsWorldIdRouteImport } from './routes/worlds.$worldId'
+import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as WorldsWorldIdIndexRouteImport } from './routes/worlds.$worldId.index'
 import { Route as WorldsWorldIdNationsRouteImport } from './routes/worlds.$worldId.nations'
 import { Route as WorldsWorldIdConfigurationRouteImport } from './routes/worlds.$worldId.configuration'
@@ -59,6 +61,16 @@ const WorldsWorldIdRoute = WorldsWorldIdRouteImport.update({
   id: '/$worldId',
   path: '/$worldId',
   getParentRoute: () => WorldsRoute,
+} as any)
+const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
+  id: '/auth/set-password',
+  path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const WorldsWorldIdIndexRoute = WorldsWorldIdIndexRouteImport.update({
   id: '/',
@@ -112,6 +124,8 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/superadmin': typeof SuperadminRouteWithChildren
   '/worlds': typeof WorldsRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/worlds/$worldId': typeof WorldsWorldIdRouteWithChildren
   '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
@@ -127,6 +141,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/superadmin': typeof SuperadminIndexRoute
   '/worlds': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
@@ -142,6 +158,8 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/superadmin': typeof SuperadminRouteWithChildren
   '/worlds': typeof WorldsRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
   '/worlds/$worldId': typeof WorldsWorldIdRouteWithChildren
   '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
@@ -161,6 +179,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/superadmin'
     | '/worlds'
+    | '/auth/callback'
+    | '/auth/set-password'
     | '/worlds/$worldId'
     | '/superadmin/'
     | '/worlds/'
@@ -176,6 +196,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/sign-in'
+    | '/auth/callback'
+    | '/auth/set-password'
     | '/superadmin'
     | '/worlds'
     | '/worlds/$worldId/configuration'
@@ -190,6 +212,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/superadmin'
     | '/worlds'
+    | '/auth/callback'
+    | '/auth/set-password'
     | '/worlds/$worldId'
     | '/superadmin/'
     | '/worlds/'
@@ -208,6 +232,8 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   SuperadminRoute: typeof SuperadminRouteWithChildren
   WorldsRoute: typeof WorldsRouteWithChildren
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthSetPasswordRoute: typeof AuthSetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -260,6 +286,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/worlds/$worldId'
       preLoaderRoute: typeof WorldsWorldIdRouteImport
       parentRoute: typeof WorldsRoute
+    }
+    '/auth/set-password': {
+      id: '/auth/set-password'
+      path: '/auth/set-password'
+      fullPath: '/auth/set-password'
+      preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/worlds/$worldId/': {
       id: '/worlds/$worldId/'
@@ -400,6 +440,8 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   SuperadminRoute: SuperadminRouteWithChildren,
   WorldsRoute: WorldsRouteWithChildren,
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthSetPasswordRoute: AuthSetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

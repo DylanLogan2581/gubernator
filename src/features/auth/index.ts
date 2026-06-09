@@ -1,6 +1,8 @@
 export {
   signInMutationOptions,
   signOutMutationOptions,
+  verifyOtpMutationOptions,
+  updatePasswordMutationOptions,
 } from "./mutations/authMutations";
 export { AuthNavigationControl } from "./components/AuthNavigationControl";
 export { SignInPage } from "./components/SignInPage";

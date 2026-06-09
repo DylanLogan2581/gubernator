@@ -38,6 +38,55 @@ Use only browser-safe values with the `VITE_` prefix. Do not put service-role ke
 
 Local Supabase Auth is configured to send email, OAuth, and recovery redirects back to the Vite dev app at `http://localhost:5173`, with `http://127.0.0.1:5173` also allowed for local browser testing.
 
+### Email & Magic-Link Setup
+
+Magic-link authentication requires SMTP configuration. For **local development**, the Supabase local environment includes **Inbucket**, a built-in email testing server that catches all outgoing emails without needing real credentials.
+
+#### Local Development (with Inbucket)
+
+When you run `supabase start`, Inbucket is automatically available at `http://localhost:54324`. Configure your `.env` with:
+
+```env
+SUPABASE_SMTP_HOST=localhost
+SUPABASE_SMTP_PORT=54324
+SUPABASE_SMTP_USER=
+SUPABASE_SMTP_PASS=
+SUPABASE_SMTP_ADMIN_EMAIL=noreply@gubernator.local
+SUPABASE_SMTP_SENDER_NAME=Gubernator
+```
+
+The empty `SUPABASE_SMTP_USER` and `SUPABASE_SMTP_PASS` are intentional — Inbucket requires no authentication.
+
+**To view sent emails locally:**
+
+1. Start Supabase and the dev app: `supabase start` and `npm run dev`
+2. Create a user with magic-link via the admin panel → Users dialog → "Send magic link instead"
+3. Open the Inbucket dashboard: `http://localhost:54324`
+4. Find the magic-link email and copy the link
+5. Paste the link into your browser to verify the callback flow
+
+#### Production (SendGrid, Postmark, Resend, etc.)
+
+For hosted Supabase or production deployments, replace the SMTP values with your email provider's credentials:
+
+```env
+# Example for SendGrid (https://sendgrid.com)
+SUPABASE_SMTP_HOST=smtp.sendgrid.net
+SUPABASE_SMTP_PORT=587
+SUPABASE_SMTP_USER=apikey
+SUPABASE_SMTP_PASS=SG.your-api-key-here
+SUPABASE_SMTP_ADMIN_EMAIL=noreply@yourcompany.com
+SUPABASE_SMTP_SENDER_NAME=Your App Name
+```
+
+For other providers:
+
+- **Postmark** (`smtp.postmarkapp.com:587`) — use Server API token as password
+- **Resend** (`smtp.resend.com:465`) — use API key as password
+- **AWS SES** — use SMTP credentials from the SES console
+
+Ensure your provider allows the sender email address to send on behalf of your domain.
+
 ### 3. Apply database migrations
 
 Requires the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and a local Supabase instance running:
