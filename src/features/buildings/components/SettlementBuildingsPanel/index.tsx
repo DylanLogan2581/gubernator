@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -79,10 +79,12 @@ export function SettlementBuildingsPanel({
             <Button
               size="sm"
               type="button"
+              variant="outline"
               onClick={() => {
                 setAddOpen(true);
               }}
             >
+              <Plus aria-hidden="true" />
               Add building
             </Button>
           ) : null}

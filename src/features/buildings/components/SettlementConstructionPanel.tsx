@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useId, useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -133,10 +133,12 @@ export function SettlementConstructionPanel({
             <Button
               size="sm"
               type="button"
+              variant="outline"
               onClick={() => {
                 setCreateOpen(true);
               }}
             >
+              <Plus aria-hidden="true" />
               Start construction
             </Button>
           ) : null}
