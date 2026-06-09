@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Save, Sparkles, X } from "lucide-react";
+import { Save, Sparkles } from "lucide-react";
 import { Tabs } from "radix-ui";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
@@ -14,13 +14,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogOverlay,
-  DialogPortal,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { generateNpcFlavor, renderNpcFlavorLine } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -257,27 +251,9 @@ function WorldNpcFlavorConfigPanelContent({
           </form>
 
           <Dialog open={exampleDialogOpen} onOpenChange={setExampleDialogOpen}>
-            <DialogPortal>
-              <DialogOverlay />
-              <DialogContent className="sm:max-w-md">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="text-sm text-foreground">{exampleOutput}</p>
-                  </div>
-                  <DialogClose asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0"
-                      aria-label="Close"
-                    >
-                      <X className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  </DialogClose>
-                </div>
-              </DialogContent>
-            </DialogPortal>
+            <DialogContent className="sm:max-w-md">
+              <p className="text-sm text-foreground">{exampleOutput}</p>
+            </DialogContent>
           </Dialog>
         </>
       ) : (
