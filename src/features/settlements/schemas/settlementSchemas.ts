@@ -30,8 +30,9 @@ const optionalSettlementDescriptionSchema = z
   .optional();
 
 const coordinateSchema = z
-  .number()
-  .finite("Coordinates must be finite numbers.");
+  .int("Coordinates must be whole numbers.")
+  .min(-33554432, "Coordinate must be at least -33,554,432.")
+  .max(33554432, "Coordinate must be at most 33,554,432.");
 
 const optionalCoordinateSchema = z
   .union([coordinateSchema, z.null()])

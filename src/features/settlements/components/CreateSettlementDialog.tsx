@@ -164,7 +164,7 @@ export function CreateSettlementDialog({
                 }}
                 placeholder="Optional"
                 disabled={mutation.isPending}
-                step="any"
+                step="1"
               />
             </div>
 
@@ -181,7 +181,7 @@ export function CreateSettlementDialog({
                 }}
                 placeholder="Optional"
                 disabled={mutation.isPending}
-                step="any"
+                step="1"
               />
             </div>
           </div>
