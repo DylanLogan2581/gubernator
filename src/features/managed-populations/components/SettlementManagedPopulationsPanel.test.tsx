@@ -87,6 +87,7 @@ type TestTypeRow = {
   readonly growth_rate: number;
   readonly maintenance_rules_json: unknown[];
   readonly culling_outputs_json: unknown[];
+  readonly regular_outputs_json: unknown[];
   readonly is_trashed: boolean;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
   readonly created_at: string;
@@ -105,6 +106,7 @@ function createTypeRow(overrides: Partial<TestTypeRow> = {}): TestTypeRow {
     growth_rate: 0.05,
     maintenance_rules_json: [],
     culling_outputs_json: [],
+    regular_outputs_json: [],
     is_trashed: false,
     referencing_jobs: [],
     created_at: "2026-05-01T00:00:00.000Z",

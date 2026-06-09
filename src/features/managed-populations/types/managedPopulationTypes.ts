@@ -15,6 +15,7 @@ export type ManagedPopulationType = {
   readonly isTrashed: boolean;
   readonly maintenanceRulesJson: readonly PopulationResourceEntry[];
   readonly name: string;
+  readonly regularOutputsJson: readonly PopulationResourceEntry[];
   readonly slug: string;
   readonly updatedAt: string;
   readonly worldId: string;

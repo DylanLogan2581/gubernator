@@ -1135,7 +1135,6 @@ export type Database = {
         Row: {
           base_stockpile_cap: number;
           created_at: string;
-          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -1148,7 +1147,6 @@ export type Database = {
         Insert: {
           base_stockpile_cap?: number;
           created_at?: string;
-          decay_rate?: number;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1161,7 +1159,6 @@ export type Database = {
         Update: {
           base_stockpile_cap?: number;
           created_at?: string;
-          decay_rate?: number;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;

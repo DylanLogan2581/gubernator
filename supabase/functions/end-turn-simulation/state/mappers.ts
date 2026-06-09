@@ -242,6 +242,7 @@ export function toSimManagedPopType(
     id: row.id,
     maintenanceRulesJson: toSimPopResourceEntries(row.maintenance_rules_json),
     name: row.name,
+    regularOutputsJson: toSimPopResourceEntries(row.regular_outputs_json),
   };
 }
 

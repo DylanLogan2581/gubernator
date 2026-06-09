@@ -274,6 +274,7 @@ function makeAllSuccessResponses(): Record<
             { amount_per_n_animals: 0.5, resource_id: FOOD_ID },
           ],
           name: "Sheep",
+          regular_outputs_json: [],
         },
       ],
       status: 200,

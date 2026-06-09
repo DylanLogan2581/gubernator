@@ -26,6 +26,7 @@ type ManagedPopulationTypeRow = {
   readonly maintenance_rules_json: ReadonlyArray<unknown>;
   readonly name: string;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
+  readonly regular_outputs_json: ReadonlyArray<unknown>;
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -134,6 +135,7 @@ function createMptRow(
     maintenance_rules_json: [],
     name: "Cattle",
     referencing_jobs: [],
+    regular_outputs_json: [],
     slug: "cattle",
     updated_at: "2026-05-01T00:00:00.000Z",
     world_id: WORLD_ID,

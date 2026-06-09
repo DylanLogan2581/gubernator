@@ -209,6 +209,7 @@ export type SimManagedPopulationType = {
   readonly id: string;
   readonly maintenanceRulesJson: readonly SimPopulationResourceEntry[];
   readonly name: string;
+  readonly regularOutputsJson: readonly SimPopulationResourceEntry[];
 };
 
 export type SimManagedPopulationStatus = "active" | "extinct";

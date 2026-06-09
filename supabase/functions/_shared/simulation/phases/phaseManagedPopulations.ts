@@ -99,6 +99,24 @@ export function phaseManagedPopulations(
     const husbandryNeeded = type.husbandryWorkersPerNAnimals * currentCount;
     const husbandryCoverage = scaleDeficit(husbandryNeeded, husbandryWorkers);
 
+    // --- Regular outputs ---
+    // Fulfillment = min of maintenance and husbandry coverage.
+    // Produce scaled amounts for each regular output entry.
+    const fulfillment = Math.min(maintenanceCoverage, husbandryCoverage);
+    for (const entry of type.regularOutputsJson) {
+      const produced = Math.floor(
+        entry.amountPerNAnimals * currentCount * fulfillment,
+      );
+      if (produced <= 0) continue;
+      const key = `${sid}:${entry.resourceId}`;
+      allDeltas.push({
+        delta: produced,
+        resourceId: entry.resourceId,
+        settlementId: sid,
+      });
+      stockpileQty.set(key, (stockpileQty.get(key) ?? 0) + produced);
+    }
+
     // --- Growth / decline ---
     const fullySupported =
       maintenanceCoverage >= 1.0 && husbandryCoverage >= 1.0;

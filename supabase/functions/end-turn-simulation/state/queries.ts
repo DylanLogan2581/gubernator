@@ -261,7 +261,7 @@ export function fetchManagedPopTypes(
       is_trashed: "eq.false",
       order: "id.asc",
       select:
-        "id,name,husbandry_job_id,culling_job_id,husbandry_workers_per_n_animals,growth_rate,maintenance_rules_json,culling_outputs_json",
+        "id,name,husbandry_job_id,culling_job_id,husbandry_workers_per_n_animals,growth_rate,maintenance_rules_json,culling_outputs_json,regular_outputs_json",
     },
   });
 }

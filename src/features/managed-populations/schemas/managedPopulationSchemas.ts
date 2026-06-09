@@ -54,6 +54,7 @@ export const createManagedPopulationTypeInputSchema = z
     husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema,
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     name: populationTypeNameSchema,
+    regularOutputsJson: populationResourceArraySchema.optional(),
     slug: populationTypeSlugSchema,
     worldId: worldIdSchema,
   })
@@ -77,6 +78,7 @@ export const updateManagedPopulationTypeInputSchema = z
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     managedPopulationTypeId: managedPopulationTypeIdSchema,
     name: populationTypeNameSchema.optional(),
+    regularOutputsJson: populationResourceArraySchema.optional(),
     slug: populationTypeSlugSchema.optional(),
     worldId: worldIdSchema,
   })
@@ -89,7 +91,8 @@ export const updateManagedPopulationTypeInputSchema = z
       value.husbandryWorkersPerNAnimals === undefined &&
       value.growthRate === undefined &&
       value.maintenanceRulesJson === undefined &&
-      value.cullingOutputsJson === undefined
+      value.cullingOutputsJson === undefined &&
+      value.regularOutputsJson === undefined
     ) {
       ctx.addIssue({
         code: "custom",

@@ -721,6 +721,9 @@ function CreateManagedPopulationTypeForm({
   const [cullingOutputs, setCullingOutputs] = useState<ResourceAmountEntry[]>(
     [],
   );
+  const [regularOutputs, setRegularOutputs] = useState<ResourceAmountEntry[]>(
+    [],
+  );
   const [fieldErrors, setFieldErrors] =
     useState<ManagedPopulationTypeFieldErrors>({});
   const [husbandryJobLinkError, setHusbandryJobLinkError] = useState<
@@ -799,6 +802,13 @@ function CreateManagedPopulationTypeForm({
             }))
           : undefined,
       name,
+      regularOutputsJson:
+        regularOutputs.length > 0
+          ? regularOutputs.map((e) => ({
+              amountPerNAnimals: parseFloat(e.amount),
+              resourceId: e.resourceId,
+            }))
+          : undefined,
       slug: derivedSlug,
       worldId,
     };
@@ -885,6 +895,15 @@ function CreateManagedPopulationTypeForm({
               resources={resources}
               onChange={setCullingOutputs}
             />
+            <ResourceAmountListEditor
+              addLabel="Add entry"
+              amountLabel="amount per N animals"
+              disabled={isPending}
+              entries={regularOutputs}
+              label="Regular outputs"
+              resources={resources}
+              onChange={setRegularOutputs}
+            />
           </div>
           <DialogFooter>
             <Button
@@ -960,6 +979,13 @@ function EditManagedPopulationTypeForm({
   );
   const [cullingOutputs, setCullingOutputs] = useState<ResourceAmountEntry[]>(
     populationType.cullingOutputsJson.map((e) => ({
+      amount: String(e.amountPerNAnimals),
+      id: generateLocalId(),
+      resourceId: e.resourceId,
+    })),
+  );
+  const [regularOutputs, setRegularOutputs] = useState<ResourceAmountEntry[]>(
+    populationType.regularOutputsJson.map((e) => ({
       amount: String(e.amountPerNAnimals),
       id: generateLocalId(),
       resourceId: e.resourceId,
@@ -1044,6 +1070,10 @@ function EditManagedPopulationTypeForm({
       })),
       managedPopulationTypeId: populationType.id,
       name,
+      regularOutputsJson: regularOutputs.map((e) => ({
+        amountPerNAnimals: parseFloat(e.amount),
+        resourceId: e.resourceId,
+      })),
       slug,
       worldId,
     };
@@ -1150,6 +1180,15 @@ function EditManagedPopulationTypeForm({
           label="Culling outputs"
           resources={resources}
           onChange={setCullingOutputs}
+        />
+        <ResourceAmountListEditor
+          addLabel="Add entry"
+          amountLabel="amount per N animals"
+          disabled={isPending}
+          entries={regularOutputs}
+          label="Regular outputs"
+          resources={resources}
+          onChange={setRegularOutputs}
         />
       </div>
       <div className="flex items-center justify-between gap-2">

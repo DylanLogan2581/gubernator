@@ -136,6 +136,7 @@ export type SupabaseManagedPopTypeRow = {
   readonly growth_rate: number;
   readonly maintenance_rules_json: unknown;
   readonly culling_outputs_json: unknown;
+  readonly regular_outputs_json: unknown;
 };
 
 export type SupabaseManagedPopRow = {
