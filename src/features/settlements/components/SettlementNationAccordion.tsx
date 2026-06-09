@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { useMemo } from "react";
 
 import {
@@ -100,6 +100,13 @@ function NationAccordionRow({
           <span>
             {formatSettlementReadinessPercentage(group.readyPercentage)}
           </span>
+          <div className="w-5 h-5 shrink-0 flex items-center justify-center">
+            {allReady ? (
+              <Check className="w-4 h-4 text-green-600 dark:text-green-500" />
+            ) : (
+              <X className="w-4 h-4 text-red-600 dark:text-red-500" />
+            )}
+          </div>
           <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
         </div>
       </CollapsibleTrigger>
