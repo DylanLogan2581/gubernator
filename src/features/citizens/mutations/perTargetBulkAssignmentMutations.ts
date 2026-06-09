@@ -19,6 +19,7 @@ import {
 } from "../schemas/setPerTargetBulkAssignmentSchemas";
 
 import type { PerTargetBulkAssignmentResult } from "../types/bulkAssignmentTypes";
+import type { CitizenAggregateStats } from "../types/citizenTypes";
 import type { z } from "zod";
 
 type PerTargetBulkAssignmentMutationErrorCode =
@@ -61,8 +62,23 @@ export function setPerTargetBulkAssignmentMutationOptions({
     mutationFn: (input: SetPerTargetBulkAssignmentInput) =>
       setPerTargetBulkAssignment(client, input),
     mutationKey: [...citizensQueryKeys.all, "set-per-target-bulk-assignment"],
-    onSuccess: async (_result, input): Promise<void> => {
+    onSuccess: async (result, input): Promise<void> => {
       const values = setPerTargetBulkAssignmentInputSchema.parse(input);
+      const delta = result.after - result.before;
+
+      // Optimistically update aggregate stats cache so unassigned count reflects immediately
+      queryClient.setQueryData(
+        citizensQueryKeys.settlementAggregateStats(values.settlementId),
+        (prev: CitizenAggregateStats | undefined) => {
+          if (prev === null || prev === undefined) return prev;
+          return {
+            ...prev,
+            unassignedNpcCount: Math.max(0, prev.unassignedNpcCount - delta),
+          };
+        },
+      );
+
+      // Invalidate queries to ensure consistency on background refresh
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: citizensQueryKeys.assignmentsInSettlement(

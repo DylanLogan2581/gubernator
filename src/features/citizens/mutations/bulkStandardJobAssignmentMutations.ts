@@ -18,7 +18,11 @@ import {
   type SetBulkStandardJobAssignmentInput,
 } from "../schemas/setBulkStandardJobAssignmentSchemas";
 
-import type { BulkStandardJobAssignmentResult } from "../types/bulkAssignmentTypes";
+import type {
+  BulkStandardJobAssignmentResult,
+  SettlementJobCount,
+} from "../types/bulkAssignmentTypes";
+import type { CitizenAggregateStats } from "../types/citizenTypes";
 import type { z } from "zod";
 
 type BulkStandardJobAssignmentMutationErrorCode =
@@ -61,8 +65,36 @@ export function setBulkStandardJobAssignmentMutationOptions({
     mutationFn: (input: SetBulkStandardJobAssignmentInput) =>
       setBulkStandardJobAssignment(client, input),
     mutationKey: [...citizensQueryKeys.all, "set-bulk-standard-job-assignment"],
-    onSuccess: async (_result, input): Promise<void> => {
+    onSuccess: async (result, input): Promise<void> => {
       const values = setBulkStandardJobAssignmentInputSchema.parse(input);
+      const delta = result.after - result.before;
+
+      // Optimistically update job counts cache so all rows see the change immediately
+      queryClient.setQueryData(
+        citizensQueryKeys.settlementJobCounts(values.settlementId),
+        (prev: readonly SettlementJobCount[] | undefined) => {
+          if (prev === null || prev === undefined) return prev;
+          return prev.map((job) =>
+            job.jobId === values.jobId
+              ? { ...job, currentCount: result.after }
+              : job,
+          );
+        },
+      );
+
+      // Optimistically update aggregate stats cache (unassigned count) so it reflects immediately
+      queryClient.setQueryData(
+        citizensQueryKeys.settlementAggregateStats(values.settlementId),
+        (prev: CitizenAggregateStats | undefined) => {
+          if (prev === null || prev === undefined) return prev;
+          return {
+            ...prev,
+            unassignedNpcCount: Math.max(0, prev.unassignedNpcCount - delta),
+          };
+        },
+      );
+
+      // Invalidate queries to ensure consistency on background refresh
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: citizensQueryKeys.assignmentsInSettlement(
