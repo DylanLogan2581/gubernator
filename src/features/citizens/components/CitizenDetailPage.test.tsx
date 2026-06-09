@@ -64,7 +64,7 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
 }));
 
-vi.mock("./PartnershipHistoryPanel", () => ({
+vi.mock("@/features/partnerships", () => ({
   PartnershipHistoryPanel: () => (
     <div data-testid="partnership-history-panel" />
   ),

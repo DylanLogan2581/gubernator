@@ -3,9 +3,10 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PartnershipHistoryPanel } from "./PartnershipHistoryPanel";
+import type { Citizen } from "@/features/citizens";
 
-import type { Citizen } from "../types/citizenTypes";
+import { PartnershipHistoryPanel } from "./index";
+
 import type { ReactNode } from "react";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({

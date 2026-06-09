@@ -1,12 +1,11 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { citizensQueryKeys } from "@/features/citizens";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
-
-import { citizensQueryKeys } from "./citizensQueryKeys";
 
 import type { Partnership, PartnershipStatus } from "../types/partnershipTypes";
 

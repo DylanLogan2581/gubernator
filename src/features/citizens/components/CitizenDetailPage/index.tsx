@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PartnershipHistoryPanel } from "@/features/partnerships";
 import {
   currentAccessContextQueryOptions,
   type AccessContext,
@@ -19,7 +20,6 @@ import {
   citizenAdminDetailsQueryOptions,
   citizenByIdQueryOptions,
 } from "../../queries/citizensQueries";
-import { PartnershipHistoryPanel } from "../PartnershipHistoryPanel";
 
 import { CitizenAssignmentSection } from "./AssignmentSection";
 import { CitizenDetailFrame } from "./CitizenDetailFrame";

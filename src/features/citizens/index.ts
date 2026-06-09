@@ -5,7 +5,8 @@ export { CitizensPanel } from "./components/CitizensPanel";
 export { SettlementAssignmentBoard } from "./components/SettlementAssignmentBoard";
 export { NpcFlavorLine } from "./components/NpcFlavorLine";
 export { NpcFlavorEditor } from "./components/NpcFlavorEditor";
-export { PartnershipHistoryPanel } from "./components/PartnershipHistoryPanel";
+// Partnership exports moved to partnerships feature; re-exported for backward compatibility
+export { PartnershipHistoryPanel } from "@/features/partnerships";
 export {
   BulkConstructionPoolMutationError,
   isBulkConstructionPoolMutationError,
@@ -38,7 +39,7 @@ export {
   markPartnershipWidowedMutationOptions,
   PartnershipMutationError,
   reassignPartnerMutationOptions,
-} from "./mutations/partnershipsMutations";
+} from "@/features/partnerships";
 export {
   assignCitizenRoleMutationOptions,
   isPlayerCharacterRoleMutationError,
@@ -80,7 +81,7 @@ export { citizensQueryKeys } from "./queries/citizensQueryKeys";
 export {
   activePartnershipForCitizenQueryOptions,
   partnershipsForCitizenQueryOptions,
-} from "./queries/partnershipsQueries";
+} from "@/features/partnerships";
 export { setBulkConstructionPoolInputSchema } from "./schemas/setBulkConstructionPoolSchemas";
 export { setBulkStandardJobAssignmentInputSchema } from "./schemas/setBulkStandardJobAssignmentSchemas";
 export { setPerTargetAssignmentInputSchema } from "./schemas/setPerTargetAssignmentSchemas";
@@ -102,13 +103,13 @@ export {
   dissolvePartnershipInputSchema,
   markPartnershipWidowedInputSchema,
   reassignPartnerInputSchema,
-} from "./schemas/partnershipSchemas";
+} from "@/features/partnerships";
 
 export type { BulkConstructionPoolMutationIssue } from "./mutations/bulkConstructionPoolMutations";
 export type { BulkStandardJobAssignmentMutationIssue } from "./mutations/bulkStandardJobAssignmentMutations";
 export type { PerTargetAssignmentMutationIssue } from "./mutations/perTargetAssignmentMutations";
 export type { CitizenMutationIssue } from "./mutations/citizensMutations";
-export type { PartnershipMutationIssue } from "./mutations/partnershipsMutations";
+export type { PartnershipMutationIssue } from "@/features/partnerships";
 export type { PlayerCharacterRoleMutationIssue } from "./mutations/playerCharacterRoleMutations";
 export type {
   SetBulkConstructionPoolInput,
@@ -155,7 +156,7 @@ export type {
   MarkPartnershipWidowedValues,
   ReassignPartnerInput,
   ReassignPartnerValues,
-} from "./schemas/partnershipSchemas";
+} from "@/features/partnerships";
 export type { CitizenRow } from "./queries/citizensQueries";
 export type {
   BulkConstructionAssignmentResult,
@@ -177,4 +178,4 @@ export type {
   CitizenType,
   CitizenTypeBreakdown,
 } from "./types/citizenTypes";
-export type { Partnership, PartnershipStatus } from "./types/partnershipTypes";
+export type { Partnership, PartnershipStatus } from "@/features/partnerships";

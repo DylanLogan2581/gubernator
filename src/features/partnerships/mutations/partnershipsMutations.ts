@@ -1,10 +1,11 @@
 import {
-  mutationOptions,
   type QueryClient,
   type UseMutationOptions,
+  mutationOptions,
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { citizensQueryKeys } from "@/features/citizens";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -12,7 +13,6 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
-import { citizensQueryKeys } from "../queries/citizensQueryKeys";
 import {
   toPartnership,
   type PartnershipRow,
