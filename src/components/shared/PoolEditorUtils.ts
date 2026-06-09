@@ -17,10 +17,14 @@ export function parseBulkPaste(
 }
 
 export function sanitizePoolEntries(entries: readonly string[]): string[] {
+  const seen = new Set<string>();
   const result: string[] = [];
   for (const entry of entries) {
     const trimmed = entry.trim();
-    if (trimmed !== "") result.push(trimmed);
+    if (trimmed !== "" && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      result.push(trimmed);
+    }
   }
   return result;
 }

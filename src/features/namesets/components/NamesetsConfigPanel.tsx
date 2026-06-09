@@ -35,6 +35,7 @@ import {
 import {
   createNamesetMutationOptions,
   hardDeleteNamesetMutationOptions,
+  isNamesetMutationError,
   restoreNamesetMutationOptions,
   setDefaultNamesetMutationOptions,
   softDeleteNamesetMutationOptions,
@@ -43,6 +44,18 @@ import {
 import { namesetsByWorldQueryOptions } from "../queries/namesetsQueries";
 
 import type { Nameset } from "../types/namesetTypes";
+
+function formatMutationError(error: unknown): string {
+  if (isNamesetMutationError(error)) {
+    if (error.issues.length > 0) {
+      const issue = error.issues[0];
+      const fieldPath =
+        issue.path.length > 0 ? `${String(issue.path[0])}: ` : "";
+      return `${fieldPath}${issue.message}`;
+    }
+  }
+  return error instanceof Error ? error.message : "Failed to save nameset.";
+}
 
 type NamesetsConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -186,11 +199,7 @@ function NamesetsConfigPanelContent({
               { worldId, name, configJson },
               {
                 onError: (error) => {
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Failed to create nameset.",
-                  );
+                  toast.error(formatMutationError(error));
                 },
                 onSuccess: () => {
                   notifyMutationSuccess("Nameset created.");
@@ -518,9 +527,7 @@ function EditNamesetForm({
       notifyMutationSuccess("Nameset saved.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save nameset.",
-      );
+      toast.error(formatMutationError(error));
     }
   }
 
