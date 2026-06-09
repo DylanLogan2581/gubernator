@@ -7,6 +7,7 @@ import {
   getRequiredRuntimeEnv,
   getRequiredRuntimeUrl,
 } from "../_shared/http/env.ts";
+import { isRecord } from "../_shared/http/guards.ts";
 import { classifyHttpError, supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import {
@@ -360,22 +361,18 @@ async function createAuthUser(
 function isAuthAdminUserPayload(
   value: unknown,
 ): value is { readonly id: string; readonly email: string } {
-  if (typeof value !== "object" || value === null) {
+  if (!isRecord(value)) {
     return false;
   }
-  const record = value as Record<string, unknown>;
-  return (
-    typeof record["id"] === "string" && typeof record["email"] === "string"
-  );
+  return typeof value["id"] === "string" && typeof value["email"] === "string";
 }
 
 function extractErrorMessage(body: unknown): string | undefined {
-  if (typeof body !== "object" || body === null) {
+  if (!isRecord(body)) {
     return undefined;
   }
-  const record = body as Record<string, unknown>;
-  if (typeof record["msg"] === "string") return record["msg"];
-  if (typeof record["message"] === "string") return record["message"];
+  if (typeof body["msg"] === "string") return body["msg"];
+  if (typeof body["message"] === "string") return body["message"];
   return undefined;
 }
 
