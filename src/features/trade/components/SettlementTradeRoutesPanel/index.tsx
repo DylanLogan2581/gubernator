@@ -47,17 +47,15 @@ function formatCancelledDate(timestamp: string): string {
 }
 
 type SettlementTradeRoutesPanelProps = {
-  readonly canAdmin: boolean;
+  readonly canManage: boolean;
   readonly isArchived: boolean;
-  readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
 };
 
 export function SettlementTradeRoutesPanel({
-  canAdmin,
+  canManage,
   isArchived,
-  nationId,
   settlementId,
   worldId,
 }: SettlementTradeRoutesPanelProps): JSX.Element {
@@ -74,20 +72,7 @@ export function SettlementTradeRoutesPanel({
   );
   const latestOutcome = useWorldTransitionOutcome(worldId);
 
-  const isNationManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nationId &&
-    activeCharacter.status === "alive";
-  const isSettlementManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "settlement_manager" &&
-    activeCharacter.roleSettlementId === settlementId &&
-    activeCharacter.status === "alive";
-  const canManageRoutes =
-    !isArchived &&
-    activeCharacter !== null &&
-    (canAdmin || isNationManager || isSettlementManager);
+  const canManageRoutes = !isArchived && canManage;
 
   const resumedRouteIds = new Set<string>();
   if (latestOutcome !== null) {
@@ -151,10 +136,7 @@ export function SettlementTradeRoutesPanel({
               Cancelled ({cancelledRoutes.length})
             </Button>
           ) : null}
-          {canManageRoutes &&
-          !routesQuery.isPending &&
-          activeCharacter !== null &&
-          !showCancelled ? (
+          {canManageRoutes && !routesQuery.isPending && !showCancelled ? (
             <Button
               size="sm"
               type="button"
@@ -169,9 +151,9 @@ export function SettlementTradeRoutesPanel({
           ) : null}
         </div>
       </div>
-      {showProposeDialog && activeCharacter !== null ? (
+      {showProposeDialog ? (
         <ProposeTradeRouteDialog
-          activeCharacterId={activeCharacter.id}
+          activeCharacterId={activeCharacter?.id ?? ""}
           queryClient={queryClient}
           settlementId={settlementId}
           worldId={worldId}

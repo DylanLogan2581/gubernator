@@ -342,9 +342,8 @@ function createClient({
 
 function renderPanel(
   props: Partial<{
-    canAdmin: boolean;
+    canManage: boolean;
     isArchived: boolean;
-    nationId: string;
     settlementId: string;
     worldId: string;
   }> = {},
@@ -356,9 +355,8 @@ function renderPanel(
   render(
     <QueryClientProvider client={queryClient}>
       <SettlementTradeRoutesPanel
-        canAdmin={props.canAdmin ?? false}
+        canManage={props.canManage ?? false}
         isArchived={props.isArchived ?? false}
-        nationId={props.nationId ?? NATION_ID}
         settlementId={props.settlementId ?? SETTLEMENT_ID}
         worldId={props.worldId ?? WORLD_ID}
       />
@@ -474,7 +472,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel({ canAdmin: false });
+    renderPanel({ canManage: true });
 
     await screen.findByText("No trade routes");
     expect(
@@ -494,7 +492,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel({ canAdmin: false });
+    renderPanel({ canManage: true });
 
     await screen.findByText("No trade routes");
     expect(
@@ -505,7 +503,7 @@ describe("SettlementTradeRoutesPanel", () => {
   it("hides propose button from non-managers", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ routeRows: [] }));
 
-    renderPanel({ canAdmin: false });
+    renderPanel({ canManage: false });
 
     await screen.findByText("No trade routes");
     expect(
@@ -525,7 +523,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel({ canAdmin: false, isArchived: true });
+    renderPanel({ canManage: true, isArchived: true });
 
     await screen.findByText("No trade routes");
     expect(
@@ -557,7 +555,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Outgoing (1)");
     expect(
@@ -597,7 +595,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Outgoing (1)");
     expect(
@@ -620,7 +618,7 @@ describe("SettlementTradeRoutesPanel", () => {
       }),
     );
 
-    renderPanel({ canAdmin: false });
+    renderPanel({ canManage: false });
 
     await screen.findByText("Outgoing (1)");
     expect(
@@ -670,7 +668,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Outgoing (1)");
     await user.click(
@@ -743,7 +741,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Outgoing (1)");
     await user.click(
@@ -805,7 +803,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Outgoing (1)");
     await user.click(
@@ -880,7 +878,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Outgoing (1)");
     await user.click(
@@ -949,7 +947,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Outgoing (1)");
     await user.click(
@@ -1005,7 +1003,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("No trade routes");
     await user.click(
@@ -1097,7 +1095,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Outgoing (1)");
     await user.click(
@@ -1173,7 +1171,7 @@ describe("SettlementTradeRoutesPanel", () => {
       },
     });
 
-    renderPanel();
+    renderPanel({ canManage: true });
 
     await screen.findByText("Incoming (1)");
     expect(

@@ -353,9 +353,8 @@ function SettlementDetailLoaded({
       />
 
       <SettlementTradeRoutesPanel
-        canAdmin={worldAccess.canAdmin}
+        canManage={canManageSettlement}
         isArchived={isArchived}
-        nationId={settlement.nationId}
         settlementId={settlement.id}
         worldId={worldId}
       />
