@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -125,15 +125,17 @@ export function SettlementTradeRoutesPanel({
         <div className="flex items-center gap-2">
           {!routesQuery.isPending && !routesQuery.isError ? (
             <Button
+              aria-label={showCancelled ? "Hide cancelled" : "Show cancelled"}
               aria-pressed={showCancelled}
-              size="sm"
+              size="icon-sm"
+              title={showCancelled ? "Hide cancelled" : "Show cancelled"}
               type="button"
               variant={showCancelled ? "secondary" : "ghost"}
               onClick={() => {
                 setShowCancelled((v) => !v);
               }}
             >
-              Cancelled ({cancelledRoutes.length})
+              <Trash2 aria-hidden="true" />
             </Button>
           ) : null}
           {canManageRoutes && !routesQuery.isPending && !showCancelled ? (

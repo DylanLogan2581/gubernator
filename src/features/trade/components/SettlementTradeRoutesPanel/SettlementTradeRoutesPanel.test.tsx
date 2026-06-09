@@ -1382,7 +1382,9 @@ describe("SettlementTradeRoutesPanel", () => {
     renderPanel();
 
     await screen.findByText("Outgoing (1)");
-    expect(screen.getByRole("button", { name: "Cancelled (1)" })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: "Show cancelled" }),
+    ).toBeDefined();
   });
 
   it("toggling Cancelled tab reveals cancelled and replaced routes", async () => {
@@ -1410,7 +1412,7 @@ describe("SettlementTradeRoutesPanel", () => {
 
     await screen.findByText("Outgoing (1)");
 
-    await user.click(screen.getByRole("button", { name: "Cancelled (1)" }));
+    await user.click(screen.getByRole("button", { name: "Show cancelled" }));
 
     await screen.findByText("Outgoing (1)");
     expect(screen.getByText("Cancelled")).toBeDefined();
@@ -1444,9 +1446,9 @@ describe("SettlementTradeRoutesPanel", () => {
 
     renderPanel();
 
-    await screen.findByText("Cancelled (1)");
+    await screen.findByRole("button", { name: "Show cancelled" });
 
-    await user.click(screen.getByRole("button", { name: "Cancelled (1)" }));
+    await user.click(screen.getByRole("button", { name: "Show cancelled" }));
 
     await screen.findByText("Outgoing (1)");
     expect(
@@ -1482,9 +1484,40 @@ describe("SettlementTradeRoutesPanel", () => {
 
     await screen.findByText("Outgoing (1)");
 
-    await user.click(screen.getByRole("button", { name: "Cancelled (0)" }));
+    await user.click(screen.getByRole("button", { name: "Show cancelled" }));
 
     expect(await screen.findByText("No cancelled trade routes")).toBeDefined();
+  });
+
+  it("cancelled toggle button aria-pressed reflects visibility state", async () => {
+    const user = userEvent.setup();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        routeRows: [
+          createRouteRow({ status: "active" }),
+          createRouteRow({
+            id: ROUTE_ID_2,
+            status: "cancelled",
+            origin_approval_status: "approved",
+            destination_approval_status: "approved",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel();
+
+    await screen.findByText("Outgoing (1)");
+    const toggleBtn = screen.getByRole("button", { name: "Show cancelled" });
+    expect(toggleBtn).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(toggleBtn);
+
+    expect(toggleBtn).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Hide cancelled" })).toBe(
+      toggleBtn,
+    );
   });
 
   it("propose button is hidden in cancelled view", async () => {
@@ -1514,9 +1547,9 @@ describe("SettlementTradeRoutesPanel", () => {
 
     renderPanel();
 
-    await screen.findByText("Cancelled (1)");
+    await screen.findByRole("button", { name: "Show cancelled" });
 
-    await user.click(screen.getByRole("button", { name: "Cancelled (1)" }));
+    await user.click(screen.getByRole("button", { name: "Show cancelled" }));
 
     await screen.findByText("Outgoing (1)");
     expect(
