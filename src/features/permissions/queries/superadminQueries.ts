@@ -143,7 +143,7 @@ type UserActivePlayerCharacterRowsQueryOptions = UseQueryOptions<
 >;
 
 const ADMIN_LIVING_PC_SELECT =
-  "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
 
 export function adminUserLivingPlayerCharactersQueryOptions(
   userId: string,
