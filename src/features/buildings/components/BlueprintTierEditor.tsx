@@ -6,15 +6,13 @@ import {
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
-import { useState, type FormEvent, type JSX } from "react";
+import { useEffect, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   activeJobsByWorldQueryOptions,
   type JobDefinition,
@@ -26,6 +24,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
+import { useTierDraftForm } from "../hooks/useTierDraftForm";
 import {
   createTierMutationOptions,
   deleteTierMutationOptions,
@@ -36,25 +35,15 @@ import {
   tiersByBlueprintQueryOptions,
 } from "../queries/buildingsQueries";
 import {
-  createTierInputSchema,
-  updateTierInputSchema,
   type CreateTierInput,
   type UpdateTierInput,
 } from "../schemas/buildingSchemas";
 import {
-  buildCostInputs,
-  buildEffectInputs,
-  extractFieldErrors,
-  extractRefErrors,
   tierCostsToState,
   tierEffectsToState,
-  type CostRowState,
-  type EffectRowState,
-  type TierFormErrors,
 } from "../utils/tierEditorUtils";
-import { validateBlueprintTierReferencesAgainstWorld } from "../utils/validateBuildingReferences";
 
-import { CostEditor, EffectsEditor } from "./TierEditorFields";
+import { TierDraftFields } from "./TierDraftFields";
 
 import type {
   BuildingBlueprint,
@@ -455,56 +444,29 @@ function CreateTierForm({
   readonly onCancel: () => void;
   readonly onSubmit: (input: CreateTierInput) => void;
 }): JSX.Element {
-  const nextTierNumber =
-    tiers.length > 0 ? Math.max(...tiers.map((t) => t.tierNumber)) + 1 : 1;
-  const [tierNumber, setTierNumber] = useState(String(nextTierNumber));
-  const [workerTurns, setWorkerTurns] = useState("0");
-  const [constructionCosts, setConstructionCosts] = useState<CostRowState[]>(
-    [],
-  );
-  const [upkeepCosts, setUpkeepCosts] = useState<CostRowState[]>([]);
-  const [effects, setEffects] = useState<EffectRowState[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<TierFormErrors>({});
+  const form = useTierDraftForm();
+
+  useEffect(() => {
+    const nextTierNumber =
+      tiers.length > 0 ? Math.max(...tiers.map((t) => t.tierNumber)) + 1 : 1;
+    form.setTierNumber(String(nextTierNumber));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setFieldErrors({});
 
-    const constructionCostInputs = buildCostInputs(constructionCosts);
-    const upkeepCostInputs = buildCostInputs(upkeepCosts);
-    const effectInputs = buildEffectInputs(effects);
+    const data = form.validate(activeResources, activeJobs);
+    if (data === null) return;
 
     const input: CreateTierInput = {
       blueprintId,
-      constructionCostsJson:
-        constructionCostInputs.length > 0 ? constructionCostInputs : undefined,
-      effectsJson: effectInputs.length > 0 ? effectInputs : undefined,
-      tierNumber: tierNumber !== "" ? parseInt(tierNumber, 10) : 0,
-      upkeepCostsJson:
-        upkeepCostInputs.length > 0 ? upkeepCostInputs : undefined,
-      workerTurnsRequired:
-        workerTurns !== "" ? parseInt(workerTurns, 10) : undefined,
+      constructionCostsJson: data.constructionCostsJson,
+      effectsJson: data.effectsJson,
+      tierNumber: data.tierNumber,
+      upkeepCostsJson: data.upkeepCostsJson,
+      workerTurnsRequired: data.workerTurnsRequired,
     };
-
-    const parseResult = createTierInputSchema.safeParse(input);
-    if (!parseResult.success) {
-      setFieldErrors(extractFieldErrors(parseResult.error.issues));
-      return;
-    }
-
-    const refIssues = validateBlueprintTierReferencesAgainstWorld(
-      {
-        constructionCostsJson: constructionCostInputs,
-        effectsJson: effectInputs,
-        upkeepCostsJson: upkeepCostInputs,
-      },
-      activeResources,
-      activeJobs,
-    );
-    if (refIssues.length > 0) {
-      setFieldErrors(extractRefErrors(refIssues));
-      return;
-    }
 
     onSubmit(input);
   }
@@ -518,65 +480,23 @@ function CreateTierForm({
     >
       <h3 className="text-sm font-medium">New tier</h3>
       <div className="grid gap-3">
-        <div className="grid gap-1">
-          <Label htmlFor="tier-number">Tier number</Label>
-          <Input
-            id="tier-number"
-            aria-invalid={fieldErrors.tierNumber !== undefined}
-            disabled={isPending}
-            inputMode="numeric"
-            placeholder="1"
-            value={tierNumber}
-            onChange={(e) => {
-              setTierNumber(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.tierNumber !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.tierNumber}</p>
-          ) : null}
-        </div>
-        <div className="grid gap-1">
-          <Label htmlFor="worker-turns-required">Worker turns required</Label>
-          <Input
-            id="worker-turns-required"
-            aria-invalid={fieldErrors.workerTurnsRequired !== undefined}
-            disabled={isPending}
-            inputMode="numeric"
-            placeholder="0"
-            value={workerTurns}
-            onChange={(e) => {
-              setWorkerTurns(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.workerTurnsRequired !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.workerTurnsRequired}
-            </p>
-          ) : null}
-        </div>
-        <CostEditor
-          activeResources={activeResources}
-          disabled={isPending}
-          error={fieldErrors.constructionCostsJson}
-          label="Construction costs"
-          rows={constructionCosts}
-          onChange={setConstructionCosts}
-        />
-        <CostEditor
-          activeResources={activeResources}
-          disabled={isPending}
-          error={fieldErrors.upkeepCostsJson}
-          label="Upkeep costs"
-          rows={upkeepCosts}
-          onChange={setUpkeepCosts}
-        />
-        <EffectsEditor
+        <TierDraftFields
           activeJobs={activeJobs}
           activeResources={activeResources}
+          constructionCosts={form.constructionCosts}
           disabled={isPending}
-          error={fieldErrors.effectsJson}
-          rows={effects}
-          onChange={setEffects}
+          effects={form.effects}
+          fieldErrors={form.fieldErrors}
+          onConstructionCostsChange={form.setConstructionCosts}
+          onEffectsChange={form.setEffects}
+          onTierNumberChange={form.setTierNumber}
+          onUpkeepCostsChange={form.setUpkeepCosts}
+          onWorkerTurnsChange={form.setWorkerTurns}
+          tierNumber={form.tierNumber}
+          tierNumberInputId="tier-number"
+          upkeepCosts={form.upkeepCosts}
+          workerTurns={form.workerTurns}
+          workerTurnsInputId="worker-turns-required"
         />
       </div>
       <div className="flex gap-2">
@@ -614,58 +534,32 @@ function EditTierForm({
     updateTierMutationOptions({ queryClient }),
   );
 
-  const [workerTurns, setWorkerTurns] = useState(
-    String(tier.workerTurnsRequired),
-  );
-  const [constructionCosts, setConstructionCosts] = useState<CostRowState[]>(
-    () => tierCostsToState(tier.constructionCostsJson),
-  );
-  const [upkeepCosts, setUpkeepCosts] = useState<CostRowState[]>(() =>
-    tierCostsToState(tier.upkeepCostsJson),
-  );
-  const [effects, setEffects] = useState<EffectRowState[]>(() =>
-    tierEffectsToState(tier.effectsJson),
-  );
-  const [fieldErrors, setFieldErrors] = useState<TierFormErrors>({});
+  const form = useTierDraftForm();
+
+  // Initialize form with existing tier data
+  useEffect(() => {
+    form.setWorkerTurns(String(tier.workerTurnsRequired));
+    form.setConstructionCosts(tierCostsToState(tier.constructionCostsJson));
+    form.setUpkeepCosts(tierCostsToState(tier.upkeepCostsJson));
+    form.setEffects(tierEffectsToState(tier.effectsJson));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tier.id]);
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    setFieldErrors({});
 
-    const constructionCostInputs = buildCostInputs(constructionCosts);
-    const upkeepCostInputs = buildCostInputs(upkeepCosts);
-    const effectInputs = buildEffectInputs(effects);
+    const data = form.validate(activeResources, activeJobs);
+    if (data === null) return;
 
     const input: UpdateTierInput = {
-      constructionCostsJson: constructionCostInputs,
-      effectsJson: effectInputs,
+      constructionCostsJson: data.constructionCostsJson ?? [],
+      effectsJson: data.effectsJson ?? [],
       tierId: tier.id,
-      upkeepCostsJson: upkeepCostInputs,
-      workerTurnsRequired:
-        workerTurns !== "" ? parseInt(workerTurns, 10) : undefined,
+      upkeepCostsJson: data.upkeepCostsJson ?? [],
+      workerTurnsRequired: data.workerTurnsRequired,
     };
-
-    const parseResult = updateTierInputSchema.safeParse(input);
-    if (!parseResult.success) {
-      setFieldErrors(extractFieldErrors(parseResult.error.issues));
-      return;
-    }
-
-    const refIssues = validateBlueprintTierReferencesAgainstWorld(
-      {
-        constructionCostsJson: constructionCostInputs,
-        effectsJson: effectInputs,
-        upkeepCostsJson: upkeepCostInputs,
-      },
-      activeResources,
-      activeJobs,
-    );
-    if (refIssues.length > 0) {
-      setFieldErrors(extractRefErrors(refIssues));
-      return;
-    }
 
     try {
       await updateMutation.mutateAsync(input);
@@ -689,50 +583,23 @@ function EditTierForm({
     >
       <h3 className="text-sm font-medium">Edit tier {tier.tierNumber}</h3>
       <div className="grid gap-3">
-        <div className="grid gap-1">
-          <Label htmlFor="edit-worker-turns-required">
-            Worker turns required
-          </Label>
-          <Input
-            id="edit-worker-turns-required"
-            aria-invalid={fieldErrors.workerTurnsRequired !== undefined}
-            disabled={updateMutation.isPending}
-            inputMode="numeric"
-            placeholder="0"
-            value={workerTurns}
-            onChange={(e) => {
-              setWorkerTurns(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.workerTurnsRequired !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.workerTurnsRequired}
-            </p>
-          ) : null}
-        </div>
-        <CostEditor
-          activeResources={activeResources}
-          disabled={updateMutation.isPending}
-          error={fieldErrors.constructionCostsJson}
-          label="Construction costs"
-          rows={constructionCosts}
-          onChange={setConstructionCosts}
-        />
-        <CostEditor
-          activeResources={activeResources}
-          disabled={updateMutation.isPending}
-          error={fieldErrors.upkeepCostsJson}
-          label="Upkeep costs"
-          rows={upkeepCosts}
-          onChange={setUpkeepCosts}
-        />
-        <EffectsEditor
+        <TierDraftFields
           activeJobs={activeJobs}
           activeResources={activeResources}
+          constructionCosts={form.constructionCosts}
           disabled={updateMutation.isPending}
-          error={fieldErrors.effectsJson}
-          rows={effects}
-          onChange={setEffects}
+          effects={form.effects}
+          fieldErrors={form.fieldErrors}
+          onConstructionCostsChange={form.setConstructionCosts}
+          onEffectsChange={form.setEffects}
+          onTierNumberChange={form.setTierNumber}
+          onUpkeepCostsChange={form.setUpkeepCosts}
+          onWorkerTurnsChange={form.setWorkerTurns}
+          tierNumber={form.tierNumber}
+          tierNumberInputId="edit-tier-number"
+          upkeepCosts={form.upkeepCosts}
+          workerTurns={form.workerTurns}
+          workerTurnsInputId="edit-worker-turns-required"
         />
       </div>
       <div className="flex gap-2">
