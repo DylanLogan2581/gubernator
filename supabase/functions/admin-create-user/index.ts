@@ -96,7 +96,7 @@ export async function handleAdminCreateUserRequest(
   if (!superAdminResult.ok || !superAdminResult.value) {
     return respond(
       createErrorResponse({
-        code: "unauthorized",
+        code: "superadmin_required",
         message: "Superadmin privileges are required to create users.",
       }),
       403,
@@ -191,7 +191,7 @@ async function createAuthUser(
   } catch {
     return {
       error: createErrorResponse({
-        code: "create_user_failed",
+        code: "auth_admin_error",
         message: "Failed to reach authentication service.",
       }),
       ok: false,
@@ -207,7 +207,7 @@ async function createAuthUser(
     if (response.status === 422 || isEmailConflict(message)) {
       return {
         error: createErrorResponse({
-          code: "user_already_exists",
+          code: "email_conflict",
           message: "A user with this email address already exists.",
         }),
         ok: false,
@@ -217,7 +217,7 @@ async function createAuthUser(
 
     return {
       error: createErrorResponse({
-        code: "create_user_failed",
+        code: "auth_admin_error",
         message: message ?? "User creation failed.",
       }),
       ok: false,
@@ -228,7 +228,7 @@ async function createAuthUser(
   if (!isAuthAdminUserPayload(responseBody)) {
     return {
       error: createErrorResponse({
-        code: "create_user_failed",
+        code: "auth_admin_error",
         message: "Unexpected response from authentication service.",
       }),
       ok: false,

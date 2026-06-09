@@ -1,11 +1,11 @@
 export type AdminCreateUserErrorCode =
+  | "auth_admin_error"
   | "auth_context_unavailable"
-  | "create_user_failed"
+  | "email_conflict"
   | "invalid_request"
   | "method_not_allowed"
-  | "unauthenticated"
-  | "unauthorized"
-  | "user_already_exists";
+  | "superadmin_required"
+  | "unauthenticated";
 
 export type AdminCreateUserRequestBody = {
   readonly email: string;

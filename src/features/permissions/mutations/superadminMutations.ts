@@ -226,19 +226,29 @@ async function createUser(
     const errorPayload = await readFunctionErrorPayload(response.error);
 
     if (errorPayload !== null) {
-      if (errorPayload.error.code === "user_already_exists") {
+      if (errorPayload.error.code === "email_conflict") {
         throw new SuperadminMutationError({
           code: "superadmin_user_exists",
           message: errorPayload.error.message,
         });
       }
-      if (
-        errorPayload.error.code === "unauthorized" ||
-        errorPayload.error.code === "unauthenticated"
-      ) {
+      if (errorPayload.error.code === "superadmin_required") {
         throw new SuperadminMutationError({
           code: "superadmin_not_authorized",
           message: errorPayload.error.message,
+        });
+      }
+      if (errorPayload.error.code === "unauthenticated") {
+        throw new SuperadminMutationError({
+          code: "superadmin_not_authorized",
+          message: "Sign-in expired, please sign in again.",
+        });
+      }
+      if (errorPayload.error.code === "auth_admin_error") {
+        throw new SuperadminMutationError({
+          code: "superadmin_operation_failed",
+          message:
+            "Something went wrong creating the user. Try again or contact support.",
         });
       }
       throw new SuperadminMutationError({
@@ -258,10 +268,29 @@ async function createUser(
   }
 
   if (isAdminCreateUserErrorResponse(response.data)) {
-    if (response.data.error.code === "user_already_exists") {
+    if (response.data.error.code === "email_conflict") {
       throw new SuperadminMutationError({
         code: "superadmin_user_exists",
         message: response.data.error.message,
+      });
+    }
+    if (response.data.error.code === "superadmin_required") {
+      throw new SuperadminMutationError({
+        code: "superadmin_not_authorized",
+        message: response.data.error.message,
+      });
+    }
+    if (response.data.error.code === "unauthenticated") {
+      throw new SuperadminMutationError({
+        code: "superadmin_not_authorized",
+        message: "Sign-in expired, please sign in again.",
+      });
+    }
+    if (response.data.error.code === "auth_admin_error") {
+      throw new SuperadminMutationError({
+        code: "superadmin_operation_failed",
+        message:
+          "Something went wrong creating the user. Try again or contact support.",
       });
     }
     throw new SuperadminMutationError({
