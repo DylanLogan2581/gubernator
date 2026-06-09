@@ -304,9 +304,7 @@ function CitizenRow({
         />
         <Chip
           label={
-            assignment === null
-              ? "Unassigned"
-              : assignmentTypeLabel(assignment.assignmentType)
+            assignment === null ? "Unassigned" : assignmentJobName(assignment)
           }
           tone={assignment === null ? "muted" : "default"}
         />
@@ -457,6 +455,25 @@ function assignmentTypeLabel(type: CitizenAssignmentType): string {
       return "Standard job";
     case "trade_route":
       return "Trade route";
+  }
+}
+
+function assignmentJobName(assignment: CitizenAssignment): string {
+  switch (assignment.assignmentType) {
+    case "standard_job":
+      return assignment.job?.name ?? "Standard Job";
+    case "deposit":
+      return assignment.depositInstance?.depositTypeJobName ?? "Deposit";
+    case "husbandry":
+      return (
+        assignment.managedPopulationInstance?.husbandryJobName ?? "Husbandry"
+      );
+    case "culling":
+      return assignment.managedPopulationInstance?.cullingJobName ?? "Culling";
+    case "trade_route":
+      return "Trader";
+    case "construction_project":
+      return "Construction";
   }
 }
 

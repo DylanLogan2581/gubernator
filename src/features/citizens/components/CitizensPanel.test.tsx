@@ -98,7 +98,7 @@ type AssignmentRowFixture = {
   readonly construction_project: null;
   readonly created_at: string;
   readonly deposit_instance: null;
-  readonly job: null;
+  readonly job: { readonly id: string; readonly name: string } | null;
   readonly managed_population_instance: null;
   readonly trade_route: null;
   readonly trade_route_end: null;
@@ -132,6 +132,7 @@ describe("CitizensPanel", () => {
           createAssignmentRow({
             assignment_type: "standard_job",
             citizen_id: "c-1",
+            job: { id: "j-1", name: "Brewer" },
           }),
         ],
       }),
@@ -144,7 +145,7 @@ describe("CitizensPanel", () => {
     expect(screen.queryByText("Cael")).toBeNull();
 
     const aldraRow = screen.getByText("Aldra").closest("li");
-    expect(aldraRow).toHaveTextContent("Standard job");
+    expect(aldraRow).toHaveTextContent("Brewer");
 
     const brannRow = screen.getByText("Brann").closest("li");
     expect(brannRow).toHaveTextContent("Unassigned");
