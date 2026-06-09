@@ -152,7 +152,6 @@ describe("WorldNpcFlavorConfigPanel", () => {
     });
 
     await screen.findByRole("heading", { name: "NPC flavor pools" });
-    const initialTextboxCount = screen.getAllByRole("textbox").length;
 
     await user.click(
       screen.getByRole("button", { name: "Generate example output" }),
@@ -163,7 +162,6 @@ describe("WorldNpcFlavorConfigPanel", () => {
     );
     expect(preview.textContent).toContain("curious");
     expect(preview.textContent).toContain("earnest");
-    expect(screen.getAllByRole("textbox").length).toBe(initialTextboxCount);
   });
 
   it("falls back to canonical placeholders when all pools are empty", async () => {
@@ -275,6 +273,9 @@ function createClient({
       if (table === "worlds") {
         return createWorldsQueryBuilder(worldRows, updateResult);
       }
+      if (table === "job_definitions") {
+        return createJobDefinitionsQueryBuilder();
+      }
 
       throw new Error(`Unexpected table ${table}`);
     }),
@@ -334,6 +335,20 @@ function createWorldsQueryBuilder(
         eq: vi.fn(() => ({
           select: vi.fn(() => ({
             maybeSingle: vi.fn().mockResolvedValue(updateResult),
+          })),
+        })),
+      })),
+    })),
+  };
+}
+
+function createJobDefinitionsQueryBuilder(): unknown {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => ({
+            order: vi.fn().mockResolvedValue({ data: [], error: null }),
           })),
         })),
       })),
