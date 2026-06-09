@@ -4,6 +4,7 @@ import { resolveSupabaseEndTurnSimulationAuthorization } from "./authorize.ts";
 import { getEdgeRuntime } from "./env.ts";
 import {
   buildCorsHeaders,
+  createErrorResponse,
   createJsonResponse,
   getAllowedOrigins,
 } from "./http.ts";
@@ -38,7 +39,14 @@ export async function handleEndTurnSimulationRequest(
   const origin = request.headers.get("origin");
 
   if (origin !== null && !allowedOrigins.includes(origin)) {
-    return new Response(null, { status: 403 });
+    return createJsonResponse(
+      createErrorResponse({
+        code: "origin_not_allowed",
+        message: "Origin not allowed.",
+      }),
+      403,
+      null,
+    );
   }
 
   const allowedOrigin = origin;
@@ -53,13 +61,10 @@ export async function handleEndTurnSimulationRequest(
 
   if (request.method !== "POST") {
     return respond(
-      {
-        error: {
-          code: "method_not_allowed",
-          message: "Use POST to request an end-turn simulation.",
-        },
-        ok: false,
-      },
+      createErrorResponse({
+        code: "method_not_allowed",
+        message: "Use POST to request an end-turn simulation.",
+      }),
       405,
     );
   }

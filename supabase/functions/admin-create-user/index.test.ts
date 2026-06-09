@@ -416,4 +416,117 @@ describe("handleAdminCreateUserRequest", () => {
       expect(body.ok).toBe(false);
     });
   });
+
+  describe("CORS / origin validation", () => {
+    it("returns a 204 preflight response with CORS headers for OPTIONS", async () => {
+      const response = await handleAdminCreateUserRequest(
+        new Request("http://localhost/admin-create-user", {
+          method: "OPTIONS",
+        }),
+      );
+
+      expect(response.status).toBe(204);
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+      expect(response.headers.get("access-control-allow-methods")).toContain(
+        "POST",
+      );
+      expect(response.headers.get("access-control-allow-headers")).toContain(
+        "authorization",
+      );
+      expect(response.headers.get("access-control-max-age")).toBe("86400");
+    });
+
+    it("returns a 204 preflight response with echoed origin for a recognized Origin", async () => {
+      const response = await handleAdminCreateUserRequest(
+        new Request("http://localhost/admin-create-user", {
+          headers: { origin: "http://localhost:5173" },
+          method: "OPTIONS",
+        }),
+        { allowedOrigins: ["http://localhost:5173", "http://127.0.0.1:5173"] },
+      );
+
+      expect(response.status).toBe(204);
+      expect(response.headers.get("access-control-allow-origin")).toBe(
+        "http://localhost:5173",
+      );
+      expect(response.headers.get("access-control-allow-methods")).toContain(
+        "POST",
+      );
+      expect(response.headers.get("access-control-allow-headers")).toContain(
+        "authorization",
+      );
+      expect(response.headers.get("access-control-max-age")).toBe("86400");
+    });
+
+    it("returns a 403 with error response for an unrecognized Origin on OPTIONS", async () => {
+      const response = await handleAdminCreateUserRequest(
+        new Request("http://localhost/admin-create-user", {
+          headers: { origin: "http://evil.example.com" },
+          method: "OPTIONS",
+        }),
+        { allowedOrigins: ["http://localhost:5173"] },
+      );
+
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(403);
+      expect(body.error?.code).toBe("origin_not_allowed");
+      expect(body.ok).toBe(false);
+    });
+
+    it("returns a 403 with error response for an unrecognized Origin on POST", async () => {
+      const response = await handleAdminCreateUserRequest(
+        new Request("http://localhost/admin-create-user", {
+          body: JSON.stringify({
+            email: "test@example.com",
+            username: "testuser",
+            password: "password123",
+          }),
+          headers: {
+            "content-type": "application/json",
+            origin: "http://evil.example.com",
+          },
+          method: "POST",
+        }),
+        { allowedOrigins: ["http://localhost:5173"] },
+      );
+
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(403);
+      expect(body.error?.code).toBe("origin_not_allowed");
+      expect(body.ok).toBe(false);
+    });
+
+    it("echoes the allowed Origin in access-control-allow-origin header for POST", async () => {
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "auth/v1/admin/users": {
+          status: 201,
+          body: { id: "new-user-id", email: "newuser@example.com" },
+        },
+      });
+
+      const response = await handleAdminCreateUserRequest(
+        new Request("http://localhost/admin-create-user", {
+          body: JSON.stringify({
+            email: "newuser@example.com",
+            username: "newuser",
+            password: "password123",
+          }),
+          headers: {
+            "content-type": "application/json",
+            origin: "http://localhost:5173",
+          },
+          method: "POST",
+        }),
+        { allowedOrigins: ["http://localhost:5173"] },
+      );
+
+      expect(response.headers.get("access-control-allow-origin")).toBe(
+        "http://localhost:5173",
+      );
+    });
+  });
 });

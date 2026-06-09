@@ -4,6 +4,7 @@ export type AdminCreateUserErrorCode =
   | "email_conflict"
   | "invalid_request"
   | "method_not_allowed"
+  | "origin_not_allowed"
   | "superadmin_required"
   | "unauthenticated";
 

@@ -203,7 +203,7 @@ describe("handleEndTurnSimulationRequest", () => {
     expect(response.headers.get("access-control-max-age")).toBe("86400");
   });
 
-  it("returns a 403 for an unrecognized Origin on OPTIONS", async () => {
+  it("returns a 403 with error response for an unrecognized Origin on OPTIONS", async () => {
     const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", {
         headers: { origin: "http://evil.example.com" },
@@ -212,10 +212,20 @@ describe("handleEndTurnSimulationRequest", () => {
       { allowedOrigins: ["http://localhost:5173"] },
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const body = await response.json();
+
     expect(response.status).toBe(403);
+    expect(body).toEqual({
+      error: {
+        code: "origin_not_allowed",
+        message: "Origin not allowed.",
+      },
+      ok: false,
+    });
   });
 
-  it("returns a 403 for an unrecognized Origin on POST", async () => {
+  it("returns a 403 with error response for an unrecognized Origin on POST", async () => {
     const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", {
         body: JSON.stringify({ expectedTurnNumber: 1, worldId: "world-1" }),
@@ -228,7 +238,17 @@ describe("handleEndTurnSimulationRequest", () => {
       { allowedOrigins: ["http://localhost:5173"] },
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const body = await response.json();
+
     expect(response.status).toBe(403);
+    expect(body).toEqual({
+      error: {
+        code: "origin_not_allowed",
+        message: "Origin not allowed.",
+      },
+      ok: false,
+    });
   });
 
   it("returns a 405 for non-POST methods", async () => {

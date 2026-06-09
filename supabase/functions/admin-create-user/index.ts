@@ -9,6 +9,7 @@ import {
   getRequiredRuntimeUrl,
 } from "./env.ts";
 import {
+  buildCorsHeaders,
   createErrorResponse,
   createJsonResponse,
   getAllowedOrigins,
@@ -55,7 +56,14 @@ export async function handleAdminCreateUserRequest(
   const origin = request.headers.get("origin");
 
   if (origin !== null && !allowedOrigins.includes(origin)) {
-    return new Response("Origin not allowed", { status: 403 });
+    return createJsonResponse(
+      createErrorResponse({
+        code: "origin_not_allowed",
+        message: "Origin not allowed.",
+      }),
+      403,
+      null,
+    );
   }
 
   const allowedOrigin = origin;
@@ -65,13 +73,7 @@ export async function handleAdminCreateUserRequest(
 
   if (request.method === "OPTIONS") {
     return new Response(null, {
-      headers: {
-        "access-control-allow-headers":
-          "authorization, x-client-info, apikey, content-type",
-        "access-control-allow-methods": "POST, OPTIONS",
-        "access-control-allow-origin": allowedOrigin ?? "*",
-        "access-control-max-age": "86400",
-      },
+      headers: buildCorsHeaders(allowedOrigin),
       status: 204,
     });
   }
