@@ -49,6 +49,16 @@ export type ManualDeconstructBuildingResult = {
   readonly settlementBuildingId: string;
 };
 
+export type RestoreSettlementBuildingResult = {
+  readonly settlementBuildingId: string;
+  readonly worldId: string;
+};
+
+export type HardDeleteSettlementBuildingResult = {
+  readonly settlementBuildingId: string;
+  readonly worldId: string;
+};
+
 export function computeEffectsDigest(
   effects: readonly TierEffect[],
 ): EffectsDigest {

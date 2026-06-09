@@ -113,6 +113,7 @@ export function SettlementBuildingsPanel({
           queryClient={queryClient}
           resourceNames={resourceNames}
           settlementId={settlementId}
+          worldId={worldId}
         />
       )}
 
@@ -139,7 +140,7 @@ const STATE_GROUPS: readonly StateGroup[] = [
   { label: "Active", states: ["active"] },
   { label: "Suspended", states: ["suspended"] },
   {
-    label: "Deconstructed",
+    label: "Trash",
     states: ["manually_deconstructed", "auto_deconstructed"],
   },
 ];
@@ -153,6 +154,7 @@ function BuildingsGroups({
   queryClient,
   resourceNames,
   settlementId,
+  worldId,
 }: {
   readonly buildings: readonly SettlementBuilding[];
   readonly canAdmin: boolean;
@@ -162,6 +164,7 @@ function BuildingsGroups({
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const canDeconstruct = canAdmin && !isArchived;
 
@@ -175,6 +178,7 @@ function BuildingsGroups({
         return (
           <BuildingStateGroup
             key={group.label}
+            canAdmin={canAdmin && !isArchived}
             canDeconstruct={canDeconstruct && group.states.includes("active")}
             buildings={groupBuildings}
             jobNames={jobNames}
@@ -183,6 +187,7 @@ function BuildingsGroups({
             queryClient={queryClient}
             resourceNames={resourceNames}
             settlementId={settlementId}
+            worldId={worldId}
           />
         );
       })}
@@ -192,6 +197,7 @@ function BuildingsGroups({
 
 function BuildingStateGroup({
   buildings,
+  canAdmin,
   canDeconstruct,
   jobNames,
   label,
@@ -199,8 +205,10 @@ function BuildingStateGroup({
   queryClient,
   resourceNames,
   settlementId,
+  worldId,
 }: {
   readonly buildings: readonly SettlementBuilding[];
+  readonly canAdmin: boolean;
   readonly canDeconstruct: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly label: string;
@@ -208,6 +216,7 @@ function BuildingStateGroup({
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   return (
     <Collapsible defaultOpen className="grid gap-1">
@@ -232,7 +241,7 @@ function BuildingStateGroup({
                 Effects
               </th>
               <th className="w-16 pb-2" scope="col" aria-label="State" />
-              {canDeconstruct ? (
+              {canAdmin ? (
                 <th className="w-28 pb-2" scope="col" aria-label="Actions" />
               ) : null}
             </tr>
@@ -242,12 +251,14 @@ function BuildingStateGroup({
               <BuildingRow
                 key={building.id}
                 building={building}
+                canAdmin={canAdmin}
                 canDeconstruct={canDeconstruct}
                 jobNames={jobNames}
                 latestOutcome={latestOutcome}
                 queryClient={queryClient}
                 resourceNames={resourceNames}
                 settlementId={settlementId}
+                worldId={worldId}
               />
             ))}
           </tbody>

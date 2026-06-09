@@ -12,6 +12,8 @@ import {
 import { tierEffectsToState } from "../../utils/tierEditorUtils";
 
 import { DeconstructConfirmDialog } from "./DeconstructConfirmDialog";
+import { HardDeleteSettlementBuildingDialog } from "./HardDeleteSettlementBuildingDialog";
+import { RestoreSettlementBuildingDialog } from "./RestoreSettlementBuildingDialog";
 
 import type {
   SettlementBuilding,
@@ -142,25 +144,35 @@ function buildStateBadgeTooltip(
 type BuildingRowProps = {
   readonly building: SettlementBuilding;
   readonly canDeconstruct: boolean;
+  readonly canAdmin: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
+  readonly worldId: string;
 };
 
 export function BuildingRow({
   building,
+  canAdmin,
   canDeconstruct,
   jobNames,
   latestOutcome,
   queryClient,
   resourceNames,
   settlementId,
+  worldId,
 }: BuildingRowProps): JSX.Element {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [trashActionOpen, setTrashActionOpen] = useState<
+    "restore" | "hard-delete" | null
+  >(null);
   const effectsSummary = buildEffectsSummary(building, resourceNames, jobNames);
   const showDeconstructButton = canDeconstruct && building.state === "active";
+  const isDeconstructed =
+    building.state === "auto_deconstructed" ||
+    building.state === "manually_deconstructed";
   const stateTooltip = buildStateBadgeTooltip(building, latestOutcome);
 
   return (
@@ -178,7 +190,7 @@ export function BuildingRow({
             {stateBadgeLabel(building.state)}
           </Badge>
         </td>
-        {canDeconstruct ? (
+        {canAdmin ? (
           <td className="w-28 py-2 text-right">
             {showDeconstructButton ? (
               <Button
@@ -193,6 +205,32 @@ export function BuildingRow({
                 Deconstruct
               </Button>
             ) : null}
+            {isDeconstructed && canAdmin ? (
+              <div className="flex gap-1 justify-end">
+                <Button
+                  aria-label={`Restore ${building.blueprintName}`}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setTrashActionOpen("restore");
+                  }}
+                >
+                  Restore
+                </Button>
+                <Button
+                  aria-label={`Permanently delete ${building.blueprintName}`}
+                  size="sm"
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    setTrashActionOpen("hard-delete");
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            ) : null}
           </td>
         ) : null}
       </tr>
@@ -203,6 +241,28 @@ export function BuildingRow({
           settlementId={settlementId}
           onClose={() => {
             setConfirmOpen(false);
+          }}
+        />
+      ) : null}
+      {trashActionOpen === "restore" ? (
+        <RestoreSettlementBuildingDialog
+          building={building}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+          onClose={() => {
+            setTrashActionOpen(null);
+          }}
+        />
+      ) : null}
+      {trashActionOpen === "hard-delete" ? (
+        <HardDeleteSettlementBuildingDialog
+          building={building}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+          onClose={() => {
+            setTrashActionOpen(null);
           }}
         />
       ) : null}

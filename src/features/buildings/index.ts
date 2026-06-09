@@ -55,6 +55,12 @@ export {
   ManualDeconstructBuildingMutationError,
   isManualDeconstructBuildingMutationError,
   manualDeconstructBuildingMutationOptions,
+  RestoreSettlementBuildingMutationError,
+  isRestoreSettlementBuildingMutationError,
+  restoreSettlementBuildingMutationOptions,
+  HardDeleteSettlementBuildingMutationError,
+  isHardDeleteSettlementBuildingMutationError,
+  hardDeleteSettlementBuildingMutationOptions,
 } from "./mutations/settlementBuildingsMutations";
 export {
   SetConstructionProjectWorkersMutationError,
@@ -87,7 +93,11 @@ export { cancelConstructionProjectInputSchema } from "./schemas/cancelConstructi
 export { createConstructionProjectInputSchema } from "./schemas/createConstructionProjectSchemas";
 export { reorderConstructionProjectsInputSchema } from "./schemas/reorderConstructionProjectsSchemas";
 export { addSettlementBuildingInputSchema } from "./schemas/addSettlementBuildingSchemas";
-export { manualDeconstructBuildingInputSchema } from "./schemas/manualDeconstructBuildingSchemas";
+export {
+  manualDeconstructBuildingInputSchema,
+  restoreSettlementBuildingInputSchema,
+  hardDeleteSettlementBuildingInputSchema,
+} from "./schemas/manualDeconstructBuildingSchemas";
 export { setConstructionProjectWorkersInputSchema } from "./schemas/setConstructionProjectWorkersSchemas";
 export { validateBlueprintTierReferencesAgainstWorld } from "./utils/validateBuildingReferences";
 
@@ -96,7 +106,11 @@ export type { CancelConstructionProjectMutationIssue } from "./mutations/cancelC
 export type { ConstructionProjectMutationIssue } from "./mutations/createConstructionProjectMutations";
 export type { ReorderConstructionProjectsMutationIssue } from "./mutations/reorderConstructionProjectsMutations";
 export type { AddSettlementBuildingMutationIssue } from "./mutations/addSettlementBuildingMutations";
-export type { ManualDeconstructBuildingMutationIssue } from "./mutations/settlementBuildingsMutations";
+export type {
+  ManualDeconstructBuildingMutationIssue,
+  RestoreSettlementBuildingMutationIssue,
+  HardDeleteSettlementBuildingMutationIssue,
+} from "./mutations/settlementBuildingsMutations";
 export type { SetConstructionProjectWorkersMutationIssue } from "./mutations/setConstructionProjectWorkersMutations";
 export type {
   CreateBlueprintInput,
@@ -140,6 +154,10 @@ export type {
 export type {
   ManualDeconstructBuildingInput,
   ManualDeconstructBuildingValues,
+  RestoreSettlementBuildingInput,
+  RestoreSettlementBuildingValues,
+  HardDeleteSettlementBuildingInput,
+  HardDeleteSettlementBuildingValues,
 } from "./schemas/manualDeconstructBuildingSchemas";
 export type {
   SetConstructionProjectWorkersInput,
@@ -169,6 +187,8 @@ export type {
   AddSettlementBuildingResult,
   EffectsDigest,
   ManualDeconstructBuildingResult,
+  RestoreSettlementBuildingResult,
+  HardDeleteSettlementBuildingResult,
   SettlementBuilding,
   SettlementBuildingState,
 } from "./types/settlementBuildingTypes";
