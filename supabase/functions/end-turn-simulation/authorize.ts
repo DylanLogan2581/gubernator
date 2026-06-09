@@ -23,6 +23,17 @@ type SupabaseBooleanFetchResult =
       readonly ok: false;
     };
 
+type SupabaseWorldStatusResult =
+  | {
+      readonly ok: true;
+      readonly status: string;
+      readonly currentTurnNumber: number;
+    }
+  | {
+      readonly error: SupabaseAuthorizationFetchError;
+      readonly ok: false;
+    };
+
 export async function resolveSupabaseEndTurnSimulationAuthorization(
   requestBody: EndTurnSimulationRequestBody,
   authContext: EndTurnSimulationAuthContext,
@@ -69,39 +80,72 @@ export async function resolveSupabaseEndTurnSimulationAuthorization(
       return resultFromSupabaseAuthorizationFetchError(worldExistsResult.error);
     }
 
-    if (worldExistsResult.value) {
-      return { ok: true };
+    if (!worldExistsResult.value) {
+      logAuthorizationDenial(
+        authContext.userId,
+        requestBody.worldId,
+        "world_not_found",
+      );
+      return createAuthorizationErrorResult();
+    }
+  } else {
+    // Non-super-admin path: check world admin authority
+    const worldAdminResult = await fetchSupabaseRpcBoolean({
+      authorizationHeader,
+      body: {
+        p_world_id: requestBody.worldId,
+      },
+      functionName: "is_world_admin",
+      supabaseAnonKey,
+      supabaseUrl,
+    });
+
+    if (!worldAdminResult.ok) {
+      return resultFromSupabaseAuthorizationFetchError(worldAdminResult.error);
     }
 
-    logAuthorizationDenial(
-      authContext.userId,
-      requestBody.worldId,
-      "world_not_found",
-    );
-    return createAuthorizationErrorResult();
+    if (!worldAdminResult.value) {
+      logAuthorizationDenial(
+        authContext.userId,
+        requestBody.worldId,
+        "world_admin_required",
+      );
+      return createAuthorizationErrorResult();
+    }
   }
 
-  const worldAdminResult = await fetchSupabaseRpcBoolean({
+  // Gate on world status and expectedTurnNumber before state load (all paths)
+  const worldStatusResult = await fetchSupabaseWorldStatusAndTurn({
     authorizationHeader,
-    body: {
-      p_world_id: requestBody.worldId,
-    },
-    functionName: "is_world_admin",
     supabaseAnonKey,
     supabaseUrl,
+    worldId: requestBody.worldId,
   });
 
-  if (!worldAdminResult.ok) {
-    return resultFromSupabaseAuthorizationFetchError(worldAdminResult.error);
+  if (!worldStatusResult.ok) {
+    return resultFromSupabaseAuthorizationFetchError(worldStatusResult.error);
   }
 
-  if (!worldAdminResult.value) {
-    logAuthorizationDenial(
-      authContext.userId,
-      requestBody.worldId,
-      "world_admin_required",
-    );
-    return createAuthorizationErrorResult();
+  if (worldStatusResult.status === "archived") {
+    return {
+      error: createErrorResponse({
+        code: "end_turn_world_archived",
+        message: "World is archived and cannot be advanced.",
+      }),
+      ok: false,
+      status: 409,
+    };
+  }
+
+  if (worldStatusResult.currentTurnNumber !== requestBody.expectedTurnNumber) {
+    return {
+      error: createErrorResponse({
+        code: "end_turn_stale_expected_turn",
+        message: "Expected current turn no longer matches the world state.",
+      }),
+      ok: false,
+      status: 409,
+    };
   }
 
   return { ok: true };
@@ -216,6 +260,82 @@ async function fetchSupabaseWorldExists({
   return {
     ok: true,
     value: payload.length > 0,
+  };
+}
+
+async function fetchSupabaseWorldStatusAndTurn({
+  authorizationHeader,
+  supabaseAnonKey,
+  supabaseUrl,
+  worldId,
+}: {
+  readonly authorizationHeader: string;
+  readonly supabaseAnonKey: string;
+  readonly supabaseUrl: string;
+  readonly worldId: string;
+}): Promise<SupabaseWorldStatusResult> {
+  const searchParameters = new URLSearchParams({
+    id: `eq.${worldId}`,
+    limit: "1",
+    select: "status,current_turn_number",
+  });
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${supabaseUrl}/rest/v1/worlds?${searchParameters}`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          authorization: authorizationHeader,
+        },
+        method: "GET",
+      },
+    );
+  } catch {
+    return {
+      error: { status: 0 },
+      ok: false,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      error: { status: response.status },
+      ok: false,
+    };
+  }
+
+  const payload: unknown = await response.json();
+
+  if (
+    !Array.isArray(payload) ||
+    payload.length === 0 ||
+    typeof payload[0] !== "object" ||
+    payload[0] === null
+  ) {
+    return {
+      error: { status: 0 },
+      ok: false,
+    };
+  }
+
+  const row = payload[0] as Record<string, unknown>;
+
+  if (
+    typeof row.status !== "string" ||
+    typeof row.current_turn_number !== "number"
+  ) {
+    return {
+      error: { status: 0 },
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    status: row.status,
+    currentTurnNumber: row.current_turn_number,
   };
 }
 

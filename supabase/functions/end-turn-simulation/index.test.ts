@@ -491,5 +491,159 @@ describe("handleEndTurnSimulationRequest", () => {
         ok: false,
       });
     });
+
+    it("gates archived world before calling state resolvers", async () => {
+      stubDenoEnv();
+      const fetchMock = vi.fn((url: string): Promise<Response> => {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: USER_ID }), { status: 200 }),
+          );
+        }
+        if (url.includes("rpc/is_super_admin")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(false), { status: 200 }),
+          );
+        }
+        if (url.includes("rpc/is_world_admin")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(true), { status: 200 }),
+          );
+        }
+        if (url.includes("select=") && url.includes("status")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify([{ status: "archived", current_turn_number: 5 }]),
+              { status: 200 },
+            ),
+          );
+        }
+        // State resolvers should not be called
+        if (
+          url.includes("/rest/v1/settlements") ||
+          url.includes("/rest/v1/resources") ||
+          url.includes("/rest/v1/citizens")
+        ) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ error: "State resolvers should not be called" }),
+              { status: 500 },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Unexpected call" }), {
+            status: 500,
+          }),
+        );
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: makeValidBody(),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      const responseBody: unknown = await response.json();
+      expect(response.status).toBe(409);
+      expect(responseBody).toMatchObject({
+        error: { code: "end_turn_world_archived" },
+        ok: false,
+      });
+
+      // Verify no state resolver calls were made
+      const stateResolverCalls = (
+        fetchMock.mock.calls as [string, RequestInit][]
+      ).filter(
+        ([url]) =>
+          url.includes("/rest/v1/settlements") ||
+          url.includes("/rest/v1/resources") ||
+          url.includes("/rest/v1/citizens"),
+      );
+      expect(stateResolverCalls).toHaveLength(0);
+    });
+
+    it("gates stale turn before calling state resolvers", async () => {
+      stubDenoEnv();
+      const fetchMock = vi.fn((url: string): Promise<Response> => {
+        if (url.includes("/auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: USER_ID }), { status: 200 }),
+          );
+        }
+        if (url.includes("rpc/is_super_admin")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(false), { status: 200 }),
+          );
+        }
+        if (url.includes("rpc/is_world_admin")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(true), { status: 200 }),
+          );
+        }
+        if (url.includes("select=") && url.includes("status")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify([{ status: "active", current_turn_number: 10 }]),
+              { status: 200 },
+            ),
+          );
+        }
+        // State resolvers should not be called
+        if (
+          url.includes("/rest/v1/settlements") ||
+          url.includes("/rest/v1/resources") ||
+          url.includes("/rest/v1/citizens")
+        ) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ error: "State resolvers should not be called" }),
+              { status: 500 },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Unexpected call" }), {
+            status: 500,
+          }),
+        );
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: makeValidBody(), // expects turn 5 but world is at turn 10
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      const responseBody: unknown = await response.json();
+      expect(response.status).toBe(409);
+      expect(responseBody).toMatchObject({
+        error: { code: "end_turn_stale_expected_turn" },
+        ok: false,
+      });
+
+      // Verify no state resolver calls were made
+      const stateResolverCalls = (
+        fetchMock.mock.calls as [string, RequestInit][]
+      ).filter(
+        ([url]) =>
+          url.includes("/rest/v1/settlements") ||
+          url.includes("/rest/v1/resources") ||
+          url.includes("/rest/v1/citizens"),
+      );
+      expect(stateResolverCalls).toHaveLength(0);
+    });
   });
 });
