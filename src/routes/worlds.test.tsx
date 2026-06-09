@@ -288,7 +288,7 @@ describe("world shell route", () => {
     ).toBeDefined();
     expect(screen.getByText("Planning turn")).toBeDefined();
     expect(screen.getByText("12")).toBeDefined();
-    expect(await screen.findByText("Settlement readiness list")).toBeDefined();
+    expect(await screen.findByText("Readiness Summary")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
     expect(screen.queryByText(/citizen/i)).toBeNull();
   });

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { useMemo } from "react";
 
@@ -70,10 +71,28 @@ function NationAccordionRow({
   isArchived,
   worldId,
 }: NationAccordionRowProps): JSX.Element {
+  const allReady = group.readyCount === group.totalCount;
+  const bgColor = allReady
+    ? "group-data-[state=closed]:bg-green-50 dark:group-data-[state=closed]:bg-green-950/30"
+    : "";
+
   return (
     <Collapsible className="group">
-      <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted/50">
-        <span className="font-medium">{group.nationName}</span>
+      <CollapsibleTrigger
+        className={`flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors ${bgColor}`}
+      >
+        <Link
+          to="/worlds/$worldId/nations/$nationId"
+          params={{
+            nationId: group.nationId,
+            worldId,
+          }}
+          search={{}}
+          className="font-medium underline-offset-4 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {group.nationName}
+        </Link>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>
             {group.readyCount}/{group.totalCount} ready

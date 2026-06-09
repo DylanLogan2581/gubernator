@@ -99,18 +99,14 @@ describe("SettlementReadinessListPanel", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Settlement readiness list",
+        name: "Readiness Summary",
       }),
     ).toBeDefined();
     await user.click(screen.getByRole("button", { name: /Nation A/ }));
-    expectSettlementRow("Amberhold", "Auto-ready", "Never");
-    expectSettlementRow("Briarwatch", "Ready", "5/2/26, 12:00 PM");
-    expectSettlementRow("Dawnport", "Not ready", "5/1/26, 9:30 AM");
-    expectSettlementRow("Cinderford", "Not ready", "Never");
-    expect(screen.getByText("5/2/26, 12:00 PM")).toHaveAttribute(
-      "dateTime",
-      "2026-05-02T12:00:00.000Z",
-    );
+    expectSettlementRow("Amberhold");
+    expectSettlementRow("Briarwatch");
+    expectSettlementRow("Dawnport");
+    expectSettlementRow("Cinderford");
   });
 
   it("links settlement names to their detail pages", async () => {
@@ -697,7 +693,7 @@ describe("SettlementReadinessListPanel", () => {
 
       expect(
         await screen.findByRole("heading", {
-          name: "Settlement readiness list",
+          name: "Readiness Summary",
         }),
       ).toBeDefined();
 
@@ -1077,17 +1073,11 @@ function createSettlementsQueryBuilder({
   };
 }
 
-function expectSettlementRow(
-  settlementName: string,
-  state: string,
-  lastReady: string,
-): void {
+function expectSettlementRow(settlementName: string): void {
   const nameCell = screen.getByText(settlementName);
   const row = nameCell.closest("tr");
 
   expect(row).not.toBeNull();
-  expect(row).toHaveTextContent(state);
-  expect(row).toHaveTextContent(lastReady);
 }
 
 function createAccessRow(): TestSettlementReadinessAccessRow {

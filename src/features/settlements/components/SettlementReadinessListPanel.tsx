@@ -96,11 +96,8 @@ export function SettlementReadinessListPanelContent({
           id="settlement-readiness-list-title"
           className="text-lg font-semibold tracking-normal"
         >
-          Settlement readiness list
+          Readiness Summary
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Current turn readiness by nation.
-        </p>
       </div>
       <SettlementNationAccordion
         accessContext={accessContext}

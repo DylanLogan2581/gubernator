@@ -94,7 +94,7 @@ describe("WorldShellPage", () => {
     expect(screen.getByText("In-world date")).toBeDefined();
     expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
     expect(screen.getByText("private")).toBeDefined();
-    expect(screen.getByText("Settlement readiness list")).toBeDefined();
+    expect(screen.getByText("Readiness Summary")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
     expect(
       screen.getByRole("link", { name: "Back to worlds" }),

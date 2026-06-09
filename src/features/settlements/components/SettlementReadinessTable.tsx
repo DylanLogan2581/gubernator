@@ -52,12 +52,6 @@ export function SettlementReadinessTable({
             <th scope="col" className="py-2 pr-4 font-medium">
               Settlement
             </th>
-            <th scope="col" className="px-4 py-2 font-medium">
-              State
-            </th>
-            <th scope="col" className="px-4 py-2 font-medium">
-              Last ready
-            </th>
             <th scope="col" className="py-2 pl-4 font-medium">
               Manual readiness
             </th>
