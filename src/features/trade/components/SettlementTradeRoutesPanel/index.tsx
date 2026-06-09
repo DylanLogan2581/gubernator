@@ -123,6 +123,19 @@ export function SettlementTradeRoutesPanel({
           Trade Routes
         </h2>
         <div className="flex items-center gap-2">
+          {canManageRoutes && !routesQuery.isPending && !showCancelled ? (
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowProposeDialog(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Propose trade route
+            </Button>
+          ) : null}
           {!routesQuery.isPending && !routesQuery.isError ? (
             <Button
               aria-label={showCancelled ? "Hide cancelled" : "Show cancelled"}
@@ -136,19 +149,6 @@ export function SettlementTradeRoutesPanel({
               }}
             >
               <Trash2 aria-hidden="true" />
-            </Button>
-          ) : null}
-          {canManageRoutes && !routesQuery.isPending && !showCancelled ? (
-            <Button
-              size="sm"
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowProposeDialog(true);
-              }}
-            >
-              <Plus aria-hidden="true" />
-              Propose trade route
             </Button>
           ) : null}
         </div>
