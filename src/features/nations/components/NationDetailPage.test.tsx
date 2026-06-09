@@ -979,6 +979,9 @@ function createClient({
       if (fn === "current_user_player_character_world_ids") {
         return Promise.resolve({ data: [], error: null });
       }
+      if (fn === "settlement_alive_citizen_count") {
+        return Promise.resolve({ data: 10, error: null });
+      }
       if (fn === "respond_to_bilateral") {
         return {
           maybeSingle: vi.fn().mockImplementation(() => {
