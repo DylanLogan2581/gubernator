@@ -379,6 +379,7 @@ deno_version = 2
 # end-turn request fails closed.
 [edge_runtime.secrets]
 END_TURN_SIMULATION_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+ADMIN_CREATE_USER_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 [analytics]
 enabled = true

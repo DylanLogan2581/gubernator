@@ -140,10 +140,10 @@ npm run functions:cache-clear
 
 ### Edge Function Origin Allowlist
 
-`end-turn-basic` rejects browser requests whose `Origin` header is not in the allowlist read from the `END_TURN_BASIC_ALLOWED_ORIGINS` env var (comma-separated). The rejection is a bare HTTP 403 with no body, which surfaces in the UI as the generic "End turn could not be saved. Refresh the page before trying again." toast.
+`end-turn-simulation` rejects browser requests whose `Origin` header is not in the allowlist read from the `END_TURN_SIMULATION_ALLOWED_ORIGINS` env var (comma-separated). The rejection is a bare HTTP 403 with no body, which surfaces in the UI as the generic "End turn could not be saved. Refresh the page before trying again." toast.
 
 - **Local:** the allowlist is set in `supabase/config.toml` under `[edge_runtime.secrets]` to `http://localhost:5173,http://127.0.0.1:5173`. Restart with `npx supabase stop && npx supabase start` after editing.
-- **Production:** every deployment must set `END_TURN_BASIC_ALLOWED_ORIGINS` to the deployed frontend origin(s) (no path, no trailing slash, scheme included — e.g. `https://app.example.com`). Without it the function rejects every browser request and end-turn fails closed.
+- **Production:** every deployment must set `END_TURN_SIMULATION_ALLOWED_ORIGINS` to the deployed frontend origin(s) (no path, no trailing slash, scheme included — e.g. `https://app.example.com`). Without it the function rejects every browser request and end-turn fails closed.
 
 ### Local Auth and Seeded Access
 

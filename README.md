@@ -87,6 +87,47 @@ For other providers:
 
 Ensure your provider allows the sender email address to send on behalf of your domain.
 
+### Supabase Edge Function CORS
+
+Gubernator uses Supabase Edge Functions to handle sensitive operations. Each function enforces a per-function browser origin allowlist to prevent unauthorized requests from other origins. The allowlist is configured via environment variables that are read from `supabase/config.toml` during local development.
+
+#### Environment Variables
+
+Two functions require origin allowlists:
+
+- **`END_TURN_SIMULATION_ALLOWED_ORIGINS`** — gates the `end-turn-simulation` function. Browser requests carrying an `Origin` header not in this list are rejected with HTTP 403 before any logic runs.
+- **`ADMIN_CREATE_USER_ALLOWED_ORIGINS`** — gates the `admin-create-user` function. Same validation and rejection behavior.
+
+Both are comma-separated origin lists (no path, no trailing slash, scheme required — e.g. `http://localhost:5173,http://127.0.0.1:5173`).
+
+#### Local Development
+
+These are already configured in `supabase/config.toml` under `[edge_runtime.secrets]` for local Supabase:
+
+```toml
+[edge_runtime.secrets]
+END_TURN_SIMULATION_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+ADMIN_CREATE_USER_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+```
+
+Both the Vite dev server (`http://localhost:5173`) and the localhost loopback variant (`http://127.0.0.1:5173`) are allowed for local testing. If you edit `config.toml`, restart Supabase for the changes to take effect:
+
+```bash
+npx supabase stop && npx supabase start
+```
+
+#### Production & Staging
+
+When deploying to a hosted Supabase project (staging or production), set these environment variables as secrets through the Supabase Dashboard or via Supabase CLI:
+
+```bash
+supabase secrets set --project-ref <project-ref> \
+  END_TURN_SIMULATION_ALLOWED_ORIGINS="https://app.example.com" \
+  ADMIN_CREATE_USER_ALLOWED_ORIGINS="https://app.example.com"
+```
+
+Replace `https://app.example.com` with your deployed frontend origin(s). If these variables are unset or the request origin is not listed, the function returns HTTP 403 and the operation fails silently in the UI.
+
 ### 3. Apply database migrations
 
 Requires the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and a local Supabase instance running:
