@@ -287,14 +287,12 @@ describe("NationDetailPage", () => {
 
     renderPage();
 
-    // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Open relationship for Veilreach by clicking its nation name
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
-    const list = await screen.findByRole("list", { name: "Relationships" });
-    expect(list).toBeDefined();
     expect(
       await screen.findByText(
         (_, element) => element?.textContent === "Current stance: Neutral",
@@ -323,13 +321,13 @@ describe("NationDetailPage", () => {
 
     renderPage();
 
-    // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Open relationship for Veilreach by clicking its nation name
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
-    await screen.findByRole("list", { name: "Relationships" });
+    // Verify controls are hidden (not present even after opening)
     expect(
       screen.queryByRole("button", { name: /Propose alliance/ }),
     ).toBeNull();
@@ -361,12 +359,12 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
-    await screen.findByRole("list", { name: "Relationships" });
     expect(await screen.findByText(/Sent proposal:/)).toBeDefined();
     expect(screen.getByText(/Allied — awaiting Veilreach\./)).toBeDefined();
     expect(
@@ -411,10 +409,11 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
     await screen.findByText(/Incoming proposal:/);
     expect(
@@ -467,10 +466,11 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
     const decline = await screen.findByRole("button", {
       name: /Decline proposal/,
@@ -510,10 +510,11 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
     const propose = await screen.findByRole("button", {
       name: /Propose alliance/,
@@ -559,10 +560,11 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
     const select = await screen.findByRole("combobox", {
       name: /Set stance/,
@@ -612,10 +614,11 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
     expect(
       await screen.findByRole("button", { name: /Withdraw agreement/ }),
@@ -649,10 +652,11 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
@@ -698,10 +702,11 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
@@ -791,10 +796,11 @@ describe("NationDetailPage", () => {
     renderPage();
 
     // Open relationships collapsible
-    const relationshipsTrigger = await screen.findByRole("button", {
-      name: /Relationships/,
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
     });
-    await userEvent.click(relationshipsTrigger);
+    await userEvent.click(veilreachTrigger);
 
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
