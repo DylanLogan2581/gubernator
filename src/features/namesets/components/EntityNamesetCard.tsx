@@ -4,7 +4,6 @@ import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { Button } from "@/components/ui/button";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
@@ -197,7 +196,6 @@ function NamesetCardContent({
   readonly onClear: () => void;
   readonly onSelect: (id: string) => void;
 }): JSX.Element {
-  const currentNameset = namesets.find((ns) => ns.id === currentNamesetId);
   const defaultNameset = namesets.find((ns) => ns.isDefault);
 
   return (
@@ -243,34 +241,14 @@ function NamesetCardContent({
               </option>
             ))}
           </select>
-
-          {currentNamesetId !== null && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={disabled}
-              onClick={onClear}
-            >
-              Use world default
-            </Button>
-          )}
         </div>
 
-        {currentNameset !== undefined ? (
-          <p className="text-xs text-muted-foreground">
-            Override: <span className="font-medium">{currentNameset.name}</span>
-            {" · "}
-            {currentNameset.configJson.convention}
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Using{" "}
-            {defaultNameset !== undefined
-              ? `world default: ${defaultNameset.name}`
-              : "world naming config"}
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          Using{" "}
+          {defaultNameset !== undefined
+            ? `world default: ${defaultNameset.name}`
+            : "world naming config"}
+        </p>
       </div>
     </section>
   );
