@@ -267,6 +267,48 @@ export function runSimulation(
     return !allDeathIds.has(pc.citizenAId) && !allDeathIds.has(pc.citizenBId);
   });
 
+  // Filter partnership.formed logs and notifications to exclude pairs dropped
+  // due to partner death. Build set of (A|B) pairs that are in final changes.
+  const formedPartnerPairs = new Set<string>();
+  for (const pc of partnershipChanges) {
+    if (pc.type === "formed") {
+      formedPartnerPairs.add(`${pc.citizenAId}|${pc.citizenBId}`);
+    }
+  }
+
+  const filteredP9Logs = p9.logs.filter((log) => {
+    if (log.category !== "partnership.formed") return true;
+    const payload = log.payload as {
+      citizenAId: string;
+      citizenBId: string;
+    };
+    return formedPartnerPairs.has(
+      `${payload.citizenAId}|${payload.citizenBId}`,
+    );
+  });
+
+  // Determine which settlements have actual formations so we only keep
+  // partnership.formed notifications for those settlements.
+  const settlementWithFormations = new Set<string>();
+  for (const pc of partnershipChanges) {
+    if (pc.type === "formed") {
+      const citizen = input.citizens.find((c) => c.id === pc.citizenAId);
+      const settleId = citizen?.settlementId;
+      if (settleId !== null && settleId !== undefined) {
+        settlementWithFormations.add(settleId);
+      }
+    }
+  }
+
+  const filteredP9Notifications = p9.notifications.filter((notif) => {
+    if (notif.notificationType !== "partnership.formed") return true;
+    return (
+      notif.settlementId !== null &&
+      notif.settlementId !== undefined &&
+      settlementWithFormations.has(notif.settlementId)
+    );
+  });
+
   // Classify deltas for the snapshot builder.
   // productionDeltas: positive deltas from production phases.
   // consumptionDeltas: negative deltas from consumption phases.
@@ -300,7 +342,7 @@ export function runSimulation(
     consumptionDeltas,
     depositUpdates: p2.depositUpdates,
     managedPopulationUpdates: p7.managedPopulationUpdates,
-    partnershipChanges: p9.partnershipChanges,
+    partnershipChanges,
     pendingStockpiles,
     productionDeltas,
     tradeRouteDeltas: p6.stockpileDeltas,
@@ -320,7 +362,7 @@ export function runSimulation(
     ...p6.logs,
     ...p7.logs,
     ...p8.logs,
-    ...p9.logs,
+    ...filteredP9Logs,
     ...p10.logs,
     ...p11.logs,
     ...p12.logs,
@@ -333,7 +375,7 @@ export function runSimulation(
     ...p4.notifications,
     ...p7.notifications,
     ...p8.notifications,
-    ...p9.notifications,
+    ...filteredP9Notifications,
     ...p10.notifications,
     ...p11.notifications,
   ];
