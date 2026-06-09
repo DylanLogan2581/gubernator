@@ -327,6 +327,11 @@ export type SimPartnership = {
   readonly status: SimPartnershipStatus;
 };
 
+export type SimResource = {
+  readonly decayRate: number;
+  readonly id: string;
+};
+
 export type SimulationInputState = {
   readonly buildingBlueprints: readonly SimBuildingBlueprint[];
   readonly buildingTiers: readonly SimBuildingTier[];
@@ -348,6 +353,7 @@ export type SimulationInputState = {
   readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];
   readonly populationRules: WorldPopulationRules;
+  readonly resources: readonly SimResource[];
   readonly settlementBuildings: readonly SimSettlementBuilding[];
   readonly settlements: readonly SimSettlement[];
   readonly stockpiles: readonly SimStockpile[];

@@ -433,6 +433,7 @@ function TrashedResourceRow({
 
 type ResourceFieldErrors = {
   readonly baseStockpileCap?: string;
+  readonly decayRate?: string;
   readonly name?: string;
   readonly slug?: string;
 };
@@ -460,6 +461,7 @@ function EditResourceForm({
   const [baseStockpileCap, setBaseStockpileCap] = useState(
     String(resource.baseStockpileCap),
   );
+  const [decayRate, setDecayRate] = useState(String(resource.decayRate));
   const [fieldErrors, setFieldErrors] = useState<ResourceFieldErrors>({});
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
@@ -477,6 +479,7 @@ function EditResourceForm({
 
     const input: UpdateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
+      decayRate: decayRate !== "" ? decayRate : undefined,
       name,
       resourceId: resource.id,
       slug,
@@ -485,18 +488,21 @@ function EditResourceForm({
 
     const result = updateResourceInputSchema.safeParse(input);
     if (!result.success) {
+      let baseStockpileCapError: string | undefined;
+      let decayRateError: string | undefined;
       let nameError: string | undefined;
       let slugError: string | undefined;
-      let baseStockpileCapError: string | undefined;
       for (const issue of result.error.issues) {
         const field = issue.path[0];
         if (field === "name") nameError ??= issue.message;
         else if (field === "slug") slugError ??= issue.message;
         else if (field === "baseStockpileCap")
           baseStockpileCapError ??= issue.message;
+        else if (field === "decayRate") decayRateError ??= issue.message;
       }
       setFieldErrors({
         baseStockpileCap: baseStockpileCapError,
+        decayRate: decayRateError,
         name: nameError,
         slug: slugError,
       });
@@ -579,6 +585,22 @@ function EditResourceForm({
             <p className="text-xs text-destructive">
               {fieldErrors.baseStockpileCap}
             </p>
+          ) : null}
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Decay rate (%)</span>
+          <Input
+            aria-invalid={fieldErrors.decayRate !== undefined}
+            disabled={isPending}
+            inputMode="decimal"
+            placeholder="0"
+            value={decayRate}
+            onChange={(e) => {
+              setDecayRate(e.currentTarget.value);
+            }}
+          />
+          {fieldErrors.decayRate !== undefined ? (
+            <p className="text-xs text-destructive">{fieldErrors.decayRate}</p>
           ) : null}
         </label>
       </div>

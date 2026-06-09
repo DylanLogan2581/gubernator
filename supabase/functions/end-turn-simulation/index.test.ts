@@ -83,8 +83,8 @@ function makeStateResponses(): Record<
     "/rest/v1/namesets": { body: [], status: 200 },
     "/rest/v1/resources": {
       body: [
-        { id: FOOD_ID, slug: "food" },
-        { id: WATER_ID, slug: "fresh-water" },
+        { decay_rate: 0, id: FOOD_ID, slug: "food" },
+        { decay_rate: 0, id: WATER_ID, slug: "fresh-water" },
       ],
       status: 200,
     },

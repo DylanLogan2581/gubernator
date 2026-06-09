@@ -303,6 +303,10 @@ export async function resolveSupabaseEndTurnSimulationInput(
       .filter(isPartnershipRow)
       .map(toSimPartnership),
     populationRules,
+    resources: systemResources.map((r) => ({
+      decayRate: r.decay_rate,
+      id: r.id,
+    })),
     settlementBuildings: (
       buildingsResult as Extract<typeof buildingsResult, { ok: true }>
     ).rows

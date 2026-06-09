@@ -76,6 +76,7 @@ function makeBaseInput(
     npcFlavorConfig: null,
     partnerships: [],
     populationRules: makeMinimalPopulationRules(),
+    resources: [],
     settlementBuildings: [],
     settlements: [{ id: SETTLEMENT_ID, name: "Test Settlement" }],
     stockpiles: [],

@@ -39,6 +39,7 @@ export type SupabaseNamesetRow = {
 };
 
 export type SupabaseResourceRow = {
+  readonly decay_rate: number;
   readonly id: string;
   readonly slug: string;
 };
@@ -249,7 +250,12 @@ export function isNamesetRow(v: unknown): v is SupabaseNamesetRow {
 }
 
 export function isResourceRow(v: unknown): v is SupabaseResourceRow {
-  return isRecord(v) && typeof v.id === "string" && typeof v.slug === "string";
+  return (
+    isRecord(v) &&
+    typeof v.decay_rate === "number" &&
+    typeof v.id === "string" &&
+    typeof v.slug === "string"
+  );
 }
 
 export function isStockpileRow(v: unknown): v is SupabaseStockpileRow {

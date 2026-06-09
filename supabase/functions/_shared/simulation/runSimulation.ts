@@ -13,6 +13,7 @@ import { phaseLogsAndSnapshots } from "./phases/phaseLogsAndSnapshots.ts";
 import { phaseManagedPopulations } from "./phases/phaseManagedPopulations.ts";
 import { phasePartnerships } from "./phases/phasePartnerships/index.ts";
 import { phasePassiveEffects } from "./phases/phasePassiveEffects.ts";
+import { phaseResourceDecay } from "./phases/phaseResourceDecay.ts";
 import { phaseStandardJobs } from "./phases/phaseStandardJobs.ts";
 import { phaseStockpileClamp } from "./phases/phaseStockpileClamp.ts";
 import { phaseTradeRoutes } from "./phases/phaseTradeRoutes.ts";
@@ -251,6 +252,21 @@ export function runSimulation(
   );
 
   // -------------------------------------------------------------------------
+  // Phase 12.5 — Resource Decay (mutates pendingStockpiles in place)
+  // -------------------------------------------------------------------------
+
+  // Index resources by ID for quick decay rate lookup.
+  const resourcesByWorldId = new Map(
+    input.resources.map((r) => [r.id, { decayRate: r.decayRate }]),
+  );
+
+  const p12dot5 = phaseResourceDecay(
+    pendingStockpiles,
+    resourcesByWorldId,
+    stockpileKeyIndex,
+  );
+
+  // -------------------------------------------------------------------------
   // Phase 13 — Logs and Snapshots
   // -------------------------------------------------------------------------
 
@@ -291,6 +307,7 @@ export function runSimulation(
     ...p7.stockpileDeltas.filter((d) => d.delta < 0),
     ...p8.stockpileDeltas,
     ...p12.stockpileDeltas.filter((d) => d.delta < 0),
+    ...p12dot5.stockpileDeltas,
   ];
 
   const p13 = phaseLogsAndSnapshots(context, {
@@ -324,6 +341,7 @@ export function runSimulation(
     ...p10.logs,
     ...p11.logs,
     ...p12.logs,
+    ...p12dot5.logs,
     ...p13.logs,
   ];
 
@@ -348,6 +366,7 @@ export function runSimulation(
     ...p7.stockpileDeltas,
     ...p8.stockpileDeltas,
     ...p12.stockpileDeltas,
+    ...p12dot5.stockpileDeltas,
   ];
 
   return {
