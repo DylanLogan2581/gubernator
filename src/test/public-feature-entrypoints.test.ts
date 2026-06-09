@@ -33,8 +33,6 @@ import {
 import {
   SettlementReadinessListPanel,
   SettlementReadinessListPanelContent,
-  SettlementReadinessSummaryPanel,
-  SettlementReadinessSummaryPanelContent,
   computeSettlementReadinessSummary,
   createSettlementReadinessResetUpdate,
   createSettlementReadinessResetUpdatePayload,
@@ -221,10 +219,6 @@ describe("public feature entrypoints", () => {
     expect(setSettlementReadinessMutationOptions).toEqual(expect.any(Function));
     expect(SettlementReadinessListPanel).toEqual(expect.any(Function));
     expect(SettlementReadinessListPanelContent).toEqual(expect.any(Function));
-    expect(SettlementReadinessSummaryPanel).toEqual(expect.any(Function));
-    expect(SettlementReadinessSummaryPanelContent).toEqual(
-      expect.any(Function),
-    );
     expect(computeSettlementReadinessSummary).toEqual(expect.any(Function));
     expect(createSettlementReadinessResetUpdate).toEqual(expect.any(Function));
     expect(createSettlementReadinessResetUpdatePayload).toEqual(

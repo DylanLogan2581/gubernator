@@ -19,7 +19,6 @@ import {
 } from "@/features/permissions";
 import {
   SettlementReadinessListPanel,
-  SettlementReadinessSummaryPanel,
   settlementReadinessSummaryQueryOptions,
 } from "@/features/settlements";
 import { EndTurnControl, TurnTransitionOutcomePanel } from "@/features/turns";
@@ -260,7 +259,6 @@ function WorldShellContent({
         worldId={worldId}
       />
       <TurnTransitionOutcomePanel scope="world" id={worldId} />
-      <SettlementReadinessSummaryPanel worldId={worldId} />
       <SettlementReadinessListPanel
         accessContext={accessContext}
         canAdmin={worldQuery.data.canAdmin}
