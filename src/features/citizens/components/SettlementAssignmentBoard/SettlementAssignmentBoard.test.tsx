@@ -484,56 +484,7 @@ describe("SettlementAssignmentBoard", () => {
     requireSupabaseClient.mockReset();
   });
 
-  it("renders tab navigation with Bulk jobs and Per-target jobs tabs", () => {
-    requireSupabaseClient.mockReturnValue(createClient({}));
-
-    renderBoard();
-
-    const bulkTab = screen.getByRole("tab", { name: "Bulk jobs" });
-    const perTargetTab = screen.getByRole("tab", { name: "Per-target jobs" });
-    expect(bulkTab).toBeDefined();
-    expect(perTargetTab).toBeDefined();
-    expect(bulkTab).toHaveAttribute("aria-selected", "true");
-    expect(perTargetTab).toHaveAttribute("aria-selected", "false");
-  });
-
-  it("mobile selector reflects active tab and calls navigate with resetScroll: false on change", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(createClient({}));
-
-    renderBoard({ activeTab: "bulk" });
-
-    const select = screen.getByRole("combobox", { name: "Assignment view" });
-    expect(select).toHaveValue("bulk");
-
-    await user.selectOptions(select, "per-target");
-
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        resetScroll: false,
-        search: { assignmentTab: "per-target" },
-      }),
-    );
-  });
-
-  it("desktop tab trigger calls navigate with resetScroll: false", async () => {
-    const user = userEvent.setup();
-    requireSupabaseClient.mockReturnValue(createClient({}));
-
-    renderBoard({ activeTab: "bulk" });
-
-    const perTargetTab = screen.getByRole("tab", { name: "Per-target jobs" });
-    await user.click(perTargetTab);
-
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        resetScroll: false,
-        search: { assignmentTab: "per-target" },
-      }),
-    );
-  });
-
-  it("keeps both panels mounted when the non-active tab is hidden", async () => {
+  it("unified table renders bulk + per-target rows in one tbody", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [],
@@ -557,75 +508,16 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target" });
+    renderBoard();
 
-    // Bulk panel is mounted and its data loads even though it is hidden
+    // Unified table renders both bulk and per-target rows in one table
     expect(await screen.findByText("Farmer")).toBeDefined();
-    // Per-target panel content is also present and visible
     expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
-  });
-
-  it("preserves row-level input state when switching tabs and returning", async () => {
-    const user = userEvent.setup();
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        aggregates: [],
-        jobCounts: [
-          createJobCountRow({
-            job_name: "Farmer",
-            current_count: 3,
-            capacity: 10,
-          }),
-        ],
-        citizenAssignmentRows: [],
-        depositInstanceRows: [],
-        populationInstanceRows: [],
-        tradeRouteRows: [],
-      }),
-    );
-
-    const defaultProps = {
-      canManageSettlement: true,
-      isArchived: false,
-      nationId: "nation-1",
-      settlementId: "settlement-1",
-      worldId: "world-1",
-    };
-
-    const { rerender } = render(
-      <QueryClientProvider client={queryClient}>
-        <SettlementAssignmentBoard activeTab="bulk" {...defaultProps} />
-      </QueryClientProvider>,
-    );
-
-    await screen.findByText("Farmer");
-
-    const input = screen.getByRole("spinbutton", {
-      name: "Target count for Farmer",
-    });
-    await user.clear(input);
-    await user.type(input, "7");
-    expect(input).toHaveValue(7);
-
-    rerender(
-      <QueryClientProvider client={queryClient}>
-        <SettlementAssignmentBoard activeTab="per-target" {...defaultProps} />
-      </QueryClientProvider>,
-    );
-
-    rerender(
-      <QueryClientProvider client={queryClient}>
-        <SettlementAssignmentBoard activeTab="bulk" {...defaultProps} />
-      </QueryClientProvider>,
-    );
-
-    expect(
-      screen.getByRole("spinbutton", { name: "Target count for Farmer" }),
-    ).toHaveValue(7);
+    // Only one table tbody (not separate tabs)
+    const tables = screen.getAllByRole("table");
+    expect(tables).toHaveLength(1);
+    const rows = tables[0].querySelectorAll("tbody tr");
+    expect(rows.length).toBeGreaterThan(2); // Unassigned + Farmer + Iron Vein deposit
   });
 
   it("shows standard job rows with current/capacity display", async () => {
@@ -998,7 +890,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target" });
+    renderBoard();
 
     expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
     expect(screen.getByText("0 / 4")).toBeDefined();
@@ -1020,10 +912,14 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target" });
+    renderBoard();
 
     expect(await screen.findByText("Coal Seam — Miner")).toBeDefined();
-    expect(screen.getByLabelText("no upper bound")).toBeInTheDocument();
+    // Multiple "no upper bound" labels exist (unassigned + deposit rows), so check the deposit row specifically
+    const depositRow = screen.getByText("Coal Seam — Miner").closest("tr");
+    expect(
+      depositRow?.querySelector("[aria-label='no upper bound']"),
+    ).toBeInTheDocument();
   });
 
   it("shows husbandry section with population name and job name", async () => {
@@ -1046,7 +942,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target" });
+    renderBoard();
 
     expect(await screen.findByText("Flock A — Shepherd")).toBeDefined();
   });
@@ -1071,7 +967,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target" });
+    renderBoard();
 
     expect(await screen.findByText("Flock A — Slaughter")).toBeDefined();
   });
@@ -1101,10 +997,10 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target" });
+    renderBoard();
 
-    await screen.findByText(/Hillfort.*Riverside|Riverside.*Hillfort/);
-    expect(screen.getByText("Trader: Grain → Riverside")).toBeDefined();
+    // Trade route rows appear in the unified table; both local and remote ends shown
+    expect(await screen.findByText("Trader: Grain → Riverside")).toBeDefined();
     expect(
       screen.getByText(/Trader \(receiving — remote\): Riverside/),
     ).toBeDefined();
@@ -1132,7 +1028,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target" });
+    renderBoard();
 
     expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
     expect(
@@ -1153,7 +1049,6 @@ describe("SettlementAssignmentBoard", () => {
     );
 
     renderBoard({
-      activeTab: "per-target",
       canManageSettlement: true,
       isArchived: false,
     });
@@ -1162,7 +1057,7 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.getByRole("button", { name: "Apply" })).toBeDefined();
   });
 
-  it("hides Apply button on per-target tab when canManageSettlement is false", async () => {
+  it("hides Apply button when canManageSettlement is false", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenAssignmentRows: [],
@@ -1175,7 +1070,6 @@ describe("SettlementAssignmentBoard", () => {
     );
 
     renderBoard({
-      activeTab: "per-target",
       canManageSettlement: false,
       isArchived: false,
     });
@@ -1184,7 +1078,7 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
-  it("hides Apply button on per-target tab when isArchived is true", async () => {
+  it("hides Apply button when isArchived is true", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         citizenAssignmentRows: [],
@@ -1197,7 +1091,6 @@ describe("SettlementAssignmentBoard", () => {
     );
 
     renderBoard({
-      activeTab: "per-target",
       canManageSettlement: true,
       isArchived: true,
     });
@@ -1227,7 +1120,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target" });
+    renderBoard();
 
     expect(await screen.findByText("Active Vein — Miner")).toBeDefined();
     expect(screen.queryByText("Depleted Vein")).toBeNull();
@@ -1270,7 +1163,6 @@ describe("SettlementAssignmentBoard", () => {
     );
 
     renderBoard({
-      activeTab: "per-target",
       canManageSettlement: true,
       settlementId: SETTLEMENT_UUID,
     });
@@ -1372,7 +1264,7 @@ describe("SettlementAssignmentBoard", () => {
       }),
     );
 
-    renderBoard({ activeTab: "per-target", canManageSettlement: true });
+    renderBoard({ canManageSettlement: true });
 
     await screen.findByText("Iron Vein — Miner");
     const input = screen.getByRole("spinbutton", {
