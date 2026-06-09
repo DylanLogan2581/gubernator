@@ -37,6 +37,28 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+  deno:
+    name: Deno
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+
+      - name: Run deno check
+        run: deno check supabase/functions/**/*.ts
+
+      - name: Run deno lint
+        run: deno lint supabase/functions/
+
+      - name: Run deno fmt --check
+        run: deno fmt --check supabase/functions/
+
   build:
     name: Build
     runs-on: ubuntu-latest
