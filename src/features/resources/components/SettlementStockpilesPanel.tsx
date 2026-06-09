@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -46,34 +47,39 @@ export function SettlementStockpilesPanel({
   );
 
   return (
-    <section
+    <Card
       aria-labelledby="settlement-stockpiles-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3"
     >
-      <h2 id="settlement-stockpiles-heading" className="text-base font-medium">
+      <h2
+        id="settlement-stockpiles-heading"
+        className="text-base font-medium px-4 pt-4"
+      >
         Stockpiles
       </h2>
-      {stockpilesQuery.isPending ? (
-        <LoadingState label="Loading stockpiles…" />
-      ) : stockpilesQuery.isError ? (
-        <ErrorState
-          title="Stockpiles could not be loaded"
-          description={getErrorDescription(stockpilesQuery.error)}
-        />
-      ) : stockpilesQuery.data.length === 0 ? (
-        <EmptyState
-          title="No stockpiles"
-          description="This settlement has no resource stockpiles."
-        />
-      ) : (
-        <StockpilesTable
-          canAdmin={canAdmin}
-          isArchived={isArchived}
-          queryClient={queryClient}
-          stockpiles={sortStockpiles(stockpilesQuery.data)}
-        />
-      )}
-    </section>
+      <CardContent>
+        {stockpilesQuery.isPending ? (
+          <LoadingState label="Loading stockpiles…" />
+        ) : stockpilesQuery.isError ? (
+          <ErrorState
+            title="Stockpiles could not be loaded"
+            description={getErrorDescription(stockpilesQuery.error)}
+          />
+        ) : stockpilesQuery.data.length === 0 ? (
+          <EmptyState
+            title="No stockpiles"
+            description="This settlement has no resource stockpiles."
+          />
+        ) : (
+          <StockpilesTable
+            canAdmin={canAdmin}
+            isArchived={isArchived}
+            queryClient={queryClient}
+            stockpiles={sortStockpiles(stockpilesQuery.data)}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

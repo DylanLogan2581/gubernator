@@ -49,7 +49,7 @@ export function NationSettlementsSection({
   return (
     <section
       aria-labelledby="nation-settlements-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="flex items-center justify-between gap-2">
         <h2 id="nation-settlements-heading" className="text-base font-medium">

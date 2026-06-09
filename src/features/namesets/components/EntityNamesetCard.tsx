@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Card } from "@/components/ui/card";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
@@ -199,10 +200,7 @@ function NamesetCardContent({
   const defaultNameset = namesets.find((ns) => ns.isDefault);
 
   return (
-    <section
-      aria-labelledby={headingId}
-      className="rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
+    <Card aria-labelledby={headingId} className="p-4">
       <div className="grid gap-3">
         <div>
           <h2 id={headingId} className="text-sm font-semibold">
@@ -250,6 +248,6 @@ function NamesetCardContent({
             : "world naming config"}
         </p>
       </div>
-    </section>
+    </Card>
   );
 }

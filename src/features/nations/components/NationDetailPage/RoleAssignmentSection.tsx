@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import {
   RoleAssignmentControls,
   useActivePlayerCharacter,
@@ -27,9 +28,9 @@ export function NationRoleAssignmentSection({
   }
 
   return (
-    <section
+    <Card
       aria-labelledby="nation-role-assignment-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="space-y-1">
         <h2
@@ -51,6 +52,6 @@ export function NationRoleAssignmentSection({
         nation={nation}
         variant="nation"
       />
-    </section>
+    </Card>
   );
 }

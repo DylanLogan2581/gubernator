@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { assignmentsInSettlementQueryOptions } from "../queries/citizenAssignmentsQueries";
@@ -45,11 +46,8 @@ export function CitizensPanel({
   const [includeDead, setIncludeDead] = useState(false);
 
   return (
-    <section
-      aria-labelledby="citizens-panel-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
-      <div className="flex items-start justify-between gap-2">
+    <Card aria-labelledby="citizens-panel-heading" className="grid gap-3">
+      <div className="flex items-start justify-between gap-2 px-4 pt-4">
         <div className="space-y-1">
           <h2 id="citizens-panel-heading" className="text-base font-medium">
             Citizens
@@ -78,16 +76,18 @@ export function CitizensPanel({
         ) : null}
       </div>
 
-      {canAdmin ? (
-        <CitizensAdminList
-          includeDead={includeDead}
-          settlementId={settlementId}
-          worldId={worldId}
-        />
-      ) : (
-        <CitizensAggregateView settlementId={settlementId} />
-      )}
-    </section>
+      <CardContent>
+        {canAdmin ? (
+          <CitizensAdminList
+            includeDead={includeDead}
+            settlementId={settlementId}
+            worldId={worldId}
+          />
+        ) : (
+          <CitizensAggregateView settlementId={settlementId} />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

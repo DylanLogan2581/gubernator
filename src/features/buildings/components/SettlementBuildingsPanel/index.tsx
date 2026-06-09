@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -63,11 +64,8 @@ export function SettlementBuildingsPanel({
   const jobNames = new Map((jobsQuery.data ?? []).map((j) => [j.id, j.name]));
 
   return (
-    <section
-      aria-labelledby="settlement-buildings-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
-      <div className="flex flex-col gap-1">
+    <Card aria-labelledby="settlement-buildings-heading" className="grid gap-3">
+      <div className="flex flex-col gap-1 px-4 pt-4">
         <div className="flex items-center justify-between gap-2">
           <h2
             id="settlement-buildings-heading"
@@ -91,43 +89,45 @@ export function SettlementBuildingsPanel({
         </div>
       </div>
 
-      {buildingsQuery.isPending ? (
-        <LoadingState label="Loading buildings…" />
-      ) : buildingsQuery.isError ? (
-        <ErrorState
-          title="Buildings could not be loaded"
-          description={getErrorDescription(buildingsQuery.error)}
-        />
-      ) : buildingsQuery.data.length === 0 ? (
-        <EmptyState
-          title="No buildings"
-          description="This settlement has no buildings."
-        />
-      ) : (
-        <BuildingsGroups
-          buildings={buildingsQuery.data}
-          canAdmin={canAdmin}
-          isArchived={isArchived}
-          jobNames={jobNames}
-          latestOutcome={latestOutcome}
-          queryClient={queryClient}
-          resourceNames={resourceNames}
-          settlementId={settlementId}
-          worldId={worldId}
-        />
-      )}
+      <CardContent>
+        {buildingsQuery.isPending ? (
+          <LoadingState label="Loading buildings…" />
+        ) : buildingsQuery.isError ? (
+          <ErrorState
+            title="Buildings could not be loaded"
+            description={getErrorDescription(buildingsQuery.error)}
+          />
+        ) : buildingsQuery.data.length === 0 ? (
+          <EmptyState
+            title="No buildings"
+            description="This settlement has no buildings."
+          />
+        ) : (
+          <BuildingsGroups
+            buildings={buildingsQuery.data}
+            canAdmin={canAdmin}
+            isArchived={isArchived}
+            jobNames={jobNames}
+            latestOutcome={latestOutcome}
+            queryClient={queryClient}
+            resourceNames={resourceNames}
+            settlementId={settlementId}
+            worldId={worldId}
+          />
+        )}
 
-      {addOpen ? (
-        <AddBuildingDialog
-          queryClient={queryClient}
-          settlementId={settlementId}
-          worldId={worldId}
-          onClose={() => {
-            setAddOpen(false);
-          }}
-        />
-      ) : null}
-    </section>
+        {addOpen ? (
+          <AddBuildingDialog
+            queryClient={queryClient}
+            settlementId={settlementId}
+            worldId={worldId}
+            onClose={() => {
+              setAddOpen(false);
+            }}
+          />
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

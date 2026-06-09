@@ -86,7 +86,7 @@ export function PartnershipHistoryPanel({
   return (
     <section
       aria-labelledby="citizen-partnerships-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">

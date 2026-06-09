@@ -45,7 +45,7 @@ export function SettlementReadinessSection({
   return (
     <section
       aria-labelledby="settlement-readiness-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <h2 id="settlement-readiness-heading" className="text-base font-medium">
         Readiness

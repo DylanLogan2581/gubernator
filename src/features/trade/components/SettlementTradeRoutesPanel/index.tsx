@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { useWorldTransitionOutcome } from "@/features/turns";
@@ -111,11 +112,11 @@ export function SettlementTradeRoutesPanel({
   );
 
   return (
-    <section
+    <Card
       aria-labelledby="settlement-trade-routes-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3"
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4">
         <h2
           id="settlement-trade-routes-heading"
           className="text-base font-medium"
@@ -154,64 +155,68 @@ export function SettlementTradeRoutesPanel({
         </div>
       </div>
       {showProposeDialog ? (
-        <ProposeTradeRouteDialog
-          activeCharacterId={activeCharacter?.id ?? ""}
-          queryClient={queryClient}
-          settlementId={settlementId}
-          worldId={worldId}
-          onClose={() => {
-            setShowProposeDialog(false);
-          }}
-        />
-      ) : null}
-
-      {routesQuery.isPending ? (
-        <LoadingState label="Loading trade routes…" />
-      ) : routesQuery.isError ? (
-        <ErrorState
-          title="Trade routes could not be loaded"
-          description={getErrorDescription(routesQuery.error)}
-        />
-      ) : outgoing.length === 0 && incoming.length === 0 ? (
-        <EmptyState
-          title={
-            showCancelled ? "No cancelled trade routes" : "No trade routes"
-          }
-          description={
-            showCancelled
-              ? "This settlement has no cancelled or replaced trade routes."
-              : "This settlement has no active or proposed trade routes."
-          }
-        />
-      ) : (
-        <div className="grid gap-4">
-          <TradeRoutesDirection
-            activeCharacterId={activeCharacter?.id ?? null}
-            canManageRoutes={showCancelled ? false : canManageRoutes}
-            label="Outgoing"
+        <div className="px-4">
+          <ProposeTradeRouteDialog
+            activeCharacterId={activeCharacter?.id ?? ""}
             queryClient={queryClient}
-            resumedRouteIds={resumedRouteIds}
-            routes={outgoing}
             settlementId={settlementId}
-            side="origin"
-            traderCountByRoute={traderCountByRoute}
             worldId={worldId}
-          />
-          <TradeRoutesDirection
-            activeCharacterId={activeCharacter?.id ?? null}
-            canManageRoutes={showCancelled ? false : canManageRoutes}
-            label="Incoming"
-            queryClient={queryClient}
-            resumedRouteIds={resumedRouteIds}
-            routes={incoming}
-            settlementId={settlementId}
-            side="destination"
-            traderCountByRoute={traderCountByRoute}
-            worldId={worldId}
+            onClose={() => {
+              setShowProposeDialog(false);
+            }}
           />
         </div>
-      )}
-    </section>
+      ) : null}
+
+      <CardContent>
+        {routesQuery.isPending ? (
+          <LoadingState label="Loading trade routes…" />
+        ) : routesQuery.isError ? (
+          <ErrorState
+            title="Trade routes could not be loaded"
+            description={getErrorDescription(routesQuery.error)}
+          />
+        ) : outgoing.length === 0 && incoming.length === 0 ? (
+          <EmptyState
+            title={
+              showCancelled ? "No cancelled trade routes" : "No trade routes"
+            }
+            description={
+              showCancelled
+                ? "This settlement has no cancelled or replaced trade routes."
+                : "This settlement has no active or proposed trade routes."
+            }
+          />
+        ) : (
+          <div className="grid gap-4">
+            <TradeRoutesDirection
+              activeCharacterId={activeCharacter?.id ?? null}
+              canManageRoutes={showCancelled ? false : canManageRoutes}
+              label="Outgoing"
+              queryClient={queryClient}
+              resumedRouteIds={resumedRouteIds}
+              routes={outgoing}
+              settlementId={settlementId}
+              side="origin"
+              traderCountByRoute={traderCountByRoute}
+              worldId={worldId}
+            />
+            <TradeRoutesDirection
+              activeCharacterId={activeCharacter?.id ?? null}
+              canManageRoutes={showCancelled ? false : canManageRoutes}
+              label="Incoming"
+              queryClient={queryClient}
+              resumedRouteIds={resumedRouteIds}
+              routes={incoming}
+              settlementId={settlementId}
+              side="destination"
+              traderCountByRoute={traderCountByRoute}
+              worldId={worldId}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

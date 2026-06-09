@@ -287,7 +287,7 @@ function WorldListItem({
   }
 
   return (
-    <li className="group grid gap-4 rounded-md border border-border bg-card p-4 text-card-foreground sm:grid-cols-[1fr_auto] sm:items-center">
+    <li className="group grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center rounded-md border border-border bg-card text-card-foreground">
       <Link
         to="/worlds/$worldId"
         params={{ worldId: world.id }}

@@ -4,6 +4,7 @@ import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { nationByIdQueryOptions } from "@/features/nations";
 import { RoleAssignmentControls } from "@/features/permissions";
@@ -37,9 +38,9 @@ export function CitizenPlayerCharacterSection({
   readonly queryClient: QueryClient;
 }): JSX.Element {
   return (
-    <section
+    <Card
       aria-labelledby="citizen-player-character-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="space-y-1">
         <h2
@@ -63,7 +64,7 @@ export function CitizenPlayerCharacterSection({
         isArchived={isArchived}
         variant="citizen"
       />
-    </section>
+    </Card>
   );
 }
 

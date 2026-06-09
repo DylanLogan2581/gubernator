@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
+import { Card } from "@/components/ui/card";
+
 import { citizenByIdQueryOptions } from "../../queries/citizensQueries";
 
 import type { Citizen } from "../../types/citizenTypes";
@@ -34,10 +36,7 @@ export function CitizenParentsSection({
   ];
 
   return (
-    <section
-      aria-labelledby="citizen-parents-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
+    <Card aria-labelledby="citizen-parents-heading" className="grid gap-3 p-4">
       <h2 id="citizen-parents-heading" className="text-base font-medium">
         Parents
       </h2>
@@ -65,6 +64,6 @@ export function CitizenParentsSection({
           </div>
         ))}
       </dl>
-    </section>
+    </Card>
   );
 }

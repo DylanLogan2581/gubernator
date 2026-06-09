@@ -76,7 +76,7 @@ export function SettlementDetailsSection({
     return (
       <section
         aria-labelledby="settlement-details-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+        className="grid gap-3 p-4"
       >
         <div className="flex items-center justify-between gap-2">
           <h2 id="settlement-details-heading" className="text-base font-medium">
@@ -110,7 +110,7 @@ export function SettlementDetailsSection({
   return (
     <form
       aria-label="Edit settlement details"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >

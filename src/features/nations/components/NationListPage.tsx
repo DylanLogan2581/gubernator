@@ -190,7 +190,7 @@ function NationListItem({
   const descriptionPreview = getDescriptionPreview(nation.description);
 
   return (
-    <li className="grid gap-2 rounded-md border border-border bg-card p-4 text-card-foreground">
+    <li className="grid gap-2 p-4">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <h2 className="truncate text-base font-medium">
           <Link
@@ -288,7 +288,7 @@ function CreateNationSection({
   return (
     <form
       aria-label="Create nation"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >

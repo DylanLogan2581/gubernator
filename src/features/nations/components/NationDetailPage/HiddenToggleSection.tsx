@@ -39,10 +39,7 @@ export function NationHiddenToggleSection({
   }
 
   return (
-    <section
-      aria-labelledby="nation-hidden-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
+    <section aria-labelledby="nation-hidden-heading" className="grid gap-3 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">
           <h2 id="nation-hidden-heading" className="text-base font-medium">

@@ -75,7 +75,7 @@ export function NationDetailsSection({
     return (
       <section
         aria-labelledby="nation-details-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+        className="grid gap-3 p-4"
       >
         <div className="flex items-center justify-between gap-2">
           <h2 id="nation-details-heading" className="text-base font-medium">
@@ -109,7 +109,7 @@ export function NationDetailsSection({
   return (
     <form
       aria-label="Edit nation details"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >

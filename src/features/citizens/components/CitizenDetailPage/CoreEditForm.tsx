@@ -4,6 +4,7 @@ import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { textInputLimits } from "@/lib/inputLimits";
 
@@ -79,10 +80,7 @@ export function CitizenCoreSection({
 
   if (!isEditing) {
     return (
-      <section
-        aria-labelledby="citizen-core-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-      >
+      <Card aria-labelledby="citizen-core-heading" className="grid gap-3 p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 id="citizen-core-heading" className="text-base font-medium">
             Core info
@@ -116,14 +114,14 @@ export function CitizenCoreSection({
             value={citizen.status === "alive" ? "Alive" : "Deceased"}
           />
         </dl>
-      </section>
+      </Card>
     );
   }
 
   return (
     <form
       aria-label="Edit citizen core"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >

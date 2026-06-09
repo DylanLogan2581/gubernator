@@ -4,6 +4,7 @@ import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 import { updateCitizenNpcFieldsMutationOptions } from "../../mutations/citizensMutations";
 
@@ -70,9 +71,9 @@ export function CitizenNpcNotesSection({
 
   if (!isEditing) {
     return (
-      <section
+      <Card
         aria-labelledby="citizen-npc-notes-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+        className="grid gap-3 p-4"
       >
         <div className="flex items-center justify-between gap-2">
           <h2 id="citizen-npc-notes-heading" className="text-base font-medium">
@@ -102,14 +103,14 @@ export function CitizenNpcNotesSection({
             block
           />
         </dl>
-      </section>
+      </Card>
     );
   }
 
   return (
     <form
       aria-label="Edit personality and skills"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >

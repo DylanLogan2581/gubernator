@@ -4,6 +4,7 @@ import { useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
 import { createSeededRng } from "@/lib/seededRng";
 import { generateLocalId } from "@/lib/uid";
@@ -93,9 +94,9 @@ export function CitizenNpcFlavorSection({
 
   if (isEditing) {
     return (
-      <section
+      <Card
         aria-labelledby="citizen-npc-flavor-heading"
-        className="grid gap-3"
+        className="grid gap-3 p-4"
       >
         <h2 id="citizen-npc-flavor-heading" className="sr-only">
           NPC flavor
@@ -110,14 +111,14 @@ export function CitizenNpcFlavorSection({
           onSave={handleSave}
           submitLabel={updateMutation.isPending ? "Saving…" : "Save flavor"}
         />
-      </section>
+      </Card>
     );
   }
 
   return (
-    <section
+    <Card
       aria-labelledby="citizen-npc-flavor-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="flex items-center justify-between gap-2">
         <h2 id="citizen-npc-flavor-heading" className="text-base font-medium">
@@ -147,6 +148,6 @@ export function CitizenNpcFlavorSection({
           block
         />
       </dl>
-    </section>
+    </Card>
   );
 }

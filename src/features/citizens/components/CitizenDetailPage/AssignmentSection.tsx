@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Card } from "@/components/ui/card";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { currentAssignmentForCitizenQueryOptions } from "../../queries/citizenAssignmentsQueries";
@@ -22,9 +23,9 @@ export function CitizenAssignmentSection({
   );
 
   return (
-    <section
+    <Card
       aria-labelledby="citizen-assignment-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <h2 id="citizen-assignment-heading" className="text-base font-medium">
         Assignment
@@ -39,7 +40,7 @@ export function CitizenAssignmentSection({
       ) : (
         <CitizenAssignmentSummary assignment={assignmentQuery.data} />
       )}
-    </section>
+    </Card>
   );
 }
 

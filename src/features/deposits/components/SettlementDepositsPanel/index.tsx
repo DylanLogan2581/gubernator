@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import {
   useSettlementTransitionOutcome,
@@ -71,52 +72,53 @@ export function SettlementDepositsPanel({
     ) ?? [];
 
   return (
-    <section
-      aria-labelledby="settlement-deposits-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
-      <DepositsPanelHeader
-        canAdmin={canAdmin && !isArchived}
-        instancesLoaded={!instancesQuery.isPending}
-        queryClient={queryClient}
-        settlementId={settlementId}
-        showRemoved={showRemoved}
-        worldId={worldId}
-        onToggleRemoved={() => {
-          setShowRemoved((prev) => !prev);
-        }}
-      />
-
-      {instancesQuery.isPending ? (
-        <LoadingState label="Loading deposits…" />
-      ) : instancesQuery.isError ? (
-        <ErrorState
-          title="Deposits could not be loaded"
-          description={getErrorDescription(instancesQuery.error)}
-        />
-      ) : instancesQuery.data.length === 0 ? (
-        <EmptyState
-          title="No deposits"
-          description="This settlement has no deposit instances."
-        />
-      ) : visibleInstances.length === 0 ? (
-        <EmptyState
-          description="This settlement has no active or depleted deposit instances."
-          title="No visible deposits"
-        />
-      ) : (
-        <DepositsGroups
-          assignedCountByInstance={assignedCountByInstance}
+    <Card aria-labelledby="settlement-deposits-heading" className="grid gap-3">
+      <div className="px-4 pt-4">
+        <DepositsPanelHeader
           canAdmin={canAdmin && !isArchived}
-          canManage={(canManage || canAdmin) && !isArchived}
-          instances={instancesQuery.data}
-          latestOutcome={latestOutcome}
+          instancesLoaded={!instancesQuery.isPending}
           queryClient={queryClient}
           settlementId={settlementId}
           showRemoved={showRemoved}
+          worldId={worldId}
+          onToggleRemoved={() => {
+            setShowRemoved((prev) => !prev);
+          }}
         />
-      )}
-    </section>
+      </div>
+
+      <CardContent>
+        {instancesQuery.isPending ? (
+          <LoadingState label="Loading deposits…" />
+        ) : instancesQuery.isError ? (
+          <ErrorState
+            title="Deposits could not be loaded"
+            description={getErrorDescription(instancesQuery.error)}
+          />
+        ) : instancesQuery.data.length === 0 ? (
+          <EmptyState
+            title="No deposits"
+            description="This settlement has no deposit instances."
+          />
+        ) : visibleInstances.length === 0 ? (
+          <EmptyState
+            description="This settlement has no active or depleted deposit instances."
+            title="No visible deposits"
+          />
+        ) : (
+          <DepositsGroups
+            assignedCountByInstance={assignedCountByInstance}
+            canAdmin={canAdmin && !isArchived}
+            canManage={(canManage || canAdmin) && !isArchived}
+            instances={instancesQuery.data}
+            latestOutcome={latestOutcome}
+            queryClient={queryClient}
+            settlementId={settlementId}
+            showRemoved={showRemoved}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

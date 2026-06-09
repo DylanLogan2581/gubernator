@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -117,11 +118,11 @@ export function SettlementConstructionPanel({
   const canAct = canManageSettlement && !isArchived;
 
   return (
-    <section
+    <Card
       aria-labelledby="settlement-construction-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3"
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4">
         <h2
           id="settlement-construction-heading"
           className="text-base font-medium"
@@ -158,35 +159,37 @@ export function SettlementConstructionPanel({
         </div>
       </div>
 
-      {projectsQuery.isPending ? (
-        <LoadingState label="Loading construction queue…" />
-      ) : projectsQuery.isError ? (
-        <ErrorState
-          title="Construction queue could not be loaded"
-          description={getErrorDescription(projectsQuery.error)}
-        />
-      ) : (
-        <QueueContent
-          allProjects={projectsQuery.data}
-          canAct={canAct}
-          logEntries={latestOutcome?.logEntries ?? []}
-          queryClient={queryClient}
-          settlementId={settlementId}
-          showCancelled={showCancelled}
-        />
-      )}
+      <CardContent>
+        {projectsQuery.isPending ? (
+          <LoadingState label="Loading construction queue…" />
+        ) : projectsQuery.isError ? (
+          <ErrorState
+            title="Construction queue could not be loaded"
+            description={getErrorDescription(projectsQuery.error)}
+          />
+        ) : (
+          <QueueContent
+            allProjects={projectsQuery.data}
+            canAct={canAct}
+            logEntries={latestOutcome?.logEntries ?? []}
+            queryClient={queryClient}
+            settlementId={settlementId}
+            showCancelled={showCancelled}
+          />
+        )}
 
-      {createOpen ? (
-        <CreateProjectDialog
-          queryClient={queryClient}
-          settlementId={settlementId}
-          worldId={worldId}
-          onClose={() => {
-            setCreateOpen(false);
-          }}
-        />
-      ) : null}
-    </section>
+        {createOpen ? (
+          <CreateProjectDialog
+            queryClient={queryClient}
+            settlementId={settlementId}
+            worldId={worldId}
+            onClose={() => {
+              setCreateOpen(false);
+            }}
+          />
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

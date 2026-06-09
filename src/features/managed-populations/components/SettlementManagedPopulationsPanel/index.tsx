@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import {
   activeResourcesByWorldQueryOptions,
@@ -104,59 +105,63 @@ export function SettlementManagedPopulationsPanel({
   const displayedInstances = showExtinct ? extinctInstances : activeInstances;
 
   return (
-    <section
+    <Card
       aria-labelledby="settlement-managed-populations-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3"
     >
-      <ManagedPopulationsPanelHeader
-        canAdmin={canAdmin && !isArchived}
-        instancesLoaded={!instancesQuery.isPending}
-        queryClient={queryClient}
-        settlementId={settlementId}
-        showExtinct={showExtinct}
-        worldId={worldId}
-        onToggleExtinct={() => {
-          setShowExtinct((prev) => !prev);
-        }}
-      />
-
-      {instancesQuery.isPending ? (
-        <LoadingState label="Loading managed populations…" />
-      ) : instancesQuery.isError ? (
-        <ErrorState
-          description={getErrorDescription(instancesQuery.error)}
-          title="Managed populations could not be loaded"
-        />
-      ) : displayedInstances.length === 0 ? (
-        <EmptyState
-          description={
-            showExtinct
-              ? "This settlement has no extinct population instances."
-              : "This settlement has no managed population instances."
-          }
-          title={
-            showExtinct ? "No extinct populations" : "No managed populations"
-          }
-        />
-      ) : (
-        <ManagedPopulationsTable
-          canAdmin={canAdmin && !isArchived && !showExtinct}
-          canManage={(canManage || canAdmin) && !isArchived && !showExtinct}
-          husbandryCountByInstance={husbandryCountByInstance}
-          instances={displayedInstances}
-          latestOutcome={latestOutcome}
+      <div className="px-4 pt-4">
+        <ManagedPopulationsPanelHeader
+          canAdmin={canAdmin && !isArchived}
+          instancesLoaded={!instancesQuery.isPending}
           queryClient={queryClient}
-          resourceById={resourceById}
-          snapshotCounts={
-            snapshotCountsQuery.data ?? {
-              latestCounts: null,
-              prevCounts: null,
-            }
-          }
-          typeById={typeById}
+          settlementId={settlementId}
+          showExtinct={showExtinct}
+          worldId={worldId}
+          onToggleExtinct={() => {
+            setShowExtinct((prev) => !prev);
+          }}
         />
-      )}
-    </section>
+      </div>
+
+      <CardContent>
+        {instancesQuery.isPending ? (
+          <LoadingState label="Loading managed populations…" />
+        ) : instancesQuery.isError ? (
+          <ErrorState
+            description={getErrorDescription(instancesQuery.error)}
+            title="Managed populations could not be loaded"
+          />
+        ) : displayedInstances.length === 0 ? (
+          <EmptyState
+            description={
+              showExtinct
+                ? "This settlement has no extinct population instances."
+                : "This settlement has no managed population instances."
+            }
+            title={
+              showExtinct ? "No extinct populations" : "No managed populations"
+            }
+          />
+        ) : (
+          <ManagedPopulationsTable
+            canAdmin={canAdmin && !isArchived && !showExtinct}
+            canManage={(canManage || canAdmin) && !isArchived && !showExtinct}
+            husbandryCountByInstance={husbandryCountByInstance}
+            instances={displayedInstances}
+            latestOutcome={latestOutcome}
+            queryClient={queryClient}
+            resourceById={resourceById}
+            snapshotCounts={
+              snapshotCountsQuery.data ?? {
+                latestCounts: null,
+                prevCounts: null,
+              }
+            }
+            typeById={typeById}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
