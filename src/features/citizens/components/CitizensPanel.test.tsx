@@ -151,7 +151,7 @@ describe("CitizensPanel", () => {
     expect(brannRow).toHaveTextContent("Unassigned");
     expect(brannRow).toHaveTextContent("Player character");
 
-    await user.click(screen.getByLabelText("Include deceased"));
+    await user.click(screen.getByLabelText("Show deceased"));
 
     expect(await screen.findByText("Cael")).toBeDefined();
     const caelRow = screen.getByText("Cael").closest("li");

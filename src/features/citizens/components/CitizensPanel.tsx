@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { UserPlus } from "lucide-react";
+import { Skull, UserPlus } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -42,6 +42,8 @@ export function CitizensPanel({
   settlementId,
   worldId,
 }: CitizensPanelProps): JSX.Element {
+  const [includeDead, setIncludeDead] = useState(false);
+
   return (
     <section
       aria-labelledby="citizens-panel-heading"
@@ -54,17 +56,34 @@ export function CitizensPanel({
           </h2>
         </div>
         {canAdmin ? (
-          <CitizensCreateActions
-            incestPreventionDepth={incestPreventionDepth}
-            isArchived={isArchived}
-            settlementId={settlementId}
-            worldId={worldId}
-          />
+          <div className="flex items-center gap-2">
+            <CitizensCreateActions
+              incestPreventionDepth={incestPreventionDepth}
+              isArchived={isArchived}
+              settlementId={settlementId}
+              worldId={worldId}
+            />
+            <Button
+              aria-label={includeDead ? "Hide deceased" : "Show deceased"}
+              aria-pressed={includeDead}
+              size="icon-sm"
+              title={includeDead ? "Hide deceased" : "Show deceased"}
+              type="button"
+              variant={includeDead ? "secondary" : "ghost"}
+              onClick={() => setIncludeDead(!includeDead)}
+            >
+              <Skull aria-hidden="true" />
+            </Button>
+          </div>
         ) : null}
       </div>
 
       {canAdmin ? (
-        <CitizensAdminList settlementId={settlementId} worldId={worldId} />
+        <CitizensAdminList
+          includeDead={includeDead}
+          settlementId={settlementId}
+          worldId={worldId}
+        />
       ) : (
         <CitizensAggregateView settlementId={settlementId} />
       )}
@@ -145,13 +164,14 @@ function CitizensCreateActions({
 }
 
 function CitizensAdminList({
+  includeDead,
   settlementId,
   worldId,
 }: {
+  readonly includeDead: boolean;
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const [includeDead, setIncludeDead] = useState(false);
   const [page, setPage] = useState(0);
 
   const citizensQuery = useQuery(
@@ -200,18 +220,6 @@ function CitizensAdminList({
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={includeDead}
-            onChange={(event) => {
-              setIncludeDead(event.currentTarget.checked);
-              setPage(0);
-            }}
-            className="size-4"
-          />
-          Include deceased
-        </label>
         <p className="text-xs text-muted-foreground" role="status">
           {filtered.length === 0
             ? "0 citizens"
@@ -225,7 +233,7 @@ function CitizensAdminList({
           description={
             includeDead
               ? "Citizens added to this settlement will appear here."
-              : "Toggle “Include deceased” to see citizens who have died."
+              : "Toggle the skull icon in the header to see deceased citizens."
           }
         />
       ) : (
