@@ -1,4 +1,9 @@
 import {
+  logAdminCreateUserSuccess,
+  logAuthorizationDenial,
+} from "../_shared/auditLog.ts";
+
+import {
   getEdgeRuntime,
   getRequiredRuntimeEnv,
   getRequiredRuntimeUrl,
@@ -94,6 +99,11 @@ export async function handleAdminCreateUserRequest(
   const superAdminResult = await checkIsSuperAdmin(authContextResult.context);
 
   if (!superAdminResult.ok || !superAdminResult.value) {
+    logAuthorizationDenial(
+      authContextResult.context.userId,
+      validateResult.body.email,
+      "superadmin_required",
+    );
     return respond(
       createErrorResponse({
         code: "superadmin_required",
@@ -107,6 +117,12 @@ export async function handleAdminCreateUserRequest(
   if (!createResult.ok) {
     return respond(createResult.error, createResult.status);
   }
+
+  logAdminCreateUserSuccess(
+    authContextResult.context.userId,
+    createResult.data.userId,
+    createResult.data.email,
+  );
 
   return respond({ data: createResult.data, ok: true }, 200);
 }

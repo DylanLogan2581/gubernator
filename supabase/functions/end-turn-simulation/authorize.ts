@@ -1,3 +1,5 @@
+import { logAuthorizationDenial } from "../_shared/auditLog.ts";
+
 import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
 import { createErrorResponse } from "./http.ts";
 
@@ -71,6 +73,11 @@ export async function resolveSupabaseEndTurnSimulationAuthorization(
       return { ok: true };
     }
 
+    logAuthorizationDenial(
+      authContext.userId,
+      requestBody.worldId,
+      "world_not_found",
+    );
     return createAuthorizationErrorResult();
   }
 
@@ -89,6 +96,11 @@ export async function resolveSupabaseEndTurnSimulationAuthorization(
   }
 
   if (!worldAdminResult.value) {
+    logAuthorizationDenial(
+      authContext.userId,
+      requestBody.worldId,
+      "world_admin_required",
+    );
     return createAuthorizationErrorResult();
   }
 

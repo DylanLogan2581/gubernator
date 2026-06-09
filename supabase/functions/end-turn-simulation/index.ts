@@ -1,3 +1,5 @@
+import { logEndTurnSuccess } from "../_shared/auditLog.ts";
+
 import { resolveSupabaseEndTurnSimulationAuthorization } from "./authorize.ts";
 import { getEdgeRuntime } from "./env.ts";
 import {
@@ -113,6 +115,14 @@ export async function handleEndTurnSimulationRequest(
   if (!persistResult.ok) {
     return respond(persistResult.error, persistResult.status);
   }
+
+  logEndTurnSuccess(
+    authContextResult.context.userId,
+    validateResult.body.worldId,
+    persistResult.summary.fromTurnNumber,
+    persistResult.summary.toTurnNumber,
+    startResult.transitionId,
+  );
 
   return respond(
     {
