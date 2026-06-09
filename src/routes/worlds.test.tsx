@@ -603,3 +603,39 @@ function createSettlementsQueryBuilder(
 
   return builder;
 }
+
+describe("scoped not-found pages", () => {
+  beforeEach(() => {
+    requireSupabaseClient.mockReset();
+  });
+
+  it("renders worlds-scoped not-found page when no worlds route is found", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+      }),
+    );
+
+    renderAt("/worlds/nonexistent-world");
+
+    expect(await screen.findByText("World unavailable")).toBeDefined();
+  });
+
+  it("renders root-level not-found page for completely invalid routes", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+      }),
+    );
+
+    renderAt("/totally/invalid");
+
+    expect(await screen.findByText("Page not found")).toBeDefined();
+    expect(
+      screen.getByText(
+        "The page you're looking for doesn't exist or may have moved.",
+      ),
+    ).toBeDefined();
+  });
+});
