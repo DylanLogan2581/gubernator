@@ -254,6 +254,7 @@ function SettlementDetailLoaded({
   const canEditDetails =
     (worldAccess.canAdmin || isNationManager || isSettlementManager) &&
     !isArchived;
+  const canEditCoordinates = worldAccess.canAdmin && !isArchived;
   const canDelete = worldAccess.canAdmin && !isArchived;
 
   return (
@@ -309,7 +310,7 @@ function SettlementDetailLoaded({
       ) : null}
 
       <SettlementCoordinatesSection
-        canEdit={canEditDetails}
+        canEdit={canEditCoordinates}
         queryClient={queryClient}
         settlement={settlement}
       />

@@ -41,7 +41,7 @@ grant insert (
 ) on public.settlements to authenticated;
 
 grant
-update (name, description, coord_x, coord_z) on public.settlements to authenticated;
+update (name, description) on public.settlements to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- set_settlement_readiness: marks a settlement ready or not-ready for the
@@ -195,3 +195,73 @@ from
 
 grant
 execute on function public.set_settlement_auto_ready (uuid, boolean) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- update_settlement_coordinates: updates settlement coordinates. Replaces
+-- direct UPDATEs to coord_x, coord_z by browser callers. SECURITY DEFINER
+-- so the direct UPDATE grant above does not allow these columns; the function
+-- re-checks super admin or world admin access before writing.
+-- ---------------------------------------------------------------------------
+create or replace function public.update_settlement_coordinates (
+  p_settlement_id uuid,
+  p_coord_x numeric,
+  p_coord_z numeric
+) returns table (id uuid, coord_x numeric, coord_z numeric) language plpgsql security definer
+set
+  search_path = '' as $$
+declare
+  v_world_id uuid;
+  v_world_status text;
+  v_world_archived_at timestamptz;
+begin
+  if p_settlement_id is null then
+    return;
+  end if;
+
+  select
+    n.world_id,
+    w.status,
+    w.archived_at
+  into v_world_id, v_world_status, v_world_archived_at
+  from
+    public.settlements s
+    inner join public.nations n on n.id = s.nation_id
+    inner join public.worlds w on w.id = n.world_id
+  where
+    s.id = p_settlement_id;
+
+  if v_world_id is null then
+    return;
+  end if;
+
+  if not (
+    public.is_world_admin (v_world_id)
+    or public.is_super_admin ()
+  ) then
+    return;
+  end if;
+
+  if v_world_status = 'archived' or v_world_archived_at is not null then
+    return;
+  end if;
+
+  return query
+  update public.settlements s
+  set
+    coord_x = p_coord_x,
+    coord_z = p_coord_z
+  where
+    s.id = p_settlement_id
+  returning
+    s.id,
+    s.coord_x,
+    s.coord_z;
+end;
+$$;
+
+revoke all on function public.update_settlement_coordinates (uuid, numeric, numeric)
+from
+  public;
+
+grant
+execute on function public.update_settlement_coordinates (uuid, numeric, numeric) to authenticated;

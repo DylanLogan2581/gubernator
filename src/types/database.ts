@@ -3138,8 +3138,8 @@ export type Database = {
       resume_construction_project: {
         Args: { p_project_id: string };
         Returns: {
-          _dummy: number;
           project_id: string;
+          success: boolean;
         }[];
       };
       revoke_citizen_role: {
@@ -3612,6 +3612,14 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      update_settlement_coordinates: {
+        Args: { p_coord_x: number; p_coord_z: number; p_settlement_id: string };
+        Returns: {
+          coord_x: number;
+          coord_z: number;
+          id: string;
+        }[];
       };
       user_has_player_character_in_world: {
         Args: { p_world_id: string };

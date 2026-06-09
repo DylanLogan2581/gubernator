@@ -623,6 +623,42 @@ describe("SettlementDetailPage", () => {
     });
   });
 
+  it("hides coordinate edit button from nation manager viewers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldVisibility: "public" }),
+    );
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: {
+        id: "char-1",
+        roleType: "nation_manager",
+        roleNationId: NATION_ID,
+        status: "alive",
+      } as never,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+
+    // Count Edit buttons: should be 1 (for details) not 2 (would be if coordinates also had one)
+    const editButtons = await screen.findAllByRole("button", { name: "Edit" });
+    expect(editButtons.length).toBe(1);
+  });
+
+  it("shows coordinate edit button for world admin viewers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ adminRows: [{ world_id: WORLD_ID }] }),
+    );
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+
+    // World admin should see multiple Edit buttons (details, nameset, coordinates)
+    const editButtons = await screen.findAllByRole("button", { name: "Edit" });
+    expect(editButtons.length).toBeGreaterThan(1);
+  });
+
   it("passes canManageSettlement=true to construction and assignment panels for settlement/nation managers", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ worldVisibility: "public" }),

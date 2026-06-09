@@ -237,29 +237,56 @@ async function updateSettlementCoordinates(
 ): Promise<Settlement> {
   const values = parseInput(updateSettlementCoordinatesInputSchema, input);
 
-  const { data, error } = await client
-    .from("settlements")
-    .update({
-      coord_x: values.coordX,
-      coord_z: values.coordZ,
-    })
-    .eq("id", values.settlementId)
-    .eq("nation_id", values.nationId)
-    .select(SETTLEMENT_SELECT)
-    .single<SettlementRow>();
+  // The RPC function accepts nullable coordinates; TypeScript's generated types
+  // don't reflect this, so we call the RPC directly on the client object
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): {
+      maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
 
-  if (error !== null) {
-    throw normalizeSupabaseError(error);
+  const { data: coordResult, error: coordError } = await clientAsRpcCapable
+    .rpc("update_settlement_coordinates", {
+      p_settlement_id: values.settlementId,
+      p_coord_x: values.coordX,
+      p_coord_z: values.coordZ,
+    })
+    .maybeSingle();
+
+  if (coordError !== null) {
+    throw normalizeSupabaseError(coordError);
   }
 
-  if (data === null) {
+  if (coordResult === null) {
     throw new SettlementMutationError({
       code: "settlement_not_found",
       message: "Settlement coordinates could not be updated.",
     });
   }
 
-  return toSettlement(data);
+  // Fetch the full settlement record to return to the caller
+  const { data: settlementData, error: fetchError } = await client
+    .from("settlements")
+    .select(SETTLEMENT_SELECT)
+    .eq("id", values.settlementId)
+    .eq("nation_id", values.nationId)
+    .single<SettlementRow>();
+
+  if (fetchError !== null) {
+    throw normalizeSupabaseError(fetchError);
+  }
+
+  if (settlementData === null) {
+    throw new SettlementMutationError({
+      code: "settlement_not_found",
+      message: "Settlement coordinates could not be updated.",
+    });
+  }
+
+  return toSettlement(settlementData);
 }
 
 async function deleteSettlement(

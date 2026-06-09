@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (32);
+  plan (36);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -537,6 +537,22 @@ select
   );
 
 select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.update_settlement_coordinates (
+          '74000000-0000-0000-0000-000000000005'::uuid,
+          42.5,
+          -17.25
+        )
+    ),
+    1,
+    'world admin can update settlement coordinates via function'
+  );
+
+select
   lives_ok (
     $test$
     delete from public.settlements
@@ -595,6 +611,22 @@ select
     where id = '74000000-0000-0000-0000-000000000006'
   $test$,
     'super admin can update settlements in any world'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.update_settlement_coordinates (
+          '74000000-0000-0000-0000-000000000006'::uuid,
+          99.75,
+          88.5
+        )
+    ),
+    1,
+    'super admin can update settlement coordinates via function'
   );
 
 select
@@ -714,6 +746,22 @@ set
 where
   id = '74000000-0000-0000-0000-000000000001';
 
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.update_settlement_coordinates (
+          '74000000-0000-0000-0000-000000000001'::uuid,
+          100.5,
+          -50.25
+        )
+    ),
+    0,
+    'nation manager cannot update settlement coordinates via function (returns empty)'
+  );
+
 -- ===========================================================================
 -- SETTLEMENT MANAGER: can update their assigned settlement.
 -- ===========================================================================
@@ -751,6 +799,30 @@ set
   name = 'Private Settlement'
 where
   id = '74000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"71000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.update_settlement_coordinates (
+          '74000000-0000-0000-0000-000000000001'::uuid,
+          100.5,
+          -50.25
+        )
+    ),
+    0,
+    'settlement manager cannot update settlement coordinates via function (returns empty)'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- PLAIN PC: player character without a management role can read but not update.
