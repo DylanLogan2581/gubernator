@@ -1,13 +1,12 @@
 import { type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { buildingsQueryKeys } from "@/features/buildings";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
-
-import { buildingsQueryKeys } from "./buildingsQueryKeys";
 
 import type {
   ConstructionProject,

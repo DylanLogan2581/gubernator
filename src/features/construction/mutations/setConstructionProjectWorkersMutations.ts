@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
+import { buildingsQueryKeys } from "@/features/buildings";
 import { citizensQueryKeys } from "@/features/citizens";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
@@ -13,7 +14,6 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
-import { buildingsQueryKeys } from "../queries/buildingsQueryKeys";
 import {
   setConstructionProjectWorkersInputSchema,
   type SetConstructionProjectWorkersInput,

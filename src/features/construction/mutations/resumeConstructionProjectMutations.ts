@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
+import { buildingsQueryKeys } from "@/features/buildings";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -12,7 +13,6 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
-import { buildingsQueryKeys } from "../queries/buildingsQueryKeys";
 import {
   resumeConstructionProjectInputSchema,
   type ResumeConstructionProjectInput,

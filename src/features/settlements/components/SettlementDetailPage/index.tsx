@@ -3,11 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import {
-  SettlementBuildingsPanel,
-  SettlementConstructionPanel,
-} from "@/features/buildings";
+import { SettlementBuildingsPanel } from "@/features/buildings";
 import { CitizensPanel, SettlementAssignmentBoard } from "@/features/citizens";
+import { SettlementConstructionPanel } from "@/features/construction";
 import { SettlementDepositsPanel } from "@/features/deposits";
 import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
 import { SettlementNamesetCard } from "@/features/namesets";

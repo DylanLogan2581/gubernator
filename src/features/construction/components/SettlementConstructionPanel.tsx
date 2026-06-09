@@ -25,6 +25,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
+  blueprintsByWorldQueryOptions,
+  tiersByBlueprintQueryOptions,
+  type BuildingBlueprint,
+  type BuildingBlueprintTier, type SettlementBuilding 
+} from "@/features/buildings";
+import { settlementBuildingsBySettlementQueryOptions } from "@/features/buildings";
+import {
   citizenAggregateStatsForSettlementQueryOptions,
   settlementConstructionProjectCountsQueryOptions,
 } from "@/features/citizens";
@@ -43,22 +50,14 @@ import { hardDeleteConstructionProjectMutationOptions } from "../mutations/hardD
 import { reorderConstructionProjectsMutationOptions } from "../mutations/reorderConstructionProjectsMutations";
 import { resumeConstructionProjectMutationOptions } from "../mutations/resumeConstructionProjectMutations";
 import { setConstructionProjectWorkersMutationOptions } from "../mutations/setConstructionProjectWorkersMutations";
-import {
-  blueprintsByWorldQueryOptions,
-  tiersByBlueprintQueryOptions,
-} from "../queries/buildingsQueries";
 import { constructionProjectsBySettlementQueryOptions } from "../queries/constructionProjectsQueries";
-import { settlementBuildingsBySettlementQueryOptions } from "../queries/settlementBuildingsQueries";
 
-import type {
-  BuildingBlueprint,
-  BuildingBlueprintTier,
-} from "../types/buildingTypes";
+
 import type {
   ConstructionProject,
   ConstructionProjectStatus,
 } from "../types/constructionProjectTypes";
-import type { SettlementBuilding } from "../types/settlementBuildingTypes";
+
 
 type SettlementConstructionPanelProps = {
   readonly canManageSettlement: boolean;
