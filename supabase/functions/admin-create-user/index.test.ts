@@ -277,4 +277,143 @@ describe("handleAdminCreateUserRequest", () => {
       expect(body.data?.userId).toBe("new-user-id");
     });
   });
+
+  describe("error: input validation", () => {
+    it("returns 400 when Content-Type is not application/json", async () => {
+      setupMockFetch({});
+
+      const request = makeRequest(
+        {
+          email: "test@example.com",
+          username: "testuser",
+          password: "password123",
+        },
+        { "content-type": "text/plain" },
+      );
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(400);
+      expect(body.error?.code).toBe("invalid_request");
+      expect(body.ok).toBe(false);
+    });
+
+    it("returns 400 when Content-Type header is missing", async () => {
+      setupMockFetch({});
+
+      const request = new Request(
+        "https://example.com/functions/v1/admin-create-user",
+        {
+          method: "POST",
+          headers: {
+            authorization: "Bearer valid-token",
+          },
+          body: JSON.stringify({
+            email: "test@example.com",
+            username: "testuser",
+            password: "password123",
+          }),
+        },
+      );
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(400);
+      expect(body.error?.code).toBe("invalid_request");
+    });
+
+    it("returns 400 when request body exceeds max size", async () => {
+      setupMockFetch({});
+
+      const request = makeRequest(
+        {
+          email: "test@example.com",
+          username: "testuser",
+          password: "password123",
+        },
+        { "content-length": String(1024 * 11) }, // 11 KB, exceeds 10 KB limit
+      );
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(400);
+      expect(body.error?.code).toBe("invalid_request");
+      expect(body.ok).toBe(false);
+    });
+
+    it("returns 400 when password exceeds max length (128)", async () => {
+      setupMockFetch({});
+
+      const longPassword = "a".repeat(129);
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: longPassword,
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(400);
+      expect(body.error?.code).toBe("invalid_request");
+      expect(body.ok).toBe(false);
+    });
+
+    it("returns 400 when email exceeds max length (254)", async () => {
+      setupMockFetch({});
+
+      const longEmail = "a".repeat(250) + "@example.com"; // 263 chars
+      const request = makeRequest({
+        email: longEmail,
+        username: "testuser",
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(400);
+      expect(body.error?.code).toBe("invalid_request");
+      expect(body.ok).toBe(false);
+    });
+
+    it("returns 400 when username exceeds max length (64)", async () => {
+      setupMockFetch({});
+
+      const longUsername = "a".repeat(65);
+      const request = makeRequest({
+        email: "test@example.com",
+        username: longUsername,
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(400);
+      expect(body.error?.code).toBe("invalid_request");
+      expect(body.ok).toBe(false);
+    });
+
+    it("returns 400 when request contains unknown fields", async () => {
+      setupMockFetch({});
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+        extraField: "should not be here",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(400);
+      expect(body.error?.code).toBe("invalid_request");
+      expect(body.ok).toBe(false);
+    });
+  });
 });

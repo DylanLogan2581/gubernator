@@ -16,6 +16,22 @@ const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const MAX_BODY_SIZE = 1024 * 10; // 10 KB
+
+export function validateContentType(
+  request: Request,
+): EndTurnSimulationErrorResponse | null {
+  const contentType = request.headers.get("content-type");
+  if (contentType === null || !contentType.includes("application/json")) {
+    return createErrorResponse({
+      code: "invalid_request",
+      details: ["body"],
+      message: "Content-Type must be application/json.",
+    });
+  }
+  return null;
+}
+
 export async function parseEndTurnSimulationRequestBody(
   request: Request,
 ): Promise<
@@ -28,6 +44,31 @@ export async function parseEndTurnSimulationRequestBody(
       readonly ok: false;
     }
 > {
+  // Check Content-Type
+  const contentTypeError = validateContentType(request);
+  if (contentTypeError !== null) {
+    return {
+      error: contentTypeError,
+      ok: false,
+    };
+  }
+
+  // Check body size
+  const contentLength = request.headers.get("content-length");
+  if (contentLength !== null) {
+    const size = parseInt(contentLength, 10);
+    if (size > MAX_BODY_SIZE) {
+      return {
+        error: createErrorResponse({
+          code: "invalid_request",
+          details: ["body"],
+          message: "Request body exceeds maximum size.",
+        }),
+        ok: false,
+      };
+    }
+  }
+
   let body: unknown;
 
   try {
