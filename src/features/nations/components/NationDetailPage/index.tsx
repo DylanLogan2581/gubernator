@@ -271,7 +271,9 @@ function NationDetailLoaded({
 
       <NationSettlementsSection
         canAdmin={worldAccess.canAdmin}
+        isArchived={isArchived}
         nationId={nation.id}
+        userId={null}
         worldId={worldId}
       />
 

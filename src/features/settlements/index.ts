@@ -11,6 +11,7 @@ export {
   settlementReadinessSummaryQueryOptions,
 } from "./queries/settlementReadinessQueries";
 export { CreateSettlementDialog } from "./components/CreateSettlementDialog";
+export { ManualReadinessControl } from "./components/ManualReadinessControl";
 export { SettlementDetailPage } from "./components/SettlementDetailPage";
 export {
   SettlementReadinessListPanel,

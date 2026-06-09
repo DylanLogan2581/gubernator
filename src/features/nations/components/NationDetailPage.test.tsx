@@ -56,6 +56,18 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
 }));
 
+vi.mock(
+  "@/features/settlements/mutations/settlementReadinessMutations",
+  () => ({
+    setSettlementReadinessMutationOptions: vi.fn(
+      () =>
+        ({
+          mutationFn: vi.fn().mockResolvedValue({}),
+        }) as never,
+    ),
+  }),
+);
+
 const worldId = "00000000-0000-0000-0000-000000000101";
 const nationId = "11111111-1111-1111-1111-111111111111";
 const otherNationId = "22222222-2222-2222-2222-222222222222";
@@ -140,9 +152,14 @@ describe("NationDetailPage", () => {
         session: { user: { id: "user-1" } },
         settlementRows: [
           {
+            auto_ready_enabled: false,
             id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            is_ready_current_turn: false,
+            last_ready_at: null,
             name: "Stonehold",
             nation_id: nationId,
+            nations: { name: "Highmark" },
+            ready_set_at: null,
           },
         ],
         adminRows: [{ world_id: worldId }],
@@ -270,6 +287,12 @@ describe("NationDetailPage", () => {
 
     renderPage();
 
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
+
     const list = await screen.findByRole("list", { name: "Relationships" });
     expect(list).toBeDefined();
     expect(
@@ -299,6 +322,12 @@ describe("NationDetailPage", () => {
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
 
     await screen.findByRole("list", { name: "Relationships" });
     expect(
@@ -330,6 +359,12 @@ describe("NationDetailPage", () => {
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
 
     await screen.findByRole("list", { name: "Relationships" });
     expect(await screen.findByText(/Sent proposal:/)).toBeDefined();
@@ -374,6 +409,12 @@ describe("NationDetailPage", () => {
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
 
     await screen.findByText(/Incoming proposal:/);
     expect(
@@ -425,6 +466,12 @@ describe("NationDetailPage", () => {
 
     renderPage();
 
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
+
     const decline = await screen.findByRole("button", {
       name: /Decline proposal/,
     });
@@ -461,6 +508,12 @@ describe("NationDetailPage", () => {
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
 
     const propose = await screen.findByRole("button", {
       name: /Propose alliance/,
@@ -504,6 +557,12 @@ describe("NationDetailPage", () => {
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
 
     const select = await screen.findByRole("combobox", {
       name: /Set stance/,
@@ -552,6 +611,12 @@ describe("NationDetailPage", () => {
 
     renderPage();
 
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
+
     expect(
       await screen.findByRole("button", { name: /Withdraw agreement/ }),
     ).toBeDefined();
@@ -582,6 +647,12 @@ describe("NationDetailPage", () => {
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
 
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
@@ -625,6 +696,12 @@ describe("NationDetailPage", () => {
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
 
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
@@ -713,6 +790,12 @@ describe("NationDetailPage", () => {
 
     renderPage();
 
+    // Open relationships collapsible
+    const relationshipsTrigger = await screen.findByRole("button", {
+      name: /Relationships/,
+    });
+    await userEvent.click(relationshipsTrigger);
+
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
 
@@ -751,9 +834,16 @@ type TestNationRow = {
 };
 
 type TestSettlementRow = {
+  readonly auto_ready_enabled: boolean;
   readonly id: string;
+  readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: {
+    readonly name: string;
+  };
+  readonly ready_set_at: string | null;
 };
 
 type TestRelationshipRow = {

@@ -10,7 +10,13 @@ export type Nation = {
 };
 
 export type NationSettlement = {
+  readonly autoReadyEnabled: boolean;
   readonly id: string;
+  readonly isReadyCurrentTurn: boolean;
+  readonly isReadyForCurrentTurn: boolean;
+  readonly lastReadyAt: string | null;
   readonly name: string;
   readonly nationId: string;
+  readonly nationName: string;
+  readonly readySetAt: string | null;
 };

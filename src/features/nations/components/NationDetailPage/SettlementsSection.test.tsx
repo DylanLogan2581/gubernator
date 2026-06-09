@@ -35,6 +35,18 @@ vi.mock("@/features/settlements/mutations/settlementsMutations", () => ({
   ),
 }));
 
+vi.mock(
+  "@/features/settlements/mutations/settlementReadinessMutations",
+  () => ({
+    setSettlementReadinessMutationOptions: vi.fn(
+      () =>
+        ({
+          mutationFn: vi.fn().mockResolvedValue({}),
+        }) as never,
+    ),
+  }),
+);
+
 vi.mock("@/lib/notify", () => ({
   notifyMutationSuccess: mockNotifySuccess,
   notifyMutationError: mockNotifyError,
@@ -78,6 +90,7 @@ describe("NationSettlementsSection", () => {
         <NationSettlementsSection
           canAdmin={canAdmin}
           nationId={nationId}
+          userId={null}
           worldId={worldId}
         />
       </QueryClientProvider>,
@@ -162,29 +175,42 @@ describe("NationSettlementsSection", () => {
     it("displays settlements with links to detail page", async () => {
       mockNationSettlementsQuery.mockResolvedValue([
         {
+          autoReadyEnabled: false,
           id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          isReadyCurrentTurn: false,
+          isReadyForCurrentTurn: false,
+          lastReadyAt: null,
           name: "Stonehold",
           nationId,
+          nationName: "Highmark",
+          readySetAt: null,
         },
         {
+          autoReadyEnabled: false,
           id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          isReadyCurrentTurn: true,
+          isReadyForCurrentTurn: true,
+          lastReadyAt: "2024-01-01T00:00:00Z",
           name: "Rivertown",
           nationId,
+          nationName: "Highmark",
+          readySetAt: "2024-01-01T00:00:00Z",
         },
       ]);
 
       renderSection(true);
 
-      const stoneholdLink = await screen.findByRole("link", {
-        name: "Stonehold",
-      });
-      expect(stoneholdLink).toHaveAttribute(
+      // Collapsible trigger shows settlement names as links
+      const stoneholdTrigger = await screen.findByText("Stonehold");
+      expect(stoneholdTrigger.tagName).toBe("A");
+      expect(stoneholdTrigger).toHaveAttribute(
         "href",
         `/worlds/${worldId}/nations/${nationId}/settlements/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
       );
 
-      const rivertownLink = screen.getByRole("link", { name: "Rivertown" });
-      expect(rivertownLink).toHaveAttribute(
+      const rivertownTrigger = screen.getByText("Rivertown");
+      expect(rivertownTrigger.tagName).toBe("A");
+      expect(rivertownTrigger).toHaveAttribute(
         "href",
         `/worlds/${worldId}/nations/${nationId}/settlements/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb`,
       );
