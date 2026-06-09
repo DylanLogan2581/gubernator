@@ -64,10 +64,44 @@ export function ActivePlayerCharacterAdminDialog({
     activeRowsQuery.isPending;
   const isError =
     worldsQuery.isError || livingPCsQuery.isError || activeRowsQuery.isError;
-  const errorMessage =
-    getErrorDescription(worldsQuery.error) ??
-    getErrorDescription(livingPCsQuery.error) ??
-    getErrorDescription(activeRowsQuery.error);
+
+  // Log errors for debugging
+  if (worldsQuery.error !== null && worldsQuery.error !== undefined) {
+    console.error("[SuperadminDialog] Worlds query error:", worldsQuery.error);
+  }
+  if (livingPCsQuery.error !== null && livingPCsQuery.error !== undefined) {
+    console.error(
+      "[SuperadminDialog] Living PCs query error:",
+      livingPCsQuery.error,
+    );
+  }
+  if (activeRowsQuery.error !== null && activeRowsQuery.error !== undefined) {
+    console.error(
+      "[SuperadminDialog] Active rows query error:",
+      activeRowsQuery.error,
+    );
+  }
+
+  let errorMessage = "";
+  if (worldsQuery.error !== null && worldsQuery.error !== undefined) {
+    errorMessage = `Failed to load worlds: ${getErrorDescription(worldsQuery.error)}`;
+  } else if (
+    livingPCsQuery.error !== null &&
+    livingPCsQuery.error !== undefined
+  ) {
+    errorMessage = `Failed to load player characters: ${getErrorDescription(livingPCsQuery.error)}`;
+  } else if (
+    activeRowsQuery.error !== null &&
+    activeRowsQuery.error !== undefined
+  ) {
+    errorMessage = `Failed to load active character data: ${getErrorDescription(activeRowsQuery.error)}`;
+  }
+
+  // Fallback if error message is empty but isError is true
+  if (isError && errorMessage === "") {
+    errorMessage =
+      "An unknown error occurred while loading data. Please check the browser console for details.";
+  }
 
   const worldsById = new Map((worldsQuery.data ?? []).map((w) => [w.id, w]));
 
