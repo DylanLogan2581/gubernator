@@ -57,6 +57,10 @@ export async function handleAdminCreateUserRequest(
     const allowedOrigins = options.allowedOrigins ?? getAllowedOrigins();
     const origin = request.headers.get("origin");
 
+    // CORS allowlist is enforced for browser requests (those with an Origin header).
+    // Requests without the Origin header (non-browser clients, scripts, servers)
+    // bypass this check and proceed to the JWT + super-admin/world-admin checks,
+    // which are the actual access boundary.
     if (origin !== null && !allowedOrigins.includes(origin)) {
       return createJsonResponse(
         createErrorResponse({

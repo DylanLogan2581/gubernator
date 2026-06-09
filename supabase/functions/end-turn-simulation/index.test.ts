@@ -251,6 +251,31 @@ describe("handleEndTurnSimulationRequest", () => {
     });
   });
 
+  it("allows a POST with no Origin header to proceed to auth checks", async () => {
+    stubFullCycle();
+
+    const response = await handleEndTurnSimulationRequest(
+      new Request("http://localhost/end-turn-simulation", {
+        body: makeValidBody(),
+        headers: {
+          authorization: "Bearer valid-token",
+          "content-type": "application/json",
+          // No Origin header — non-browser client
+        },
+        method: "POST",
+      }),
+      { allowedOrigins: ["http://localhost:5173"] },
+    );
+
+    // Should succeed (200), not fail at CORS check (403)
+    expect(response.status).toBe(200);
+    const responseBody = (await response.json()) as {
+      data?: { actorId: string };
+      ok?: boolean;
+    };
+    expect(responseBody.ok).toBe(true);
+  });
+
   it("returns a 405 for non-POST methods", async () => {
     const response = await handleEndTurnSimulationRequest(
       new Request("http://localhost/end-turn-simulation", { method: "GET" }),

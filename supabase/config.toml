@@ -370,13 +370,13 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
-# Comma-separated origin allowlist enforced by the end-turn-simulation
-# function. Browser requests carry an `Origin` header; values not on this list
-# are rejected with a bare HTTP 403 before any other logic runs. The local
-# Vite dev server is served from both http://localhost:5173 and
-# http://127.0.0.1:5173, so both are listed. Production deployments must
-# override these with their own frontend origin(s) — without it, every browser
-# end-turn request fails closed.
+# Comma-separated origin allowlist for CORS preflight on browser requests.
+# Only enforced on requests with an Origin header (browsers); requests without
+# Origin header (non-browser clients, scripts, servers) bypass this check and
+# proceed to JWT + super-admin/world-admin validation, which is the actual access
+# boundary. The local Vite dev server is served from both http://localhost:5173
+# and http://127.0.0.1:5173, so both are listed. Production deployments must
+# override these with their own frontend origin(s).
 [edge_runtime.secrets]
 END_TURN_SIMULATION_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 ADMIN_CREATE_USER_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"

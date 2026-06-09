@@ -528,5 +528,39 @@ describe("handleAdminCreateUserRequest", () => {
         "http://localhost:5173",
       );
     });
+
+    it("allows a POST with no Origin header to proceed to auth checks", async () => {
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "auth/v1/admin/users": {
+          status: 201,
+          body: { id: "new-user-id", email: "newuser@example.com" },
+        },
+      });
+
+      const response = await handleAdminCreateUserRequest(
+        new Request("http://localhost/admin-create-user", {
+          body: JSON.stringify({
+            email: "newuser@example.com",
+            username: "newuser",
+            password: "password123",
+          }),
+          headers: {
+            "content-type": "application/json",
+            authorization: "Bearer valid-token",
+            // No Origin header — non-browser client
+          },
+          method: "POST",
+        }),
+        { allowedOrigins: ["http://localhost:5173"] },
+      );
+
+      // Should succeed (200), not fail at CORS check (403)
+      expect(response.status).toBe(200);
+      const body = await parseResponse(response);
+      expect(body.ok).toBe(true);
+      expect(body.data?.userId).toBe("new-user-id");
+    });
   });
 });
