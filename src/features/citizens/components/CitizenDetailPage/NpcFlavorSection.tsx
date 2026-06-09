@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
+import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 import { generateLocalId } from "@/lib/uid";
 
@@ -74,6 +75,7 @@ export function CitizenNpcFlavorSection({
           toast.error(getCitizenMutationErrorDescription(error));
         },
         onSuccess: () => {
+          notifyMutationSuccess("NPC flavor saved.");
           setIsEditing(false);
         },
       },

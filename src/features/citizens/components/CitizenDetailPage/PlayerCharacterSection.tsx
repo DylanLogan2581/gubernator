@@ -11,6 +11,7 @@ import { availableUsersQueryOptions } from "@/features/auth";
 import { nationByIdQueryOptions } from "@/features/nations";
 import { RoleAssignmentControls } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
   linkUserToCitizenMutationOptions,
@@ -131,6 +132,7 @@ function CitizenLinkedUserControl({
           toast.error(getRoleMutationErrorDescription(error));
         },
         onSuccess: () => {
+          notifyMutationSuccess("User linked to citizen.");
           setIsEditing(false);
         },
       },
@@ -165,6 +167,7 @@ function CitizenLinkedUserControl({
           toast.error(getRoleMutationErrorDescription(error));
         },
         onSuccess: () => {
+          notifyMutationSuccess("User unlinked from citizen.");
           setIsConfirmingUnlink(false);
         },
       },

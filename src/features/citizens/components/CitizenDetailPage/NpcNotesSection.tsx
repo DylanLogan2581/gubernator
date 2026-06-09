@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import { updateCitizenNpcFieldsMutationOptions } from "../../mutations/citizensMutations";
 
@@ -64,6 +65,7 @@ export function CitizenNpcNotesSection({
           toast.error(getCitizenMutationErrorDescription(error));
         },
         onSuccess: () => {
+          notifyMutationSuccess("Personality and skills saved.");
           setIsEditing(false);
         },
       },

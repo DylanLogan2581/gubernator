@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
   markCitizenDeadMutationOptions,
@@ -50,6 +51,7 @@ export function CitizenLifecycleSection({
           toast.error(getCitizenMutationErrorDescription(error));
         },
         onSuccess: () => {
+          notifyMutationSuccess("Citizen marked as deceased.");
           setIsMarkingDead(false);
           setDeathCause("");
         },
@@ -67,6 +69,9 @@ export function CitizenLifecycleSection({
       {
         onError: (error) => {
           toast.error(getCitizenMutationErrorDescription(error));
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Citizen revived.");
         },
       },
     );
