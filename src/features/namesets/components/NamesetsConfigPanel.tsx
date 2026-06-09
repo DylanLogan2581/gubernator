@@ -7,6 +7,7 @@ import {
 import { AlertTriangle, Plus, RotateCcw, Star, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -51,6 +52,10 @@ function formatMutationError(error: unknown): string {
       const issue = error.issues[0];
       const fieldPath =
         issue.path.length > 0 ? `${String(issue.path[0])}: ` : "";
+      // Special handling for UUID validation errors
+      if (issue.message.includes("uuid")) {
+        return "World ID is invalid. Please reload the page.";
+      }
       return `${fieldPath}${issue.message}`;
     }
   }
@@ -116,6 +121,13 @@ function NamesetsConfigPanelContent({
   const [editingNamesetId, setEditingNamesetId] = useState<string | null>(null);
   const canEdit = canAdmin && !isArchived;
 
+  // Validate worldId is a valid UUID
+  const isWorldIdValid = z.string().uuid().safeParse(worldId).success;
+
+  if (!isWorldIdValid) {
+    console.warn("Invalid worldId received in NamesetsConfigPanel:", worldId);
+  }
+
   const namesets = showTrash
     ? allNamesets.filter((ns) => ns.isTrashed)
     : allNamesets.filter((ns) => !ns.isTrashed);
@@ -135,6 +147,7 @@ function NamesetsConfigPanelContent({
               type="button"
               variant="outline"
               size="sm"
+              disabled={!isWorldIdValid}
               onClick={() => {
                 setShowForm(true);
               }}
@@ -163,53 +176,62 @@ function NamesetsConfigPanelContent({
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        {canEdit
-          ? "Namesets bundle naming pools and a convention. Nations and settlements can override the world default."
-          : "Namesets define the naming pools and convention used for random NPC creation."}
-      </p>
-
-      {namesets.length > 0 ? (
-        <NamesetList
-          canEdit={canEdit}
-          editingNamesetId={editingNamesetId}
-          namesets={namesets}
-          queryClient={queryClient}
-          showTrash={showTrash}
-          worldId={worldId}
-          onEditingChange={setEditingNamesetId}
+      {!isWorldIdValid ? (
+        <ErrorState
+          title="World configuration unavailable"
+          description="The world ID is invalid. Please reload the page or contact support if the issue persists."
         />
       ) : (
-        <EmptyState
-          title={showTrash ? "No namesets in trash" : "No namesets yet"}
-          description={
-            showTrash ? undefined : "Add the first nameset for this world."
-          }
-        />
-      )}
+        <>
+          <p className="text-sm text-muted-foreground">
+            {canEdit
+              ? "Namesets bundle naming pools and a convention. Nations and settlements can override the world default."
+              : "Namesets define the naming pools and convention used for random NPC creation."}
+          </p>
 
-      {canEdit && showForm && !showTrash ? (
-        <CreateNamesetDialog
-          isPending={createMutation.isPending}
-          onCancel={() => {
-            setShowForm(false);
-          }}
-          onSubmit={(name, configJson) => {
-            createMutation.mutate(
-              { worldId, name, configJson },
-              {
-                onError: (error) => {
-                  toast.error(formatMutationError(error));
-                },
-                onSuccess: () => {
-                  notifyMutationSuccess("Nameset created.");
-                  setShowForm(false);
-                },
-              },
-            );
-          }}
-        />
-      ) : null}
+          {namesets.length > 0 ? (
+            <NamesetList
+              canEdit={canEdit}
+              editingNamesetId={editingNamesetId}
+              namesets={namesets}
+              queryClient={queryClient}
+              showTrash={showTrash}
+              worldId={worldId}
+              onEditingChange={setEditingNamesetId}
+            />
+          ) : (
+            <EmptyState
+              title={showTrash ? "No namesets in trash" : "No namesets yet"}
+              description={
+                showTrash ? undefined : "Add the first nameset for this world."
+              }
+            />
+          )}
+
+          {canEdit && showForm && !showTrash ? (
+            <CreateNamesetDialog
+              isPending={createMutation.isPending}
+              onCancel={() => {
+                setShowForm(false);
+              }}
+              onSubmit={(name, configJson) => {
+                createMutation.mutate(
+                  { worldId, name, configJson },
+                  {
+                    onError: (error) => {
+                      toast.error(formatMutationError(error));
+                    },
+                    onSuccess: () => {
+                      notifyMutationSuccess("Nameset created.");
+                      setShowForm(false);
+                    },
+                  },
+                );
+              }}
+            />
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
