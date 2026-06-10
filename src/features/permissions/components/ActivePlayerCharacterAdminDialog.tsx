@@ -174,7 +174,7 @@ export function ActivePlayerCharacterAdminDialog({
     >
       <DialogContent className="max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Manage Active Player Character</DialogTitle>
+          <DialogTitle>Manage active player character</DialogTitle>
           <DialogDescription>
             Recovery controls for{" "}
             <span className="font-medium">{targetUser.username}</span> (

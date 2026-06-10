@@ -63,7 +63,7 @@ export function ToggleSuperadminDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{willGrant ? "Grant" : "Remove"} Superadmin</DialogTitle>
+          <DialogTitle>{willGrant ? "Grant" : "Remove"} superadmin</DialogTitle>
           <DialogDescription>
             {willGrant
               ? `Grant superadmin privileges to ${targetUser.username} (${targetUser.email})?`

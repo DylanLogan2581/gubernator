@@ -75,7 +75,7 @@ export function CreateUserDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create User</DialogTitle>
+          <DialogTitle>Create user</DialogTitle>
           <DialogDescription>
             Create a new application user. They will be able to sign in with the
             provided credentials.

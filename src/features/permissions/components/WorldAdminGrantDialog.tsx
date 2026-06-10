@@ -104,7 +104,7 @@ export function WorldAdminGrantDialog({
     >
       <DialogContent className="max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Manage World Admin Access</DialogTitle>
+          <DialogTitle>Manage world admin access</DialogTitle>
           <DialogDescription>
             Toggle world admin access for{" "}
             <span className="font-medium">{targetUser.username}</span> (

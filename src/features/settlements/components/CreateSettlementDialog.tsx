@@ -95,7 +95,7 @@ export function CreateSettlementDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Settlement</DialogTitle>
+          <DialogTitle>Create settlement</DialogTitle>
           <DialogDescription>
             Create a new settlement in this nation.
           </DialogDescription>

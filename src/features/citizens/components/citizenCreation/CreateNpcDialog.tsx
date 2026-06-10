@@ -240,7 +240,7 @@ export function CreateNpcDialog({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create NPC</DialogTitle>
+            <DialogTitle>Create npc</DialogTitle>
             <DialogDescription>
               NPCs are managed by World Admins and are not linked to a user.
             </DialogDescription>
