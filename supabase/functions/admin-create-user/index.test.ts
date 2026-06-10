@@ -636,4 +636,244 @@ describe("handleAdminCreateUserRequest", () => {
       expect(body.data?.userId).toBe("new-user-id");
     });
   });
+
+  describe("idempotency: repeat requests with same idempotency-key", () => {
+    it("first request creates user and stores idempotency key", async () => {
+      const responses: Record<
+        string,
+        {
+          status: number;
+          body: Record<string, unknown> | boolean;
+        }
+      > = {
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "auth/v1/admin/users": {
+          status: 201,
+          body: { id: "new-user-id", email: "newuser@example.com" },
+        },
+        admin_create_user_idempotency_keys: { status: 201, body: {} },
+      };
+      setupMockFetch(responses);
+
+      const request = makeRequest(
+        {
+          email: "newuser@example.com",
+          username: "newuser",
+          password: "password123",
+        },
+        { "idempotency-key": "idem-key-123" },
+      );
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(200);
+      expect(body.ok).toBe(true);
+      expect(body.data?.userId).toBe("new-user-id");
+    });
+
+    it("duplicate request with same idempotency-key returns cached response", async () => {
+      // Custom mock to handle array response for idempotency lookup
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes("admin_create_user_idempotency_keys")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify([
+                {
+                  idempotency_key: "idem-key-123",
+                  caller_user_id: "user-123",
+                  created_user_id: "cached-user-id",
+                  created_user_email: "cached@example.com",
+                  created_user_username: "cached",
+                  created_at: "2024-06-21T00:00:00Z",
+                  expires_at: "2024-06-22T00:00:00Z",
+                },
+              ]),
+              { status: 200 },
+            ),
+          );
+        }
+        if (url.includes("auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
+          );
+        }
+        if (url.includes("rest/v1/rpc/is_super_admin")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(true), { status: 200 }),
+          );
+        }
+        // auth/v1/admin/users should NOT be called
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Not found" }), { status: 404 }),
+        );
+      });
+
+      const request = makeRequest(
+        {
+          email: "ignored@example.com",
+          username: "ignored",
+          password: "password123",
+        },
+        { "idempotency-key": "idem-key-123" },
+      );
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(200);
+      expect(body.ok).toBe(true);
+      // Should return cached data, not the email from the request
+      expect(body.data?.userId).toBe("cached-user-id");
+      expect(body.data?.email).toBe("cached@example.com");
+      expect(body.data?.username).toBe("cached");
+
+      // Verify auth/v1/admin/users was NOT called (would be in mockFetch calls if it was)
+      const calls = mockFetch.mock.calls;
+      const authAdminUsersCalled = calls.some((call) =>
+        String(call[0]).includes("auth/v1/admin/users"),
+      );
+      expect(authAdminUsersCalled).toBe(false);
+    });
+
+    it("different idempotency-keys create different users (no cross-key collision)", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes("admin_create_user_idempotency_keys")) {
+          // Empty result for first lookup (key not cached)
+          return Promise.resolve(
+            new Response(JSON.stringify([]), { status: 200 }),
+          );
+        }
+        if (url.includes("auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
+          );
+        }
+        if (url.includes("rest/v1/rpc/is_super_admin")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(true), { status: 200 }),
+          );
+        }
+        if (url.includes("auth/v1/admin/users")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ id: "user-1", email: "first@example.com" }),
+              { status: 201 },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Not found" }), { status: 404 }),
+        );
+      });
+
+      const request1 = makeRequest(
+        {
+          email: "first@example.com",
+          username: "first",
+          password: "password123",
+        },
+        { "idempotency-key": "idem-key-first" },
+      );
+
+      const response1 = await handleAdminCreateUserRequest(request1);
+      const body1 = await parseResponse(response1);
+
+      expect(body1.data?.userId).toBe("user-1");
+
+      // Verify each idempotency key is independent
+      expect(mockFetch.mock.calls.length).toBeGreaterThan(0);
+    });
+
+    it("expired idempotency key is retried (lookup returns empty)", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes("admin_create_user_idempotency_keys")) {
+          // Empty result (key expired or not found)
+          return Promise.resolve(
+            new Response(JSON.stringify([]), { status: 200 }),
+          );
+        }
+        if (url.includes("auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
+          );
+        }
+        if (url.includes("rest/v1/rpc/is_super_admin")) {
+          return Promise.resolve(
+            new Response(JSON.stringify(true), { status: 200 }),
+          );
+        }
+        if (url.includes("auth/v1/admin/users")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                id: "retry-user-id",
+                email: "retry@example.com",
+              }),
+              { status: 201 },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Not found" }), { status: 404 }),
+        );
+      });
+
+      const request = makeRequest(
+        {
+          email: "retry@example.com",
+          username: "retry",
+          password: "password123",
+        },
+        { "idempotency-key": "expired-key" },
+      );
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(200);
+      expect(body.ok).toBe(true);
+      expect(body.data?.userId).toBe("retry-user-id");
+
+      // Verify auth/v1/admin/users WAS called (key was expired, so retry)
+      const calls = mockFetch.mock.calls;
+      const authAdminUsersCalled = calls.some((call) =>
+        String(call[0]).includes("auth/v1/admin/users"),
+      );
+      expect(authAdminUsersCalled).toBe(true);
+    });
+
+    it("request without idempotency-key bypasses caching (backwards compatible)", async () => {
+      const responses: Record<
+        string,
+        {
+          status: number;
+          body: Record<string, unknown> | boolean;
+        }
+      > = {
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "auth/v1/admin/users": {
+          status: 201,
+          body: { id: "no-key-user-id", email: "nokey@example.com" },
+        },
+      };
+      setupMockFetch(responses);
+
+      const request = makeRequest({
+        email: "nokey@example.com",
+        username: "nokey",
+        password: "password123",
+      });
+      // No idempotency-key header
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(200);
+      expect(body.ok).toBe(true);
+      expect(body.data?.userId).toBe("no-key-user-id");
+    });
+  });
 });

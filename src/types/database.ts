@@ -2526,10 +2526,6 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      fail_stuck_turn_transition: {
-        Args: { p_transition_id: string; p_world_id: string };
-        Returns: Json;
-      };
       get_settlement_construction_project_counts: {
         Args: { p_settlement_id: string };
         Returns: {

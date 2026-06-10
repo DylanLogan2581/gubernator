@@ -122,9 +122,27 @@ export async function handleAdminCreateUserRequest(
       );
     }
 
+    // Idempotency key support: check if request with same key was already processed
+    const idempotencyKey = request.headers.get("idempotency-key");
+    if (idempotencyKey !== null) {
+      const cachedResult = await getIdempotencyKeyResult(idempotencyKey);
+      if (cachedResult !== null) {
+        return respond({ data: cachedResult, ok: true }, 200);
+      }
+    }
+
     const createResult = await createAuthUser(validateResult.body);
     if (!createResult.ok) {
       return respond(createResult.error, createResult.status);
+    }
+
+    // Store idempotency key for future identical requests
+    if (idempotencyKey !== null) {
+      await storeIdempotencyKeyResult(
+        idempotencyKey,
+        authContextResult.context.userId,
+        createResult.data,
+      );
     }
 
     logAdminCreateUserSuccess(
@@ -392,6 +410,110 @@ function isEmailConflict(message: string | undefined): boolean {
   if (message === undefined) return false;
   const lower = message.toLowerCase();
   return lower.includes("already") || lower.includes("exists");
+}
+
+async function getIdempotencyKeyResult(
+  idempotencyKey: string,
+): Promise<AdminCreateUserSuccessData | null> {
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
+  const serviceRoleKey = getRequiredRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (supabaseUrl === undefined || serviceRoleKey === undefined) {
+    // Silently skip idempotency check if config unavailable
+    return null;
+  }
+
+  try {
+    const response = await supabaseFetch(
+      `${supabaseUrl}/rest/v1/admin_create_user_idempotency_keys?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&expires_at=gt.now()`,
+      {
+        headers: {
+          apikey: serviceRoleKey,
+          authorization: `Bearer ${serviceRoleKey}`,
+          "content-type": "application/json",
+        },
+        method: "GET",
+      },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+     
+    const body: unknown = await response.json();
+    if (!Array.isArray(body) || body.length === 0) {
+      return null;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const record = body[0];
+    if (
+      !isRecord(record) ||
+      typeof record["created_user_id"] !== "string" ||
+      typeof record["created_user_email"] !== "string" ||
+      typeof record["created_user_username"] !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      userId: record["created_user_id"],
+      email: record["created_user_email"],
+      username: record["created_user_username"],
+    };
+  } catch {
+    // Idempotency check failure should not block the request
+    // Fall through to normal flow
+    return null;
+  }
+}
+
+async function storeIdempotencyKeyResult(
+  idempotencyKey: string,
+  callerUserId: string,
+  data: AdminCreateUserSuccessData,
+): Promise<void> {
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
+  const serviceRoleKey = getRequiredRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (supabaseUrl === undefined || serviceRoleKey === undefined) {
+    // Silently skip storing idempotency key if config unavailable
+    return;
+  }
+
+  try {
+    await supabaseFetch(
+      `${supabaseUrl}/rest/v1/admin_create_user_idempotency_keys`,
+      {
+        body: JSON.stringify({
+          idempotency_key: idempotencyKey,
+          caller_user_id: callerUserId,
+          created_user_id: data.userId,
+          created_user_email: data.email,
+          created_user_username: data.username,
+        }),
+        headers: {
+          apikey: serviceRoleKey,
+          authorization: `Bearer ${serviceRoleKey}`,
+          "content-type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+  } catch (error) {
+    // Idempotency storage failure should not block response
+    // Request was already successful, so we can safely ignore storage errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "idempotency_key_store_error",
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+      }),
+    );
+  }
 }
 
 const edgeRuntime = getEdgeRuntime();
