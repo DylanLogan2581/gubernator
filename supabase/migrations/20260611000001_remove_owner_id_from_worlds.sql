@@ -1340,6 +1340,7 @@ declare
   v_notif_scope text;
   v_notif_settlement_id uuid;
   v_notif_nation_id uuid;
+  v_static_recipients uuid[];
 begin
   log_entry_count    := 0;
   notification_count := 0;
@@ -1368,6 +1369,24 @@ begin
   where entry.value ->> 'category' is not null;
 
   get diagnostics log_entry_count = row_count;
+
+  -- §C33b: Compute static recipients (world admins + super admins) once per transition.
+  -- This avoids per-notification 4-way UNION and sequential scan of users.is_super_admin.
+  select
+    array_agg(user_id)
+  into v_static_recipients
+  from (
+    select wa.user_id
+    from public.world_admins wa
+    inner join public.users u on u.id = wa.user_id
+    where wa.world_id = p_world_id
+      and u.status = 'active'
+    union
+    select u.id
+    from public.users u
+    where u.is_super_admin = true
+      and u.status = 'active'
+  ) as static_recipients;
 
   -- §C33b: Fan out simulation notifications to scoped recipients.
   for v_notification in
@@ -1432,16 +1451,7 @@ begin
         and c.user_id is not null
         and u.status = 'active'
       union
-      select wa.user_id
-      from public.world_admins wa
-      inner join public.users u on u.id = wa.user_id
-      where wa.world_id = p_world_id
-        and u.status = 'active'
-      union
-      select u.id
-      from public.users u
-      where u.is_super_admin = true
-        and u.status = 'active'
+      select unnest(v_static_recipients)
     ) as recipients (user_id)
     on conflict (
       generated_in_transition_id,
@@ -1455,3 +1465,8 @@ begin
   end loop;
 end;
 $function$;
+
+-- §C33b: Index on super-admin lookup to avoid sequential scan during notification fan-out.
+create index if not exists idx_users_is_super_admin_active on public.users (id)
+where
+  is_super_admin = true;
