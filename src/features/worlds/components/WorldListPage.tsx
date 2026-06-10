@@ -428,36 +428,36 @@ function WorldBadge({
 }): JSX.Element {
   if (world.isArchived) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+      <Badge variant="outline">
         <Archive className="size-3" aria-hidden="true" />
         Archived
-      </span>
+      </Badge>
     );
   }
 
   if (world.isHidden) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+      <Badge variant="outline">
         <LockKeyhole className="size-3" aria-hidden="true" />
         Hidden
-      </span>
+      </Badge>
     );
   }
 
   if (world.canManage) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+      <Badge variant="outline">
         <ShieldCheck className="size-3" aria-hidden="true" />
         Manage
-      </span>
+      </Badge>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+    <Badge variant="outline">
       <Globe2 className="size-3" aria-hidden="true" />
       Public
-    </span>
+    </Badge>
   );
 }
 

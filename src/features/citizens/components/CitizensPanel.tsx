@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -306,17 +307,17 @@ function CitizenRow({
         )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
-        <Chip label={citizenTypeLabel(citizen.citizenType)} />
-        <Chip
-          label={citizen.status === "alive" ? "Alive" : "Deceased"}
-          tone={citizen.status === "alive" ? "default" : "muted"}
-        />
-        <Chip
-          label={
-            assignment === null ? "Unassigned" : assignmentJobName(assignment)
-          }
-          tone={assignment === null ? "muted" : "default"}
-        />
+        <Badge variant="secondary">
+          {citizenTypeLabel(citizen.citizenType)}
+        </Badge>
+        <Badge
+          variant={citizen.status === "alive" ? "secondary" : "destructive"}
+        >
+          {citizen.status === "alive" ? "Alive" : "Deceased"}
+        </Badge>
+        <Badge variant={assignment === null ? "outline" : "secondary"}>
+          {assignment === null ? "Unassigned" : assignmentJobName(assignment)}
+        </Badge>
       </div>
     </li>
   );
@@ -413,20 +414,6 @@ function Stat({
       <dd className="text-lg font-medium tabular-nums">{value}</dd>
     </div>
   );
-}
-
-function Chip({
-  label,
-  tone = "default",
-}: {
-  readonly label: string;
-  readonly tone?: "default" | "muted";
-}): JSX.Element {
-  const className =
-    tone === "muted"
-      ? "inline-flex items-center rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-      : "inline-flex items-center rounded-sm bg-secondary px-2 py-0.5 text-xs text-secondary-foreground";
-  return <span className={className}>{label}</span>;
 }
 
 const ASSIGNMENT_BREAKDOWN_ORDER: ReadonlyArray<
