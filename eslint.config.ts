@@ -5,6 +5,8 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import eslintConfigPrettier from "eslint-config-prettier";
 import { createConfig as createBoundariesConfig } from "eslint-plugin-boundaries/config";
 import importX from "eslint-plugin-import-x";
+// @ts-expect-error - jsx-a11y lacks type definitions
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import unicorn from "eslint-plugin-unicorn";
@@ -412,6 +414,7 @@ export default defineConfig([
     plugins: {
       "@tanstack/query": tanstackQuery as unknown as ESLint.Plugin,
       "import-x": importX as unknown as ESLint.Plugin,
+      "jsx-a11y": jsxA11y as unknown as ESLint.Plugin,
       unicorn,
       "unused-imports": unusedImports,
     },
@@ -574,6 +577,16 @@ export default defineConfig([
         },
       ],
       "@eslint-react/jsx-no-useless-fragment": "error",
+      "jsx-a11y/control-has-associated-label": [
+        "error",
+        {
+          // Buttons without children (icon buttons) must have aria-label or title.
+          // Allow radio/checkbox inputs to be associated via Label wrapper.
+          ignoreElements: ["button", "input"],
+          ignoreRoles: ["menu", "menuitem", "switch", "tab"],
+          depth: 3,
+        },
+      ],
       "react-hooks/exhaustive-deps": "error",
       // Redundant with react-hooks/exhaustive-deps above, which is the
       // canonical rule here (and the one our intentional disable comments
