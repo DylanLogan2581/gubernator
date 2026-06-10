@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import { updateSettlementStockpileMutationOptions } from "../mutations/settlementStockpilesMutations";
 import { settlementStockpilesByIdQueryOptions } from "../queries/settlementStockpilesQueries";
@@ -214,8 +215,6 @@ function StockpileRow({
   );
 }
 
-type QuantityFieldError = string | undefined;
-
 function EditStockpileDialog({
   onClose,
   queryClient,
@@ -229,13 +228,13 @@ function EditStockpileDialog({
     updateSettlementStockpileMutationOptions({ queryClient }),
   );
   const [quantity, setQuantity] = useState(String(stockpile.quantity));
-  const [fieldError, setFieldError] = useState<QuantityFieldError>(undefined);
+  const { fieldErrors, setFromZod, clear } = useFieldErrors<"quantity">();
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    setFieldError(undefined);
+    clear();
 
     const result = updateSettlementStockpileInputSchema.safeParse({
       quantity,
@@ -244,13 +243,7 @@ function EditStockpileDialog({
     });
 
     if (!result.success) {
-      for (const issue of result.error.issues) {
-        if (issue.path[0] === "quantity") {
-          setFieldError(issue.message);
-          return;
-        }
-      }
-      setFieldError("Invalid input.");
+      setFromZod(result.error);
       return;
     }
 
@@ -291,7 +284,7 @@ function EditStockpileDialog({
           <Label className="grid gap-1 text-sm" htmlFor="edit-stockpile-qty">
             <span className="text-muted-foreground">Quantity</span>
             <Input
-              aria-invalid={fieldError !== undefined}
+              aria-invalid={fieldErrors.quantity !== undefined}
               aria-label="Quantity"
               autoFocus
               disabled={updateMutation.isPending}
@@ -303,8 +296,8 @@ function EditStockpileDialog({
                 setQuantity(e.currentTarget.value);
               }}
             />
-            {fieldError !== undefined ? (
-              <p className="text-xs text-destructive">{fieldError}</p>
+            {fieldErrors.quantity !== undefined ? (
+              <p className="text-xs text-destructive">{fieldErrors.quantity}</p>
             ) : null}
           </Label>
           <DialogFooter>

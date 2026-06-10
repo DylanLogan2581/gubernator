@@ -12,9 +12,7 @@ import type { JobDefinition } from "@/features/jobs";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { sortByName } from "@/lib/sortUtils";
 
-import type {
-  ManagedPopulationTypeFieldErrors,
-} from "../hooks/usePopulationTypeForm";
+import type { ManagedPopulationTypeFieldErrors } from "../hooks/UsePopulationTypeForm";
 
 type PopulationTypeScalarFieldsProps = {
   readonly cullingJobId: string;

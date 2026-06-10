@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
   softDeleteBlueprintMutationOptions,
@@ -20,6 +21,7 @@ import {
   updateBlueprintInputSchema,
   type UpdateBlueprintInput,
 } from "../../schemas/buildingSchemas";
+
 import type { BuildingBlueprint } from "../../types/buildingTypes";
 
 type BlueprintFieldErrors = {
@@ -64,7 +66,8 @@ export function EditBlueprintForm({
       ? String(blueprint.maxInstancesPerSettlement)
       : "",
   );
-  const [fieldErrors, setFieldErrors] = useState<BlueprintFieldErrors>({});
+  const { fieldErrors, setFromZod, clear } =
+    useFieldErrors<keyof BlueprintFieldErrors>();
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
@@ -72,7 +75,7 @@ export function EditBlueprintForm({
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    setFieldErrors({});
+    clear();
 
     const updateInput: UpdateBlueprintInput = {
       blueprintId: blueprint.id,
@@ -88,20 +91,7 @@ export function EditBlueprintForm({
 
     const result = updateBlueprintInputSchema.safeParse(updateInput);
     if (!result.success) {
-      const errors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const field = String(issue.path[0]);
-        if (!(field in errors)) {
-          errors[field] = issue.message;
-        }
-      }
-      setFieldErrors({
-        description: errors.description,
-        gracePeriodTurns: errors.gracePeriodTurns,
-        maxInstancesPerSettlement: errors.maxInstancesPerSettlement,
-        name: errors.name,
-        slug: errors.slug,
-      });
+      setFromZod(result.error);
       return;
     }
 

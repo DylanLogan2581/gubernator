@@ -16,6 +16,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import { createManagedPopulationInstanceMutationOptions } from "../../mutations/createManagedPopulationInstanceMutations";
 import { activeManagedPopulationTypesByWorldQueryOptions } from "../../queries/managedPopulationsQueries";
@@ -50,21 +51,13 @@ export function AddManagedPopulationDialog({
   const [initialCount, setInitialCount] = useState("");
   const [initialCullQuantity, setInitialCullQuantity] = useState("0");
 
-  const [nameError, setNameError] = useState<string | undefined>(undefined);
-  const [typeError, setTypeError] = useState<string | undefined>(undefined);
-  const [initialCountError, setInitialCountError] = useState<
-    string | undefined
-  >(undefined);
-  const [initialCullError, setInitialCullError] = useState<string | undefined>(
-    undefined,
-  );
+  const { fieldErrors, setFromZod, clear } = useFieldErrors<
+    "name" | "typeId" | "initialCount" | "initialCullQuantity"
+  >();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setNameError(undefined);
-    setTypeError(undefined);
-    setInitialCountError(undefined);
-    setInitialCullError(undefined);
+    clear();
 
     const parsedCount = parseFloat(initialCount);
     const parsedCull = parseFloat(initialCullQuantity);
@@ -79,19 +72,7 @@ export function AddManagedPopulationDialog({
 
     const result = createManagedPopulationInstanceInputSchema.safeParse(input);
     if (!result.success) {
-      const errors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const field = String(issue.path[0]);
-        if (!(field in errors)) {
-          errors[field] = issue.message;
-        }
-      }
-      if (errors.name !== undefined) setNameError(errors.name);
-      if (errors.typeId !== undefined) setTypeError(errors.typeId);
-      if (errors.initialCount !== undefined)
-        setInitialCountError(errors.initialCount);
-      if (errors.initialCullQuantity !== undefined)
-        setInitialCullError(errors.initialCullQuantity);
+      setFromZod(result.error);
       return;
     }
 
@@ -125,7 +106,7 @@ export function AddManagedPopulationDialog({
             <Label className="grid gap-1 text-sm" htmlFor="add-pop-name">
               <span className="text-muted-foreground">Name</span>
               <Input
-                aria-invalid={nameError !== undefined}
+                aria-invalid={fieldErrors.name !== undefined}
                 aria-label="Name"
                 disabled={mutation.isPending}
                 id="add-pop-name"
@@ -137,8 +118,8 @@ export function AddManagedPopulationDialog({
                   setName(e.currentTarget.value);
                 }}
               />
-              {nameError !== undefined ? (
-                <p className="text-xs text-destructive">{nameError}</p>
+              {fieldErrors.name !== undefined ? (
+                <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
             </Label>
             <Label className="grid gap-1 text-sm" htmlFor="add-pop-type">
@@ -149,7 +130,7 @@ export function AddManagedPopulationDialog({
                 </p>
               ) : (
                 <NativeSelect
-                  aria-invalid={typeError !== undefined}
+                  aria-invalid={fieldErrors.typeId !== undefined}
                   aria-label="Population type"
                   className="w-full"
                   disabled={mutation.isPending}
@@ -167,14 +148,14 @@ export function AddManagedPopulationDialog({
                   ))}
                 </NativeSelect>
               )}
-              {typeError !== undefined ? (
-                <p className="text-xs text-destructive">{typeError}</p>
+              {fieldErrors.typeId !== undefined ? (
+                <p className="text-xs text-destructive">{fieldErrors.typeId}</p>
               ) : null}
             </Label>
             <Label className="grid gap-1 text-sm" htmlFor="add-pop-count">
               <span className="text-muted-foreground">Initial count</span>
               <Input
-                aria-invalid={initialCountError !== undefined}
+                aria-invalid={fieldErrors.initialCount !== undefined}
                 aria-label="Initial count"
                 disabled={mutation.isPending}
                 id="add-pop-count"
@@ -186,8 +167,10 @@ export function AddManagedPopulationDialog({
                   setInitialCount(e.currentTarget.value);
                 }}
               />
-              {initialCountError !== undefined ? (
-                <p className="text-xs text-destructive">{initialCountError}</p>
+              {fieldErrors.initialCount !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.initialCount}
+                </p>
               ) : null}
             </Label>
             <Label className="grid gap-1 text-sm" htmlFor="add-pop-cull">
@@ -195,7 +178,7 @@ export function AddManagedPopulationDialog({
                 Initial cull quantity
               </span>
               <Input
-                aria-invalid={initialCullError !== undefined}
+                aria-invalid={fieldErrors.initialCullQuantity !== undefined}
                 aria-label="Initial cull quantity"
                 disabled={mutation.isPending}
                 id="add-pop-cull"
@@ -207,8 +190,10 @@ export function AddManagedPopulationDialog({
                   setInitialCullQuantity(e.currentTarget.value);
                 }}
               />
-              {initialCullError !== undefined ? (
-                <p className="text-xs text-destructive">{initialCullError}</p>
+              {fieldErrors.initialCullQuantity !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.initialCullQuantity}
+                </p>
               ) : null}
             </Label>
           </div>

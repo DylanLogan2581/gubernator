@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
   softDeleteResourceMutationOptions,
@@ -56,7 +57,8 @@ export function EditResourceForm({
     String(resource.baseStockpileCap),
   );
   const [decayRate, setDecayRate] = useState(String(resource.decayRate));
-  const [fieldErrors, setFieldErrors] = useState<ResourceFieldErrors>({});
+  const { fieldErrors, setFromZod, clear } =
+    useFieldErrors<keyof ResourceFieldErrors>();
 
   const isPending = updateMutation.isPending || softDeleteMutation.isPending;
 
@@ -69,7 +71,7 @@ export function EditResourceForm({
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    setFieldErrors({});
+    clear();
 
     const input: UpdateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
@@ -82,24 +84,7 @@ export function EditResourceForm({
 
     const result = updateResourceInputSchema.safeParse(input);
     if (!result.success) {
-      let baseStockpileCapError: string | undefined;
-      let decayRateError: string | undefined;
-      let nameError: string | undefined;
-      let slugError: string | undefined;
-      for (const issue of result.error.issues) {
-        const field = issue.path[0];
-        if (field === "name") nameError ??= issue.message;
-        else if (field === "slug") slugError ??= issue.message;
-        else if (field === "baseStockpileCap")
-          baseStockpileCapError ??= issue.message;
-        else if (field === "decayRate") decayRateError ??= issue.message;
-      }
-      setFieldErrors({
-        baseStockpileCap: baseStockpileCapError,
-        decayRate: decayRateError,
-        name: nameError,
-        slug: slugError,
-      });
+      setFromZod(result.error);
       return;
     }
 

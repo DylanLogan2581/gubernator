@@ -1,8 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -21,6 +20,7 @@ import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { toSlug } from "@/lib/slugify";
 import { sortByName } from "@/lib/sortUtils";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
   softDeleteDepositTypeMutationOptions,
@@ -35,7 +35,6 @@ import { useDepositTypeJobLink } from "./hooks/UseDepositTypeJobLink";
 import { toWorkerInputsEntries } from "./utils/WorkerInputsUtils";
 
 import type { DepositType } from "../../types/depositTypes";
-import type { QueryClient } from "@tanstack/react-query";
 
 type DepositTypeFieldErrors = {
   readonly jobId?: string;
@@ -75,7 +74,8 @@ export function EditDepositTypeForm({
   const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>(() =>
     toWorkerInputsEntries(depositType.workerInputsJson),
   );
-  const [fieldErrors, setFieldErrors] = useState<DepositTypeFieldErrors>({});
+  const { fieldErrors, setFromZod, clear } =
+    useFieldErrors<keyof DepositTypeFieldErrors>();
   const { jobId, jobLinkError, handleJobChange } = useDepositTypeJobLink(
     allDepositTypes,
     depositType.id,
@@ -95,7 +95,7 @@ export function EditDepositTypeForm({
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    setFieldErrors({});
+    clear();
 
     if (jobLinkError !== undefined) return;
 
@@ -117,19 +117,7 @@ export function EditDepositTypeForm({
 
     const result = updateDepositTypeInputSchema.safeParse(updateInput);
     if (!result.success) {
-      const errors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const field = String(issue.path[0]);
-        if (!(field in errors)) {
-          errors[field] = issue.message;
-        }
-      }
-      setFieldErrors({
-        jobId: errors.jobId,
-        name: errors.name,
-        outputUnitsPerWorker: errors.outputUnitsPerWorker,
-        slug: errors.slug,
-      });
+      setFromZod(result.error);
       return;
     }
 

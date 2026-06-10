@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type FormEvent, type JSX } from "react";
 
-import {
-  ResourceAmountListEditor,
-} from "@/components/shared/ResourceAmountListEditor";
+import { ResourceAmountListEditor } from "@/components/shared/ResourceAmountListEditor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,21 +13,15 @@ import {
 } from "@/components/ui/dialog";
 import type { JobDefinition } from "@/features/jobs";
 // eslint-disable-next-line import-x/no-internal-modules
-import {
-  createManagedPopulationTypeInputSchema,
-} from "@/features/managed-populations/schemas/managedPopulationSchemas";
+import { createManagedPopulationTypeInputSchema } from "@/features/managed-populations/schemas/managedPopulationSchemas";
 // eslint-disable-next-line import-x/no-internal-modules
-import type {
-  CreateManagedPopulationTypeInput,
-} from "@/features/managed-populations/schemas/managedPopulationSchemas";
+import type { CreateManagedPopulationTypeInput } from "@/features/managed-populations/schemas/managedPopulationSchemas";
 // eslint-disable-next-line import-x/no-internal-modules
 import type { ManagedPopulationType } from "@/features/managed-populations/types/managedPopulationTypes";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 
 import { usePopulationTypeForm } from "../hooks/UsePopulationTypeForm";
-import {
-  resourceEntriesToDtoArray,
-} from "../utils/PopulationTypeFormMapping";
+import { resourceEntriesToDtoArray } from "../utils/PopulationTypeFormMapping";
 
 import { PopulationTypeScalarFields } from "./PopulationTypeScalarFields";
 
@@ -66,7 +58,7 @@ export function CreateManagedPopulationTypeForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    form.setFieldErrors({});
+    form.clearFieldErrors();
 
     if (form.hasJobError) return;
 
@@ -97,21 +89,7 @@ export function CreateManagedPopulationTypeForm({
 
     const result = createManagedPopulationTypeInputSchema.safeParse(input);
     if (!result.success) {
-      const errors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const field = String(issue.path[0]);
-        if (!(field in errors)) {
-          errors[field] = issue.message;
-        }
-      }
-      form.setFieldErrors({
-        cullingJobId: errors.cullingJobId,
-        growthRate: errors.growthRate,
-        husbandryJobId: errors.husbandryJobId,
-        husbandryWorkersPerNAnimals: errors.husbandryWorkersPerNAnimals,
-        name: errors.name,
-        slug: errors.slug,
-      });
+      form.setFromZod(result.error);
       return;
     }
 

@@ -21,6 +21,7 @@ import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import { createDepositInstanceMutationOptions } from "../../mutations/createDepositInstanceMutations";
 import { activeDepositTypesByWorldQueryOptions } from "../../queries/depositsQueries";
@@ -58,23 +59,14 @@ export function AddDepositInstanceDialog({
   const [resourceEntries, setResourceEntries] = useState<ResourceAmountEntry[]>(
     [],
   );
-  const [nameError, setNameError] = useState<string | undefined>(undefined);
-  const [depositTypeError, setDepositTypeError] = useState<string | undefined>(
-    undefined,
-  );
-  const [maxWorkersError, setMaxWorkersError] = useState<string | undefined>(
-    undefined,
-  );
-  const [resourcesError, setResourcesError] = useState<string | undefined>(
-    undefined,
-  );
+
+  const { fieldErrors, setFromZod, clear } = useFieldErrors<
+    "name" | "depositTypeId" | "maxWorkers" | "resources"
+  >();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setNameError(undefined);
-    setDepositTypeError(undefined);
-    setMaxWorkersError(undefined);
-    setResourcesError(undefined);
+    clear();
 
     const parsedMax = maxWorkers !== "" ? parseInt(maxWorkers, 10) : undefined;
 
@@ -91,19 +83,7 @@ export function AddDepositInstanceDialog({
 
     const result = createDepositInstanceInputSchema.safeParse(input);
     if (!result.success) {
-      const errors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const field = String(issue.path[0]);
-        if (!(field in errors)) {
-          errors[field] = issue.message;
-        }
-      }
-      if (errors.name !== undefined) setNameError(errors.name);
-      if (errors.depositTypeId !== undefined)
-        setDepositTypeError(errors.depositTypeId);
-      if (errors.maxWorkers !== undefined)
-        setMaxWorkersError(errors.maxWorkers);
-      if (errors.resources !== undefined) setResourcesError(errors.resources);
+      setFromZod(result.error);
       return;
     }
 
@@ -138,7 +118,7 @@ export function AddDepositInstanceDialog({
               <span className="text-muted-foreground">Name</span>
               <Input
                 id="add-deposit-name"
-                aria-invalid={nameError !== undefined}
+                aria-invalid={fieldErrors.name !== undefined}
                 aria-label="Name"
                 disabled={mutation.isPending}
                 maxLength={depositInputLimits.depositInstanceNameMax}
@@ -147,8 +127,8 @@ export function AddDepositInstanceDialog({
                   setName(e.currentTarget.value);
                 }}
               />
-              {nameError !== undefined ? (
-                <p className="text-xs text-destructive">{nameError}</p>
+              {fieldErrors.name !== undefined ? (
+                <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
             </Label>
             <Label htmlFor="add-deposit-type" className="grid gap-1 text-sm">
@@ -160,7 +140,7 @@ export function AddDepositInstanceDialog({
               ) : (
                 <NativeSelect
                   id="add-deposit-type"
-                  aria-invalid={depositTypeError !== undefined}
+                  aria-invalid={fieldErrors.depositTypeId !== undefined}
                   aria-label="Deposit type"
                   className="w-full"
                   disabled={mutation.isPending}
@@ -177,8 +157,10 @@ export function AddDepositInstanceDialog({
                   ))}
                 </NativeSelect>
               )}
-              {depositTypeError !== undefined ? (
-                <p className="text-xs text-destructive">{depositTypeError}</p>
+              {fieldErrors.depositTypeId !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.depositTypeId}
+                </p>
               ) : null}
             </Label>
             <Label
@@ -190,7 +172,7 @@ export function AddDepositInstanceDialog({
               </span>
               <Input
                 id="add-deposit-maxworkers"
-                aria-invalid={maxWorkersError !== undefined}
+                aria-invalid={fieldErrors.maxWorkers !== undefined}
                 aria-label="Max workers"
                 disabled={mutation.isPending}
                 inputMode="numeric"
@@ -200,8 +182,10 @@ export function AddDepositInstanceDialog({
                   setMaxWorkers(e.currentTarget.value);
                 }}
               />
-              {maxWorkersError !== undefined ? (
-                <p className="text-xs text-destructive">{maxWorkersError}</p>
+              {fieldErrors.maxWorkers !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.maxWorkers}
+                </p>
               ) : null}
             </Label>
             <ResourceAmountListEditor
@@ -209,7 +193,7 @@ export function AddDepositInstanceDialog({
               amountLabel="initial quantity"
               disabled={mutation.isPending}
               entries={resourceEntries}
-              fieldError={resourcesError}
+              fieldError={fieldErrors.resources}
               label="Resources"
               resources={resources}
               onChange={setResourceEntries}

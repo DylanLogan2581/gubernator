@@ -1,10 +1,14 @@
 import { useState } from "react";
 
+
 import type { ResourceAmountEntry } from "@/components/shared/ResourceAmountListEditor";
 // eslint-disable-next-line import-x/no-internal-modules
 import type { ManagedPopulationType } from "@/features/managed-populations/types/managedPopulationTypes";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
+
+import type { ZodError } from "zod";
 
 export type ManagedPopulationTypeFieldErrors = {
   readonly cullingJobId?: string;
@@ -40,6 +44,8 @@ type UsePopulationTypeFormReturn = {
   readonly setCullingOutputs: (value: ResourceAmountEntry[]) => void;
   readonly setRegularOutputs: (value: ResourceAmountEntry[]) => void;
   readonly setFieldErrors: (value: ManagedPopulationTypeFieldErrors) => void;
+  readonly clearFieldErrors: () => void;
+  readonly setFromZod: (error: ZodError) => void;
   readonly handleNameChange: (value: string) => void;
   readonly handleHusbandryJobChange: (selectedId: string) => void;
   readonly handleCullingJobChange: (selectedId: string) => void;
@@ -76,9 +82,8 @@ export function usePopulationTypeForm({
   const [slug, setSlug] = useState(initialSlug);
   const [husbandryJobId, setHusbandryJobId] = useState(initialHusbandryJobId);
   const [cullingJobId, setCullingJobId] = useState(initialCullingJobId);
-  const [husbandryWorkersPerNAnimals, setHusbandryWorkersPerNAnimals] = useState(
-    initialHusbandryWorkersPerNAnimals,
-  );
+  const [husbandryWorkersPerNAnimals, setHusbandryWorkersPerNAnimals] =
+    useState(initialHusbandryWorkersPerNAnimals);
   const [growthRate, setGrowthRate] = useState(initialGrowthRate);
   const [maintenanceRules, setMaintenanceRules] = useState<
     ResourceAmountEntry[]
@@ -89,8 +94,11 @@ export function usePopulationTypeForm({
   const [regularOutputs, setRegularOutputs] = useState<ResourceAmountEntry[]>(
     initialRegularOutputs,
   );
-  const [fieldErrors, setFieldErrors] =
-    useState<ManagedPopulationTypeFieldErrors>({});
+  const { fieldErrors, setFromZod, clear } =
+    useFieldErrors<keyof ManagedPopulationTypeFieldErrors>();
+  const setFieldErrors = (_value: ManagedPopulationTypeFieldErrors): void => {
+    // Bridge method - fieldErrors now managed by useFieldErrors hook via setFromZod
+  };
   const [husbandryJobLinkError, setHusbandryJobLinkError] = useState<
     string | undefined
   >(undefined);
@@ -113,7 +121,8 @@ export function usePopulationTypeForm({
       (pt) =>
         pt.husbandryJobId === selectedId &&
         selectedId !== "" &&
-        (editingPopulationTypeId === undefined || pt.id !== editingPopulationTypeId),
+        (editingPopulationTypeId === undefined ||
+          pt.id !== editingPopulationTypeId),
     );
     setHusbandryJobLinkError(
       conflict !== undefined
@@ -128,7 +137,8 @@ export function usePopulationTypeForm({
       (pt) =>
         pt.cullingJobId === selectedId &&
         selectedId !== "" &&
-        (editingPopulationTypeId === undefined || pt.id !== editingPopulationTypeId),
+        (editingPopulationTypeId === undefined ||
+          pt.id !== editingPopulationTypeId),
     );
     setCullingJobLinkError(
       conflict !== undefined
@@ -176,6 +186,8 @@ export function usePopulationTypeForm({
     setCullingOutputs,
     setRegularOutputs,
     setFieldErrors,
+    clearFieldErrors: clear,
+    setFromZod,
     // Handlers
     handleNameChange,
     handleHusbandryJobChange,

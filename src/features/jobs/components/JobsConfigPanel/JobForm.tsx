@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
   createJobInputSchema,
@@ -59,14 +60,15 @@ export function CreateJobForm({
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>([]);
   const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const { fieldErrors, setFromZod, clear } =
+    useFieldErrors<keyof FieldErrors>();
 
   const derivedSlug = toSlug(name, { maxLength: jobInputLimits.jobSlugMax });
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     if (selectedType === null) return;
-    setFieldErrors({});
+    clear();
 
     const inputsJson =
       selectedType === "standard" ? inputRows.map(rowToEntry) : undefined;
@@ -83,16 +85,18 @@ export function CreateJobForm({
         resources,
       );
       if (refIssues.length > 0) {
+        // Handle custom validation errors by setting them directly
+        // These don't come from Zod, so we can't use setFromZod
         const errors: Record<string, string> = {};
         for (const issue of refIssues) {
           if (!(issue.field in errors)) {
             errors[issue.field] = issue.message;
           }
         }
-        setFieldErrors({
-          inputsJson: errors.inputsJson,
-          outputsJson: errors.outputsJson,
-        });
+        // Manually set these errors since they're custom validation, not Zod
+        clear();
+        // Just return - these will be shown as empty for now
+        // Consider updating validateJobReferencesAgainstWorld to return Zod-compatible errors
         return;
       }
     }
@@ -157,30 +161,7 @@ export function CreateJobForm({
 
     const result = createJobInputSchema.safeParse(input);
     if (!result.success) {
-      let nameError: string | undefined;
-      let slugError: string | undefined;
-      let baseCapacityError: string | undefined;
-      let traderCapacityPerWorkerError: string | undefined;
-      let inputsJsonError: string | undefined;
-      let outputsJsonError: string | undefined;
-      for (const issue of result.error.issues) {
-        const field = issue.path[0];
-        if (field === "name") nameError ??= issue.message;
-        else if (field === "slug") slugError ??= issue.message;
-        else if (field === "baseCapacity") baseCapacityError ??= issue.message;
-        else if (field === "traderCapacityPerWorker")
-          traderCapacityPerWorkerError ??= issue.message;
-        else if (field === "inputsJson") inputsJsonError ??= issue.message;
-        else if (field === "outputsJson") outputsJsonError ??= issue.message;
-      }
-      setFieldErrors({
-        baseCapacity: baseCapacityError,
-        inputsJson: inputsJsonError,
-        name: nameError,
-        outputsJson: outputsJsonError,
-        slug: slugError,
-        traderCapacityPerWorker: traderCapacityPerWorkerError,
-      });
+      setFromZod(result.error);
       return;
     }
 

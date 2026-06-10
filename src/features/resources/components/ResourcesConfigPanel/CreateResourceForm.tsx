@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resourceInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
   createResourceInputSchema,
@@ -41,7 +42,8 @@ export function CreateResourceForm({
 }: CreateResourceFormProps): JSX.Element {
   const [name, setName] = useState("");
   const [baseStockpileCap, setBaseStockpileCap] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<CreateResourceFieldErrors>({});
+  const { fieldErrors, setFromZod, clear } =
+    useFieldErrors<keyof CreateResourceFieldErrors>();
 
   const derivedSlug = toSlug(name, {
     maxLength: resourceInputLimits.resourceSlugMax,
@@ -49,7 +51,7 @@ export function CreateResourceForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setFieldErrors({});
+    clear();
 
     const input: CreateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
@@ -60,21 +62,7 @@ export function CreateResourceForm({
 
     const result = createResourceInputSchema.safeParse(input);
     if (!result.success) {
-      let nameError: string | undefined;
-      let slugError: string | undefined;
-      let baseStockpileCapError: string | undefined;
-      for (const issue of result.error.issues) {
-        const field = issue.path[0];
-        if (field === "name") nameError ??= issue.message;
-        else if (field === "slug") slugError ??= issue.message;
-        else if (field === "baseStockpileCap")
-          baseStockpileCapError ??= issue.message;
-      }
-      setFieldErrors({
-        baseStockpileCap: baseStockpileCapError,
-        name: nameError,
-        slug: slugError,
-      });
+      setFromZod(result.error);
       return;
     }
 

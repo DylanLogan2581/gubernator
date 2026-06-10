@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useState, type FormEvent, type JSX } from "react";
+import { type FormEvent, type JSX, useState } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import {
@@ -25,6 +25,7 @@ import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { depositInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { sortByName } from "@/lib/sortUtils";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import {
   createDepositTypeInputSchema,
@@ -61,7 +62,8 @@ export function CreateDepositTypeForm({
   const [jobId, setJobId] = useState("");
   const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState("1");
   const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<DepositTypeFieldErrors>({});
+  const { fieldErrors, setFromZod, clear } =
+    useFieldErrors<keyof DepositTypeFieldErrors>();
   const [jobLinkError, setJobLinkError] = useState<string | undefined>(
     undefined,
   );
@@ -84,7 +86,7 @@ export function CreateDepositTypeForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setFieldErrors({});
+    clear();
 
     if (jobLinkError !== undefined) return;
 
@@ -106,19 +108,7 @@ export function CreateDepositTypeForm({
 
     const result = createDepositTypeInputSchema.safeParse(input);
     if (!result.success) {
-      const errors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const field = String(issue.path[0]);
-        if (!(field in errors)) {
-          errors[field] = issue.message;
-        }
-      }
-      setFieldErrors({
-        jobId: errors.jobId,
-        name: errors.name,
-        outputUnitsPerWorker: errors.outputUnitsPerWorker,
-        slug: errors.slug,
-      });
+      setFromZod(result.error);
       return;
     }
 

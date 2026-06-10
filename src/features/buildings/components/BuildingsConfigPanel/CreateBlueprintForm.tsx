@@ -15,21 +15,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  activeJobsByWorldQueryOptions,
-} from "@/features/jobs";
-import {
-  activeResourcesByWorldQueryOptions,
-} from "@/features/resources";
+import { activeJobsByWorldQueryOptions } from "@/features/jobs";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { buildingInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
+import { useCreateBlueprintWithTiers } from "../../hooks/useCreateBlueprintWithTiers";
 import {
   createBlueprintInputSchema,
   type CreateBlueprintInput,
 } from "../../schemas/buildingSchemas";
-import { useCreateBlueprintWithTiers } from "../../hooks/useCreateBlueprintWithTiers";
+
 import InlineTierDraftForm from "./InlineTierDraftForm";
+
 import type { PendingTierDraft } from "../../hooks/useCreateBlueprintWithTiers";
 
 type BlueprintFieldErrors = {
@@ -57,7 +56,8 @@ export function CreateBlueprintForm({
   const [description, setDescription] = useState("");
   const [gracePeriodTurns, setGracePeriodTurns] = useState("0");
   const [maxInstances, setMaxInstances] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<BlueprintFieldErrors>({});
+  const { fieldErrors, setFromZod, clear } =
+    useFieldErrors<keyof BlueprintFieldErrors>();
   const [pendingTiers, setPendingTiers] = useState<PendingTierDraft[]>([]);
   const [showAddTierForm, setShowAddTierForm] = useState(false);
 
@@ -71,7 +71,7 @@ export function CreateBlueprintForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setFieldErrors({});
+    clear();
 
     const input: CreateBlueprintInput = {
       description: description.length > 0 ? description : undefined,
@@ -86,20 +86,7 @@ export function CreateBlueprintForm({
 
     const result = createBlueprintInputSchema.safeParse(input);
     if (!result.success) {
-      const errors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const field = String(issue.path[0]);
-        if (!(field in errors)) {
-          errors[field] = issue.message;
-        }
-      }
-      setFieldErrors({
-        description: errors.description,
-        gracePeriodTurns: errors.gracePeriodTurns,
-        maxInstancesPerSettlement: errors.maxInstancesPerSettlement,
-        name: errors.name,
-        slug: errors.slug,
-      });
+      setFromZod(result.error);
       return;
     }
 
