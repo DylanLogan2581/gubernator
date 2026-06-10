@@ -149,7 +149,7 @@ function EndTurnControlContent({
             void navigate({ to: "/sign-in", search: { returnTo } });
             return;
           }
-          notifyMutationError(error, "End turn failed.");
+          // Error shown in dialog banner instead of toast for high-stakes flow.
         },
         onSuccess: (result) => {
           setIsConfirming(false);

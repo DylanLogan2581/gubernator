@@ -418,7 +418,7 @@ describe("EndTurnControl", () => {
         code: "end_turn_stale_expected_turn",
         message: "Internal stale detail",
       }),
-      settlementRows: [],
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -433,9 +433,15 @@ describe("EndTurnControl", () => {
     );
 
     await vi.waitFor(() => {
-      expect(toastError).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getByRole("dialog", {
+          name: "Confirm turn transition",
+        }),
+      ).toHaveTextContent(
+        "This turn has already changed. Refresh the page to review the latest world state.",
+      );
     });
-    expect(toastError).toHaveBeenCalledWith("Internal stale detail");
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("navigates to sign-in when the session has expired", async () => {
@@ -476,7 +482,7 @@ describe("EndTurnControl", () => {
         code: "unauthorized",
         message: "Internal authorization detail",
       }),
-      settlementRows: [],
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -491,9 +497,13 @@ describe("EndTurnControl", () => {
     );
 
     await vi.waitFor(() => {
-      expect(toastError).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getByRole("dialog", {
+          name: "Confirm turn transition",
+        }),
+      ).toHaveTextContent("End turn is unavailable for this world.");
     });
-    expect(toastError).toHaveBeenCalledWith("Internal authorization detail");
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("toasts an error message for transition persistence failures", async () => {
@@ -503,7 +513,7 @@ describe("EndTurnControl", () => {
         code: "end_turn_transition_failed",
         message: "Internal transition detail",
       }),
-      settlementRows: [],
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
@@ -517,10 +527,14 @@ describe("EndTurnControl", () => {
       await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
-    await vi.waitFor(() => {
-      expect(toastError).toHaveBeenCalledTimes(1);
+    const dialog = screen.getByRole("dialog", {
+      name: "Confirm turn transition",
     });
-    expect(toastError).toHaveBeenCalledWith("Internal transition detail");
+    expect(dialog).toBeDefined();
+    expect(dialog).toHaveTextContent(
+      "End turn could not be saved. Refresh the page before trying again.",
+    );
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("shows inline error in the dialog body after a mutation failure", async () => {
@@ -544,10 +558,6 @@ describe("EndTurnControl", () => {
       await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
-    await vi.waitFor(() => {
-      expect(toastError).toHaveBeenCalledTimes(1);
-    });
-
     const dialog = screen.getByRole("dialog", {
       name: "Confirm turn transition",
     });
@@ -555,6 +565,7 @@ describe("EndTurnControl", () => {
     expect(dialog).toHaveTextContent(
       "End turn could not be saved. Refresh the page before trying again.",
     );
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("shows the actual error message when the readiness query fails", async () => {
@@ -600,10 +611,6 @@ describe("EndTurnControl", () => {
       await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
-    await vi.waitFor(() => {
-      expect(toastError).toHaveBeenCalledTimes(1);
-    });
-
     const dialog = screen.getByRole("dialog", {
       name: "Confirm turn transition",
     });
@@ -611,6 +618,7 @@ describe("EndTurnControl", () => {
       "End turn could not be saved. Refresh the page before trying again.",
     );
     expect(dialog).not.toHaveTextContent("Internal transition detail");
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("closes the dialog when Escape is pressed", async () => {
