@@ -7,7 +7,7 @@
 --   P0002 (no_data_found)          – null params, settlement / blueprint / tier not found,
 --                                    or blueprint belongs to a different world
 --   42501 (insufficient_privilege) – caller lacks manage-settlement permission
---   P0001 (raise_exception)        – blueprint is trashed, or max_instances exceeded
+--   P0001 (raise_exception)        – world is archived, blueprint is trashed, or max_instances exceeded
 -- ---------------------------------------------------------------------------
 create or replace function public.create_construction_project (
   p_settlement_id uuid,
@@ -39,6 +39,11 @@ begin
 
   if v_world_id is null then
     raise exception 'not found' using errcode = 'P0002';
+  end if;
+
+  -- Archived world guard
+  if public.world_is_archived(v_world_id) then
+    raise exception 'world is archived' using errcode = 'P0001';
   end if;
 
   -- Auth: settlement manager, nation manager, world admin, or super admin

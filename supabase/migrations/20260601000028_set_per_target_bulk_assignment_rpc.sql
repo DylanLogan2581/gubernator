@@ -17,7 +17,7 @@
 --   P0002 (no_data_found)          – null required param, settlement not found,
 --                                    target not found
 --   42501 (insufficient_privilege) – caller lacks authority
---   P0001 (raise_exception)        – negative target count, invalid assignment
+--   P0001 (raise_exception)        – world is archived, negative target count, invalid assignment
 --                                    type, target not in settlement, inactive
 --                                    instance, target count exceeds max_workers
 --                                    (deposit), trashed linked job
@@ -88,6 +88,11 @@ begin
 
   if v_world_id is null then
     raise exception 'not found' using errcode = 'P0002';
+  end if;
+
+  -- Archived world guard
+  if public.world_is_archived(v_world_id) then
+    raise exception 'world is archived' using errcode = 'P0001';
   end if;
 
   -- -----------------------------------------------------------------------

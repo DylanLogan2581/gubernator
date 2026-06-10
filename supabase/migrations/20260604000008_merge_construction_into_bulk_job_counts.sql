@@ -119,6 +119,11 @@ begin
     raise exception 'not found' using errcode = 'P0002';
   end if;
 
+  -- Archived world guard
+  if public.world_is_archived(v_world_id) then
+    raise exception 'world is archived' using errcode = 'P0001';
+  end if;
+
   -- Authorization
   if not (
     public.is_super_admin ()

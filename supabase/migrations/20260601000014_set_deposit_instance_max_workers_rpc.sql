@@ -9,7 +9,7 @@
 -- Error contract:
 --   P0002 (no_data_found)          – p_deposit_instance_id is null or not found
 --   42501 (insufficient_privilege) – caller lacks manage-settlement permission
---   P0001 (raise_exception)        – p_max_workers <= 0, p_removal_strategy
+--   P0001 (raise_exception)        – world is archived, p_max_workers <= 0, p_removal_strategy
 --                                    invalid, or strategy omitted when shrinking
 --
 -- Removal strategies (consulted only when shrinking):
@@ -30,6 +30,7 @@ set
   search_path = '' as $$
 declare
   v_settlement_id  uuid;
+  v_world_id       uuid;
   v_current_count  integer;
   v_excess         integer;
   v_new_max        integer;
@@ -59,6 +60,18 @@ begin
 
   if v_settlement_id is null then
     raise exception 'not found' using errcode = 'P0002';
+  end if;
+
+  -- Resolve world_id for archived check
+  select n.world_id
+    into v_world_id
+    from public.settlements s
+    join public.nations n on n.id = s.nation_id
+   where s.id = v_settlement_id;
+
+  -- Archived world guard
+  if public.world_is_archived(v_world_id) then
+    raise exception 'world is archived' using errcode = 'P0001';
   end if;
 
   -- Auth: settlement manager, nation manager, world admin, or super admin

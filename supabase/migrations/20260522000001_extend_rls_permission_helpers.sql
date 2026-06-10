@@ -146,6 +146,25 @@ set
 $$;
 
 -- ---------------------------------------------------------------------------
+-- 7. world_is_archived(p_world_id)
+-- ---------------------------------------------------------------------------
+-- TRUE when the given world is archived (either status = 'archived' or
+-- archived_at is not null). Used by mutation RPCs to reject operations on
+-- frozen worlds. Extraction into a helper ensures consistent archived-world
+-- semantics across all manager and admin RPCs.
+create or replace function public.world_is_archived (p_world_id uuid) returns boolean language sql stable security definer
+set
+  search_path = '' as $$
+  select
+    exists (
+      select 1
+      from public.worlds w
+      where w.id = p_world_id
+        and (w.status = 'archived' or w.archived_at is not null)
+    )
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Execution grants: revoke from public, grant execute to authenticated, in
 -- line with the helpers added in 20260520000000_add_citizens.sql.
 -- ---------------------------------------------------------------------------
@@ -173,6 +192,10 @@ revoke all on function public.nation_visible_to_current_user (uuid)
 from
   public;
 
+revoke all on function public.world_is_archived (uuid)
+from
+  public;
+
 grant
 execute on function public.current_user_player_character_ids (uuid) to authenticated;
 
@@ -190,6 +213,9 @@ execute on function public.current_user_has_world_access (uuid) to authenticated
 
 grant
 execute on function public.nation_visible_to_current_user (uuid) to authenticated;
+
+grant
+execute on function public.world_is_archived (uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Read RLS rewiring
