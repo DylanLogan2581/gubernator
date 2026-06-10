@@ -1,13 +1,11 @@
 import { useState } from "react";
 
-
 import type { ResourceAmountEntry } from "@/components/shared/ResourceAmountListEditor";
-// eslint-disable-next-line import-x/no-internal-modules
-import type { ManagedPopulationType } from "@/features/managed-populations/types/managedPopulationTypes";
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
 
+import type { ManagedPopulationType } from "../../../types/managedPopulationTypes";
 import type { ZodError } from "zod";
 
 export type ManagedPopulationTypeFieldErrors = {

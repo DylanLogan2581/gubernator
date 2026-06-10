@@ -1,5 +1,13 @@
 import { useState } from "react";
 
+import type { JobDefinition } from "@/features/jobs";
+import type { Resource } from "@/features/resources";
+
+import {
+  createTierInputSchema,
+  type TierCostEntryInput,
+  type TierEffectInput,
+} from "../schemas/buildingSchemas";
 import {
   buildCostInputs,
   buildEffectInputs,
@@ -10,13 +18,6 @@ import {
   type TierFormErrors,
 } from "../utils/tierEditorUtils";
 import { validateBlueprintTierReferencesAgainstWorld } from "../utils/validateBuildingReferences";
-import {
-  createTierInputSchema,
-  type TierCostEntryInput,
-  type TierEffectInput,
-} from "../schemas/buildingSchemas";
-import type { JobDefinition } from "@/features/jobs";
-import type { Resource } from "@/features/resources";
 
 export type TierDraftFormState = {
   tierNumber: string;

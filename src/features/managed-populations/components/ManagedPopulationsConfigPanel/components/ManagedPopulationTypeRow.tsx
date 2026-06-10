@@ -3,14 +3,11 @@ import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { JobDefinition } from "@/features/jobs";
-// eslint-disable-next-line import-x/no-internal-modules
-import {
-  softDeleteManagedPopulationTypeMutationOptions,
-} from "@/features/managed-populations/mutations/managedPopulationsMutations";
-// eslint-disable-next-line import-x/no-internal-modules
-import type { ManagedPopulationType } from "@/features/managed-populations/types/managedPopulationTypes";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
 
+import { softDeleteManagedPopulationTypeMutationOptions } from "../../../mutations/managedPopulationsMutations";
+
+import type { ManagedPopulationType } from "../../../types/managedPopulationTypes";
 import type { QueryClient } from "@tanstack/react-query";
 
 export function ManagedPopulationTypeRow({

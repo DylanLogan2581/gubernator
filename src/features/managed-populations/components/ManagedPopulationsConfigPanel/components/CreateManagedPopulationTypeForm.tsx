@@ -12,18 +12,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { JobDefinition } from "@/features/jobs";
-// eslint-disable-next-line import-x/no-internal-modules
-import { createManagedPopulationTypeInputSchema } from "@/features/managed-populations/schemas/managedPopulationSchemas";
-// eslint-disable-next-line import-x/no-internal-modules
-import type { CreateManagedPopulationTypeInput } from "@/features/managed-populations/schemas/managedPopulationSchemas";
-// eslint-disable-next-line import-x/no-internal-modules
-import type { ManagedPopulationType } from "@/features/managed-populations/types/managedPopulationTypes";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 
+import { createManagedPopulationTypeInputSchema } from "../../../schemas/managedPopulationSchemas";
 import { usePopulationTypeForm } from "../hooks/UsePopulationTypeForm";
 import { resourceEntriesToDtoArray } from "../utils/PopulationTypeFormMapping";
 
 import { PopulationTypeScalarFields } from "./PopulationTypeScalarFields";
+
+import type { CreateManagedPopulationTypeInput } from "../../../schemas/managedPopulationSchemas";
+import type { ManagedPopulationType } from "../../../types/managedPopulationTypes";
 
 export function CreateManagedPopulationTypeForm({
   allPopulationTypes,

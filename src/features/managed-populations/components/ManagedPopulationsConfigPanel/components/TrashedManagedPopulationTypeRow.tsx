@@ -2,16 +2,15 @@ import { type JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-/* eslint-disable-next-line import-x/no-internal-modules */
-import {
-  hardDeleteManagedPopulationTypeMutationOptions,
-  restoreManagedPopulationTypeMutationOptions,
-} from "@/features/managed-populations/mutations/managedPopulationsMutations";
-// eslint-disable-next-line import-x/no-internal-modules
-import type { ManagedPopulationType } from "@/features/managed-populations/types/managedPopulationTypes";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
 import { useRestoreRow } from "@/hooks/useRestoreRow";
 
+import {
+  hardDeleteManagedPopulationTypeMutationOptions,
+  restoreManagedPopulationTypeMutationOptions,
+} from "../../../mutations/managedPopulationsMutations";
+
+import type { ManagedPopulationType } from "../../../types/managedPopulationTypes";
 import type { QueryClient } from "@tanstack/react-query";
 
 export function TrashedManagedPopulationTypeRow({

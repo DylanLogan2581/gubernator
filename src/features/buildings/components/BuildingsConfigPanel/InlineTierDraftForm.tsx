@@ -6,8 +6,9 @@ import { type Resource } from "@/features/resources";
 import { generateLocalId } from "@/lib/uid";
 
 import { useTierDraftForm } from "../../hooks/useTierDraftForm";
-import type { PendingTierDraft } from "../../hooks/useCreateBlueprintWithTiers";
 import { TierDraftFields } from "../TierDraftFields";
+
+import type { PendingTierDraft } from "../../hooks/useCreateBlueprintWithTiers";
 
 export default function InlineTierDraftForm({
   activeJobs,

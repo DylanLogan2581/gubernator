@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
 import {
@@ -10,20 +6,17 @@ import {
   handleCrudError,
 } from "@/components/shared/ConfigCrudPanel";
 import { jobsByTypeQueryOptions } from "@/features/jobs";
-// eslint-disable-next-line import-x/no-internal-modules
-import {
-  createManagedPopulationTypeMutationOptions,
-} from "@/features/managed-populations/mutations/managedPopulationsMutations";
-// eslint-disable-next-line import-x/no-internal-modules
-import { managedPopulationTypesByWorldQueryOptions } from "@/features/managed-populations/queries/managedPopulationsQueries";
-// eslint-disable-next-line import-x/no-internal-modules
-import type { ManagedPopulationType } from "@/features/managed-populations/types/managedPopulationTypes";
 import { notifyMutationSuccess } from "@/lib/notify";
+
+import { createManagedPopulationTypeMutationOptions } from "../../mutations/managedPopulationsMutations";
+import { managedPopulationTypesByWorldQueryOptions } from "../../queries/managedPopulationsQueries";
 
 import { CreateManagedPopulationTypeForm } from "./components/CreateManagedPopulationTypeForm";
 import { EditManagedPopulationTypeForm } from "./components/EditManagedPopulationTypeForm";
 import { ManagedPopulationTypeRow } from "./components/ManagedPopulationTypeRow";
 import { TrashedManagedPopulationTypeRow } from "./components/TrashedManagedPopulationTypeRow";
+
+import type { ManagedPopulationType } from "../../types/managedPopulationTypes";
 
 type ManagedPopulationsConfigPanelProps = {
   readonly canAdmin: boolean;

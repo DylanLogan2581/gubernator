@@ -2,32 +2,18 @@ import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { type FormEvent, type JSX } from "react";
 
-import {
-  handleCrudError,
-} from "@/components/shared/ConfigCrudPanel";
-import {
-  ResourceAmountListEditor,
-} from "@/components/shared/ResourceAmountListEditor";
+import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { ResourceAmountListEditor } from "@/components/shared/ResourceAmountListEditor";
 import { Button } from "@/components/ui/button";
 import type { JobDefinition } from "@/features/jobs";
-// eslint-disable-next-line import-x/no-internal-modules
-import {
-  softDeleteManagedPopulationTypeMutationOptions,
-  updateManagedPopulationTypeMutationOptions,
-} from "@/features/managed-populations/mutations/managedPopulationsMutations";
-// eslint-disable-next-line import-x/no-internal-modules
-import {
-  updateManagedPopulationTypeInputSchema,
-} from "@/features/managed-populations/schemas/managedPopulationSchemas";
-// eslint-disable-next-line import-x/no-internal-modules
-import type {
-  UpdateManagedPopulationTypeInput,
-} from "@/features/managed-populations/schemas/managedPopulationSchemas";
-// eslint-disable-next-line import-x/no-internal-modules
-import type { ManagedPopulationType } from "@/features/managed-populations/types/managedPopulationTypes";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { notifyMutationSuccess } from "@/lib/notify";
 
+import {
+  softDeleteManagedPopulationTypeMutationOptions,
+  updateManagedPopulationTypeMutationOptions,
+} from "../../../mutations/managedPopulationsMutations";
+import { updateManagedPopulationTypeInputSchema } from "../../../schemas/managedPopulationSchemas";
 import { usePopulationTypeForm } from "../hooks/UsePopulationTypeForm";
 import {
   databaseResourcesToEntries,
@@ -35,6 +21,9 @@ import {
 } from "../utils/PopulationTypeFormMapping";
 
 import { PopulationTypeScalarFields } from "./PopulationTypeScalarFields";
+
+import type { UpdateManagedPopulationTypeInput } from "../../../schemas/managedPopulationSchemas";
+import type { ManagedPopulationType } from "../../../types/managedPopulationTypes";
 
 export function EditManagedPopulationTypeForm({
   allPopulationTypes,
@@ -102,7 +91,9 @@ export function EditManagedPopulationTypeForm({
         form.husbandryWorkersPerNAnimals !== ""
           ? parseInt(form.husbandryWorkersPerNAnimals, 10)
           : undefined,
-      maintenanceRulesJson: [...resourceEntriesToDtoArray(form.maintenanceRules)],
+      maintenanceRulesJson: [
+        ...resourceEntriesToDtoArray(form.maintenanceRules),
+      ],
       managedPopulationTypeId: populationType.id,
       name: form.name,
       regularOutputsJson: [...resourceEntriesToDtoArray(form.regularOutputs)],
@@ -110,9 +101,8 @@ export function EditManagedPopulationTypeForm({
       worldId,
     };
 
-    const result = updateManagedPopulationTypeInputSchema.safeParse(
-      updateInput,
-    );
+    const result =
+      updateManagedPopulationTypeInputSchema.safeParse(updateInput);
     if (!result.success) {
       form.setFromZod(result.error);
       return;
@@ -209,7 +199,11 @@ export function EditManagedPopulationTypeForm({
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-2">
-          <Button type="submit" size="sm" disabled={isPending || form.hasJobError}>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isPending || form.hasJobError}
+          >
             Save
           </Button>
           <Button
