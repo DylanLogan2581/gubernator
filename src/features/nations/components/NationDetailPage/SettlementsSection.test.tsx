@@ -183,6 +183,7 @@ describe("NationSettlementsSection", () => {
           name: "Stonehold",
           nationId,
           nationName: "Highmark",
+          population: 1250,
           readySetAt: null,
         },
         {
@@ -194,6 +195,7 @@ describe("NationSettlementsSection", () => {
           name: "Rivertown",
           nationId,
           nationName: "Highmark",
+          population: 2500,
           readySetAt: "2024-01-01T00:00:00Z",
         },
       ]);

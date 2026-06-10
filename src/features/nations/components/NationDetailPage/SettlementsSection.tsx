@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Plus } from "lucide-react";
+import { Check, ChevronDown, Plus, X } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -163,24 +163,44 @@ function NationSettlementListItem({
     );
   };
 
+  const isReady = settlement.autoReadyEnabled || settlement.isReadyCurrentTurn;
+
   return (
     <li className="rounded-md border border-border bg-background p-0">
       <Collapsible className="group">
         <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors">
-          <Link
-            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-            params={{
-              nationId: settlement.nationId,
-              settlementId: settlement.id,
-              worldId,
-            }}
-            search={{}}
-            className="flex-1 text-sm font-medium underline-offset-4 hover:underline text-left"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {settlement.name}
-          </Link>
-          <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180 ml-2" />
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 shrink-0 flex items-center justify-center">
+              {isReady ? (
+                <Check
+                  className="w-4 h-4 text-green-600 dark:text-green-500"
+                  aria-label="Settlement ready"
+                />
+              ) : (
+                <X
+                  className="w-4 h-4 text-red-600 dark:text-red-500"
+                  aria-label="Settlement not ready"
+                />
+              )}
+            </div>
+            <Link
+              to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
+              params={{
+                nationId: settlement.nationId,
+                settlementId: settlement.id,
+                worldId,
+              }}
+              search={{}}
+              className="text-sm font-medium underline-offset-4 hover:underline text-left"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {settlement.name}
+            </Link>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>Population: {settlement.population.toLocaleString()}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent className="border-t border-border px-4 pb-4 pt-2">
           <div className="space-y-3">
@@ -188,7 +208,6 @@ function NationSettlementListItem({
               isArchived={isArchived}
               item={settlement}
               isPending={isPending}
-              population={settlement.population}
               setReadiness={handleSetReadiness}
             />
           </div>
