@@ -354,7 +354,6 @@ export type Database = {
         Row: {
           activated_on_turn_number: number | null;
           building_blueprint_id: string;
-          cancelled_at: string | null;
           completed_in_transition_id: string | null;
           created_at: string;
           id: string;
@@ -368,7 +367,6 @@ export type Database = {
         Insert: {
           activated_on_turn_number?: number | null;
           building_blueprint_id: string;
-          cancelled_at?: string | null;
           completed_in_transition_id?: string | null;
           created_at?: string;
           id?: string;
@@ -382,7 +380,6 @@ export type Database = {
         Update: {
           activated_on_turn_number?: number | null;
           building_blueprint_id?: string;
-          cancelled_at?: string | null;
           completed_in_transition_id?: string | null;
           created_at?: string;
           id?: string;
@@ -1138,7 +1135,6 @@ export type Database = {
         Row: {
           base_stockpile_cap: number;
           created_at: string;
-          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -1151,7 +1147,6 @@ export type Database = {
         Insert: {
           base_stockpile_cap?: number;
           created_at?: string;
-          decay_rate?: number;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1164,7 +1159,6 @@ export type Database = {
         Update: {
           base_stockpile_cap?: number;
           created_at?: string;
-          decay_rate?: number;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1927,6 +1921,7 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
+          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -1951,6 +1946,7 @@ export type Database = {
           name: string;
           naming_config_json?: Json;
           npc_flavor_config_json?: Json;
+          owner_id: string;
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
@@ -1975,6 +1971,7 @@ export type Database = {
           name?: string;
           naming_config_json?: Json;
           npc_flavor_config_json?: Json;
+          owner_id?: string;
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
@@ -1982,7 +1979,15 @@ export type Database = {
           visibility?: string;
           water_consumption_per_citizen?: number;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "worlds_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
@@ -2024,25 +2029,6 @@ export type Database = {
         Returns: {
           id: string;
         }[];
-      };
-      admin_clear_user_active_player_character: {
-        Args: { p_user_id: string; p_world_id: string };
-        Returns: undefined;
-      };
-      admin_set_user_active_player_character: {
-        Args: { p_citizen_id: string; p_user_id: string; p_world_id: string };
-        Returns: {
-          citizen_id: string;
-          updated_at: string;
-          user_id: string;
-          world_id: string;
-        }[];
-        SetofOptions: {
-          from: "*";
-          to: "user_active_player_characters";
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
       };
       apply_turn_transition: {
         Args: {
@@ -2218,7 +2204,6 @@ export type Database = {
         Returns: {
           activated_on_turn_number: number | null;
           building_blueprint_id: string;
-          cancelled_at: string | null;
           completed_in_transition_id: string | null;
           created_at: string;
           id: string;
@@ -2448,6 +2433,7 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
+          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -2481,10 +2467,6 @@ export type Database = {
       };
       current_user_player_character_ids: {
         Args: { p_world_id: string };
-        Returns: string[];
-      };
-      current_user_player_character_world_ids: {
-        Args: never;
         Returns: string[];
       };
       default_calendar_config: { Args: never; Returns: Json };
@@ -2544,17 +2526,9 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      get_citizen_admin_details: {
-        Args: { p_citizen_id: string };
-        Returns: {
-          npc_flaw: string;
-          npc_goal: string;
-          npc_secret_contradiction: string;
-          npc_trait_1: string;
-          npc_trait_2: string;
-          personality_text: string;
-          skills_text: string;
-        }[];
+      fail_stuck_turn_transition: {
+        Args: { p_transition_id: string; p_world_id: string };
+        Returns: Json;
       };
       get_settlement_construction_project_counts: {
         Args: { p_settlement_id: string };
@@ -2589,20 +2563,6 @@ export type Database = {
           world_id: string;
         }[];
       };
-      hard_delete_construction_project: {
-        Args: { p_project_id: string };
-        Returns: {
-          project_id: string;
-          success: boolean;
-        }[];
-      };
-      hard_delete_deposit_instance: {
-        Args: { p_deposit_instance_id: string };
-        Returns: {
-          id: string;
-          settlement_id: string;
-        }[];
-      };
       hard_delete_deposit_type: {
         Args: { p_deposit_type_id: string; p_world_id: string };
         Returns: {
@@ -2633,13 +2593,6 @@ export type Database = {
       };
       hard_delete_resource: {
         Args: { p_resource_id: string; p_world_id: string };
-        Returns: {
-          id: string;
-          world_id: string;
-        }[];
-      };
-      hard_delete_settlement_building: {
-        Args: { p_building_id: string; p_world_id: string };
         Returns: {
           id: string;
           world_id: string;
@@ -2931,6 +2884,7 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
+          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -3009,13 +2963,6 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
-      };
-      restore_deposit_instance: {
-        Args: { p_deposit_instance_id: string };
-        Returns: {
-          id: string;
-          settlement_id: string;
-        }[];
       };
       restore_deposit_type: {
         Args: { p_deposit_type_id: string; p_world_id: string };
@@ -3100,7 +3047,6 @@ export type Database = {
         Returns: {
           base_stockpile_cap: number;
           created_at: string;
-          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -3113,29 +3059,6 @@ export type Database = {
         SetofOptions: {
           from: "*";
           to: "resources";
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
-      };
-      restore_settlement_building: {
-        Args: { p_building_id: string; p_world_id: string };
-        Returns: {
-          activated_on_turn_number: number;
-          building_blueprint_id: string;
-          created_at: string;
-          current_tier_id: string;
-          deactivated_in_transition_id: string | null;
-          id: string;
-          missed_upkeep_count: number;
-          name: string | null;
-          settlement_id: string;
-          source_project_id: string | null;
-          state: string;
-          updated_at: string;
-        }[];
-        SetofOptions: {
-          from: "*";
-          to: "settlement_buildings";
           isOneToOne: false;
           isSetofReturn: true;
         };
@@ -3159,6 +3082,7 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
+          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -3172,13 +3096,6 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
-      };
-      resume_construction_project: {
-        Args: { p_project_id: string };
-        Returns: {
-          project_id: string;
-          success: boolean;
-        }[];
       };
       revoke_citizen_role: {
         Args: { p_citizen_id: string };
@@ -3405,6 +3322,7 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
+          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -3554,7 +3472,6 @@ export type Database = {
         Returns: {
           base_stockpile_cap: number;
           created_at: string;
-          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -3598,6 +3515,7 @@ export type Database = {
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
+          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -3665,6 +3583,7 @@ export type Database = {
         Args: { p_world_id: string };
         Returns: boolean;
       };
+      world_is_archived: { Args: { p_world_id: string }; Returns: boolean };
     };
     Enums: {
       death_cause_category:

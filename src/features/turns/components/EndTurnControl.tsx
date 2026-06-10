@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouter } from "@tanstack/react-router";
-import { StepForward } from "lucide-react";
+import { AlertTriangle, StepForward } from "lucide-react";
 import { useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { normalizeSignInReturnPath } from "@/features/auth";
 import {
@@ -18,6 +19,11 @@ import {
   endTurnTransitionMutationOptions,
   isEndTurnTransitionError,
 } from "../mutations/endTurnTransitionMutations";
+import {
+  failStuckTurnTransitionMutationOptions,
+  isFailStuckTurnTransitionError,
+} from "../mutations/failStuckTurnTransitionMutations";
+import { latestTurnTransitionStatusQueryOptions } from "../queries/latestTurnTransitionStatusQueries";
 import {
   getControlDescription,
   getErrorDescription as getEndTurnMutationErrorDescription,
@@ -85,12 +91,32 @@ function EndTurnControlContent({
   const readinessSummaryQuery = useQuery(
     settlementReadinessSummaryQueryOptions(worldId),
   );
+  const latestTransitionQuery = useQuery(
+    latestTurnTransitionStatusQueryOptions(worldId),
+  );
   const endTurnMutation = useMutation(
     endTurnTransitionMutationOptions({ queryClient }),
+  );
+  const failStuckMutation = useMutation(
+    failStuckTurnTransitionMutationOptions({ queryClient }),
   );
   const isReadinessUnavailable = !readinessSummaryQuery.isSuccess;
   const isDisabled =
     isArchived || isReadinessUnavailable || endTurnMutation.isPending;
+
+  // Time-based check to detect stuck transitions — safe since the result depends only on the transition data.
+  const isStuckRunning = (() => {
+    const data = latestTransitionQuery.data;
+    if (data?.isRunning !== true || data?.startedAt === undefined) {
+      return false;
+    }
+
+    // eslint-disable-next-line no-restricted-syntax
+    const startedTime = new Date(data.startedAt).getTime();
+    // eslint-disable-next-line react-hooks/purity, no-restricted-syntax
+    const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
+    return startedTime < thirtyMinutesAgo;
+  })();
 
   function openConfirmation(): void {
     if (isDisabled) {
@@ -134,6 +160,40 @@ function EndTurnControlContent({
           const depositUpdates = patchCounts.depositUpdates;
           notifyMutationSuccess(`Advanced to turn ${toTurnNumber.toString()}`, {
             description: `${deaths.toString()} deaths, ${births.toString()} births, ${buildingChanges.toString()} building changes, ${depositUpdates.toString()} deposit updates.`,
+          });
+        },
+      },
+    );
+  }
+
+  function resetStuckTransition(): void {
+    if (
+      latestTransitionQuery.data?.id === undefined ||
+      failStuckMutation.isPending
+    ) {
+      return;
+    }
+
+    failStuckMutation.mutate(
+      {
+        transitionId: latestTransitionQuery.data.id,
+        worldId,
+      },
+      {
+        onError: (error) => {
+          if (isFailStuckTurnTransitionError(error)) {
+            notifyMutationError(
+              error,
+              "Could not reset stuck transition. Check permissions and try again.",
+            );
+            return;
+          }
+          notifyMutationError(error, "Reset failed.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Stuck transition marked as failed", {
+            description:
+              "You can now try running the turn transition again with fresh state.",
           });
         },
       },
@@ -197,6 +257,30 @@ function EndTurnControlContent({
             )}
           />
         </dl>
+      ) : null}
+
+      {isStuckRunning ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Stuck turn transition detected</AlertTitle>
+          <AlertDescription className="mt-2 space-y-2">
+            <p>
+              The turn transition has been running for over 30 minutes,
+              suggesting it may be wedged by a validation failure. You can reset
+              it to try again with fresh state.
+            </p>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={resetStuckTransition}
+              disabled={failStuckMutation.isPending}
+            >
+              {failStuckMutation.isPending
+                ? "Resetting..."
+                : "Reset transition"}
+            </Button>
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       <p className="text-sm text-muted-foreground">

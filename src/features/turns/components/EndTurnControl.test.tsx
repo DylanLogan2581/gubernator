@@ -747,7 +747,8 @@ function createClientFixture({
           );
         }
 
-        throw new Error(`Unexpected table ${table}`);
+        // Return empty builder for turn_transitions to avoid errors
+        return createTurnTransitionsQueryBuilder();
       }),
       functions: {
         invoke,
@@ -798,6 +799,19 @@ function createSettlementsQueryBuilder(
   const builder = {
     eq: vi.fn(() => builder),
     returns: vi.fn().mockResolvedValue(resolvedValue),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
+}
+
+function createTurnTransitionsQueryBuilder(): unknown {
+  // Return null for turn transitions (no running transition in test)
+  const builder = {
+    eq: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    order: vi.fn(() => builder),
     select: vi.fn(() => builder),
   };
 

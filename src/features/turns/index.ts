@@ -12,6 +12,13 @@ export {
   type EndTurnTransitionMutationResult,
   type EndTurnTransitionSummary,
 } from "./mutations/endTurnTransitionMutations";
+export {
+  FailStuckTurnTransitionError,
+  failStuckTurnTransitionMutationOptions,
+  isFailStuckTurnTransitionError,
+  type FailStuckTurnTransitionInput,
+  type FailStuckTurnTransitionMutationResult,
+} from "./mutations/failStuckTurnTransitionMutations";
 export { EndTurnControl } from "./components/EndTurnControl";
 export {
   TurnTransitionOutcomeContent,
