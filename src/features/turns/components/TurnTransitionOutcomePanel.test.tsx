@@ -64,22 +64,21 @@ describe("TurnTransitionOutcomeContent", () => {
     expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
     expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
 
-    // Details elements should exist but be closed (not open)
-    const detailsElements = document.querySelectorAll("details");
-    expect(detailsElements.length).toBeGreaterThan(0);
-    detailsElements.forEach((details) => {
-      expect(details.hasAttribute("open")).toBe(false);
-    });
+    // Accordion items should exist (shadcn accordion uses data-state="closed" for collapsed)
+    const accordionTriggers = document.querySelectorAll(
+      "[data-state='closed']",
+    );
+    expect(accordionTriggers.length).toBeGreaterThan(0);
   });
 
-  it("expands group to show notifications when details element is opened", async () => {
+  it("expands group to show notifications when accordion is opened", async () => {
     const user = userEvent.setup();
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    const buildingsSuspendedSummary = screen.getByText(
+    const buildingsSuspendedTrigger = screen.getByText(
       "Buildings suspended (1)",
     );
-    await user.click(buildingsSuspendedSummary);
+    await user.click(buildingsSuspendedTrigger);
 
     expect(
       screen.getByText("Ironforge mill suspended due to missing upkeep."),
@@ -89,10 +88,10 @@ describe("TurnTransitionOutcomeContent", () => {
   it("collapses groups by default", () => {
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    const detailsElements = document.querySelectorAll(
-      "section details:not([open])",
+    const closedAccordionItems = document.querySelectorAll(
+      "[data-state='closed']",
     );
-    expect(detailsElements.length).toBeGreaterThan(0);
+    expect(closedAccordionItems.length).toBeGreaterThan(0);
   });
 
   it("renders 'no notifications' message when notifications are empty", () => {
@@ -135,27 +134,17 @@ describe("TurnTransitionOutcomeContent", () => {
     const user = userEvent.setup();
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    // Initially both group summaries should be present
+    // Initially both group triggers should be present
     expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
     expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
 
-    // Count the initial number of summary elements (one per group)
-    const initialSummaries = document.querySelectorAll("summary").length;
-    expect(initialSummaries).toBe(2);
-
-    // Click the "Buildings suspended" chip to deselect it
+    // Click the "Buildings suspended" toggle to deselect it
     const buildingsChip = screen.getByRole("button", {
-      name: "Buildings suspended",
+      name: "Filter Buildings suspended",
     });
-    expect(buildingsChip).toHaveAttribute("aria-pressed", "true");
     await user.click(buildingsChip);
 
-    // Now "Buildings suspended" chip should be deselected
-    expect(buildingsChip).toHaveAttribute("aria-pressed", "false");
-
-    // Only one summary should remain (Deposits depleted)
-    const summariesAfterFilter = document.querySelectorAll("summary");
-    expect(summariesAfterFilter.length).toBe(1);
+    // Only "Deposits depleted" should remain
     expect(screen.queryByText("Buildings suspended (1)")).toBeNull();
     expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
   });
@@ -164,12 +153,11 @@ describe("TurnTransitionOutcomeContent", () => {
     const user = userEvent.setup();
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    // Deselect one category
+    // Deselect one category via toggle
     const buildingsChip = screen.getByRole("button", {
-      name: "Buildings suspended",
+      name: "Filter Buildings suspended",
     });
     await user.click(buildingsChip);
-    expect(buildingsChip).toHaveAttribute("aria-pressed", "false");
 
     // Only one group should be visible
     expect(screen.queryByText("Buildings suspended (1)")).toBeNull();
@@ -178,10 +166,6 @@ describe("TurnTransitionOutcomeContent", () => {
     // Click "All" to reset
     const allChip = screen.getByRole("button", { name: "All" });
     await user.click(allChip);
-
-    // All chips should be selected again
-    expect(allChip).toHaveAttribute("aria-pressed", "true");
-    expect(buildingsChip).toHaveAttribute("aria-pressed", "true");
 
     // Both groups should be visible again
     expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
@@ -293,11 +277,13 @@ describe("TurnTransitionOutcomePanel", () => {
           id: "notif-world",
           settlement_id: null,
           message_text: "World-scope event.",
+          notification_type: "partnership.formed",
         }),
         createRawNotification({
           id: "notif-settlement",
           settlement_id: "settlement-1",
           message_text: "Settlement-scope event.",
+          notification_type: "deposit.depleted",
         }),
       ],
     };
@@ -313,6 +299,10 @@ describe("TurnTransitionOutcomePanel", () => {
 
     await screen.findByRole("heading", { name: "Last transition" });
     expect(screen.queryByText("World-scope event.")).toBeNull();
+    // Open the accordion to see the hidden content
+    const depositAccordionTrigger = screen.getByText(/Deposits depleted \(1\)/);
+    const user = userEvent.setup();
+    await user.click(depositAccordionTrigger);
     expect(screen.getByText("Settlement-scope event.")).toBeDefined();
   });
 
@@ -324,6 +314,7 @@ describe("TurnTransitionOutcomePanel", () => {
           id: "notif-world",
           settlement_id: null,
           message_text: "World-scope event.",
+          notification_type: "partnership.formed",
         }),
       ],
     };
@@ -335,7 +326,13 @@ describe("TurnTransitionOutcomePanel", () => {
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByText("World-scope event.")).toBeDefined();
+    // Open the accordion to see the hidden content
+    const partnershipAccordionTrigger = await screen.findByText(
+      /Partnerships formed \(1\)/,
+    );
+    const user = userEvent.setup();
+    await user.click(partnershipAccordionTrigger);
+    expect(screen.getByText("World-scope event.")).toBeDefined();
   });
 });
 

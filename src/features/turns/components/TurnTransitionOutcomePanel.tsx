@@ -3,18 +3,27 @@ import { useMemo, useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
   latestSettlementTransitionOutcomeQueryOptions,
   latestWorldTransitionOutcomeQueryOptions,
 } from "../queries/turnTransitionOutcomeQueries";
+import {
+  computeDeltas,
+  groupNotificationsByType,
+  notificationTypeLabel,
+  sortNotificationsBySettlement,
+} from "../utils/transitionOutcome";
 
-import type {
-  TurnTransitionNotification,
-  TurnTransitionOutcome,
-  TurnTransitionSettlementSnapshot,
-} from "../queries/turnTransitionOutcomeQueries";
+import type { TurnTransitionOutcome } from "../queries/turnTransitionOutcomeQueries";
 import type { JSX, ReactNode } from "react";
 
 type TurnTransitionOutcomePanelProps = {
@@ -135,14 +144,6 @@ export function TurnTransitionOutcomeContent({
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(allCategories);
 
-  const toggleCategory = (category: string): void => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category],
-    );
-  };
-
   const resetFilter = (): void => {
     setSelectedCategories(allCategories);
   };
@@ -200,21 +201,59 @@ export function TurnTransitionOutcomeContent({
       {notificationGroups.length > 0 ? (
         <div className="space-y-3">
           <h3 className="text-sm font-medium">Notifications</h3>
-          <CategoryFilterChips
-            categories={allCategories}
-            selectedCategories={selectedCategories}
-            onToggle={toggleCategory}
-            onReset={resetFilter}
-          />
-          <div className="space-y-2">
-            {visibleGroups.map((group) => (
-              <NotificationGroupAccordion
-                key={group.type}
-                type={group.type}
-                notifications={group.notifications}
-              />
-            ))}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={resetFilter}
+              className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                selectedCategories.length === allCategories.length
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background text-foreground hover:border-primary"
+              }`}
+            >
+              All
+            </button>
+            <ToggleGroup
+              type="multiple"
+              value={selectedCategories}
+              onValueChange={setSelectedCategories}
+              className="justify-start"
+            >
+              {allCategories.map((category) => (
+                <ToggleGroupItem
+                  key={category}
+                  value={category}
+                  className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  aria-label={`Filter ${notificationTypeLabel(category)}`}
+                >
+                  {notificationTypeLabel(category)}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
           </div>
+          <Accordion type="single" collapsible className="space-y-2">
+            {visibleGroups.map((group) => (
+              <AccordionItem
+                key={group.type}
+                value={group.type}
+                className="rounded-md border border-border"
+              >
+                <AccordionTrigger className="flex cursor-pointer items-center justify-between bg-muted/50 px-4 py-3 font-medium text-sm hover:bg-muted hover:no-underline">
+                  <span>
+                    {notificationTypeLabel(group.type)} (
+                    {group.notifications.length.toString()})
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="border-t border-border px-4 py-3 text-sm text-muted-foreground">
+                  <ul className="space-y-1">
+                    {group.notifications.map((n) => (
+                      <li key={n.id}>{n.messageText}</li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
@@ -226,169 +265,6 @@ export function TurnTransitionOutcomeContent({
 }
 
 // -- Components --
-
-function CategoryFilterChips({
-  categories,
-  selectedCategories,
-  onToggle,
-  onReset,
-}: {
-  readonly categories: string[];
-  readonly selectedCategories: string[];
-  readonly onToggle: (category: string) => void;
-  readonly onReset: () => void;
-}): JSX.Element {
-  const isAllSelected = selectedCategories.length === categories.length;
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        type="button"
-        onClick={onReset}
-        className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-          isAllSelected
-            ? "border-primary bg-primary text-primary-foreground"
-            : "border-border bg-background text-foreground hover:border-primary"
-        }`}
-        aria-pressed={isAllSelected}
-      >
-        All
-      </button>
-      {categories.map((category) => (
-        <button
-          key={category}
-          type="button"
-          onClick={() => onToggle(category)}
-          className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-            selectedCategories.includes(category)
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-background text-foreground hover:border-primary"
-          }`}
-          aria-pressed={selectedCategories.includes(category)}
-        >
-          {notificationTypeLabel(category)}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function NotificationGroupAccordion({
-  type,
-  notifications,
-}: {
-  readonly type: string;
-  readonly notifications: TurnTransitionNotification[];
-}): JSX.Element {
-  return (
-    <details className="group rounded-md border border-border">
-      <summary className="flex cursor-pointer items-center justify-between bg-muted/50 px-4 py-3 font-medium text-sm hover:bg-muted">
-        <span>
-          {notificationTypeLabel(type)} ({notifications.length.toString()})
-        </span>
-        <svg
-          className="h-4 w-4 transition-transform group-open:rotate-180"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </summary>
-      <ul className="space-y-1 border-t border-border px-4 py-3 text-sm text-muted-foreground">
-        {notifications.map((n) => (
-          <li key={n.id}>{n.messageText}</li>
-        ))}
-      </ul>
-    </details>
-  );
-}
-
-// -- Internal helpers --
-
-type NotificationGroup = {
-  readonly notifications: TurnTransitionNotification[];
-  readonly type: string;
-};
-
-type OutcomeDeltas = {
-  readonly births: number;
-  readonly buildingsSuspended: number;
-  readonly deaths: number;
-  readonly depositsDepleted: number;
-};
-
-function groupNotificationsByType(
-  notifications: readonly TurnTransitionNotification[],
-): NotificationGroup[] {
-  const groups = new Map<string, TurnTransitionNotification[]>();
-  for (const notification of notifications) {
-    const existing = groups.get(notification.notificationType);
-    if (existing !== undefined) {
-      existing.push(notification);
-    } else {
-      groups.set(notification.notificationType, [notification]);
-    }
-  }
-  return [...groups.entries()].map(([type, notifs]) => ({
-    notifications: notifs,
-    type,
-  }));
-}
-
-function computeDeltas(
-  snapshots: readonly TurnTransitionSettlementSnapshot[],
-  notifications: readonly TurnTransitionNotification[],
-): OutcomeDeltas {
-  const births = snapshots.reduce((sum, s) => sum + s.birthCount, 0);
-  const deaths = snapshots.reduce((sum, s) => sum + s.deathCount, 0);
-  const buildingsSuspended = notifications.filter(
-    (n) => n.notificationType === "building.suspended",
-  ).length;
-  const depositsDepleted = notifications.filter(
-    (n) => n.notificationType === "deposit.depleted",
-  ).length;
-  return { births, buildingsSuspended, deaths, depositsDepleted };
-}
-
-function sortNotificationsBySettlement(
-  notifications: readonly TurnTransitionNotification[],
-): TurnTransitionNotification[] {
-  return [...notifications].sort((a, b) => {
-    // Sort by settlementId first, then by messageText
-    const settlementCmp = (a.settlementId ?? "").localeCompare(
-      b.settlementId ?? "",
-    );
-    if (settlementCmp !== 0) {
-      return settlementCmp;
-    }
-    return a.messageText.localeCompare(b.messageText);
-  });
-}
-
-const NOTIFICATION_LABELS: Readonly<Record<string, string>> = {
-  "building.auto_deconstructed": "Buildings auto-deconstructed",
-  "building.suspended": "Buildings suspended",
-  "construction.completed": "Constructions completed",
-  "construction.paused": "Constructions paused",
-  "deposit.depleted": "Deposits depleted",
-  "managed_population.declining": "Managed populations declining",
-  "managed_population.extinct": "Managed populations extinct",
-  "partnership.formed": "Partnerships formed",
-  "partnership.widowed": "Widowhoods",
-  "settlement.homelessness_occurred": "Homelessness events",
-  "settlement.starvation_occurred": "Starvation events",
-  "trade_route.paused": "Trade routes paused",
-  "trade_route.resumed": "Trade routes resumed",
-};
-
-function notificationTypeLabel(type: string): string {
-  return NOTIFICATION_LABELS[type] ?? type;
-}
 
 function OutcomePanelFrame({
   children,
