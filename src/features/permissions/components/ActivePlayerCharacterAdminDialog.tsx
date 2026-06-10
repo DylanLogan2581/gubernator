@@ -101,7 +101,7 @@ export function ActivePlayerCharacterAdminDialog({
   // Fallback if error message is empty but isError is true
   if (isError && errorMessage === "") {
     errorMessage =
-      "An unknown error occurred while loading data. Please check the browser console for details.";
+      "Couldn't load active-character data. Refresh and try again, or contact an administrator if it continues.";
   }
 
   const worldsById = new Map((worldsQuery.data ?? []).map((w) => [w.id, w]));

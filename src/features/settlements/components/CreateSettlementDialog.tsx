@@ -97,8 +97,7 @@ export function CreateSettlementDialog({
         <DialogHeader>
           <DialogTitle>Create Settlement</DialogTitle>
           <DialogDescription>
-            Create a new settlement in this nation. Name is required; other
-            fields are optional.
+            Create a new settlement in this nation.
           </DialogDescription>
         </DialogHeader>
 
@@ -135,7 +134,7 @@ export function CreateSettlementDialog({
               onChange={(e) => {
                 setDescription(e.currentTarget.value);
               }}
-              placeholder="Settlement description (optional)"
+              placeholder="Settlement description"
               maxLength={textInputLimits.settlementDescriptionMax}
               disabled={mutation.isPending}
               className="resize-none"

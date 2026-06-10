@@ -118,11 +118,12 @@ function WorldPopulationRulesConfigPanelContent({
           >
             Population rules
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {canEdit
-              ? "World admins can tune the scalar rules that govern population simulation."
-              : "Population rules are read-only for your current access."}
-          </p>
+          {canEdit && (
+            <p className="text-sm text-muted-foreground">
+              World admins can tune the scalar rules that govern population
+              simulation.
+            </p>
+          )}
         </div>
         {!canEdit ? (
           <span className="inline-flex w-fit rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground">

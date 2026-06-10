@@ -129,7 +129,9 @@ describe("WorldShellPage", () => {
     ).toBe("3");
     expect(screen.getByText("Firstday, Ember 1, 100 AG")).toBeDefined();
     expect(screen.getByText("Read-only archive")).toBeDefined();
-    expect(screen.getByText(/gameplay actions are read-only/i)).toBeDefined();
+    expect(
+      screen.getByText(/archived and available for review/i),
+    ).toBeDefined();
   });
 
   it("renders a safe fallback when calendar data cannot be loaded", async () => {

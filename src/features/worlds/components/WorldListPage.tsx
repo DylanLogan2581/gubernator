@@ -130,9 +130,6 @@ function WorldListContent({
           <div className="flex items-center justify-between gap-2">
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold tracking-normal">Trash</h1>
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                Trashed worlds appear here. Restore or delete permanently.
-              </p>
             </div>
             <Button
               type="button"

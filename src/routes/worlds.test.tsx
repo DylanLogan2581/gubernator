@@ -336,7 +336,9 @@ describe("world shell route", () => {
       await screen.findByRole("heading", { name: "Archived Realm" }),
     ).toBeDefined();
     expect(screen.getByText("Read-only archive")).toBeDefined();
-    expect(screen.getByText(/gameplay actions are read-only/i)).toBeDefined();
+    expect(
+      screen.getByText(/archived and available for review/i),
+    ).toBeDefined();
   });
 
   it("blocks inactive users on world routes without leaking world details", async () => {

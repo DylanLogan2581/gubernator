@@ -195,8 +195,7 @@ function WorldShellContent({
 
         {worldQuery.data.header.isArchived ? (
           <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-            This world is archived. It is available for review, but gameplay
-            actions are read-only.
+            This world is archived and available for review.
           </p>
         ) : null}
       </section>

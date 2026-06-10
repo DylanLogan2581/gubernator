@@ -142,11 +142,12 @@ function WorldNamingConfigPanelContent({
           >
             Naming rules
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {canEdit
-              ? "World admins can configure name pools and conventions for random NPC creation."
-              : "Naming configuration is read-only for your current access."}
-          </p>
+          {canEdit && (
+            <p className="text-sm text-muted-foreground">
+              World admins can configure name pools and conventions for random
+              NPC creation.
+            </p>
+          )}
         </div>
         {!canEdit ? (
           <span className="inline-flex w-fit rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground">

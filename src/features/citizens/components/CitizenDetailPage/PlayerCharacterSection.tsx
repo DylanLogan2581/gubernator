@@ -237,7 +237,7 @@ function CitizenLinkedUserControl({
                 role="alert"
                 className="flex h-9 items-center text-sm text-destructive"
               >
-                Failed to load users. Please try again.
+                Couldn't load users. Refresh and try again.
               </p>
             ) : (
               <NativeSelect
