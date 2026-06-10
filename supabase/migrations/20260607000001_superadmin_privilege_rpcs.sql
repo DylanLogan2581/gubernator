@@ -84,3 +84,28 @@ begin
     id = p_user_id;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Execution grants: revoke from public, grant execute to authenticated, in
+-- line with other privileged RPCs (e.g. rename_world, create_world).
+-- ---------------------------------------------------------------------------
+revoke all on function public.grant_world_admin (uuid, uuid)
+from
+  public;
+
+grant
+execute on function public.grant_world_admin (uuid, uuid) to authenticated;
+
+revoke all on function public.revoke_world_admin (uuid, uuid)
+from
+  public;
+
+grant
+execute on function public.revoke_world_admin (uuid, uuid) to authenticated;
+
+revoke all on function public.set_user_super_admin (uuid, boolean)
+from
+  public;
+
+grant
+execute on function public.set_user_super_admin (uuid, boolean) to authenticated;

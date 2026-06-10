@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (13);
+  plan (16);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -74,11 +74,12 @@ where
 
 -- Create a test world owned by sa_user1.
 insert into
-  public.worlds (id, name, visibility, status)
+  public.worlds (id, name, owner_id, visibility, status)
 values
   (
     'bb100000-0000-0000-0000-000000000001',
     'Test World SA',
+    'bb000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -352,6 +353,69 @@ select
     '42501',
     null,
     'non-superadmin cannot call set_user_super_admin'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- Anon cannot call grant_world_admin
+-- ===========================================================================
+set
+  local role anon;
+
+select
+  throws_ok (
+    $test$
+    select public.grant_world_admin(
+      'bb000000-0000-0000-0000-000000000004'::uuid,
+      'bb100000-0000-0000-0000-000000000001'::uuid
+    )
+  $test$,
+    '42501',
+    null,
+    'anon cannot call grant_world_admin'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- Anon cannot call revoke_world_admin
+-- ===========================================================================
+set
+  local role anon;
+
+select
+  throws_ok (
+    $test$
+    select public.revoke_world_admin(
+      'bb000000-0000-0000-0000-000000000004'::uuid,
+      'bb100000-0000-0000-0000-000000000001'::uuid
+    )
+  $test$,
+    '42501',
+    null,
+    'anon cannot call revoke_world_admin'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- Anon cannot call set_user_super_admin
+-- ===========================================================================
+set
+  local role anon;
+
+select
+  throws_ok (
+    $test$
+    select public.set_user_super_admin(
+      'bb000000-0000-0000-0000-000000000003'::uuid,
+      true
+    )
+  $test$,
+    '42501',
+    null,
+    'anon cannot call set_user_super_admin'
   );
 
 reset role;
