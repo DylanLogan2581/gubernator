@@ -13,30 +13,13 @@ import {
   withdrawFromBilateralMutationOptions,
 } from "../../mutations/nationRelationshipMutations";
 
+import { formatRelationshipStance } from "./RelationshipUtils";
+
 import type {
   NationRelationship,
   NationUnilateralStance,
 } from "../../types/nationRelationshipTypes";
 import type { Nation } from "../../types/nationTypes";
-
-function formatRelationshipStance(stance: string): string {
-  switch (stance) {
-    case "neutral":
-      return "Neutral";
-    case "friendly":
-      return "Friendly";
-    case "hostile":
-      return "Hostile";
-    case "at_war":
-      return "At war";
-    case "allied":
-      return "Allied";
-    case "non_aggression_pact":
-      return "Non-aggression pact";
-    default:
-      return stance;
-  }
-}
 
 export function NationRelationshipRow({
   canControl,

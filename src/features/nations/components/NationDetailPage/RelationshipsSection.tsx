@@ -20,6 +20,7 @@ import {
 import { nationsListQueryOptions } from "../../queries/nationsQueries";
 
 import { NationRelationshipRow } from "./RelationshipRow";
+import { getStanceIconConfig } from "./RelationshipUtils";
 
 import type { NationRelationship } from "../../types/nationRelationshipTypes";
 import type { Nation } from "../../types/nationTypes";
@@ -175,11 +176,17 @@ function NationRelationshipAccordionRow({
   readonly outgoing: NationRelationship | null;
   readonly queryClient: QueryClient;
 }): JSX.Element {
+  const currentStance = outgoing?.currentStance ?? "neutral";
+  const { Icon, colorClass, label } = getStanceIconConfig(currentStance);
+
   return (
     <Collapsible className="group">
       <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors">
         <span className="font-medium">{other.name}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
+        <div className="flex items-center gap-2 shrink-0">
+          <Icon className={`h-4 w-4 ${colorClass}`} aria-label={label} />
+          <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+        </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="border-t border-border px-4 pb-4 pt-2">
