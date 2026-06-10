@@ -14,8 +14,16 @@ while read local_ref local_sha remote_ref remote_sha; do
   if git diff "$compare_to".."$local_sha" --name-only --diff-filter=ACMR | \
        grep -qE '^supabase/(migrations|tests)/'; then
     echo "🔍 Schema or test files changed. Running database tests..."
-    npm run test:db
-    exit $?
+    # Failure-only output: suppress pgTAP's per-test "ok" lines on success,
+    # dump the full log only when something fails.
+    db_out=$(npx --no-install supabase test db 2>&1)
+    db_code=$?
+    if [ "$db_code" -ne 0 ]; then
+      printf '%s\n' "$db_out"
+      exit "$db_code"
+    fi
+    echo "✓ Database tests passed."
+    exit 0
   fi
 done
 
