@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (55);
+  plan (67);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -1218,6 +1218,294 @@ select
     where id = 'c5000000-0000-0000-0000-000000000010'
   $test$,
     'world admin can update death_cause on any citizen in the administered world'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- RPC TESTS: create_npc and create_player_character user-facing RPCs
+-- ===========================================================================
+-- ---------------------------------------------------------------------------
+-- NEGATIVE: non-admin cannot create NPCs (authz guard returns empty, no error)
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'Unauth NPC'
+        )
+    ),
+    0,
+    'non-admin cannot create NPC (returns 0 rows, not error)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000006',
+          'Unauth PC'
+        )
+    ),
+    0,
+    'non-admin cannot create player_character (returns 0 rows, not error)'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- NEGATIVE: world-A admin cannot create in world-B (cross-world authz guard)
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000002',
+          'Cross-World NPC'
+        )
+    ),
+    0,
+    'world-A admin cannot create NPC in world-B (returns 0 rows, not error)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000002',
+          'c1000000-0000-0000-0000-000000000005',
+          'Cross-World PC'
+        )
+    ),
+    0,
+    'world-A admin cannot create player_character in world-B (returns 0 rows, not error)'
+  );
+
+-- ---------------------------------------------------------------------------
+-- POSITIVE: world admin can create NPC and PC with correct attributes
+-- ---------------------------------------------------------------------------
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'Admin NPC',
+          p_surname => 'Surname'
+        )
+    ),
+    1,
+    'world admin can create NPC (returns 1 row)'
+  );
+
+select
+  is (
+    (
+      select
+        citizen_type
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'Type Check NPC'
+        )
+      limit
+        1
+    ),
+    'npc',
+    'create_npc sets citizen_type=npc'
+  );
+
+select
+  is (
+    (
+      select
+        given_name || coalesce(' ' || surname, '')
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'Given Only'
+        )
+      limit
+        1
+    ),
+    'Given Only',
+    'create_npc with given_name only produces correct full name'
+  );
+
+select
+  is (
+    (
+      select
+        given_name || coalesce(' ' || surname, '')
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'First',
+          p_surname => 'Last'
+        )
+      limit
+        1
+    ),
+    'First Last',
+    'create_npc with given_name and surname produces correct full name'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000005',
+          'Admin PC',
+          p_surname => 'PC Surname'
+        )
+    ),
+    1,
+    'world admin can create player_character (returns 1 row)'
+  );
+
+select
+  is (
+    (
+      select
+        citizen_type
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000005',
+          'Type Check PC'
+        )
+      limit
+        1
+    ),
+    'player_character',
+    'create_player_character sets citizen_type=player_character'
+  );
+
+select
+  is (
+    (
+      select
+        user_id
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000005',
+          'User Link PC'
+        )
+      limit
+        1
+    ),
+    'c1000000-0000-0000-0000-000000000005'::uuid,
+    'create_player_character establishes user_id link'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- SUPER ADMIN: can create in any world
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000007","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000002',
+          'Super Admin NPC'
+        )
+    ),
+    1,
+    'super admin can create NPC in any world'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000002',
+          'c1000000-0000-0000-0000-000000000005',
+          'Super Admin PC'
+        )
+    ),
+    1,
+    'super admin can create player_character in any world'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- GUARD: empty given_name and null world_id return no rows (authz guard)
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc ('c2000000-0000-0000-0000-000000000001', '')
+    ),
+    0,
+    'create_npc with empty given_name returns 0 rows (guard check)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (null::uuid, 'Given Name')
+    ),
+    0,
+    'create_npc with null world_id returns 0 rows (guard check)'
   );
 
 reset role;
