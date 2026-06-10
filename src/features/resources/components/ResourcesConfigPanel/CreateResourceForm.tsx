@@ -80,7 +80,7 @@ export function CreateResourceForm({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create resource</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Define a resource and its base stockpile settings.
             </DialogDescription>
           </DialogHeader>

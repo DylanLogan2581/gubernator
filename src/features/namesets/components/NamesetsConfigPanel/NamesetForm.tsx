@@ -170,7 +170,7 @@ export function CreateNamesetDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create nameset</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Define naming pools and conventions for this nameset.
             </DialogDescription>
           </DialogHeader>

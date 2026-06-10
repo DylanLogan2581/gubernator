@@ -179,7 +179,7 @@ export function CreateJobForm({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create job</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Define a job type, worker capacity, and resource flow.
             </DialogDescription>
           </DialogHeader>

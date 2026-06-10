@@ -157,7 +157,7 @@ export function ProposeTradeRouteDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Propose trade route</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Choose a destination settlement and resource legs for a proposed
               trade route.
             </DialogDescription>

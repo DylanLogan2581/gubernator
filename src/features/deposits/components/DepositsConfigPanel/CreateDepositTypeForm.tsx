@@ -128,7 +128,7 @@ export function CreateDepositTypeForm({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create deposit type</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Define a deposit type, worker settings, and resource outputs.
             </DialogDescription>
           </DialogHeader>

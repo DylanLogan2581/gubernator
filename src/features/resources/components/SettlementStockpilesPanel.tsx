@@ -277,7 +277,7 @@ function EditStockpileDialog({
         >
           <DialogHeader>
             <DialogTitle>Edit {stockpile.resourceName} quantity</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Update this settlement stockpile quantity.
             </DialogDescription>
           </DialogHeader>

@@ -515,7 +515,7 @@ function CreateWorldDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create world</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Create a world and choose its initial mode.
             </DialogDescription>
           </DialogHeader>

@@ -109,7 +109,7 @@ export function AddDepositInstanceDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add deposit instance</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Add a deposit instance to this settlement.
             </DialogDescription>
           </DialogHeader>

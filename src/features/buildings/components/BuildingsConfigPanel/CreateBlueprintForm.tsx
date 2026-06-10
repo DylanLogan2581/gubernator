@@ -109,7 +109,7 @@ export function CreateBlueprintForm({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create blueprint</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Define a building blueprint and its construction tiers.
             </DialogDescription>
           </DialogHeader>

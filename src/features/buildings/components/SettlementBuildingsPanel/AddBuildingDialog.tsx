@@ -82,7 +82,7 @@ export function AddBuildingDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add building</DialogTitle>
-          <DialogDescription className="sr-only">
+          <DialogDescription>
             Add a building from an available blueprint and tier.
           </DialogDescription>
         </DialogHeader>

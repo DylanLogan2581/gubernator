@@ -98,7 +98,7 @@ export function AddManagedPopulationDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Add managed population</DialogTitle>
-            <DialogDescription className="sr-only">
+            <DialogDescription>
               Add a managed population instance to this settlement.
             </DialogDescription>
           </DialogHeader>
