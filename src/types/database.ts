@@ -542,6 +542,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "deposit_instances_discovered_by_event_id_fkey";
+            columns: ["discovered_by_event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "deposit_instances_settlement_id_fkey";
             columns: ["settlement_id"];
             isOneToOne: false;
@@ -1059,6 +1066,20 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "notifications_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "notifications_nation_id_fkey";
             columns: ["nation_id"];

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (12);
+  plan (15);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -338,6 +338,57 @@ select
     'P0001',
     null,
     'remaining_quantity < 0 is rejected with P0001'
+  );
+
+-- ===========================================================================
+-- initial = 0: rejected (P0001)
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.set_deposit_instance_resource_quantities(
+      'fa000000-0000-0000-0000-000000000001',
+      0,
+      0
+    )
+    $test$,
+    'P0001',
+    null,
+    'initial_quantity = 0 is rejected with P0001'
+  );
+
+-- ===========================================================================
+-- p_initial_quantity is NULL: rejected (P0001)
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.set_deposit_instance_resource_quantities(
+      'fa000000-0000-0000-0000-000000000001',
+      null,
+      0
+    )
+    $test$,
+    'P0001',
+    null,
+    'null initial_quantity is rejected with P0001'
+  );
+
+-- ===========================================================================
+-- p_remaining_quantity is NULL: rejected (P0001)
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.set_deposit_instance_resource_quantities(
+      'fa000000-0000-0000-0000-000000000001',
+      100,
+      null
+    )
+    $test$,
+    'P0001',
+    null,
+    'null remaining_quantity is rejected with P0001'
   );
 
 reset role;

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (11);
+  plan (15);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -489,6 +489,114 @@ select
     'P0001',
     null,
     'name longer than 64 characters is rejected with P0001'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- MAX_WORKERS NON-POSITIVE: rejected (P0001)
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.create_deposit_instance(
+      'f4000000-0000-0000-0000-000000000001',
+      'f5000000-0000-0000-0000-000000000001',
+      'Zero Workers Seam',
+      0,
+      '[{"resource_id":"f6000000-0000-0000-0000-000000000001","initial_quantity":100}]'::jsonb
+    )
+  $test$,
+    'P0001',
+    null,
+    'max_workers = 0 is rejected with P0001'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- MAX_WORKERS NEGATIVE: rejected (P0001)
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.create_deposit_instance(
+      'f4000000-0000-0000-0000-000000000001',
+      'f5000000-0000-0000-0000-000000000001',
+      'Negative Workers Seam',
+      -5,
+      '[{"resource_id":"f6000000-0000-0000-0000-000000000001","initial_quantity":100}]'::jsonb
+    )
+  $test$,
+    'P0001',
+    null,
+    'max_workers < 0 is rejected with P0001'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- INITIAL_QUANTITY ZERO: rejected (P0001)
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.create_deposit_instance(
+      'f4000000-0000-0000-0000-000000000001',
+      'f5000000-0000-0000-0000-000000000001',
+      'Zero Qty Seam',
+      null,
+      '[{"resource_id":"f6000000-0000-0000-0000-000000000001","initial_quantity":0}]'::jsonb
+    )
+  $test$,
+    'P0001',
+    null,
+    'initial_quantity = 0 is rejected with P0001'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- INITIAL_QUANTITY NEGATIVE: rejected (P0001)
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.create_deposit_instance(
+      'f4000000-0000-0000-0000-000000000001',
+      'f5000000-0000-0000-0000-000000000001',
+      'Negative Qty Seam',
+      null,
+      '[{"resource_id":"f6000000-0000-0000-0000-000000000001","initial_quantity":-50}]'::jsonb
+    )
+  $test$,
+    'P0001',
+    null,
+    'initial_quantity < 0 is rejected with P0001'
   );
 
 reset role;

@@ -8,7 +8,8 @@
 -- Error contract:
 --   P0002 (no_data_found)          – p_deposit_instance_resource_id is null or not found
 --   42501 (insufficient_privilege) – caller is not world admin or super admin
---   P0001 (raise_exception)        – quantities violate 0 ≤ remaining ≤ initial
+--   P0001 (raise_exception)        – null quantities, initial_quantity not positive,
+--                                    or quantities violate 0 ≤ remaining ≤ initial
 -- ---------------------------------------------------------------------------
 create or replace function public.set_deposit_instance_resource_quantities (
   p_deposit_instance_resource_id uuid,
@@ -33,9 +34,18 @@ begin
     raise exception 'not found' using errcode = 'P0002';
   end if;
 
-  -- Range validation: both must be non-negative and remaining ≤ initial
-  if p_initial_quantity < 0 then
-    raise exception 'initial_quantity must be >= 0' using errcode = 'P0001';
+  -- Null guard for numeric params
+  if p_initial_quantity is null then
+    raise exception 'initial_quantity must not be null' using errcode = 'P0001';
+  end if;
+
+  if p_remaining_quantity is null then
+    raise exception 'remaining_quantity must not be null' using errcode = 'P0001';
+  end if;
+
+  -- Range validation: initial_quantity must be > 0, remaining must be >= 0 and <= initial
+  if p_initial_quantity <= 0 then
+    raise exception 'initial_quantity must be > 0' using errcode = 'P0001';
   end if;
 
   if p_remaining_quantity < 0 then
