@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { textInputLimits } from "@/lib/inputLimits";
 
-const worldIdSchema = z.guid("World id must be a valid UUID.");
+const worldIdSchema = z.guid("Select a world.");
 
 export const renameWorldInputSchema = z.strictObject({
   name: z

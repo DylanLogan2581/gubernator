@@ -21,7 +21,7 @@ describe("cancelConstructionProjectInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.projectId).toContain(
-        "Project id must be a valid UUID.",
+        "Select a project.",
       );
     }
   });

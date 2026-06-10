@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const setBulkConstructionPoolInputSchema = z.strictObject({
-  settlementId: z.guid("Settlement id must be a valid UUID."),
+  settlementId: z.guid("Select a settlement."),
   targetCount: z
     .number()
     .int("Target count must be an integer.")

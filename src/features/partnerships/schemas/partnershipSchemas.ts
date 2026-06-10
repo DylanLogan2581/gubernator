@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-const citizenIdSchema = z.guid("Citizen id must be a valid UUID.");
-const partnershipIdSchema = z.guid("Partnership id must be a valid UUID.");
+const citizenIdSchema = z.guid("Select a citizen.");
+const partnershipIdSchema = z.guid("Select a partnership.");
 const turnTransitionIdSchema = z.guid(
   "Turn transition id must be a valid UUID.",
 );

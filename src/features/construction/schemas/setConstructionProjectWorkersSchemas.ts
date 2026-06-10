@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const setConstructionProjectWorkersInputSchema = z.strictObject({
-  projectId: z.guid("Project id must be a valid UUID."),
-  settlementId: z.guid("Settlement id must be a valid UUID."),
+  projectId: z.guid("Select a project."),
+  settlementId: z.guid("Select a settlement."),
   targetCount: z
     .number()
     .int("Target count must be an integer.")

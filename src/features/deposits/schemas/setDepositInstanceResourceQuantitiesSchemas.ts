@@ -3,7 +3,7 @@ import { z } from "zod";
 const depositInstanceResourceIdSchema = z.guid(
   "Deposit instance resource id must be a valid UUID.",
 );
-const settlementIdSchema = z.guid("Settlement id must be a valid UUID.");
+const settlementIdSchema = z.guid("Select a settlement.");
 
 export const setDepositInstanceResourceQuantitiesInputSchema = z.strictObject({
   depositInstanceResourceId: depositInstanceResourceIdSchema,

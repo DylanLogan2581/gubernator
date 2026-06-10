@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 const baseFields = {
-  citizenIds: z.array(z.guid("Citizen id must be a valid UUID.")),
-  settlementId: z.guid("Settlement id must be a valid UUID."),
-  targetId: z.guid("Target id must be a valid UUID."),
+  citizenIds: z.array(z.guid("Select a citizen.")),
+  settlementId: z.guid("Select a settlement."),
+  targetId: z.guid("Select a target."),
 };
 
 const depositSchema = z.strictObject({

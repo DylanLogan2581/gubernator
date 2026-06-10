@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { managedPopulationInputLimits } from "@/lib/inputLimits";
 
-const settlementIdSchema = z.guid("Settlement id must be a valid UUID.");
+const settlementIdSchema = z.guid("Select a settlement.");
 const managedPopulationTypeIdSchema = z.guid(
   "Managed population type id must be a valid UUID.",
 );

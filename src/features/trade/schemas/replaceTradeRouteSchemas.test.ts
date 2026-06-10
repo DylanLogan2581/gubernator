@@ -122,7 +122,7 @@ describe("replaceTradeRouteInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.oldRouteId).toContain(
-        "Old route id must be a valid UUID.",
+        "Select a trade route.",
       );
     }
   });
@@ -136,7 +136,7 @@ describe("replaceTradeRouteInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.proposingCitizenId).toContain(
-        "Proposing citizen id must be a valid UUID.",
+        "Select a proposing citizen.",
       );
     }
   });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-const nationIdSchema = z.guid("Nation id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
+const nationIdSchema = z.guid("Select a nation.");
+const worldIdSchema = z.guid("Select a world.");
 
 const unilateralStanceSchema = z.enum([
   "neutral",

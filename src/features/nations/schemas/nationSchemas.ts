@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { textInputLimits } from "@/lib/inputLimits";
 
-const nationIdSchema = z.guid("Nation id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
+const nationIdSchema = z.guid("Select a nation.");
+const worldIdSchema = z.guid("Select a world.");
 
 const nationNameSchema = z
   .string()

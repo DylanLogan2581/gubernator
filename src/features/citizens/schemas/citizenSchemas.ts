@@ -2,11 +2,11 @@ import { z } from "zod";
 
 import { textInputLimits } from "@/lib/inputLimits";
 
-const citizenIdSchema = z.guid("Citizen id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
-const settlementIdSchema = z.guid("Settlement id must be a valid UUID.");
-const nationIdSchema = z.guid("Nation id must be a valid UUID.");
-const userIdSchema = z.guid("User id must be a valid UUID.");
+const citizenIdSchema = z.guid("Select a citizen.");
+const worldIdSchema = z.guid("Select a world.");
+const settlementIdSchema = z.guid("Select a settlement.");
+const nationIdSchema = z.guid("Select a nation.");
+const userIdSchema = z.guid("Select a user.");
 
 const givenNameSchema = z
   .string()

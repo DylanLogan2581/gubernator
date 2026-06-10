@@ -10,7 +10,7 @@ const newRoutePayloadSchema = z
     legs: z
       .array(tradeRouteLegInputSchema)
       .min(1, "Trade route must have at least one leg."),
-    originSettlementId: z.guid("Origin settlement id must be a valid UUID."),
+    originSettlementId: z.guid("Select an origin settlement."),
   })
   .superRefine((value, ctx): void => {
     if (value.originSettlementId === value.destinationSettlementId) {
@@ -24,8 +24,8 @@ const newRoutePayloadSchema = z
 
 export const replaceTradeRouteInputSchema = z.strictObject({
   newRoutePayload: newRoutePayloadSchema,
-  oldRouteId: z.guid("Old route id must be a valid UUID."),
-  proposingCitizenId: z.guid("Proposing citizen id must be a valid UUID."),
+  oldRouteId: z.guid("Select a trade route."),
+  proposingCitizenId: z.guid("Select a proposing citizen."),
 });
 
 export type ReplaceTradeRouteInput = z.input<

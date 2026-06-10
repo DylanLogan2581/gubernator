@@ -7,7 +7,7 @@ export const tradeRouteLegInputSchema = z.strictObject({
   quantity: z
     .number()
     .positive("Quantity per transition must be greater than zero."),
-  resourceId: z.guid("Resource id must be a valid UUID."),
+  resourceId: z.guid("Select a resource."),
 });
 
 export type TradeRouteLegInput = z.input<typeof tradeRouteLegInputSchema>;
@@ -21,8 +21,8 @@ export const proposeTradeRouteInputSchema = z
     legs: z
       .array(tradeRouteLegInputSchema)
       .min(1, "Trade route must have at least one leg."),
-    originSettlementId: z.guid("Origin settlement id must be a valid UUID."),
-    proposingCitizenId: z.guid("Proposing citizen id must be a valid UUID."),
+    originSettlementId: z.guid("Select an origin settlement."),
+    proposingCitizenId: z.guid("Select a proposing citizen."),
   })
   .superRefine((value, ctx): void => {
     if (value.originSettlementId === value.destinationSettlementId) {

@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 export const addSettlementBuildingInputSchema = z.strictObject({
-  blueprintId: z.guid("Blueprint ID must be a valid UUID."),
+  blueprintId: z.guid("Select a blueprint."),
   name: z.string().trim().max(200).optional(),
-  settlementId: z.guid("Settlement ID must be a valid UUID."),
-  tierId: z.guid("Tier ID must be a valid UUID."),
+  settlementId: z.guid("Select a settlement."),
+  tierId: z.guid("Select a tier."),
 });
 
 export type AddSettlementBuildingInput = z.input<

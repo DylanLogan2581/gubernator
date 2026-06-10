@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 const baseFields = {
-  settlementId: z.guid("Settlement id must be a valid UUID."),
+  settlementId: z.guid("Select a settlement."),
   targetCount: z
     .number()
     .int("Target count must be an integer.")
     .min(0, "Target count must not be negative."),
-  targetId: z.guid("Target id must be a valid UUID."),
+  targetId: z.guid("Select a target."),
 };
 
 const depositSchema = z.strictObject({

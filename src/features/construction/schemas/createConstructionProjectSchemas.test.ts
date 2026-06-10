@@ -27,7 +27,7 @@ describe("createConstructionProjectInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.settlementId).toContain(
-        "Settlement id must be a valid UUID.",
+        "Select a settlement.",
       );
     }
   });
@@ -42,7 +42,7 @@ describe("createConstructionProjectInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.blueprintId).toContain(
-        "Blueprint id must be a valid UUID.",
+        "Select a blueprint.",
       );
     }
   });
@@ -57,7 +57,7 @@ describe("createConstructionProjectInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.targetTierId).toContain(
-        "Target tier id must be a valid UUID.",
+        "Select a target tier.",
       );
     }
   });

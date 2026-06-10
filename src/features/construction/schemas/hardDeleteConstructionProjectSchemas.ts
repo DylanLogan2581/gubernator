@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const hardDeleteConstructionProjectInputSchema = z.strictObject({
-  projectId: z.guid("Project id must be a valid UUID."),
+  projectId: z.guid("Select a project."),
 });
 
 export type HardDeleteConstructionProjectInput = z.input<

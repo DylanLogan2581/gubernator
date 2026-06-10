@@ -2,9 +2,9 @@ import { z } from "zod";
 
 import { depositInputLimits } from "@/lib/inputLimits";
 
-const depositTypeIdSchema = z.guid("Deposit type id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
-const jobIdSchema = z.guid("Job id must be a valid UUID.");
+const depositTypeIdSchema = z.guid("Select a deposit type.");
+const worldIdSchema = z.guid("Select a world.");
+const jobIdSchema = z.guid("Select a job.");
 
 const depositTypeNameSchema = z
   .string()
@@ -28,7 +28,7 @@ const outputUnitsPerWorkerSchema = z
 
 export const workerInputEntrySchema = z.strictObject({
   amountPerWorker: z.number().min(0, "Amount per worker must be non-negative."),
-  resourceId: z.guid("Resource id must be a valid UUID."),
+  resourceId: z.guid("Select a resource."),
 });
 
 const workerInputArraySchema = z.array(workerInputEntrySchema);

@@ -120,7 +120,7 @@ describe("proposeTradeRouteInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.originSettlementId).toContain(
-        "Origin settlement id must be a valid UUID.",
+        "Select an origin settlement.",
       );
     }
   });
@@ -148,7 +148,7 @@ describe("proposeTradeRouteInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.proposingCitizenId).toContain(
-        "Proposing citizen id must be a valid UUID.",
+        "Select a proposing citizen.",
       );
     }
   });

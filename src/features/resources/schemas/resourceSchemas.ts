@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { resourceInputLimits } from "@/lib/inputLimits";
 
-const resourceIdSchema = z.guid("Resource id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
+const resourceIdSchema = z.guid("Select a resource.");
+const worldIdSchema = z.guid("Select a world.");
 
 const resourceNameSchema = z
   .string()

@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { jobInputLimits } from "@/lib/inputLimits";
 
-const jobIdSchema = z.guid("Job id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
+const jobIdSchema = z.guid("Select a job.");
+const worldIdSchema = z.guid("Select a world.");
 
 const jobNameSchema = z
   .string()
@@ -26,7 +26,7 @@ const traderCapacityPerWorkerSchema = z
 export const jobIoEntrySchema = z.strictObject({
   amountPerWorker: z.number().min(0, "Amount per worker must be non-negative."),
   notes: z.string().optional(),
-  resourceId: z.guid("Resource id must be a valid UUID."),
+  resourceId: z.guid("Select a resource."),
 });
 
 const jobIoArraySchema = z.array(jobIoEntrySchema);
@@ -63,9 +63,7 @@ export const createJobInputSchema = z.discriminatedUnion("jobType", [
   }),
   z.strictObject({
     jobType: z.literal("deposit"),
-    linkedDepositTypeId: z
-      .guid("Deposit type id must be a valid UUID.")
-      .nullish(),
+    linkedDepositTypeId: z.guid("Select a deposit type.").nullish(),
     ...commonCreateFields,
   }),
   z.strictObject({
