@@ -8,6 +8,19 @@
 --
 -- Authorised callers: world_admin, super_admin.
 --
+-- Both RPCs follow the canonical trash-RPC skeleton (auth-before-lock pattern):
+-- 1. NULL guard on input parameter(s)
+-- 2. Non-locking SELECT to derive world_id and fetch row state
+-- 3. Row-exists check using derived values
+-- 4. Authorization check (is_world_admin / is_super_admin) using derived world_id
+-- 5. SELECT FOR UPDATE to lock row for mutation
+-- 6. Precondition checks on locked row
+-- 7. Mutation (soft_delete, restore, hard_delete, etc.)
+--
+-- This pattern ensures authorization is evaluated before acquiring locks, reducing
+-- contention and providing consistent error semantics: unauthorized callers receive
+-- 42501 (insufficient_privilege) regardless of row existence or state.
+--
 -- Error contract (both RPCs):
 --   P0002 (no_data_found)          – p_deposit_instance_id is null or not found
 --   42501 (insufficient_privilege) – caller is not world admin or super admin
@@ -30,14 +43,13 @@ begin
     raise exception 'not found' using errcode = 'P0002';
   end if;
 
-  -- Resolve deposit instance → settlement → world, lock row
+  -- Resolve deposit instance → settlement → world (non-locking)
   select di.settlement_id, n.world_id, di.status
     into v_settlement_id, v_world_id, v_status
     from public.deposit_instances di
     join public.settlements s on s.id = di.settlement_id
     join public.nations n on n.id = s.nation_id
-   where di.id = p_deposit_instance_id
-   for update;
+   where di.id = p_deposit_instance_id;
 
   if v_settlement_id is null then
     raise exception 'not found' using errcode = 'P0002';
@@ -47,6 +59,15 @@ begin
   if not (public.is_world_admin (v_world_id) or public.is_super_admin ()) then
     raise exception 'forbidden' using errcode = '42501';
   end if;
+
+  -- Lock row for mutation
+  select di.settlement_id, n.world_id, di.status
+    into v_settlement_id, v_world_id, v_status
+    from public.deposit_instances di
+    join public.settlements s on s.id = di.settlement_id
+    join public.nations n on n.id = s.nation_id
+   where di.id = p_deposit_instance_id
+   for update;
 
   -- Reject if not removed
   if v_status != 'removed' then
@@ -112,14 +133,13 @@ begin
     raise exception 'not found' using errcode = 'P0002';
   end if;
 
-  -- Resolve deposit instance → settlement → world, lock row
+  -- Resolve deposit instance → settlement → world (non-locking)
   select di.settlement_id, n.world_id, di.status
     into v_settlement_id, v_world_id, v_status
     from public.deposit_instances di
     join public.settlements s on s.id = di.settlement_id
     join public.nations n on n.id = s.nation_id
-   where di.id = p_deposit_instance_id
-   for update;
+   where di.id = p_deposit_instance_id;
 
   if v_settlement_id is null then
     raise exception 'not found' using errcode = 'P0002';
@@ -129,6 +149,15 @@ begin
   if not (public.is_world_admin (v_world_id) or public.is_super_admin ()) then
     raise exception 'forbidden' using errcode = '42501';
   end if;
+
+  -- Lock row for mutation
+  select di.settlement_id, n.world_id, di.status
+    into v_settlement_id, v_world_id, v_status
+    from public.deposit_instances di
+    join public.settlements s on s.id = di.settlement_id
+    join public.nations n on n.id = s.nation_id
+   where di.id = p_deposit_instance_id
+   for update;
 
   -- Only removed deposit instances can be permanently deleted
   if v_status != 'removed' then
