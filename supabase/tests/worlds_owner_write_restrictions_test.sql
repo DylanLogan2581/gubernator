@@ -8,10 +8,12 @@
 --     calendar_config_json).
 --   • World admin cannot insert worlds (INSERT requires super-admin).
 --   • World admin cannot insert worlds with state-machine columns pre-set.
+--   • Plain authenticated user (no world_admins row, not super-admin) is denied
+--     direct INSERT on public.worlds with 42501 (permission denied).
 begin;
 
 select
-  plan (12);
+  plan (14);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -224,6 +226,60 @@ select
     '42501',
     null,
     'world admin cannot insert: INSERT requires super-admin'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- PLAIN USER: unauthenticated user is denied direct INSERT on public.worlds
+-- ===========================================================================
+insert into
+  auth.users (
+    id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+  )
+values
+  (
+    '70000000-0000-0000-0000-000000000003',
+    'plain-user@example.com',
+    'x',
+    now(),
+    '{"username":"plain_user"}'::jsonb,
+    now(),
+    now()
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"70000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  is (
+    current_user::text,
+    'authenticated',
+    'session role is authenticated for plain user'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.worlds (id, name, visibility)
+    values (
+      '71000000-0000-0000-0000-000000000005',
+      'Plain User World',
+      'private'
+    )
+  $test$,
+    '42501',
+    null,
+    'plain user cannot insert: INSERT requires super-admin'
   );
 
 reset role;
