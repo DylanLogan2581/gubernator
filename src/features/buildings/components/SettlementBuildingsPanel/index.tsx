@@ -8,7 +8,7 @@ import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -98,7 +98,7 @@ export function SettlementBuildingsPanel({
 
       <CardContent>
         {buildingsQuery.isPending ? (
-          <LoadingState label="Loading buildings…" />
+          <TableSkeleton columnCount={5} rowCount={5} />
         ) : buildingsQuery.isError ? (
           <ErrorState
             title="Buildings could not be loaded"

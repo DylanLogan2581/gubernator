@@ -4,7 +4,7 @@ import { useState, type JSX, type ReactNode } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -131,7 +131,7 @@ export function JobAssignmentsTable({
     tradeRoutesQuery.isPending;
 
   if (isLoading) {
-    return <LoadingState label="Loading job assignments…" />;
+    return <TableSkeleton columnCount={6} rowCount={8} />;
   }
 
   const firstError =
@@ -153,7 +153,7 @@ export function JobAssignmentsTable({
 
   const stats = aggregateQuery.data;
   if (stats === undefined) {
-    return <LoadingState label="Loading job assignments…" />;
+    return <TableSkeleton columnCount={6} rowCount={8} />;
   }
 
   const jobCounts = jobCountsQuery.data ?? [];

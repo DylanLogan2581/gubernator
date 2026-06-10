@@ -6,6 +6,7 @@ import { useMemo, useState, type JSX } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -205,7 +206,7 @@ function CitizensAdminList({
   const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   if (citizensQuery.isPending) {
-    return <LoadingState label="Loading citizens…" />;
+    return <CardListSkeleton rowCount={5} />;
   }
 
   if (citizensQuery.isError) {

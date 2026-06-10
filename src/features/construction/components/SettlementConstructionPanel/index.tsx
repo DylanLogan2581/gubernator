@@ -7,7 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -90,7 +90,7 @@ export function SettlementConstructionPanel({
 
       <CardContent>
         {projectsQuery.isPending ? (
-          <LoadingState label="Loading construction queue…" />
+          <TableSkeleton columnCount={5} rowCount={5} />
         ) : projectsQuery.isError ? (
           <ErrorState
             title="Construction queue could not be loaded"

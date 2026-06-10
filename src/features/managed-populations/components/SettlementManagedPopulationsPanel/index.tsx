@@ -8,7 +8,7 @@ import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -132,7 +132,7 @@ export function SettlementManagedPopulationsPanel({
 
       <CardContent>
         {instancesQuery.isPending ? (
-          <LoadingState label="Loading managed populations…" />
+          <TableSkeleton columnCount={6} rowCount={5} />
         ) : instancesQuery.isError ? (
           <ErrorState
             description={getErrorDescription(instancesQuery.error)}

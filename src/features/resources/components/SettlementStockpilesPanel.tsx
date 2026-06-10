@@ -8,7 +8,7 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,7 +68,7 @@ export function SettlementStockpilesPanel({
       </h2>
       <CardContent>
         {stockpilesQuery.isPending ? (
-          <LoadingState label="Loading stockpiles…" />
+          <TableSkeleton columnCount={5} rowCount={5} />
         ) : stockpilesQuery.isError ? (
           <ErrorState
             title="Stockpiles could not be loaded"

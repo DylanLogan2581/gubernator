@@ -8,7 +8,7 @@ import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -178,7 +178,7 @@ export function SettlementTradeRoutesPanel({
 
       <CardContent>
         {routesQuery.isPending ? (
-          <LoadingState label="Loading trade routes…" />
+          <TableSkeleton columnCount={5} rowCount={5} />
         ) : routesQuery.isError ? (
           <ErrorState
             title="Trade routes could not be loaded"
