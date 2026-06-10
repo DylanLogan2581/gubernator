@@ -108,13 +108,15 @@ begin
 
   -- -----------------------------------------------------------------------
   -- Target validation and current-count fetch: deposit
+  -- Lock deposit_instances row to prevent concurrent modifications.
   -- -----------------------------------------------------------------------
   if p_assignment_type = 'deposit' then
 
     select di.settlement_id, di.status, di.max_workers
       into v_target_settlement, v_target_status, v_max_workers
       from public.deposit_instances di
-     where di.id = p_target_id;
+     where di.id = p_target_id
+     for update;
 
     if v_target_settlement is null then
       raise exception 'not found' using errcode = 'P0002';
@@ -144,13 +146,15 @@ begin
 
   -- -----------------------------------------------------------------------
   -- Target validation and current-count fetch: husbandry / culling
+  -- Lock managed_population_instances row to prevent concurrent modifications.
   -- -----------------------------------------------------------------------
   elsif p_assignment_type in ('husbandry', 'culling') then
 
     select mpi.settlement_id, mpi.status
       into v_target_settlement, v_target_status
       from public.managed_population_instances mpi
-     where mpi.id = p_target_id;
+     where mpi.id = p_target_id
+     for update;
 
     if v_target_settlement is null then
       raise exception 'not found' using errcode = 'P0002';
@@ -195,6 +199,7 @@ begin
 
   -- -----------------------------------------------------------------------
   -- Target validation and current-count fetch: trade_route
+  -- Lock trade_routes row to prevent concurrent modifications.
   -- -----------------------------------------------------------------------
   elsif p_assignment_type = 'trade_route' then
 
@@ -211,7 +216,8 @@ begin
          (p_trade_route_end = 'origin'      and tr.origin_settlement_id      = p_settlement_id)
          or
          (p_trade_route_end = 'destination' and tr.destination_settlement_id = p_settlement_id)
-       );
+       )
+     for update;
 
     if v_target_status is null then
       if exists (select 1 from public.trade_routes where id = p_target_id) then
