@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (16);
+  plan (20);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -574,6 +574,121 @@ select
     ),
     'active',
     'route is active after dual-side manager approves both sides'
+  );
+
+-- ===========================================================================
+-- CONCURRENT APPROVALS (TOCTOU FIX): both sides approve in separate txns
+-- ===========================================================================
+-- Create a fresh route for concurrent test
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000003',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'pending',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000003',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    15
+  );
+
+-- First transaction: origin manager approves origin side
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000003',
+      'origin',
+      'af600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'concurrent test: origin manager approves origin side'
+  );
+
+reset role;
+
+-- Second transaction: destination manager approves destination side
+-- This should trigger activation because FOR UPDATE lock ensures both approval
+-- checks happen atomically
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000003',
+      'destination',
+      'af600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'concurrent test: destination manager approves destination side'
+  );
+
+reset role;
+
+-- Verify route is active (not stuck in proposed)
+select
+  is (
+    (
+      select
+        tr.status
+      from
+        public.trade_routes tr
+      where
+        tr.id = 'af700000-0000-0000-0000-000000000003'
+    ),
+    'active',
+    'concurrent approvals result in active status (TOCTOU fixed)'
+  );
+
+-- Verify exactly one acceptance notification inserted (not zero)
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications n
+      where
+        n.notification_type = 'trade_proposal_accepted'
+        and n.trade_route_id = 'af700000-0000-0000-0000-000000000003'
+    ),
+    4,
+    'concurrent approval generates one acceptance notification batch (origin mgr, dest mgr, dual mgr, seeded super admin)'
   );
 
 -- ===========================================================================

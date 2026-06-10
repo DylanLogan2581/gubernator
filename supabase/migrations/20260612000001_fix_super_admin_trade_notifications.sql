@@ -355,7 +355,8 @@ begin
   join public.settlements s_orig on s_orig.id = tr.origin_settlement_id
   join public.settlements s_dest on s_dest.id = tr.destination_settlement_id
   join public.nations     n_orig on n_orig.id  = s_orig.nation_id
-  where tr.id = p_route_id;
+  where tr.id = p_route_id
+  for update of tr;
 
   if v_origin_settlement_id is null then
     raise exception 'not found' using errcode = 'P0002';
@@ -585,7 +586,8 @@ begin
   join public.settlements s_orig on s_orig.id = tr.origin_settlement_id
   join public.settlements s_dest on s_dest.id = tr.destination_settlement_id
   join public.nations     n_orig on n_orig.id  = s_orig.nation_id
-  where tr.id = p_route_id;
+  where tr.id = p_route_id
+  for update of tr;
 
   if v_origin_settlement_id is null then
     raise exception 'not found' using errcode = 'P0002';
@@ -786,7 +788,8 @@ begin
   join public.settlements s_orig on s_orig.id = tr.origin_settlement_id
   join public.settlements s_dest on s_dest.id = tr.destination_settlement_id
   join public.nations     n_orig on n_orig.id  = s_orig.nation_id
-  where tr.id = p_route_id;
+  where tr.id = p_route_id
+  for update of tr;
 
   if v_origin_settlement_id is null then
     raise exception 'not found' using errcode = 'P0002';
@@ -967,7 +970,8 @@ begin
     join public.settlements os on os.id = tr.origin_settlement_id
     join public.nations on2 on on2.id = os.nation_id
     join public.settlements ds on ds.id = tr.destination_settlement_id
-   where tr.id = p_old_id;
+   where tr.id = p_old_id
+   for update of tr;
 
   if v_old_status_text is null then
     raise exception 'not found' using errcode = 'P0002';
