@@ -1,8 +1,20 @@
-import type { UserConfig } from "@commitlint/types";
+import type { SyncRule, UserConfig } from "@commitlint/types";
+
+// Forbid Co-Authored-By trailers. Commits are authored solely by the human
+// committer; AI assistance is not credited as a co-author.
+const noCoauthors: SyncRule = (parsed) => {
+  const hasCoauthor = /^[ \t]*co-authored-by:/im.test(parsed.raw ?? "");
+  return [
+    !hasCoauthor,
+    "Co-Authored-By trailers are not allowed in commit messages.",
+  ];
+};
 
 const config: UserConfig = {
   extends: ["@commitlint/config-conventional"],
+  plugins: [{ rules: { "no-coauthors": noCoauthors } }],
   rules: {
+    "no-coauthors": [2, "always"],
     "body-leading-blank": [2, "always"],
     "body-max-line-length": [2, "always", 100],
     "footer-leading-blank": [2, "always"],
