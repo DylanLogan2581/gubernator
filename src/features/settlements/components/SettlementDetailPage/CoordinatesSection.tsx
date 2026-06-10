@@ -1,15 +1,13 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { MapPin, Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { notifyMutationError } from "@/lib/notify";
 
 import { updateSettlementCoordinatesMutationOptions } from "../../mutations/settlementsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { SettlementWithNation } from "../../types/settlementTypes";
 
@@ -124,7 +122,10 @@ export function SettlementCoordinatesSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(
+            error,
+            "Failed to update settlement coordinates.",
+          );
         },
         onSuccess: () => {
           setIsEditing(false);

@@ -2,15 +2,12 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { deleteSettlementMutationOptions } from "../../mutations/settlementsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { SettlementWithNation } from "../../types/settlementTypes";
 
@@ -39,7 +36,7 @@ export function SettlementDeleteSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to delete settlement.");
         },
         onSuccess: () => {
           setIsConfirming(false);

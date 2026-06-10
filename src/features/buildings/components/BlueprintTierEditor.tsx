@@ -6,8 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
-import { useEffect, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
+import { useEffect, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -22,7 +21,7 @@ import {
   type Resource,
 } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { useTierDraftForm } from "../hooks/useTierDraftForm";
 import {
@@ -38,10 +37,7 @@ import {
   type CreateTierInput,
   type UpdateTierInput,
 } from "../schemas/buildingSchemas";
-import {
-  tierCostsToState,
-  tierEffectsToState,
-} from "../utils/tierEditorUtils";
+import { tierCostsToState, tierEffectsToState } from "../utils/tierEditorUtils";
 
 import { TierDraftFields } from "./TierDraftFields";
 
@@ -252,11 +248,7 @@ function BlueprintTierEditorContent({
               { tierId: deletingTier.id },
               {
                 onError: (error) => {
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Failed to delete tier.",
-                  );
+                  notifyMutationError(error, "Failed to delete tier.");
                 },
                 onSuccess: () => {
                   setDeletingTier(null);
@@ -281,11 +273,7 @@ function BlueprintTierEditorContent({
           onSubmit={(input) => {
             createMutation.mutate(input, {
               onError: (error) => {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to create tier.",
-                );
+                notifyMutationError(error, "Failed to create tier.");
               },
               onSuccess: () => {
                 notifyMutationSuccess("Tier created.");
@@ -566,9 +554,7 @@ function EditTierForm({
       notifyMutationSuccess("Tier saved.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save tier.",
-      );
+      notifyMutationError(error, "Failed to save tier.");
     }
   }
 

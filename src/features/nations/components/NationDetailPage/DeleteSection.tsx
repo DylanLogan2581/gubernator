@@ -2,15 +2,12 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { deleteNationMutationOptions } from "../../mutations/nationsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { Nation } from "../../types/nationTypes";
 
@@ -33,7 +30,7 @@ export function NationDeleteSection({
       { nationId: nation.id, worldId: nation.worldId },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to delete nation.");
         },
         onSuccess: () => {
           setIsConfirming(false);

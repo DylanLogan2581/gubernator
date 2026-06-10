@@ -1,20 +1,17 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Heart, Skull } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   markCitizenDeadMutationOptions,
   reviveCitizenMutationOptions,
 } from "../../mutations/citizensMutations";
-
-import { getCitizenMutationErrorDescription } from "./ErrorMessages";
 
 import type { Citizen } from "../../types/citizenTypes";
 
@@ -48,7 +45,7 @@ export function CitizenLifecycleSection({
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update citizen.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Citizen marked as deceased.");
@@ -68,7 +65,7 @@ export function CitizenLifecycleSection({
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update citizen.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Citizen revived.");

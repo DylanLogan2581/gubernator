@@ -1,12 +1,10 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { notifyMutationError } from "@/lib/notify";
 
 import { setNationHiddenMutationOptions } from "../../mutations/nationsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { Nation } from "../../types/nationTypes";
 import type { JSX } from "react";
@@ -32,7 +30,7 @@ export function NationHiddenToggleSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update nation.");
         },
       },
     );

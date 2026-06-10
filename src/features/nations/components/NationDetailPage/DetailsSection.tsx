@@ -1,16 +1,14 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { textInputLimits } from "@/lib/inputLimits";
+import { notifyMutationError } from "@/lib/notify";
 
 import { updateNationDetailsMutationOptions } from "../../mutations/nationsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { Nation } from "../../types/nationTypes";
 
@@ -63,7 +61,7 @@ export function NationDetailsSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update nation.");
         },
         onSuccess: () => {
           setIsEditing(false);

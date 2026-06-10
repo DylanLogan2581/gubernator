@@ -1,11 +1,10 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   proposeBilateralMutationOptions,
@@ -13,8 +12,6 @@ import {
   setUnilateralStanceMutationOptions,
   withdrawFromBilateralMutationOptions,
 } from "../../mutations/nationRelationshipMutations";
-
-import { getRelationshipMutationErrorDescription } from "./ErrorMessages";
 
 import type {
   NationRelationship,
@@ -103,7 +100,7 @@ export function NationRelationshipRow({
   }
 
   function notifyStanceError(error: unknown): void {
-    toast.error(getRelationshipMutationErrorDescription(error));
+    notifyMutationError(error, "Failed to update relationship.");
   }
 
   return (

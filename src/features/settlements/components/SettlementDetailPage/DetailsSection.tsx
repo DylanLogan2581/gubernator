@@ -1,16 +1,14 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { textInputLimits } from "@/lib/inputLimits";
+import { notifyMutationError } from "@/lib/notify";
 
 import { updateSettlementDetailsMutationOptions } from "../../mutations/settlementsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { SettlementWithNation } from "../../types/settlementTypes";
 
@@ -64,7 +62,7 @@ export function SettlementDetailsSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update settlement.");
         },
         onSuccess: () => {
           setIsEditing(false);

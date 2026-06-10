@@ -1,12 +1,11 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Pencil } from "lucide-react";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 import { generateLocalId } from "@/lib/uid";
 
@@ -15,7 +14,6 @@ import { generateNpcFlavor, type NpcFlavor } from "../../utils/npcFlavor";
 import { NpcFlavorEditor } from "../NpcFlavorEditor";
 import { NpcFlavorLine } from "../NpcFlavorLine";
 
-import { getCitizenMutationErrorDescription } from "./ErrorMessages";
 import { Readout } from "./Shared";
 
 import type { CitizenAdminDetails } from "../../types/citizenTypes";
@@ -72,7 +70,7 @@ export function CitizenNpcFlavorSection({
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update citizen flavor.");
         },
         onSuccess: () => {
           notifyMutationSuccess("NPC flavor saved.");

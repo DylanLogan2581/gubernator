@@ -1,7 +1,6 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +10,7 @@ import { availableUsersQueryOptions } from "@/features/auth";
 import { nationByIdQueryOptions } from "@/features/nations";
 import { RoleAssignmentControls } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   linkUserToCitizenMutationOptions,
@@ -19,7 +18,6 @@ import {
 } from "../../mutations/playerCharacterRoleMutations";
 import { isManagerRole, managerScopeLabel } from "../../utils/citizenRoles";
 
-import { getRoleMutationErrorDescription } from "./ErrorMessages";
 import { Readout } from "./Shared";
 
 import type { Citizen } from "../../types/citizenTypes";
@@ -129,7 +127,7 @@ function CitizenLinkedUserControl({
       },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update role.");
         },
         onSuccess: () => {
           notifyMutationSuccess("User linked to citizen.");
@@ -152,7 +150,7 @@ function CitizenLinkedUserControl({
       },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update role.");
         },
       },
     );
@@ -164,7 +162,7 @@ function CitizenLinkedUserControl({
       { citizenId: citizen.id, worldId: citizen.worldId },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update role.");
         },
         onSuccess: () => {
           notifyMutationSuccess("User unlinked from citizen.");

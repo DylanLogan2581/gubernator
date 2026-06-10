@@ -1,16 +1,14 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { updateCitizenNpcFieldsMutationOptions } from "../../mutations/citizensMutations";
 
-import { getCitizenMutationErrorDescription } from "./ErrorMessages";
 import { Readout } from "./Shared";
 
 import type { CitizenAdminDetails } from "../../types/citizenTypes";
@@ -62,7 +60,7 @@ export function CitizenNpcNotesSection({
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to save notes.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Personality and skills saved.");

@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
-import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Card } from "@/components/ui/card";
 import { NativeSelect } from "@/components/ui/native-select";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   setNationNamesetMutationOptions,
@@ -71,11 +70,7 @@ export function NationNamesetCard({
       { nationId, worldId, namesetId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to update nation naming.",
-          );
+          notifyMutationError(error, "Failed to update nation naming.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Nation naming updated.");
@@ -154,11 +149,7 @@ export function SettlementNamesetCard({
       { settlementId, worldId, namesetId },
       {
         onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to update settlement naming.",
-          );
+          notifyMutationError(error, "Failed to update settlement naming.");
         },
         onSuccess: () => {
           notifyMutationSuccess("Settlement naming updated.");
