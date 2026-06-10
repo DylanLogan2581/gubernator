@@ -290,15 +290,14 @@ describe("fetchManagedPops", () => {
 // ---------------------------------------------------------------------------
 
 describe("fetchTradeRoutes", () => {
-  it("filters both endpoints by settlement_id and status=in.(active,paused)", async () => {
+  it("filters by world_id and status=in.(active,paused)", async () => {
     const { calls } = stubFetch([]);
 
-    await fetchTradeRoutes(ctx, [SETTLEMENT_ID]);
+    await fetchTradeRoutes(ctx, WORLD_ID);
 
     const url = calls[0];
     expect(url).toContain("/rest/v1/trade_routes");
-    expect(url).toContain("origin_settlement_id=in.");
-    expect(url).toContain("destination_settlement_id=in.");
+    expect(url).toContain(`origin_settlement_id-%3Eworld_id=eq.${WORLD_ID}`);
     expect(url).toContain("status=in.");
     expect(url).toContain("active");
     expect(url).toContain("paused");

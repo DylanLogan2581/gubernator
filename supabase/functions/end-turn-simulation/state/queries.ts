@@ -439,14 +439,13 @@ export function fetchManagedPops(
 
 export function fetchTradeRoutes(
   ctx: FetchContext,
-  settlementIds: readonly string[],
+  worldId: string,
 ): Promise<FetchRowsResult> {
   return fetchRows({
     ctx,
     table: "trade_routes",
     params: {
-      origin_settlement_id: buildInFilter(settlementIds),
-      destination_settlement_id: buildInFilter(settlementIds),
+      "origin_settlement_id->world_id": `eq.${worldId}`,
       status: "in.(active,paused)",
       order: "id.asc",
       select:
