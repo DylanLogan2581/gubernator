@@ -3,12 +3,21 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -575,12 +584,15 @@ function StatusBadge({
   readonly pauseReason?: string | null;
   readonly status: TradeRouteStatus;
 }): JSX.Element {
-  const styles: Record<TradeRouteStatus, string> = {
-    active: "text-success-foreground",
-    cancelled: "text-destructive",
-    paused: "text-warning-foreground",
-    proposed: "text-warning-foreground",
-    replaced: "text-muted-foreground",
+  const variantMap: Record<
+    TradeRouteStatus,
+    "default" | "destructive" | "warning" | "outline"
+  > = {
+    active: "default",
+    cancelled: "destructive",
+    paused: "warning",
+    proposed: "warning",
+    replaced: "outline",
   };
   const labels: Record<TradeRouteStatus, string> = {
     active: "Active",
@@ -593,10 +605,15 @@ function StatusBadge({
     status === "paused" && pauseReason !== null && pauseReason !== undefined
       ? (PAUSE_REASON_LABELS[pauseReason] ?? pauseReason)
       : undefined;
+
+  const variant = variantMap[status];
+  const className =
+    status === "active" ? "bg-success text-success-foreground" : undefined;
+
   return (
-    <span className={`text-xs font-medium ${styles[status]}`} title={title}>
+    <Badge className={className} title={title} variant={variant}>
       {labels[status]}
-    </span>
+    </Badge>
   );
 }
 
@@ -607,22 +624,33 @@ function ApprovalBadge({
   readonly label: string;
   readonly status: TradeRouteApprovalStatus;
 }): JSX.Element {
-  const styles: Record<TradeRouteApprovalStatus, string> = {
-    approved: "text-success-foreground",
-    pending: "text-muted-foreground",
-    rejected: "text-destructive",
+  const statusLabels: Record<TradeRouteApprovalStatus, string> = {
+    approved: "Approved",
+    pending: "Pending",
+    rejected: "Rejected",
   };
-  const icons: Record<TradeRouteApprovalStatus, string> = {
-    approved: "✓",
-    pending: "…",
-    rejected: "✗",
+  const iconMap: Record<TradeRouteApprovalStatus, React.ReactNode> = {
+    approved: <Check className="size-3" />,
+    pending: <Clock className="size-3" />,
+    rejected: <X className="size-3" />,
   };
+  const variantMap: Record<
+    TradeRouteApprovalStatus,
+    "default" | "outline" | "destructive"
+  > = {
+    approved: "default",
+    pending: "outline",
+    rejected: "destructive",
+  };
+  const className =
+    status === "approved" ? "bg-success text-success-foreground" : undefined;
+
   return (
-    <span
-      className={`text-xs font-medium ${styles[status]}`}
-      title={`${label}: ${status}`}
-    >
-      {label}:{icons[status]}
-    </span>
+    <Badge className={className} variant={variantMap[status]}>
+      <span>
+        {label} {statusLabels[status]}
+      </span>
+      {iconMap[status]}
+    </Badge>
   );
 }
