@@ -23,6 +23,8 @@ import {
   sortNotificationsBySettlement,
 } from "../utils/transitionOutcome";
 
+import { MetricTile } from "./EndTurnMetric";
+
 import type { TurnTransitionOutcome } from "../queries/turnTransitionOutcomeQueries";
 import type { JSX, ReactNode } from "react";
 
@@ -186,16 +188,13 @@ export function TurnTransitionOutcomeContent({
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-4">
-        <OutcomeMetric label="Births" value={deltas.births} />
-        <OutcomeMetric label="Deaths" value={deltas.deaths} />
-        <OutcomeMetric
+        <MetricTile label="Births" value={deltas.births} />
+        <MetricTile label="Deaths" value={deltas.deaths} />
+        <MetricTile
           label="Buildings suspended"
           value={deltas.buildingsSuspended}
         />
-        <OutcomeMetric
-          label="Deposits depleted"
-          value={deltas.depositsDepleted}
-        />
+        <MetricTile label="Deposits depleted" value={deltas.depositsDepleted} />
       </dl>
 
       {notificationGroups.length > 0 ? (
@@ -278,20 +277,5 @@ function OutcomePanelFrame({
     >
       {children}
     </section>
-  );
-}
-
-function OutcomeMetric({
-  label,
-  value,
-}: {
-  readonly label: string;
-  readonly value: number;
-}): JSX.Element {
-  return (
-    <div className="rounded-md border border-border bg-background px-3 py-2">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-2xl font-semibold tracking-normal">{value}</dd>
-    </div>
   );
 }

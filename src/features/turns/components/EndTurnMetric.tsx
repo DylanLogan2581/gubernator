@@ -1,11 +1,11 @@
 import type { JSX } from "react";
 
-export function EndTurnMetric({
+export function MetricTile({
   label,
   value,
 }: {
   readonly label: string;
-  readonly value: string;
+  readonly value: string | number;
 }): JSX.Element {
   return (
     <div className="rounded-md border border-border bg-background px-3 py-2">

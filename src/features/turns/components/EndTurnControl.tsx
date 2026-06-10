@@ -30,7 +30,7 @@ import {
 } from "../utils/endTurnDescriptions";
 
 import { EndTurnConfirmationDialog } from "./EndTurnConfirmationDialog";
-import { EndTurnMetric } from "./EndTurnMetric";
+import { MetricTile } from "./EndTurnMetric";
 
 import type { JSX } from "react";
 
@@ -238,19 +238,19 @@ function EndTurnControlContent({
 
       {readinessSummaryQuery.isSuccess ? (
         <dl className="grid gap-3 sm:grid-cols-4">
-          <EndTurnMetric
+          <MetricTile
             label="Current turn"
             value={currentTurnNumber.toString()}
           />
-          <EndTurnMetric
+          <MetricTile
             label="Ready"
             value={readinessSummaryQuery.data.readySettlementCount.toString()}
           />
-          <EndTurnMetric
+          <MetricTile
             label="Not ready"
             value={readinessSummaryQuery.data.notReadySettlementCount.toString()}
           />
-          <EndTurnMetric
+          <MetricTile
             label="Ready percent"
             value={formatSettlementReadinessPercentage(
               readinessSummaryQuery.data.readyPercentage,

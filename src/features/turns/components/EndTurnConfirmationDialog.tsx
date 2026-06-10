@@ -14,7 +14,7 @@ import type { SettlementReadinessSummary } from "@/features/settlements";
 
 import { getReadinessSummaryDescription } from "../utils/endTurnDescriptions";
 
-import { EndTurnMetric } from "./EndTurnMetric";
+import { MetricTile } from "./EndTurnMetric";
 
 import type { JSX } from "react";
 
@@ -56,13 +56,13 @@ export function EndTurnConfirmationDialog({
         </DialogHeader>
 
         <dl className="grid gap-3 sm:grid-cols-2">
-          <EndTurnMetric
+          <MetricTile
             label="Current turn"
             value={currentTurnNumber.toString()}
           />
-          <EndTurnMetric label="Next turn" value={nextTurnNumber.toString()} />
-          <EndTurnMetric label="Current date" value={currentDateLabel} />
-          <EndTurnMetric label="Next date" value={nextDateLabel} />
+          <MetricTile label="Next turn" value={nextTurnNumber.toString()} />
+          <MetricTile label="Current date" value={currentDateLabel} />
+          <MetricTile label="Next date" value={nextDateLabel} />
         </dl>
 
         <div className="rounded-md border border-border bg-background px-3 py-2">
