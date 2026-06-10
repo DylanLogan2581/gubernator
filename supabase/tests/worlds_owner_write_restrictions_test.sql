@@ -6,8 +6,8 @@
 --     status, archived_at, created_at) through direct table updates.
 --   • World admin can still mutate allowed metadata columns (name, visibility,
 --     calendar_config_json).
+--   • World admin cannot insert worlds (INSERT requires super-admin).
 --   • World admin cannot insert worlds with state-machine columns pre-set.
---   • World admin can insert a world specifying only allowed metadata columns.
 begin;
 
 select
@@ -212,7 +212,7 @@ select
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     insert into public.worlds (id, name, visibility)
     values (
@@ -221,7 +221,9 @@ select
       'private'
     )
   $test$,
-    'world admin can create a world with allowed metadata only'
+    '42501',
+    null,
+    'world admin cannot insert: INSERT requires super-admin'
   );
 
 reset role;

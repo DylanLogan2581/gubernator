@@ -50,13 +50,13 @@ drop policy "worlds_update_owner" on public.worlds;
 
 -- worlds_delete_owner was already dropped in 20260608000001.
 -- ===========================================================================
--- 3b. Replace worlds_insert_authenticated: no owner_id check
+-- 3b. Replace worlds_insert_authenticated: require is_super_admin
 -- ===========================================================================
 drop policy "worlds_insert_authenticated" on public.worlds;
 
 create policy "worlds_insert_authenticated" on public.worlds for insert to authenticated
 with
-  check (public.is_active_app_user ());
+  check (public.is_super_admin ());
 
 -- ===========================================================================
 -- 3c. Update is_world_admin: world_admins table only

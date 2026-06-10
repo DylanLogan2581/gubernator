@@ -757,6 +757,7 @@ export type Database = {
           is_trashed: boolean;
           maintenance_rules_json: Json;
           name: string;
+          regular_outputs_json: Json;
           slug: string;
           updated_at: string;
           world_id: string;
@@ -772,6 +773,7 @@ export type Database = {
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
           name: string;
+          regular_outputs_json?: Json;
           slug: string;
           updated_at?: string;
           world_id: string;
@@ -787,6 +789,7 @@ export type Database = {
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
           name?: string;
+          regular_outputs_json?: Json;
           slug?: string;
           updated_at?: string;
           world_id?: string;
@@ -1135,6 +1138,7 @@ export type Database = {
         Row: {
           base_stockpile_cap: number;
           created_at: string;
+          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -1147,6 +1151,7 @@ export type Database = {
         Insert: {
           base_stockpile_cap?: number;
           created_at?: string;
+          decay_rate?: number;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1159,6 +1164,7 @@ export type Database = {
         Update: {
           base_stockpile_cap?: number;
           created_at?: string;
+          decay_rate?: number;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -2632,6 +2638,13 @@ export type Database = {
           world_id: string;
         }[];
       };
+      hard_delete_settlement_building: {
+        Args: { p_building_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
       hard_delete_world: {
         Args: { p_world_id: string };
         Returns: {
@@ -3063,6 +3076,7 @@ export type Database = {
           is_trashed: boolean;
           maintenance_rules_json: Json;
           name: string;
+          regular_outputs_json: Json;
           slug: string;
           updated_at: string;
           world_id: string;
@@ -3086,6 +3100,7 @@ export type Database = {
         Returns: {
           base_stockpile_cap: number;
           created_at: string;
+          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -3098,6 +3113,29 @@ export type Database = {
         SetofOptions: {
           from: "*";
           to: "resources";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      restore_settlement_building: {
+        Args: { p_building_id: string; p_world_id: string };
+        Returns: {
+          activated_on_turn_number: number;
+          building_blueprint_id: string;
+          created_at: string;
+          current_tier_id: string;
+          deactivated_in_transition_id: string | null;
+          id: string;
+          missed_upkeep_count: number;
+          name: string | null;
+          settlement_id: string;
+          source_project_id: string | null;
+          state: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "settlement_buildings";
           isOneToOne: false;
           isSetofReturn: true;
         };
@@ -3492,6 +3530,7 @@ export type Database = {
           is_trashed: boolean;
           maintenance_rules_json: Json;
           name: string;
+          regular_outputs_json: Json;
           slug: string;
           updated_at: string;
           world_id: string;
@@ -3515,6 +3554,7 @@ export type Database = {
         Returns: {
           base_stockpile_cap: number;
           created_at: string;
+          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
