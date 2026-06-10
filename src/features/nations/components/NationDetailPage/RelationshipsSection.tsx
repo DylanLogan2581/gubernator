@@ -188,17 +188,15 @@ function NationRelationshipAccordionRow({
           <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="border-t border-border px-4 pb-4 pt-2">
-          <NationRelationshipRow
-            canControl={canControl}
-            incoming={incoming}
-            nation={nation}
-            other={other}
-            outgoing={outgoing}
-            queryClient={queryClient}
-          />
-        </div>
+      <CollapsibleContent className="border-t border-border px-4 pb-4 pt-2">
+        <NationRelationshipRow
+          canControl={canControl}
+          incoming={incoming}
+          nation={nation}
+          other={other}
+          outgoing={outgoing}
+          queryClient={queryClient}
+        />
       </CollapsibleContent>
     </Collapsible>
   );

@@ -88,14 +88,9 @@ export function NationRelationshipRow({
 
   return (
     <li className="grid gap-3 rounded-md border border-border bg-background p-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-sm font-medium">{other.name}</span>
-        <span className="text-xs text-muted-foreground">
-          Current stance:{" "}
-          <span className="font-medium text-foreground">
-            {formatRelationshipStance(currentStance)}
-          </span>
-        </span>
+      <div className="text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Current stance:</span>{" "}
+        {formatRelationshipStance(currentStance)}
       </div>
       <div className="grid gap-1 text-xs text-muted-foreground">
         {outgoingPending !== null ? (
