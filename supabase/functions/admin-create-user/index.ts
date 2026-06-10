@@ -327,10 +327,22 @@ async function createAuthUser(
       };
     }
 
+    // Log raw upstream error server-side for debugging, but never expose to client
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "auth_admin_error",
+        endpoint: "auth_admin_users",
+        upstreamError: message,
+        status: response.status,
+        timestamp: new Date().toISOString(),
+      }),
+    );
+
     return {
       error: createErrorResponse({
         code: "auth_admin_error",
-        message: message ?? "User creation failed.",
+        message: "User creation failed.",
       }),
       ok: false,
       status: 500,

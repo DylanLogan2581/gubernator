@@ -8,7 +8,7 @@ const SUPABASE_ANON_KEY = "test-anon-key";
 const SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
 
 type ResponseBody = {
-  error?: { code?: string };
+  error?: { code?: string; message?: string };
   ok?: boolean;
   data?: { userId?: string; email?: string; username?: string };
 };
@@ -223,6 +223,79 @@ describe("handleAdminCreateUserRequest", () => {
       expect(response.status).toBe(502);
       expect(body.error?.code).toBe("auth_admin_error");
       expect(body.ok).toBe(false);
+    });
+
+    it("never exposes raw upstream error message to client", async () => {
+      const upstreamErrorMsg = "Rate limit exceeded: 100 requests per minute";
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "auth/v1/admin/users": {
+          status: 429,
+          body: { message: upstreamErrorMsg },
+        },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      const consoleSpy = vi.spyOn(console, "log");
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(500);
+      expect(body.error?.code).toBe("auth_admin_error");
+      expect(body.error?.message).toBe("User creation failed.");
+      // Verify raw message is NOT in client response
+      expect(body.error?.message).not.toBe(upstreamErrorMsg);
+      expect(body.error?.message).not.toContain("Rate limit");
+
+      // Verify raw message IS logged server-side
+      const logCalls = consoleSpy.mock.calls;
+      const authErrorLog = logCalls.find((call) => {
+        const logStr = String(call[0]);
+        return logStr.includes("auth_admin_error");
+      });
+      expect(authErrorLog).toBeDefined();
+      if (authErrorLog !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const logJson = JSON.parse(String(authErrorLog[0]));
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        expect(logJson.upstreamError).toBe(upstreamErrorMsg);
+      }
+
+      consoleSpy.mockRestore();
+    });
+
+    it("handles validation errors without leaking details", async () => {
+      const upstreamMsg = "Invalid input: validation failed";
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "auth/v1/admin/users": {
+          status: 500,
+          body: { message: upstreamMsg },
+        },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(500);
+      expect(body.error?.code).toBe("auth_admin_error");
+      expect(body.error?.message).toBe("User creation failed.");
+      // Verify upstream message details never exposed
+      expect(body.error?.message).not.toBe(upstreamMsg);
+      expect(body.error?.message).not.toContain("Invalid input");
     });
   });
 
