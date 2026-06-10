@@ -23,7 +23,7 @@
 begin;
 
 select
-  plan (13);
+  plan (15);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -71,10 +71,18 @@ where
 --   World A (turn 5, active): the world the attacker is admin of
 --   World B (turn 5, active): the foreign world whose entities should be protected
 insert into
-  public.worlds (id, name, current_turn_number, visibility, status)
+  public.worlds (
+    id,
+    owner_id,
+    name,
+    current_turn_number,
+    visibility,
+    status
+  )
 values
   (
     'e1200000-0000-0000-0000-000000000001',
+    'e1100000-0000-0000-0000-000000000001',
     'ATTCW World A',
     5,
     'private',
@@ -82,6 +90,7 @@ values
   ),
   (
     'e1200000-0000-0000-0000-000000000002',
+    'e1100000-0000-0000-0000-000000000001',
     'ATTCW World B',
     5,
     'private',
@@ -153,7 +162,34 @@ values
     'attcw-grain-b'
   );
 
--- Building blueprint + tier in World B (needed for construction project and building FKs)
+-- Building blueprints + tiers in both worlds
+-- World A blueprint (for happy-path baseline and attack payload origin)
+insert into
+  public.building_blueprints (id, world_id, name, slug)
+values
+  (
+    'e1600000-0000-0000-0000-000000000002',
+    'e1200000-0000-0000-0000-000000000001',
+    'ATTCW Granary A',
+    'attcw-granary-a'
+  );
+
+insert into
+  public.building_blueprint_tiers (
+    id,
+    building_blueprint_id,
+    tier_number,
+    worker_turns_required
+  )
+values
+  (
+    'e1610000-0000-0000-0000-000000000002',
+    'e1600000-0000-0000-0000-000000000002',
+    1,
+    10
+  );
+
+-- World B blueprint (needed for construction project and building FKs)
 insert into
   public.building_blueprints (id, world_id, name, slug)
 values
@@ -501,6 +537,60 @@ select
     'P0001',
     null,
     'buildingsCreated: foreign settlementId raises P0001'
+  );
+
+-- ===========================================================================
+-- TEST 3a: buildingsCreated — foreign buildingBlueprintId rejected
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.apply_turn_transition(
+      'e1200000-0000-0000-0000-000000000001',
+      5,
+      jsonb_build_object(
+        'buildingsCreated',
+        jsonb_build_array(
+          jsonb_build_object(
+            'settlementId',        'e1400000-0000-0000-0000-000000000001',
+            'buildingBlueprintId', 'e1600000-0000-0000-0000-000000000001',
+            'currentTierId',       'e1610000-0000-0000-0000-000000000002'
+          )
+        )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
+    )
+    $test$,
+    'P0001',
+    null,
+    'buildingsCreated: foreign buildingBlueprintId raises P0001'
+  );
+
+-- ===========================================================================
+-- TEST 3b: buildingsCreated — foreign currentTierId rejected
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.apply_turn_transition(
+      'e1200000-0000-0000-0000-000000000001',
+      5,
+      jsonb_build_object(
+        'buildingsCreated',
+        jsonb_build_array(
+          jsonb_build_object(
+            'settlementId',        'e1400000-0000-0000-0000-000000000001',
+            'buildingBlueprintId', 'e1600000-0000-0000-0000-000000000002',
+            'currentTierId',       'e1610000-0000-0000-0000-000000000001'
+          )
+        )
+      ),
+      'e1300000-0000-0000-0000-000000000001'::uuid
+    )
+    $test$,
+    'P0001',
+    null,
+    'buildingsCreated: foreign currentTierId raises P0001'
   );
 
 -- ===========================================================================

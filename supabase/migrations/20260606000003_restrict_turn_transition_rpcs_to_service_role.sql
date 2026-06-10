@@ -155,6 +155,8 @@ declare
   v_valid_resource_ids uuid[];
   v_valid_project_ids uuid[];
   v_valid_building_ids uuid[];
+  v_valid_building_blueprint_ids uuid[];
+  v_valid_building_blueprint_tier_ids uuid[];
   v_valid_deposit_instance_ids uuid[];
   v_valid_managed_pop_instance_ids uuid[];
   v_valid_trade_route_ids uuid[];
@@ -277,6 +279,16 @@ begin
     select id from public.citizens where world_id = p_world_id
   );
 
+  v_valid_building_blueprint_ids := array(
+    select id from public.building_blueprints where world_id = p_world_id
+  );
+
+  v_valid_building_blueprint_tier_ids := array(
+    select t.id from public.building_blueprint_tiers t
+    join public.building_blueprints b on b.id = t.building_blueprint_id
+    where b.world_id = p_world_id
+  );
+
   for v_delta in
     select value from jsonb_array_elements(coalesce(p_payload -> 'stockpileDeltas', '[]'::jsonb))
   loop
@@ -304,6 +316,14 @@ begin
   loop
     v_check_id := (v_update ->> 'settlementId')::uuid;
     if v_check_id is not null and not (v_check_id = any(v_valid_settlement_ids)) then
+      raise exception 'cross-world id % in buildingsCreated', v_check_id using errcode = 'P0001';
+    end if;
+    v_check_id := (v_update ->> 'buildingBlueprintId')::uuid;
+    if v_check_id is not null and not (v_check_id = any(v_valid_building_blueprint_ids)) then
+      raise exception 'cross-world id % in buildingsCreated', v_check_id using errcode = 'P0001';
+    end if;
+    v_check_id := (v_update ->> 'currentTierId')::uuid;
+    if v_check_id is not null and not (v_check_id = any(v_valid_building_blueprint_tier_ids)) then
       raise exception 'cross-world id % in buildingsCreated', v_check_id using errcode = 'P0001';
     end if;
   end loop;
