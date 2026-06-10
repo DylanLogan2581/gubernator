@@ -66,23 +66,6 @@ export function ActivePlayerCharacterAdminDialog({
   const isError =
     worldsQuery.isError || livingPCsQuery.isError || activeRowsQuery.isError;
 
-  // Log errors for debugging
-  if (worldsQuery.error !== null && worldsQuery.error !== undefined) {
-    console.error("[SuperadminDialog] Worlds query error:", worldsQuery.error);
-  }
-  if (livingPCsQuery.error !== null && livingPCsQuery.error !== undefined) {
-    console.error(
-      "[SuperadminDialog] Living PCs query error:",
-      livingPCsQuery.error,
-    );
-  }
-  if (activeRowsQuery.error !== null && activeRowsQuery.error !== undefined) {
-    console.error(
-      "[SuperadminDialog] Active rows query error:",
-      activeRowsQuery.error,
-    );
-  }
-
   let errorMessage = "";
   if (worldsQuery.error !== null && worldsQuery.error !== undefined) {
     errorMessage = `Failed to load worlds: ${getErrorDescription(worldsQuery.error)}`;
@@ -101,7 +84,7 @@ export function ActivePlayerCharacterAdminDialog({
   // Fallback if error message is empty but isError is true
   if (isError && errorMessage === "") {
     errorMessage =
-      "Couldn't load active-character data. Refresh and try again, or contact an administrator if it continues.";
+      "Couldn't load player character data. Close this dialog and try again.";
   }
 
   const worldsById = new Map((worldsQuery.data ?? []).map((w) => [w.id, w]));
