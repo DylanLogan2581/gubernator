@@ -1,5 +1,25 @@
 npx lint-staged
 
+# Typecheck the app project. Failure-only output: capture everything, stay
+# quiet on success, dump the full log only when tsc reports errors.
+echo "🔍 Typechecking..."
+tsc_out=$(npx tsc -b 2>&1)
+tsc_code=$?
+if [ "$tsc_code" -ne 0 ]; then
+  printf '%s\n' "$tsc_out"
+  exit "$tsc_code"
+fi
+
+# Run the unit/component suite. Same failure-only contract: suppress the
+# passing-test noise, print the report only when something fails.
+echo "🔍 Running tests..."
+test_out=$(npm run test 2>&1)
+test_code=$?
+if [ "$test_code" -ne 0 ]; then
+  printf '%s\n' "$test_out"
+  exit "$test_code"
+fi
+
 # Run database tests when schema/test files are staged. Pre-commit (not
 # pre-push) so the failure lands while an agent/author is still in-session and
 # can fix it, instead of after the commit during push.
