@@ -63,6 +63,11 @@ export function PoolEditor({
   const getEntryKey = (index: number): string =>
     entryKeys[index] ?? `pending-${String(index)}`;
 
+  // @tanstack/react-virtual returns a mutable virtualizer instance whose
+  // getVirtualItems()/getTotalSize() read live, externally-mutated state during
+  // render, so the React Compiler cannot safely memoize this component and skips
+  // it. The library, not our code, is incompatible; behavior is unaffected.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: shouldVirtualize ? entries.length : 0,
     getItemKey: getEntryKey,
