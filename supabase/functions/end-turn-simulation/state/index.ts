@@ -110,6 +110,8 @@ export async function resolveSupabaseEndTurnSimulationInput(
 
   // -------------------------------------------------------------------------
   // Round 1: world + settlements (parallel)
+  // Settlements fetched first to determine scope (settlementIds) for Round 2.
+  // See LOAD_ARCHITECTURE.md for design rationale.
   // -------------------------------------------------------------------------
 
   const [worldResult, settlementsResult] = await Promise.all([
@@ -154,7 +156,9 @@ export async function resolveSupabaseEndTurnSimulationInput(
   );
 
   // -------------------------------------------------------------------------
-  // Round 2: all entity fetches in parallel
+  // Round 2: all 16 entity fetches parallelized via Promise.all (not N+1).
+  // DB round-trip count fixed at 2 regardless of entity table size.
+  // See LOAD_ARCHITECTURE.md for design rationale.
   // -------------------------------------------------------------------------
 
   const [
