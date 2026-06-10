@@ -23,6 +23,7 @@ import {
   setSettlementReadinessMutationOptions,
 } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { notifyMutationError } from "@/lib/notify";
 
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
 import { nationsQueryKeys } from "../../queries/nationsQueryKeys";
@@ -151,6 +152,9 @@ function NationSettlementListItem({
           void queryClient.invalidateQueries({
             queryKey: nationsQueryKeys.settlements(settlement.nationId),
           });
+        },
+        onError: (error) => {
+          notifyMutationError(error);
         },
         onSettled: () => {
           setIsPending(false);
