@@ -113,9 +113,10 @@ function makeStockpile(
 
 function makeBuildingBlueprint(): SimBuildingBlueprint {
   return {
+    gracePeriodTurns: 0,
     id: "bp1",
+    maxInstancesPerSettlement: null,
     name: "Housing",
-    tiers: [{ populationCapIncrease: 10, tier: 1 }],
   };
 }
 
@@ -126,7 +127,6 @@ function makeBuildingTier(): SimBuildingTier {
     effectsJson: [
       {
         amount: 1,
-        resourceId: null,
         type: "population_cap_increase",
       },
     ],
@@ -154,9 +154,13 @@ describe("runSimulation — partnership formed then dies in homelessness same tu
       buildingTiers: [makeBuildingTier()],
       settlementBuildings: [
         {
-          id: "b1",
-          settlementId: "s1",
+          activatedOnTurnNumber: 0,
+          buildingBlueprintId: "bp1",
           currentTierId: "tier1",
+          id: "b1",
+          missedUpkeepCount: 0,
+          settlementId: "s1",
+          sourceProjectId: null,
           state: "active",
         },
       ],

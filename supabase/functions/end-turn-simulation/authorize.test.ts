@@ -110,7 +110,9 @@ describe("resolveSupabaseEndTurnSimulationAuthorization", () => {
         { authorizationHeader: userJwt, userId: "user-1" },
       );
 
-      const worldsCall = (fetchMock.mock.calls as [string, RequestInit][]).find(
+      const worldsCall = (
+        fetchMock.mock.calls as unknown as [string, RequestInit][]
+      ).find(
         ([url]) => url.includes("/rest/v1/worlds") && url.includes("select=id"),
       );
 
@@ -284,9 +286,9 @@ describe("resolveSupabaseEndTurnSimulationAuthorization", () => {
       );
 
       expect(result.ok).toBe(true);
-      const worldAdminCall = (
-        fetchMock.mock.calls as [string, RequestInit][]
-      ).find(([url]) => url.includes("is_world_admin"));
+      const worldAdminCall = fetchMock.mock.calls.find(([url]) =>
+        url.includes("is_world_admin"),
+      );
       expect(worldAdminCall).toBeUndefined();
     });
 

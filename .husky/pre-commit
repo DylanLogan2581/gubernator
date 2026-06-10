@@ -20,6 +20,19 @@ if [ "$test_code" -ne 0 ]; then
   exit "$test_code"
 fi
 
+# Typecheck the edge functions when any are staged. They use a separate
+# Deno-targeted tsconfig that `tsc -b` does not cover. Failure-only output.
+if git diff --cached --name-only --diff-filter=ACMR | \
+     grep -qE '^supabase/functions/'; then
+  echo "🔍 Edge functions staged. Typechecking edge functions..."
+  edge_out=$(npx tsc -p tsconfig.edge-functions.json 2>&1)
+  edge_code=$?
+  if [ "$edge_code" -ne 0 ]; then
+    printf '%s\n' "$edge_out"
+    exit "$edge_code"
+  fi
+fi
+
 # Run database tests when schema/test files are staged. Pre-commit (not
 # pre-push) so the failure lands while an agent/author is still in-session and
 # can fix it, instead of after the commit during push.

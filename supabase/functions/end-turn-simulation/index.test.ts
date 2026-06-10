@@ -603,9 +603,7 @@ describe("handleEndTurnSimulationRequest", () => {
       });
 
       // Verify no state resolver calls were made
-      const stateResolverCalls = (
-        fetchMock.mock.calls as [string, RequestInit][]
-      ).filter(
+      const stateResolverCalls = fetchMock.mock.calls.filter(
         ([url]) =>
           url.includes("/rest/v1/settlements") ||
           url.includes("/rest/v1/resources") ||
@@ -680,9 +678,7 @@ describe("handleEndTurnSimulationRequest", () => {
       });
 
       // Verify no state resolver calls were made
-      const stateResolverCalls = (
-        fetchMock.mock.calls as [string, RequestInit][]
-      ).filter(
+      const stateResolverCalls = fetchMock.mock.calls.filter(
         ([url]) =>
           url.includes("/rest/v1/settlements") ||
           url.includes("/rest/v1/resources") ||
