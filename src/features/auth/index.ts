@@ -4,7 +4,9 @@ export {
   verifyOtpMutationOptions,
   updatePasswordMutationOptions,
 } from "./mutations/authMutations";
+export { AuthCallbackPage } from "./components/AuthCallbackPage";
 export { AuthNavigationControl } from "./components/AuthNavigationControl";
+export { SetPasswordPage } from "./components/SetPasswordPage";
 export { SignInPage } from "./components/SignInPage";
 export { SignOutControl } from "./components/SignOutControl";
 export { authQueryKeys } from "./queries/authQueryKeys";
