@@ -426,5 +426,17 @@ function stateResultFromFetchError(
     };
   }
 
+  if (reason === "response_truncated") {
+    // eslint-disable-next-line no-restricted-syntax
+    console.log(
+      JSON.stringify({
+        event: "truncated_response_error",
+        message:
+          "PostgREST response truncated at 1000 rows limit. Pagination may have failed.",
+        timestamp: new Date().toISOString(),
+      }),
+    );
+  }
+
   return createStateUnavailableResult();
 }

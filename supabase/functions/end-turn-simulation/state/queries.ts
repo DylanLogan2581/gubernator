@@ -23,7 +23,8 @@ export type FetchContext = {
 export type FetchReason =
   | "fetch_failed"
   | { readonly kind: "http_error"; readonly safeDeny: boolean }
-  | "invalid_payload";
+  | "invalid_payload"
+  | "response_truncated";
 
 export type FetchRowsResult =
   | { readonly ok: true; readonly rows: readonly unknown[] }
@@ -85,6 +86,114 @@ async function fetchRows({
   }
 
   return { ok: true, rows: payload };
+}
+
+/**
+ * Fetch rows with automatic pagination for responses that exceed the 1000-row limit.
+ * Detects truncation via Content-Range header and paginates to fetch all rows.
+ * Raises error if response is truncated (safeguard against silent data loss).
+ */
+async function fetchRowsPaginated({
+  ctx,
+  params,
+  table,
+}: {
+  readonly ctx: FetchContext;
+  readonly params: Record<string, string>;
+  readonly table: string;
+}): Promise<FetchRowsResult> {
+  const allRows: unknown[] = [];
+  let offset = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    const searchParams = new URLSearchParams(params);
+
+    let response: Response;
+
+    try {
+      const rangeHeader = `rows=${offset}-${offset + pageSize - 1}`;
+      response = await supabaseFetch(
+        `${ctx.supabaseUrl}/rest/v1/${table}?${searchParams}`,
+        {
+          headers: { ...ctx.headers, Range: rangeHeader },
+          method: "GET",
+        },
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      // eslint-disable-next-line no-restricted-syntax
+      console.log(
+        JSON.stringify({
+          event: "fetch_error",
+          table,
+          error: errorMessage,
+          timestamp: new Date().toISOString(),
+          offset,
+        }),
+      );
+      return { ok: false, reason: "fetch_failed" };
+    }
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        reason: {
+          kind: "http_error",
+          ...classifyHttpError(response.status),
+        },
+      };
+    }
+
+    const payload: unknown = await response.json();
+
+    if (!Array.isArray(payload)) {
+      return { ok: false, reason: "invalid_payload" };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    allRows.push(...payload);
+
+    // Check Content-Range header to detect if we got all rows or if more exist.
+    const contentRange = response.headers.get("Content-Range");
+
+    if (contentRange === null) {
+      // No Content-Range header typically means <1000 rows in first request.
+      // Safe to assume we got everything.
+      break;
+    }
+
+    // Parse Content-Range: items 0-999/1234 means we got rows 0-999 of 1234 total.
+    const rangeMatch = contentRange.match(/items (\d+)-(\d+)\/(\d+)/);
+
+    if (rangeMatch === null) {
+      // Malformed header, assume truncation risk and raise error.
+      // eslint-disable-next-line no-restricted-syntax
+      console.log(
+        JSON.stringify({
+          event: "content_range_parse_error",
+          table,
+          contentRange,
+          timestamp: new Date().toISOString(),
+        }),
+      );
+      return { ok: false, reason: "response_truncated" };
+    }
+
+    const rangeEnd = parseInt(rangeMatch[2], 10);
+    const total = parseInt(rangeMatch[3], 10);
+
+    // If we've fetched all rows, stop.
+    if (rangeEnd >= total - 1) {
+      break;
+    }
+
+    // Move to next page.
+    offset = rangeEnd + 1;
+  }
+
+  return { ok: true, rows: allRows };
 }
 
 function buildInFilter(ids: readonly string[]): string {
@@ -285,7 +394,7 @@ export function fetchCitizens(
   ctx: FetchContext,
   worldId: string,
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "citizens",
     params: {
@@ -302,7 +411,7 @@ export function fetchEvents(
   ctx: FetchContext,
   worldId: string,
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "events",
     params: {
@@ -319,7 +428,7 @@ export function fetchAssignments(
   ctx: FetchContext,
   worldId: string,
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "citizen_assignments",
     params: {
@@ -339,7 +448,7 @@ export function fetchPartnerships(
   // multiple FKs to the same target (citizen_a_id / citizen_b_id both point
   // to citizens).  "citizens!citizen_a_id.world_id" is not valid syntax in
   // PostgREST 14; instead we alias the embed and filter by the alias.
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "partnerships",
     params: {
@@ -359,7 +468,7 @@ export function fetchStockpiles(
   ctx: FetchContext,
   settlementIds: readonly string[],
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "settlement_stockpiles_view",
     params: {

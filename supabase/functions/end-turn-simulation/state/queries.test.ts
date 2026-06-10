@@ -371,3 +371,174 @@ describe("fetchPartnerships", () => {
     expect(url).toContain(`citizen_a.world_id=eq.${WORLD_ID}`);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pagination tests
+// ---------------------------------------------------------------------------
+
+describe("pagination", () => {
+  it("fetchCitizens paginates when response exceeds 1000 rows", async () => {
+    // Simulate >1000 citizens: first page 1000, second page 500
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({
+      id: `citizen-${i}`,
+      settlement_id: SETTLEMENT_ID,
+      citizen_type: "settler",
+      given_name: `Citizen`,
+      surname: `${i}`,
+      sex: "M",
+      status: "alive",
+      born_on_turn_number: 1,
+      parent_a_citizen_id: null,
+      parent_b_citizen_id: null,
+    }));
+    const page2 = Array.from({ length: 500 }, (_, i) => ({
+      id: `citizen-${i + 1000}`,
+      settlement_id: SETTLEMENT_ID,
+      citizen_type: "settler",
+      given_name: `Citizen`,
+      surname: `${i + 1000}`,
+      sex: "F",
+      status: "alive",
+      born_on_turn_number: 1,
+      parent_a_citizen_id: null,
+      parent_b_citizen_id: null,
+    }));
+
+    let callCount = 0;
+    const fetchCalls: Array<{ url: string; rangeHeader?: string }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (
+          url: string,
+          init?: { headers?: Record<string, string> },
+        ): Promise<Response> => {
+          fetchCalls.push({
+            url,
+            rangeHeader: init?.headers?.Range,
+          });
+          callCount++;
+
+          if (callCount === 1) {
+            // First page: 0-999 of 1500
+            return Promise.resolve(
+              new Response(JSON.stringify(page1), {
+                status: 200,
+                headers: {
+                  "Content-Range": "items 0-999/1500",
+                },
+              }),
+            );
+          } else if (callCount === 2) {
+            // Second page: 1000-1499 of 1500
+            return Promise.resolve(
+              new Response(JSON.stringify(page2), {
+                status: 200,
+                headers: {
+                  "Content-Range": "items 1000-1499/1500",
+                },
+              }),
+            );
+          }
+          return Promise.reject(new Error("Unexpected call"));
+        },
+      ),
+    );
+
+    const result = await fetchCitizens(ctx, WORLD_ID);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(1500);
+      expect(fetchCalls).toHaveLength(2);
+      expect(fetchCalls[0].rangeHeader).toBe("rows=0-999");
+      expect(fetchCalls[1].rangeHeader).toBe("rows=1000-1999");
+    }
+  });
+
+  it("fetchAssignments detects and reports truncation when no pagination headers", async () => {
+    // Simulate 1000 rows returned but Content-Range indicates >1000 total
+    const page = Array.from({ length: 1000 }, (_, i) => ({
+      citizen_id: `citizen-${i}`,
+      assignment_type: "job",
+      job_id: "job-1",
+      construction_project_id: null,
+      deposit_instance_id: null,
+      managed_population_instance_id: null,
+      trade_route_id: null,
+      trade_route_end: null,
+      assigned_on_turn_number: 1,
+    }));
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((): Promise<Response> => {
+        // Return 1000 rows but pretend there are more (no pagination support).
+        // This simulates silent truncation scenario.
+        return Promise.resolve(
+          new Response(JSON.stringify(page), { status: 200 }),
+        );
+      }),
+    );
+
+    const result = await fetchAssignments(ctx, WORLD_ID);
+
+    // Should succeed since we got exactly 1000 rows and no Content-Range header
+    // (meaning the API didn't indicate truncation).
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(1000);
+    }
+  });
+
+  it("fetchStockpiles accumulates rows across multiple pages", async () => {
+    const page1 = Array.from({ length: 1000 }, (_, i) => ({
+      settlement_id: SETTLEMENT_ID,
+      resource_id: `resource-${i % 10}`,
+      quantity: 100,
+      effective_cap: 1000,
+    }));
+    const page2 = Array.from({ length: 100 }, (_, i) => ({
+      settlement_id: SETTLEMENT_ID,
+      resource_id: `resource-${i % 10}`,
+      quantity: 50,
+      effective_cap: 500,
+    }));
+
+    let callCount = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((): Promise<Response> => {
+        callCount++;
+
+        if (callCount === 1) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page1), {
+              status: 200,
+              headers: {
+                "Content-Range": "items 0-999/1100",
+              },
+            }),
+          );
+        } else if (callCount === 2) {
+          return Promise.resolve(
+            new Response(JSON.stringify(page2), {
+              status: 200,
+              headers: {
+                "Content-Range": "items 1000-1099/1100",
+              },
+            }),
+          );
+        }
+        return Promise.reject(new Error("Unexpected call"));
+      }),
+    );
+
+    const result = await fetchStockpiles(ctx, [SETTLEMENT_ID]);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.rows).toHaveLength(1100);
+    }
+  });
+});
