@@ -44,6 +44,9 @@ where
     and is_trashed = false
   );
 
+-- General covering index for world_id lookups and ON DELETE CASCADE.
+create index namesets_world_id_idx on public.namesets (world_id);
+
 -- §4: Constraints, RLS, and column grants.
 alter table public.namesets
 add constraint namesets_name_length_check check (char_length(btrim(name)) >= 1),
