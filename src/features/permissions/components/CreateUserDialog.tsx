@@ -53,7 +53,6 @@ export function CreateUserDialog({
 
     mutation.mutate(input, {
       onError: (error) => {
-        setFormError(error.message);
         notifyMutationError(error, "Failed to create user.");
       },
       onSuccess: (result) => {

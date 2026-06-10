@@ -48,10 +48,11 @@ describe("CreateUserDialog", () => {
   describe("error message: superadmin_user_exists", () => {
     it("displays email conflict message", async () => {
       const user = userEvent.setup();
-      mockCreateUser.mockRejectedValueOnce({
+      const error = {
         code: "superadmin_user_exists",
         message: "A user with this email address already exists.",
-      });
+      };
+      mockCreateUser.mockRejectedValueOnce(error);
 
       renderDialog();
 
@@ -69,9 +70,10 @@ describe("CreateUserDialog", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByText("A user with this email address already exists."),
-        ).toBeDefined();
+        expect(mockNotifyError).toHaveBeenCalledWith(
+          error,
+          "Failed to create user.",
+        );
       });
     });
   });
@@ -79,10 +81,11 @@ describe("CreateUserDialog", () => {
   describe("error message: superadmin_not_authorized", () => {
     it("displays authorization error message", async () => {
       const user = userEvent.setup();
-      mockCreateUser.mockRejectedValueOnce({
+      const error = {
         code: "superadmin_not_authorized",
         message: "You don't have permission to create users.",
-      });
+      };
+      mockCreateUser.mockRejectedValueOnce(error);
 
       renderDialog();
 
@@ -100,18 +103,20 @@ describe("CreateUserDialog", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByText("You don't have permission to create users."),
-        ).toBeDefined();
+        expect(mockNotifyError).toHaveBeenCalledWith(
+          error,
+          "Failed to create user.",
+        );
       });
     });
 
     it("displays auth expired message when unauthenticated", async () => {
       const user = userEvent.setup();
-      mockCreateUser.mockRejectedValueOnce({
+      const error = {
         code: "superadmin_not_authorized",
         message: "Sign-in expired, please sign in again.",
-      });
+      };
+      mockCreateUser.mockRejectedValueOnce(error);
 
       renderDialog();
 
@@ -129,9 +134,10 @@ describe("CreateUserDialog", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByText("Sign-in expired, please sign in again."),
-        ).toBeDefined();
+        expect(mockNotifyError).toHaveBeenCalledWith(
+          error,
+          "Failed to create user.",
+        );
       });
     });
   });
@@ -139,11 +145,12 @@ describe("CreateUserDialog", () => {
   describe("error message: superadmin_operation_failed", () => {
     it("displays generic operation failed message", async () => {
       const user = userEvent.setup();
-      mockCreateUser.mockRejectedValueOnce({
+      const error = {
         code: "superadmin_operation_failed",
         message:
           "Something went wrong creating the user. Try again or contact support.",
-      });
+      };
+      mockCreateUser.mockRejectedValueOnce(error);
 
       renderDialog();
 
@@ -161,11 +168,10 @@ describe("CreateUserDialog", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByText(
-            "Something went wrong creating the user. Try again or contact support.",
-          ),
-        ).toBeDefined();
+        expect(mockNotifyError).toHaveBeenCalledWith(
+          error,
+          "Failed to create user.",
+        );
       });
     });
   });
