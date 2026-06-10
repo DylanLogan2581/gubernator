@@ -3,10 +3,9 @@
 --
 -- First step of the two-step turn-transition protocol (issue #497 / review finding C2).
 -- The edge function calls start_turn_transition to reserve a turn_transitions row before running
--- the simulation engine, then passes the returned UUID as both the engine RNG seed and the
--- p_transition_id argument of apply_turn_transition. This ensures the stored
--- turn_transitions.id equals the seed used by the engine, satisfying the determinism model:
---   identical results for a given (worldId, turnNumber, transitionId)
+-- the simulation engine, then passes the returned UUID as the p_transition_id argument of
+-- apply_turn_transition. Determinism is keyed on (worldId, turnNumber) only:
+--   identical results for a given (worldId, turnNumber)
 -- ---------------------------------------------------------------------------
 create or replace function public.start_turn_transition (p_world_id uuid, p_expected_turn_number integer) returns uuid language plpgsql security definer
 set
