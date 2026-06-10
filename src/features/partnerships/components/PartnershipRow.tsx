@@ -3,6 +3,11 @@ import { Heart, HeartCrack, Pencil } from "lucide-react";
 import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Citizen } from "@/features/citizens";
 import { citizenByIdQueryOptions } from "@/features/citizens";
 
@@ -60,12 +65,16 @@ export function PartnershipRow({
             worldId={focalCitizen.worldId}
           />
           {isCrossSettlement ? (
-            <span
-              className="inline-flex items-center rounded-sm bg-amber-500/15 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300"
-              title="Partner belongs to a different settlement."
-            >
-              Cross-settlement
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center rounded-sm bg-amber-500/15 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300">
+                  Cross-settlement
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Partner belongs to a different settlement.
+              </TooltipContent>
+            </Tooltip>
           ) : null}
           <PartnershipStatusChip status={partnership.status} />
         </div>

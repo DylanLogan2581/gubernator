@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Citizen } from "@/features/citizens";
 
 import { PartnershipHistoryPanel } from "./index";
@@ -603,13 +604,15 @@ function renderPanel({
     focal ?? createCitizenRow({ id: "c-focal" }),
   );
   render(
-    <QueryClientProvider client={createQueryClient()}>
-      <PartnershipHistoryPanel
-        canAdmin={canAdmin}
-        citizen={focalCitizen}
-        isArchived={isArchived}
-      />
-    </QueryClientProvider>,
+    <TooltipProvider>
+      <QueryClientProvider client={createQueryClient()}>
+        <PartnershipHistoryPanel
+          canAdmin={canAdmin}
+          citizen={focalCitizen}
+          isArchived={isArchived}
+        />
+      </QueryClientProvider>
+    </TooltipProvider>,
   );
 }
 

@@ -5,6 +5,11 @@ import { useState, type JSX } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { type TurnTransitionOutcome } from "@/features/turns";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseDepositDepletedPayload } from "@/shared/simulation";
@@ -77,13 +82,20 @@ export function DepositInstanceRow({
           <span className="flex items-center gap-2">
             {instance.name}
             {isDepletion ? (
-              <Badge
-                aria-label="Depleted"
-                title={depletedTooltip}
-                variant="secondary"
-              >
-                Depleted
-              </Badge>
+              depletedTooltip !== undefined ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge aria-label="Depleted" variant="secondary">
+                      Depleted
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>{depletedTooltip}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Badge aria-label="Depleted" variant="secondary">
+                  Depleted
+                </Badge>
+              )
             ) : null}
           </span>
         </TableCell>
@@ -189,17 +201,22 @@ export function DepositInstanceRow({
                   ) : null}
                   {canAdmin ? (
                     assignedCount > 0 ? (
-                      <span title="Cannot remove: deposit has assigned workers.">
-                        <Button
-                          aria-label={`Remove ${instance.name}`}
-                          disabled
-                          size="sm"
-                          type="button"
-                          variant="destructive"
-                        >
-                          Remove
-                        </Button>
-                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            aria-label={`Remove ${instance.name}`}
+                            disabled
+                            size="sm"
+                            type="button"
+                            variant="destructive"
+                          >
+                            Remove
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Cannot remove: deposit has assigned workers.
+                        </TooltipContent>
+                      </Tooltip>
                     ) : (
                       <Button
                         aria-label={`Remove ${instance.name}`}

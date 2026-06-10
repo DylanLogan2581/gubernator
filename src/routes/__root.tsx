@@ -14,6 +14,7 @@ import { AppLayout } from "@/components/app/AppLayout";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthNavigationControl } from "@/features/auth";
 import { scheduleAuthStateQueryCacheSync } from "@/lib/authStateQueryCache";
 import { type AppRouterContext } from "@/lib/queryClient";
@@ -56,22 +57,29 @@ function RootLayout(): JSX.Element {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppLayout headerAction={<AuthNavigationControl />}>
-        {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
-      </AppLayout>
-      <Toaster theme="system" richColors closeButton position="bottom-right" />
-      {TanStackRouterDevtools !== null ? (
-        <Suspense fallback={null}>
-          <TanStackRouterDevtools />
-        </Suspense>
-      ) : null}
-      {ReactQueryDevtools !== null ? (
-        <Suspense fallback={null}>
-          <ReactQueryDevtools />
-        </Suspense>
-      ) : null}
-    </QueryClientProvider>
+    <TooltipProvider>
+      <QueryClientProvider client={queryClient}>
+        <AppLayout headerAction={<AuthNavigationControl />}>
+          {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
+        </AppLayout>
+        <Toaster
+          theme="system"
+          richColors
+          closeButton
+          position="bottom-right"
+        />
+        {TanStackRouterDevtools !== null ? (
+          <Suspense fallback={null}>
+            <TanStackRouterDevtools />
+          </Suspense>
+        ) : null}
+        {ReactQueryDevtools !== null ? (
+          <Suspense fallback={null}>
+            <ReactQueryDevtools />
+          </Suspense>
+        ) : null}
+      </QueryClientProvider>
+    </TooltipProvider>
   );
 }
 

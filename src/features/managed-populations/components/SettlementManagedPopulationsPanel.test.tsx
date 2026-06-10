@@ -3,6 +3,8 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { SettlementManagedPopulationsPanel } from "./SettlementManagedPopulationsPanel";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
@@ -1047,15 +1049,17 @@ function renderPanel({
   readonly isArchived?: boolean;
 }): void {
   render(
-    <QueryClientProvider client={createQueryClient()}>
-      <SettlementManagedPopulationsPanel
-        canAdmin={canAdmin}
-        canManage={canManage}
-        isArchived={isArchived}
-        settlementId={SETTLEMENT_ID}
-        worldId={WORLD_ID}
-      />
-    </QueryClientProvider>,
+    <TooltipProvider>
+      <QueryClientProvider client={createQueryClient()}>
+        <SettlementManagedPopulationsPanel
+          canAdmin={canAdmin}
+          canManage={canManage}
+          isArchived={isArchived}
+          settlementId={SETTLEMENT_ID}
+          worldId={WORLD_ID}
+        />
+      </QueryClientProvider>
+    </TooltipProvider>,
   );
 }
 
