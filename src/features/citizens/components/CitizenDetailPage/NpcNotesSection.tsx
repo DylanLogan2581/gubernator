@@ -130,6 +130,7 @@ export function CitizenNpcNotesSection({
       <div className="grid gap-1 text-sm">
         <Label htmlFor="personality">Personality</Label>
         <textarea
+          aria-label="Personality"
           id="personality"
           className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
@@ -140,6 +141,7 @@ export function CitizenNpcNotesSection({
       <div className="grid gap-1 text-sm">
         <Label htmlFor="skills">Skills</Label>
         <textarea
+          aria-label="Skills"
           id="skills"
           className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}

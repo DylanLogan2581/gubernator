@@ -197,6 +197,7 @@ export function CreatePlayerCharacterDialog({
           <div className="grid gap-1 text-sm">
             <Label>Sex</Label>
             <NativeSelect
+              aria-label="Sex"
               disabled={mutation.isPending}
               value={fields.sex}
               onChange={(event) => {
@@ -204,7 +205,7 @@ export function CreatePlayerCharacterDialog({
                 setFields((current) => ({ ...current, sex: value }));
               }}
             >
-              <option value=""></option>
+              <option value="">Unspecified</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
             </NativeSelect>

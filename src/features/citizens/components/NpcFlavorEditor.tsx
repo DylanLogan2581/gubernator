@@ -166,6 +166,7 @@ function FlavorTextField({
     <div className="grid gap-1 text-sm">
       <Label htmlFor="flavor-text">{label}</Label>
       <textarea
+        aria-label={label}
         id="flavor-text"
         className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         disabled={disabled}

@@ -181,11 +181,12 @@ export function CitizenCoreSection({
       <div className="grid gap-1 text-sm">
         <Label>Sex</Label>
         <NativeSelect
+          aria-label="Sex"
           disabled={updateMutation.isPending}
           value={sex}
           onChange={(event) => setSex(event.currentTarget.value)}
         >
-          <option value=""></option>
+          <option value="">Unspecified</option>
           <option value="male">Male</option>
           <option value="female">Female</option>
         </NativeSelect>

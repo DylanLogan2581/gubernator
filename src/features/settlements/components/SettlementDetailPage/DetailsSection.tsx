@@ -156,6 +156,7 @@ export function SettlementDetailsSection({
       <Label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Description</span>
         <textarea
+          aria-label="Description"
           className="min-h-[6rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
           maxLength={textInputLimits.settlementDescriptionMax}

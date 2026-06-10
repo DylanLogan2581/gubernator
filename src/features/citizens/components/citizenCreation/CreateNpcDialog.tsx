@@ -296,6 +296,7 @@ export function CreateNpcDialog({
           <div className="grid gap-1 text-sm">
             <Label>Sex</Label>
             <NativeSelect
+              aria-label="Sex"
               disabled={mutation.isPending}
               value={fields.sex}
               onChange={(event) => {
@@ -303,7 +304,7 @@ export function CreateNpcDialog({
                 setFields((current) => ({ ...current, sex: value }));
               }}
             >
-              <option value=""></option>
+              <option value="">Unspecified</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
             </NativeSelect>
@@ -383,6 +384,7 @@ export function CreateNpcDialog({
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
                 value={flavor.contradiction}
+                aria-label="Secret / contradiction"
                 onChange={(event) =>
                   handleFlavorChange("contradiction", event.currentTarget.value)
                 }
@@ -394,6 +396,7 @@ export function CreateNpcDialog({
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
                 value={flavor.goal}
+                aria-label="Goal"
                 onChange={(event) =>
                   handleFlavorChange("goal", event.currentTarget.value)
                 }
@@ -405,6 +408,7 @@ export function CreateNpcDialog({
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
                 value={flavor.flaw}
+                aria-label="Flaw"
                 onChange={(event) =>
                   handleFlavorChange("flaw", event.currentTarget.value)
                 }

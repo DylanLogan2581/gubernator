@@ -158,6 +158,7 @@ export function NationDetailsSection({
         <textarea
           className="min-h-[6rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
+          aria-label="Description"
           id="nation-detail-desc"
           maxLength={textInputLimits.nationDescriptionMax}
           value={description}
