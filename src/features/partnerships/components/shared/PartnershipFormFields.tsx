@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -124,12 +125,9 @@ export function FormError({
     return null;
   }
   return (
-    <p
-      role="alert"
-      className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-    >
-      {fieldError}
-    </p>
+    <Alert variant="destructive">
+      <AlertDescription>{fieldError}</AlertDescription>
+    </Alert>
   );
 }
 

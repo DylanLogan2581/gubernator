@@ -4,6 +4,7 @@ import { useState, type ChangeEvent, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -181,17 +182,14 @@ export function ActivePlayerCharacterAdminDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-          <AlertTriangle
-            className="mt-0.5 size-4 shrink-0"
-            aria-hidden="true"
-          />
-          <p>
+        <Alert variant="warning">
+          <AlertTriangle className="size-4" aria-hidden="true" />
+          <AlertDescription>
             This is a recovery action. Only use it when the user is stuck due to
             an orphaned row or unlinked character. Changes take effect on the
             user&apos;s next session.
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
 
         {isLoading && <LoadingState label="Loading characters…" />}
 

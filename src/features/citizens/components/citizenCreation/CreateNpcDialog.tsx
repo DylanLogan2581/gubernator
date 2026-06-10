@@ -3,6 +3,7 @@ import { Save, Shuffle, UserPlus, Wand2 } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -412,12 +413,9 @@ export function CreateNpcDialog({
           </div>
 
           {fieldError === undefined ? null : (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {fieldError}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{fieldError}</AlertDescription>
+            </Alert>
           )}
 
           <DialogFooter>

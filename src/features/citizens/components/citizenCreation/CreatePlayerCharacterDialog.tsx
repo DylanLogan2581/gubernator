@@ -3,6 +3,7 @@ import { Save, UserPlus } from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -254,12 +255,9 @@ export function CreatePlayerCharacterDialog({
           />
 
           {formError === undefined ? null : (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {formError}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
           )}
 
           <DialogFooter>
