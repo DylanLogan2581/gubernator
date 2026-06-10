@@ -38,6 +38,20 @@ export function PoolEditor({
   const [entryKeys, setEntryKeys] = useState(() =>
     createEntryKeys(entries.length),
   );
+  // Keep the stable key list in sync with externally-driven entry-count
+  // changes during render (React's "adjust state when a prop changes" pattern)
+  // rather than in an effect, which avoids an extra commit and re-render.
+  const [prevEntryCount, setPrevEntryCount] = useState(entries.length);
+  if (prevEntryCount !== entries.length) {
+    setPrevEntryCount(entries.length);
+    setEntryKeys((prev) => {
+      if (prev.length === entries.length) return prev;
+      if (prev.length < entries.length) {
+        return [...prev, ...createEntryKeys(entries.length - prev.length)];
+      }
+      return prev.slice(0, entries.length);
+    });
+  }
   const [pendingFocusIndex, setPendingFocusIndex] = useState<number | null>(
     null,
   );
@@ -55,16 +69,6 @@ export function PoolEditor({
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => 40,
   });
-
-  useEffect(() => {
-    setEntryKeys((prev) => {
-      if (prev.length === entries.length) return prev;
-      if (prev.length < entries.length) {
-        return [...prev, ...createEntryKeys(entries.length - prev.length)];
-      }
-      return prev.slice(0, entries.length);
-    });
-  }, [entries.length]);
 
   useEffect(() => {
     if (pendingFocusIndex !== null && shouldVirtualize) {
