@@ -6,7 +6,7 @@
 // Run with: npm run test:integration
 
 import { createClient } from "@supabase/supabase-js";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Well-known local development constants (from `npx supabase status --output json`).
@@ -15,9 +15,10 @@ import { beforeAll, describe, expect, it } from "vitest";
 const LOCAL_URL = "http://127.0.0.1:54321";
 const LOCAL_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+// `process` comes from the Node/vitest runtime that executes this integration
+// test; declare it for the Deno-targeted edge tsconfig, which ships no node types.
+declare const process: { env: Record<string, string | undefined> };
 const LOCAL_SERVICE_KEY: string =
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   process.env.SUPABASE_SERVICE_ROLE_JWT ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
@@ -59,6 +60,14 @@ const SETTLEMENT_IDS = [
 const CONSTRUCTION_PROJECT_ID = "00000000-0000-0000-000b-000000000001";
 const CONSTRUCTION_PROJECT_INITIAL_PROGRESS = 4;
 const CONSTRUCTION_CITIZEN_ID = "00000000-0000-0000-0000-000000000434";
+
+// Old Mara of the Crossing (citizen 431) is seeded as a deceased NPC with a
+// populated death_cause. The seed-topology pgTAP test asserts she stays dead,
+// so the revive step below must exclude her and her seed state restored exactly.
+const SEED_DECEASED_NPC_ID = "00000000-0000-0000-0000-000000000431";
+const SEED_DECEASED_NPC_DEATH_CAUSE =
+  "Died peacefully during the first winter after the founding.";
+const SEED_DECEASED_NPC_DEATH_CAUSE_CATEGORY = "unknown";
 
 // Sunmere stone quarry: primary resource is stone block.
 // Sable Wren (citizen 413) is the deposit worker for this quarry.
@@ -268,6 +277,158 @@ const SYSTEM_STOCKPILE_SEEDS = [
 // ---------------------------------------------------------------------------
 let accessToken = "";
 
+// Reset world 101 to its canonical turn-0 seed state using the service-role
+// client (bypasses RLS). Idempotent: safe to run before the test (for
+// repeatability) and after it (to leave the shared local database clean for
+// the pgTAP seed-topology tests). Returns a list of failures rather than
+// throwing so callers can aggregate and report them together.
+async function restoreWorldToSeed(): Promise<string[]> {
+  const setupErrors: string[] = [];
+
+  // Delete any prior turn-0 transition for this world.  The FK cascade
+  // removes the associated settlement_turn_snapshots, turn_log_entries, and
+  // notifications so the assertions below start from a clean slate.
+  const { error: delErr } = await svc
+    .from("turn_transitions")
+    .delete()
+    .eq("world_id", WORLD_ID)
+    .eq("from_turn_number", SEED_TURN);
+  if (delErr !== null)
+    setupErrors.push(`delete turn_transitions: ${delErr.message}`);
+
+  // Reset the world turn counter.
+  const { error: wErr } = await svc
+    .from("worlds")
+    .update({ current_turn_number: SEED_TURN })
+    .eq("id", WORLD_ID);
+  if (wErr !== null) setupErrors.push(`update worlds: ${wErr.message}`);
+
+  // Reset construction project progress so the "increased" assertion is reliable.
+  const { error: cErr } = await svc
+    .from("construction_projects")
+    .update({
+      progress_worker_turns: CONSTRUCTION_PROJECT_INITIAL_PROGRESS,
+      status: "in_progress",
+    })
+    .eq("id", CONSTRUCTION_PROJECT_ID);
+  if (cErr !== null)
+    setupErrors.push(`update construction_projects: ${cErr.message}`);
+
+  // Reset deposit remaining quantity.
+  const { error: dErr } = await svc
+    .from("deposit_instance_resources")
+    .update({ remaining_quantity: DEPOSIT_INITIAL_REMAINING })
+    .eq("deposit_instance_id", DEPOSIT_INSTANCE_ID)
+    .eq("resource_id", DEPOSIT_RESOURCE_ID);
+  if (dErr !== null)
+    setupErrors.push(`update deposit_instance_resources: ${dErr.message}`);
+
+  // Reset the Hearthwatch sheep flock count.
+  const { error: mErr } = await svc
+    .from("managed_population_instances")
+    .update({ current_count: MANAGED_POP_INITIAL_COUNT })
+    .eq("id", MANAGED_POP_ID);
+  if (mErr !== null)
+    setupErrors.push(`update managed_population_instances: ${mErr.message}`);
+
+  // Reset non-system resource stockpiles to seed values so repeated runs
+  // don't start with depleted resources.
+  for (const s of NON_SYSTEM_STOCKPILE_SEEDS) {
+    const { error } = await svc
+      .from("settlement_resource_stockpiles")
+      .update({ quantity: s.quantity })
+      .eq("settlement_id", s.settlementId)
+      .eq("resource_id", s.resourceId);
+    if (error !== null) {
+      setupErrors.push(
+        `update settlement_resource_stockpiles: ${error.message}`,
+      );
+      break;
+    }
+  }
+
+  // Resolve food/fresh-water resource IDs by slug (they are generated
+  // dynamically per-world) and reset those stockpiles too.
+  const { data: sysResources, error: srErr } = await svc
+    .from("resources")
+    .select("id,slug")
+    .eq("world_id", WORLD_ID)
+    .eq("is_system_resource", true)
+    .in("slug", ["food", "fresh-water"]);
+  if (srErr !== null) {
+    setupErrors.push(`select resources: ${srErr.message}`);
+  } else if (sysResources === null) {
+    setupErrors.push("select resources: returned null");
+  } else {
+    for (const seed of SYSTEM_STOCKPILE_SEEDS) {
+      const resource = sysResources.find((r) => r.slug === seed.slug);
+      if (resource === undefined) {
+        setupErrors.push(`resource not found: slug=${seed.slug}`);
+        break;
+      }
+      const { error } = await svc
+        .from("settlement_resource_stockpiles")
+        .update({ quantity: seed.quantity })
+        .eq("settlement_id", seed.settlementId)
+        .eq("resource_id", resource.id);
+      if (error !== null) {
+        setupErrors.push(
+          `update settlement_resource_stockpiles (system): ${error.message}`,
+        );
+        break;
+      }
+    }
+  }
+
+  // Revive citizens who died during a run, but leave the seed's intentionally
+  // deceased NPC (Old Mara, 431) dead so the seed-topology invariant holds.
+  const { error: citizenErr } = await svc
+    .from("citizens")
+    .update({
+      status: "alive",
+      death_cause: null,
+      death_cause_category: null,
+    })
+    .eq("world_id", WORLD_ID)
+    .eq("status", "dead")
+    .neq("id", SEED_DECEASED_NPC_ID);
+  if (citizenErr !== null)
+    setupErrors.push(`update citizens: ${citizenErr.message}`);
+
+  // Restore Old Mara's exact seed death state in case a prior run mutated it.
+  const { error: deceasedErr } = await svc
+    .from("citizens")
+    .update({
+      status: "dead",
+      death_cause: SEED_DECEASED_NPC_DEATH_CAUSE,
+      death_cause_category: SEED_DECEASED_NPC_DEATH_CAUSE_CATEGORY,
+    })
+    .eq("id", SEED_DECEASED_NPC_ID);
+  if (deceasedErr !== null)
+    setupErrors.push(`restore deceased seed NPC: ${deceasedErr.message}`);
+
+  // Restore the construction pool assignment for Lyss Thornwick (434) in
+  // case it was cleared when the worker died in a prior run.
+  const { error: assignErr } = await svc.from("citizen_assignments").upsert(
+    {
+      citizen_id: CONSTRUCTION_CITIZEN_ID,
+      assignment_type: "construction_project",
+      job_id: null,
+      construction_project_id: null,
+      deposit_instance_id: null,
+      managed_population_instance_id: null,
+      trade_route_id: null,
+      trade_route_end: null,
+      assigned_on_turn_number: SEED_TURN,
+    },
+    { onConflict: "citizen_id" },
+  );
+  if (assignErr !== null)
+    setupErrors.push(`upsert citizen_assignments: ${assignErr.message}`);
+
+  return setupErrors;
+}
+
 describe("end-turn-simulation integration", () => {
   beforeAll(async () => {
     // Probe local Supabase via the REST root (returns the OpenAPI spec on 200).
@@ -315,137 +476,10 @@ describe("end-turn-simulation integration", () => {
       );
     }
 
-    // Collect errors from DB setup steps so we can report all failures together.
-    const setupErrors: string[] = [];
-
-    // Use the service-role client (bypasses RLS) to reset world 101 to the
-    // canonical turn-0 state so the test is repeatable after previous runs.
-    // Delete any prior turn-0 transition for this world.  The FK cascade
-    // removes the associated settlement_turn_snapshots, turn_log_entries, and
-    // notifications so the assertions below start from a clean slate.
-    const { error: delErr } = await svc
-      .from("turn_transitions")
-      .delete()
-      .eq("world_id", WORLD_ID)
-      .eq("from_turn_number", SEED_TURN);
-    if (delErr !== null)
-      setupErrors.push(`delete turn_transitions: ${delErr.message}`);
-
-    // Reset the world turn counter.
-    const { error: wErr } = await svc
-      .from("worlds")
-      .update({ current_turn_number: SEED_TURN })
-      .eq("id", WORLD_ID);
-    if (wErr !== null) setupErrors.push(`update worlds: ${wErr.message}`);
-
-    // Reset construction project progress so the "increased" assertion is reliable.
-    const { error: cErr } = await svc
-      .from("construction_projects")
-      .update({
-        progress_worker_turns: CONSTRUCTION_PROJECT_INITIAL_PROGRESS,
-        status: "in_progress",
-      })
-      .eq("id", CONSTRUCTION_PROJECT_ID);
-    if (cErr !== null)
-      setupErrors.push(`update construction_projects: ${cErr.message}`);
-
-    // Reset deposit remaining quantity.
-    const { error: dErr } = await svc
-      .from("deposit_instance_resources")
-      .update({ remaining_quantity: DEPOSIT_INITIAL_REMAINING })
-      .eq("deposit_instance_id", DEPOSIT_INSTANCE_ID)
-      .eq("resource_id", DEPOSIT_RESOURCE_ID);
-    if (dErr !== null)
-      setupErrors.push(`update deposit_instance_resources: ${dErr.message}`);
-
-    // Reset the Hearthwatch sheep flock count.
-    const { error: mErr } = await svc
-      .from("managed_population_instances")
-      .update({ current_count: MANAGED_POP_INITIAL_COUNT })
-      .eq("id", MANAGED_POP_ID);
-    if (mErr !== null)
-      setupErrors.push(`update managed_population_instances: ${mErr.message}`);
-
-    // Reset non-system resource stockpiles to seed values so repeated runs
-    // don't start with depleted resources.
-    for (const s of NON_SYSTEM_STOCKPILE_SEEDS) {
-      const { error } = await svc
-        .from("settlement_resource_stockpiles")
-        .update({ quantity: s.quantity })
-        .eq("settlement_id", s.settlementId)
-        .eq("resource_id", s.resourceId);
-      if (error !== null) {
-        setupErrors.push(
-          `update settlement_resource_stockpiles: ${error.message}`,
-        );
-        break;
-      }
-    }
-
-    // Resolve food/fresh-water resource IDs by slug (they are generated
-    // dynamically per-world) and reset those stockpiles too.
-    const { data: sysResources, error: srErr } = await svc
-      .from("resources")
-      .select("id,slug")
-      .eq("world_id", WORLD_ID)
-      .eq("is_system_resource", true)
-      .in("slug", ["food", "fresh-water"]);
-    if (srErr !== null) {
-      setupErrors.push(`select resources: ${srErr.message}`);
-    } else if (sysResources === null) {
-      setupErrors.push("select resources: returned null");
-    } else {
-      for (const seed of SYSTEM_STOCKPILE_SEEDS) {
-        const resource = sysResources.find((r) => r.slug === seed.slug);
-        if (resource === undefined) {
-          setupErrors.push(`resource not found: slug=${seed.slug}`);
-          break;
-        }
-        const { error } = await svc
-          .from("settlement_resource_stockpiles")
-          .update({ quantity: seed.quantity })
-          .eq("settlement_id", seed.settlementId)
-          .eq("resource_id", resource.id);
-        if (error !== null) {
-          setupErrors.push(
-            `update settlement_resource_stockpiles (system): ${error.message}`,
-          );
-          break;
-        }
-      }
-    }
-
-    // Restore citizens who may have died in a prior run to alive status.
-    const { error: citizenErr } = await svc
-      .from("citizens")
-      .update({
-        status: "alive",
-        death_cause: null,
-        death_cause_category: null,
-      })
-      .eq("world_id", WORLD_ID)
-      .eq("status", "dead");
-    if (citizenErr !== null)
-      setupErrors.push(`update citizens: ${citizenErr.message}`);
-
-    // Restore the construction pool assignment for Lyss Thornwick (434) in
-    // case it was cleared when the worker died in a prior run.
-    const { error: assignErr } = await svc.from("citizen_assignments").upsert(
-      {
-        citizen_id: CONSTRUCTION_CITIZEN_ID,
-        assignment_type: "construction_project",
-        job_id: null,
-        construction_project_id: null,
-        deposit_instance_id: null,
-        managed_population_instance_id: null,
-        trade_route_id: null,
-        trade_route_end: null,
-        assigned_on_turn_number: SEED_TURN,
-      },
-      { onConflict: "citizen_id" },
-    );
-    if (assignErr !== null)
-      setupErrors.push(`upsert citizen_assignments: ${assignErr.message}`);
+    // Restore world 101 to its canonical turn-0 seed state. Runs here so the
+    // test is repeatable after previous runs, and again in afterAll so the
+    // shared local database is left clean for the pgTAP seed-topology tests.
+    const setupErrors = await restoreWorldToSeed();
 
     // Sign in as the seeded super admin and capture the JWT.
     const { data: authData, error: authErr } =
@@ -587,4 +621,15 @@ describe("end-turn-simulation integration", () => {
       .eq("world_id", WORLD_ID);
     expect(notifCount).toBeGreaterThanOrEqual(1);
   }, 60_000);
+
+  // Leave the shared local database in its canonical seed state so the pgTAP
+  // seed-topology tests (and any later run) see an unmutated world 101.
+  afterAll(async () => {
+    const teardownErrors = await restoreWorldToSeed();
+    if (teardownErrors.length > 0) {
+      throw new Error(
+        `Integration test teardown failed:\n${teardownErrors.map((e) => `  - ${e}`).join("\n")}`,
+      );
+    }
+  }, 30_000);
 });
