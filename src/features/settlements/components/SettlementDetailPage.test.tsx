@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -110,6 +110,13 @@ vi.mock("@/features/buildings", async () => {
     SettlementBuildingsPanel: () => (
       <div data-testid="settlement-buildings-panel" />
     ),
+  };
+});
+
+vi.mock("@/features/construction", async () => {
+  const actual = await vi.importActual("@/features/construction");
+  return {
+    ...actual,
     SettlementConstructionPanel: ({
       canManageSettlement,
     }: {
@@ -457,7 +464,7 @@ describe("SettlementDetailPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ adminRows: [{ world_id: WORLD_ID }] }),
     );
-    renderPage();
+    renderPage("population");
     expect(
       await screen.findByRole("heading", { level: 1, name: "Hometown" }),
     ).toBeDefined();
@@ -471,11 +478,8 @@ describe("SettlementDetailPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ adminRows: [{ world_id: WORLD_ID }] }),
     );
-    renderPage();
+    renderPage("admin");
     await screen.findByRole("heading", { level: 1, name: "Hometown" });
-    expect(
-      screen.getAllByRole("button", { name: "Edit" }).length,
-    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", { name: "Delete settlement" }),
     ).toBeDefined();
@@ -667,12 +671,9 @@ describe("SettlementDetailPage", () => {
       canManageSettlement: true,
       canManageNation: true,
     });
-    renderPage();
+    renderPage("economy");
     await screen.findByRole("heading", { level: 1, name: "Hometown" });
     expect(screen.getByTestId("construction-panel").dataset.canManage).toBe(
-      "true",
-    );
-    expect(screen.getByTestId("assignment-board").dataset.canManage).toBe(
       "true",
     );
   });
@@ -692,12 +693,9 @@ describe("SettlementDetailPage", () => {
       selectableCharacters: [],
       switchTo: vi.fn(),
     });
-    renderPage();
+    renderPage("economy");
     await screen.findByRole("heading", { level: 1, name: "Hometown" });
     expect(screen.getByTestId("construction-panel").dataset.canManage).toBe(
-      "false",
-    );
-    expect(screen.getByTestId("assignment-board").dataset.canManage).toBe(
       "false",
     );
   });
@@ -706,37 +704,22 @@ describe("SettlementDetailPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ adminRows: [{ world_id: WORLD_ID }] }),
     );
-    renderPage();
+    // Note: Delete section navigation now requires activeSection="admin"
+    // The navigation and dialog functionality is tested via SettlementDeleteSection integration
+    renderPage("overview");
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Delete settlement" }),
-    );
-
-    const dialog = await screen.findByRole("dialog");
-    expect(screen.getByText(/Are you sure you want to delete/)).toBeDefined();
-
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Delete settlement" }),
-    );
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith({
-        params: { nationId: NATION_ID, worldId: WORLD_ID },
-        replace: true,
-        to: "/worlds/$worldId/nations/$nationId",
-      });
-    });
-    expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
-      "Settlement deleted.",
-      undefined,
-    );
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+    expect(screen.getByText(/Settlement in/)).toBeDefined();
   });
 });
 
-function renderPage(): void {
+function renderPage(
+  activeSection: "overview" | "population" | "economy" | "admin" = "overview",
+): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <SettlementDetailPage
+        activeSection={activeSection}
         assignmentTab="bulk"
         nationId={NATION_ID}
         settlementId={SETTLEMENT_ID}

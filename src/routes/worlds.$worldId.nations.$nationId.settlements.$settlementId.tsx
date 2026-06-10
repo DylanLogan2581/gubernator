@@ -8,29 +8,40 @@ import { SettlementDetailPage } from "@/features/settlements";
 import type { JSX } from "react";
 
 const ASSIGNMENT_TABS = ["bulk", "per-target"] as const;
+const SECTION_TABS = ["overview", "population", "economy", "admin"] as const;
 
 type AssignmentTab = (typeof ASSIGNMENT_TABS)[number];
+type SectionTab = (typeof SECTION_TABS)[number];
 
 const DEFAULT_ASSIGNMENT_TAB: AssignmentTab = "bulk";
+const DEFAULT_SECTION_TAB: SectionTab = "overview";
 
-const assignmentSearchSchema = z.object({
+const settlementDetailSearchSchema = z.object({
   assignmentTab: z.enum(ASSIGNMENT_TABS).optional(),
+  section: z.enum(SECTION_TABS).optional(),
 });
 
-function parseAssignmentSearch(search: unknown): {
+function parseSettlementDetailSearch(search: unknown): {
   readonly assignmentTab?: AssignmentTab;
+  readonly section?: SectionTab;
 } {
-  const result = assignmentSearchSchema.safeParse(search);
+  const result = settlementDetailSearchSchema.safeParse(search);
   return {
     assignmentTab: result.success
       ? (result.data.assignmentTab ?? DEFAULT_ASSIGNMENT_TAB)
       : DEFAULT_ASSIGNMENT_TAB,
+    section: result.success
+      ? (result.data.section ?? DEFAULT_SECTION_TAB)
+      : DEFAULT_SECTION_TAB,
   };
 }
 
 function SettlementDetailRoute(): JSX.Element {
   const { nationId, settlementId, worldId } = Route.useParams();
-  const { assignmentTab = DEFAULT_ASSIGNMENT_TAB } = Route.useSearch();
+  const {
+    assignmentTab = DEFAULT_ASSIGNMENT_TAB,
+    section = DEFAULT_SECTION_TAB,
+  } = Route.useSearch();
 
   return (
     <SettlementDetailPage
@@ -38,6 +49,7 @@ function SettlementDetailRoute(): JSX.Element {
       nationId={nationId}
       settlementId={settlementId}
       worldId={worldId}
+      activeSection={section}
     />
   );
 }
@@ -52,7 +64,7 @@ export const Route = createFileRoute(
     }),
   component: SettlementDetailRoute,
   pendingComponent: SettlementDetailPendingRoute,
-  validateSearch: parseAssignmentSearch,
+  validateSearch: parseSettlementDetailSearch,
 });
 
 function SettlementDetailPendingRoute(): JSX.Element {
