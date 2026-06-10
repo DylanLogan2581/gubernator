@@ -2,6 +2,19 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+/**
+ * DecimalValue = number (IEEE-754 float64).
+ *
+ * The name "Decimal" is historical and does NOT imply exact decimal arithmetic.
+ * All operations use standard float64 operators (+, -, *, /).
+ * Precision is guaranteed only at the database boundary: all quantities stored
+ * in the DB use numeric(18,4), which rounds/clamps on write (see apply_turn_transition).
+ * This constrains float noise to < 1 ULP at the 4dp scale, eliminating the need
+ * for a decimal library.
+ *
+ * When comparing quantities for drift or equality checks on the JS side, round to
+ * 4 decimal places or use a small tolerance rather than exact float equality.
+ */
 export type DecimalValue = number;
 
 export function toDecimal(value: number): DecimalValue {
@@ -47,8 +60,10 @@ export function clampDecimal(
  * output sums to exactly `amount`. Zero-weight entries receive 0. When all
  * weights are zero, every share is 0.
  *
- * The floating-point residual (typically < 1e-14) is absorbed into the last
- * non-zero entry so the invariant holds without rounding loops.
+ * Uses float64 arithmetic. The floating-point residual (typically < 1e-14)
+ * is absorbed into the last non-zero entry so the invariant holds without
+ * rounding loops. This confirms the float-based implementation: no decimal
+ * library is used.
  */
 export function proportionalShare(
   amount: number,
@@ -108,4 +123,13 @@ export function clampToRange(value: number, min: number, max: number): number {
 export function formatStockpileForDisplay(value: number): string {
   if (Number.isInteger(value)) return String(value);
   return parseFloat(value.toFixed(2)).toString();
+}
+
+/**
+ * Rounds a float64 value to the database scale (4 decimal places).
+ * Use for JS-side quantity comparisons that feed drift or equality checks,
+ * to match the numeric(18,4) precision boundary where values are stored.
+ */
+export function roundToDatabaseScale(value: DecimalValue): DecimalValue {
+  return Math.round(value * 10000) / 10000;
 }
