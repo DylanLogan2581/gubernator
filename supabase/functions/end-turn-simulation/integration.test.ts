@@ -1,7 +1,7 @@
 // Integration test: runs end-turn-simulation against the local seeded Verdant Reach world.
 //
 // Requires a running local Supabase instance (`npx supabase start`) with `seed.sql` loaded.
-// Automatically skips when the local API is unreachable so it never blocks CI.
+// Fails if the local API is unreachable.
 //
 // Run with: npm run test:integration
 
@@ -266,21 +266,28 @@ const SYSTEM_STOCKPILE_SEEDS = [
 // ---------------------------------------------------------------------------
 // Test state set up by beforeAll
 // ---------------------------------------------------------------------------
-let available = false;
 let accessToken = "";
 
 describe("end-turn-simulation integration", () => {
   beforeAll(async () => {
     // Probe local Supabase via the REST root (returns the OpenAPI spec on 200).
-    // Skip the entire suite when the local API is not reachable.
+    // Fail if the local API is not reachable.
+    let probe: Response;
     try {
-      const probe = await fetch(`${LOCAL_URL}/rest/v1/`, {
+      probe = await fetch(`${LOCAL_URL}/rest/v1/`, {
         headers: { apikey: LOCAL_ANON_KEY },
         signal: AbortSignal.timeout(2_000),
       });
-      if (!probe.ok) return;
-    } catch {
-      return;
+    } catch (error) {
+      throw new Error(`Supabase REST API probe failed: ${String(error)}`, {
+        cause: error,
+      });
+    }
+    if (!probe.ok) {
+      const responseText = await probe.text();
+      throw new Error(
+        `Supabase REST API probe failed: ${probe.status} ${probe.statusText} ${responseText}`,
+      );
     }
 
     // Probe the edge function itself. If the local API is reachable but the
@@ -308,6 +315,9 @@ describe("end-turn-simulation integration", () => {
       );
     }
 
+    // Collect errors from DB setup steps so we can report all failures together.
+    const setupErrors: string[] = [];
+
     // Use the service-role client (bypasses RLS) to reset world 101 to the
     // canonical turn-0 state so the test is repeatable after previous runs.
     // Delete any prior turn-0 transition for this world.  The FK cascade
@@ -318,14 +328,15 @@ describe("end-turn-simulation integration", () => {
       .delete()
       .eq("world_id", WORLD_ID)
       .eq("from_turn_number", SEED_TURN);
-    if (delErr !== null) return;
+    if (delErr !== null)
+      setupErrors.push(`delete turn_transitions: ${delErr.message}`);
 
     // Reset the world turn counter.
     const { error: wErr } = await svc
       .from("worlds")
       .update({ current_turn_number: SEED_TURN })
       .eq("id", WORLD_ID);
-    if (wErr !== null) return;
+    if (wErr !== null) setupErrors.push(`update worlds: ${wErr.message}`);
 
     // Reset construction project progress so the "increased" assertion is reliable.
     const { error: cErr } = await svc
@@ -335,7 +346,8 @@ describe("end-turn-simulation integration", () => {
         status: "in_progress",
       })
       .eq("id", CONSTRUCTION_PROJECT_ID);
-    if (cErr !== null) return;
+    if (cErr !== null)
+      setupErrors.push(`update construction_projects: ${cErr.message}`);
 
     // Reset deposit remaining quantity.
     const { error: dErr } = await svc
@@ -343,14 +355,16 @@ describe("end-turn-simulation integration", () => {
       .update({ remaining_quantity: DEPOSIT_INITIAL_REMAINING })
       .eq("deposit_instance_id", DEPOSIT_INSTANCE_ID)
       .eq("resource_id", DEPOSIT_RESOURCE_ID);
-    if (dErr !== null) return;
+    if (dErr !== null)
+      setupErrors.push(`update deposit_instance_resources: ${dErr.message}`);
 
     // Reset the Hearthwatch sheep flock count.
     const { error: mErr } = await svc
       .from("managed_population_instances")
       .update({ current_count: MANAGED_POP_INITIAL_COUNT })
       .eq("id", MANAGED_POP_ID);
-    if (mErr !== null) return;
+    if (mErr !== null)
+      setupErrors.push(`update managed_population_instances: ${mErr.message}`);
 
     // Reset non-system resource stockpiles to seed values so repeated runs
     // don't start with depleted resources.
@@ -360,7 +374,12 @@ describe("end-turn-simulation integration", () => {
         .update({ quantity: s.quantity })
         .eq("settlement_id", s.settlementId)
         .eq("resource_id", s.resourceId);
-      if (error !== null) return;
+      if (error !== null) {
+        setupErrors.push(
+          `update settlement_resource_stockpiles: ${error.message}`,
+        );
+        break;
+      }
     }
 
     // Resolve food/fresh-water resource IDs by slug (they are generated
@@ -371,17 +390,29 @@ describe("end-turn-simulation integration", () => {
       .eq("world_id", WORLD_ID)
       .eq("is_system_resource", true)
       .in("slug", ["food", "fresh-water"]);
-    if (srErr !== null || sysResources === null) return;
-
-    for (const seed of SYSTEM_STOCKPILE_SEEDS) {
-      const resource = sysResources.find((r) => r.slug === seed.slug);
-      if (resource === undefined) return;
-      const { error } = await svc
-        .from("settlement_resource_stockpiles")
-        .update({ quantity: seed.quantity })
-        .eq("settlement_id", seed.settlementId)
-        .eq("resource_id", resource.id);
-      if (error !== null) return;
+    if (srErr !== null) {
+      setupErrors.push(`select resources: ${srErr.message}`);
+    } else if (sysResources === null) {
+      setupErrors.push("select resources: returned null");
+    } else {
+      for (const seed of SYSTEM_STOCKPILE_SEEDS) {
+        const resource = sysResources.find((r) => r.slug === seed.slug);
+        if (resource === undefined) {
+          setupErrors.push(`resource not found: slug=${seed.slug}`);
+          break;
+        }
+        const { error } = await svc
+          .from("settlement_resource_stockpiles")
+          .update({ quantity: seed.quantity })
+          .eq("settlement_id", seed.settlementId)
+          .eq("resource_id", resource.id);
+        if (error !== null) {
+          setupErrors.push(
+            `update settlement_resource_stockpiles (system): ${error.message}`,
+          );
+          break;
+        }
+      }
     }
 
     // Restore citizens who may have died in a prior run to alive status.
@@ -394,7 +425,8 @@ describe("end-turn-simulation integration", () => {
       })
       .eq("world_id", WORLD_ID)
       .eq("status", "dead");
-    if (citizenErr !== null) return;
+    if (citizenErr !== null)
+      setupErrors.push(`update citizens: ${citizenErr.message}`);
 
     // Restore the construction pool assignment for Lyss Thornwick (434) in
     // case it was cleared when the worker died in a prior run.
@@ -412,7 +444,8 @@ describe("end-turn-simulation integration", () => {
       },
       { onConflict: "citizen_id" },
     );
-    if (assignErr !== null) return;
+    if (assignErr !== null)
+      setupErrors.push(`upsert citizen_assignments: ${assignErr.message}`);
 
     // Sign in as the seeded super admin and capture the JWT.
     const { data: authData, error: authErr } =
@@ -420,18 +453,23 @@ describe("end-turn-simulation integration", () => {
         email: SUPER_ADMIN_EMAIL,
         password: SUPER_ADMIN_PASSWORD,
       });
-    if (authErr !== null || authData.session === null) return;
-    accessToken = authData.session.access_token;
+    if (authErr !== null) {
+      setupErrors.push(`sign in: ${authErr.message}`);
+    } else if (authData.session === null) {
+      setupErrors.push("sign in: session is null");
+    } else {
+      accessToken = authData.session.access_token;
+    }
 
-    available = true;
+    // Fail if any setup errors occurred.
+    if (setupErrors.length > 0) {
+      throw new Error(
+        `Integration test setup failed:\n${setupErrors.map((e) => `  - ${e}`).join("\n")}`,
+      );
+    }
   }, 30_000);
 
   it("runs end-to-end against the seeded Verdant Reach world and satisfies all assertions", async () => {
-    if (!available) {
-      // Local Supabase is not running — skip gracefully.
-      return;
-    }
-
     // -----------------------------------------------------------------------
     // 1. Call the edge function as the seeded super admin.
     // -----------------------------------------------------------------------

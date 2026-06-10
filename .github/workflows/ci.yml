@@ -148,3 +148,6 @@ jobs:
 
       - name: Run database test suite
         run: npm run test:db
+
+      - name: Run integration tests against seeded database
+        run: npm run test:integration
