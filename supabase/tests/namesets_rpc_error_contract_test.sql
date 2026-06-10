@@ -41,18 +41,16 @@ values
   );
 
 insert into
-  public.worlds (id, owner_id, name, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f1000000-0000-0000-0000-000000000001',
-    'f0000000-0000-0000-0000-000000000001',
     'Namesets Test World A',
     'private',
     'active'
   ),
   (
     'f1000000-0000-0000-0000-000000000002',
-    'f0000000-0000-0000-0000-000000000001',
     'Namesets Test World B',
     'private',
     'active'

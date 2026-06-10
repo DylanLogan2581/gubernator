@@ -548,7 +548,7 @@ select
             jsonb_build_array(
               jsonb_build_object(
                 'resourceId', 'f3600000-0000-0000-0000-000000000002',
-                'delta', 10,
+                'delta', -10,
                 'remainingQuantityBefore', 100
               )
             )

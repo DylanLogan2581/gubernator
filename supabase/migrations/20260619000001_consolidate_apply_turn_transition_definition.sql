@@ -674,12 +674,6 @@ begin
         and c.user_id is not null
         and u.status = 'active'
       union
-      select w.owner_id
-      from public.worlds w
-      inner join public.users u on u.id = w.owner_id
-      where w.id = p_world_id
-        and u.status = 'active'
-      union
       select wa.user_id
       from public.world_admins wa
       inner join public.users u on u.id = wa.user_id
@@ -1089,6 +1083,14 @@ declare
   v_resource_id uuid;
   v_quantity_before numeric(18, 4);
   v_actual_quantity numeric(18, 4);
+  -- §H10a/§H10b deposit & managed-pop re-validation variables (issue #670)
+  v_resource_delta jsonb;
+  v_deposit_instance_id uuid;
+  v_remaining_quantity_before numeric(18, 4);
+  v_actual_remaining_quantity numeric(18, 4);
+  v_managed_pop_instance_id uuid;
+  v_current_count_before numeric(18, 4);
+  v_actual_current_count numeric(18, 4);
   -- §C36 id-sets per entity table
   v_valid_settlement_ids uuid[];
   v_valid_resource_ids uuid[];
@@ -1379,6 +1381,61 @@ begin
       raise exception 'state diverged: stockpile (%,%) was % but payload claimed %',
         v_settlement_id, v_resource_id, v_actual_quantity, v_quantity_before
         using errcode = 'P0001', hint = 'state_drifted';
+    end if;
+  end loop;
+
+  -- §H10a: Deposit resource remainingQuantityBefore re-validation (issue #670).
+  for v_update in
+    select value
+    from jsonb_array_elements(coalesce(p_payload -> 'depositUpdates', '[]'::jsonb))
+  loop
+    v_deposit_instance_id := (v_update ->> 'depositInstanceId')::uuid;
+
+    for v_resource_delta in
+      select value
+      from jsonb_array_elements(coalesce(v_update -> 'resourceDeltas', '[]'::jsonb))
+    loop
+      -- Only re-validate when the payload explicitly carries the before-value;
+      -- omitting it opts out of drift detection for that delta.
+      if v_resource_delta ? 'remainingQuantityBefore' then
+        v_resource_id             := (v_resource_delta ->> 'resourceId')::uuid;
+        v_remaining_quantity_before := (v_resource_delta ->> 'remainingQuantityBefore')::numeric;
+
+        select dir.remaining_quantity
+        into v_actual_remaining_quantity
+        from public.deposit_instance_resources dir
+        where dir.deposit_instance_id = v_deposit_instance_id
+          and dir.resource_id = v_resource_id;
+
+        if found and v_actual_remaining_quantity <> v_remaining_quantity_before then
+          raise exception 'state diverged: deposit resource (%,%) was % but payload claimed %',
+            v_deposit_instance_id, v_resource_id, v_actual_remaining_quantity, v_remaining_quantity_before
+            using errcode = 'P0001', hint = 'state_drifted';
+        end if;
+      end if;
+    end loop;
+  end loop;
+
+  -- §H10b: Managed-population currentCountBefore re-validation (issue #670).
+  for v_update in
+    select value
+    from jsonb_array_elements(coalesce(p_payload -> 'managedPopulationUpdates', '[]'::jsonb))
+  loop
+    -- Only re-validate when the payload explicitly carries the before-value.
+    if v_update ? 'currentCountBefore' then
+      v_managed_pop_instance_id := (v_update ->> 'managedPopulationInstanceId')::uuid;
+      v_current_count_before    := (v_update ->> 'currentCountBefore')::numeric;
+
+      select mpi.current_count
+      into v_actual_current_count
+      from public.managed_population_instances mpi
+      where mpi.id = v_managed_pop_instance_id;
+
+      if found and v_actual_current_count <> v_current_count_before then
+        raise exception 'state diverged: managed-population % was % but payload claimed %',
+          v_managed_pop_instance_id, v_actual_current_count, v_current_count_before
+          using errcode = 'P0001', hint = 'state_drifted';
+      end if;
     end if;
   end loop;
 

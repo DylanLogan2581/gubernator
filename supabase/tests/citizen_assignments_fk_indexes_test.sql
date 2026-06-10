@@ -104,7 +104,7 @@ select
           'citizen_assignments_managed_population_instance_id_idx',
           'citizen_assignments_trade_route_id_idx'
         )
-        and indexdef like '%is not null%'
+        and indexdef ilike '%is not null%'
     ),
     5,
     'All 5 FK indexes are partial (WHERE <col> IS NOT NULL)'

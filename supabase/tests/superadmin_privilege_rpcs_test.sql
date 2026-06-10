@@ -72,14 +72,14 @@ where
     'bb000000-0000-0000-0000-000000000002'
   );
 
--- Create a test world owned by sa_user1.
+-- Create a test world (owner_id column was removed; world admin authority
+-- now lives entirely in public.world_admins).
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'bb100000-0000-0000-0000-000000000001',
     'Test World SA',
-    'bb000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

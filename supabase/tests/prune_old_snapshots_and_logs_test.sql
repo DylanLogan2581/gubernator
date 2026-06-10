@@ -8,7 +8,7 @@
 begin;
 
 select
-  plan (11);
+  plan (10);
 
 -- ---------------------------------------------------------------------------
 -- Setup: super_admin user
@@ -39,6 +39,12 @@ set
   is_super_admin = true
 where
   id = 'c4100000-0000-0000-0000-000000000001';
+
+-- prune_old_snapshots_and_logs requires world_admin or super_admin. Assume the
+-- super_admin identity via jwt claims so is_super_admin() resolves true. Role
+-- stays postgres so fixture inserts and verification selects bypass RLS.
+set
+  local "request.jwt.claims" = '{"sub":"c4100000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 -- World with current_turn_number = 110
 insert into
@@ -73,17 +79,19 @@ values
 
 -- Resources
 insert into
-  public.resources (id, name, rarity)
+  public.resources (id, world_id, name, slug)
 values
   (
     'c4500000-0000-0000-0000-000000000001',
+    'c4200000-0000-0000-0000-000000000001',
     'Resource 1',
-    'common'
+    'resource-1'
   ),
   (
     'c4500000-0000-0000-0000-000000000002',
+    'c4200000-0000-0000-0000-000000000001',
     'Resource 2',
-    'common'
+    'resource-2'
   );
 
 -- ---------------------------------------------------------------------------
@@ -205,14 +213,20 @@ select
 -- ---------------------------------------------------------------------------
 -- Test 1: Prune with retention_turns=50 (cutoff=60)
 -- Should prune turns 10, 30, 50; keep 70, 90, 100, 110
+-- A single prune call deletes settlement snapshots, resource snapshots, and log
+-- entries together, so capture its result once and assert against each field.
 -- ---------------------------------------------------------------------------
+create temp table prune_result_t1 as
+select
+  prune_old_snapshots_and_logs ('c4200000-0000-0000-0000-000000000001', 50) as result;
+
 select
   is (
     (
       select
-        (
-          prune_old_snapshots_and_logs ('c4200000-0000-0000-0000-000000000001', 50) -> 'snapshots_deleted'
-        )::int
+        (result -> 'snapshots_deleted')::int
+      from
+        prune_result_t1
     ),
     3::int,
     'Prune with retention=50: deletes 3 settlement snapshots (turns 10, 30, 50)'
@@ -222,9 +236,9 @@ select
   is (
     (
       select
-        (
-          prune_old_snapshots_and_logs ('c4200000-0000-0000-0000-000000000001', 50) -> 'resource_snapshots_deleted'
-        )::int
+        (result -> 'resource_snapshots_deleted')::int
+      from
+        prune_result_t1
     ),
     6::int,
     'Prune with retention=50: deletes 6 resource snapshots (2 per turn × 3 turns)'
@@ -334,10 +348,8 @@ select
   is (
     (
       select
-        (
-          prune_old_snapshots_and_logs ('c4200000-0000-0000-0000-000000000002', 100) -> 'message'
-        )::text
-    )::text,
+        prune_old_snapshots_and_logs ('c4200000-0000-0000-0000-000000000002', 100) ->> 'message'
+    ),
     'No pruning: world has < 100 turns',
     'Prune with retention > current_turn: returns early with message'
   );

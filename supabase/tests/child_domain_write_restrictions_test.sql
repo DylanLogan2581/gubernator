@@ -19,7 +19,7 @@
 begin;
 
 select
-  plan (21);
+  plan (22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -321,12 +321,23 @@ select
     $test$
     update public.settlements
     set name = 'Renamed Settlement',
-        description = 'New description',
-        coord_x = 1.25,
-        coord_z = -3.5
+        description = 'New description'
     where id = '83000000-0000-0000-0000-000000000001'
   $test$,
-    'admin can update settlements.name/description/coord_x/coord_z'
+    'admin can update settlements.name/description directly'
+  );
+
+-- Direct coord_x/coord_z writes are blocked by the column grant restriction;
+-- coordinate edits go through the update_settlement_coordinates SECURITY DEFINER
+-- function (see 20260525000002_grant_manager_settlement_updates.sql).
+select
+  lives_ok (
+    $test$
+    select public.update_settlement_coordinates (
+      '83000000-0000-0000-0000-000000000001'::uuid, 1.25, -3.5
+    )
+  $test$,
+    'admin can update settlements.coord_x/coord_z via update_settlement_coordinates'
   );
 
 -- ===========================================================================

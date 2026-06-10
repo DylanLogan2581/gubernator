@@ -71,18 +71,10 @@ where
 --   World A (turn 5, active): the world the attacker is admin of
 --   World B (turn 5, active): the foreign world whose entities should be protected
 insert into
-  public.worlds (
-    id,
-    owner_id,
-    name,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     'e1200000-0000-0000-0000-000000000001',
-    'e1100000-0000-0000-0000-000000000001',
     'ATTCW World A',
     5,
     'private',
@@ -90,7 +82,6 @@ values
   ),
   (
     'e1200000-0000-0000-0000-000000000002',
-    'e1100000-0000-0000-0000-000000000001',
     'ATTCW World B',
     5,
     'private',

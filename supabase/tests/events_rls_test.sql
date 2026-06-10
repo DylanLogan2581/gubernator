@@ -213,30 +213,48 @@ select
     'non-admin cannot insert events into inaccessible world'
   );
 
+-- UPDATE/DELETE under RLS are silent no-ops when the row is not visible to the
+-- writer (USING is false), not permission errors. Attempt the writes, then
+-- verify as a privileged role that the row is unchanged and still present.
+update public.events
+set
+  name = 'Outsider Update'
+where
+  id = 'e3000000-0000-0000-0000-000000000001';
+
+delete from public.events
+where
+  id = 'e3000000-0000-0000-0000-000000000001';
+
+reset role;
+
 select
-  throws_ok (
-    $test$
-    update public.events
-    set name = 'Outsider Update'
-    where id = 'e3000000-0000-0000-0000-000000000001'
-  $test$,
-    '42501',
-    null,
+  is (
+    (
+      select
+        name
+      from
+        public.events
+      where
+        id = 'e3000000-0000-0000-0000-000000000001'
+    ),
+    'Event A1',
     'non-admin cannot update events in inaccessible world'
   );
 
 select
-  throws_ok (
-    $test$
-    delete from public.events
-    where id = 'e3000000-0000-0000-0000-000000000001'
-  $test$,
-    '42501',
-    null,
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.events
+      where
+        id = 'e3000000-0000-0000-0000-000000000001'
+    ),
+    1,
     'non-admin cannot delete events in inaccessible world'
   );
-
-reset role;
 
 -- ===========================================================================
 -- WORLD ADMIN (A): full read+write in World A, blocked from World B
@@ -323,30 +341,47 @@ select
     'world-A admin cannot insert events into world-B'
   );
 
+-- UPDATE/DELETE under RLS are silent no-ops across worlds the admin does not
+-- govern; verify the World-B row is unchanged and still present.
+update public.events
+set
+  name = 'World A Admin Hack B'
+where
+  id = 'e3000000-0000-0000-0000-000000000003';
+
+delete from public.events
+where
+  id = 'e3000000-0000-0000-0000-000000000003';
+
+reset role;
+
 select
-  throws_ok (
-    $test$
-    update public.events
-    set name = 'World A Admin Hack B'
-    where id = 'e3000000-0000-0000-0000-000000000003'
-  $test$,
-    '42501',
-    null,
+  is (
+    (
+      select
+        name
+      from
+        public.events
+      where
+        id = 'e3000000-0000-0000-0000-000000000003'
+    ),
+    'Event B1',
     'world-A admin cannot update events in world-B'
   );
 
 select
-  throws_ok (
-    $test$
-    delete from public.events
-    where id = 'e3000000-0000-0000-0000-000000000003'
-  $test$,
-    '42501',
-    null,
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.events
+      where
+        id = 'e3000000-0000-0000-0000-000000000003'
+    ),
+    1,
     'world-A admin cannot delete events in world-B'
   );
-
-reset role;
 
 -- ===========================================================================
 -- SUPER ADMIN: cross-world read+write

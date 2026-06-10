@@ -15,28 +15,34 @@ select
 
 -- Verify the consolidated functions exist with correct signatures
 select
-  exists (
-    select
-      1
-    from
-      information_schema.routines
-    where
-      routine_name = 'apply_turn_transition'
-      and routine_schema = 'public'
-      and routine_type = 'FUNCTION'
-  ) as "apply_turn_transition exists";
+  ok (
+    exists (
+      select
+        1
+      from
+        information_schema.routines
+      where
+        routine_name = 'apply_turn_transition'
+        and routine_schema = 'public'
+        and routine_type = 'FUNCTION'
+    ),
+    'apply_turn_transition function exists'
+  );
 
 select
-  exists (
-    select
-      1
-    from
-      information_schema.routines
-    where
-      routine_name = 'create_citizen_internal'
-      and routine_schema = 'public'
-      and routine_type = 'FUNCTION'
-  ) as "create_citizen_internal exists";
+  ok (
+    exists (
+      select
+        1
+      from
+        information_schema.routines
+      where
+        routine_name = 'create_citizen_internal'
+        and routine_schema = 'public'
+        and routine_type = 'FUNCTION'
+    ),
+    'create_citizen_internal function exists'
+  );
 
 select
   finish ();
