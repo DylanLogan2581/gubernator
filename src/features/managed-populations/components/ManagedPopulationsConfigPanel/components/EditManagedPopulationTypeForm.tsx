@@ -10,7 +10,7 @@ import {
 } from "@/components/shared/ResourceAmountListEditor";
 import { Button } from "@/components/ui/button";
 import type { JobDefinition } from "@/features/jobs";
-/* eslint-disable-next-line import-x/no-internal-modules */
+// eslint-disable-next-line import-x/no-internal-modules
 import {
   softDeleteManagedPopulationTypeMutationOptions,
   updateManagedPopulationTypeMutationOptions,
@@ -89,7 +89,7 @@ export function EditManagedPopulationTypeForm({
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    form.setFieldErrors({});
+    form.clearFieldErrors();
 
     if (form.hasJobError) return;
 
@@ -114,21 +114,7 @@ export function EditManagedPopulationTypeForm({
       updateInput,
     );
     if (!result.success) {
-      const errors: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        const field = String(issue.path[0]);
-        if (!(field in errors)) {
-          errors[field] = issue.message;
-        }
-      }
-      form.setFieldErrors({
-        cullingJobId: errors.cullingJobId,
-        growthRate: errors.growthRate,
-        husbandryJobId: errors.husbandryJobId,
-        husbandryWorkersPerNAnimals: errors.husbandryWorkersPerNAnimals,
-        name: errors.name,
-        slug: errors.slug,
-      });
+      form.setFromZod(result.error);
       return;
     }
 
