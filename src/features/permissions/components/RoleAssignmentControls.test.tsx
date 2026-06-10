@@ -19,7 +19,7 @@ vi.mock("sonner", () => ({
 import type { Citizen } from "@/features/citizens";
 import type { Nation } from "@/features/nations";
 
-import { RoleAssignmentControls } from "./RoleAssignmentControls";
+import { RoleAssignmentControls } from "./RoleAssignmentControls/index";
 
 import type { ReactNode } from "react";
 

@@ -45,7 +45,7 @@ export type {
 } from "./utils/manageAuthority";
 export type { ActiveCharacterSwitcherProps } from "./components/ActiveCharacterSwitcher";
 export type { PlayerCharacterChooserProps } from "./components/PlayerCharacterChooser";
-export type { RoleAssignmentControlsProps } from "./components/RoleAssignmentControls";
+export type { RoleAssignmentControlsProps } from "./components/RoleAssignmentControls/index";
 export type { ActivePlayerCharacterContextValue } from "./context/activePlayerCharacterContext";
 export type { ActivePlayerCharacterProviderProps } from "./context/ActivePlayerCharacterProvider";
 export type {
