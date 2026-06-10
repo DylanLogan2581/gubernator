@@ -1,1 +1,10 @@
 npx lint-staged
+
+# Run database tests when schema/test files are staged. Pre-commit (not
+# pre-push) so the failure lands while an agent/author is still in-session and
+# can fix it, instead of after the commit during push.
+if git diff --cached --name-only --diff-filter=ACMR | \
+     grep -qE '^supabase/(migrations|tests)/'; then
+  echo "🔍 Schema or test files staged. Running database tests..."
+  npm run test:db || exit 1
+fi
