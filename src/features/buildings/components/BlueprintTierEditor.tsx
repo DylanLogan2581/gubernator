@@ -11,6 +11,14 @@ import { useEffect, useState, type FormEvent, type JSX } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   activeJobsByWorldQueryOptions,
@@ -235,14 +243,11 @@ function BlueprintTierEditorContent({
         />
       ) : null}
 
-      {deletingTier !== null ? (
+      {deletingTier !== null && (
         <TierDeleteConfirmDialog
           isPending={deleteMutation.isPending}
+          open={deletingTier !== null}
           tier={deletingTier}
-          onCancel={() => {
-            setDeletingTier(null);
-            deleteMutation.reset();
-          }}
           onConfirm={() => {
             deleteMutation.mutate(
               { tierId: deletingTier.id },
@@ -257,8 +262,14 @@ function BlueprintTierEditorContent({
               },
             );
           }}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeletingTier(null);
+              deleteMutation.reset();
+            }
+          }}
         />
-      ) : null}
+      )}
 
       {canEdit && showCreateForm ? (
         <CreateTierForm
@@ -361,45 +372,30 @@ function TierRow({
 
 function TierDeleteConfirmDialog({
   isPending,
+  open,
   tier,
-  onCancel,
   onConfirm,
+  onOpenChange,
 }: {
   readonly isPending: boolean;
+  readonly open: boolean;
   readonly tier: BuildingBlueprintTier;
-  readonly onCancel: () => void;
   readonly onConfirm: () => void;
+  readonly onOpenChange: (open: boolean) => void;
 }): JSX.Element {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
-      <div
-        aria-labelledby="tier-delete-confirm-title"
-        aria-modal="true"
-        className="grid w-full max-w-md gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="space-y-1">
-          <h3
-            id="tier-delete-confirm-title"
-            className="text-lg font-semibold tracking-normal"
-          >
-            Delete tier
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete{" "}
-            <span className="font-medium">Tier {tier.tierNumber}</span>? This
-            action cannot be undone.
-          </p>
-        </div>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete tier</AlertDialogTitle>
+        </AlertDialogHeader>
+        <AlertDialogDescription>
+          Are you sure you want to delete{" "}
+          <span className="font-medium">Tier {tier.tierNumber}</span>? This
+          action cannot be undone.
+        </AlertDialogDescription>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending}
-            onClick={onCancel}
-          >
-            Cancel
-          </Button>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <Button
             type="button"
             variant="destructive"
@@ -410,8 +406,8 @@ function TierDeleteConfirmDialog({
             {isPending ? "Deleting…" : "Delete tier"}
           </Button>
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
