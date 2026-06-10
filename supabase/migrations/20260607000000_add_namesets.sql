@@ -57,7 +57,7 @@ alter table public.namesets enable row level security;
 
 create policy "namesets_select_world_access" on public.namesets for
 select
-  to authenticated using (public.has_world_access (world_id));
+  to authenticated using (public.current_user_has_world_access (world_id));
 
 create policy "namesets_insert_world_admin" on public.namesets for insert to authenticated
 with
