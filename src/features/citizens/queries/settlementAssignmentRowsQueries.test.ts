@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-
 import type { DepositInstance } from "@/features/deposits";
 
 import { buildSettlementAssignmentRows } from "./settlementAssignmentRowsQueries";
@@ -44,7 +43,7 @@ describe("buildSettlementAssignmentRows", () => {
       managedPopulationInstance: null,
       tradeRoute: null,
       tradeRouteEnd: "origin",
-    } as CitizenAssignment;
+    } as unknown as CitizenAssignment;
 
     const { countMaps } = buildSettlementAssignmentRows(
       [],
@@ -119,7 +118,10 @@ describe("buildSettlementAssignmentRows", () => {
       10,
     );
 
-    expect(rows[0]?.kind).toBe("unassigned");
-    expect(rows[0]?.unassignedNpcCount).toBe(10);
+    const firstRow = rows[0];
+    expect(firstRow?.kind).toBe("unassigned");
+    if (firstRow?.kind === "unassigned") {
+      expect(firstRow.unassignedNpcCount).toBe(10);
+    }
   });
 });
