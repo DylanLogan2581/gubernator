@@ -1039,7 +1039,7 @@ describe("SettlementTradeRoutesPanel", () => {
           p_origin: SETTLEMENT_ID,
           p_destination: DEST_SETTLEMENT_ID,
           p_legs: [
-            { direction: "send", quantity: 25, resourceId: RESOURCE_ID_1 },
+            { direction: "send", quantity: 25, resource_id: RESOURCE_ID_1 },
           ],
           p_proposed_by_citizen_id: CITIZEN_ID_1,
         }),

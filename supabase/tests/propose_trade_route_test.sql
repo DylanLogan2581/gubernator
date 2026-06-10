@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (16);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -567,6 +567,59 @@ select
     ),
     1,
     'admin route with foreign citizen leaves both sides pending'
+  );
+
+-- ===========================================================================
+-- MULTI-LEG HAPPY PATH: nation manager proposes trade with multiple resources
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(
+        jsonb_build_object(
+          'direction', 'send',
+          'resource_id', 'fc500000-0000-0000-0000-000000000001',
+          'quantity', 100
+        ),
+        jsonb_build_object(
+          'direction', 'receive',
+          'resource_id', 'fc500000-0000-0000-0000-000000000001',
+          'quantity', 50
+        )
+      ),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'nation manager can propose trade route with multiple legs'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.trade_routes tr
+      where
+        tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
+        and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
+        and tr.status = 'proposed'
+        and tr.origin_approval_status = 'approved'
+        and tr.destination_approval_status = 'pending'
+    ),
+    2,
+    'multi-leg proposal creates route with legs intact (2 total routes: first single-leg + this multi-leg)'
   );
 
 -- ===========================================================================

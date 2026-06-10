@@ -84,7 +84,11 @@ async function proposeTradeRoute(
   const { data, error } = await client
     .rpc("propose_trade_route", {
       p_destination: values.destinationSettlementId,
-      p_legs: values.legs,
+      p_legs: values.legs.map((leg) => ({
+        direction: leg.direction,
+        quantity: leg.quantity,
+        resource_id: leg.resourceId,
+      })),
       p_origin: values.originSettlementId,
       p_proposed_by_citizen_id: values.proposingCitizenId,
     })

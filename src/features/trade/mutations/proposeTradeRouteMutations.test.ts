@@ -114,7 +114,7 @@ describe("proposeTradeRouteMutationOptions", () => {
     });
     expect(calls.rpc).toHaveBeenCalledWith("propose_trade_route", {
       p_destination: DESTINATION_ID,
-      p_legs: [{ direction: "send", quantity: 50, resourceId: RESOURCE_ID }],
+      p_legs: [{ direction: "send", quantity: 50, resource_id: RESOURCE_ID }],
       p_origin: ORIGIN_ID,
       p_proposed_by_citizen_id: CITIZEN_ID,
     });
