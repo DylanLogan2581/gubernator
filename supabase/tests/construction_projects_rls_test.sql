@@ -4,7 +4,7 @@
 begin;
 
 select
-  plan (12);
+  plan (14);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -130,6 +130,24 @@ values
     '14000000-0000-0000-0000-000000000001',
     '13000000-0000-0000-0000-000000000001',
     'CP Settlement'
+  );
+
+insert into
+  public.nations (id, world_id, name)
+values
+  (
+    '13000000-0000-0000-0000-000000000002',
+    '12000000-0000-0000-0000-000000000002',
+    'CP Nation 2'
+  );
+
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    '14000000-0000-0000-0000-000000000002',
+    '13000000-0000-0000-0000-000000000002',
+    'CP Settlement 2'
   );
 
 -- Farmhouse: max_instances_per_settlement = 2 (used for cap tests).
@@ -432,6 +450,50 @@ select
     )
   $test$,
     'super admin can insert a construction project'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- SETTLEMENT MANAGER OF FOREIGN SETTLEMENT: cannot insert or update
+-- construction_projects for settlements they do not manage. Test verifies
+-- WITH CHECK(public.current_user_manages_settlement(settlement_id)) policy
+-- rejection. Analog: settlement_buildings_rls_test.sql:441-455.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"11000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    insert into public.construction_projects (id, settlement_id, building_blueprint_id, target_tier_id, status, queue_position)
+    values (
+      '17000000-0000-0000-0000-000000000014',
+      '14000000-0000-0000-0000-000000000002',
+      '15000000-0000-0000-0000-000000000002',
+      '16000000-0000-0000-0000-000000000002',
+      'queued',
+      1
+    )
+  $test$,
+    '42501',
+    null,
+    'settlement manager of one settlement cannot insert construction project for foreign settlement'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.construction_projects
+    set settlement_id = '14000000-0000-0000-0000-000000000002'
+    where id = '17000000-0000-0000-0000-000000000012'
+  $test$,
+    '42501',
+    null,
+    'settlement manager cannot update construction project to relocate to foreign settlement'
   );
 
 reset role;
