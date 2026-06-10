@@ -16,6 +16,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import {
@@ -228,25 +235,19 @@ function BuildingStateGroup({
         {label} ({buildings.length})
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-muted-foreground">
-              <th className="pb-2 font-medium" scope="col">
-                Building
-              </th>
-              <th className="pb-2 font-medium" scope="col">
-                Tier
-              </th>
-              <th className="pb-2 font-medium" scope="col">
-                Effects
-              </th>
-              <th className="w-16 pb-2" scope="col" aria-label="State" />
+        <Table className="w-full text-sm">
+          <TableHeader>
+            <TableRow className="text-muted-foreground">
+              <TableHead scope="col">Building</TableHead>
+              <TableHead scope="col">Tier</TableHead>
+              <TableHead scope="col">Effects</TableHead>
+              <TableHead className="w-16" scope="col" aria-label="State" />
               {canAdmin ? (
-                <th className="w-28 pb-2" scope="col" aria-label="Actions" />
+                <TableHead className="w-28" scope="col" aria-label="Actions" />
               ) : null}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {buildings.map((building) => (
               <BuildingRow
                 key={building.id}
@@ -261,8 +262,8 @@ function BuildingStateGroup({
                 worldId={worldId}
               />
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </CollapsibleContent>
     </Collapsible>
   );

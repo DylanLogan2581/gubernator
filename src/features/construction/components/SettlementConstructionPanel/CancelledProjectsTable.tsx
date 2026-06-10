@@ -1,6 +1,13 @@
 import { type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { CancelledProjectRow } from "./CancelledProjectRow";
 
@@ -30,24 +37,18 @@ export function CancelledProjectsTable({
   }
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-border text-left text-muted-foreground">
-          <th className="pb-2 font-medium" scope="col">
-            Blueprint
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Tier
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Progress
-          </th>
+    <Table className="w-full text-sm">
+      <TableHeader>
+        <TableRow className="text-muted-foreground">
+          <TableHead scope="col">Blueprint</TableHead>
+          <TableHead scope="col">Tier</TableHead>
+          <TableHead scope="col">Progress</TableHead>
           {canAct ? (
-            <th className="w-64 pb-2" scope="col" aria-label="Actions" />
+            <TableHead className="w-64" scope="col" aria-label="Actions" />
           ) : null}
-        </tr>
-      </thead>
-      <tbody>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {cancelledProjects
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
           .map((project) => (
@@ -59,7 +60,7 @@ export function CancelledProjectsTable({
               settlementId={settlementId}
             />
           ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

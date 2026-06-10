@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Check, X } from "lucide-react";
 
+import { TableCell, TableRow } from "@/components/ui/table";
+
 import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
 
 import { AutoReadyControl } from "./AutoReadyControl";
@@ -40,8 +42,8 @@ export function SettlementReadinessRow({
     : "bg-red-50 dark:bg-red-950/30";
 
   return (
-    <tr className={bgColor}>
-      <th scope="row" className="py-3 pr-4 font-medium text-foreground">
+    <TableRow className={bgColor}>
+      <TableCell className="py-3 pr-4 font-medium text-foreground" scope="row">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 shrink-0 flex items-center justify-center text-sm">
             {isReady ? (
@@ -63,8 +65,8 @@ export function SettlementReadinessRow({
             {item.name}
           </Link>
         </div>
-      </th>
-      <td className="py-3 pl-4">
+      </TableCell>
+      <TableCell className="py-3 pl-4">
         {canSetManualReady ? (
           <ManualReadinessControl
             isArchived={isArchived}
@@ -75,17 +77,17 @@ export function SettlementReadinessRow({
         ) : (
           <ReadOnlyReadinessIndicator item={item} />
         )}
-      </td>
+      </TableCell>
       {canSetAutoReady ? (
-        <td className="py-3 pl-4">
+        <TableCell className="py-3 pl-4">
           <AutoReadyControl
             isArchived={isArchived}
             isPending={pendingAutoReadySettlementId === item.id}
             item={item}
             setAutoReady={setAutoReady}
           />
-        </td>
+        </TableCell>
       ) : null}
-    </tr>
+    </TableRow>
   );
 }

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { type Resource } from "@/features/resources";
 import { type TurnTransitionOutcome } from "@/features/turns";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -209,8 +210,8 @@ export function ManagedPopulationInstanceRow({
 
   return (
     <>
-      <tr className="border-b border-border last:border-0">
-        <td className="py-2 pr-4 font-medium">
+      <TableRow className="border-b border-border last:border-0">
+        <TableCell className="py-2 pr-4 font-medium">
           <span className="flex items-center gap-2">
             {instance.name}
             {instance.status === "extinct" ? (
@@ -223,11 +224,11 @@ export function ManagedPopulationInstanceRow({
               </Badge>
             ) : null}
           </span>
-        </td>
-        <td className="py-2 pr-4 text-muted-foreground">
+        </TableCell>
+        <TableCell className="py-2 pr-4 text-muted-foreground">
           {instance.managedPopulationTypeName}
-        </td>
-        <td className="py-2 pr-4">
+        </TableCell>
+        <TableCell className="py-2 pr-4">
           <span className="flex items-center gap-1">
             {instance.currentCount.toLocaleString()}
             {snapshotDelta !== null ? (
@@ -254,8 +255,8 @@ export function ManagedPopulationInstanceRow({
               )
             ) : null}
           </span>
-        </td>
-        <td className="py-2 pr-4">
+        </TableCell>
+        <TableCell className="py-2 pr-4">
           {editingCull ? (
             <CullQuantityEditor
               instance={instance}
@@ -282,20 +283,20 @@ export function ManagedPopulationInstanceRow({
               ) : null}
             </span>
           )}
-        </td>
-        <td className="py-2 pr-4 text-muted-foreground">
+        </TableCell>
+        <TableCell className="py-2 pr-4 text-muted-foreground">
           {instance.husbandryJobName}
           {requiredWorkers !== null ? (
             <span className="ml-1 text-xs">
               ({husbandryCount}/{requiredWorkers})
             </span>
           ) : null}
-        </td>
-        <td className="py-2 pr-4 text-muted-foreground text-xs">
+        </TableCell>
+        <TableCell className="py-2 pr-4 text-muted-foreground text-xs">
           {maintenanceSummary}
-        </td>
+        </TableCell>
         {canAdmin ? (
-          <td className="w-32 py-2 text-right">
+          <TableCell className="w-32 py-2 text-right">
             {husbandryCount > 0 ? (
               <span title="Cannot mark extinct: active worker assignments exist.">
                 <Button
@@ -321,9 +322,9 @@ export function ManagedPopulationInstanceRow({
                 Mark extinct
               </Button>
             )}
-          </td>
+          </TableCell>
         ) : null}
-      </tr>
+      </TableRow>
       {showExtinctConfirm ? (
         <MarkExtinctConfirmDialog
           instance={instance}

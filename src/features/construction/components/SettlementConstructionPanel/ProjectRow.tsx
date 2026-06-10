@@ -5,6 +5,7 @@ import { useState, type JSX } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TableCell, TableRow } from "@/components/ui/table";
 import type { TurnTransitionLogEntry } from "@/features/turns";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -115,29 +116,29 @@ export function ProjectRow({
 
   return (
     <>
-      <tr className="border-b border-border last:border-0">
-        <td className="py-2 pr-4">{project.blueprintName}</td>
-        <td className="py-2 pr-4">Tier {project.tierNumber}</td>
-        <td className="py-2 pr-4">
+      <TableRow className="border-b border-border last:border-0">
+        <TableCell className="py-2 pr-4">{project.blueprintName}</TableCell>
+        <TableCell className="py-2 pr-4">Tier {project.tierNumber}</TableCell>
+        <TableCell className="py-2 pr-4">
           {pauseReason !== null ? (
             <span title={pauseReason}>{statusBadge}</span>
           ) : (
             statusBadge
           )}
-        </td>
-        <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+        </TableCell>
+        <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
           {logData !== null ? logData.workers.toString() : "—"}
-        </td>
-        <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+        </TableCell>
+        <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
           {assignedWorkerCount}
-        </td>
-        <td className="py-2 pr-4 text-muted-foreground">
+        </TableCell>
+        <TableCell className="py-2 pr-4 text-muted-foreground">
           {project.progressWorkerTurns} / {project.workerTurnsRequired}{" "}
           worker-turns
-        </td>
+        </TableCell>
         {canAct ? (
           <>
-            <td className="py-2 pr-4">
+            <TableCell className="py-2 pr-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Input
                   aria-label={`Target workers for ${project.blueprintName}`}
@@ -159,8 +160,8 @@ export function ProjectRow({
                   applyButton
                 )}
               </div>
-            </td>
-            <td className="w-36 py-2">
+            </TableCell>
+            <TableCell className="w-36 py-2">
               <div className="flex items-center justify-end gap-1">
                 <Button
                   aria-label={`Move ${project.blueprintName} up in queue`}
@@ -198,10 +199,10 @@ export function ProjectRow({
                   Cancel
                 </Button>
               </div>
-            </td>
+            </TableCell>
           </>
         ) : null}
-      </tr>
+      </TableRow>
       {confirmCancelOpen ? (
         <CancelConfirmDialog
           project={project}

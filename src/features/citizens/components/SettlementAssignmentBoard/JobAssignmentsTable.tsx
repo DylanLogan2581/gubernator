@@ -7,6 +7,14 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { depositInstancesBySettlementQueryOptions } from "@/features/deposits";
 import type { DepositInstance } from "@/features/deposits";
 import { managedPopulationInstancesBySettlementQueryOptions } from "@/features/managed-populations";
@@ -304,23 +312,15 @@ export function JobAssignmentsTable({
   }
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-border text-left text-muted-foreground">
-          <th className="pb-2 font-medium" scope="col">
-            Job
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Assigned / Capacity
-          </th>
-          {canEdit ? (
-            <th className="pb-2 font-medium" scope="col">
-              Set count
-            </th>
-          ) : null}
-        </tr>
-      </thead>
-      <tbody>
+    <Table className="w-full text-sm">
+      <TableHeader>
+        <TableRow className="text-muted-foreground">
+          <TableHead scope="col">Job</TableHead>
+          <TableHead scope="col">Assigned / Capacity</TableHead>
+          {canEdit ? <TableHead scope="col">Set count</TableHead> : null}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {rows.map((row, idx) => (
           <RowRenderer
             key={getRowKey(row, idx)}
@@ -334,8 +334,8 @@ export function JobAssignmentsTable({
             unassignedNpcCount={stats.unassignedNpcCount}
           />
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }
 
@@ -531,14 +531,16 @@ function UnassignedRow({
   readonly unassignedNpcCount: number;
 }): JSX.Element {
   return (
-    <tr className="border-b border-border">
-      <td className="py-2 pr-4 font-medium">Unassigned</td>
-      <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+    <TableRow>
+      <TableCell className="py-2 pr-4 font-medium">Unassigned</TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
         {unassignedNpcCount.toString()} /{" "}
         <span aria-label="no upper bound">∞</span>
-      </td>
-      {canEdit ? <td className="py-2 text-muted-foreground">—</td> : null}
-    </tr>
+      </TableCell>
+      {canEdit ? (
+        <TableCell className="py-2 text-muted-foreground">—</TableCell>
+      ) : null}
+    </TableRow>
   );
 }
 
@@ -582,13 +584,13 @@ function BulkJobRow({
   }
 
   return (
-    <tr className="border-b border-border last:border-0">
-      <td className="py-2 pr-4 font-medium">{job.jobName}</td>
-      <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+    <TableRow className="border-b border-border last:border-0">
+      <TableCell className="py-2 pr-4 font-medium">{job.jobName}</TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
         {job.currentCount} / {job.capacity}
-      </td>
+      </TableCell>
       {canEdit ? (
-        <td className="py-2">
+        <TableCell className="py-2">
           <div className="flex flex-wrap items-center gap-2">
             <Input
               aria-label={`Target count for ${job.jobName}`}
@@ -613,9 +615,9 @@ function BulkJobRow({
               Apply
             </Button>
           </div>
-        </td>
+        </TableCell>
       ) : null}
-    </tr>
+    </TableRow>
   );
 }
 
@@ -678,13 +680,13 @@ function DepositTargetRow({
   }
 
   return (
-    <tr className="border-b border-border last:border-0">
-      <td className="py-2 pr-4 font-medium">{label}</td>
-      <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+    <TableRow className="border-b border-border last:border-0">
+      <TableCell className="py-2 pr-4 font-medium">{label}</TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
         {currentCount} / {capacityDisplay}
-      </td>
+      </TableCell>
       {canEdit ? (
-        <td className="py-2">
+        <TableCell className="py-2">
           <div className="flex flex-wrap items-center gap-2">
             <Input
               aria-label={`Target count for ${label}`}
@@ -711,9 +713,9 @@ function DepositTargetRow({
               </Button>
             </span>
           </div>
-        </td>
+        </TableCell>
       ) : null}
-    </tr>
+    </TableRow>
   );
 }
 
@@ -767,13 +769,13 @@ function PopulationTargetRow({
   }
 
   return (
-    <tr className="border-b border-border last:border-0">
-      <td className="py-2 pr-4 font-medium">{label}</td>
-      <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+    <TableRow className="border-b border-border last:border-0">
+      <TableCell className="py-2 pr-4 font-medium">{label}</TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
         {currentCount} / <span aria-label="no upper bound">∞</span>
-      </td>
+      </TableCell>
       {canEdit ? (
-        <td className="py-2">
+        <TableCell className="py-2">
           <div className="flex flex-wrap items-center gap-2">
             <Input
               aria-label={`Target count for ${label}`}
@@ -800,9 +802,9 @@ function PopulationTargetRow({
               </Button>
             </span>
           </div>
-        </td>
+        </TableCell>
       ) : null}
-    </tr>
+    </TableRow>
   );
 }
 
@@ -857,18 +859,18 @@ function TradeRouteLocalEndRow({
   }
 
   return (
-    <tr className="border-b border-border last:border-0">
-      <td className="py-2 pr-4 font-medium">
+    <TableRow className="border-b border-border last:border-0">
+      <TableCell className="py-2 pr-4 font-medium">
         <div className="flex items-center gap-1.5">
           {icon}
           <span>{label}</span>
         </div>
-      </td>
-      <td className="py-2 pr-4 tabular-nums text-muted-foreground">
+      </TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
         {currentCount} / <span aria-label="no upper bound">∞</span>
-      </td>
+      </TableCell>
       {canEdit ? (
-        <td className="py-2">
+        <TableCell className="py-2">
           <div className="flex flex-wrap items-center gap-2">
             <Input
               aria-label={`Target count for ${label}`}
@@ -895,9 +897,9 @@ function TradeRouteLocalEndRow({
               </Button>
             </span>
           </div>
-        </td>
+        </TableCell>
       ) : null}
-    </tr>
+    </TableRow>
   );
 }
 
@@ -924,8 +926,8 @@ function TradeRouteRemoteEndRow({
     : "Trader (receiving — remote)";
 
   return (
-    <tr className="border-b border-border last:border-0 bg-muted/20">
-      <td className="py-2 pr-4 font-medium">
+    <TableRow className="border-b border-border last:border-0 bg-muted/20">
+      <TableCell className="py-2 pr-4 font-medium">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <span title={remoteTooltip}>
             <RemoteIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -934,10 +936,10 @@ function TradeRouteRemoteEndRow({
             {endLabel}: {remoteSettlementName}
           </span>
         </div>
-      </td>
-      <td className="py-2 pr-4 tabular-nums text-muted-foreground text-xs">
+      </TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground text-xs">
         {assignedCount.toString()} assigned (remote)
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

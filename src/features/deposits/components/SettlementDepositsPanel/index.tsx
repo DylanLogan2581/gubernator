@@ -11,6 +11,13 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import {
   useSettlementTransitionOutcome,
@@ -318,31 +325,23 @@ function DepositsStatusGroup({
       </button>
       {!isCollapsed ? (
         <div id={panelId}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="pb-2 font-medium" scope="col">
-                  Name
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Type
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Resources
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Workers
-                </th>
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="text-muted-foreground">
+                <TableHead scope="col">Name</TableHead>
+                <TableHead scope="col">Type</TableHead>
+                <TableHead scope="col">Resources</TableHead>
+                <TableHead scope="col">Workers</TableHead>
                 {canAdmin || canManage ? (
-                  <th
+                  <TableHead
                     aria-label="Actions"
-                    className="w-[18rem] pb-2"
+                    className="w-[18rem]"
                     scope="col"
                   />
                 ) : null}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {instances.map((instance) => (
                 <DepositInstanceRow
                   key={instance.id}
@@ -355,8 +354,8 @@ function DepositsStatusGroup({
                   settlementId={settlementId}
                 />
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       ) : null}
     </div>

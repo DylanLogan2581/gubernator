@@ -22,6 +22,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -112,23 +120,21 @@ function StockpilesTable({
 
   return (
     <>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border text-left text-muted-foreground">
-            <th className="pb-2 font-medium" scope="col">
-              Resource
-            </th>
-            <th className="pb-2 font-medium tabular-nums" scope="col">
+      <Table className="w-full text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">Resource</TableHead>
+            <TableHead scope="col" className="tabular-nums">
               Quantity
-            </th>
-            <th className="pb-2 font-medium tabular-nums" scope="col">
+            </TableHead>
+            <TableHead scope="col" className="tabular-nums">
               Cap
-            </th>
-            <th className="w-16 pb-2" scope="col" aria-label="Status" />
-            <th className="w-24 pb-2" scope="col" aria-label="Actions" />
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+            <TableHead scope="col" className="w-16" aria-label="Status" />
+            <TableHead scope="col" className="w-24" aria-label="Actions" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {stockpiles.map((stockpile) => (
             <StockpileRow
               key={stockpile.resourceId}
@@ -139,8 +145,8 @@ function StockpilesTable({
               }}
             />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
       {editingStockpile !== null ? (
         <EditStockpileDialog
@@ -167,29 +173,29 @@ function StockpileRow({
   const atCap = stockpile.quantity >= stockpile.effectiveCap;
 
   return (
-    <tr className="border-b border-border last:border-0">
-      <td className="py-2 pr-4">
+    <TableRow>
+      <TableCell className="py-2 pr-4">
         <div className="flex items-center gap-2">
           <span>{stockpile.resourceName}</span>
           {stockpile.isSystemResource ? (
             <Badge variant="secondary">system</Badge>
           ) : null}
         </div>
-      </td>
-      <td className="py-2 pr-4 tabular-nums">
+      </TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums">
         {stockpile.quantity.toLocaleString()}
-      </td>
-      <td className="py-2 pr-4 tabular-nums">
+      </TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums">
         {stockpile.effectiveCap.toLocaleString()}
-      </td>
-      <td className="w-16 py-2 pr-2">
+      </TableCell>
+      <TableCell className="w-16 py-2 pr-2">
         {atCap ? (
           <Badge variant="destructive">at cap</Badge>
         ) : (
           <span className="inline-block w-[53px]" aria-hidden="true" />
         )}
-      </td>
-      <td className="w-24 py-2 text-right">
+      </TableCell>
+      <TableCell className="w-24 py-2 text-right">
         {canEdit ? (
           <Button
             type="button"
@@ -203,8 +209,8 @@ function StockpileRow({
         ) : (
           <Badge variant="secondary">read-only</Badge>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 

@@ -8,6 +8,14 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { currentAppUserQueryOptions } from "@/features/auth";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -117,38 +125,28 @@ export function SuperadminSettingsPage(): JSX.Element {
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                User
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Superadmin
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Joined
-              </th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+        <Table className="w-full text-sm">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-4 py-3 text-left">User</TableHead>
+              <TableHead className="px-4 py-3 text-left">Status</TableHead>
+              <TableHead className="px-4 py-3 text-left">Superadmin</TableHead>
+              <TableHead className="px-4 py-3 text-left">Joined</TableHead>
+              <TableHead className="px-4 py-3 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredUsers.length === 0 && (
-              <tr>
-                <td
+              <TableRow>
+                <TableCell
                   colSpan={5}
                   className="px-4 py-8 text-center text-sm text-muted-foreground"
                 >
                   {searchTrimmed.length > 0
                     ? "No users match your search."
                     : "No users found."}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
             {filteredUsers.map((user) => (
               <UserRow
@@ -166,8 +164,8 @@ export function SuperadminSettingsPage(): JSX.Element {
                 }}
               />
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {dialog.kind === "create-user" && (
@@ -234,8 +232,8 @@ function UserRow({
   const isSelf = user.id === currentUserId;
 
   return (
-    <tr className="hover:bg-muted/30 transition-colors">
-      <td className="px-4 py-3">
+    <TableRow className="hover:bg-muted/30">
+      <TableCell className="px-4 py-3">
         <div>
           <p className="font-medium">
             {user.username}
@@ -247,13 +245,13 @@ function UserRow({
           </p>
           <p className="text-xs text-muted-foreground">{user.email}</p>
         </div>
-      </td>
-      <td className="px-4 py-3">
+      </TableCell>
+      <TableCell className="px-4 py-3">
         <Badge variant={user.status === "active" ? "default" : "secondary"}>
           {user.status}
         </Badge>
-      </td>
-      <td className="px-4 py-3">
+      </TableCell>
+      <TableCell className="px-4 py-3">
         {user.is_super_admin ? (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
             <Shield className="size-3" aria-hidden="true" />
@@ -262,11 +260,11 @@ function UserRow({
         ) : (
           <span className="text-xs text-muted-foreground">—</span>
         )}
-      </td>
-      <td className="px-4 py-3 text-xs text-muted-foreground">
+      </TableCell>
+      <TableCell className="px-4 py-3 text-xs text-muted-foreground">
         {user.created_at.slice(0, 10)}
-      </td>
-      <td className="px-4 py-3">
+      </TableCell>
+      <TableCell className="px-4 py-3">
         <div className="flex items-center justify-end gap-2">
           <Button
             type="button"
@@ -301,8 +299,8 @@ function UserRow({
             {user.is_super_admin ? "Demote" : "Promote"}
           </Button>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 

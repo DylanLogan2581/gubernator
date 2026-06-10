@@ -1,5 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { WorldPermissionContext } from "@/features/worlds";
 import { notifyMutationError } from "@/lib/notify";
 
@@ -46,23 +53,15 @@ export function SettlementReadinessTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-120 text-left text-sm">
-        <thead className="border-b border-border text-xs text-muted-foreground">
-          <tr>
-            <th scope="col" className="py-2 pr-4 font-medium">
-              Settlement
-            </th>
-            <th scope="col" className="py-2 pl-4 font-medium">
-              Manual readiness
-            </th>
-            {canAdmin ? (
-              <th scope="col" className="py-2 pl-4 font-medium">
-                Auto-ready
-              </th>
-            ) : null}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
+      <Table className="w-full min-w-120 text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">Settlement</TableHead>
+            <TableHead scope="col">Manual readiness</TableHead>
+            {canAdmin ? <TableHead scope="col">Auto-ready</TableHead> : null}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {items.map((item) => (
             <SettlementReadinessRow
               canSetAutoReady={canAdmin}
@@ -111,8 +110,8 @@ export function SettlementReadinessTable({
               }}
             />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

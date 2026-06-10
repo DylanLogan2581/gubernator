@@ -4,6 +4,7 @@ import { useState, type JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { type TurnTransitionOutcome } from "@/features/turns";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseDepositDepletedPayload } from "@/shared/simulation";
@@ -71,8 +72,8 @@ export function DepositInstanceRow({
 
   return (
     <>
-      <tr className="border-b border-border last:border-0">
-        <td className="py-2 pr-4 font-medium">
+      <TableRow>
+        <TableCell className="py-2 pr-4 font-medium">
           <span className="flex items-center gap-2">
             {instance.name}
             {isDepletion ? (
@@ -85,11 +86,11 @@ export function DepositInstanceRow({
               </Badge>
             ) : null}
           </span>
-        </td>
-        <td className="py-2 pr-4 text-muted-foreground">
+        </TableCell>
+        <TableCell className="py-2 pr-4 text-muted-foreground">
           {instance.depositTypeName}
-        </td>
-        <td className="py-2 pr-4 text-muted-foreground text-xs">
+        </TableCell>
+        <TableCell className="py-2 pr-4 text-muted-foreground text-xs">
           {instance.resources.length === 0 ? (
             "—"
           ) : (
@@ -106,12 +107,12 @@ export function DepositInstanceRow({
               })}
             </span>
           )}
-        </td>
-        <td className="py-2 pr-4">
+        </TableCell>
+        <TableCell className="py-2 pr-4">
           <span className="text-sm">{workersDisplay}</span>
-        </td>
+        </TableCell>
         {canAdmin || canManage ? (
-          <td className="w-[18rem] py-2 text-right">
+          <TableCell className="w-[18rem] py-2 text-right">
             <div className="flex items-center justify-end gap-2">
               {instance.status === "removed" ? (
                 canAdmin ? (
@@ -216,9 +217,9 @@ export function DepositInstanceRow({
                 </>
               )}
             </div>
-          </td>
+          </TableCell>
         ) : null}
-      </tr>
+      </TableRow>
       {showEditQuantities ? (
         <EditResourceQuantitiesDialog
           instance={instance}

@@ -11,6 +11,14 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { useWorldTransitionOutcome } from "@/features/turns";
@@ -269,27 +277,25 @@ function TradeRoutesDirection({
       </button>
       {!isCollapsed ? (
         <div id={panelId}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="pb-2 font-medium" scope="col">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="text-muted-foreground">
+                <TableHead scope="col">
                   {side === "origin" ? "Destination" : "Origin"}
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Resources
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Status
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Origin / Dest
-                </th>
+                </TableHead>
+                <TableHead scope="col">Resources</TableHead>
+                <TableHead scope="col">Status</TableHead>
+                <TableHead scope="col">Origin / Dest</TableHead>
                 {canManageRoutes ? (
-                  <th className="w-48 pb-2" scope="col" aria-label="Actions" />
+                  <TableHead
+                    scope="col"
+                    className="w-48"
+                    aria-label="Actions"
+                  />
                 ) : null}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {routes.map((route) => (
                 <TradeRouteRow
                   key={route.id}
@@ -304,8 +310,8 @@ function TradeRoutesDirection({
                   worldId={worldId}
                 />
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       ) : null}
     </div>
@@ -364,16 +370,16 @@ function TradeRouteRow({
 
   return (
     <>
-      <tr
+      <TableRow
         id={`trade-route-${route.id}`}
         aria-live={isResumedThisTransition ? "polite" : undefined}
-        className={`border-b border-border last:border-0${isResumedThisTransition ? " animate-pulse bg-success [animation-iteration-count:4]" : ""}`}
+        className={`${isResumedThisTransition ? "animate-pulse bg-success [animation-iteration-count:4]" : ""}`}
       >
-        <td className="py-2 pr-4 font-medium">{counterpart}</td>
-        <td className="py-2 pr-4">
+        <TableCell className="py-2 pr-4 font-medium">{counterpart}</TableCell>
+        <TableCell className="py-2 pr-4">
           <LegsSummary legs={route.legs} viewerSide={side} />
-        </td>
-        <td className="py-2 pr-4">
+        </TableCell>
+        <TableCell className="py-2 pr-4">
           <StatusBadge
             pauseReason={route.pauseReasonLastTransition}
             status={route.status}
@@ -394,8 +400,8 @@ function TradeRouteRow({
               Earlier route →
             </a>
           ) : null}
-        </td>
-        <td className="py-2 pr-4">
+        </TableCell>
+        <TableCell className="py-2 pr-4">
           <span className="flex items-center gap-1">
             <ApprovalBadge status={route.originApprovalStatus} label="Orig" />
             <span className="text-muted-foreground">/</span>
@@ -404,9 +410,9 @@ function TradeRouteRow({
               label="Dest"
             />
           </span>
-        </td>
+        </TableCell>
         {canManageRoutes ? (
-          <td className="w-48 py-2 text-right">
+          <TableCell className="w-48 py-2 text-right">
             <div className="flex flex-wrap items-center justify-end gap-1">
               {canApproveOrReject && thisSideApproval === "pending" ? (
                 <>
@@ -461,9 +467,9 @@ function TradeRouteRow({
                 </Button>
               ) : null}
             </div>
-          </td>
+          </TableCell>
         ) : null}
-      </tr>
+      </TableRow>
       {showApproveDialog && activeCharacterId !== null ? (
         <ApproveConfirmDialog
           approverCitizenId={activeCharacterId}

@@ -11,6 +11,13 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import {
   activeResourcesByWorldQueryOptions,
@@ -258,33 +265,21 @@ function ManagedPopulationsTable({
   readonly typeById: ReadonlyMap<string, ManagedPopulationType>;
 }): JSX.Element {
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-border text-left text-muted-foreground">
-          <th className="pb-2 font-medium" scope="col">
-            Name
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Type
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Count
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Cull qty
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Husbandry / workers
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Maintenance/turn
-          </th>
+    <Table className="w-full text-sm">
+      <TableHeader>
+        <TableRow className="text-muted-foreground">
+          <TableHead scope="col">Name</TableHead>
+          <TableHead scope="col">Type</TableHead>
+          <TableHead scope="col">Count</TableHead>
+          <TableHead scope="col">Cull qty</TableHead>
+          <TableHead scope="col">Husbandry / workers</TableHead>
+          <TableHead scope="col">Maintenance/turn</TableHead>
           {canAdmin ? (
-            <th aria-label="Actions" className="w-32 pb-2" scope="col" />
+            <TableHead aria-label="Actions" className="w-32" scope="col" />
           ) : null}
-        </tr>
-      </thead>
-      <tbody>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {instances.map((instance) => (
           <ManagedPopulationInstanceRow
             key={instance.id}
@@ -299,7 +294,7 @@ function ManagedPopulationsTable({
             type={typeById.get(instance.managedPopulationTypeId)}
           />
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

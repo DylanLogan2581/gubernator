@@ -3,6 +3,13 @@ import { type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   citizenAggregateStatsForSettlementQueryOptions,
   settlementConstructionProjectCountsQueryOptions,
 } from "@/features/citizens";
@@ -55,38 +62,24 @@ export function ActiveProjectsTable({
   const unassignedNpcCount = aggregateQuery.data?.unassignedNpcCount ?? 0;
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-border text-left text-muted-foreground">
-          <th className="pb-2 font-medium" scope="col">
-            Blueprint
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Tier
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Status
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Workers (this turn)
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Assigned
-          </th>
-          <th className="pb-2 font-medium" scope="col">
-            Progress
-          </th>
+    <Table className="w-full text-sm">
+      <TableHeader>
+        <TableRow className="text-muted-foreground">
+          <TableHead scope="col">Blueprint</TableHead>
+          <TableHead scope="col">Tier</TableHead>
+          <TableHead scope="col">Status</TableHead>
+          <TableHead scope="col">Workers (this turn)</TableHead>
+          <TableHead scope="col">Assigned</TableHead>
+          <TableHead scope="col">Progress</TableHead>
           {canAct ? (
             <>
-              <th className="pb-2 font-medium" scope="col">
-                Set workers
-              </th>
-              <th className="w-36 pb-2" scope="col" aria-label="Actions" />
+              <TableHead scope="col">Set workers</TableHead>
+              <TableHead className="w-36" scope="col" aria-label="Actions" />
             </>
           ) : null}
-        </tr>
-      </thead>
-      <tbody>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {activeProjects.map((project, index) => (
           <ProjectRow
             key={project.id}
@@ -102,7 +95,7 @@ export function ActiveProjectsTable({
             unassignedNpcCount={unassignedNpcCount}
           />
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

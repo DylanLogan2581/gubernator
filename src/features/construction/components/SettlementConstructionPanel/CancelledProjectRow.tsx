@@ -2,6 +2,7 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { resumeConstructionProjectMutationOptions } from "../../mutations/resumeConstructionProjectMutations";
@@ -39,14 +40,14 @@ export function CancelledProjectRow({
 
   return (
     <>
-      <tr className="border-b border-border">
-        <td className="py-2">{project.blueprintName}</td>
-        <td className="py-2">{project.tierNumber}</td>
-        <td className="py-2">
+      <TableRow className="border-b border-border">
+        <TableCell className="py-2">{project.blueprintName}</TableCell>
+        <TableCell className="py-2">{project.tierNumber}</TableCell>
+        <TableCell className="py-2">
           {project.progressWorkerTurns} / {project.workerTurnsRequired}
-        </td>
+        </TableCell>
         {canAct ? (
-          <td className="flex items-center justify-end gap-2 py-2">
+          <TableCell className="flex items-center justify-end gap-2 py-2">
             <Button
               disabled={resumeMutation.isPending}
               onClick={() => {
@@ -69,9 +70,9 @@ export function CancelledProjectRow({
             >
               Destroy
             </Button>
-          </td>
+          </TableCell>
         ) : null}
-      </tr>
+      </TableRow>
       {showDestroyDialog ? (
         <DestroyConfirmDialog
           onClose={() => {
