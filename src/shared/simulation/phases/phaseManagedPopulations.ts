@@ -135,6 +135,7 @@ export function phaseManagedPopulations(
       countDelta: totalCountDelta,
       managedPopulationInstanceId: pop.id,
       toStatus: isExtinct ? "extinct" : null,
+      currentCountBefore: pop.currentCount,
     });
 
     if (isExtinct) {

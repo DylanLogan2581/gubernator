@@ -55,7 +55,9 @@ const exampleResult: SimulationResult = {
   depositUpdates: [
     {
       depositInstanceId: "dep-1",
-      resourceDeltas: [{ delta: -10, resourceId: "res-1" }],
+      resourceDeltas: [
+        { delta: -10, resourceId: "res-1", remainingQuantityBefore: 100 },
+      ],
       toStatus: "depleted",
     },
   ],
@@ -71,6 +73,7 @@ const exampleResult: SimulationResult = {
       countDelta: 5,
       managedPopulationInstanceId: "mpi-1",
       toStatus: null,
+      currentCountBefore: 50,
     },
   ],
   notifications: [

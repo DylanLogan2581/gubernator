@@ -583,6 +583,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
             managedPopulationInstanceId: "mp-1",
             countDelta: 5,
             toStatus: null,
+            currentCountBefore: 20,
           },
         ],
       };

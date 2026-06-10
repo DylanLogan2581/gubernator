@@ -392,6 +392,7 @@ export type BuildingStateChange = {
 export type DepositResourceDelta = {
   readonly delta: number;
   readonly resourceId: string;
+  readonly remainingQuantityBefore: number;
 };
 
 export type DepositUpdate = {
@@ -404,6 +405,7 @@ export type ManagedPopulationUpdate = {
   readonly countDelta: number;
   readonly managedPopulationInstanceId: string;
   readonly toStatus: SimManagedPopulationStatus | null;
+  readonly currentCountBefore: number;
 };
 
 export type TradeRouteOutcome = {

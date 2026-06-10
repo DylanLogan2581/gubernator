@@ -134,6 +134,7 @@ export function phaseDepositExtraction(
         resourceDeltas.push({
           delta: -actualExtracted,
           resourceId: res.resourceId,
+          remainingQuantityBefore: res.remainingQuantity,
         });
         allDeltas.push({
           delta: actualExtracted,
