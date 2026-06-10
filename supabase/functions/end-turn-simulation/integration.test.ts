@@ -429,6 +429,74 @@ async function restoreWorldToSeed(): Promise<string[]> {
   return setupErrors;
 }
 
+// Settlement-scoped tables the end-turn mutates across ALL five settlements
+// (status/progress/count/remaining fields) but does not create or delete rows
+// in. The value-based reset above only restores settlement 301's specifics, so
+// these are snapshotted at the seed baseline in beforeAll and upserted back
+// verbatim in afterAll. That keeps world 101 byte-identical for the pgTAP
+// seed-topology suite (e.g. "every settlement has an in_progress project").
+const SETTLEMENT_SCOPED_TABLES = [
+  "construction_projects",
+  "managed_population_instances",
+  "deposit_instances",
+  "settlement_resource_stockpiles",
+  "settlement_buildings",
+] as const;
+
+const seedSnapshots: Record<string, unknown[]> = {};
+let depositResourceSnapshot: unknown[] = [];
+
+async function captureSeedSnapshot(): Promise<string[]> {
+  const errors: string[] = [];
+  for (const table of SETTLEMENT_SCOPED_TABLES) {
+    const { data, error } = await svc
+      .from(table)
+      .select("*")
+      .in("settlement_id", SETTLEMENT_IDS);
+    if (error !== null) {
+      errors.push(`snapshot ${table}: ${error.message}`);
+      continue;
+    }
+    seedSnapshots[table] = data ?? [];
+  }
+  // deposit_instance_resources has no settlement_id; scope it via the snapshot
+  // deposit instances for the five settlements.
+  const depositIds = (seedSnapshots["deposit_instances"] ?? []).map(
+    (d) => (d as { id: string }).id,
+  );
+  if (depositIds.length > 0) {
+    const { data, error } = await svc
+      .from("deposit_instance_resources")
+      .select("*")
+      .in("deposit_instance_id", depositIds);
+    if (error !== null) {
+      errors.push(`snapshot deposit_instance_resources: ${error.message}`);
+    } else {
+      depositResourceSnapshot = data ?? [];
+    }
+  }
+  return errors;
+}
+
+async function restoreSeedSnapshot(): Promise<string[]> {
+  const errors: string[] = [];
+  for (const table of SETTLEMENT_SCOPED_TABLES) {
+    const rows = seedSnapshots[table];
+    if (rows !== undefined && rows.length > 0) {
+      const { error } = await svc.from(table).upsert(rows);
+      if (error !== null) errors.push(`restore ${table}: ${error.message}`);
+    }
+  }
+  if (depositResourceSnapshot.length > 0) {
+    const { error } = await svc
+      .from("deposit_instance_resources")
+      .upsert(depositResourceSnapshot);
+    if (error !== null)
+      errors.push(`restore deposit_instance_resources: ${error.message}`);
+  }
+  return errors;
+}
+
 describe("end-turn-simulation integration", () => {
   beforeAll(async () => {
     // Probe local Supabase via the REST root (returns the OpenAPI spec on 200).
@@ -480,6 +548,10 @@ describe("end-turn-simulation integration", () => {
     // test is repeatable after previous runs, and again in afterAll so the
     // shared local database is left clean for the pgTAP seed-topology tests.
     const setupErrors = await restoreWorldToSeed();
+
+    // Snapshot the settlement-scoped tables at the seed baseline so afterAll can
+    // restore the four other settlements the end-turn mutates, not just 301.
+    setupErrors.push(...(await captureSeedSnapshot()));
 
     // Sign in as the seeded super admin and capture the JWT.
     const { data: authData, error: authErr } =
@@ -625,7 +697,10 @@ describe("end-turn-simulation integration", () => {
   // Leave the shared local database in its canonical seed state so the pgTAP
   // seed-topology tests (and any later run) see an unmutated world 101.
   afterAll(async () => {
-    const teardownErrors = await restoreWorldToSeed();
+    const teardownErrors = [
+      ...(await restoreWorldToSeed()),
+      ...(await restoreSeedSnapshot()),
+    ];
     if (teardownErrors.length > 0) {
       throw new Error(
         `Integration test teardown failed:\n${teardownErrors.map((e) => `  - ${e}`).join("\n")}`,
