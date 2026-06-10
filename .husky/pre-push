@@ -1,0 +1,22 @@
+#!/bin/bash
+# Pre-push hook: Run database tests if schema/test files changed
+
+# Parse stdin to get local and remote SHAs
+while read local_ref local_sha remote_ref remote_sha; do
+  # For new branches (remote_sha = 0000...), compare to origin/main
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    compare_to="origin/main"
+  else
+    compare_to="$remote_sha"
+  fi
+
+  # Check if any files in supabase/migrations or supabase/tests changed
+  if git diff "$compare_to".."$local_sha" --name-only --diff-filter=ACMR | \
+       grep -qE '^supabase/(migrations|tests)/'; then
+    echo "🔍 Schema or test files changed. Running database tests..."
+    npm run test:db
+    exit $?
+  fi
+done
+
+exit 0

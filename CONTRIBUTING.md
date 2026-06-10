@@ -187,6 +187,12 @@ npm run test:db
 
 `npm run test:db` runs Supabase pgTAP tests under `supabase/tests`. The current database tests cover auth user synchronization, permission helpers, RLS behavior for anonymous users, authenticated users, world owners, world admins, and super admins, denied access to private worlds, restricted write paths, and super-admin elevation guards.
 
+## Pre-Push Database Testing
+
+When you push commits that change files under `supabase/migrations/` or `supabase/tests/`, the pre-push hook automatically runs the database test suite before the push completes. This detects schema and RLS breaks early and prevents broken migrations from reaching CI. If tests fail, the push is blocked and you can fix the issue locally.
+
+Pushes that do not change schema or test files bypass this check and push immediately.
+
 ## Security Expectations
 
 Review every change for:
