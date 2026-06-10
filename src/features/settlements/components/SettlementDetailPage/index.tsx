@@ -282,6 +282,7 @@ function SettlementDetailLoaded({
         settlementId: settlement.id,
       },
       search: { section },
+      resetScroll: false,
     });
   }
 
