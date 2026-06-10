@@ -1,15 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { manualDeconstructBuildingMutationOptions } from "../../mutations/settlementBuildingsMutations";
@@ -46,44 +38,24 @@ export function DeconstructConfirmDialog({
   }
 
   return (
-    <Dialog
+    <ConfirmDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Deconstruct {building.blueprintName}?</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+      title={`Deconstruct ${building.blueprintName}?`}
+      description={
+        <>
           This will permanently deconstruct{" "}
           <span className="font-medium text-foreground">
             {building.blueprintName}
           </span>{" "}
           (Tier {building.tierNumber}). This action cannot be undone.
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={deconstructMutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={deconstructMutation.isPending}
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Deconstruct
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Deconstruct"
+      isPending={deconstructMutation.isPending}
+      onConfirm={handleConfirm}
+    />
   );
 }

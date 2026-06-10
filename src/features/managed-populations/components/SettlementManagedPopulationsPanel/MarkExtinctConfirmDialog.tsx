@@ -1,15 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { removeManagedPopulationInstanceMutationOptions } from "../../mutations/removeManagedPopulationInstanceMutations";
@@ -44,42 +36,22 @@ export function MarkExtinctConfirmDialog({
   }
 
   return (
-    <Dialog
+    <ConfirmDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Mark {instance.name} extinct?</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+      title={`Mark ${instance.name} extinct?`}
+      description={
+        <>
           This will mark{" "}
           <span className="font-medium text-foreground">{instance.name}</span>{" "}
           as extinct. This action cannot be undone.
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={mutation.isPending}
-            type="button"
-            variant="outline"
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={mutation.isPending}
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Mark extinct
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Mark extinct"
+      isPending={mutation.isPending}
+      onConfirm={handleConfirm}
+    />
   );
 }

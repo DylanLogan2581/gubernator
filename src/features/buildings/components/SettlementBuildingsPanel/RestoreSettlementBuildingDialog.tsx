@@ -1,15 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { restoreSettlementBuildingMutationOptions } from "../../mutations/settlementBuildingsMutations";
@@ -49,44 +41,25 @@ export function RestoreSettlementBuildingDialog({
   }
 
   return (
-    <Dialog
+    <ConfirmDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Restore {building.blueprintName}?</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+      title={`Restore ${building.blueprintName}?`}
+      description={
+        <>
           This will restore{" "}
           <span className="font-medium text-foreground">
             {building.blueprintName}
           </span>{" "}
           (Tier {building.tierNumber}) to active status.
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={restoreMutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={restoreMutation.isPending}
-            type="button"
-            variant="default"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Restore
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Restore"
+      confirmVariant="default"
+      isPending={restoreMutation.isPending}
+      onConfirm={handleConfirm}
+    />
   );
 }

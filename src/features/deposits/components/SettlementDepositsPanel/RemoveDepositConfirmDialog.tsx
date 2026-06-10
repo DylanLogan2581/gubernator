@@ -1,15 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { removeDepositInstanceMutationOptions } from "../../mutations/removeDepositInstanceMutations";
@@ -42,42 +34,22 @@ export function RemoveDepositConfirmDialog({
   }
 
   return (
-    <Dialog
+    <ConfirmDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Remove {instance.name}?</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+      title={`Remove ${instance.name}?`}
+      description={
+        <>
           This will permanently remove{" "}
           <span className="font-medium text-foreground">{instance.name}</span>.
           This action cannot be undone.
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={mutation.isPending}
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Remove
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Remove"
+      isPending={mutation.isPending}
+      onConfirm={handleConfirm}
+    />
   );
 }

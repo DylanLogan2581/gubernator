@@ -1,15 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { rejectTradeRouteSideMutationOptions } from "../../mutations/rejectTradeRouteSideMutations";
@@ -52,42 +44,22 @@ export function RejectConfirmDialog({
   }
 
   return (
-    <Dialog
+    <ConfirmDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Reject trade route?</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+      title="Reject trade route?"
+      description={
+        <>
           Reject the trade route with{" "}
           <span className="font-medium text-foreground">{counterpart}</span>?
           This cannot be undone.
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={mutation.isPending}
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Reject
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Reject"
+      isPending={mutation.isPending}
+      onConfirm={handleConfirm}
+    />
   );
 }

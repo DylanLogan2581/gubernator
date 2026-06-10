@@ -1,15 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { hardDeleteDepositInstanceMutationOptions } from "../../mutations/hardDeleteDepositInstanceMutations";
@@ -45,42 +37,22 @@ export function HardDeleteDepositConfirmDialog({
   }
 
   return (
-    <Dialog
+    <ConfirmDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Permanently delete {instance.name}?</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+      title={`Permanently delete ${instance.name}?`}
+      description={
+        <>
           This will permanently delete{" "}
           <span className="font-medium text-foreground">{instance.name}</span>{" "}
           and all its data. This action cannot be undone.
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={mutation.isPending}
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Delete permanently
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Delete permanently"
+      isPending={mutation.isPending}
+      onConfirm={handleConfirm}
+    />
   );
 }

@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { notifyMutationSuccess } from "@/lib/notify";
 
@@ -71,73 +72,26 @@ export function NationDeleteSection({
           Delete nation
         </Button>
       </div>
-      {isConfirming ? (
-        <NationDeleteConfirmDialog
-          isPending={deleteMutation.isPending}
-          nationName={nation.name}
-          onCancel={() => {
+      <ConfirmDialog
+        open={isConfirming}
+        onOpenChange={(open) => {
+          if (!open) {
             setIsConfirming(false);
             deleteMutation.reset();
-          }}
-          onConfirm={handleConfirm}
-        />
-      ) : null}
-    </section>
-  );
-}
-
-function NationDeleteConfirmDialog({
-  isPending,
-  nationName,
-  onCancel,
-  onConfirm,
-}: {
-  readonly isPending: boolean;
-  readonly nationName: string;
-  readonly onCancel: () => void;
-  readonly onConfirm: () => void;
-}): JSX.Element {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
-      <div
-        aria-labelledby="nation-delete-confirm-title"
-        aria-modal="true"
-        className="grid w-full max-w-md gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="space-y-1">
-          <h3
-            id="nation-delete-confirm-title"
-            className="text-lg font-semibold tracking-normal"
-          >
-            Delete nation
-          </h3>
-          <p className="text-sm text-muted-foreground">
+          }
+        }}
+        title="Delete nation"
+        description={
+          <>
             Are you sure you want to delete{" "}
-            <span className="font-medium">{nationName}</span>? This action
+            <span className="font-medium">{nation.name}</span>? This action
             cannot be undone.
-          </p>
-        </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={onConfirm}
-            disabled={isPending}
-          >
-            <Trash2 aria-hidden="true" />
-            {isPending ? "Deleting…" : "Delete nation"}
-          </Button>
-        </div>
-      </div>
-    </div>
+          </>
+        }
+        confirmLabel={deleteMutation.isPending ? "Deleting…" : "Delete nation"}
+        isPending={deleteMutation.isPending}
+        onConfirm={handleConfirm}
+      />
+    </section>
   );
 }
