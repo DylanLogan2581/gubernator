@@ -1,4 +1,4 @@
-import { type JSX } from "react";
+import { useId, useMemo, type JSX } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -19,23 +19,32 @@ export function TableSkeleton({
   columnCount,
   rowCount = 5,
 }: TableSkeletonProps): JSX.Element {
+  const baseId = useId();
+  const columnKeys = useMemo(
+    () => Array.from({ length: columnCount }, (_, i) => `${baseId}-col-${i}`),
+    [baseId, columnCount],
+  );
+  const rowKeys = useMemo(
+    () => Array.from({ length: rowCount }, (_, i) => `${baseId}-row-${i}`),
+    [baseId, rowCount],
+  );
   return (
     <div role="status" aria-label="Loading table">
       <Table>
         <TableHeader>
           <TableRow>
-            {Array.from({ length: columnCount }).map((_, i) => (
-              <TableHead key={`header-${i}`}>
+            {columnKeys.map((key) => (
+              <TableHead key={key}>
                 <Skeleton className="h-6 w-24" />
               </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Array.from({ length: rowCount }).map((_, rowIdx) => (
-            <TableRow key={`row-${rowIdx}`}>
-              {Array.from({ length: columnCount }).map((_, colIdx) => (
-                <TableCell key={`cell-${rowIdx}-${colIdx}`}>
+          {rowKeys.map((rowKey) => (
+            <TableRow key={rowKey}>
+              {columnKeys.map((colKey) => (
+                <TableCell key={`${rowKey}-${colKey}`}>
                   <Skeleton className="h-6 w-32" />
                 </TableCell>
               ))}
@@ -54,11 +63,16 @@ type CardListSkeletonProps = {
 export function CardListSkeleton({
   rowCount = 5,
 }: CardListSkeletonProps): JSX.Element {
+  const baseId = useId();
+  const itemKeys = useMemo(
+    () => Array.from({ length: rowCount }, (_, i) => `${baseId}-item-${i}`),
+    [baseId, rowCount],
+  );
   return (
     <div role="status" aria-label="Loading list">
       <div className="grid gap-3">
-        {Array.from({ length: rowCount }).map((_, i) => (
-          <div key={`item-${i}`} className="flex items-center gap-3 p-3">
+        {itemKeys.map((key) => (
+          <div key={key} className="flex items-center gap-3 p-3">
             <Skeleton className="h-10 w-10 rounded" />
             <div className="flex-1 space-y-2">
               <Skeleton className="h-4 w-3/4" />
