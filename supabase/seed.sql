@@ -4,6 +4,10 @@
 -- Keep seed data deterministic and safe to re-run.
 -- These credentials are for local development only; never reuse them in hosted
 -- Supabase projects or production data.
+-- pgTAP is a test-only dependency required by `supabase test db`. It is created
+-- here (local seed) rather than in a migration so it never ships to production.
+create extension if not exists pgtap;
+
 insert into
   auth.users (
     id,
