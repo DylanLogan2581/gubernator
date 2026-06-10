@@ -189,7 +189,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     fetchDeposits(ctx, settlementIds),
     fetchManagedPopTypes(ctx, worldId),
     fetchManagedPops(ctx, settlementIds),
-    fetchTradeRoutes(ctx, worldId),
+    fetchTradeRoutes(ctx, settlementIds),
     fetchCitizens(ctx, worldId),
     fetchEvents(ctx, worldId),
     fetchAssignments(ctx, worldId),

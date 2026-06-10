@@ -152,20 +152,38 @@ async function fetchRowsPaginated({
       return { ok: false, reason: "invalid_payload" };
     }
 
+    const pageRowCount = payload.length;
+
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     allRows.push(...payload);
 
-    // Check Content-Range header to detect if we got all rows or if more exist.
-    const contentRange = response.headers.get("Content-Range");
-
-    if (contentRange === null) {
-      // No Content-Range header typically means <1000 rows in first request.
-      // Safe to assume we got everything.
+    // A short page (fewer rows than the page size) is always the final page;
+    // there cannot be more rows to fetch regardless of the Content-Range header.
+    if (pageRowCount < pageSize) {
       break;
     }
 
-    // Parse Content-Range: items 0-999/1234 means we got rows 0-999 of 1234 total.
-    const rangeMatch = contentRange.match(/items (\d+)-(\d+)\/(\d+)/);
+    // Check Content-Range header to determine whether more rows exist.
+    const contentRange = response.headers.get("Content-Range");
+
+    if (contentRange === null) {
+      // No Content-Range header but a full page: cannot rule out more rows.
+      // Treat as truncation risk to avoid silent data loss.
+      // eslint-disable-next-line no-restricted-syntax
+      console.log(
+        JSON.stringify({
+          event: "missing_content_range",
+          table,
+          timestamp: new Date().toISOString(),
+        }),
+      );
+      return { ok: false, reason: "response_truncated" };
+    }
+
+    // PostgREST Content-Range format is `<start>-<end>/<total>` where the total
+    // is `*` unless an exact count was requested (e.g. `0-999/*` or `0-999/1500`).
+    // There is no `items ` prefix.
+    const rangeMatch = contentRange.match(/(\d+)-(\d+)\/(\d+|\*)/);
 
     if (rangeMatch === null) {
       // Malformed header, assume truncation risk and raise error.
@@ -182,14 +200,18 @@ async function fetchRowsPaginated({
     }
 
     const rangeEnd = parseInt(rangeMatch[2], 10);
-    const total = parseInt(rangeMatch[3], 10);
+    const totalRaw = rangeMatch[3];
 
-    // If we've fetched all rows, stop.
-    if (rangeEnd >= total - 1) {
-      break;
+    // If the total is known and we've reached it, stop.
+    if (totalRaw !== "*") {
+      const total = parseInt(totalRaw, 10);
+
+      if (rangeEnd >= total - 1) {
+        break;
+      }
     }
 
-    // Move to next page.
+    // Total unknown (`*`) or more rows remain: fetch the next full page.
     offset = rangeEnd + 1;
   }
 
@@ -548,13 +570,17 @@ export function fetchManagedPops(
 
 export function fetchTradeRoutes(
   ctx: FetchContext,
-  worldId: string,
+  settlementIds: readonly string[],
 ): Promise<FetchRowsResult> {
+  // Scope to routes whose origin AND destination are in-world. `origin_settlement_id`
+  // is a UUID FK (not JSON), so it cannot be filtered with PostgREST's `->` operator.
+  // Filtering by the world's settlement IDs is both correct and simpler.
   return fetchRows({
     ctx,
     table: "trade_routes",
     params: {
-      "origin_settlement_id->world_id": `eq.${worldId}`,
+      origin_settlement_id: buildInFilter(settlementIds),
+      destination_settlement_id: buildInFilter(settlementIds),
       status: "in.(active,paused)",
       order: "id.asc",
       select:

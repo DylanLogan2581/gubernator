@@ -290,14 +290,17 @@ describe("fetchManagedPops", () => {
 // ---------------------------------------------------------------------------
 
 describe("fetchTradeRoutes", () => {
-  it("filters by world_id and status=in.(active,paused)", async () => {
+  it("filters by in-world settlement ids and status=in.(active,paused)", async () => {
     const { calls } = stubFetch([]);
 
-    await fetchTradeRoutes(ctx, WORLD_ID);
+    await fetchTradeRoutes(ctx, [SETTLEMENT_ID]);
 
     const url = calls[0];
     expect(url).toContain("/rest/v1/trade_routes");
-    expect(url).toContain(`origin_settlement_id-%3Eworld_id=eq.${WORLD_ID}`);
+    expect(url).toContain(`origin_settlement_id=in.%28${SETTLEMENT_ID}%29`);
+    expect(url).toContain(
+      `destination_settlement_id=in.%28${SETTLEMENT_ID}%29`,
+    );
     expect(url).toContain("status=in.");
     expect(url).toContain("active");
     expect(url).toContain("paused");
@@ -425,7 +428,7 @@ describe("pagination", () => {
               new Response(JSON.stringify(page1), {
                 status: 200,
                 headers: {
-                  "Content-Range": "items 0-999/1500",
+                  "Content-Range": "0-999/*",
                 },
               }),
             );
@@ -435,7 +438,7 @@ describe("pagination", () => {
               new Response(JSON.stringify(page2), {
                 status: 200,
                 headers: {
-                  "Content-Range": "items 1000-1499/1500",
+                  "Content-Range": "1000-1499/*",
                 },
               }),
             );
@@ -457,7 +460,7 @@ describe("pagination", () => {
   });
 
   it("fetchAssignments detects and reports truncation when no pagination headers", async () => {
-    // Simulate 1000 rows returned but Content-Range indicates >1000 total
+    // Simulate a full page (1000 rows) returned with no Content-Range header.
     const page = Array.from({ length: 1000 }, (_, i) => ({
       citizen_id: `citizen-${i}`,
       assignment_type: "job",
@@ -473,8 +476,9 @@ describe("pagination", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((): Promise<Response> => {
-        // Return 1000 rows but pretend there are more (no pagination support).
-        // This simulates silent truncation scenario.
+        // Return a full page (1000 rows) with no Content-Range header. We cannot
+        // rule out additional rows, so this must be reported as a truncation risk
+        // rather than silently dropping data.
         return Promise.resolve(
           new Response(JSON.stringify(page), { status: 200 }),
         );
@@ -483,11 +487,9 @@ describe("pagination", () => {
 
     const result = await fetchAssignments(ctx, WORLD_ID);
 
-    // Should succeed since we got exactly 1000 rows and no Content-Range header
-    // (meaning the API didn't indicate truncation).
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.rows).toHaveLength(1000);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("response_truncated");
     }
   });
 
@@ -516,7 +518,7 @@ describe("pagination", () => {
             new Response(JSON.stringify(page1), {
               status: 200,
               headers: {
-                "Content-Range": "items 0-999/1100",
+                "Content-Range": "0-999/*",
               },
             }),
           );
@@ -525,7 +527,7 @@ describe("pagination", () => {
             new Response(JSON.stringify(page2), {
               status: 200,
               headers: {
-                "Content-Range": "items 1000-1099/1100",
+                "Content-Range": "1000-1099/*",
               },
             }),
           );
