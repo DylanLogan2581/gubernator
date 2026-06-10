@@ -417,7 +417,7 @@ describe("CitizenDetailPage", () => {
       });
       await userEvent.click(linkButton);
 
-      expect(await screen.findByText(/Failed to load users/i)).toBeDefined();
+      expect(await screen.findByText(/Couldn't load users/i)).toBeDefined();
     });
 
     it("unlinks a plain PC immediately without a confirmation dialog", async () => {

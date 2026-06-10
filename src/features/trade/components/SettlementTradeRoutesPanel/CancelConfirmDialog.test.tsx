@@ -123,7 +123,7 @@ describe("CancelConfirmDialog", () => {
   it("shows cancel dialog with counterpart name", () => {
     renderDialog();
     expect(
-      screen.getByRole("dialog", { name: "Cancel trade route?" }),
+      screen.getByRole("alertdialog", { name: "Cancel trade route?" }),
     ).toBeDefined();
     expect(screen.getByText(/Far Settlement \(Far Nation\)/)).toBeDefined();
   });
@@ -200,7 +200,7 @@ describe("CancelConfirmDialog", () => {
     const user = userEvent.setup();
     const { onClose, rpcMock } = renderDialog();
 
-    await user.click(screen.getByRole("button", { name: "Keep" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(onClose).toHaveBeenCalled();
     expect(rpcMock).not.toHaveBeenCalled();

@@ -5,6 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreateNpcDialog } from "./CreateNpcDialog";
 
+function getSelectByLabel(label: string): HTMLSelectElement {
+  const labelEl = screen.getByText(label);
+  const select = labelEl.parentElement?.querySelector("select");
+  if (select === null || select === undefined) {
+    throw new Error(`No select found for label "${label}"`);
+  }
+  return select;
+}
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
@@ -180,12 +189,12 @@ describe("CreateNpcDialog", () => {
   it("renders Parent A and Parent B side by side in a sm:grid-cols-2 container", () => {
     renderDialog();
 
-    const parentALabel = screen.getByRole("combobox", { name: "Parent A" });
-    const parentBLabel = screen.getByRole("combobox", { name: "Parent B" });
-    const container = parentALabel.closest("label")?.parentElement;
+    const parentASelect = getSelectByLabel("Parent A");
+    const parentBSelect = getSelectByLabel("Parent B");
+    const container = parentASelect.closest("div")?.parentElement;
     expect(container).not.toBeNull();
     expect(container?.className).toContain("sm:grid-cols-2");
-    expect(container).toContainElement(parentBLabel);
+    expect(container).toContainElement(parentBSelect);
   });
 
   it("does not call the mutation when the name is blank", async () => {
@@ -205,14 +214,8 @@ describe("CreateNpcDialog", () => {
       screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent A" }),
-      CITIZEN_A_ID,
-    );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent B" }),
-      CITIZEN_A_ID,
-    );
+    await userEvent.selectOptions(getSelectByLabel("Parent A"), CITIZEN_A_ID);
+    await userEvent.selectOptions(getSelectByLabel("Parent B"), CITIZEN_A_ID);
 
     await userEvent.click(screen.getByRole("button", { name: "Create NPC" }));
 
@@ -231,14 +234,8 @@ describe("CreateNpcDialog", () => {
       screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent A" }),
-      CITIZEN_A_ID,
-    );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent B" }),
-      CITIZEN_B_ID,
-    );
+    await userEvent.selectOptions(getSelectByLabel("Parent A"), CITIZEN_A_ID);
+    await userEvent.selectOptions(getSelectByLabel("Parent B"), CITIZEN_B_ID);
 
     await userEvent.click(screen.getByRole("button", { name: "Create NPC" }));
 

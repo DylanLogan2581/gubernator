@@ -314,6 +314,25 @@ function createClient({
       .mockResolvedValue({ data: latestSnapshotRow, error: null }),
   };
 
+  // The settlement outcome fetcher also queries settlement_turn_snapshots a
+  // second time (scoped to transition id) for the embedded child collection.
+  // That call chains .select().eq().eq().returns() instead of .maybeSingle().
+  const snapshotChildBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => snapshotChildBuilder),
+    returns: vi.fn().mockResolvedValue({
+      data: latestTransitionRow?.settlement_turn_snapshots ?? [],
+      error: null,
+    }),
+  };
+
+  function createChildCollectionBuilder(rows: readonly unknown[]): unknown {
+    const builder: Record<string, unknown> = {
+      eq: vi.fn(() => builder),
+      returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    };
+    return builder;
+  }
+
   const transitionBuilder: Record<string, unknown> = {
     eq: vi.fn(() => transitionBuilder),
     returns: vi.fn(() => transitionBuilder),
@@ -347,10 +366,43 @@ function createClient({
         return createSimpleQueryBuilder(resourceRows);
       }
       if (table === "settlement_turn_snapshots") {
-        return { select: vi.fn(() => snapshotLookupBuilder) };
+        return {
+          select: vi.fn((columns: string) =>
+            columns === "turn_transition_id"
+              ? snapshotLookupBuilder
+              : snapshotChildBuilder,
+          ),
+        };
       }
       if (table === "turn_transitions") {
         return { select: vi.fn(() => transitionBuilder) };
+      }
+      if (table === "settlement_turn_resource_snapshots") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(
+              latestTransitionRow?.settlement_turn_resource_snapshots ?? [],
+            ),
+          ),
+        };
+      }
+      if (table === "turn_log_entries") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(
+              latestTransitionRow?.turn_log_entries ?? [],
+            ),
+          ),
+        };
+      }
+      if (table === "notifications") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(
+              latestTransitionRow?.notifications ?? [],
+            ),
+          ),
+        };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),

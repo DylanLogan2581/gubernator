@@ -301,11 +301,38 @@ function createClient({
     returns: vi.fn().mockResolvedValue({ data: snapshotRows, error: null }),
   };
 
+  // The settlement transition-outcome fetcher loads the base transition row
+  // without embedded collections, then fetches the child collections from
+  // their own tables in parallel.
   const transitionSelectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => transitionSelectBuilder),
     returns: vi.fn(() => transitionSelectBuilder),
     maybeSingle: vi.fn().mockResolvedValue({
       data: transitionRow ?? null,
+      error: null,
+    }),
+  };
+
+  const logEntriesBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => logEntriesBuilder),
+    returns: vi.fn().mockResolvedValue({
+      data: transitionRow?.turn_log_entries ?? [],
+      error: null,
+    }),
+  };
+
+  const notificationsBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => notificationsBuilder),
+    returns: vi.fn().mockResolvedValue({
+      data: transitionRow?.notifications ?? [],
+      error: null,
+    }),
+  };
+
+  const resourceSnapshotsBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => resourceSnapshotsBuilder),
+    returns: vi.fn().mockResolvedValue({
+      data: transitionRow?.settlement_turn_resource_snapshots ?? [],
       error: null,
     }),
   };
@@ -326,6 +353,15 @@ function createClient({
       }
       if (table === "settlement_turn_snapshots") {
         return { select: vi.fn(() => snapshotBuilder) };
+      }
+      if (table === "settlement_turn_resource_snapshots") {
+        return { select: vi.fn(() => resourceSnapshotsBuilder) };
+      }
+      if (table === "turn_log_entries") {
+        return { select: vi.fn(() => logEntriesBuilder) };
+      }
+      if (table === "notifications") {
+        return { select: vi.fn(() => notificationsBuilder) };
       }
       if (table === "turn_transitions") {
         return { select: vi.fn(() => transitionSelectBuilder) };
@@ -762,7 +798,7 @@ describe("SettlementManagedPopulationsPanel", () => {
       screen.getByRole("button", { name: "Mark North Herd extinct" }),
     );
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Mark North Herd extinct?",
     });
     await user.click(

@@ -257,6 +257,19 @@ function createClient({
     }),
   };
 
+  // Child collections are fetched as separate settlement+transition-scoped
+  // queries that terminate in `.returns()`. Serve them from the embedded
+  // arrays carried on latestTransitionRow so existing fixtures keep working.
+  function createChildCollectionBuilder(
+    rows: readonly unknown[],
+  ): Record<string, unknown> {
+    const builder: Record<string, unknown> = {
+      eq: vi.fn(() => builder),
+      returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    };
+    return builder;
+  }
+
   const defaultRpcMock = vi.fn((fn: string) => {
     if (fn === "settlement_population_cap") {
       return Promise.resolve({ data: populationCap, error: null });
@@ -279,7 +292,42 @@ function createClient({
         return createSimpleQueryBuilder(jobRows);
       }
       if (table === "settlement_turn_snapshots") {
-        return { select: vi.fn(() => snapshotLookupBuilder) };
+        return {
+          select: vi.fn((columns: string) =>
+            columns === "turn_transition_id"
+              ? snapshotLookupBuilder
+              : createChildCollectionBuilder(
+                  latestTransitionRow?.settlement_turn_snapshots ?? [],
+                ),
+          ),
+        };
+      }
+      if (table === "settlement_turn_resource_snapshots") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(
+              latestTransitionRow?.settlement_turn_resource_snapshots ?? [],
+            ),
+          ),
+        };
+      }
+      if (table === "turn_log_entries") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(
+              latestTransitionRow?.turn_log_entries ?? [],
+            ),
+          ),
+        };
+      }
+      if (table === "notifications") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(
+              latestTransitionRow?.notifications ?? [],
+            ),
+          ),
+        };
       }
       if (table === "turn_transitions") {
         return { select: vi.fn(() => transitionBuilder) };
@@ -325,7 +373,9 @@ describe("SettlementBuildingsPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     // Panel should render successfully with the queries
-    expect(await screen.findByRole("region")).toBeDefined();
+    expect(
+      await screen.findByRole("heading", { name: "Buildings" }),
+    ).toBeDefined();
   });
 
   it("renders building rows grouped by state", async () => {
@@ -637,7 +687,9 @@ describe("SettlementBuildingsPanel", () => {
     );
 
     expect(
-      await screen.findByRole("dialog", { name: "Deconstruct Barracks?" }),
+      await screen.findByRole("alertdialog", {
+        name: "Deconstruct Barracks?",
+      }),
     ).toBeDefined();
   });
 
@@ -677,7 +729,7 @@ describe("SettlementBuildingsPanel", () => {
       screen.getByRole("button", { name: "Deconstruct Barracks" }),
     );
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Deconstruct Barracks?",
     });
     await user.click(

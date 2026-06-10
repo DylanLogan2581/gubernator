@@ -748,7 +748,7 @@ describe("NationDetailPage", () => {
       await screen.findByRole("button", { name: /Delete nation/ }),
     );
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     await userEvent.click(
       within(dialog).getByRole("button", { name: /Delete nation/ }),
     );

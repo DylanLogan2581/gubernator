@@ -5,6 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreatePlayerCharacterDialog } from "./CreatePlayerCharacterDialog";
 
+function getSelectByLabel(label: string): HTMLSelectElement {
+  const labelEl = screen.getByText(label);
+  const select = labelEl.parentElement?.querySelector("select");
+  if (select === null || select === undefined) {
+    throw new Error(`No select found for label "${label}"`);
+  }
+  return select;
+}
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
@@ -244,14 +253,8 @@ describe("CreatePlayerCharacterDialog", () => {
       screen.getByRole("combobox", { name: "User" }),
       USER_ID,
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent A" }),
-      CITIZEN_A_ID,
-    );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent B" }),
-      CITIZEN_A_ID,
-    );
+    await userEvent.selectOptions(getSelectByLabel("Parent A"), CITIZEN_A_ID);
+    await userEvent.selectOptions(getSelectByLabel("Parent B"), CITIZEN_A_ID);
 
     await userEvent.click(
       screen.getByRole("button", { name: "Create player character" }),
@@ -278,14 +281,8 @@ describe("CreatePlayerCharacterDialog", () => {
       screen.getByRole("combobox", { name: "User" }),
       USER_ID,
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent A" }),
-      CITIZEN_A_ID,
-    );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent B" }),
-      CITIZEN_B_ID,
-    );
+    await userEvent.selectOptions(getSelectByLabel("Parent A"), CITIZEN_A_ID);
+    await userEvent.selectOptions(getSelectByLabel("Parent B"), CITIZEN_B_ID);
 
     await userEvent.click(
       screen.getByRole("button", { name: "Create player character" }),

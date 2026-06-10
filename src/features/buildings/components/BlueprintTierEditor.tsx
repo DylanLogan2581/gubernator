@@ -526,6 +526,7 @@ function EditTierForm({
 
   // Initialize form with existing tier data
   useEffect(() => {
+    form.setTierNumber(String(tier.tierNumber));
     form.setWorkerTurns(String(tier.workerTurnsRequired));
     form.setConstructionCosts(tierCostsToState(tier.constructionCostsJson));
     form.setUpkeepCosts(tierCostsToState(tier.upkeepCostsJson));

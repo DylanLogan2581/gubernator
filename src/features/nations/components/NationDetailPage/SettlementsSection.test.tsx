@@ -138,7 +138,7 @@ describe("NationSettlementsSection", () => {
       // Check that the dialog appeared
       await waitFor(() => {
         expect(
-          screen.getByRole("heading", { name: "Create Settlement" }),
+          screen.getByRole("heading", { name: "Create settlement" }),
         ).toBeInTheDocument();
       });
     });
@@ -156,7 +156,7 @@ describe("NationSettlementsSection", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole("heading", { name: "Create Settlement" }),
+          screen.getByRole("heading", { name: "Create settlement" }),
         ).toBeInTheDocument();
       });
 
@@ -165,7 +165,7 @@ describe("NationSettlementsSection", () => {
 
       await waitFor(() => {
         expect(
-          screen.queryByRole("heading", { name: "Create Settlement" }),
+          screen.queryByRole("heading", { name: "Create settlement" }),
         ).not.toBeInTheDocument();
       });
     });

@@ -406,7 +406,7 @@ describe("SettlementTradeRoutesPanel", () => {
 
     renderPanel();
 
-    expect(screen.getByText("Loading trade routes…")).toBeDefined();
+    expect(screen.getByRole("status", { name: "Loading table" })).toBeDefined();
   });
 
   it("renders empty state when no routes", async () => {
@@ -677,7 +677,7 @@ describe("SettlementTradeRoutesPanel", () => {
       }),
     );
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Approve trade route?",
     });
     await user.click(within(dialog).getByRole("button", { name: "Approve" }));
@@ -750,7 +750,7 @@ describe("SettlementTradeRoutesPanel", () => {
       }),
     );
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Approve trade route?",
     });
     await user.click(within(dialog).getByRole("button", { name: "Approve" }));
@@ -812,7 +812,7 @@ describe("SettlementTradeRoutesPanel", () => {
       }),
     );
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Reject trade route?",
     });
     await user.click(within(dialog).getByRole("button", { name: "Reject" }));
@@ -887,7 +887,7 @@ describe("SettlementTradeRoutesPanel", () => {
       }),
     );
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Cancel trade route?",
     });
     expect(within(dialog).getByText(/2 traders/)).toBeDefined();
@@ -956,7 +956,7 @@ describe("SettlementTradeRoutesPanel", () => {
       }),
     );
 
-    await screen.findByRole("dialog", { name: "Cancel trade route?" });
+    await screen.findByRole("alertdialog", { name: "Cancel trade route?" });
     await user.click(screen.getByRole("button", { name: "Cancel route" }));
 
     await waitFor(() => {

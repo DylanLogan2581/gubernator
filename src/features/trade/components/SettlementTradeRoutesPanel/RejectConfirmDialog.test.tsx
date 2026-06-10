@@ -103,7 +103,7 @@ describe("RejectConfirmDialog", () => {
   it("shows reject dialog with counterpart name", () => {
     renderDialog();
     expect(
-      screen.getByRole("dialog", { name: "Reject trade route?" }),
+      screen.getByRole("alertdialog", { name: "Reject trade route?" }),
     ).toBeDefined();
     expect(screen.getByText(/Far Settlement \(Far Nation\)/)).toBeDefined();
   });

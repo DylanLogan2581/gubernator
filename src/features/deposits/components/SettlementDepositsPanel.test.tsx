@@ -313,6 +313,25 @@ function createClient({
     }),
   };
 
+  // The settlement outcome fetcher loads child collections via separate
+  // table queries scoped to the transition id, each chaining
+  // .select().eq().eq().returns() to resolve the rows.
+  const snapshotChildBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => snapshotChildBuilder),
+    returns: vi.fn().mockResolvedValue({
+      data: transitionRow?.settlement_turn_snapshots ?? [],
+      error: null,
+    }),
+  };
+
+  function createChildCollectionBuilder(rows: readonly unknown[]): unknown {
+    const builder: Record<string, unknown> = {
+      eq: vi.fn(() => builder),
+      returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    };
+    return builder;
+  }
+
   return {
     from: vi.fn((table: string) => {
       if (table === "deposit_instances") {
@@ -328,10 +347,39 @@ function createClient({
         return { select: vi.fn(() => resourcesSelectBuilder) };
       }
       if (table === "settlement_turn_snapshots") {
-        return { select: vi.fn(() => snapshotLookupBuilder) };
+        return {
+          select: vi.fn((columns: string) =>
+            columns === "turn_transition_id"
+              ? snapshotLookupBuilder
+              : snapshotChildBuilder,
+          ),
+        };
       }
       if (table === "turn_transitions") {
         return { select: vi.fn(() => transitionSelectBuilder) };
+      }
+      if (table === "settlement_turn_resource_snapshots") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(
+              transitionRow?.settlement_turn_resource_snapshots ?? [],
+            ),
+          ),
+        };
+      }
+      if (table === "turn_log_entries") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(transitionRow?.turn_log_entries ?? []),
+          ),
+        };
+      }
+      if (table === "notifications") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(transitionRow?.notifications ?? []),
+          ),
+        };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -548,7 +596,7 @@ describe("SettlementDepositsPanel", () => {
       screen.getByRole("button", { name: "Permanently delete Old Mine" }),
     );
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Permanently delete Old Mine?",
     });
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
@@ -593,7 +641,7 @@ describe("SettlementDepositsPanel", () => {
       screen.getByRole("button", { name: "Permanently delete Old Mine" }),
     );
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Permanently delete Old Mine?",
     });
     await user.click(
@@ -1010,7 +1058,7 @@ describe("SettlementDepositsPanel", () => {
     await screen.findByText("North Mine");
     await user.click(screen.getByRole("button", { name: "Remove North Mine" }));
 
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Remove North Mine?",
     });
     await user.click(within(dialog).getByRole("button", { name: "Remove" }));

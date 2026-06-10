@@ -106,7 +106,7 @@ describe("ApproveConfirmDialog", () => {
   it("shows approve dialog with counterpart name", () => {
     renderDialog();
     expect(
-      screen.getByRole("dialog", { name: "Approve trade route?" }),
+      screen.getByRole("alertdialog", { name: "Approve trade route?" }),
     ).toBeDefined();
     expect(screen.getByText(/Far Settlement \(Far Nation\)/)).toBeDefined();
   });

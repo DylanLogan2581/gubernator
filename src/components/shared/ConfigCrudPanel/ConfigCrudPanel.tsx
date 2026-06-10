@@ -100,7 +100,7 @@ export function ConfigCrudPanel<T>({
         </div>
       </div>
 
-      {visibleItems.length > 0 ? (
+      {visibleItems.length > 0 || (showForm && !showTrash) ? (
         renderContent({
           canEdit,
           editingId,

@@ -61,7 +61,7 @@ describe("CreateSettlementDialog", () => {
     renderDialog();
 
     expect(
-      screen.getByRole("heading", { name: "Create Settlement" }),
+      screen.getByRole("heading", { name: "Create settlement" }),
     ).toBeDefined();
     expect(screen.getByLabelText(/Name.*\*/)).toBeInTheDocument();
     expect(
@@ -222,7 +222,7 @@ describe("CreateSettlementDialog", () => {
     renderDialog();
 
     const dialogContent = screen
-      .getByRole("heading", { name: "Create Settlement" })
+      .getByRole("heading", { name: "Create settlement" })
       .closest("[role='dialog']");
     expect(dialogContent).toBeInTheDocument();
 
