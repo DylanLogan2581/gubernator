@@ -257,39 +257,114 @@ async function getLatestSettlementTransitionOutcome(
     return null;
   }
 
-  const { data, error } = await client
+  const transitionId = latestSnapshot.turn_transition_id;
+
+  // Fetch base transition data without embedded collections
+  const baseSelect = [
+    "id",
+    "world_id",
+    "from_turn_number",
+    "to_turn_number",
+    "status",
+    "started_at",
+    "finished_at",
+  ].join(",");
+
+  const { data: transition, error: transitionError } = await client
     .from("turn_transitions")
-    .select(TRANSITION_OUTCOME_SELECT)
-    .eq("id", latestSnapshot.turn_transition_id)
-    .returns<TransitionOutcomeRow[]>()
+    .select(baseSelect)
+    .eq("id", transitionId)
+    .returns<{
+      id: string;
+      world_id: string;
+      from_turn_number: number;
+      to_turn_number: number;
+      status: string;
+      started_at: string;
+      finished_at: string | null;
+    }>()
     .maybeSingle();
 
-  if (error !== null) {
-    throw normalizeSupabaseError(error);
+  if (transitionError !== null) {
+    throw normalizeSupabaseError(transitionError);
   }
 
-  if (data === null) {
+  if (transition === null) {
     return null;
   }
 
-  const row = data;
+  // Fetch child collections separately, scoped to settlement + transition
+  const [
+    { data: snapshots, error: snapshotsError },
+    { data: resourceSnapshots, error: resourceSnapshotsError },
+    { data: logEntries, error: logEntriesError },
+    { data: notifications, error: notificationsError },
+  ] = await Promise.all([
+    client
+      .from("settlement_turn_snapshots")
+      .select(
+        "id,settlement_id,world_id,turn_number,birth_count,death_count,homeless_deaths_count,starvation_deaths_count,population_cap,population_npc,population_player_character,population_total",
+      )
+      .eq("settlement_id", settlementId)
+      .eq("turn_transition_id", transitionId)
+      .returns<SettlementSnapshotRow[]>(),
+    client
+      .from("settlement_turn_resource_snapshots")
+      .select(
+        "id,settlement_id,world_id,resource_id,turn_number,consumed_amount,produced_amount,quantity_after,quantity_before,trade_in_amount,trade_out_amount",
+      )
+      .eq("settlement_id", settlementId)
+      .eq("turn_transition_id", transitionId)
+      .returns<ResourceSnapshotRow[]>(),
+    client
+      .from("turn_log_entries")
+      .select(
+        "id,settlement_id,world_id,citizen_id,nation_id,resource_id,log_category,payload_jsonb",
+      )
+      .eq("settlement_id", settlementId)
+      .eq("turn_transition_id", transitionId)
+      .returns<LogEntryRow[]>(),
+    client
+      .from("notifications")
+      .select(
+        "id,settlement_id,world_id,citizen_id,nation_id,generated_at,generated_in_transition_id,is_read,message_text,notification_type,recipient_user_id",
+      )
+      .eq("settlement_id", settlementId)
+      .eq("generated_in_transition_id", transitionId)
+      .returns<NotificationRow[]>(),
+  ]);
 
-  return toTurnTransitionOutcome({
-    ...row,
-    notifications: row.notifications.filter(
-      (n) => n.settlement_id === settlementId,
-    ),
-    settlement_turn_resource_snapshots:
-      row.settlement_turn_resource_snapshots.filter(
-        (r) => r.settlement_id === settlementId,
-      ),
-    settlement_turn_snapshots: row.settlement_turn_snapshots.filter(
-      (s) => s.settlement_id === settlementId,
-    ),
-    turn_log_entries: row.turn_log_entries.filter(
-      (e) => e.settlement_id === settlementId,
-    ),
-  });
+  if (
+    snapshotsError !== null ||
+    resourceSnapshotsError !== null ||
+    logEntriesError !== null ||
+    notificationsError !== null
+  ) {
+    throw normalizeSupabaseError(
+      snapshotsError ??
+        resourceSnapshotsError ??
+        logEntriesError ??
+        notificationsError,
+    );
+  }
+
+  const row: TransitionOutcomeRow = {
+    ...(transition as {
+      id: string;
+      world_id: string;
+      from_turn_number: number;
+      to_turn_number: number;
+      status: string;
+      started_at: string;
+      finished_at: string | null;
+    }),
+    notifications: notifications ?? [],
+    settlement_turn_resource_snapshots: resourceSnapshots ?? [],
+    settlement_turn_snapshots: snapshots ?? [],
+    turn_log_entries: logEntries ?? [],
+  };
+
+  return toTurnTransitionOutcome(row);
 }
 
 // -- Transformers --

@@ -250,40 +250,80 @@ function createSettlementFilterClient(
   snapshotBuilder.not = vi.fn(() => snapshotBuilder);
   snapshotBuilder.order = vi.fn(() => snapshotBuilder);
   snapshotBuilder.limit = vi.fn(() => snapshotBuilder);
+  snapshotBuilder.returns = vi.fn(() => snapshotBuilder);
   snapshotBuilder.maybeSingle = vi.fn().mockResolvedValue({
     data: { turn_transition_id: "transition-1" },
     error: null,
   });
 
-  const row = {
-    finished_at: "2026-06-01T12:00:00Z",
-    from_turn_number: 5,
-    id: "transition-1",
-    notifications,
-    settlement_turn_resource_snapshots: [],
-    settlement_turn_snapshots: [],
-    started_at: "2026-06-01T11:55:00Z",
-    status: "completed",
-    to_turn_number: 6,
-    turn_log_entries: [],
-    world_id: "world-1",
-  };
-
   const transitionBuilder: Record<string, unknown> = {};
   transitionBuilder.select = vi.fn(() => transitionBuilder);
   transitionBuilder.eq = vi.fn(() => transitionBuilder);
   transitionBuilder.returns = vi.fn(() => transitionBuilder);
-  transitionBuilder.maybeSingle = vi
-    .fn()
-    .mockResolvedValue({ data: row, error: null });
+  transitionBuilder.maybeSingle = vi.fn().mockResolvedValue({
+    data: {
+      finished_at: "2026-06-01T12:00:00Z",
+      from_turn_number: 5,
+      id: "transition-1",
+      started_at: "2026-06-01T11:55:00Z",
+      status: "completed",
+      to_turn_number: 6,
+      world_id: "world-1",
+    },
+    error: null,
+  });
+
+  const makeChildBuilder = (data: unknown): Record<string, unknown> => {
+    const builder: Record<string, unknown> = {};
+    builder.select = vi.fn(() => builder);
+    builder.eq = vi.fn(() => builder);
+    builder.returns = vi.fn(() => Promise.resolve({ data, error: null }));
+    return builder;
+  };
+
+  // Create a smarter notifications builder that filters by settlement_id
+  const notificationsBuilder: Record<string, unknown> = {};
+  let filteredNotifications: readonly NotificationRowFixture[] = notifications;
+  notificationsBuilder.select = vi.fn(() => notificationsBuilder);
+  notificationsBuilder.eq = vi.fn((column: string, value: unknown) => {
+    if (column === "settlement_id") {
+      filteredNotifications = notifications.filter(
+        (n) => n.settlement_id === value,
+      );
+    }
+    return notificationsBuilder;
+  });
+  notificationsBuilder.returns = vi.fn(() =>
+    Promise.resolve({ data: filteredNotifications, error: null }),
+  );
+
+  const callCounts: Record<string, number> = {};
 
   return {
     from: vi.fn((table: string) => {
+      callCounts[table] = (callCounts[table] ?? 0) + 1;
+
       if (table === "settlement_turn_snapshots") {
-        return snapshotBuilder;
+        // First call: initial snapshot lookup
+        if (callCounts[table] === 1) {
+          return snapshotBuilder;
+        }
+        // Second call: child table query (in Promise.all)
+        return makeChildBuilder([]);
       }
       if (table === "turn_transitions") {
         return transitionBuilder;
+      }
+      if (table === "settlement_turn_resource_snapshots") {
+        return makeChildBuilder([]);
+      }
+      if (table === "turn_log_entries") {
+        return makeChildBuilder([]);
+      }
+      if (table === "notifications") {
+        // Reset filtered notifications for each new query
+        filteredNotifications = notifications;
+        return notificationsBuilder;
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
