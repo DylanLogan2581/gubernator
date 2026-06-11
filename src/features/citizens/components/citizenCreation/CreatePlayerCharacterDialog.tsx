@@ -3,6 +3,7 @@ import { Save, UserPlus } from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -47,7 +50,8 @@ export function CreatePlayerCharacterDialog({
   settlementId,
   worldId,
 }: CreatePlayerCharacterDialogProps): JSX.Element {
-  const nameId = useId();
+  const givenNameId = useId();
+  const surnameId = useId();
   const userId = useId();
   const [fields, setFields] = useState({
     ...EMPTY_COMMON_FIELDS,
@@ -71,8 +75,8 @@ export function CreatePlayerCharacterDialog({
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    const trimmedName = fields.name.trim();
-    if (trimmedName === "") {
+    const trimmedGivenName = fields.givenName.trim();
+    if (trimmedGivenName === "") {
       return;
     }
     if (fields.userId === "") {
@@ -96,7 +100,8 @@ export function CreatePlayerCharacterDialog({
       setFormError(undefined);
       mutation.mutate(
         {
-          name: trimmedName,
+          givenName: trimmedGivenName,
+          surname: fields.surname.trim() !== "" ? fields.surname.trim() : null,
           parentACitizenId,
           parentBCitizenId,
           personalityText: null,
@@ -160,39 +165,56 @@ export function CreatePlayerCharacterDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <label className="grid gap-1 text-sm" htmlFor={nameId}>
-            <span className="text-muted-foreground">Name</span>
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={givenNameId}>Given name</Label>
             <Input
-              id={nameId}
+              id={givenNameId}
               disabled={mutation.isPending}
               maxLength={textInputLimits.citizenNameMax}
               required
-              value={fields.name}
+              value={fields.givenName}
               onChange={(event) => {
                 const value = event.currentTarget.value;
-                setFields((current) => ({ ...current, name: value }));
+                setFields((current) => ({ ...current, givenName: value }));
               }}
             />
-          </label>
+          </div>
 
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Sex</span>
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={surnameId}>Surname</Label>
             <Input
+              id={surnameId}
               disabled={mutation.isPending}
-              placeholder="Optional"
+              maxLength={textInputLimits.citizenNameMax}
+              value={fields.surname}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setFields((current) => ({ ...current, surname: value }));
+              }}
+            />
+          </div>
+
+          <div className="grid gap-1 text-sm">
+            <Label>Sex</Label>
+            <NativeSelect
+              aria-label="Sex"
+              disabled={mutation.isPending}
               value={fields.sex}
               onChange={(event) => {
                 const value = event.currentTarget.value;
                 setFields((current) => ({ ...current, sex: value }));
               }}
-            />
-          </label>
+            >
+              <option value="">Unspecified</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </NativeSelect>
+          </div>
 
-          <label className="grid gap-1 text-sm" htmlFor={userId}>
-            <span className="text-muted-foreground">User</span>
-            <select
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={userId}>User</Label>
+            <NativeSelect
               id={userId}
-              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
               disabled={mutation.isPending || usersQuery.isPending}
               required
               value={fields.userId}
@@ -208,8 +230,8 @@ export function CreatePlayerCharacterDialog({
                   {appUser.username}
                 </option>
               ))}
-            </select>
-          </label>
+            </NativeSelect>
+          </div>
 
           <ParentField
             citizens={parentChoices}
@@ -234,12 +256,9 @@ export function CreatePlayerCharacterDialog({
           />
 
           {formError === undefined ? null : (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {formError}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
           )}
 
           <DialogFooter>
@@ -280,10 +299,9 @@ function ParentField({
   readonly value: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <select
-        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+    <div className="grid gap-1 text-sm">
+      <Label>{label}</Label>
+      <NativeSelect
         disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
@@ -294,7 +312,7 @@ function ParentField({
             {citizen.name}
           </option>
         ))}
-      </select>
-    </label>
+      </NativeSelect>
+    </div>
   );
 }

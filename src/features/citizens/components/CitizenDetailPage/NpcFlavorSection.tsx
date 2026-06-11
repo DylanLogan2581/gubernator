@@ -1,10 +1,11 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Pencil } from "lucide-react";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 import { generateLocalId } from "@/lib/uid";
 
@@ -13,29 +14,32 @@ import { generateNpcFlavor, type NpcFlavor } from "../../utils/npcFlavor";
 import { NpcFlavorEditor } from "../NpcFlavorEditor";
 import { NpcFlavorLine } from "../NpcFlavorLine";
 
-import { getCitizenMutationErrorDescription } from "./ErrorMessages";
 import { Readout } from "./Shared";
 
-import type { Citizen } from "../../types/citizenTypes";
+import type { CitizenAdminDetails } from "../../types/citizenTypes";
 
-function citizenToNpcFlavor(citizen: Citizen): NpcFlavor {
+function adminDetailsToNpcFlavor(
+  adminDetails: CitizenAdminDetails | null,
+): NpcFlavor {
   return {
-    contradiction: citizen.npcSecretContradiction ?? "",
-    flaw: citizen.npcFlaw ?? "",
-    goal: citizen.npcGoal ?? "",
-    trait1: citizen.npcTrait1 ?? "",
-    trait2: citizen.npcTrait2 ?? "",
+    contradiction: adminDetails?.npcSecretContradiction ?? "",
+    flaw: adminDetails?.npcFlaw ?? "",
+    goal: adminDetails?.npcGoal ?? "",
+    trait1: adminDetails?.npcTrait1 ?? "",
+    trait2: adminDetails?.npcTrait2 ?? "",
   };
 }
 
 export function CitizenNpcFlavorSection({
+  adminDetails,
   canEdit,
-  citizen,
+  citizenId,
   queryClient,
   worldId,
 }: {
+  readonly adminDetails: CitizenAdminDetails | null;
   readonly canEdit: boolean;
-  readonly citizen: Citizen;
+  readonly citizenId: string;
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
@@ -54,21 +58,22 @@ export function CitizenNpcFlavorSection({
     updateMutation.reset();
     updateMutation.mutate(
       {
-        citizenId: citizen.id,
+        citizenId,
         npcFlaw: next.flaw,
         npcGoal: next.goal,
         npcSecretContradiction: next.contradiction,
         npcTrait1: next.trait1,
         npcTrait2: next.trait2,
-        personalityText: citizen.personalityText ?? "",
-        skillsText: citizen.skillsText ?? "",
-        worldId: citizen.worldId,
+        personalityText: adminDetails?.personalityText ?? "",
+        skillsText: adminDetails?.skillsText ?? "",
+        worldId,
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update citizen flavor.");
         },
         onSuccess: () => {
+          notifyMutationSuccess("NPC flavor saved.");
           setIsEditing(false);
         },
       },
@@ -85,18 +90,20 @@ export function CitizenNpcFlavorSection({
     return generateNpcFlavor(config, createSeededRng(generateLocalId()));
   }
 
+  const currentFlavor = adminDetailsToNpcFlavor(adminDetails);
+
   if (isEditing) {
     return (
-      <section
+      <Card
         aria-labelledby="citizen-npc-flavor-heading"
-        className="grid gap-3"
+        className="grid gap-3 p-4"
       >
         <h2 id="citizen-npc-flavor-heading" className="sr-only">
           NPC flavor
         </h2>
         <NpcFlavorEditor
           disabled={updateMutation.isPending}
-          initial={citizenToNpcFlavor(citizen)}
+          initial={currentFlavor}
           onCancel={closeEditor}
           onGenerate={
             flavorConfigQuery.data !== undefined ? handleGenerate : undefined
@@ -104,14 +111,14 @@ export function CitizenNpcFlavorSection({
           onSave={handleSave}
           submitLabel={updateMutation.isPending ? "Saving…" : "Save flavor"}
         />
-      </section>
+      </Card>
     );
   }
 
   return (
-    <section
+    <Card
       aria-labelledby="citizen-npc-flavor-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="flex items-center justify-between gap-2">
         <h2 id="citizen-npc-flavor-heading" className="text-base font-medium">
@@ -129,21 +136,18 @@ export function CitizenNpcFlavorSection({
           </Button>
         ) : null}
       </div>
-      <NpcFlavorLine
-        citizenId={citizen.id}
-        flavor={citizenToNpcFlavor(citizen)}
-      />
+      <NpcFlavorLine citizenId={citizenId} flavor={currentFlavor} />
       <dl className="flex flex-col gap-2">
-        <Readout label="Trait 1" value={citizen.npcTrait1} />
-        <Readout label="Trait 2" value={citizen.npcTrait2} />
-        <Readout label="Goal" value={citizen.npcGoal} block />
-        <Readout label="Flaw" value={citizen.npcFlaw} block />
+        <Readout label="Trait 1" value={adminDetails?.npcTrait1 ?? null} />
+        <Readout label="Trait 2" value={adminDetails?.npcTrait2 ?? null} />
+        <Readout label="Goal" value={adminDetails?.npcGoal ?? null} block />
+        <Readout label="Flaw" value={adminDetails?.npcFlaw ?? null} block />
         <Readout
           label="Secret / contradiction"
-          value={citizen.npcSecretContradiction}
+          value={adminDetails?.npcSecretContradiction ?? null}
           block
         />
       </dl>
-    </section>
+    </Card>
   );
 }

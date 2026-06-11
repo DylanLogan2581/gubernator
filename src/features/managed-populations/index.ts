@@ -29,6 +29,10 @@ export {
 } from "./mutations/managedPopulationsMutations";
 export { managedPopulationInstancesBySettlementQueryOptions } from "./queries/managedPopulationInstancesQueries";
 export {
+  managedPopulationSnapshotsBySettlementQueryOptions,
+  type ManagedPopSnapshotCounts,
+} from "./queries/managedPopulationSnapshotsQueries";
+export {
   activeManagedPopulationTypesByWorldQueryOptions,
   managedPopulationTypeByIdQueryOptions,
   managedPopulationTypesByWorldQueryOptions,

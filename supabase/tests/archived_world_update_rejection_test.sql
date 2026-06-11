@@ -37,19 +37,17 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '93000000-0000-0000-0000-000000000001',
     'Archived Test World',
-    '92000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     '93000000-0000-0000-0000-000000000002',
     'Active Test World',
-    '92000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

@@ -18,10 +18,9 @@ const TRADE_ROUTE_ID = "55555555-5555-5555-5555-555555555555";
 
 const VALID_INPUT = {
   destinationSettlementId: DESTINATION_ID,
+  legs: [{ direction: "send" as const, quantity: 50, resourceId: RESOURCE_ID }],
   originSettlementId: ORIGIN_ID,
   proposingCitizenId: CITIZEN_ID,
-  quantityPerTransition: 50,
-  resourceId: RESOURCE_ID,
 };
 
 type RpcRow = {
@@ -115,10 +114,9 @@ describe("proposeTradeRouteMutationOptions", () => {
     });
     expect(calls.rpc).toHaveBeenCalledWith("propose_trade_route", {
       p_destination: DESTINATION_ID,
+      p_legs: [{ direction: "send", quantity: 50, resource_id: RESOURCE_ID }],
       p_origin: ORIGIN_ID,
       p_proposed_by_citizen_id: CITIZEN_ID,
-      p_quantity: 50,
-      p_resource_id: RESOURCE_ID,
     });
     expect(options.mutationKey).toEqual(["trade", "propose-trade-route"]);
     expect(invalidateSpy).toHaveBeenCalledWith(

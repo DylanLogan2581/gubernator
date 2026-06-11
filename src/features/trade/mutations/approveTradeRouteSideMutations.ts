@@ -109,7 +109,10 @@ async function approveTradeRouteSide(
           message: "This side of the trade route is already approved.",
         });
       }
-      if (error.message.includes("side nation")) {
+      if (
+        error.message.includes("side nation") ||
+        (error.message.includes("citizen") && error.message.includes("nation"))
+      ) {
         throw new ApproveTradeRouteSideMutationError({
           code: "approve_trade_route_side_citizen_wrong_nation",
           message: "Approver citizen does not belong to the side nation.",

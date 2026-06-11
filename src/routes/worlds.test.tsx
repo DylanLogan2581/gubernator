@@ -112,24 +112,22 @@ describe("worlds route list", () => {
   it("renders accessible worlds returned by the worlds query module", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Public World",
-            owner_id: "user-2",
             visibility: "public",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Hidden World",
-            owner_id: "user-1",
             visibility: "private",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000303",
             name: "Other Hidden World",
-            owner_id: "user-3",
             visibility: "private",
           }),
         ],
@@ -170,13 +168,11 @@ describe("worlds route list", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Suspended Owner World",
-            owner_id: "user-1",
             visibility: "private",
           }),
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Public World",
-            owner_id: "user-2",
             visibility: "public",
           }),
         ],
@@ -226,12 +222,12 @@ describe("worlds route list", () => {
 
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000101" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Public World",
-            owner_id: "user-1",
             visibility: "private",
           }),
         ],
@@ -266,13 +262,13 @@ describe("world shell route", () => {
   it("renders basic world context for authorized users", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000404" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             current_turn_number: 12,
             id: "00000000-0000-0000-0000-000000000404",
             name: "Eastern Marches",
-            owner_id: "user-1",
             visibility: "private",
           }),
         ],
@@ -292,8 +288,8 @@ describe("world shell route", () => {
     ).toBeDefined();
     expect(screen.getByText("Planning turn")).toBeDefined();
     expect(screen.getByText("12")).toBeDefined();
-    expect(await screen.findByText("Settlement readiness list")).toBeDefined();
-    expect(screen.getByText("Amberhold")).toBeDefined();
+    expect(await screen.findByText("Readiness Summary")).toBeDefined();
+    expect(screen.getByText("Nation A")).toBeDefined();
     expect(screen.queryByText(/citizen/i)).toBeNull();
   });
 
@@ -321,13 +317,13 @@ describe("world shell route", () => {
   it("shows read-only status messaging for archived worlds", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000505" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             archived_at: "2026-01-03T00:00:00.000Z",
             id: "00000000-0000-0000-0000-000000000505",
             name: "Archived Realm",
-            owner_id: "user-1",
             status: "archived",
           }),
         ],
@@ -340,7 +336,9 @@ describe("world shell route", () => {
       await screen.findByRole("heading", { name: "Archived Realm" }),
     ).toBeDefined();
     expect(screen.getByText("Read-only archive")).toBeDefined();
-    expect(screen.getByText(/gameplay actions are read-only/i)).toBeDefined();
+    expect(
+      screen.getByText(/archived and available for review/i),
+    ).toBeDefined();
   });
 
   it("blocks inactive users on world routes without leaking world details", async () => {
@@ -355,7 +353,6 @@ describe("world shell route", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000505",
             name: "Deleted Owner World",
-            owner_id: "user-1",
             visibility: "private",
           }),
         ],
@@ -449,14 +446,13 @@ function createClient({
         return createSettlementsQueryBuilder(settlementRows);
       }
 
-      if (table === "citizens") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        return { select: vi.fn(() => b) };
-      }
-
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
     }),
   };
 }
@@ -476,8 +472,8 @@ type TestWorldRow = {
   readonly created_at: string;
   readonly current_turn_number: number;
   readonly id: string;
+  readonly is_trashed: boolean;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -489,6 +485,7 @@ type TestSettlementReadinessRow = {
   readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: { readonly id: string; readonly name: string };
   readonly ready_set_at: string | null;
 };
 
@@ -511,8 +508,8 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     created_at: "2026-01-01T00:00:00.000Z",
     current_turn_number: 1,
     id: "00000000-0000-0000-0000-000000000001",
+    is_trashed: false,
     name: "World",
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",
@@ -530,6 +527,7 @@ function createSettlementRow(
     last_ready_at: null,
     name: "Settlement",
     nation_id: "nation-1",
+    nations: { id: "nation-1", name: "Nation A" },
     ready_set_at: null,
     ...overrides,
   };
@@ -569,10 +567,16 @@ function createWorldsQueryBuilder(
           error,
         });
 
+  const order = vi.fn().mockReturnValue(result);
+
   return {
     select: vi.fn(() => ({
       order: vi.fn().mockReturnValue(result),
       eq: vi.fn((column: string, value: string) => {
+        if (column === "is_trashed") {
+          return { order };
+        }
+
         const data =
           rows instanceof Promise || column !== "id"
             ? null
@@ -601,3 +605,39 @@ function createSettlementsQueryBuilder(
 
   return builder;
 }
+
+describe("scoped not-found pages", () => {
+  beforeEach(() => {
+    requireSupabaseClient.mockReset();
+  });
+
+  it("renders worlds-scoped not-found page when no worlds route is found", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+      }),
+    );
+
+    renderAt("/worlds/nonexistent-world");
+
+    expect(await screen.findByText("World unavailable")).toBeDefined();
+  });
+
+  it("renders root-level not-found page for completely invalid routes", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+      }),
+    );
+
+    renderAt("/totally/invalid");
+
+    expect(await screen.findByText("Page not found")).toBeDefined();
+    expect(
+      screen.getByText(
+        "The page you're looking for doesn't exist or may have moved.",
+      ),
+    ).toBeDefined();
+  });
+});

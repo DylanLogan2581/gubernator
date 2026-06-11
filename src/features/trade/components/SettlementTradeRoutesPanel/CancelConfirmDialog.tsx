@@ -1,15 +1,7 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { cancelTradeRouteMutationOptions } from "../../mutations/cancelTradeRouteMutations";
@@ -53,17 +45,14 @@ export function CancelConfirmDialog({
   }
 
   return (
-    <Dialog
+    <ConfirmDialog
       open
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Cancel trade route?</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
+      title="Cancel trade route?"
+      description={
+        <>
           Cancel the trade route with{" "}
           <span className="font-medium text-foreground">{counterpart}</span>?
           {traderCount > 0 ? (
@@ -76,28 +65,11 @@ export function CancelConfirmDialog({
               will be unassigned.
             </>
           ) : null}
-        </DialogDescription>
-        <DialogFooter>
-          <Button
-            disabled={mutation.isPending}
-            onClick={onClose}
-            type="button"
-            variant="outline"
-          >
-            Keep
-          </Button>
-          <Button
-            disabled={mutation.isPending}
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              void handleConfirm();
-            }}
-          >
-            Cancel route
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+      confirmLabel="Cancel route"
+      isPending={mutation.isPending}
+      onConfirm={handleConfirm}
+    />
   );
 }

@@ -21,6 +21,25 @@ export function resolveMutationErrorMessage(
   error: unknown,
   fallback?: string,
 ): string {
+  // Unwrap validation issues from typed errors like {issues: [{message: string}]}
+  if (error !== null && typeof error === "object" && "issues" in error) {
+    const errorWithIssues = error as Record<string, unknown>;
+    const issues = errorWithIssues.issues;
+    if (Array.isArray(issues) && issues.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const firstIssue = issues[0];
+      if (
+        firstIssue !== null &&
+        typeof firstIssue === "object" &&
+        "message" in firstIssue
+      ) {
+        const msgFromIssue = (firstIssue as Record<string, unknown>).message;
+        if (typeof msgFromIssue === "string") {
+          return msgFromIssue;
+        }
+      }
+    }
+  }
   if (error instanceof Error && error.message !== "") {
     return error.message;
   }

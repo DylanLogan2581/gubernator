@@ -55,26 +55,32 @@ where
   id = 'e1000000-0000-0000-0000-000000000003';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'Active PC World A',
-    'e1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'e2000000-0000-0000-0000-000000000002',
     'Active PC World B',
-    'e1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
 -- Two PCs in World A belonging to user 1 (one alive, one dead), and an NPC.
 insert into
-  public.citizens (id, world_id, citizen_type, name, status, user_id)
+  public.citizens (
+    id,
+    world_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id,
+    death_cause_category
+  )
 values
   (
     'e5000000-0000-0000-0000-000000000001',
@@ -82,7 +88,8 @@ values
     'player_character',
     'Owner Alive PC',
     'alive',
-    'e1000000-0000-0000-0000-000000000001'
+    'e1000000-0000-0000-0000-000000000001',
+    null
   ),
   (
     'e5000000-0000-0000-0000-000000000002',
@@ -90,7 +97,8 @@ values
     'player_character',
     'Owner Dead PC',
     'dead',
-    'e1000000-0000-0000-0000-000000000001'
+    'e1000000-0000-0000-0000-000000000001',
+    'unknown'
   ),
   (
     'e5000000-0000-0000-0000-000000000003',
@@ -98,7 +106,8 @@ values
     'player_character',
     'Owner PC in World B',
     'alive',
-    'e1000000-0000-0000-0000-000000000001'
+    'e1000000-0000-0000-0000-000000000001',
+    null
   ),
   (
     'e5000000-0000-0000-0000-000000000004',
@@ -106,11 +115,12 @@ values
     'player_character',
     'Other Users PC',
     'alive',
-    'e1000000-0000-0000-0000-000000000002'
+    'e1000000-0000-0000-0000-000000000002',
+    null
   );
 
 insert into
-  public.citizens (id, world_id, citizen_type, name, status)
+  public.citizens (id, world_id, citizen_type, given_name, status)
 values
   (
     'e5000000-0000-0000-0000-000000000005',
@@ -389,7 +399,8 @@ reset role;
 -- ===========================================================================
 update public.citizens
 set
-  status = 'dead'
+  status = 'dead',
+  death_cause_category = 'unknown'
 where
   id = 'e5000000-0000-0000-0000-000000000001';
 

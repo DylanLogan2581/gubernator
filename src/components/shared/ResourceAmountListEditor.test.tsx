@@ -9,6 +9,10 @@ import {
   type ResourceAmountEntry,
 } from "./ResourceAmountListEditor";
 
+vi.mock("@/lib/uid", () => ({
+  generateLocalId: vi.fn(() => "00000000-0000-0000-0000-0000000000aa"),
+}));
+
 const RESOURCE_ID_1 = "00000000-0000-0000-0000-000000000001";
 const RESOURCE_ID_2 = "00000000-0000-0000-0000-000000000002";
 
@@ -16,6 +20,7 @@ function createResource(overrides: Partial<Resource> = {}): Resource {
   return {
     baseStockpileCap: 1000,
     createdAt: "2026-01-01T00:00:00.000Z",
+    decayRate: 0,
     id: RESOURCE_ID_1,
     isTrashed: false,
     isSystemResource: false,
@@ -33,6 +38,7 @@ function createEntry(
 ): ResourceAmountEntry {
   return {
     amount: "1",
+    id: "00000000-0000-0000-0000-0000000000ab",
     resourceId: RESOURCE_ID_1,
     ...overrides,
   };
@@ -78,7 +84,11 @@ describe("ResourceAmountListEditor", () => {
     );
     await user.click(screen.getByRole("button", { name: "Add entry" }));
     expect(onChange).toHaveBeenCalledWith([
-      { amount: "1", resourceId: RESOURCE_ID_1 },
+      {
+        amount: "1",
+        id: "00000000-0000-0000-0000-0000000000aa",
+        resourceId: RESOURCE_ID_1,
+      },
     ]);
   });
 

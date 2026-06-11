@@ -49,6 +49,8 @@
   --sidebar-ring: oklch(0.708 0 0);
   --warning: oklch(0.987 0.022 95.277);
   --warning-foreground: oklch(0.414 0.112 45.904);
+  --success: oklch(0.982 0.018 155.826);
+  --success-foreground: oklch(0.527 0.154 150.069);
 }
 
 .dark {
@@ -85,6 +87,8 @@
   --sidebar-ring: oklch(0.556 0 0);
   --warning: oklch(0.279 0.077 45.635);
   --warning-foreground: oklch(0.924 0.12 95.746);
+  --success: oklch(0.203 0.079 166.113);
+  --success-foreground: oklch(0.696 0.17 162.48);
 }
 
 @theme inline {
@@ -122,6 +126,8 @@
   --color-background: var(--background);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -140,6 +146,7 @@
   }
   html {
     @apply font-sans;
+    scrollbar-gutter: stable;
   }
 }
 
@@ -178,5 +185,7 @@
     --sidebar-ring: oklch(0.556 0 0);
     --warning: oklch(0.279 0.077 45.635);
     --warning-foreground: oklch(0.924 0.12 95.746);
+    --success: oklch(0.203 0.079 166.113);
+    --success-foreground: oklch(0.696 0.17 162.48);
   }
 }

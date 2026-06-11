@@ -44,14 +44,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'ab200000-0000-0000-0000-000000000001',
     'RDI World',
-    'ab100000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'ab200000-0000-0000-0000-000000000001',
+    'ab100000-0000-0000-0000-000000000001'
   );
 
 insert into
@@ -78,7 +85,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -104,7 +111,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     role_type
   )
@@ -230,7 +237,8 @@ select
 reset role;
 
 -- ===========================================================================
--- BLOCKED WITH ACTIVE ASSIGNMENTS: rejected (P0001)
+-- AUTO-UNASSIGN WITH ACTIVE ASSIGNMENTS: admin can remove deposit with
+-- active assignments; all citizens are auto-unassigned.
 -- ab9...0002 has one NPC worker assigned.
 -- ===========================================================================
 set
@@ -240,30 +248,30 @@ set
   local "request.jwt.claims" = '{"sub":"ab100000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
-  throws_ok (
-    $test$
-    select public.remove_deposit_instance('ab900000-0000-0000-0000-000000000002')
-    $test$,
-    'P0001',
-    null,
-    'admin blocked with P0001 when active assignments exist'
-  );
-
--- ===========================================================================
--- SUCCESS AFTER UNASSIGN: admin removes deposit once workers are cleared
--- ===========================================================================
-delete from public.citizen_assignments ca
-where
-  ca.citizen_id = 'ab700000-0000-0000-0000-000000000002';
-
-select
   lives_ok (
     $test$
     select public.remove_deposit_instance('ab900000-0000-0000-0000-000000000002')
     $test$,
-    'admin can remove deposit after assignments are cleared'
+    'admin can remove deposit even with active assignments (auto-unassigns)'
   );
 
+-- Verify assignment was deleted
+select
+  is (
+    (
+      select
+        count(*)::int
+      from
+        public.citizen_assignments ca
+      where
+        ca.deposit_instance_id = 'ab900000-0000-0000-0000-000000000002'
+        and ca.assignment_type = 'deposit'
+    ),
+    0,
+    'all deposit assignments were auto-deleted on exhaust'
+  );
+
+-- Verify deposit status changed to removed
 select
   is (
     (
@@ -275,7 +283,7 @@ select
         di.id = 'ab900000-0000-0000-0000-000000000002'
     ),
     'removed',
-    'deposit instance status is removed after successful removal'
+    'deposit instance status is removed after removal with active assignments'
   );
 
 -- ===========================================================================

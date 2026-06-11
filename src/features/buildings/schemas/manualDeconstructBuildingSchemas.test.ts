@@ -21,7 +21,7 @@ describe("manualDeconstructBuildingInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.settlementBuildingId).toContain(
-        "Settlement building id must be a valid UUID.",
+        "Select a settlement building.",
       );
     }
   });

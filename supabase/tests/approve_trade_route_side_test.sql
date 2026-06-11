@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (16);
+  plan (20);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -71,12 +71,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'af200000-0000-0000-0000-000000000001',
     'AF World',
-    'af100000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -132,7 +131,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -220,8 +219,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -232,8 +229,6 @@ values
     'af700000-0000-0000-0000-000000000001',
     'af400000-0000-0000-0000-000000000001',
     'af400000-0000-0000-0000-000000000002',
-    'af500000-0000-0000-0000-000000000001',
-    10,
     'proposed',
     'af600000-0000-0000-0000-000000000003',
     'pending',
@@ -246,8 +241,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -258,12 +251,31 @@ values
     'af700000-0000-0000-0000-000000000002',
     'af400000-0000-0000-0000-000000000001',
     'af400000-0000-0000-0000-000000000002',
-    'af500000-0000-0000-0000-000000000001',
-    5,
     'proposed',
     'af600000-0000-0000-0000-000000000003',
     'pending',
     'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000001',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    10
+  ),
+  (
+    'af700000-0000-0000-0000-000000000002',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    5
   );
 
 -- ===========================================================================
@@ -314,8 +326,47 @@ select
 reset role;
 
 -- ===========================================================================
--- APPROVER CITIZEN FROM WRONG NATION: origin manager uses destination citizen
+-- CITIZEN RESIDENCY IS NOT REQUIRED: authority is role-based only. The origin
+-- manager may stamp the approval with any citizen id (here one residing in the
+-- destination settlement) because residency no longer gates approval. Uses a
+-- dedicated route so the main route's approval sequence is untouched.
 -- ===========================================================================
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000004',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'pending',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000004',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    8
+  );
+
 set
   local role authenticated;
 
@@ -323,17 +374,15 @@ set
   local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select
-  throws_ok (
+  lives_ok (
     $test$
     select public.approve_trade_route_side(
-      'af700000-0000-0000-0000-000000000001',
+      'af700000-0000-0000-0000-000000000004',
       'origin',
       'af600000-0000-0000-0000-000000000004'
     )
     $test$,
-    'P0001',
-    null,
-    'approver citizen from wrong nation is rejected with P0001'
+    'approver citizen residency is not required (role authority only)'
   );
 
 reset role;
@@ -453,8 +502,8 @@ select
         n.notification_type = 'trade_proposal_accepted'
         and n.trade_route_id = 'af700000-0000-0000-0000-000000000001'
     ),
-    3,
-    'three trade_proposal_accepted notifications inserted (origin mgr, dest mgr, dual mgr)'
+    4,
+    'four trade_proposal_accepted notifications inserted (origin mgr, dest mgr, dual mgr, seeded super admin)'
   );
 
 select
@@ -562,6 +611,121 @@ select
     ),
     'active',
     'route is active after dual-side manager approves both sides'
+  );
+
+-- ===========================================================================
+-- CONCURRENT APPROVALS (TOCTOU FIX): both sides approve in separate txns
+-- ===========================================================================
+-- Create a fresh route for concurrent test
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000003',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'pending',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000003',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    15
+  );
+
+-- First transaction: origin manager approves origin side
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000003',
+      'origin',
+      'af600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'concurrent test: origin manager approves origin side'
+  );
+
+reset role;
+
+-- Second transaction: destination manager approves destination side
+-- This should trigger activation because FOR UPDATE lock ensures both approval
+-- checks happen atomically
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000003',
+      'destination',
+      'af600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'concurrent test: destination manager approves destination side'
+  );
+
+reset role;
+
+-- Verify route is active (not stuck in proposed)
+select
+  is (
+    (
+      select
+        tr.status
+      from
+        public.trade_routes tr
+      where
+        tr.id = 'af700000-0000-0000-0000-000000000003'
+    ),
+    'active',
+    'concurrent approvals result in active status (TOCTOU fixed)'
+  );
+
+-- Verify exactly one acceptance notification inserted (not zero)
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications n
+      where
+        n.notification_type = 'trade_proposal_accepted'
+        and n.trade_route_id = 'af700000-0000-0000-0000-000000000003'
+    ),
+    4,
+    'concurrent approval generates one acceptance notification batch (origin mgr, dest mgr, dual mgr, seeded super admin)'
   );
 
 -- ===========================================================================

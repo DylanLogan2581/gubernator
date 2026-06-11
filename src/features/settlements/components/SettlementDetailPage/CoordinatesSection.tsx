@@ -1,20 +1,19 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { MapPin, Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { notifyMutationError } from "@/lib/notify";
 
 import { updateSettlementCoordinatesMutationOptions } from "../../mutations/settlementsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { SettlementWithNation } from "../../types/settlementTypes";
 
 // Coordinates are informational only per the feature guide; we still bound
 // client input so users get feedback before the DB rejects out-of-range numbers.
-const COORDINATE_LIMIT = 1_000_000;
+const COORDINATE_LIMIT = 33_554_432;
 
 type ParsedCoordinate =
   | { readonly kind: "valid"; readonly value: number | null }
@@ -26,10 +25,10 @@ function parseCoordinateInput(raw: string): ParsedCoordinate {
     return { kind: "valid", value: null };
   }
 
-  if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {
+  if (!/^-?\d+$/.test(trimmed)) {
     return {
       kind: "invalid",
-      message: "Enter a decimal number, or leave blank to clear.",
+      message: "Enter a whole number, or leave blank to clear.",
     };
   }
 
@@ -123,7 +122,10 @@ export function SettlementCoordinatesSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(
+            error,
+            "Failed to update settlement coordinates.",
+          );
         },
         onSuccess: () => {
           setIsEditing(false);
@@ -136,7 +138,7 @@ export function SettlementCoordinatesSection({
     return (
       <section
         aria-labelledby="settlement-coordinates-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+        className="grid gap-3 p-4"
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -163,9 +165,6 @@ export function SettlementCoordinatesSection({
             </Button>
           ) : null}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Coordinates are informational only.
-        </p>
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <CoordinateReadout label="X" value={settlement.coordX} />
           <CoordinateReadout label="Z" value={settlement.coordZ} />
@@ -177,7 +176,7 @@ export function SettlementCoordinatesSection({
   return (
     <form
       aria-label="Edit settlement coordinates"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >
@@ -194,7 +193,7 @@ export function SettlementCoordinatesSection({
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
-        Accepts decimal values between {`-${COORDINATE_LIMIT.toLocaleString()}`}{" "}
+        Accepts whole numbers between {`-${COORDINATE_LIMIT.toLocaleString()}`}{" "}
         and {COORDINATE_LIMIT.toLocaleString()}. Leave blank to clear.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -281,16 +280,16 @@ function CoordinateField({
 }): JSX.Element {
   const errorId = `${id}-error`;
   return (
-    <label className="grid gap-1 text-sm" htmlFor={id}>
+    <Label className="grid gap-1 text-sm" htmlFor={id}>
       <span className="text-muted-foreground">{label}</span>
       <Input
         aria-describedby={error === undefined ? undefined : errorId}
         aria-invalid={error === undefined ? undefined : true}
         disabled={disabled}
         id={id}
-        inputMode="decimal"
+        inputMode="numeric"
         onChange={(event) => onChange(event.currentTarget.value)}
-        placeholder="e.g. 12.5"
+        placeholder="e.g. 100"
         value={value}
       />
       {error === undefined ? null : (
@@ -298,6 +297,6 @@ function CoordinateField({
           {error}
         </p>
       )}
-    </label>
+    </Label>
   );
 }

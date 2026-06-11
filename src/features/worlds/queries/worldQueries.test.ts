@@ -61,8 +61,8 @@ describe("accessibleWorldsQueryOptions", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           current_turn_number: 5,
           id: "00000000-0000-0000-0000-000000000101",
+          is_trashed: false,
           name: "Verdant Reach",
-          owner_id: "user-1",
           status: "active",
           updated_at: "2026-01-02T00:00:00.000Z",
           visibility: "private",
@@ -70,13 +70,14 @@ describe("accessibleWorldsQueryOptions", () => {
       ],
       error: null,
     });
-    const select = vi.fn(() => ({ order }));
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
     const from = vi.fn(() => ({ select }));
     const queryClient = createQueryClient();
     const accessContext = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
-      worldAdminWorldIds: [],
+      worldAdminWorldIds: ["00000000-0000-0000-0000-000000000101"],
     });
 
     const worlds = await queryClient.fetchQuery(
@@ -93,20 +94,21 @@ describe("accessibleWorldsQueryOptions", () => {
         isArchived: false,
         isHidden: true,
         name: "Verdant Reach",
-        ownerId: "user-1",
         slug: "verdant-reach-00000000",
       }),
     ]);
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,updated_at,visibility",
     );
+    expect(eq).toHaveBeenCalledWith("is_trashed", false);
     expect(order).toHaveBeenCalledWith("updated_at", { ascending: false });
   });
 
   it("handles empty accessible world results", async () => {
     const order = vi.fn().mockResolvedValue({ data: [], error: null });
-    const select = vi.fn(() => ({ order }));
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
     const from = vi.fn(() => ({ select }));
     const queryClient = createQueryClient();
     const accessContext = createAccessContext({
@@ -132,8 +134,8 @@ describe("accessibleWorldsQueryOptions", () => {
           created_at: "2026-01-01T00:00:00.000Z",
           current_turn_number: 5,
           id: "00000000-0000-0000-0000-000000000101",
+          is_trashed: false,
           name: "Private Other World",
-          owner_id: "user-2",
           status: "active",
           updated_at: "2026-01-02T00:00:00.000Z",
           visibility: "private",
@@ -141,7 +143,8 @@ describe("accessibleWorldsQueryOptions", () => {
       ],
       error: null,
     });
-    const select = vi.fn(() => ({ order }));
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
     const from = vi.fn(() => ({ select }));
     const queryClient = createQueryClient();
     const accessContext = createAccessContext({
@@ -189,7 +192,6 @@ describe("worldRouteAccessQueryOptions", () => {
         current_turn_number: 8,
         id: "00000000-0000-0000-0000-000000000101",
         name: "Verdant Reach",
-        owner_id: "user-1",
         visibility: "private",
       }),
       error: null,
@@ -201,7 +203,7 @@ describe("worldRouteAccessQueryOptions", () => {
     const accessContext = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
-      worldAdminWorldIds: [],
+      worldAdminWorldIds: ["00000000-0000-0000-0000-000000000101"],
     });
 
     const routeAccess = await queryClient.fetchQuery(
@@ -234,7 +236,7 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(routeAccess.world.slug).toBe("verdant-reach-00000000");
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,updated_at,visibility",
     );
     expect(eq).toHaveBeenCalledWith(
       "id",
@@ -248,7 +250,6 @@ describe("worldRouteAccessQueryOptions", () => {
       data: createWorldRow({
         id: "00000000-0000-0000-0000-000000000101",
         name: "Renamed Verdant Reach",
-        owner_id: "user-1",
         visibility: "private",
       }),
       error: null,
@@ -258,7 +259,7 @@ describe("worldRouteAccessQueryOptions", () => {
     const accessContext = createAccessContext({
       isSuperAdmin: false,
       userId: "user-1",
-      worldAdminWorldIds: [],
+      worldAdminWorldIds: ["00000000-0000-0000-0000-000000000101"],
     });
 
     const routeAccess = await queryClient.fetchQuery(
@@ -457,8 +458,8 @@ function createWorldRow(
     readonly current_turn_number: number;
     readonly id: string;
     readonly incest_prevention_depth: number;
+    readonly is_trashed: boolean;
     readonly name: string;
-    readonly owner_id: string;
     readonly status: string;
     readonly updated_at: string;
     readonly visibility: string;
@@ -470,8 +471,8 @@ function createWorldRow(
   readonly current_turn_number: number;
   readonly id: string;
   readonly incest_prevention_depth: number;
+  readonly is_trashed: boolean;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -483,8 +484,8 @@ function createWorldRow(
     current_turn_number: 5,
     id: "00000000-0000-0000-0000-000000000101",
     incest_prevention_depth: 4,
+    is_trashed: false,
     name: "Verdant Reach",
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",

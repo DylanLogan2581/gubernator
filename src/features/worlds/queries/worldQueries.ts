@@ -19,12 +19,19 @@ import type {
 type AccessibleWorldsQueryKey = ReturnType<
   typeof worldQueryKeys.accessibleWorlds
 >;
+type TrashedWorldsQueryKey = ReturnType<typeof worldQueryKeys.trashedWorlds>;
 type WorldByIdQueryKey = ReturnType<typeof worldQueryKeys.byId>;
 type AccessibleWorldsQueryOptions = UseQueryOptions<
   readonly AccessibleWorld[],
   AuthUiError,
   readonly AccessibleWorld[],
   AccessibleWorldsQueryKey
+>;
+type TrashedWorldsQueryOptions = UseQueryOptions<
+  readonly AccessibleWorld[],
+  AuthUiError,
+  readonly AccessibleWorld[],
+  TrashedWorldsQueryKey
 >;
 type WorldRouteAccessQueryOptions = UseQueryOptions<
   WorldRouteAccess,
@@ -34,9 +41,9 @@ type WorldRouteAccessQueryOptions = UseQueryOptions<
 >;
 
 const WORLD_HEADER_SELECT =
-  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility";
+  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,updated_at,visibility";
 const ACCESSIBLE_WORLDS_SELECT =
-  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,name,owner_id,status,updated_at,visibility";
+  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,updated_at,visibility";
 
 export class WorldNotFoundError extends Error {
   readonly worldId: string;
@@ -57,6 +64,18 @@ export function accessibleWorldsQueryOptions(
   return queryOptions({
     queryFn: () => getAccessibleWorlds(client, accessContext),
     queryKey: worldQueryKeys.accessibleWorlds(accessContext),
+  });
+}
+
+export function trashedWorldsQueryOptions(
+  accessContext: WorldPermissionContext,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): TrashedWorldsQueryOptions {
+  // The client is the configured Supabase singleton in app code; tests inject a fake.
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getTrashedWorlds(client, accessContext),
+    queryKey: worldQueryKeys.trashedWorlds(accessContext),
   });
 }
 
@@ -92,6 +111,7 @@ async function getAccessibleWorlds(
   const { data, error } = await client
     .from("worlds")
     .select(ACCESSIBLE_WORLDS_SELECT)
+    .eq("is_trashed", false)
     .order("updated_at", { ascending: false });
 
   if (error !== null) {
@@ -101,6 +121,27 @@ async function getAccessibleWorlds(
   return data
     .map((world) => toAccessibleWorld(world, accessContext))
     .filter((world) => world.canAccess);
+}
+
+async function getTrashedWorlds(
+  client: GubernatorSupabaseClient,
+  accessContext: WorldPermissionContext,
+): Promise<readonly AccessibleWorld[]> {
+  if (!accessContext.isAuthenticated || !accessContext.isSuperAdmin) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("worlds")
+    .select(ACCESSIBLE_WORLDS_SELECT)
+    .eq("is_trashed", true)
+    .order("updated_at", { ascending: false });
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map((world) => toAccessibleWorld(world, accessContext));
 }
 
 async function getWorldRouteAccess(

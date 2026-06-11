@@ -21,6 +21,7 @@ export type ManagedPopulationTypeRow = {
   readonly name: string;
   // Embedded FK references — job_definitions whose linked_managed_population_type_id = this id.
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
+  readonly regular_outputs_json: readonly PopulationResourceEntryRow[];
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -29,7 +30,7 @@ export type ManagedPopulationTypeRow = {
 export const MANAGED_POPULATION_TYPE_SELECT = [
   "id,world_id,name,slug,husbandry_job_id,culling_job_id",
   "husbandry_workers_per_n_animals,growth_rate",
-  "maintenance_rules_json,culling_outputs_json,is_trashed,created_at,updated_at",
+  "maintenance_rules_json,culling_outputs_json,regular_outputs_json,is_trashed,created_at,updated_at",
   "referencing_jobs:job_definitions!job_definitions_linked_managed_pop_type_fk(id)",
 ].join(",");
 
@@ -59,6 +60,7 @@ export function toManagedPopulationType(
       toPopulationResourceEntry,
     ),
     name: row.name,
+    regularOutputsJson: row.regular_outputs_json.map(toPopulationResourceEntry),
     slug: row.slug,
     updatedAt: row.updated_at,
     worldId: row.world_id,

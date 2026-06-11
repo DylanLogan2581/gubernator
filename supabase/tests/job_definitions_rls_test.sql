@@ -63,26 +63,23 @@ where
   id = 'a1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a2000000-0000-0000-0000-000000000001',
     'JD Private World',
-    'a1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'a2000000-0000-0000-0000-000000000002',
     'JD Public World',
-    'a1000000-0000-0000-0000-000000000001',
     'public',
     'active'
   ),
   (
     'a2000000-0000-0000-0000-000000000003',
     'JD Outsider World',
-    'a1000000-0000-0000-0000-000000000003',
     'private',
     'active'
   );
@@ -90,6 +87,10 @@ values
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    'a2000000-0000-0000-0000-000000000001',
+    'a1000000-0000-0000-0000-000000000001'
+  ),
   (
     'a2000000-0000-0000-0000-000000000001',
     'a1000000-0000-0000-0000-000000000002'
@@ -564,9 +565,9 @@ select
     'non-husbandry/culling job with linked_managed_population_type_id rejected by check constraint'
   );
 
--- base_capacity = 0 rejected
+-- base_capacity = 0 accepted (constraint changed from > 0 to >= 0)
 select
-  throws_ok (
+  lives_ok (
     $test$
     insert into public.job_definitions (world_id, name, slug, job_type, base_capacity)
     values (
@@ -577,9 +578,7 @@ select
       0
     )
   $test$,
-    '23514',
-    null,
-    'base_capacity of zero rejected by check constraint'
+    'base_capacity of zero accepted by check constraint'
   );
 
 -- base_capacity negative rejected

@@ -140,10 +140,10 @@ npm run functions:cache-clear
 
 ### Edge Function Origin Allowlist
 
-`end-turn-basic` rejects browser requests whose `Origin` header is not in the allowlist read from the `END_TURN_BASIC_ALLOWED_ORIGINS` env var (comma-separated). The rejection is a bare HTTP 403 with no body, which surfaces in the UI as the generic "End turn could not be saved. Refresh the page before trying again." toast.
+`end-turn-simulation` rejects browser requests whose `Origin` header is not in the allowlist read from the `END_TURN_SIMULATION_ALLOWED_ORIGINS` env var (comma-separated). The rejection is a bare HTTP 403 with no body, which surfaces in the UI as the generic "End turn could not be saved. Refresh the page before trying again." toast.
 
 - **Local:** the allowlist is set in `supabase/config.toml` under `[edge_runtime.secrets]` to `http://localhost:5173,http://127.0.0.1:5173`. Restart with `npx supabase stop && npx supabase start` after editing.
-- **Production:** every deployment must set `END_TURN_BASIC_ALLOWED_ORIGINS` to the deployed frontend origin(s) (no path, no trailing slash, scheme included — e.g. `https://app.example.com`). Without it the function rejects every browser request and end-turn fails closed.
+- **Production:** every deployment must set `END_TURN_SIMULATION_ALLOWED_ORIGINS` to the deployed frontend origin(s) (no path, no trailing slash, scheme included — e.g. `https://app.example.com`). Without it the function rejects every browser request and end-turn fails closed.
 
 ### Local Auth and Seeded Access
 
@@ -186,6 +186,12 @@ npm run test:db
 ```
 
 `npm run test:db` runs Supabase pgTAP tests under `supabase/tests`. The current database tests cover auth user synchronization, permission helpers, RLS behavior for anonymous users, authenticated users, world owners, world admins, and super admins, denied access to private worlds, restricted write paths, and super-admin elevation guards.
+
+## Pre-Push Database Testing
+
+When you push commits that change files under `supabase/migrations/` or `supabase/tests/`, the pre-push hook automatically runs the database test suite before the push completes. This detects schema and RLS breaks early and prevents broken migrations from reaching CI. If tests fail, the push is blocked and you can fix the issue locally.
+
+Pushes that do not change schema or test files bypass this check and push immediately.
 
 ## Security Expectations
 

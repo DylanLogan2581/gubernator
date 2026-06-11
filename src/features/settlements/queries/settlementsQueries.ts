@@ -29,17 +29,19 @@ type SettlementWithNationRow = {
   readonly description: string | null;
   readonly id: string;
   readonly name: string;
+  readonly nameset_id: string | null;
   readonly nation_id: string;
   readonly nations: {
     readonly id: string;
     readonly name: string;
+    readonly nameset_id: string | null;
     readonly world_id: string;
   };
   readonly updated_at: string;
 };
 
 const SETTLEMENT_WITH_NATION_SELECT =
-  "id,nation_id,name,description,coord_x,coord_z,created_at,updated_at,nations!inner(id,name,world_id)";
+  "id,nation_id,name,description,nameset_id,coord_x,coord_z,created_at,updated_at,nations!inner(id,name,nameset_id,world_id)";
 
 export function settlementByIdQueryOptions(
   settlementId: string,
@@ -137,9 +139,11 @@ function toSettlementWithNation(
     description: row.description,
     id: row.id,
     name: row.name,
+    namesetId: row.nameset_id,
     nation: {
       id: row.nations.id,
       name: row.nations.name,
+      namesetId: row.nations.nameset_id,
       worldId: row.nations.world_id,
     },
     nationId: row.nation_id,

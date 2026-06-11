@@ -19,8 +19,8 @@ type WorldRow = Pick<
   | "current_turn_number"
   | "id"
   | "incest_prevention_depth"
+  | "is_trashed"
   | "name"
-  | "owner_id"
   | "status"
   | "updated_at"
   | "visibility"
@@ -34,7 +34,6 @@ export function toAccessibleWorld(
 ): AccessibleWorld {
   const accessTarget = {
     id: world.id,
-    ownerId: world.owner_id,
     visibility: world.visibility,
   };
   const planningTurnNumber = resolvePlanningTurnNumber(
@@ -47,9 +46,11 @@ export function toAccessibleWorld(
 
   return {
     archivedAt: world.archived_at,
-    canAccess: accessContext.canAccessWorld(accessTarget),
+    canAccess: world.is_trashed
+      ? false
+      : accessContext.canAccessWorld(accessTarget),
     canAdmin: accessContext.canAdminWorld(accessTarget),
-    canManage: accessContext.canManageWorld(accessTarget),
+    canManage: accessContext.canAdminWorld(accessTarget),
     createdAt: world.created_at,
     currentTurnNumber: world.current_turn_number,
     id: world.id,
@@ -60,13 +61,13 @@ export function toAccessibleWorld(
     ),
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
+    isTrashed: world.is_trashed,
     name: world.name,
     nextInWorldDateLabel: resolveInWorldDateLabel(
       world.calendar_config_json,
       nextPlanningTurnNumber,
     ),
     nextTurnNumber,
-    ownerId: world.owner_id,
     planningTurnNumber,
     slug: createWorldSlug(world.name, world.id),
     status: world.status,

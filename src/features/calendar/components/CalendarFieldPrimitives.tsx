@@ -1,7 +1,7 @@
+import { useId, type JSX } from "react";
+
 import { Input } from "@/components/ui/input";
-
-import type { JSX } from "react";
-
+import { Label } from "@/components/ui/label";
 
 export function NumberField({
   describedBy,
@@ -20,10 +20,12 @@ export function NumberField({
   readonly onChange: (value: number) => void;
   readonly value: number;
 }): JSX.Element {
+  const fieldId = useId();
   return (
-    <label className="grid gap-1 text-sm">
+    <Label htmlFor={fieldId} className="grid gap-1 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <Input
+        id={fieldId}
         aria-describedby={describedBy}
         aria-invalid={error === undefined ? undefined : true}
         max={max}
@@ -35,7 +37,7 @@ export function NumberField({
       {error === undefined || describedBy === undefined ? null : (
         <FieldError id={describedBy} message={error} />
       )}
-    </label>
+    </Label>
   );
 }
 

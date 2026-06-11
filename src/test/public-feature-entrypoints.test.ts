@@ -13,6 +13,17 @@ import {
   type WorldCalendarConfig,
 } from "@/features/calendar";
 import {
+  BulkConstructionPoolMutationError,
+  setBulkConstructionPoolInputSchema,
+  setBulkConstructionPoolMutationOptions,
+  type SetBulkConstructionPoolInput,
+  type SetBulkConstructionPoolValues,
+} from "@/features/citizens";
+import {
+  managedPopulationSnapshotsBySettlementQueryOptions,
+  type ManagedPopSnapshotCounts,
+} from "@/features/managed-populations";
+import {
   notificationQueryKeys,
   turnCompletedNotificationsQueryOptions,
   unreadNotificationsCountQueryOptions,
@@ -22,8 +33,6 @@ import {
 import {
   SettlementReadinessListPanel,
   SettlementReadinessListPanelContent,
-  SettlementReadinessSummaryPanel,
-  SettlementReadinessSummaryPanelContent,
   computeSettlementReadinessSummary,
   createSettlementReadinessResetUpdate,
   createSettlementReadinessResetUpdatePayload,
@@ -42,17 +51,28 @@ import {
 } from "@/features/settlements";
 import {
   EndTurnControl,
+  EndTurnTransitionError,
+  TurnTransitionOutcomeContent,
+  TurnTransitionOutcomeEmptyState,
+  TurnTransitionOutcomePanel,
   currentTurnStateQueryOptions,
-  endTurnBasicMutationOptions,
+  endTurnTransitionMutationOptions,
+  latestSettlementTransitionOutcomeQueryOptions,
   latestTurnTransitionStatusQueryOptions,
-  planBasicEndTurnTransition,
+  latestWorldTransitionOutcomeQueryOptions,
   shouldRetryCurrentTurnStateQuery,
   shouldRetryLatestTurnTransitionStatusQuery,
   turnQueryKeys,
-  type BasicEndTurnTransitionInput,
   type CurrentTurnDateDisplay,
-  type EndTurnBasicInput,
+  type EndTurnTransitionInput,
+  type EndTurnTransitionMutationResult,
+  type EndTurnTransitionSummary,
   type LatestTurnTransitionStatus,
+  type TurnTransitionLogEntry,
+  type TurnTransitionNotification,
+  type TurnTransitionOutcome,
+  type TurnTransitionResourceSnapshot,
+  type TurnTransitionSettlementSnapshot,
 } from "@/features/turns";
 
 describe("public feature entrypoints", () => {
@@ -98,32 +118,16 @@ describe("public feature entrypoints", () => {
     expect(latestTurnTransitionStatusQueryOptions).toEqual(
       expect.any(Function),
     );
-    expect(endTurnBasicMutationOptions).toEqual(expect.any(Function));
     expect(EndTurnControl).toEqual(expect.any(Function));
-    expect(planBasicEndTurnTransition).toEqual(expect.any(Function));
     expect(shouldRetryCurrentTurnStateQuery).toEqual(expect.any(Function));
     expect(shouldRetryLatestTurnTransitionStatusQuery).toEqual(
       expect.any(Function),
     );
 
     expectTypeOf<
-      Pick<
-        BasicEndTurnTransitionInput,
-        "actorId" | "currentTurnNumber" | "worldId"
-      >
-    >().toEqualTypeOf<{
-      readonly actorId: string;
-      readonly currentTurnNumber: number;
-      readonly worldId: string;
-    }>();
-    expectTypeOf<
       Pick<CurrentTurnDateDisplay, "currentTurnNumber" | "worldId">
     >().toEqualTypeOf<{
       readonly currentTurnNumber: number;
-      readonly worldId: string;
-    }>();
-    expectTypeOf<EndTurnBasicInput>().toEqualTypeOf<{
-      readonly expectedTurnNumber: number;
       readonly worldId: string;
     }>();
     expectTypeOf<
@@ -131,6 +135,77 @@ describe("public feature entrypoints", () => {
     >().toEqualTypeOf<{
       readonly state: "completed" | "failed" | "running";
       readonly worldId: string;
+    }>();
+  });
+
+  it("exports the Epic 6 turns public surface", () => {
+    expect(endTurnTransitionMutationOptions).toEqual(expect.any(Function));
+    expect(EndTurnTransitionError).toEqual(expect.any(Function));
+    expect(TurnTransitionOutcomePanel).toEqual(expect.any(Function));
+    expect(TurnTransitionOutcomeContent).toEqual(expect.any(Function));
+    expect(TurnTransitionOutcomeEmptyState).toEqual(expect.any(Function));
+    expect(latestSettlementTransitionOutcomeQueryOptions).toEqual(
+      expect.any(Function),
+    );
+    expect(latestWorldTransitionOutcomeQueryOptions).toEqual(
+      expect.any(Function),
+    );
+
+    expectTypeOf<
+      Pick<EndTurnTransitionInput, "expectedTurnNumber" | "worldId">
+    >().toEqualTypeOf<{
+      readonly expectedTurnNumber: number;
+      readonly worldId: string;
+    }>();
+    expectTypeOf<
+      Pick<EndTurnTransitionMutationResult, "actorId" | "worldId">
+    >().toEqualTypeOf<{
+      readonly actorId: string;
+      readonly worldId: string;
+    }>();
+    expectTypeOf<
+      Pick<EndTurnTransitionSummary, "currentTurnNumber" | "transitionId">
+    >().toEqualTypeOf<{
+      readonly currentTurnNumber: number;
+      readonly transitionId: string;
+    }>();
+    expectTypeOf<
+      Pick<TurnTransitionOutcome, "id" | "status" | "worldId">
+    >().toEqualTypeOf<{
+      readonly id: string;
+      readonly status: string;
+      readonly worldId: string;
+    }>();
+    expectTypeOf<
+      Pick<TurnTransitionNotification, "id" | "isRead" | "worldId">
+    >().toEqualTypeOf<{
+      readonly id: string;
+      readonly isRead: boolean;
+      readonly worldId: string;
+    }>();
+    expectTypeOf<
+      Pick<TurnTransitionLogEntry, "id" | "logCategory" | "worldId">
+    >().toEqualTypeOf<{
+      readonly id: string;
+      readonly logCategory: string;
+      readonly worldId: string;
+    }>();
+    expectTypeOf<
+      Pick<TurnTransitionResourceSnapshot, "id" | "resourceId" | "settlementId">
+    >().toEqualTypeOf<{
+      readonly id: string;
+      readonly resourceId: string;
+      readonly settlementId: string;
+    }>();
+    expectTypeOf<
+      Pick<
+        TurnTransitionSettlementSnapshot,
+        "id" | "populationTotal" | "settlementId"
+      >
+    >().toEqualTypeOf<{
+      readonly id: string;
+      readonly populationTotal: number;
+      readonly settlementId: string;
     }>();
   });
 
@@ -144,10 +219,6 @@ describe("public feature entrypoints", () => {
     expect(setSettlementReadinessMutationOptions).toEqual(expect.any(Function));
     expect(SettlementReadinessListPanel).toEqual(expect.any(Function));
     expect(SettlementReadinessListPanelContent).toEqual(expect.any(Function));
-    expect(SettlementReadinessSummaryPanel).toEqual(expect.any(Function));
-    expect(SettlementReadinessSummaryPanelContent).toEqual(
-      expect.any(Function),
-    );
     expect(computeSettlementReadinessSummary).toEqual(expect.any(Function));
     expect(createSettlementReadinessResetUpdate).toEqual(expect.any(Function));
     expect(createSettlementReadinessResetUpdatePayload).toEqual(
@@ -197,6 +268,40 @@ describe("public feature entrypoints", () => {
     }>();
     expectTypeOf<TurnCompletedNotificationsFilters>().toMatchTypeOf<{
       readonly worldId?: string | null;
+    }>();
+  });
+
+  it("exports the Epic 6 managed-populations public surface", () => {
+    expect(managedPopulationSnapshotsBySettlementQueryOptions).toEqual(
+      expect.any(Function),
+    );
+
+    expectTypeOf<ManagedPopSnapshotCounts>().toEqualTypeOf<{
+      readonly latestCounts: ReadonlyMap<string, number> | null;
+      readonly prevCounts: ReadonlyMap<string, number> | null;
+    }>();
+  });
+
+  it("exports the Epic 6 citizens bulk-construction-pool public surface", () => {
+    expect(BulkConstructionPoolMutationError).toEqual(expect.any(Function));
+    expect(setBulkConstructionPoolMutationOptions).toEqual(
+      expect.any(Function),
+    );
+    expect(setBulkConstructionPoolInputSchema.safeParse({}).success).toBe(
+      false,
+    );
+
+    expectTypeOf<
+      Pick<SetBulkConstructionPoolInput, "settlementId" | "targetCount">
+    >().toMatchTypeOf<{
+      settlementId: string;
+      targetCount: number;
+    }>();
+    expectTypeOf<
+      Pick<SetBulkConstructionPoolValues, "settlementId" | "targetCount">
+    >().toMatchTypeOf<{
+      settlementId: string;
+      targetCount: number;
     }>();
   });
 });

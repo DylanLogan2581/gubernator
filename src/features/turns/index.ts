@@ -1,13 +1,30 @@
 // Turns feature — advance and track turns within a world.
 // Implemented in Epic 2.
 export {
-  EndTurnBasicError,
-  endTurnBasicMutationOptions,
-  isEndTurnBasicError,
-  type EndTurnBasicInput,
-  type EndTurnBasicMutationResult,
-} from "./mutations/endTurnBasicMutations";
+  useSettlementTransitionOutcome,
+  useWorldTransitionOutcome,
+} from "./hooks/useTransitionOutcome";
+export {
+  EndTurnTransitionError,
+  endTurnTransitionMutationOptions,
+  isEndTurnTransitionError,
+  type EndTurnTransitionInput,
+  type EndTurnTransitionMutationResult,
+  type EndTurnTransitionSummary,
+} from "./mutations/endTurnTransitionMutations";
+export {
+  FailStuckTurnTransitionError,
+  failStuckTurnTransitionMutationOptions,
+  isFailStuckTurnTransitionError,
+  type FailStuckTurnTransitionInput,
+  type FailStuckTurnTransitionMutationResult,
+} from "./mutations/failStuckTurnTransitionMutations";
 export { EndTurnControl } from "./components/EndTurnControl";
+export {
+  TurnTransitionOutcomeContent,
+  TurnTransitionOutcomeEmptyState,
+  TurnTransitionOutcomePanel,
+} from "./components/TurnTransitionOutcomePanel";
 export {
   CurrentTurnStateError,
   currentTurnStateQueryOptions,
@@ -20,26 +37,21 @@ export {
   latestTurnTransitionStatusQueryOptions,
   shouldRetryLatestTurnTransitionStatusQuery,
 } from "./queries/latestTurnTransitionStatusQueries";
+export {
+  latestSettlementTransitionOutcomeQueryOptions,
+  latestWorldTransitionOutcomeQueryOptions,
+  type TurnTransitionLogEntry,
+  type TurnTransitionNotification,
+  type TurnTransitionOutcome,
+  type TurnTransitionResourceSnapshot,
+  type TurnTransitionSettlementSnapshot,
+} from "./queries/turnTransitionOutcomeQueries";
 export { turnQueryKeys } from "./queries/turnQueryKeys";
 export type {
   CurrentTurnDateDisplay,
   CurrentTurnDateDisplayLabels,
 } from "./types/currentTurnTypes";
 export type {
-  BasicEndTurnLogPayload,
-  BasicEndTurnNotificationPayload,
-  BasicEndTurnReadinessRow,
-  BasicEndTurnReadinessSummary,
-  BasicEndTurnTransitionInput,
-  BasicEndTurnTransitionResult,
-} from "./types/endTurnTransitionTypes";
-export type {
   LatestTurnTransitionStatus,
   TurnTransitionState,
 } from "./types/turnTransitionStatusTypes";
-export {
-  BasicEndTurnTransitionPlanningError,
-  isBasicEndTurnTransitionPlanningError,
-  planBasicEndTurnTransition,
-  type BasicEndTurnTransitionPlanningErrorCode,
-} from "./utils/endTurnTransitionPlanning";

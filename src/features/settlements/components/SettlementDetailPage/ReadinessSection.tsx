@@ -14,7 +14,6 @@ import {
 import { settlementReadinessListQueryOptions } from "../../queries/settlementReadinessQueries";
 import { AutoReadyControl } from "../AutoReadyControl";
 import { ManualReadinessControl } from "../ManualReadinessControl";
-import { ReadinessStateBadge } from "../ReadinessStateBadge";
 
 import type { SettlementReadinessListItem } from "../../types/settlementReadinessTypes";
 import type { JSX } from "react";
@@ -46,7 +45,7 @@ export function SettlementReadinessSection({
   return (
     <section
       aria-labelledby="settlement-readiness-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <h2 id="settlement-readiness-heading" className="text-base font-medium">
         Readiness
@@ -138,26 +137,23 @@ function SettlementReadinessSectionContent({
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-start">
-      <ReadinessStateBadge item={item} />
-      <div className="grid gap-3">
-        {canSetManualReady ? (
-          <ManualReadinessControl
-            isArchived={isArchived}
-            isPending={isReadinessPending}
-            item={item}
-            setReadiness={setReadiness}
-          />
-        ) : null}
-        {canSetAutoReady ? (
-          <AutoReadyControl
-            isArchived={isArchived}
-            isPending={isAutoReadyPending}
-            item={item}
-            setAutoReady={setAutoReady}
-          />
-        ) : null}
-      </div>
+    <div className="grid gap-3">
+      {canSetManualReady ? (
+        <ManualReadinessControl
+          isArchived={isArchived}
+          isPending={isReadinessPending}
+          item={item}
+          setReadiness={setReadiness}
+        />
+      ) : null}
+      {canSetAutoReady ? (
+        <AutoReadyControl
+          isArchived={isArchived}
+          isPending={isAutoReadyPending}
+          item={item}
+          setAutoReady={setAutoReady}
+        />
+      ) : null}
     </div>
   );
 }

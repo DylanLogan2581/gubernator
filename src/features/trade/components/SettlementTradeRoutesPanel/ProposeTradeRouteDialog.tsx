@@ -1,28 +1,43 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
+import { Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { sortByName } from "@/lib/sortUtils";
+import { generateLocalId } from "@/lib/uid";
 
 import { proposeTradeRouteMutationOptions } from "../../mutations/proposeTradeRouteMutations";
 
-type RouteFormValues = {
-  destinationSettlementId: string;
-  originSettlementId: string;
-  quantityPerTransition: string;
+type LegDraft = {
+  direction: "send" | "receive";
+  id: string;
+  quantity: string;
   resourceId: string;
+};
+
+type LegErrors = {
+  direction?: string;
+  quantity?: string;
+  resourceId?: string;
+};
+
+type FormErrors = {
+  destinationSettlementId?: string;
+  legs?: LegErrors[];
 };
 
 type ProposeTradeRouteDialogProps = {
@@ -32,6 +47,18 @@ type ProposeTradeRouteDialogProps = {
   readonly settlementId: string;
   readonly worldId: string;
 };
+
+function createLegDraft(
+  overrides: Partial<Omit<LegDraft, "id">> = {},
+): LegDraft {
+  return {
+    direction: "send",
+    id: generateLocalId(),
+    quantity: "",
+    resourceId: "",
+    ...overrides,
+  };
+}
 
 export function ProposeTradeRouteDialog({
   activeCharacterId,
@@ -46,34 +73,49 @@ export function ProposeTradeRouteDialog({
     proposeTradeRouteMutationOptions({ queryClient }),
   );
 
-  const [form, setForm] = useState<RouteFormValues>({
-    destinationSettlementId: "",
-    originSettlementId: settlementId,
-    quantityPerTransition: "",
-    resourceId: "",
-  });
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof RouteFormValues, string>>
-  >({});
+  const [destinationSettlementId, setDestinationSettlementId] = useState("");
+  const [legs, setLegs] = useState<LegDraft[]>(() => [createLegDraft()]);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const settlements = (settlementsQuery.data ?? []).filter(
     (s) => s.id !== settlementId,
   );
   const resources = resourcesQuery.data ?? [];
 
+  function addLeg(): void {
+    setLegs((prev) => [...prev, createLegDraft()]);
+  }
+
+  function removeLeg(index: number): void {
+    setLegs((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateLeg(index: number, patch: Partial<LegDraft>): void {
+    setLegs((prev) =>
+      prev.map((leg, i) => (i === index ? { ...leg, ...patch } : leg)),
+    );
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    const newErrors: Partial<Record<keyof RouteFormValues, string>> = {};
+    const newErrors: FormErrors = {};
 
-    if (form.destinationSettlementId === "") {
+    if (destinationSettlementId === "") {
       newErrors.destinationSettlementId = "Select a destination settlement.";
     }
-    if (form.resourceId === "") {
-      newErrors.resourceId = "Select a resource.";
-    }
-    const qty = parseFloat(form.quantityPerTransition);
-    if (form.quantityPerTransition === "" || Number.isNaN(qty) || qty <= 0) {
-      newErrors.quantityPerTransition = "Quantity must be greater than zero.";
+
+    const legErrors: LegErrors[] = legs.map((leg) => {
+      const errs: LegErrors = {};
+      if (leg.resourceId === "") errs.resourceId = "Select a resource.";
+      const qty = parseFloat(leg.quantity);
+      if (leg.quantity === "" || Number.isNaN(qty) || qty <= 0) {
+        errs.quantity = "Quantity must be greater than zero.";
+      }
+      return errs;
+    });
+
+    if (legErrors.some((e) => Object.keys(e).length > 0)) {
+      newErrors.legs = legErrors;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -83,11 +125,14 @@ export function ProposeTradeRouteDialog({
 
     mutation.mutate(
       {
-        destinationSettlementId: form.destinationSettlementId,
-        originSettlementId: form.originSettlementId,
+        destinationSettlementId,
+        legs: legs.map((leg) => ({
+          direction: leg.direction,
+          quantity: parseFloat(leg.quantity),
+          resourceId: leg.resourceId,
+        })),
+        originSettlementId: settlementId,
         proposingCitizenId: activeCharacterId,
-        quantityPerTransition: qty,
-        resourceId: form.resourceId,
       },
       {
         onError: (error) => {
@@ -112,9 +157,13 @@ export function ProposeTradeRouteDialog({
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Propose trade route</DialogTitle>
+            <DialogDescription>
+              Choose a destination settlement and resource legs for a proposed
+              trade route.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <label className="grid gap-1 text-sm">
+            <Label className="grid gap-1 text-sm">
               <span className="text-muted-foreground">
                 Destination settlement
               </span>
@@ -132,13 +181,9 @@ export function ProposeTradeRouteDialog({
                   aria-label="Destination settlement"
                   className="w-full"
                   disabled={mutation.isPending}
-                  value={form.destinationSettlementId}
+                  value={destinationSettlementId}
                   onChange={(e) => {
-                    const val = e.currentTarget.value;
-                    setForm((prev) => ({
-                      ...prev,
-                      destinationSettlementId: val,
-                    }));
+                    setDestinationSettlementId(e.currentTarget.value);
                   }}
                 >
                   <option value="">Select a settlement…</option>
@@ -154,63 +199,38 @@ export function ProposeTradeRouteDialog({
                   {errors.destinationSettlementId}
                 </p>
               ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Resource</span>
-              {resources.length === 0 ? (
-                <span className="text-xs text-muted-foreground">
-                  No active resources available.
-                </span>
-              ) : (
-                <NativeSelect
-                  aria-invalid={errors.resourceId !== undefined}
-                  aria-label="Resource"
-                  className="w-full"
+            </Label>
+
+            <div className="grid gap-2">
+              <span className="text-sm text-muted-foreground">Resources</span>
+              {legs.map((leg, index) => (
+                <LegRow
+                  key={leg.id}
                   disabled={mutation.isPending}
-                  value={form.resourceId}
-                  onChange={(e) => {
-                    const val = e.currentTarget.value;
-                    setForm((prev) => ({
-                      ...prev,
-                      resourceId: val,
-                    }));
+                  errors={errors.legs?.[index]}
+                  index={index}
+                  leg={leg}
+                  resources={resources}
+                  showRemove={legs.length > 1}
+                  onRemove={() => {
+                    removeLeg(index);
                   }}
-                >
-                  <option value="">Select a resource…</option>
-                  {sortByName(resources).map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
-                </NativeSelect>
-              )}
-              {errors.resourceId !== undefined ? (
-                <p className="text-xs text-destructive">{errors.resourceId}</p>
-              ) : null}
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Quantity per turn</span>
-              <Input
-                aria-invalid={errors.quantityPerTransition !== undefined}
-                aria-label="Quantity per turn"
+                  onUpdate={(patch) => {
+                    updateLeg(index, patch);
+                  }}
+                />
+              ))}
+              <Button
                 disabled={mutation.isPending}
-                inputMode="numeric"
-                placeholder="e.g. 10"
-                value={form.quantityPerTransition}
-                onChange={(e) => {
-                  const val = e.currentTarget.value;
-                  setForm((prev) => ({
-                    ...prev,
-                    quantityPerTransition: val,
-                  }));
-                }}
-              />
-              {errors.quantityPerTransition !== undefined ? (
-                <p className="text-xs text-destructive">
-                  {errors.quantityPerTransition}
-                </p>
-              ) : null}
-            </label>
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={addLeg}
+              >
+                <Plus aria-hidden="true" />
+                Add resource
+              </Button>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -228,5 +248,98 @@ export function ProposeTradeRouteDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function LegRow({
+  disabled,
+  errors,
+  index,
+  leg,
+  resources,
+  showRemove,
+  onRemove,
+  onUpdate,
+}: {
+  readonly disabled: boolean;
+  readonly errors: LegErrors | undefined;
+  readonly index: number;
+  readonly leg: LegDraft;
+  readonly resources: readonly { readonly id: string; readonly name: string }[];
+  readonly showRemove: boolean;
+  readonly onRemove: () => void;
+  readonly onUpdate: (patch: Partial<LegDraft>) => void;
+}): JSX.Element {
+  return (
+    <div className="grid gap-2 rounded-md border border-border p-3">
+      <div className="flex items-center gap-2">
+        <NativeSelect
+          aria-label={`Leg ${String(index + 1)} direction`}
+          className="w-28 shrink-0"
+          disabled={disabled}
+          value={leg.direction}
+          onChange={(e) => {
+            onUpdate({
+              direction: e.currentTarget.value as "send" | "receive",
+            });
+          }}
+        >
+          <option value="send">Send (−)</option>
+          <option value="receive">Receive (+)</option>
+        </NativeSelect>
+        <div className="flex-1">
+          <NativeSelect
+            aria-invalid={errors?.resourceId !== undefined}
+            aria-label={`Leg ${String(index + 1)} resource`}
+            className="w-full"
+            disabled={disabled}
+            value={leg.resourceId}
+            onChange={(e) => {
+              onUpdate({ resourceId: e.currentTarget.value });
+            }}
+          >
+            <option value="">Select a resource…</option>
+            {sortByName(resources).map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </NativeSelect>
+          {errors?.resourceId !== undefined ? (
+            <p className="mt-0.5 text-xs text-destructive">
+              {errors.resourceId}
+            </p>
+          ) : null}
+        </div>
+        <div className="w-24 shrink-0">
+          <Input
+            aria-invalid={errors?.quantity !== undefined}
+            aria-label={`Leg ${String(index + 1)} quantity per turn`}
+            disabled={disabled}
+            inputMode="numeric"
+            placeholder="Qty"
+            value={leg.quantity}
+            onChange={(e) => {
+              onUpdate({ quantity: e.currentTarget.value });
+            }}
+          />
+          {errors?.quantity !== undefined ? (
+            <p className="mt-0.5 text-xs text-destructive">{errors.quantity}</p>
+          ) : null}
+        </div>
+        {showRemove ? (
+          <Button
+            aria-label={`Remove leg ${String(index + 1)}`}
+            disabled={disabled}
+            size="sm"
+            type="button"
+            variant="ghost"
+            onClick={onRemove}
+          >
+            <Trash2 aria-hidden="true" className="h-4 w-4" />
+          </Button>
+        ) : null}
+      </div>
+    </div>
   );
 }

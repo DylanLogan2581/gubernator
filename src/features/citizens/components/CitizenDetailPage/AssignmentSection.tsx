@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Card } from "@/components/ui/card";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { currentAssignmentForCitizenQueryOptions } from "../../queries/citizenAssignmentsQueries";
@@ -22,9 +23,9 @@ export function CitizenAssignmentSection({
   );
 
   return (
-    <section
+    <Card
       aria-labelledby="citizen-assignment-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <h2 id="citizen-assignment-heading" className="text-base font-medium">
         Assignment
@@ -39,7 +40,7 @@ export function CitizenAssignmentSection({
       ) : (
         <CitizenAssignmentSummary assignment={assignmentQuery.data} />
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -113,13 +114,16 @@ function assignmentTargetLabel(assignment: CitizenAssignment): string | null {
     case "trade_route": {
       if (assignment.tradeRoute === null) return null;
       const end = assignment.tradeRouteEnd;
+      const resources = assignment.tradeRoute.legs
+        .map((leg) => leg.resourceName)
+        .join(", ");
       if (end === "origin") {
-        return `${assignment.tradeRoute.resourceName} → ${assignment.tradeRoute.destinationSettlementName} — Trader (origin)`;
+        return `${resources} → ${assignment.tradeRoute.destinationSettlementName} — Trader (origin)`;
       }
       if (end === "destination") {
-        return `${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.resourceName} — Trader (destination)`;
+        return `${assignment.tradeRoute.originSettlementName} → ${resources} — Trader (destination)`;
       }
-      return `${assignment.tradeRoute.resourceName}: ${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.destinationSettlementName}`;
+      return `${resources}: ${assignment.tradeRoute.originSettlementName} → ${assignment.tradeRoute.destinationSettlementName}`;
     }
   }
 }

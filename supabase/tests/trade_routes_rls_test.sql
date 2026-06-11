@@ -7,15 +7,17 @@
 -- character settlement belongs to that nation.
 --
 -- Writes: INSERT (propose) is open to world admins and nation managers on
--- either side. Direct UPDATE of approval columns and status is blocked by
--- column-level grants (42501) for all authenticated callers; Cards 20–23
--- supply SECURITY DEFINER RPCs for the approval lifecycle.
+-- either side. Direct UPDATE of approval columns, status, and
+-- pause_reason_last_transition is blocked by column-level grants (42501) for
+-- all authenticated callers; Cards 20–23 supply SECURITY DEFINER RPCs for the
+-- approval lifecycle. Quantity changes go through replace_trade_route;
+-- quantity_per_transition lives on trade_route_legs (SELECT-only grant).
 --
 -- UUID ranges (all numeric/hex, unique to this file):
 --   c1xxxxxx = users          c2xxxxxx = worlds
 --   c3xxxxxx = nations        c4xxxxxx = settlements
 --   c5xxxxxx = resources      c6xxxxxx = citizens
---   c7xxxxxx = trade_routes
+--   c7xxxxxx = trade_routes   c8xxxxxx = trade_route_legs
 begin;
 
 select
@@ -97,19 +99,17 @@ where
   id = 'c1000000-0000-0000-0000-000000000006';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'c2000000-0000-0000-0000-000000000001',
     'TR Main World',
-    'c1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000002',
     'TR Other World',
-    'c1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -203,7 +203,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -241,8 +241,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     proposed_by_citizen_id,
     status,
     origin_approval_status,
@@ -253,8 +251,6 @@ values
     'c7000000-0000-0000-0000-000000000001',
     'c4000000-0000-0000-0000-000000000001',
     'c4000000-0000-0000-0000-000000000002',
-    'c5000000-0000-0000-0000-000000000001',
-    100,
     'c6000000-0000-0000-0000-000000000001',
     'proposed',
     'pending',
@@ -266,12 +262,29 @@ values
     'c7000000-0000-0000-0000-000000000002',
     'c4000000-0000-0000-0000-000000000003',
     'c4000000-0000-0000-0000-000000000004',
-    'c5000000-0000-0000-0000-000000000001',
-    50,
     'c6000000-0000-0000-0000-000000000001',
     'proposed',
     'pending',
     'pending'
+  );
+
+-- A single leg for the visible route — used by the quantity_per_transition
+-- column-grant tests below.
+insert into
+  public.trade_route_legs (
+    id,
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'c8000000-0000-0000-0000-000000000001',
+    'c7000000-0000-0000-0000-000000000001',
+    'send',
+    'c5000000-0000-0000-0000-000000000001',
+    50
   );
 
 -- ===========================================================================
@@ -411,15 +424,11 @@ select
       id,
       origin_settlement_id,
       destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
       proposed_by_citizen_id
     ) values (
       'c7000000-0000-0000-0000-000000000010',
       'c4000000-0000-0000-0000-000000000001',
       'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000001',
-      200,
       'c6000000-0000-0000-0000-000000000001'
     )
   $test$,
@@ -427,13 +436,27 @@ select
   );
 
 select
-  lives_ok (
+  throws_ok (
     $test$
     update public.trade_routes
-    set quantity_per_transition = 250
+    set pause_reason_last_transition = 'stockpile_empty'
     where id = 'c7000000-0000-0000-0000-000000000010'
   $test$,
-    'world admin can update quantity_per_transition'
+    '42501',
+    null,
+    'world admin cannot directly update pause_reason_last_transition (simulation-only field)'
+  );
+
+select
+  throws_ok (
+    $test$
+    update public.trade_route_legs
+    set quantity_per_transition = 9999
+    where id = 'c8000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'world admin cannot directly update quantity_per_transition on trade_route_legs'
   );
 
 reset role;
@@ -454,15 +477,11 @@ select
       id,
       origin_settlement_id,
       destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
       proposed_by_citizen_id
     ) values (
       'c7000000-0000-0000-0000-000000000011',
       'c4000000-0000-0000-0000-000000000001',
       'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000001',
-      75,
       'c6000000-0000-0000-0000-000000000001'
     )
   $test$,
@@ -504,6 +523,18 @@ select
     'origin nation manager cannot directly update status'
   );
 
+select
+  throws_ok (
+    $test$
+    update public.trade_route_legs
+    set quantity_per_transition = 9999
+    where id = 'c8000000-0000-0000-0000-000000000001'
+  $test$,
+    '42501',
+    null,
+    'origin nation manager cannot directly update quantity_per_transition on trade_route_legs'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -521,14 +552,10 @@ select
     insert into public.trade_routes (
       origin_settlement_id,
       destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
       proposed_by_citizen_id
     ) values (
       'c4000000-0000-0000-0000-000000000001',
       'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000001',
-      100,
       'c6000000-0000-0000-0000-000000000001'
     )
   $test$,
@@ -540,48 +567,31 @@ select
 reset role;
 
 -- ===========================================================================
--- CONSTRAINT: cross-world resource rejected by trigger (errcode = 23503)
--- Runs as postgres so RLS does not mask the trigger error.
+-- GRANT: approval columns are not directly writable by authenticated users
 -- ===========================================================================
-select
-  throws_ok (
-    $test$
-    insert into public.trade_routes (
-      origin_settlement_id,
-      destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
-      proposed_by_citizen_id
-    ) values (
-      'c4000000-0000-0000-0000-000000000001',
-      'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000002',
-      100,
-      'c6000000-0000-0000-0000-000000000001'
-    )
-  $test$,
-    '23503',
-    null,
-    'cross-world resource is rejected by the same-world trigger'
-  );
+-- Approval is role-based and flows only through the SECURITY DEFINER RPCs. Even
+-- the origin nation manager (c1..003), who passes the UPDATE RLS policy, lacks a
+-- column grant on origin_approved_by_citizen_id, so a direct write is denied
+-- (errcode 42501). This is what forces all approvals through approve/reject.
+set
+  local role authenticated;
 
--- ===========================================================================
--- CONSTRAINT: approver citizen from wrong nation rejected (errcode = 23503)
--- ===========================================================================
--- Citizen c6..002 (destination manager) lives in destination settlement
--- (nation c3..002). Setting them as the origin approver targets nation c3..001 —
--- a mismatch that the approver-nation trigger must reject.
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
 select
   throws_ok (
     $test$
     update public.trade_routes
-    set origin_approved_by_citizen_id = 'c6000000-0000-0000-0000-000000000002'
+    set origin_approved_by_citizen_id = 'c6000000-0000-0000-0000-000000000003'
     where id = 'c7000000-0000-0000-0000-000000000001'
   $test$,
-    '23503',
+    '42501',
     null,
-    'approver citizen from wrong nation is rejected by the approver-nation trigger'
+    'authenticated manager cannot directly write approval columns (RPC-only)'
   );
+
+reset role;
 
 -- ===========================================================================
 -- CONSTRAINT: origin_settlement_id = destination_settlement_id rejected (23514)
@@ -592,45 +602,16 @@ select
     insert into public.trade_routes (
       origin_settlement_id,
       destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
       proposed_by_citizen_id
     ) values (
       'c4000000-0000-0000-0000-000000000001',
       'c4000000-0000-0000-0000-000000000001',
-      'c5000000-0000-0000-0000-000000000001',
-      100,
       'c6000000-0000-0000-0000-000000000001'
     )
   $test$,
     '23514',
     null,
     'self-referential settlement pair is rejected by the distinct_settlements check'
-  );
-
--- ===========================================================================
--- CONSTRAINT: quantity_per_transition = 0 rejected (23514)
--- ===========================================================================
-select
-  throws_ok (
-    $test$
-    insert into public.trade_routes (
-      origin_settlement_id,
-      destination_settlement_id,
-      resource_id,
-      quantity_per_transition,
-      proposed_by_citizen_id
-    ) values (
-      'c4000000-0000-0000-0000-000000000001',
-      'c4000000-0000-0000-0000-000000000002',
-      'c5000000-0000-0000-0000-000000000001',
-      0,
-      'c6000000-0000-0000-0000-000000000001'
-    )
-  $test$,
-    '23514',
-    null,
-    'quantity_per_transition = 0 is rejected by the positive check'
   );
 
 select

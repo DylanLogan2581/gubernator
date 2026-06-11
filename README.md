@@ -38,6 +38,96 @@ Use only browser-safe values with the `VITE_` prefix. Do not put service-role ke
 
 Local Supabase Auth is configured to send email, OAuth, and recovery redirects back to the Vite dev app at `http://localhost:5173`, with `http://127.0.0.1:5173` also allowed for local browser testing.
 
+### Email & Magic-Link Setup
+
+Magic-link authentication requires SMTP configuration. For **local development**, the Supabase local environment includes **Inbucket**, a built-in email testing server that catches all outgoing emails without needing real credentials.
+
+#### Local Development (with Inbucket)
+
+When you run `supabase start`, Inbucket is automatically available at `http://localhost:54324`. Configure your `.env` with:
+
+```env
+SUPABASE_SMTP_HOST=localhost
+SUPABASE_SMTP_PORT=54324
+SUPABASE_SMTP_USER=
+SUPABASE_SMTP_PASS=
+SUPABASE_SMTP_ADMIN_EMAIL=noreply@gubernator.local
+SUPABASE_SMTP_SENDER_NAME=Gubernator
+```
+
+The empty `SUPABASE_SMTP_USER` and `SUPABASE_SMTP_PASS` are intentional — Inbucket requires no authentication.
+
+**To view sent emails locally:**
+
+1. Start Supabase and the dev app: `supabase start` and `npm run dev`
+2. Create a user with magic-link via the admin panel → Users dialog → "Send magic link instead"
+3. Open the Inbucket dashboard: `http://localhost:54324`
+4. Find the magic-link email and copy the link
+5. Paste the link into your browser to verify the callback flow
+
+#### Production (SendGrid, Postmark, Resend, etc.)
+
+For hosted Supabase or production deployments, replace the SMTP values with your email provider's credentials:
+
+```env
+# Example for SendGrid (https://sendgrid.com)
+SUPABASE_SMTP_HOST=smtp.sendgrid.net
+SUPABASE_SMTP_PORT=587
+SUPABASE_SMTP_USER=apikey
+SUPABASE_SMTP_PASS=SG.your-api-key-here
+SUPABASE_SMTP_ADMIN_EMAIL=noreply@yourcompany.com
+SUPABASE_SMTP_SENDER_NAME=Your App Name
+```
+
+For other providers:
+
+- **Postmark** (`smtp.postmarkapp.com:587`) — use Server API token as password
+- **Resend** (`smtp.resend.com:465`) — use API key as password
+- **AWS SES** — use SMTP credentials from the SES console
+
+Ensure your provider allows the sender email address to send on behalf of your domain.
+
+### Supabase Edge Function CORS
+
+Gubernator uses Supabase Edge Functions to handle sensitive operations. Each function enforces a per-function browser origin allowlist to prevent unauthorized requests from other origins. The allowlist is configured via environment variables that are read from `supabase/config.toml` during local development.
+
+#### Environment Variables
+
+Two functions require origin allowlists:
+
+- **`END_TURN_SIMULATION_ALLOWED_ORIGINS`** — gates the `end-turn-simulation` function. Browser requests carrying an `Origin` header not in this list are rejected with HTTP 403 before any logic runs.
+- **`ADMIN_CREATE_USER_ALLOWED_ORIGINS`** — gates the `admin-create-user` function. Same validation and rejection behavior.
+
+Both are comma-separated origin lists (no path, no trailing slash, scheme required — e.g. `http://localhost:5173,http://127.0.0.1:5173`).
+
+#### Local Development
+
+These are already configured in `supabase/config.toml` under `[edge_runtime.secrets]` for local Supabase:
+
+```toml
+[edge_runtime.secrets]
+END_TURN_SIMULATION_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+ADMIN_CREATE_USER_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+```
+
+Both the Vite dev server (`http://localhost:5173`) and the localhost loopback variant (`http://127.0.0.1:5173`) are allowed for local testing. If you edit `config.toml`, restart Supabase for the changes to take effect:
+
+```bash
+npx supabase stop && npx supabase start
+```
+
+#### Production & Staging
+
+When deploying to a hosted Supabase project (staging or production), set these environment variables as secrets through the Supabase Dashboard or via Supabase CLI:
+
+```bash
+supabase secrets set --project-ref <project-ref> \
+  END_TURN_SIMULATION_ALLOWED_ORIGINS="https://app.example.com" \
+  ADMIN_CREATE_USER_ALLOWED_ORIGINS="https://app.example.com"
+```
+
+Replace `https://app.example.com` with your deployed frontend origin(s). If these variables are unset or the request origin is not listed, the function returns HTTP 403 and the operation fails silently in the UI.
+
 ### 3. Apply database migrations
 
 Requires the [Supabase CLI](https://supabase.com/docs/guides/cli) installed and a local Supabase instance running:

@@ -42,9 +42,15 @@ function makeRoute(): TradeRoute {
     destinationSettlementId: DEST_SETTLEMENT_ID,
     destinationSettlementName: "Far Settlement",
     destinationNationName: "Far Nation",
-    resourceId: "00000000-0000-0000-0000-000000000030",
-    resourceName: "Grain",
-    quantityPerTransition: 10,
+    legs: [
+      {
+        id: "00000000-0000-0000-0000-000000000031",
+        direction: "send" as const,
+        quantityPerTransition: 10,
+        resourceId: "00000000-0000-0000-0000-000000000030",
+        resourceName: "Grain",
+      },
+    ],
     status: "proposed",
     originApprovalStatus: "pending",
     destinationApprovalStatus: "pending",
@@ -97,7 +103,7 @@ describe("RejectConfirmDialog", () => {
   it("shows reject dialog with counterpart name", () => {
     renderDialog();
     expect(
-      screen.getByRole("dialog", { name: "Reject trade route?" }),
+      screen.getByRole("alertdialog", { name: "Reject trade route?" }),
     ).toBeDefined();
     expect(screen.getByText(/Far Settlement \(Far Nation\)/)).toBeDefined();
   });

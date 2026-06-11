@@ -19,7 +19,7 @@
 begin;
 
 select
-  plan (21);
+  plan (22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -55,40 +55,42 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '81000000-0000-0000-0000-000000000001',
     'Child Domain World',
-    '80000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     '81000000-0000-0000-0000-000000000002',
     'Child Domain Other World',
-    '80000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    visibility,
-    status,
-    archived_at
-  )
+  public.worlds (id, name, visibility, status, archived_at)
 values
   (
     '81000000-0000-0000-0000-000000000003',
     'Child Domain Archived World',
-    '80000000-0000-0000-0000-000000000001',
     'private',
     'archived',
     now()
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    '81000000-0000-0000-0000-000000000001',
+    '80000000-0000-0000-0000-000000000001'
+  ),
+  (
+    '81000000-0000-0000-0000-000000000003',
+    '80000000-0000-0000-0000-000000000001'
   );
 
 insert into
@@ -319,12 +321,23 @@ select
     $test$
     update public.settlements
     set name = 'Renamed Settlement',
-        description = 'New description',
-        coord_x = 1.25,
-        coord_z = -3.5
+        description = 'New description'
     where id = '83000000-0000-0000-0000-000000000001'
   $test$,
-    'admin can update settlements.name/description/coord_x/coord_z'
+    'admin can update settlements.name/description directly'
+  );
+
+-- Direct coord_x/coord_z writes are blocked by the column grant restriction;
+-- coordinate edits go through the update_settlement_coordinates SECURITY DEFINER
+-- function (see 20260525000002_grant_manager_settlement_updates.sql).
+select
+  lives_ok (
+    $test$
+    select public.update_settlement_coordinates (
+      '83000000-0000-0000-0000-000000000001'::uuid, 1.25, -3.5
+    )
+  $test$,
+    'admin can update settlements.coord_x/coord_z via update_settlement_coordinates'
   );
 
 -- ===========================================================================
@@ -366,23 +379,21 @@ select
     'set_settlement_auto_ready enables auto-ready for admin caller'
   );
 
--- Archived worlds are no-ops via the RPC.
+-- Archived worlds raise P0001 via the RPC.
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.set_settlement_readiness ('83000000-0000-0000-0000-000000000003', true)
-    ),
-    0,
-    'set_settlement_readiness returns no rows for archived-world settlement'
+  throws_ok (
+    $test$
+    select public.set_settlement_readiness ('83000000-0000-0000-0000-000000000003', true)
+    $test$,
+    'P0001',
+    null,
+    'set_settlement_readiness raises P0001 for archived-world settlement'
   );
 
 reset role;
 
 -- ===========================================================================
--- NON-ADMIN: RPC is a no-op for callers without admin access.
+-- NON-ADMIN: RPC raises 42501 for callers without admin access.
 -- ===========================================================================
 set
   local role authenticated;
@@ -391,27 +402,23 @@ set
   local "request.jwt.claims" = '{"sub":"80000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.set_settlement_readiness ('83000000-0000-0000-0000-000000000001', false)
-    ),
-    0,
-    'set_settlement_readiness returns no rows for non-admin caller'
+  throws_ok (
+    $test$
+    select public.set_settlement_readiness ('83000000-0000-0000-0000-000000000001', false)
+    $test$,
+    '42501',
+    null,
+    'set_settlement_readiness raises 42501 for non-admin caller'
   );
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.set_settlement_auto_ready ('83000000-0000-0000-0000-000000000001', false)
-    ),
-    0,
-    'set_settlement_auto_ready returns no rows for non-admin caller'
+  throws_ok (
+    $test$
+    select public.set_settlement_auto_ready ('83000000-0000-0000-0000-000000000001', false)
+    $test$,
+    '42501',
+    null,
+    'set_settlement_auto_ready raises 42501 for non-admin caller'
   );
 
 reset role;

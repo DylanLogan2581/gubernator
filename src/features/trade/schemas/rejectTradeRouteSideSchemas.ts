@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export const rejectTradeRouteSideInputSchema = z.strictObject({
-  rejectorCitizenId: z.guid("Rejector citizen id must be a valid UUID."),
+  rejectorCitizenId: z.guid("Select a rejector."),
   side: z.enum(["origin", "destination"], {
     message: 'Side must be "origin" or "destination".',
   }),
-  tradeRouteId: z.guid("Trade route id must be a valid UUID."),
+  tradeRouteId: z.guid("Select a trade route."),
 });
 
 export type RejectTradeRouteSideInput = z.input<

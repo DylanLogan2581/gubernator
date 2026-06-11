@@ -68,33 +68,40 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a1000000-0000-0000-0000-000000000001',
     'Role World',
-    'a0000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    visibility,
-    status,
-    archived_at
-  )
+  public.world_admins (world_id, user_id)
+values
+  (
+    'a1000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001'
+  );
+
+insert into
+  public.worlds (id, name, visibility, status, archived_at)
 values
   (
     'a1000000-0000-0000-0000-000000000002',
     'Role Archived World',
-    'a0000000-0000-0000-0000-000000000001',
     'private',
     'archived',
     now()
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'a1000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000001'
   );
 
 insert into
@@ -141,13 +148,14 @@ values
   );
 
 -- Nation Manager player_character (governs Nation A).
+-- name is a generated column (given_name || coalesce(' ' || surname, '')).
 insert into
   public.citizens (
     id,
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -175,7 +183,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values
@@ -197,7 +205,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     role_type,
     role_nation_id,
@@ -225,7 +233,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     role_type,
     role_nation_id,
@@ -251,7 +259,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -273,7 +281,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -318,7 +326,7 @@ select
   $test$,
     '42501',
     null,
-    'admin cannot set citizens.role_type directly'
+    'authenticated role cannot set citizens.role_type directly'
   );
 
 select
@@ -330,7 +338,7 @@ select
   $test$,
     '42501',
     null,
-    'admin cannot set citizens.role_nation_id directly'
+    'authenticated role cannot set citizens.role_nation_id directly'
   );
 
 select
@@ -342,11 +350,11 @@ select
   $test$,
     '42501',
     null,
-    'admin cannot set citizens.role_settlement_id directly'
+    'authenticated role cannot set citizens.role_settlement_id directly'
   );
 
 -- ===========================================================================
--- World owner: link/unlink + assign/revoke (admin path).
+-- World admin: link/unlink + assign/revoke (admin path).
 -- ===========================================================================
 select
   ok (
@@ -401,39 +409,35 @@ select
     'link_user_to_citizen preserves a role whose scope still matches'
   );
 
--- assign_citizen_role: admin path with scope mismatch is rejected.
+-- assign_citizen_role: admin path with scope mismatch raises P0001.
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.assign_citizen_role (
-          'a4000000-0000-0000-0000-000000000020',
-          'settlement_manager',
-          null,
-          'a3000000-0000-0000-0000-0000000000b1'
-        )
-    ),
-    0,
-    'assign_citizen_role rejects settlement scope that does not match citizen settlement'
+  throws_ok (
+    $test$
+    select public.assign_citizen_role (
+      'a4000000-0000-0000-0000-000000000020',
+      'settlement_manager',
+      null,
+      'a3000000-0000-0000-0000-0000000000b1'
+    )
+    $test$,
+    'P0001',
+    null,
+    'assign_citizen_role raises P0001 for settlement scope mismatch'
   );
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.assign_citizen_role (
-          'a4000000-0000-0000-0000-000000000020',
-          'nation_manager',
-          'a2000000-0000-0000-0000-00000000000b',
-          null
-        )
-    ),
-    0,
-    'assign_citizen_role rejects nation scope that does not match citizen nation'
+  throws_ok (
+    $test$
+    select public.assign_citizen_role (
+      'a4000000-0000-0000-0000-000000000020',
+      'nation_manager',
+      'a2000000-0000-0000-0000-00000000000b',
+      null
+    )
+    $test$,
+    'P0001',
+    null,
+    'assign_citizen_role raises P0001 for nation scope mismatch'
   );
 
 select
@@ -467,34 +471,30 @@ select
     'revoke_citizen_role resets all role columns to none'
   );
 
--- Archived-world citizen: all four RPCs no-op.
+-- Archived-world citizen: all four RPCs raise P0001.
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.unlink_user_from_citizen ('a4000000-0000-0000-0000-000000000030')
-    ),
-    0,
-    'unlink_user_from_citizen returns no rows for archived-world citizen'
+  throws_ok (
+    $test$
+    select public.unlink_user_from_citizen ('a4000000-0000-0000-0000-000000000030')
+    $test$,
+    'P0001',
+    null,
+    'unlink_user_from_citizen raises P0001 for archived-world citizen'
   );
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.assign_citizen_role (
-          'a4000000-0000-0000-0000-000000000030',
-          'settlement_manager',
-          null,
-          'a3000000-0000-0000-0000-0000000000c1'
-        )
-    ),
-    0,
-    'assign_citizen_role returns no rows for archived-world citizen'
+  throws_ok (
+    $test$
+    select public.assign_citizen_role (
+      'a4000000-0000-0000-0000-000000000030',
+      'settlement_manager',
+      null,
+      'a3000000-0000-0000-0000-0000000000c1'
+    )
+    $test$,
+    'P0001',
+    null,
+    'assign_citizen_role raises P0001 for archived-world citizen'
   );
 
 reset role;
@@ -509,29 +509,25 @@ set
   local "request.jwt.claims" = '{"sub":"a0000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.link_user_to_citizen (
-          'a4000000-0000-0000-0000-000000000010',
-          'a0000000-0000-0000-0000-000000000002'
-        )
-    ),
-    0,
+  throws_ok (
+    $test$
+    select public.link_user_to_citizen (
+      'a4000000-0000-0000-0000-000000000010',
+      'a0000000-0000-0000-0000-000000000002'
+    )
+    $test$,
+    '42501',
+    null,
     'non-admin cannot link a user to a citizen'
   );
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.unlink_user_from_citizen ('a4000000-0000-0000-0000-000000000020')
-    ),
-    0,
+  throws_ok (
+    $test$
+    select public.unlink_user_from_citizen ('a4000000-0000-0000-0000-000000000020')
+    $test$,
+    '42501',
+    null,
     'non-admin cannot unlink a user from a citizen'
   );
 
@@ -548,35 +544,31 @@ set
 
 -- Nation Manager cannot link.
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.link_user_to_citizen (
-          'a4000000-0000-0000-0000-000000000010',
-          'a0000000-0000-0000-0000-000000000002'
-        )
-    ),
-    0,
+  throws_ok (
+    $test$
+    select public.link_user_to_citizen (
+      'a4000000-0000-0000-0000-000000000010',
+      'a0000000-0000-0000-0000-000000000002'
+    )
+    $test$,
+    '42501',
+    null,
     'nation manager cannot link a user to a citizen'
   );
 
 -- Nation Manager cannot assign a nation_manager role.
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.assign_citizen_role (
-          'a4000000-0000-0000-0000-000000000020',
-          'nation_manager',
-          'a2000000-0000-0000-0000-00000000000a',
-          null
-        )
-    ),
-    0,
+  throws_ok (
+    $test$
+    select public.assign_citizen_role (
+      'a4000000-0000-0000-0000-000000000020',
+      'nation_manager',
+      'a2000000-0000-0000-0000-00000000000a',
+      null
+    )
+    $test$,
+    '42501',
+    null,
     'nation manager cannot assign nation_manager role'
   );
 

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (32);
+  plan (36);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -90,26 +90,23 @@ where
   id = '71000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '72000000-0000-0000-0000-000000000001',
     'Settlements Private World',
-    '71000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     '72000000-0000-0000-0000-000000000002',
     'Settlements Public World',
-    '71000000-0000-0000-0000-000000000001',
     'public',
     'active'
   ),
   (
     '72000000-0000-0000-0000-000000000003',
     'Settlements Outsider World',
-    '71000000-0000-0000-0000-000000000003',
     'private',
     'active'
   );
@@ -117,6 +114,10 @@ values
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    '72000000-0000-0000-0000-000000000001',
+    '71000000-0000-0000-0000-000000000001'
+  ),
   (
     '72000000-0000-0000-0000-000000000001',
     '71000000-0000-0000-0000-000000000002'
@@ -189,7 +190,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -536,6 +537,22 @@ select
   );
 
 select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.update_settlement_coordinates (
+          '74000000-0000-0000-0000-000000000005'::uuid,
+          42.5,
+          -17.25
+        )
+    ),
+    1,
+    'world admin can update settlement coordinates via function'
+  );
+
+select
   lives_ok (
     $test$
     delete from public.settlements
@@ -594,6 +611,22 @@ select
     where id = '74000000-0000-0000-0000-000000000006'
   $test$,
     'super admin can update settlements in any world'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.update_settlement_coordinates (
+          '74000000-0000-0000-0000-000000000006'::uuid,
+          99.75,
+          88.5
+        )
+    ),
+    1,
+    'super admin can update settlement coordinates via function'
   );
 
 select
@@ -713,6 +746,22 @@ set
 where
   id = '74000000-0000-0000-0000-000000000001';
 
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.update_settlement_coordinates (
+          '74000000-0000-0000-0000-000000000001'::uuid,
+          100.5,
+          -50.25
+        )
+    ),
+    0,
+    'nation manager cannot update settlement coordinates via function (returns empty)'
+  );
+
 -- ===========================================================================
 -- SETTLEMENT MANAGER: can update their assigned settlement.
 -- ===========================================================================
@@ -750,6 +799,30 @@ set
   name = 'Private Settlement'
 where
   id = '74000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"71000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.update_settlement_coordinates (
+          '74000000-0000-0000-0000-000000000001'::uuid,
+          100.5,
+          -50.25
+        )
+    ),
+    0,
+    'settlement manager cannot update settlement coordinates via function (returns empty)'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- PLAIN PC: player character without a management role can read but not update.

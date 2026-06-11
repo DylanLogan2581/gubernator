@@ -29,8 +29,11 @@ export type CitizenAssignment = {
   readonly tradeRoute: {
     readonly destinationSettlementName: string;
     readonly id: string;
+    readonly legs: readonly {
+      readonly direction: "receive" | "send";
+      readonly resourceName: string;
+    }[];
     readonly originSettlementName: string;
-    readonly resourceName: string;
   } | null;
   readonly tradeRouteEnd: string | null;
   readonly updatedAt: string;

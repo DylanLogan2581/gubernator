@@ -3,16 +3,36 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
+import { useWorldTransitionOutcome } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { parseTradeRouteResumedPayload } from "@/shared/simulation";
 
 import { tradeRoutesForSettlementQueryOptions } from "../../queries/tradeRoutesQueries";
 
@@ -25,28 +45,42 @@ import { ReplaceTradeRouteDialog } from "./ReplaceTradeRouteDialog";
 import type {
   TradeRoute,
   TradeRouteApprovalStatus,
+  TradeRouteLeg,
   TradeRouteStatus,
 } from "../../types/tradeRouteTypes";
 
+const ACTIVE_STATUSES = new Set(["proposed", "active", "paused"]);
+const CANCELLED_STATUSES = new Set(["cancelled", "replaced"]);
+
+const CANCELLED_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "numeric",
+  timeZone: "UTC",
+  year: "2-digit",
+});
+
+function formatCancelledDate(timestamp: string): string {
+  const ms = Date.parse(timestamp);
+  return Number.isNaN(ms) ? timestamp : CANCELLED_DATE_FORMATTER.format(ms);
+}
+
 type SettlementTradeRoutesPanelProps = {
-  readonly canAdmin: boolean;
   readonly canManage: boolean;
   readonly isArchived: boolean;
-  readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
 };
 
 export function SettlementTradeRoutesPanel({
-  canAdmin,
+  canManage,
   isArchived,
-  nationId,
   settlementId,
   worldId,
 }: SettlementTradeRoutesPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const { activeCharacter } = useActivePlayerCharacter();
   const [showProposeDialog, setShowProposeDialog] = useState(false);
+  const [showCancelled, setShowCancelled] = useState(false);
 
   const routesQuery = useQuery(
     tradeRoutesForSettlementQueryOptions(settlementId),
@@ -54,21 +88,21 @@ export function SettlementTradeRoutesPanel({
   const assignmentsQuery = useQuery(
     settlementTargetAssignmentsQueryOptions(settlementId),
   );
+  const latestOutcome = useWorldTransitionOutcome(worldId);
 
-  const isNationManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nationId &&
-    activeCharacter.status === "alive";
-  const isSettlementManager =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "settlement_manager" &&
-    activeCharacter.roleSettlementId === settlementId &&
-    activeCharacter.status === "alive";
-  const canManageRoutes =
-    !isArchived &&
-    activeCharacter !== null &&
-    (canAdmin || isNationManager || isSettlementManager);
+  const canManageRoutes = !isArchived && canManage;
+
+  const resumedRouteIds = new Set<string>();
+  if (latestOutcome !== null) {
+    for (const entry of latestOutcome.logEntries) {
+      if (entry.logCategory === "trade_route.resumed") {
+        const parsed = parseTradeRouteResumedPayload(entry.payloadJsonb);
+        if (parsed !== null) {
+          resumedRouteIds.add(parsed.tradeRouteId);
+        }
+      }
+    }
+  }
 
   const traderCountByRoute = new Map<string, number>();
   if (assignmentsQuery.data !== undefined) {
@@ -80,89 +114,126 @@ export function SettlementTradeRoutesPanel({
     }
   }
 
-  const routes = routesQuery.data ?? [];
-  const outgoing = routes.filter((r) => r.originSettlementId === settlementId);
-  const incoming = routes.filter(
+  const allRoutes = routesQuery.data ?? [];
+  const activeRoutes = allRoutes.filter((r) => ACTIVE_STATUSES.has(r.status));
+  const cancelledRoutes = allRoutes.filter((r) =>
+    CANCELLED_STATUSES.has(r.status),
+  );
+  const visibleRoutes = showCancelled ? cancelledRoutes : activeRoutes;
+
+  const outgoing = visibleRoutes.filter(
+    (r) => r.originSettlementId === settlementId,
+  );
+  const incoming = visibleRoutes.filter(
     (r) => r.destinationSettlementId === settlementId,
   );
 
   return (
-    <section
+    <Card
       aria-labelledby="settlement-trade-routes-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4">
         <h2
           id="settlement-trade-routes-heading"
           className="text-base font-medium"
         >
           Trade Routes
         </h2>
-        {canManageRoutes &&
-        !routesQuery.isPending &&
-        activeCharacter !== null ? (
-          <Button
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setShowProposeDialog(true);
-            }}
-          >
-            <Plus aria-hidden="true" />
-            Propose trade route
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {canManageRoutes && !routesQuery.isPending && !showCancelled ? (
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowProposeDialog(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Propose trade route
+            </Button>
+          ) : null}
+          {!routesQuery.isPending && !routesQuery.isError ? (
+            <Button
+              aria-label={showCancelled ? "Hide cancelled" : "Show cancelled"}
+              aria-pressed={showCancelled}
+              size="icon-sm"
+              title={showCancelled ? "Hide cancelled" : "Show cancelled"}
+              type="button"
+              variant={showCancelled ? "secondary" : "ghost"}
+              onClick={() => {
+                setShowCancelled((v) => !v);
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
       </div>
-      {showProposeDialog && activeCharacter !== null ? (
-        <ProposeTradeRouteDialog
-          activeCharacterId={activeCharacter.id}
-          queryClient={queryClient}
-          settlementId={settlementId}
-          worldId={worldId}
-          onClose={() => {
-            setShowProposeDialog(false);
-          }}
-        />
-      ) : null}
-
-      {routesQuery.isPending ? (
-        <LoadingState label="Loading trade routes…" />
-      ) : routesQuery.isError ? (
-        <ErrorState
-          title="Trade routes could not be loaded"
-          description={getErrorDescription(routesQuery.error)}
-        />
-      ) : outgoing.length === 0 && incoming.length === 0 ? (
-        <EmptyState
-          title="No trade routes"
-          description="This settlement has no active or proposed trade routes."
-        />
-      ) : (
-        <div className="grid gap-4">
-          <TradeRoutesDirection
-            activeCharacterId={activeCharacter?.id ?? null}
-            canManageRoutes={canManageRoutes}
-            label="Outgoing"
+      {showProposeDialog ? (
+        <div className="px-4">
+          <ProposeTradeRouteDialog
+            activeCharacterId={activeCharacter?.id ?? ""}
             queryClient={queryClient}
-            routes={outgoing}
             settlementId={settlementId}
-            side="origin"
-            traderCountByRoute={traderCountByRoute}
-          />
-          <TradeRoutesDirection
-            activeCharacterId={activeCharacter?.id ?? null}
-            canManageRoutes={canManageRoutes}
-            label="Incoming"
-            queryClient={queryClient}
-            routes={incoming}
-            settlementId={settlementId}
-            side="destination"
-            traderCountByRoute={traderCountByRoute}
+            worldId={worldId}
+            onClose={() => {
+              setShowProposeDialog(false);
+            }}
           />
         </div>
-      )}
-    </section>
+      ) : null}
+
+      <CardContent>
+        {routesQuery.isPending ? (
+          <TableSkeleton columnCount={5} rowCount={5} />
+        ) : routesQuery.isError ? (
+          <ErrorState
+            title="Trade routes could not be loaded"
+            description={getErrorDescription(routesQuery.error)}
+          />
+        ) : outgoing.length === 0 && incoming.length === 0 ? (
+          <EmptyState
+            title={
+              showCancelled ? "No cancelled trade routes" : "No trade routes"
+            }
+            description={
+              showCancelled
+                ? "This settlement has no cancelled or replaced trade routes."
+                : "This settlement has no active or proposed trade routes."
+            }
+          />
+        ) : (
+          <div className="grid gap-4">
+            <TradeRoutesDirection
+              activeCharacterId={activeCharacter?.id ?? null}
+              canManageRoutes={showCancelled ? false : canManageRoutes}
+              label="Outgoing"
+              queryClient={queryClient}
+              resumedRouteIds={resumedRouteIds}
+              routes={outgoing}
+              settlementId={settlementId}
+              side="origin"
+              traderCountByRoute={traderCountByRoute}
+              worldId={worldId}
+            />
+            <TradeRoutesDirection
+              activeCharacterId={activeCharacter?.id ?? null}
+              canManageRoutes={showCancelled ? false : canManageRoutes}
+              label="Incoming"
+              queryClient={queryClient}
+              resumedRouteIds={resumedRouteIds}
+              routes={incoming}
+              settlementId={settlementId}
+              side="destination"
+              traderCountByRoute={traderCountByRoute}
+              worldId={worldId}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -171,19 +242,23 @@ function TradeRoutesDirection({
   canManageRoutes,
   label,
   queryClient,
+  resumedRouteIds,
   routes,
   settlementId,
   side,
   traderCountByRoute,
+  worldId,
 }: {
   readonly activeCharacterId: string | null;
   readonly canManageRoutes: boolean;
   readonly label: string;
   readonly queryClient: QueryClient;
+  readonly resumedRouteIds: ReadonlySet<string>;
   readonly routes: readonly TradeRoute[];
   readonly settlementId: string;
   readonly side: "destination" | "origin";
   readonly traderCountByRoute: ReadonlyMap<string, number>;
+  readonly worldId: string;
 }): JSX.Element | null {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -211,44 +286,41 @@ function TradeRoutesDirection({
       </button>
       {!isCollapsed ? (
         <div id={panelId}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="pb-2 font-medium" scope="col">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="text-muted-foreground">
+                <TableHead scope="col">
                   {side === "origin" ? "Destination" : "Origin"}
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Resource
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Qty/turn
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Status
-                </th>
-                <th className="pb-2 font-medium" scope="col">
-                  Origin / Dest
-                </th>
+                </TableHead>
+                <TableHead scope="col">Resources</TableHead>
+                <TableHead scope="col">Status</TableHead>
+                <TableHead scope="col">Approval</TableHead>
                 {canManageRoutes ? (
-                  <th className="w-48 pb-2" scope="col" aria-label="Actions" />
+                  <TableHead
+                    scope="col"
+                    className="w-48"
+                    aria-label="Actions"
+                  />
                 ) : null}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {routes.map((route) => (
                 <TradeRouteRow
                   key={route.id}
                   activeCharacterId={activeCharacterId}
                   canManageRoutes={canManageRoutes}
+                  isResumedThisTransition={resumedRouteIds.has(route.id)}
                   queryClient={queryClient}
                   route={route}
                   settlementId={settlementId}
                   side={side}
                   traderCount={traderCountByRoute.get(route.id) ?? 0}
+                  worldId={worldId}
                 />
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       ) : null}
     </div>
@@ -258,19 +330,23 @@ function TradeRoutesDirection({
 function TradeRouteRow({
   activeCharacterId,
   canManageRoutes,
+  isResumedThisTransition,
   queryClient,
   route,
   settlementId,
   side,
   traderCount,
+  worldId,
 }: {
   readonly activeCharacterId: string | null;
   readonly canManageRoutes: boolean;
+  readonly isResumedThisTransition: boolean;
   readonly queryClient: QueryClient;
   readonly route: TradeRoute;
   readonly settlementId: string;
   readonly side: "destination" | "origin";
   readonly traderCount: number;
+  readonly worldId: string;
 }): JSX.Element {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -303,19 +379,28 @@ function TradeRouteRow({
 
   return (
     <>
-      <tr
+      <TableRow
         id={`trade-route-${route.id}`}
-        className="border-b border-border last:border-0"
+        aria-live={isResumedThisTransition ? "polite" : undefined}
+        className={`${isResumedThisTransition ? "animate-pulse bg-success [animation-iteration-count:4]" : ""}`}
       >
-        <td className="py-2 pr-4 font-medium">{counterpart}</td>
-        <td className="py-2 pr-4 text-muted-foreground">
-          {route.resourceName}
-        </td>
-        <td className="py-2 pr-4 tabular-nums">
-          {route.quantityPerTransition.toLocaleString()}
-        </td>
-        <td className="py-2 pr-4">
-          <StatusBadge status={route.status} />
+        <TableCell className="py-2 pr-4 font-medium">{counterpart}</TableCell>
+        <TableCell className="py-2 pr-4">
+          <LegsSummary legs={route.legs} viewerSide={side} />
+        </TableCell>
+        <TableCell className="py-2 pr-4">
+          <StatusBadge
+            pauseReason={route.pauseReasonLastTransition}
+            status={route.status}
+          />
+          {CANCELLED_STATUSES.has(route.status) ? (
+            <span className="block text-xs text-muted-foreground">
+              {formatCancelledDate(route.updatedAt)}
+            </span>
+          ) : null}
+          {isResumedThisTransition ? (
+            <span className="sr-only">resumed this turn</span>
+          ) : null}
           {route.replacementForTradeRouteId !== null ? (
             <a
               href={`#trade-route-${route.replacementForTradeRouteId}`}
@@ -324,19 +409,12 @@ function TradeRouteRow({
               Earlier route →
             </a>
           ) : null}
-        </td>
-        <td className="py-2 pr-4">
-          <span className="flex items-center gap-1">
-            <ApprovalBadge status={route.originApprovalStatus} label="Orig" />
-            <span className="text-muted-foreground">/</span>
-            <ApprovalBadge
-              status={route.destinationApprovalStatus}
-              label="Dest"
-            />
-          </span>
-        </td>
+        </TableCell>
+        <TableCell className="py-2 pr-4">
+          <ApprovalBadge status={combinedApprovalStatus(route)} />
+        </TableCell>
         {canManageRoutes ? (
-          <td className="w-48 py-2 text-right">
+          <TableCell className="w-48 py-2 text-right">
             <div className="flex flex-wrap items-center justify-end gap-1">
               {canApproveOrReject && thisSideApproval === "pending" ? (
                 <>
@@ -391,9 +469,9 @@ function TradeRouteRow({
                 </Button>
               ) : null}
             </div>
-          </td>
+          </TableCell>
         ) : null}
-      </tr>
+      </TableRow>
       {showApproveDialog && activeCharacterId !== null ? (
         <ApproveConfirmDialog
           approverCitizenId={activeCharacterId}
@@ -436,6 +514,7 @@ function TradeRouteRow({
           counterpart={counterpart}
           queryClient={queryClient}
           route={route}
+          worldId={worldId}
           onClose={() => {
             setShowReplaceDialog(false);
           }}
@@ -445,17 +524,68 @@ function TradeRouteRow({
   );
 }
 
+function LegsSummary({
+  legs,
+  viewerSide,
+}: {
+  readonly legs: readonly TradeRouteLeg[];
+  readonly viewerSide: "destination" | "origin";
+}): JSX.Element {
+  if (legs.length === 0) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  const items = legs.map((leg) => {
+    // From the viewer's perspective:
+    // - origin viewer: "send" legs are negative (outgoing), "receive" legs are positive (incoming)
+    // - destination viewer: "send" legs are positive (incoming), "receive" legs are negative (outgoing)
+    const isNegative =
+      (viewerSide === "origin" && leg.direction === "send") ||
+      (viewerSide === "destination" && leg.direction === "receive");
+    const sign = isNegative ? "−" : "+";
+    const colorClass = isNegative
+      ? "text-destructive"
+      : "text-success-foreground";
+    return { colorClass, leg, sign };
+  });
+
+  return (
+    <span className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs tabular-nums">
+      {items.map(({ colorClass, leg, sign }) => (
+        <span key={leg.id} className={`font-medium ${colorClass}`}>
+          {sign}
+          {leg.quantityPerTransition.toLocaleString()} {leg.resourceName}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+const PAUSE_REASON_LABELS: Record<string, string> = {
+  insufficient_destination_space: "Insufficient space at destination",
+  insufficient_destination_stock: "Insufficient stock at destination",
+  insufficient_origin_space: "Insufficient space at origin",
+  insufficient_origin_stock: "Insufficient stock at origin",
+  insufficient_trader_destination: "Insufficient traders at destination",
+  insufficient_trader_origin: "Insufficient traders at origin",
+};
+
 function StatusBadge({
+  pauseReason,
   status,
 }: {
+  readonly pauseReason?: string | null;
   readonly status: TradeRouteStatus;
 }): JSX.Element {
-  const styles: Record<TradeRouteStatus, string> = {
-    active: "text-green-700",
-    cancelled: "text-destructive",
-    paused: "text-amber-600",
-    proposed: "text-amber-600",
-    replaced: "text-muted-foreground",
+  const variantMap: Record<
+    TradeRouteStatus,
+    "default" | "destructive" | "warning" | "outline"
+  > = {
+    active: "default",
+    cancelled: "destructive",
+    paused: "warning",
+    proposed: "warning",
+    replaced: "outline",
   };
   const labels: Record<TradeRouteStatus, string> = {
     active: "Active",
@@ -464,36 +594,77 @@ function StatusBadge({
     proposed: "Proposed",
     replaced: "Replaced",
   };
+  const title =
+    status === "paused" && pauseReason !== null && pauseReason !== undefined
+      ? (PAUSE_REASON_LABELS[pauseReason] ?? pauseReason)
+      : undefined;
+
+  const variant = variantMap[status];
+  const className =
+    status === "active" ? "bg-success text-success-foreground" : undefined;
+
   return (
-    <span className={`text-xs font-medium ${styles[status]}`}>
+    <Badge className={className} title={title} variant={variant}>
       {labels[status]}
-    </span>
+    </Badge>
   );
+}
+
+// Only the recipient side requires approval (the proposer's side is auto-approved
+// at propose time), so the two per-side statuses collapse to one route-level
+// status: rejected wins, then any still-pending side, otherwise approved.
+function combinedApprovalStatus(route: TradeRoute): TradeRouteApprovalStatus {
+  if (
+    route.originApprovalStatus === "rejected" ||
+    route.destinationApprovalStatus === "rejected"
+  ) {
+    return "rejected";
+  }
+  if (
+    route.originApprovalStatus === "pending" ||
+    route.destinationApprovalStatus === "pending"
+  ) {
+    return "pending";
+  }
+  return "approved";
 }
 
 function ApprovalBadge({
   label,
   status,
 }: {
-  readonly label: string;
+  readonly label?: string;
   readonly status: TradeRouteApprovalStatus;
 }): JSX.Element {
-  const styles: Record<TradeRouteApprovalStatus, string> = {
-    approved: "text-green-700",
-    pending: "text-muted-foreground",
-    rejected: "text-destructive",
+  const statusLabels: Record<TradeRouteApprovalStatus, string> = {
+    approved: "Approved",
+    pending: "Pending",
+    rejected: "Rejected",
   };
-  const icons: Record<TradeRouteApprovalStatus, string> = {
-    approved: "✓",
-    pending: "…",
-    rejected: "✗",
+  const iconMap: Record<TradeRouteApprovalStatus, React.ReactNode> = {
+    approved: <Check className="size-3" />,
+    pending: <Clock className="size-3" />,
+    rejected: <X className="size-3" />,
   };
+  const variantMap: Record<
+    TradeRouteApprovalStatus,
+    "default" | "outline" | "destructive"
+  > = {
+    approved: "default",
+    pending: "outline",
+    rejected: "destructive",
+  };
+  const className =
+    status === "approved" ? "bg-success text-success-foreground" : undefined;
+
   return (
-    <span
-      className={`text-xs font-medium ${styles[status]}`}
-      title={`${label}: ${status}`}
-    >
-      {label}:{icons[status]}
-    </span>
+    <Badge className={className} variant={variantMap[status]}>
+      <span>
+        {label === undefined
+          ? statusLabels[status]
+          : `${label} ${statusLabels[status]}`}
+      </span>
+      {iconMap[status]}
+    </Badge>
   );
 }

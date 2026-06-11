@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { resourceInputLimits } from "@/lib/inputLimits";
 
-const resourceIdSchema = z.guid("Resource id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
+const resourceIdSchema = z.guid("Select a resource.");
+const worldIdSchema = z.guid("Select a world.");
 
 const resourceNameSchema = z
   .string()
@@ -29,8 +29,23 @@ const baseStockpileCapSchema = z
   )
   .transform((value): number => parseFloat(value));
 
+const decayRateSchema = z
+  .string()
+  .regex(
+    /^\d+(\.\d{1,2})?$/,
+    "Decay rate must be a non-negative decimal with up to two decimal places.",
+  )
+  .transform((value): number => parseFloat(value))
+  .pipe(
+    z
+      .number()
+      .min(0, "Decay rate must be at least 0.")
+      .max(100, "Decay rate cannot exceed 100."),
+  );
+
 export const createResourceInputSchema = z.strictObject({
   baseStockpileCap: baseStockpileCapSchema.optional(),
+  decayRate: decayRateSchema.optional(),
   name: resourceNameSchema,
   slug: resourceSlugSchema,
   worldId: worldIdSchema,
@@ -39,6 +54,7 @@ export const createResourceInputSchema = z.strictObject({
 export const updateResourceInputSchema = z
   .strictObject({
     baseStockpileCap: baseStockpileCapSchema.optional(),
+    decayRate: decayRateSchema.optional(),
     name: resourceNameSchema.optional(),
     resourceId: resourceIdSchema,
     slug: resourceSlugSchema.optional(),
@@ -48,12 +64,13 @@ export const updateResourceInputSchema = z
     if (
       value.name === undefined &&
       value.slug === undefined &&
-      value.baseStockpileCap === undefined
+      value.baseStockpileCap === undefined &&
+      value.decayRate === undefined
     ) {
       ctx.addIssue({
         code: "custom",
         message:
-          "At least one of name, slug, or baseStockpileCap must be provided.",
+          "At least one of name, slug, baseStockpileCap, or decayRate must be provided.",
         path: ["name"],
       });
     }

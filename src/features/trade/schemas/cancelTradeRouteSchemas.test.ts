@@ -24,7 +24,7 @@ describe("cancelTradeRouteInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.tradeRouteId).toContain(
-        "Trade route id must be a valid UUID.",
+        "Select a trade route.",
       );
     }
   });

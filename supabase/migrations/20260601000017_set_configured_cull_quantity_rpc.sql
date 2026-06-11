@@ -8,13 +8,14 @@
 -- Error contract:
 --   P0002 (no_data_found)          – p_instance_id is null or not found
 --   42501 (insufficient_privilege) – caller lacks manage-settlement permission
---   P0001 (raise_exception)        – p_quantity < 0 or p_quantity > current_count
+--   P0001 (raise_exception)        – world is archived, p_quantity < 0 or p_quantity > current_count
 -- ---------------------------------------------------------------------------
 create or replace function public.set_configured_cull_quantity (p_instance_id uuid, p_quantity numeric) returns table (id uuid, settlement_id uuid) language plpgsql security definer
 set
   search_path = '' as $$
 declare
   v_settlement_id  uuid;
+  v_world_id       uuid;
   v_current_count  numeric;
 begin
   -- Null guard
@@ -35,6 +36,18 @@ begin
 
   if v_settlement_id is null then
     raise exception 'not found' using errcode = 'P0002';
+  end if;
+
+  -- Resolve world_id for archived check
+  select n.world_id
+    into v_world_id
+    from public.settlements s
+    join public.nations n on n.id = s.nation_id
+   where s.id = v_settlement_id;
+
+  -- Archived world guard
+  if public.world_is_archived(v_world_id) then
+    raise exception 'world is archived' using errcode = 'P0001';
   end if;
 
   -- Auth: settlement manager, nation manager, world admin, or super admin

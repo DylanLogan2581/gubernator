@@ -46,7 +46,7 @@ export function PlayerCharacterChooser({
   return (
     <section
       aria-labelledby="player-character-chooser-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="space-y-1">
         <h2

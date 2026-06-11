@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-const settlementIdSchema = z.guid("Settlement id must be a valid UUID.");
-const resourceIdSchema = z.guid("Resource id must be a valid UUID.");
+const settlementIdSchema = z.guid("Select a settlement.");
+const resourceIdSchema = z.guid("Select a resource.");
 
 const quantitySchema = z
   .string()

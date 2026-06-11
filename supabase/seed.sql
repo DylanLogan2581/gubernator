@@ -4,6 +4,10 @@
 -- Keep seed data deterministic and safe to re-run.
 -- These credentials are for local development only; never reuse them in hosted
 -- Supabase projects or production data.
+-- pgTAP is a test-only dependency required by `supabase test db`. It is created
+-- here (local seed) rather than in a migration so it never ships to production.
+create extension if not exists pgtap;
+
 insert into
   auth.users (
     id,
@@ -176,7 +180,6 @@ insert into
   public.worlds (
     id,
     name,
-    owner_id,
     current_turn_number,
     visibility,
     status,
@@ -186,7 +189,6 @@ values
   (
     '00000000-0000-0000-0000-000000000101',
     'Verdant Reach',
-    '00000000-0000-0000-0000-000000000001',
     0,
     'private',
     'active',
@@ -195,7 +197,6 @@ values
   (
     '00000000-0000-0000-0000-000000000102',
     'Linnford Concord',
-    '00000000-0000-0000-0000-000000000002',
     1,
     'private',
     'active',
@@ -204,7 +205,6 @@ values
   (
     '00000000-0000-0000-0000-000000000103',
     'Greyfell March',
-    '00000000-0000-0000-0000-000000000003',
     3,
     'private',
     'active',
@@ -213,7 +213,6 @@ values
   (
     '00000000-0000-0000-0000-000000000104',
     'Hollowmere Coast',
-    '00000000-0000-0000-0000-000000000002',
     0,
     'private',
     'active',
@@ -222,7 +221,6 @@ values
   (
     '00000000-0000-0000-0000-000000000105',
     'Stormhold Vale',
-    '00000000-0000-0000-0000-000000000003',
     2,
     'private',
     'active',
@@ -231,7 +229,6 @@ values
 on conflict (id) do update
 set
   name = excluded.name,
-  owner_id = excluded.owner_id,
   current_turn_number = excluded.current_turn_number,
   visibility = excluded.visibility,
   status = excluded.status,
@@ -523,7 +520,8 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
+    surname,
     sex,
     status,
     born_on_turn_number,
@@ -541,6 +539,7 @@ values
     '00000000-0000-0000-0000-000000000301',
     'player_character',
     'Aria of Hearthwatch',
+    null,
     'female',
     'alive',
     -28,
@@ -556,7 +555,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000302',
     'player_character',
-    'Halden Reyne',
+    'Halden',
+    'Reyne',
     'male',
     'alive',
     -34,
@@ -572,7 +572,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000303',
     'player_character',
-    'Kestrel Vale',
+    'Kestrel',
+    'Vale',
     'female',
     'alive',
     -22,
@@ -588,7 +589,8 @@ set
   world_id = excluded.world_id,
   settlement_id = excluded.settlement_id,
   citizen_type = excluded.citizen_type,
-  name = excluded.name,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
   sex = excluded.sex,
   status = excluded.status,
   born_on_turn_number = excluded.born_on_turn_number,
@@ -610,7 +612,8 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
+    surname,
     sex,
     status,
     born_on_turn_number,
@@ -626,7 +629,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000301',
     'npc',
-    'Mara Quill',
+    'Mara',
+    'Quill',
     'female',
     'alive',
     -41,
@@ -641,7 +645,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000302',
     'npc',
-    'Joren Bask',
+    'Joren',
+    'Bask',
     'male',
     'alive',
     -38,
@@ -656,7 +661,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000303',
     'npc',
-    'Sable Wren',
+    'Sable',
+    'Wren',
     'female',
     'alive',
     -29,
@@ -671,7 +677,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000304',
     'npc',
-    'Pell Auren',
+    'Pell',
+    'Auren',
     'male',
     'alive',
     -45,
@@ -686,7 +693,8 @@ set
   world_id = excluded.world_id,
   settlement_id = excluded.settlement_id,
   citizen_type = excluded.citizen_type,
-  name = excluded.name,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
   sex = excluded.sex,
   status = excluded.status,
   born_on_turn_number = excluded.born_on_turn_number,
@@ -705,7 +713,8 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
+    surname,
     sex,
     status,
     born_on_turn_number,
@@ -721,7 +730,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000301',
     'npc',
-    'Tessen Marrow',
+    'Tessen',
+    'Marrow',
     'female',
     'alive',
     -52,
@@ -736,7 +746,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000301',
     'npc',
-    'Rhys Marrow',
+    'Rhys',
+    'Marrow',
     'male',
     'alive',
     -50,
@@ -751,7 +762,8 @@ set
   world_id = excluded.world_id,
   settlement_id = excluded.settlement_id,
   citizen_type = excluded.citizen_type,
-  name = excluded.name,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
   sex = excluded.sex,
   status = excluded.status,
   born_on_turn_number = excluded.born_on_turn_number,
@@ -769,7 +781,8 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
+    surname,
     sex,
     status,
     born_on_turn_number,
@@ -780,7 +793,8 @@ insert into
     npc_secret_contradiction,
     npc_goal,
     npc_flaw,
-    death_cause
+    death_cause,
+    death_cause_category
   )
 values
   (
@@ -788,7 +802,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000301',
     'npc',
-    'Wren Marrow',
+    'Wren',
+    'Marrow',
     'female',
     'alive',
     -8,
@@ -799,6 +814,7 @@ values
     'mourns a friend they betrayed',
     'a seat on the council',
     'envy',
+    null,
     null
   ),
   (
@@ -807,6 +823,7 @@ values
     '00000000-0000-0000-0000-000000000302',
     'npc',
     'Old Mara of the Crossing',
+    null,
     'female',
     'dead',
     -73,
@@ -817,14 +834,16 @@ values
     'mourns a friend they betrayed',
     'to restore their family''s name',
     'pride',
-    'Died peacefully during the first winter after the founding.'
+    'Died peacefully during the first winter after the founding.',
+    'unknown'
   )
 on conflict (id) do update
 set
   world_id = excluded.world_id,
   settlement_id = excluded.settlement_id,
   citizen_type = excluded.citizen_type,
-  name = excluded.name,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
   sex = excluded.sex,
   status = excluded.status,
   born_on_turn_number = excluded.born_on_turn_number,
@@ -836,6 +855,7 @@ set
   npc_goal = excluded.npc_goal,
   npc_flaw = excluded.npc_flaw,
   death_cause = excluded.death_cause,
+  death_cause_category = excluded.death_cause_category,
   updated_at = now();
 
 -- Active partnership between two living NPCs (Mara Quill + Joren Bask) plus a
@@ -1058,7 +1078,8 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
+    surname,
     sex,
     status,
     born_on_turn_number,
@@ -1074,7 +1095,8 @@ values
     '00000000-0000-0000-0000-000000000102',
     '00000000-0000-0000-0000-000000000311',
     'npc',
-    'Vellan Pace',
+    'Vellan',
+    'Pace',
     'male',
     'alive',
     -33,
@@ -1089,7 +1111,8 @@ set
   world_id = excluded.world_id,
   settlement_id = excluded.settlement_id,
   citizen_type = excluded.citizen_type,
-  name = excluded.name,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
   sex = excluded.sex,
   status = excluded.status,
   born_on_turn_number = excluded.born_on_turn_number,
@@ -1171,7 +1194,8 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
+    surname,
     sex,
     status,
     born_on_turn_number,
@@ -1187,7 +1211,8 @@ values
     '00000000-0000-0000-0000-000000000103',
     '00000000-0000-0000-0000-000000000321',
     'npc',
-    'Ivor Greyfell',
+    'Ivor',
+    'Greyfell',
     'male',
     'alive',
     -40,
@@ -1202,7 +1227,8 @@ set
   world_id = excluded.world_id,
   settlement_id = excluded.settlement_id,
   citizen_type = excluded.citizen_type,
-  name = excluded.name,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
   sex = excluded.sex,
   status = excluded.status,
   born_on_turn_number = excluded.born_on_turn_number,
@@ -1407,7 +1433,8 @@ declare
   v_npc_count integer;
   v_npc_idx integer;
   v_npc_id uuid;
-  v_npc_name text;
+  v_given_name text;
+  v_surname text;
   v_auto_ready boolean;
   v_is_ready boolean;
   v_ready_at timestamptz;
@@ -1564,31 +1591,28 @@ begin
             )
           )::uuid;
 
-          v_npc_name := format(
-            '%s %s',
-            v_first_names[
+          v_given_name := v_first_names[
+            (
               (
-                (
-                  v_world_idx * 31
-                  + v_nation_idx * 13
-                  + v_settlement_idx * 7
-                  + v_npc_idx * 3
-                )
-                % array_length(v_first_names, 1)
-              ) + 1
-            ],
-            v_last_names[
+                v_world_idx * 31
+                + v_nation_idx * 13
+                + v_settlement_idx * 7
+                + v_npc_idx * 3
+              )
+              % array_length(v_first_names, 1)
+            ) + 1
+          ];
+          v_surname := v_last_names[
+            (
               (
-                (
-                  v_world_idx * 17
-                  + v_nation_idx * 11
-                  + v_settlement_idx * 5
-                  + v_npc_idx * 19
-                )
-                % array_length(v_last_names, 1)
-              ) + 1
-            ]
-          );
+                v_world_idx * 17
+                + v_nation_idx * 11
+                + v_settlement_idx * 5
+                + v_npc_idx * 19
+              )
+              % array_length(v_last_names, 1)
+            ) + 1
+          ];
 
           if v_world_idx = 2 then
             v_trait1 := v_w102_traits[
@@ -1648,7 +1672,8 @@ begin
             world_id,
             settlement_id,
             citizen_type,
-            name,
+            given_name,
+            surname,
             sex,
             status,
             born_on_turn_number,
@@ -1663,7 +1688,8 @@ begin
             v_world_id,
             v_settlement_id,
             'npc',
-            v_npc_name,
+            v_given_name,
+            v_surname,
             v_sex,
             'alive',
             v_born,
@@ -1678,7 +1704,8 @@ begin
             world_id = excluded.world_id,
             settlement_id = excluded.settlement_id,
             citizen_type = excluded.citizen_type,
-            name = excluded.name,
+            given_name = excluded.given_name,
+            surname = excluded.surname,
             sex = excluded.sex,
             status = excluded.status,
             born_on_turn_number = excluded.born_on_turn_number,
@@ -2281,7 +2308,8 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
+    surname,
     sex,
     status,
     born_on_turn_number,
@@ -2297,7 +2325,8 @@ values
     '00000000-0000-0000-0000-000000000101',
     '00000000-0000-0000-0000-000000000305',
     'npc',
-    'Davin Stonehill',
+    'Davin',
+    'Stonehill',
     'male',
     'alive',
     -35,
@@ -2312,7 +2341,8 @@ set
   world_id = excluded.world_id,
   settlement_id = excluded.settlement_id,
   citizen_type = excluded.citizen_type,
-  name = excluded.name,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
   sex = excluded.sex,
   status = excluded.status,
   born_on_turn_number = excluded.born_on_turn_number,
@@ -2971,8 +3001,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -2986,8 +3014,6 @@ values
     '00000000-0000-0000-000e-000000000101',
     '00000000-0000-0000-0000-000000000301',
     '00000000-0000-0000-0000-000000000304',
-    '00000000-0000-0000-0004-000000000101',
-    25,
     'active',
     '00000000-0000-0000-0000-000000000401',
     'approved',
@@ -3000,8 +3026,6 @@ values
     '00000000-0000-0000-000e-000000000102',
     '00000000-0000-0000-0000-000000000303',
     '00000000-0000-0000-0000-000000000305',
-    '00000000-0000-0000-0004-000000000107',
-    15,
     'proposed',
     '00000000-0000-0000-0000-000000000403',
     'pending',
@@ -3016,8 +3040,6 @@ values
     '00000000-0000-0000-000e-000000000201',
     '00000000-0000-0000-0002-000000020201',
     '00000000-0000-0000-0002-000000020301',
-    '00000000-0000-0000-0004-000000000201',
-    20,
     'active',
     '00000000-0000-0000-0003-000000202011',
     'approved',
@@ -3030,8 +3052,6 @@ values
     '00000000-0000-0000-000e-000000000301',
     '00000000-0000-0000-0002-000000030201',
     '00000000-0000-0000-0002-000000030301',
-    '00000000-0000-0000-0004-000000000301',
-    20,
     'active',
     '00000000-0000-0000-0003-000000302011',
     'approved',
@@ -3044,8 +3064,6 @@ values
     '00000000-0000-0000-000e-000000000401',
     '00000000-0000-0000-0002-000000040101',
     '00000000-0000-0000-0002-000000040201',
-    '00000000-0000-0000-0004-000000000401',
-    20,
     'active',
     '00000000-0000-0000-0003-000000401011',
     'approved',
@@ -3058,8 +3076,6 @@ values
     '00000000-0000-0000-000e-000000000501',
     '00000000-0000-0000-0002-000000050101',
     '00000000-0000-0000-0002-000000050201',
-    '00000000-0000-0000-0004-000000000501',
-    20,
     'active',
     '00000000-0000-0000-0003-000000501011',
     'approved',
@@ -3074,6 +3090,56 @@ set
   destination_approval_status = excluded.destination_approval_status,
   origin_approved_by_citizen_id = excluded.origin_approved_by_citizen_id,
   destination_approved_by_citizen_id = excluded.destination_approved_by_citizen_id,
+  updated_at = now();
+
+-- Single 'send' leg per route, matching the original single-resource model.
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    '00000000-0000-0000-000e-000000000101',
+    'send',
+    '00000000-0000-0000-0004-000000000101',
+    25
+  ),
+  (
+    '00000000-0000-0000-000e-000000000102',
+    'send',
+    '00000000-0000-0000-0004-000000000107',
+    15
+  ),
+  (
+    '00000000-0000-0000-000e-000000000201',
+    'send',
+    '00000000-0000-0000-0004-000000000201',
+    20
+  ),
+  (
+    '00000000-0000-0000-000e-000000000301',
+    'send',
+    '00000000-0000-0000-0004-000000000301',
+    20
+  ),
+  (
+    '00000000-0000-0000-000e-000000000401',
+    'send',
+    '00000000-0000-0000-0004-000000000401',
+    20
+  ),
+  (
+    '00000000-0000-0000-000e-000000000501',
+    'send',
+    '00000000-0000-0000-0004-000000000501',
+    20
+  )
+on conflict (trade_route_id, direction, resource_id) do update
+set
+  quantity_per_transition = excluded.quantity_per_transition,
   updated_at = now();
 
 -- ---------------------------------------------------------------------------
@@ -3182,3 +3248,676 @@ set
   trade_route_end = excluded.trade_route_end,
   assigned_on_turn_number = excluded.assigned_on_turn_number,
   updated_at = now();
+
+-- ===========================================================================
+-- Epic 6 simulation fixture: extends Verdant Reach (world 101) settlements
+-- 301–303 to ≥ 20 alive NPCs with parent links, one active partnership per
+-- settlement, construction pool workers, and multi-resource deposit mixes so
+-- the simulation engine can be exercised immediately after
+-- `npx supabase db reset`.
+--
+-- UUID scheme (canonical fixture range, fourth group):
+--   new parents / standalone  '00000000-0000-0000-0000-000000000432' – '000000000453'
+--   new children              '00000000-0000-0000-0000-000000000434',
+--                             '00000000-0000-0000-0000-000000000437',
+--                             '00000000-0000-0000-0000-000000000444',
+--                             '00000000-0000-0000-0000-000000000454'
+--   new partnerships          '00000000-0000-0000-0000-000000000503' – '000000000505'
+-- ===========================================================================
+-- ---------------------------------------------------------------------------
+-- New NPC parents — inserted before children so the composite-world FKs
+-- (parent_a / parent_b same-world check) resolve correctly.
+-- ---------------------------------------------------------------------------
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    surname,
+    sex,
+    status,
+    born_on_turn_number,
+    npc_trait_1,
+    npc_trait_2,
+    npc_secret_contradiction,
+    npc_goal,
+    npc_flaw
+  )
+values
+  -- Hearthwatch (301) pair 1: Elva & Curt Thornwick
+  (
+    '00000000-0000-0000-0000-000000000432',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Elva',
+    'Thornwick',
+    'female',
+    'alive',
+    -44,
+    'stoic',
+    'tender',
+    'shelters the family of a soldier they killed',
+    'to outlive every captain they ever served',
+    'a temper that comes out in writing'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000433',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Curt',
+    'Thornwick',
+    'male',
+    'alive',
+    -46,
+    'blunt',
+    'watchful',
+    'owes a debt to the very people they hunt',
+    'to apprentice a child of the lower ward',
+    'pride'
+  ),
+  -- Hearthwatch (301) pair 2: Doran & Merin Westmark
+  (
+    '00000000-0000-0000-0000-000000000435',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Doran',
+    'Westmark',
+    'male',
+    'alive',
+    -51,
+    'fervent',
+    'shrewd',
+    'writes letters to a god they no longer trust',
+    'a seat on the council',
+    'envy'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000436',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Merin',
+    'Westmark',
+    'female',
+    'alive',
+    -48,
+    'patient',
+    'courtly',
+    'loves their rival',
+    'to restore their family''s name',
+    'miserliness with their own household'
+  ),
+  -- Mistfall Crossing (302) pair: Oswin & Selma Ashford
+  (
+    '00000000-0000-0000-0000-000000000442',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Oswin',
+    'Ashford',
+    'male',
+    'alive',
+    -39,
+    'wry',
+    'boisterous',
+    'mourns a friend they betrayed',
+    'to walk the south road one more time',
+    'an addiction to risk'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000443',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Selma',
+    'Ashford',
+    'female',
+    'alive',
+    -37,
+    'earnest',
+    'scrappy',
+    'hides a wound that should have killed them',
+    'to see the long winter season end',
+    'a tendency to read every silence as betrayal'
+  ),
+  -- Sunmere Hold (303) pair: Aldric & Neva Sunmoor
+  (
+    '00000000-0000-0000-0000-000000000452',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000303',
+    'npc',
+    'Aldric',
+    'Sunmoor',
+    'male',
+    'alive',
+    -42,
+    'weary',
+    'soft-spoken',
+    'holds a vow they cannot remember swearing',
+    'to read the unburned half of the library',
+    'the certainty that they alone can hold the line'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000453',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000303',
+    'npc',
+    'Neva',
+    'Sunmoor',
+    'female',
+    'alive',
+    -40,
+    'haunted',
+    'patient',
+    'keeps a child''s portrait they have never named',
+    'to pay back the gold lender of Mistfall',
+    'an inability to forgive the dead'
+  )
+on conflict (id) do update
+set
+  world_id = excluded.world_id,
+  settlement_id = excluded.settlement_id,
+  citizen_type = excluded.citizen_type,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
+  sex = excluded.sex,
+  status = excluded.status,
+  born_on_turn_number = excluded.born_on_turn_number,
+  npc_trait_1 = excluded.npc_trait_1,
+  npc_trait_2 = excluded.npc_trait_2,
+  npc_secret_contradiction = excluded.npc_secret_contradiction,
+  npc_goal = excluded.npc_goal,
+  npc_flaw = excluded.npc_flaw,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- New NPC children and standalone NPCs — parent rows above must exist first.
+-- Standalone NPCs carry null parent columns; the insert shape is shared so
+-- a single ON CONFLICT covers all variants.
+-- ---------------------------------------------------------------------------
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    surname,
+    sex,
+    status,
+    born_on_turn_number,
+    parent_a_citizen_id,
+    parent_b_citizen_id,
+    npc_trait_1,
+    npc_trait_2,
+    npc_secret_contradiction,
+    npc_goal,
+    npc_flaw
+  )
+values
+  -- Hearthwatch (301): child of Elva (432) + Curt (433) Thornwick
+  (
+    '00000000-0000-0000-0000-000000000434',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Lyss',
+    'Thornwick',
+    'female',
+    'alive',
+    -12,
+    '00000000-0000-0000-0000-000000000432',
+    '00000000-0000-0000-0000-000000000433',
+    'earnest',
+    'wry',
+    'mourns a friend they betrayed',
+    'to restore their family''s name',
+    'envy'
+  ),
+  -- Hearthwatch (301): child of Doran (435) + Merin (436) Westmark
+  (
+    '00000000-0000-0000-0000-000000000437',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000301',
+    'npc',
+    'Colt',
+    'Westmark',
+    'male',
+    'alive',
+    -10,
+    '00000000-0000-0000-0000-000000000435',
+    '00000000-0000-0000-0000-000000000436',
+    'patient',
+    'stoic',
+    'loves their rival',
+    'a seat on the council',
+    'pride'
+  ),
+  -- Mistfall Crossing (302): standalone NPC
+  (
+    '00000000-0000-0000-0000-000000000441',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Brynn',
+    'Ashford',
+    'female',
+    'alive',
+    -27,
+    null,
+    null,
+    'watchful',
+    'fervent',
+    'owes a debt to the very people they hunt',
+    'to outlive every captain they ever served',
+    'a slow drinking habit kept quiet at court'
+  ),
+  -- Mistfall Crossing (302): child of Oswin (442) + Selma (443) Ashford
+  (
+    '00000000-0000-0000-0000-000000000444',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Pip',
+    'Ashford',
+    'male',
+    'alive',
+    -9,
+    '00000000-0000-0000-0000-000000000442',
+    '00000000-0000-0000-0000-000000000443',
+    'boisterous',
+    'earnest',
+    'writes letters to a god they no longer trust',
+    'to walk the south road one more time',
+    'a need to be the cleverest voice in the room'
+  ),
+  -- Mistfall Crossing (302): standalone NPC
+  (
+    '00000000-0000-0000-0000-000000000445',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000302',
+    'npc',
+    'Wulf',
+    'Dray',
+    'male',
+    'alive',
+    -31,
+    null,
+    null,
+    'shrewd',
+    'blunt',
+    'shelters the family of a soldier they killed',
+    'to die at home and not on the road',
+    'miserliness with their own household'
+  ),
+  -- Sunmere Hold (303): standalone NPC
+  (
+    '00000000-0000-0000-0000-000000000456',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000303',
+    'npc',
+    'Cress',
+    'Finmore',
+    'female',
+    'alive',
+    -26,
+    null,
+    null,
+    'tender',
+    'courtly',
+    'keeps a child''s portrait they have never named',
+    'to apprentice a child of the lower ward',
+    'a tendency to read every silence as betrayal'
+  ),
+  -- Sunmere Hold (303): child of Aldric (452) + Neva (453) Sunmoor
+  (
+    '00000000-0000-0000-0000-000000000454',
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000303',
+    'npc',
+    'Kit',
+    'Sunmoor',
+    'male',
+    'alive',
+    -11,
+    '00000000-0000-0000-0000-000000000452',
+    '00000000-0000-0000-0000-000000000453',
+    'wry',
+    'watchful',
+    'holds a vow they cannot remember swearing',
+    'to see the long winter season end',
+    'pride'
+  )
+on conflict (id) do update
+set
+  world_id = excluded.world_id,
+  settlement_id = excluded.settlement_id,
+  citizen_type = excluded.citizen_type,
+  given_name = excluded.given_name,
+  surname = excluded.surname,
+  sex = excluded.sex,
+  status = excluded.status,
+  born_on_turn_number = excluded.born_on_turn_number,
+  parent_a_citizen_id = excluded.parent_a_citizen_id,
+  parent_b_citizen_id = excluded.parent_b_citizen_id,
+  npc_trait_1 = excluded.npc_trait_1,
+  npc_trait_2 = excluded.npc_trait_2,
+  npc_secret_contradiction = excluded.npc_secret_contradiction,
+  npc_goal = excluded.npc_goal,
+  npc_flaw = excluded.npc_flaw,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Active partnerships: one per Ashvale settlement (301, 302, 303).
+-- Each pair is intra-settlement so the partnership is unambiguously
+-- associated with that settlement's population.
+-- The partial unique indexes partnerships_unique_active_citizen_{a,b}_idx
+-- allow at most one active row per citizen; all six citizens below are new
+-- and have no prior partnership rows.
+-- ---------------------------------------------------------------------------
+insert into
+  public.partnerships (
+    id,
+    citizen_a_id,
+    citizen_b_id,
+    status,
+    formed_on_turn_number,
+    ended_on_turn_number,
+    changed_by_user_id,
+    change_reason
+  )
+values
+  -- Settlement 301: Elva Thornwick (432) + Curt Thornwick (433)
+  (
+    '00000000-0000-0000-0000-000000000503',
+    '00000000-0000-0000-0000-000000000432',
+    '00000000-0000-0000-0000-000000000433',
+    'active',
+    0,
+    null,
+    null,
+    null
+  ),
+  -- Settlement 302: Oswin Ashford (442) + Selma Ashford (443)
+  (
+    '00000000-0000-0000-0000-000000000504',
+    '00000000-0000-0000-0000-000000000442',
+    '00000000-0000-0000-0000-000000000443',
+    'active',
+    0,
+    null,
+    null,
+    null
+  ),
+  -- Settlement 303: Aldric Sunmoor (452) + Neva Sunmoor (453)
+  (
+    '00000000-0000-0000-0000-000000000505',
+    '00000000-0000-0000-0000-000000000452',
+    '00000000-0000-0000-0000-000000000453',
+    'active',
+    0,
+    null,
+    null,
+    null
+  )
+on conflict (id) do update
+set
+  citizen_a_id = excluded.citizen_a_id,
+  citizen_b_id = excluded.citizen_b_id,
+  status = excluded.status,
+  formed_on_turn_number = excluded.formed_on_turn_number,
+  ended_on_turn_number = excluded.ended_on_turn_number,
+  changed_by_user_id = excluded.changed_by_user_id,
+  change_reason = excluded.change_reason,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Construction pool workers: one pool-member assignment per Ashvale
+-- settlement. construction_project_id = NULL marks these as pool members;
+-- the simulation allocates them to the in-progress project by queue_position
+-- each turn transition (see Epic 6 phaseBuildingConstruction).
+-- ---------------------------------------------------------------------------
+insert into
+  public.citizen_assignments (
+    citizen_id,
+    assignment_type,
+    job_id,
+    construction_project_id,
+    deposit_instance_id,
+    managed_population_instance_id,
+    trade_route_id,
+    trade_route_end,
+    assigned_on_turn_number
+  )
+values
+  -- Lyss Thornwick (434, Hearthwatch 301): construction pool
+  (
+    '00000000-0000-0000-0000-000000000434',
+    'construction_project',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  -- Brynn Ashford (441, Mistfall Crossing 302): construction pool
+  (
+    '00000000-0000-0000-0000-000000000441',
+    'construction_project',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  ),
+  -- Cress Finmore (456, Sunmere Hold 303): construction pool
+  (
+    '00000000-0000-0000-0000-000000000456',
+    'construction_project',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    0
+  )
+on conflict (citizen_id) do update
+set
+  assignment_type = excluded.assignment_type,
+  job_id = excluded.job_id,
+  construction_project_id = excluded.construction_project_id,
+  deposit_instance_id = excluded.deposit_instance_id,
+  managed_population_instance_id = excluded.managed_population_instance_id,
+  trade_route_id = excluded.trade_route_id,
+  trade_route_end = excluded.trade_route_end,
+  assigned_on_turn_number = excluded.assigned_on_turn_number,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Multi-resource deposit mixes: add a secondary resource to each canonical
+-- deposit instance so the extraction phase runs against heterogeneous mixes.
+-- Resource IDs use the W=1 formula: lpad(1*100+offset, 12, '0').
+-- The unique constraint is on (deposit_instance_id, resource_id); these rows
+-- use a different resource_id from the primary entry so there is no conflict.
+-- ---------------------------------------------------------------------------
+insert into
+  public.deposit_instance_resources (
+    deposit_instance_id,
+    resource_id,
+    initial_quantity,
+    remaining_quantity
+  )
+values
+  -- Hearthwatch iron vein (000c-1): secondary stone block (resource offset 9)
+  (
+    '00000000-0000-0000-000c-000000000001',
+    '00000000-0000-0000-0004-000000000109',
+    1500,
+    1400
+  ),
+  -- Mistfall hardwood grove (000c-2): secondary iron ore (resource offset 10)
+  (
+    '00000000-0000-0000-000c-000000000002',
+    '00000000-0000-0000-0004-000000000110',
+    1200,
+    1100
+  ),
+  -- Sunmere stone quarry (000c-3): secondary hardwood logs (resource offset 8)
+  (
+    '00000000-0000-0000-000c-000000000003',
+    '00000000-0000-0000-0004-000000000108',
+    2000,
+    1850
+  ),
+  -- Tidewatch copper vein (000c-4): secondary stone block (resource offset 9)
+  (
+    '00000000-0000-0000-000c-000000000004',
+    '00000000-0000-0000-0004-000000000109',
+    1000,
+    950
+  ),
+  -- Stonehold iron vein (000c-5): secondary copper ingot (resource offset 11)
+  (
+    '00000000-0000-0000-000c-000000000005',
+    '00000000-0000-0000-0004-000000000111',
+    800,
+    750
+  )
+on conflict (deposit_instance_id, resource_id) do update
+set
+  remaining_quantity = excluded.remaining_quantity,
+  updated_at = now();
+
+-- ---------------------------------------------------------------------------
+-- Epic 6 baseline turn snapshots: one row per settlement and one row per
+-- (settlement, resource) pair. The migration backfill
+-- (20260602000010_backfill_baseline_turn_snapshots) handles production
+-- deployments where settlements exist at migration time. Here we repeat the
+-- same idempotent backfill so development resets (npx supabase db reset) also
+-- produce baseline rows after seed data is fully loaded.
+-- ---------------------------------------------------------------------------
+insert into
+  public.settlement_turn_snapshots (
+    turn_transition_id,
+    world_id,
+    settlement_id,
+    turn_number,
+    population_total,
+    population_npc,
+    population_player_character,
+    population_cap,
+    birth_count,
+    death_count,
+    starvation_deaths_count,
+    homeless_deaths_count,
+    partnerships_formed_count
+  )
+select
+  null as turn_transition_id,
+  n.world_id,
+  s.id as settlement_id,
+  w.current_turn_number as turn_number,
+  (
+    select
+      count(*)::integer
+    from
+      public.citizens c
+    where
+      c.settlement_id = s.id
+      and c.status = 'alive'
+  ) as population_total,
+  (
+    select
+      count(*)::integer
+    from
+      public.citizens c
+    where
+      c.settlement_id = s.id
+      and c.status = 'alive'
+      and c.citizen_type = 'npc'
+  ) as population_npc,
+  (
+    select
+      count(*)::integer
+    from
+      public.citizens c
+    where
+      c.settlement_id = s.id
+      and c.status = 'alive'
+      and c.citizen_type = 'player_character'
+  ) as population_player_character,
+  public.settlement_population_cap (s.id)::integer as population_cap,
+  0,
+  0,
+  0,
+  0,
+  0
+from
+  public.settlements s
+  join public.nations n on n.id = s.nation_id
+  join public.worlds w on w.id = n.world_id
+where
+  not exists (
+    select
+      1
+    from
+      public.settlement_turn_snapshots sts
+    where
+      sts.settlement_id = s.id
+      and sts.turn_number = w.current_turn_number
+      and sts.turn_transition_id is null
+  );
+
+insert into
+  public.settlement_turn_resource_snapshots (
+    turn_transition_id,
+    world_id,
+    settlement_id,
+    resource_id,
+    turn_number,
+    quantity_before,
+    quantity_after,
+    produced_amount,
+    consumed_amount,
+    trade_in_amount,
+    trade_out_amount
+  )
+select
+  null as turn_transition_id,
+  n.world_id,
+  s.id as settlement_id,
+  srs.resource_id,
+  w.current_turn_number as turn_number,
+  srs.quantity as quantity_before,
+  srs.quantity as quantity_after,
+  0,
+  0,
+  0,
+  0
+from
+  public.settlements s
+  join public.nations n on n.id = s.nation_id
+  join public.worlds w on w.id = n.world_id
+  join public.settlement_resource_stockpiles srs on srs.settlement_id = s.id
+where
+  not exists (
+    select
+      1
+    from
+      public.settlement_turn_resource_snapshots strs
+    where
+      strs.settlement_id = s.id
+      and strs.resource_id = srs.resource_id
+      and strs.turn_number = w.current_turn_number
+      and strs.turn_transition_id is null
+  );

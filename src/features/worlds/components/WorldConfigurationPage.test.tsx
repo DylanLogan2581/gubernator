@@ -226,13 +226,6 @@ function createClient({
         return createWorldsQueryBuilder(worldRows);
       }
 
-      if (table === "citizens") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        return { select: vi.fn(() => b) };
-      }
-
       if (table === "resources") {
         const b: Record<string, unknown> = {};
         b.eq = vi.fn(() => b);
@@ -251,6 +244,12 @@ function createClient({
       }
 
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
     }),
   };
 }
@@ -274,7 +273,6 @@ type TestWorldRow = {
   readonly incest_prevention_depth: number;
   readonly name: string;
   readonly npc_flavor_config_json: WorldNpcFlavorConfig;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -302,7 +300,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     incest_prevention_depth: 4,
     name: "Test World",
     npc_flavor_config_json: createNpcFlavorConfig(),
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",

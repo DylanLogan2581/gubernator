@@ -33,14 +33,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'ed100000-0000-0000-0000-000000000001',
     'HD Test World',
-    'ed000000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'ed100000-0000-0000-0000-000000000001',
+    'ed000000-0000-0000-0000-000000000001'
   );
 
 -- Resource: soft-deleted so hard_delete is allowed.
@@ -160,7 +167,7 @@ values
   );
 
 -- ===========================================================================
--- All tests run as the world owner (authenticated, world admin via ownership).
+-- All tests run as an authenticated world admin.
 -- ===========================================================================
 set
   local role authenticated;

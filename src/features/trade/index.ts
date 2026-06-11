@@ -68,5 +68,7 @@ export type {
   ReplaceTradeRouteResult,
   TradeRoute,
   TradeRouteApprovalStatus,
+  TradeRouteLeg,
+  TradeRouteLegDirection,
   TradeRouteStatus,
 } from "./types/tradeRouteTypes";

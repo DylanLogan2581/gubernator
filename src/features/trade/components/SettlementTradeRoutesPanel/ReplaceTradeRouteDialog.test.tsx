@@ -32,7 +32,22 @@ const ROUTE_ID = "00000000-0000-0000-0000-000000000010";
 const ROUTE_ID_2 = "00000000-0000-0000-0000-000000000011";
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000001";
 const DEST_SETTLEMENT_ID = "00000000-0000-0000-0000-000000000002";
+const WORLD_ID = "00000000-0000-0000-0000-000000000005";
 const CITIZEN_ID = "00000000-0000-0000-0000-000000000040";
+const RESOURCE_ID = "00000000-0000-0000-0000-000000000030";
+const LEG_ID = "00000000-0000-0000-0000-000000000031";
+
+const GRAIN_RESOURCE_ROW = {
+  id: RESOURCE_ID,
+  name: "Grain",
+  slug: "grain",
+  world_id: WORLD_ID,
+  is_trashed: false,
+  is_system_resource: false,
+  base_stockpile_cap: 100,
+  created_at: "2026-06-01T00:00:00.000Z",
+  updated_at: "2026-06-01T00:00:00.000Z",
+};
 
 function makeRoute(): TradeRoute {
   return {
@@ -43,9 +58,15 @@ function makeRoute(): TradeRoute {
     destinationSettlementId: DEST_SETTLEMENT_ID,
     destinationSettlementName: "Far Settlement",
     destinationNationName: "Far Nation",
-    resourceId: "00000000-0000-0000-0000-000000000030",
-    resourceName: "Grain",
-    quantityPerTransition: 10,
+    legs: [
+      {
+        id: LEG_ID,
+        direction: "send",
+        quantityPerTransition: 10,
+        resourceId: RESOURCE_ID,
+        resourceName: "Grain",
+      },
+    ],
     status: "active",
     originApprovalStatus: "approved",
     destinationApprovalStatus: "approved",
@@ -59,17 +80,38 @@ function makeRoute(): TradeRoute {
   };
 }
 
-function renderDialog({
-  onClose = vi.fn<() => void>(),
+function createClient({
+  resourceRows = [GRAIN_RESOURCE_ROW] as readonly unknown[],
   rpcMock = vi.fn(),
 }: {
-  readonly onClose?: () => void;
+  readonly resourceRows?: readonly unknown[];
   readonly rpcMock?: ReturnType<typeof vi.fn>;
+} = {}): unknown {
+  const resourcesBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => resourcesBuilder),
+    order: vi.fn(() => resourcesBuilder),
+    returns: vi.fn().mockResolvedValue({ data: resourceRows, error: null }),
+  };
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "resources")
+        return { select: vi.fn(() => resourcesBuilder) };
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+    rpc: rpcMock,
+  };
+}
+
+function renderDialog({
+  onClose = vi.fn<() => void>(),
+  client = createClient(),
+}: {
+  readonly onClose?: () => void;
+  readonly client?: unknown;
 } = {}): {
   readonly onClose: () => void;
-  readonly rpcMock: ReturnType<typeof vi.fn>;
 } {
-  requireSupabaseClient.mockReturnValue({ rpc: rpcMock });
+  requireSupabaseClient.mockReturnValue(client);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -81,10 +123,11 @@ function renderDialog({
         onClose={onClose}
         queryClient={queryClient}
         route={makeRoute()}
+        worldId={WORLD_ID}
       />
     </QueryClientProvider>,
   );
-  return { onClose, rpcMock };
+  return { onClose };
 }
 
 describe("ReplaceTradeRouteDialog", () => {
@@ -94,16 +137,24 @@ describe("ReplaceTradeRouteDialog", () => {
     toastSuccess.mockReset();
   });
 
-  it("renders replace dialog with counterpart and resource", () => {
+  it("renders replace dialog with counterpart name", () => {
     renderDialog();
     expect(
       screen.getByRole("dialog", { name: "Replace trade route" }),
     ).toBeDefined();
     expect(screen.getByText(/Far Settlement \(Far Nation\)/)).toBeDefined();
-    expect(screen.getByText("Grain")).toBeDefined();
   });
 
-  it("happy path — submits new quantity and shows success toast", async () => {
+  it("pre-populates legs from existing route", () => {
+    renderDialog();
+    const dialog = screen.getByRole("dialog", { name: "Replace trade route" });
+    const qtyInput = within(dialog).getByRole("textbox", {
+      name: "Leg 1 quantity per turn",
+    });
+    expect((qtyInput as HTMLInputElement).value).toBe("10");
+  });
+
+  it("happy path — submits and shows success toast", async () => {
     const user = userEvent.setup();
     const rpcMock = vi.fn((fn: string) => {
       if (fn === "replace_trade_route") {
@@ -121,11 +172,11 @@ describe("ReplaceTradeRouteDialog", () => {
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     });
-    const { onClose } = renderDialog({ rpcMock });
+    const { onClose } = renderDialog({ client: createClient({ rpcMock }) });
 
     const dialog = screen.getByRole("dialog", { name: "Replace trade route" });
     const qtyInput = within(dialog).getByRole("textbox", {
-      name: "New quantity per turn",
+      name: "Leg 1 quantity per turn",
     });
     await user.clear(qtyInput);
     await user.type(qtyInput, "20");
@@ -143,11 +194,12 @@ describe("ReplaceTradeRouteDialog", () => {
 
   it("validation — rejects zero quantity", async () => {
     const user = userEvent.setup();
-    const { rpcMock } = renderDialog();
+    const rpcMock = vi.fn();
+    renderDialog({ client: createClient({ rpcMock }) });
 
     const dialog = screen.getByRole("dialog", { name: "Replace trade route" });
     const qtyInput = within(dialog).getByRole("textbox", {
-      name: "New quantity per turn",
+      name: "Leg 1 quantity per turn",
     });
     await user.clear(qtyInput);
     await user.type(qtyInput, "0");
@@ -174,11 +226,11 @@ describe("ReplaceTradeRouteDialog", () => {
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     });
-    renderDialog({ rpcMock });
+    renderDialog({ client: createClient({ rpcMock }) });
 
     const dialog = screen.getByRole("dialog", { name: "Replace trade route" });
     const qtyInput = within(dialog).getByRole("textbox", {
-      name: "New quantity per turn",
+      name: "Leg 1 quantity per turn",
     });
     await user.clear(qtyInput);
     await user.type(qtyInput, "15");
@@ -193,7 +245,8 @@ describe("ReplaceTradeRouteDialog", () => {
 
   it("cancel button calls onClose without submitting", async () => {
     const user = userEvent.setup();
-    const { onClose, rpcMock } = renderDialog();
+    const rpcMock = vi.fn();
+    const { onClose } = renderDialog({ client: createClient({ rpcMock }) });
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 

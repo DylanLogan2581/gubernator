@@ -1,9 +1,10 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   proposeBilateralMutationOptions,
@@ -12,32 +13,13 @@ import {
   withdrawFromBilateralMutationOptions,
 } from "../../mutations/nationRelationshipMutations";
 
-import { getRelationshipMutationErrorDescription } from "./ErrorMessages";
+import { formatRelationshipStance } from "./RelationshipUtils";
 
 import type {
   NationRelationship,
   NationUnilateralStance,
 } from "../../types/nationRelationshipTypes";
 import type { Nation } from "../../types/nationTypes";
-
-function formatRelationshipStance(stance: string): string {
-  switch (stance) {
-    case "neutral":
-      return "Neutral";
-    case "friendly":
-      return "Friendly";
-    case "hostile":
-      return "Hostile";
-    case "at_war":
-      return "At war";
-    case "allied":
-      return "Allied";
-    case "non_aggression_pact":
-      return "Non-aggression pact";
-    default:
-      return stance;
-  }
-}
 
 export function NationRelationshipRow({
   canControl,
@@ -101,19 +83,14 @@ export function NationRelationshipRow({
   }
 
   function notifyStanceError(error: unknown): void {
-    toast.error(getRelationshipMutationErrorDescription(error));
+    notifyMutationError(error, "Failed to update relationship.");
   }
 
   return (
     <li className="grid gap-3 rounded-md border border-border bg-background p-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-sm font-medium">{other.name}</span>
-        <span className="text-xs text-muted-foreground">
-          Current stance:{" "}
-          <span className="font-medium text-foreground">
-            {formatRelationshipStance(currentStance)}
-          </span>
-        </span>
+      <div className="text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Current stance:</span>{" "}
+        {formatRelationshipStance(currentStance)}
       </div>
       <div className="grid gap-1 text-xs text-muted-foreground">
         {outgoingPending !== null ? (
@@ -140,15 +117,15 @@ export function NationRelationshipRow({
       {canControl ? (
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <label
+            <Label
               className="text-xs text-muted-foreground"
               htmlFor={`unilateral-${other.id}`}
             >
               Set stance
-            </label>
-            <select
+            </Label>
+            <NativeSelect
               id={`unilateral-${other.id}`}
-              className="h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+              className="h-8 px-2 text-xs md:text-xs"
               disabled={anyPending}
               value={isBilateral ? "neutral" : currentStance}
               onChange={(event) => {
@@ -177,7 +154,7 @@ export function NationRelationshipRow({
               <option value="friendly">Friendly</option>
               <option value="hostile">Hostile</option>
               <option value="at_war">At war</option>
-            </select>
+            </NativeSelect>
           </div>
           <div className="flex flex-wrap gap-2">
             {!isBilateral && outgoingPending === null ? (

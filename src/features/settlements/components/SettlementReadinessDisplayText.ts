@@ -47,7 +47,7 @@ export function getManualReadinessDescription({
     return "Saving manual readiness.";
   }
 
-  return "Toggle whether this settlement is ready for the current turn.";
+  return "";
 }
 
 export function getAutoReadyDescription({
@@ -65,5 +65,5 @@ export function getAutoReadyDescription({
     return "Saving auto-ready.";
   }
 
-  return "Automatically count this settlement as ready for each turn.";
+  return "";
 }

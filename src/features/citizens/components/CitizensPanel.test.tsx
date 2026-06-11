@@ -98,7 +98,7 @@ type AssignmentRowFixture = {
   readonly construction_project: null;
   readonly created_at: string;
   readonly deposit_instance: null;
-  readonly job: null;
+  readonly job: { readonly id: string; readonly name: string } | null;
   readonly managed_population_instance: null;
   readonly trade_route: null;
   readonly trade_route_end: null;
@@ -132,6 +132,7 @@ describe("CitizensPanel", () => {
           createAssignmentRow({
             assignment_type: "standard_job",
             citizen_id: "c-1",
+            job: { id: "j-1", name: "Brewer" },
           }),
         ],
       }),
@@ -144,17 +145,25 @@ describe("CitizensPanel", () => {
     expect(screen.queryByText("Cael")).toBeNull();
 
     const aldraRow = screen.getByText("Aldra").closest("li");
-    expect(aldraRow).toHaveTextContent("Standard job");
+    expect(aldraRow).toHaveTextContent("Brewer");
 
     const brannRow = screen.getByText("Brann").closest("li");
     expect(brannRow).toHaveTextContent("Unassigned");
     expect(brannRow).toHaveTextContent("Player character");
 
-    await user.click(screen.getByLabelText("Include deceased"));
+    await user.click(screen.getByLabelText("Show deceased"));
 
     expect(await screen.findByText("Cael")).toBeDefined();
     const caelRow = screen.getByText("Cael").closest("li");
     expect(caelRow).toHaveTextContent("Deceased");
+
+    // Dead toggle shows only dead and hides create buttons
+    expect(screen.queryByText("Aldra")).toBeNull();
+    expect(screen.queryByText("Brann")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Create NPC" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Create player character" }),
+    ).toBeNull();
   });
 
   it("exposes Create NPC and Create player character actions for world admins on active worlds", async () => {
@@ -194,18 +203,20 @@ describe("CitizensPanel", () => {
   });
 
   it("renders aggregate counts for non-admin roles without listing citizens", async () => {
+    // Non-admins receive only player_character rows from the DB after RLS
+    // restricts NPC visibility to world/super admins. The mock reflects that.
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [
           createAggregateRow({
             citizen_assignments: [{ assignment_type: "standard_job" }],
-            citizen_type: "npc",
+            citizen_type: "player_character",
             id: "c-1",
             status: "alive",
           }),
           createAggregateRow({
             citizen_assignments: [{ assignment_type: "husbandry" }],
-            citizen_type: "npc",
+            citizen_type: "player_character",
             id: "c-2",
             status: "alive",
           }),
@@ -217,7 +228,7 @@ describe("CitizensPanel", () => {
           }),
           createAggregateRow({
             citizen_assignments: null,
-            citizen_type: "npc",
+            citizen_type: "player_character",
             id: "c-4",
             status: "dead",
           }),
@@ -230,8 +241,7 @@ describe("CitizensPanel", () => {
     expect(await screen.findByText("Living citizens")).toBeDefined();
 
     expectMetric("Living citizens", "3");
-    expectMetric("NPCs", "3");
-    expectMetric("Player characters", "1");
+    expectMetric("Player characters", "4");
 
     expectBreakdownRow("Standard job", "1");
     expectBreakdownRow("Husbandry", "1");

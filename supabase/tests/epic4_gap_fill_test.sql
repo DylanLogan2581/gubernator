@@ -40,24 +40,34 @@ values
     now()
   );
 
--- World-alpha is owned by the alpha user; world-beta is owned by the beta user.
+-- World-alpha is administered by alpha; world-beta is administered by beta.
 -- Alpha has no admin rights in world-beta, making it the cross-world target.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '92000000-0000-0000-0000-000000000001',
     'GF Alpha World',
-    '91000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     '92000000-0000-0000-0000-000000000002',
     'GF Beta World',
-    '91000000-0000-0000-0000-000000000002',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    '92000000-0000-0000-0000-000000000001',
+    '91000000-0000-0000-0000-000000000001'
+  ),
+  (
+    '92000000-0000-0000-0000-000000000002',
+    '91000000-0000-0000-0000-000000000002'
   );
 
 -- Jobs in world-beta needed as FK targets for cross-world INSERT tests and
@@ -143,7 +153,7 @@ values
 
 -- ===========================================================================
 -- CROSS-WORLD WRITE DENIED
--- The alpha user is owner/admin of world-alpha but has no access to world-beta.
+-- The alpha user is admin of world-alpha but has no access to world-beta.
 -- Every Epic 4 table must reject an INSERT into world-beta with 42501.
 -- ===========================================================================
 set

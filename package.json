@@ -10,8 +10,8 @@
     "db:types": "sh -c \"printf '/* eslint-disable @typescript-eslint/no-redundant-type-constituents */\\n\\n' > src/types/database.ts && supabase gen types typescript --local --schema public >> src/types/database.ts && prettier --write src/types/database.ts\"",
     "dev": "vite",
     "build": "tsc -b && tsc -p tsconfig.edge-functions.json && vite build",
-    "lint": "npm run lint:eslint && npm run lint:docs && npm run lint:sql",
-    "lint:docs": "markdownlint-cli2 \"*.md\" \".github/**/*.md\" \"docs/**/*.md\" \"src/**/*.md\" \"supabase/**/*.md\"",
+    "lint": "npm run lint:eslint && npm run lint:md && npm run lint:sql",
+    "lint:md": "markdownlint-cli2 \"*.md\" \".github/**/*.md\" \"src/**/*.md\" \"supabase/**/*.md\"",
     "lint:eslint": "eslint .",
     "lint:sql": "sh -c 'set -- $(find supabase -type f -name \"*.sql\"); [ \"$#\" -eq 0 ] || prettier --check \"$@\"'",
     "preview": "vite preview",
@@ -21,6 +21,7 @@
     "test": "vitest run --passWithNoTests",
     "functions:cache-clear": "docker stop supabase_edge_runtime_gubernator && docker run --rm -v supabase_edge_runtime_gubernator:/cache alpine sh -c \"rm -rf /cache/*\" && docker start supabase_edge_runtime_gubernator",
     "test:db": "supabase test db",
+    "test:integration": "VITEST_INTEGRATION=true vitest run supabase/functions/end-turn-simulation/integration.test.ts",
     "test:coverage": "vitest run --coverage"
   },
   "lint-staged": {
@@ -34,7 +35,7 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
-    "@supabase/supabase-js": "^2.99.3",
+    "@supabase/supabase-js": "2.99.3",
     "@tanstack/react-form": "^1.28.5",
     "@tanstack/react-query": "^5.94.5",
     "@tanstack/react-query-devtools": "^5.94.5",
@@ -49,6 +50,7 @@
     "sonner": "2.0.7",
     "tailwind-merge": "^3.5.0",
     "tw-animate-css": "^1.4.0",
+    "uuid": "^14.0.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -81,6 +83,7 @@
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-boundaries": "^6.0.1",
     "eslint-plugin-import-x": "^4.16.2",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "eslint-plugin-unicorn": "^64.0.0",
@@ -103,7 +106,10 @@
   },
   "overrides": {
     "lodash": ">=4.18.1",
-    "tmp": ">=0.2.5"
+    "tmp": ">=0.2.5",
+    "eslint-plugin-jsx-a11y": {
+      "eslint": "$eslint"
+    }
   },
   "config": {
     "commitizen": {

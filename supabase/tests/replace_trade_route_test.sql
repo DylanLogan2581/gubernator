@@ -62,14 +62,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'dd200000-0000-0000-0000-000000000001',
     'DD World',
-    'dd100000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'dd200000-0000-0000-0000-000000000001',
+    'dd100000-0000-0000-0000-000000000001'
   );
 
 insert into
@@ -127,7 +134,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -184,8 +191,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -196,8 +201,6 @@ values
     'dd700000-0000-0000-0000-000000000001',
     'dd400000-0000-0000-0000-000000000001',
     'dd400000-0000-0000-0000-000000000002',
-    'dd500000-0000-0000-0000-000000000001',
-    10,
     'active',
     'dd600000-0000-0000-0000-000000000003',
     'approved',
@@ -207,8 +210,6 @@ values
     'dd700000-0000-0000-0000-000000000002',
     'dd400000-0000-0000-0000-000000000001',
     'dd400000-0000-0000-0000-000000000002',
-    'dd500000-0000-0000-0000-000000000001',
-    5,
     'active',
     'dd600000-0000-0000-0000-000000000003',
     'approved',
@@ -218,8 +219,6 @@ values
     'dd700000-0000-0000-0000-000000000003',
     'dd400000-0000-0000-0000-000000000001',
     'dd400000-0000-0000-0000-000000000002',
-    'dd500000-0000-0000-0000-000000000001',
-    8,
     'proposed',
     'dd600000-0000-0000-0000-000000000003',
     'pending',
@@ -229,8 +228,6 @@ values
     'dd700000-0000-0000-0000-000000000004',
     'dd400000-0000-0000-0000-000000000001',
     'dd400000-0000-0000-0000-000000000002',
-    'dd500000-0000-0000-0000-000000000001',
-    3,
     'cancelled',
     'dd600000-0000-0000-0000-000000000003',
     'pending',
@@ -240,8 +237,6 @@ values
     'dd700000-0000-0000-0000-000000000005',
     'dd400000-0000-0000-0000-000000000001',
     'dd400000-0000-0000-0000-000000000002',
-    'dd500000-0000-0000-0000-000000000001',
-    7,
     'replaced',
     'dd600000-0000-0000-0000-000000000003',
     'approved',
@@ -251,12 +246,55 @@ values
     'dd700000-0000-0000-0000-000000000006',
     'dd400000-0000-0000-0000-000000000001',
     'dd400000-0000-0000-0000-000000000002',
-    'dd500000-0000-0000-0000-000000000001',
-    9,
     'active',
     'dd600000-0000-0000-0000-000000000003',
     'approved',
     'approved'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'dd700000-0000-0000-0000-000000000001',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    10
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000002',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    5
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000003',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    8
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000004',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    3
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000005',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    7
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000006',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    9
   );
 
 -- ===========================================================================
@@ -270,7 +308,7 @@ select
     $test$
     select public.replace_trade_route(
       'dd700000-0000-0000-0000-000000000001',
-      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","resource_id":"dd500000-0000-0000-0000-000000000001","quantity_per_transition":15}'::jsonb,
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":15}]}'::jsonb,
       'dd600000-0000-0000-0000-000000000001'
     )
     $test$,
@@ -295,7 +333,7 @@ select
     $test$
     select public.replace_trade_route(
       'dd700000-0000-0000-0000-000000000001',
-      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","resource_id":"dd500000-0000-0000-0000-000000000001","quantity_per_transition":15}'::jsonb,
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":15}]}'::jsonb,
       'dd600000-0000-0000-0000-000000000001'
     )
     $test$,
@@ -321,7 +359,7 @@ select
     $test$
     select public.replace_trade_route(
       'dd700000-0000-0000-0000-000000000001',
-      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","resource_id":"dd500000-0000-0000-0000-000000000001","quantity_per_transition":15}'::jsonb,
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":15}]}'::jsonb,
       'dd600000-0000-0000-0000-000000000001'
     )
     $test$,
@@ -417,7 +455,7 @@ select
     $test$
     select public.replace_trade_route(
       'dd700000-0000-0000-0000-000000000002',
-      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","resource_id":"dd500000-0000-0000-0000-000000000001","quantity_per_transition":20}'::jsonb,
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":20}]}'::jsonb,
       'dd600000-0000-0000-0000-000000000002'
     )
     $test$,
@@ -440,7 +478,7 @@ select
     $test$
     select public.replace_trade_route(
       'dd700000-0000-0000-0000-000000000003',
-      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","resource_id":"dd500000-0000-0000-0000-000000000001","quantity_per_transition":12}'::jsonb,
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":12}]}'::jsonb,
       'dd600000-0000-0000-0000-000000000001'
     )
     $test$,
@@ -463,7 +501,7 @@ select
     $test$
     select public.replace_trade_route(
       'dd700000-0000-0000-0000-000000000004',
-      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","resource_id":"dd500000-0000-0000-0000-000000000001","quantity_per_transition":5}'::jsonb,
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":5}]}'::jsonb,
       'dd600000-0000-0000-0000-000000000001'
     )
     $test$,
@@ -488,7 +526,7 @@ select
     $test$
     select public.replace_trade_route(
       'dd700000-0000-0000-0000-000000000005',
-      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","resource_id":"dd500000-0000-0000-0000-000000000001","quantity_per_transition":5}'::jsonb,
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":5}]}'::jsonb,
       'dd600000-0000-0000-0000-000000000001'
     )
     $test$,
@@ -513,7 +551,7 @@ select
     $test$
     select public.replace_trade_route(
       'dd700000-0000-0000-0000-000000000006',
-      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","resource_id":"dd500000-0000-0000-0000-000000000002","quantity_per_transition":5}'::jsonb,
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000002","quantity":5}]}'::jsonb,
       'dd600000-0000-0000-0000-000000000001'
     )
     $test$,

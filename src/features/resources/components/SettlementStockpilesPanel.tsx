@@ -8,19 +8,31 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { useFieldErrors } from "@/lib/zodFieldErrors";
 
 import { updateSettlementStockpileMutationOptions } from "../mutations/settlementStockpilesMutations";
 import { settlementStockpilesByIdQueryOptions } from "../queries/settlementStockpilesQueries";
@@ -45,34 +57,39 @@ export function SettlementStockpilesPanel({
   );
 
   return (
-    <section
+    <Card
       aria-labelledby="settlement-stockpiles-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3"
     >
-      <h2 id="settlement-stockpiles-heading" className="text-base font-medium">
+      <h2
+        id="settlement-stockpiles-heading"
+        className="text-base font-medium px-4 pt-4"
+      >
         Stockpiles
       </h2>
-      {stockpilesQuery.isPending ? (
-        <LoadingState label="Loading stockpiles…" />
-      ) : stockpilesQuery.isError ? (
-        <ErrorState
-          title="Stockpiles could not be loaded"
-          description={getErrorDescription(stockpilesQuery.error)}
-        />
-      ) : stockpilesQuery.data.length === 0 ? (
-        <EmptyState
-          title="No stockpiles"
-          description="This settlement has no resource stockpiles."
-        />
-      ) : (
-        <StockpilesTable
-          canAdmin={canAdmin}
-          isArchived={isArchived}
-          queryClient={queryClient}
-          stockpiles={sortStockpiles(stockpilesQuery.data)}
-        />
-      )}
-    </section>
+      <CardContent>
+        {stockpilesQuery.isPending ? (
+          <TableSkeleton columnCount={5} rowCount={5} />
+        ) : stockpilesQuery.isError ? (
+          <ErrorState
+            title="Stockpiles could not be loaded"
+            description={getErrorDescription(stockpilesQuery.error)}
+          />
+        ) : stockpilesQuery.data.length === 0 ? (
+          <EmptyState
+            title="No stockpiles"
+            description="This settlement has no resource stockpiles."
+          />
+        ) : (
+          <StockpilesTable
+            canAdmin={canAdmin}
+            isArchived={isArchived}
+            queryClient={queryClient}
+            stockpiles={sortStockpiles(stockpilesQuery.data)}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -104,23 +121,21 @@ function StockpilesTable({
 
   return (
     <>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border text-left text-muted-foreground">
-            <th className="pb-2 font-medium" scope="col">
-              Resource
-            </th>
-            <th className="pb-2 font-medium tabular-nums" scope="col">
+      <Table className="w-full text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">Resource</TableHead>
+            <TableHead scope="col" className="tabular-nums">
               Quantity
-            </th>
-            <th className="pb-2 font-medium tabular-nums" scope="col">
+            </TableHead>
+            <TableHead scope="col" className="tabular-nums">
               Cap
-            </th>
-            <th className="w-16 pb-2" scope="col" aria-label="Status" />
-            <th className="w-24 pb-2" scope="col" aria-label="Actions" />
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+            <TableHead scope="col" className="w-16" aria-label="Status" />
+            <TableHead scope="col" className="w-24" aria-label="Actions" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {stockpiles.map((stockpile) => (
             <StockpileRow
               key={stockpile.resourceId}
@@ -131,8 +146,8 @@ function StockpilesTable({
               }}
             />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
       {editingStockpile !== null ? (
         <EditStockpileDialog
@@ -159,29 +174,29 @@ function StockpileRow({
   const atCap = stockpile.quantity >= stockpile.effectiveCap;
 
   return (
-    <tr className="border-b border-border last:border-0">
-      <td className="py-2 pr-4">
+    <TableRow>
+      <TableCell className="py-2 pr-4">
         <div className="flex items-center gap-2">
           <span>{stockpile.resourceName}</span>
           {stockpile.isSystemResource ? (
             <Badge variant="secondary">system</Badge>
           ) : null}
         </div>
-      </td>
-      <td className="py-2 pr-4 tabular-nums">
+      </TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums">
         {stockpile.quantity.toLocaleString()}
-      </td>
-      <td className="py-2 pr-4 tabular-nums">
+      </TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums">
         {stockpile.effectiveCap.toLocaleString()}
-      </td>
-      <td className="w-16 py-2 pr-2">
+      </TableCell>
+      <TableCell className="w-16 py-2 pr-2">
         {atCap ? (
           <Badge variant="destructive">at cap</Badge>
         ) : (
           <span className="inline-block w-[53px]" aria-hidden="true" />
         )}
-      </td>
-      <td className="w-24 py-2 text-right">
+      </TableCell>
+      <TableCell className="w-24 py-2 text-right">
         {canEdit ? (
           <Button
             type="button"
@@ -195,12 +210,10 @@ function StockpileRow({
         ) : (
           <Badge variant="secondary">read-only</Badge>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
-
-type QuantityFieldError = string | undefined;
 
 function EditStockpileDialog({
   onClose,
@@ -215,13 +228,13 @@ function EditStockpileDialog({
     updateSettlementStockpileMutationOptions({ queryClient }),
   );
   const [quantity, setQuantity] = useState(String(stockpile.quantity));
-  const [fieldError, setFieldError] = useState<QuantityFieldError>(undefined);
+  const { fieldErrors, setFromZod, clear } = useFieldErrors<"quantity">();
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    setFieldError(undefined);
+    clear();
 
     const result = updateSettlementStockpileInputSchema.safeParse({
       quantity,
@@ -230,13 +243,7 @@ function EditStockpileDialog({
     });
 
     if (!result.success) {
-      for (const issue of result.error.issues) {
-        if (issue.path[0] === "quantity") {
-          setFieldError(issue.message);
-          return;
-        }
-      }
-      setFieldError("Invalid input.");
+      setFromZod(result.error);
       return;
     }
 
@@ -270,14 +277,18 @@ function EditStockpileDialog({
         >
           <DialogHeader>
             <DialogTitle>Edit {stockpile.resourceName} quantity</DialogTitle>
+            <DialogDescription>
+              Update this settlement stockpile quantity.
+            </DialogDescription>
           </DialogHeader>
-          <label className="grid gap-1 text-sm">
+          <Label className="grid gap-1 text-sm" htmlFor="edit-stockpile-qty">
             <span className="text-muted-foreground">Quantity</span>
             <Input
-              aria-invalid={fieldError !== undefined}
+              aria-invalid={fieldErrors.quantity !== undefined}
               aria-label="Quantity"
               autoFocus
               disabled={updateMutation.isPending}
+              id="edit-stockpile-qty"
               inputMode="decimal"
               placeholder="0"
               value={quantity}
@@ -285,10 +296,10 @@ function EditStockpileDialog({
                 setQuantity(e.currentTarget.value);
               }}
             />
-            {fieldError !== undefined ? (
-              <p className="text-xs text-destructive">{fieldError}</p>
+            {fieldErrors.quantity !== undefined ? (
+              <p className="text-xs text-destructive">{fieldErrors.quantity}</p>
             ) : null}
-          </label>
+          </Label>
           <DialogFooter>
             <Button
               disabled={updateMutation.isPending}

@@ -45,14 +45,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'd2000000-0000-0000-0000-000000000001',
     'Assignments World',
-    'd1000000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'd2000000-0000-0000-0000-000000000001',
+    'd1000000-0000-0000-0000-000000000001'
   );
 
 insert into
@@ -79,7 +86,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values
@@ -197,7 +204,7 @@ select
   );
 
 select
-  throws_ok (
+  lives_ok (
     $test$
     insert into public.citizen_assignments (
       citizen_id, assignment_type, assigned_on_turn_number
@@ -205,10 +212,14 @@ select
       'd5000000-0000-0000-0000-000000000001', 'construction_project', 1
     )
   $test$,
-    '23514',
-    null,
-    'construction_project requires construction_project_id'
+    'construction_project pool assignment (null construction_project_id) is valid'
   );
+
+-- Remove the pool row so subsequent tests can insert a standard_job for the
+-- same citizen without hitting the primary-key constraint.
+delete from public.citizen_assignments
+where
+  citizen_id = 'd5000000-0000-0000-0000-000000000001';
 
 select
   throws_ok (

@@ -1,12 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { UserPlus } from "lucide-react";
+import { Skull, UserPlus } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { assignmentsInSettlementQueryOptions } from "../queries/citizenAssignmentsQueries";
@@ -42,38 +45,53 @@ export function CitizensPanel({
   settlementId,
   worldId,
 }: CitizensPanelProps): JSX.Element {
+  const [includeDead, setIncludeDead] = useState(false);
+
   return (
-    <section
-      aria-labelledby="citizens-panel-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
-      <div className="flex items-start justify-between gap-2">
+    <Card aria-labelledby="citizens-panel-heading" className="grid gap-3">
+      <div className="flex items-start justify-between gap-2 px-4 pt-4">
         <div className="space-y-1">
           <h2 id="citizens-panel-heading" className="text-base font-medium">
             Citizens
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {canAdmin
-              ? "Individual citizens in this settlement."
-              : "Population summary for this settlement."}
-          </p>
         </div>
         {canAdmin ? (
-          <CitizensCreateActions
-            incestPreventionDepth={incestPreventionDepth}
-            isArchived={isArchived}
-            settlementId={settlementId}
-            worldId={worldId}
-          />
+          <div className="flex items-center gap-2">
+            {!includeDead ? (
+              <CitizensCreateActions
+                incestPreventionDepth={incestPreventionDepth}
+                isArchived={isArchived}
+                settlementId={settlementId}
+                worldId={worldId}
+              />
+            ) : null}
+            <Button
+              aria-label={includeDead ? "Hide deceased" : "Show deceased"}
+              aria-pressed={includeDead}
+              size="icon-sm"
+              title={includeDead ? "Hide deceased" : "Show deceased"}
+              type="button"
+              variant={includeDead ? "secondary" : "ghost"}
+              onClick={() => setIncludeDead(!includeDead)}
+            >
+              <Skull aria-hidden="true" />
+            </Button>
+          </div>
         ) : null}
       </div>
 
-      {canAdmin ? (
-        <CitizensAdminList settlementId={settlementId} worldId={worldId} />
-      ) : (
-        <CitizensAggregateView settlementId={settlementId} />
-      )}
-    </section>
+      <CardContent>
+        {canAdmin ? (
+          <CitizensAdminList
+            includeDead={includeDead}
+            settlementId={settlementId}
+            worldId={worldId}
+          />
+        ) : (
+          <CitizensAggregateView settlementId={settlementId} />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -150,13 +168,14 @@ function CitizensCreateActions({
 }
 
 function CitizensAdminList({
+  includeDead,
   settlementId,
   worldId,
 }: {
+  readonly includeDead: boolean;
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const [includeDead, setIncludeDead] = useState(false);
   const [page, setPage] = useState(0);
 
   const citizensQuery = useQuery(
@@ -180,7 +199,7 @@ function CitizensAdminList({
       return [];
     }
     return includeDead
-      ? citizensQuery.data
+      ? citizensQuery.data.filter((citizen) => citizen.status === "dead")
       : citizensQuery.data.filter((citizen) => citizen.status === "alive");
   }, [citizensQuery.data, includeDead]);
 
@@ -190,7 +209,7 @@ function CitizensAdminList({
   const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   if (citizensQuery.isPending) {
-    return <LoadingState label="Loading citizens…" />;
+    return <CardListSkeleton rowCount={5} />;
   }
 
   if (citizensQuery.isError) {
@@ -205,18 +224,6 @@ function CitizensAdminList({
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={includeDead}
-            onChange={(event) => {
-              setIncludeDead(event.currentTarget.checked);
-              setPage(0);
-            }}
-            className="size-4"
-          />
-          Include deceased
-        </label>
         <p className="text-xs text-muted-foreground" role="status">
           {filtered.length === 0
             ? "0 citizens"
@@ -230,7 +237,7 @@ function CitizensAdminList({
           description={
             includeDead
               ? "Citizens added to this settlement will appear here."
-              : "Toggle “Include deceased” to see citizens who have died."
+              : "Toggle the skull icon in the header to see deceased citizens."
           }
         />
       ) : (
@@ -302,19 +309,17 @@ function CitizenRow({
         )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
-        <Chip label={citizenTypeLabel(citizen.citizenType)} />
-        <Chip
-          label={citizen.status === "alive" ? "Alive" : "Deceased"}
-          tone={citizen.status === "alive" ? "default" : "muted"}
-        />
-        <Chip
-          label={
-            assignment === null
-              ? "Unassigned"
-              : assignmentTypeLabel(assignment.assignmentType)
-          }
-          tone={assignment === null ? "muted" : "default"}
-        />
+        <Badge variant="secondary">
+          {citizenTypeLabel(citizen.citizenType)}
+        </Badge>
+        <Badge
+          variant={citizen.status === "alive" ? "secondary" : "destructive"}
+        >
+          {citizen.status === "alive" ? "Alive" : "Deceased"}
+        </Badge>
+        <Badge variant={assignment === null ? "outline" : "secondary"}>
+          {assignment === null ? "Unassigned" : assignmentJobName(assignment)}
+        </Badge>
       </div>
     </li>
   );
@@ -368,9 +373,8 @@ function CitizensAggregateContent({
 
   return (
     <div className="grid gap-4">
-      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Stat label="Living citizens" value={aliveTotal} />
-        <Stat label="NPCs" value={stats.typeBreakdown.npc} />
         <Stat
           label="Player characters"
           value={stats.typeBreakdown.player_character}
@@ -414,20 +418,6 @@ function Stat({
   );
 }
 
-function Chip({
-  label,
-  tone = "default",
-}: {
-  readonly label: string;
-  readonly tone?: "default" | "muted";
-}): JSX.Element {
-  const className =
-    tone === "muted"
-      ? "inline-flex items-center rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-      : "inline-flex items-center rounded-sm bg-secondary px-2 py-0.5 text-xs text-secondary-foreground";
-  return <span className={className}>{label}</span>;
-}
-
 const ASSIGNMENT_BREAKDOWN_ORDER: ReadonlyArray<
   CitizenAssignmentType | "unassigned"
 > = [
@@ -463,6 +453,25 @@ function assignmentTypeLabel(type: CitizenAssignmentType): string {
       return "Standard job";
     case "trade_route":
       return "Trade route";
+  }
+}
+
+function assignmentJobName(assignment: CitizenAssignment): string {
+  switch (assignment.assignmentType) {
+    case "standard_job":
+      return assignment.job?.name ?? "Standard Job";
+    case "deposit":
+      return assignment.depositInstance?.depositTypeJobName ?? "Deposit";
+    case "husbandry":
+      return (
+        assignment.managedPopulationInstance?.husbandryJobName ?? "Husbandry"
+      );
+    case "culling":
+      return assignment.managedPopulationInstance?.cullingJobName ?? "Culling";
+    case "trade_route":
+      return "Trader";
+    case "construction_project":
+      return "Construction";
   }
 }
 

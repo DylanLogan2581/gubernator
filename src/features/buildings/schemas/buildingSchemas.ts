@@ -2,11 +2,11 @@ import { z } from "zod";
 
 import { buildingInputLimits } from "@/lib/inputLimits";
 
-const blueprintIdSchema = z.guid("Blueprint id must be a valid UUID.");
-const tierIdSchema = z.guid("Tier id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
-const resourceIdSchema = z.guid("Resource id must be a valid UUID.");
-const jobIdSchema = z.guid("Job id must be a valid UUID.");
+const blueprintIdSchema = z.guid("Select a blueprint.");
+const tierIdSchema = z.guid("Select a tier.");
+const worldIdSchema = z.guid("Select a world.");
+const resourceIdSchema = z.guid("Select a resource.");
+const jobIdSchema = z.guid("Select a job.");
 
 const blueprintNameSchema = z
   .string()

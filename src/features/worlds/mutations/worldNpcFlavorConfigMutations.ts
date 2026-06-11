@@ -31,7 +31,6 @@ type SaveWorldNpcFlavorConfigMutationOptions = UseMutationOptions<
 type WorldNpcFlavorSaveAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -41,8 +40,7 @@ export type SaveWorldNpcFlavorConfigInput = {
   readonly worldId: string;
 };
 
-const WORLD_NPC_FLAVOR_SAVE_ACCESS_SELECT =
-  "archived_at,id,owner_id,status,visibility";
+const WORLD_NPC_FLAVOR_SAVE_ACCESS_SELECT = "archived_at,id,status,visibility";
 const WORLD_NPC_FLAVOR_SAVE_UPDATE_SELECT = "id";
 
 export class SaveWorldNpcFlavorConfigError extends Error {

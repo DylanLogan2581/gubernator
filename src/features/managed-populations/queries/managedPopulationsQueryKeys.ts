@@ -18,4 +18,10 @@ export const managedPopulationsQueryKeys = {
       "instances-by-settlement",
       settlementId,
     ] as const,
+  snapshotsBySettlement: (settlementId: string) =>
+    [
+      ...managedPopulationsQueryKeys.all,
+      "snapshots-by-settlement",
+      settlementId,
+    ] as const,
 } as const;

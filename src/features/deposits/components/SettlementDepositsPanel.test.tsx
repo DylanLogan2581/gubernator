@@ -3,6 +3,8 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { SettlementDepositsPanel } from "./SettlementDepositsPanel";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
@@ -192,17 +194,76 @@ function createResourceRow(
   };
 }
 
+const TRANSITION_ID = "00000000-0000-0000-0000-000000000099";
+
+type TestTransitionOutcomeRow = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly status: string;
+  readonly from_turn_number: number;
+  readonly to_turn_number: number;
+  readonly started_at: string;
+  readonly finished_at: string | null;
+  readonly turn_log_entries: ReadonlyArray<{
+    readonly id: string;
+    readonly world_id: string;
+    readonly log_category: string;
+    readonly payload_jsonb: unknown;
+    readonly citizen_id: string | null;
+    readonly nation_id: string | null;
+    readonly resource_id: string | null;
+    readonly settlement_id: string | null;
+  }>;
+  readonly notifications: readonly unknown[];
+  readonly settlement_turn_snapshots: ReadonlyArray<{
+    readonly id: string;
+    readonly settlement_id: string;
+    readonly world_id: string;
+    readonly turn_number: number;
+    readonly birth_count: number;
+    readonly death_count: number;
+    readonly homeless_deaths_count: number;
+    readonly starvation_deaths_count: number;
+    readonly population_cap: number;
+    readonly population_total: number;
+    readonly population_npc: number;
+    readonly population_player_character: number;
+  }>;
+  readonly settlement_turn_resource_snapshots: readonly unknown[];
+};
+
+function createTransitionRow(
+  overrides: Partial<TestTransitionOutcomeRow> = {},
+): TestTransitionOutcomeRow {
+  return {
+    id: TRANSITION_ID,
+    world_id: WORLD_ID,
+    status: "completed",
+    from_turn_number: 4,
+    to_turn_number: 5,
+    started_at: "2026-05-05T00:00:00.000Z",
+    finished_at: "2026-05-05T00:01:00.000Z",
+    turn_log_entries: [],
+    notifications: [],
+    settlement_turn_snapshots: [],
+    settlement_turn_resource_snapshots: [],
+    ...overrides,
+  };
+}
+
 function createClient({
   instanceRows = [],
   assignmentRows = [],
   depositTypeRows = [],
   resourceRows = [],
+  transitionRow = null,
   rpcMock,
 }: {
   readonly instanceRows?: readonly TestDepositInstanceRow[];
   readonly assignmentRows?: readonly TestAssignmentRow[];
   readonly depositTypeRows?: readonly TestDepositTypeRow[];
   readonly resourceRows?: readonly TestResourceRow[];
+  readonly transitionRow?: TestTransitionOutcomeRow | null;
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
   const instancesSelectBuilder: Record<string, unknown> = {
@@ -230,6 +291,49 @@ function createClient({
     returns: vi.fn().mockResolvedValue({ data: resourceRows, error: null }),
   };
 
+  // settlement_turn_snapshots: returns a snapshot pointing to TRANSITION_ID when
+  // transitionRow is provided, otherwise returns null (no prior transition).
+  const snapshotLookupBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => snapshotLookupBuilder),
+    not: vi.fn(() => snapshotLookupBuilder),
+    order: vi.fn(() => snapshotLookupBuilder),
+    limit: vi.fn(() => snapshotLookupBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data:
+        transitionRow !== null ? { turn_transition_id: TRANSITION_ID } : null,
+      error: null,
+    }),
+  };
+
+  // turn_transitions: returns the transition row when queried by id.
+  const transitionSelectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => transitionSelectBuilder),
+    returns: vi.fn(() => transitionSelectBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: transitionRow ?? null,
+      error: null,
+    }),
+  };
+
+  // The settlement outcome fetcher loads child collections via separate
+  // table queries scoped to the transition id, each chaining
+  // .select().eq().eq().returns() to resolve the rows.
+  const snapshotChildBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => snapshotChildBuilder),
+    returns: vi.fn().mockResolvedValue({
+      data: transitionRow?.settlement_turn_snapshots ?? [],
+      error: null,
+    }),
+  };
+
+  function createChildCollectionBuilder(rows: readonly unknown[]): unknown {
+    const builder: Record<string, unknown> = {
+      eq: vi.fn(() => builder),
+      returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    };
+    return builder;
+  }
+
   return {
     from: vi.fn((table: string) => {
       if (table === "deposit_instances") {
@@ -243,6 +347,41 @@ function createClient({
       }
       if (table === "resources") {
         return { select: vi.fn(() => resourcesSelectBuilder) };
+      }
+      if (table === "settlement_turn_snapshots") {
+        return {
+          select: vi.fn((columns: string) =>
+            columns === "turn_transition_id"
+              ? snapshotLookupBuilder
+              : snapshotChildBuilder,
+          ),
+        };
+      }
+      if (table === "turn_transitions") {
+        return { select: vi.fn(() => transitionSelectBuilder) };
+      }
+      if (table === "settlement_turn_resource_snapshots") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(
+              transitionRow?.settlement_turn_resource_snapshots ?? [],
+            ),
+          ),
+        };
+      }
+      if (table === "turn_log_entries") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(transitionRow?.turn_log_entries ?? []),
+          ),
+        };
+      }
+      if (table === "notifications") {
+        return {
+          select: vi.fn(() =>
+            createChildCollectionBuilder(transitionRow?.notifications ?? []),
+          ),
+        };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -283,6 +422,248 @@ describe("SettlementDepositsPanel", () => {
     expect(screen.getByText("Depleted (1)")).toBeDefined();
   });
 
+  it("hides removed section by default; toggle reveals it", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "North Mine",
+            status: "active",
+          }),
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Mine");
+    expect(screen.queryByText("Old Mine")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+    expect(await screen.findByText("Old Mine")).toBeDefined();
+    expect(screen.getByText("North Mine")).toBeDefined();
+  });
+
+  it("toggle button aria-pressed reflects current state", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(createClient({ instanceRows: [] }));
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("No deposits");
+    const btn = screen.getByRole("button", { name: "Show removed" });
+    expect(btn.getAttribute("aria-pressed")).toBe("false");
+
+    await user.click(btn);
+    expect(
+      screen
+        .getByRole("button", { name: "Hide removed" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+  });
+
+  it("shows an empty state when only removed deposits exist and the removed section is hidden", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("No visible deposits");
+    expect(screen.queryByText("Old Mine")).toBeNull();
+  });
+
+  it("keeps the add button visible while removed deposits are shown", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "North Mine",
+            status: "active",
+          }),
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    await screen.findByText("North Mine");
+    expect(
+      screen.getByRole("button", { name: "Add deposit instance" }),
+    ).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+
+    expect(
+      screen.getByRole("button", { name: "Add deposit instance" }),
+    ).toBeDefined();
+  });
+
+  it("calls restore RPC and shows success toast when Restore is clicked", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "restore_deposit_instance") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: INSTANCE_ID_2, settlement_id: SETTLEMENT_ID },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    // Wait for data to load (toggle button appears once instancesLoaded=true)
+    await screen.findByRole("button", { name: "Show removed" });
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+
+    await screen.findByText("Old Mine");
+    await user.click(screen.getByRole("button", { name: "Restore Old Mine" }));
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith("restore_deposit_instance", {
+        p_deposit_instance_id: INSTANCE_ID_2,
+      });
+    });
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Old Mine restored.",
+        undefined,
+      );
+    });
+  });
+
+  it("opens hard-delete dialog; cancel does not call RPC", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn();
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    await screen.findByRole("button", { name: "Show removed" });
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+
+    await screen.findByText("Old Mine");
+    await user.click(
+      screen.getByRole("button", { name: "Permanently delete Old Mine" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Permanently delete Old Mine?",
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("calls hard-delete RPC and shows success toast on confirm", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "hard_delete_deposit_instance") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: INSTANCE_ID_2, settlement_id: SETTLEMENT_ID },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_2,
+            name: "Old Mine",
+            status: "removed",
+          }),
+        ],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, canManage: false });
+
+    await screen.findByRole("button", { name: "Show removed" });
+    await user.click(screen.getByRole("button", { name: "Show removed" }));
+
+    await screen.findByText("Old Mine");
+    await user.click(
+      screen.getByRole("button", { name: "Permanently delete Old Mine" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Permanently delete Old Mine?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete permanently" }),
+    );
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith("hard_delete_deposit_instance", {
+        p_deposit_instance_id: INSTANCE_ID_2,
+      });
+    });
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "Old Mine permanently deleted.",
+        undefined,
+      );
+    });
+  });
+
   it("shows deposit type name and resource remaining/initial in each row", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -295,6 +676,119 @@ describe("SettlementDepositsPanel", () => {
     await screen.findByText("North Mine");
     expect(screen.getByText("Coal Vein")).toBeDefined();
     expect(screen.getByText(/Coal: 60\/100/)).toBeDefined();
+  });
+
+  it("shows Depleted badge with turn tooltip when deposit.depleted log entry exists", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            name: "North Mine",
+            status: "depleted",
+            deposit_instance_resources: [
+              {
+                id: "00000000-0000-0000-0000-000000000050",
+                deposit_instance_id: INSTANCE_ID_1,
+                resource_id: RESOURCE_ID_1,
+                initial_quantity: 100,
+                remaining_quantity: 0,
+                created_at: "2026-05-01T00:00:00.000Z",
+                updated_at: "2026-05-05T00:00:00.000Z",
+                resources: { name: "Coal" },
+              },
+            ],
+          }),
+        ],
+        transitionRow: createTransitionRow({
+          to_turn_number: 5,
+          turn_log_entries: [
+            {
+              id: "00000000-0000-0000-0000-000000000090",
+              world_id: WORLD_ID,
+              log_category: "deposit.depleted",
+              payload_jsonb: {
+                depositId: INSTANCE_ID_1,
+                depositName: "North Mine",
+              },
+              citizen_id: null,
+              nation_id: null,
+              resource_id: null,
+              settlement_id: SETTLEMENT_ID,
+            },
+          ],
+        }),
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    // Badge should be rendered when deposit is depleted
+    const badge = await screen.findByRole("generic", { name: "Depleted" });
+    expect(badge).toBeDefined();
+  });
+
+  it("shows Depleted badge without tooltip when no matching log entry", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            status: "depleted",
+            deposit_instance_resources: [
+              {
+                id: "00000000-0000-0000-0000-000000000050",
+                deposit_instance_id: INSTANCE_ID_1,
+                resource_id: RESOURCE_ID_1,
+                initial_quantity: 100,
+                remaining_quantity: 0,
+                created_at: "2026-05-01T00:00:00.000Z",
+                updated_at: "2026-05-05T00:00:00.000Z",
+                resources: { name: "Coal" },
+              },
+            ],
+          }),
+        ],
+        transitionRow: null,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    // Badge should be rendered even when no tooltip is available
+    const badge = await screen.findByRole("generic", { name: "Depleted" });
+    expect(badge).toBeDefined();
+  });
+
+  it("applies line-through to resources with 0 remaining quantity on depleted deposits", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            id: INSTANCE_ID_1,
+            status: "depleted",
+            deposit_instance_resources: [
+              {
+                id: "00000000-0000-0000-0000-000000000050",
+                deposit_instance_id: INSTANCE_ID_1,
+                resource_id: RESOURCE_ID_1,
+                initial_quantity: 100,
+                remaining_quantity: 0,
+                created_at: "2026-05-01T00:00:00.000Z",
+                updated_at: "2026-05-05T00:00:00.000Z",
+                resources: { name: "Coal" },
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Mine");
+    const resourceSpan = screen.getByText(/Coal: 0\/100/);
+    expect(resourceSpan.className).toContain("line-through");
   });
 
   it("shows worker count with max-workers cap", async () => {
@@ -515,7 +1009,7 @@ describe("SettlementDepositsPanel", () => {
 
     await screen.findByText("North Mine");
     const removeButton = screen.getByRole("button", {
-      name: "Remove North Mine",
+      name: "Exhaust North Mine",
     });
     expect(removeButton).toBeDisabled();
   });
@@ -532,7 +1026,7 @@ describe("SettlementDepositsPanel", () => {
 
     await screen.findByText("North Mine");
     const removeButton = screen.getByRole("button", {
-      name: "Remove North Mine",
+      name: "Exhaust North Mine",
     });
     expect(removeButton).not.toBeDisabled();
   });
@@ -562,12 +1056,14 @@ describe("SettlementDepositsPanel", () => {
     renderPanel({ canAdmin: true, canManage: false });
 
     await screen.findByText("North Mine");
-    await user.click(screen.getByRole("button", { name: "Remove North Mine" }));
+    await user.click(
+      screen.getByRole("button", { name: "Exhaust North Mine" }),
+    );
 
-    const dialog = await screen.findByRole("dialog", {
-      name: "Remove North Mine?",
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Exhaust North Mine?",
     });
-    await user.click(within(dialog).getByRole("button", { name: "Remove" }));
+    await user.click(within(dialog).getByRole("button", { name: "Exhaust" }));
 
     await waitFor(() => {
       expect(rpcMock).toHaveBeenCalledWith("remove_deposit_instance", {
@@ -577,7 +1073,7 @@ describe("SettlementDepositsPanel", () => {
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledWith(
-        "North Mine removed.",
+        "North Mine exhausted.",
         undefined,
       );
     });
@@ -767,15 +1263,17 @@ function renderPanel({
   readonly isArchived?: boolean;
 }): void {
   render(
-    <QueryClientProvider client={createQueryClient()}>
-      <SettlementDepositsPanel
-        canAdmin={canAdmin}
-        canManage={canManage}
-        isArchived={isArchived}
-        settlementId={SETTLEMENT_ID}
-        worldId={WORLD_ID}
-      />
-    </QueryClientProvider>,
+    <TooltipProvider>
+      <QueryClientProvider client={createQueryClient()}>
+        <SettlementDepositsPanel
+          canAdmin={canAdmin}
+          canManage={canManage}
+          isArchived={isArchived}
+          settlementId={SETTLEMENT_ID}
+          worldId={WORLD_ID}
+        />
+      </QueryClientProvider>
+    </TooltipProvider>,
   );
 }
 

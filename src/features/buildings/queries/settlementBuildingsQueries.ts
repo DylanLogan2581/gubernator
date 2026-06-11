@@ -29,6 +29,7 @@ type SettlementBuildingRow = {
   readonly deactivated_in_transition_id: string | null;
   readonly id: string;
   readonly missed_upkeep_count: number;
+  readonly name: string | null;
   readonly settlement_id: string;
   readonly source_project_id: string | null;
   readonly state: SettlementBuildingState;
@@ -36,7 +37,7 @@ type SettlementBuildingRow = {
 };
 
 const SETTLEMENT_BUILDING_SELECT =
-  "id,settlement_id,building_blueprint_id,current_tier_id,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number,effects_json)";
+  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number,effects_json)";
 
 type SettlementBuildingsBySettlementQueryKey = ReturnType<
   typeof buildingsQueryKeys.settlementBuildingsBySettlement
@@ -92,6 +93,7 @@ function toSettlementBuilding(row: SettlementBuildingRow): SettlementBuilding {
     effectsJson,
     id: row.id,
     missedUpkeepCount: row.missed_upkeep_count,
+    name: row.name,
     settlementId: row.settlement_id,
     sourceProjectId: row.source_project_id,
     state: row.state,

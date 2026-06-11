@@ -62,12 +62,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'b1200000-0000-0000-0000-000000000001',
     'B1 World',
-    'b1100000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -121,7 +120,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -185,8 +184,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -197,12 +194,25 @@ values
     'b1700000-0000-0000-0000-000000000001',
     'b1400000-0000-0000-0000-000000000001',
     'b1400000-0000-0000-0000-000000000002',
-    'b1500000-0000-0000-0000-000000000001',
-    10,
     'proposed',
     'b1600000-0000-0000-0000-000000000003',
     'pending',
     'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'b1700000-0000-0000-0000-000000000001',
+    'send',
+    'b1500000-0000-0000-0000-000000000001',
+    10
   );
 
 -- Second route for invalid-status test (will be cancelled after first test)
@@ -211,8 +221,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -223,12 +231,25 @@ values
     'b1700000-0000-0000-0000-000000000002',
     'b1400000-0000-0000-0000-000000000001',
     'b1400000-0000-0000-0000-000000000002',
-    'b1500000-0000-0000-0000-000000000001',
-    5,
     'cancelled',
     'b1600000-0000-0000-0000-000000000003',
     'pending',
     'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'b1700000-0000-0000-0000-000000000002',
+    'send',
+    'b1500000-0000-0000-0000-000000000001',
+    5
   );
 
 -- ===========================================================================
@@ -373,8 +394,8 @@ select
         n.notification_type = 'trade_proposal_rejected'
         and n.trade_route_id = 'b1700000-0000-0000-0000-000000000001'
     ),
-    2,
-    'two trade_proposal_rejected notifications inserted (origin mgr, dest mgr)'
+    3,
+    'three trade_proposal_rejected notifications inserted (origin mgr, dest mgr, seeded super admin)'
   );
 
 select

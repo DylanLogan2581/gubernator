@@ -138,7 +138,7 @@ describe("toCitizenAssignment", () => {
     expect(result.managedPopulationInstance?.name).toBe("Flock A");
   });
 
-  it("maps a trade_route assignment with joined resource and settlement names", () => {
+  it("maps a trade_route assignment with a single leg", () => {
     const row: CitizenAssignmentRow = {
       ...BASE_ROW,
       assignment_type: "trade_route",
@@ -146,7 +146,7 @@ describe("toCitizenAssignment", () => {
         destination: { name: "Riverside" },
         id: "route-1",
         origin: { name: "Hillfort" },
-        resources: { name: "Grain" },
+        trade_route_legs: [{ direction: "send", resource: { name: "Grain" } }],
       },
       trade_route_end: "origin",
     };
@@ -157,11 +157,35 @@ describe("toCitizenAssignment", () => {
     expect(result.tradeRoute).toEqual({
       destinationSettlementName: "Riverside",
       id: "route-1",
+      legs: [{ direction: "send", resourceName: "Grain" }],
       originSettlementName: "Hillfort",
-      resourceName: "Grain",
     });
     expect(result.tradeRouteEnd).toBe("origin");
     expect(result.job).toBeNull();
+  });
+
+  it("maps a trade_route assignment with multiple legs", () => {
+    const row: CitizenAssignmentRow = {
+      ...BASE_ROW,
+      assignment_type: "trade_route",
+      trade_route: {
+        destination: { name: "Riverside" },
+        id: "route-2",
+        origin: { name: "Hillfort" },
+        trade_route_legs: [
+          { direction: "send", resource: { name: "Iron" } },
+          { direction: "receive", resource: { name: "Wool" } },
+        ],
+      },
+      trade_route_end: null,
+    };
+
+    const result = toCitizenAssignment(row);
+
+    expect(result.tradeRoute?.legs).toEqual([
+      { direction: "send", resourceName: "Iron" },
+      { direction: "receive", resourceName: "Wool" },
+    ]);
   });
 });
 
@@ -182,6 +206,26 @@ describe("currentAssignmentForCitizenQueryOptions", () => {
 
     expect(select).toHaveBeenCalledWith(
       expect.stringContaining("deposit_types_job_id_fk"),
+    );
+  });
+
+  it("embeds trade_route_legs instead of removed resources FK", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    const client = { from } as unknown as GubernatorSupabaseClient;
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, retryDelay: 0 } },
+    });
+
+    await queryClient.fetchQuery(
+      currentAssignmentForCitizenQueryOptions("citizen-1", client),
+    );
+
+    const selectArg = (select.mock.calls[0] as unknown[])[0] as string;
+    expect(selectArg).toContain(
+      "trade_route_legs(direction,resource:resources(name))",
     );
   });
 });

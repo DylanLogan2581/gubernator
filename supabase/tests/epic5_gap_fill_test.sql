@@ -107,21 +107,27 @@ values
 
 -- Worlds
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a5100000-0000-0000-0000-000000000001',
     'A5 World Alpha',
-    'a5000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'a5100000-0000-0000-0000-000000000002',
     'A5 World Beta',
-    'a5000000-0000-0000-0000-000000000002',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'a5100000-0000-0000-0000-000000000001',
+    'a5000000-0000-0000-0000-000000000001'
   );
 
 -- Nations: nation_1 and nation_2 are visible; nation_hmix and nation_hduo are
@@ -318,7 +324,7 @@ insert into
     settlement_id,
     citizen_type,
     user_id,
-    name,
+    given_name,
     status,
     role_type,
     role_nation_id,
@@ -568,8 +574,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id
   )
@@ -578,8 +582,6 @@ values
     'a5960000-0000-0000-0000-000000000001',
     'a5300000-0000-0000-0000-000000000001',
     'a5300000-0000-0000-0000-000000000002',
-    'a5400000-0000-0000-0000-000000000001',
-    10,
     'proposed',
     'a5500000-0000-0000-0000-000000000004'
   ),
@@ -587,8 +589,6 @@ values
     'a5960000-0000-0000-0000-000000000002',
     'a5300000-0000-0000-0000-000000000001',
     'a5300000-0000-0000-0000-000000000003',
-    'a5400000-0000-0000-0000-000000000001',
-    5,
     'proposed',
     'a5500000-0000-0000-0000-000000000004'
   ),
@@ -596,10 +596,35 @@ values
     'a5960000-0000-0000-0000-000000000003',
     'a5300000-0000-0000-0000-000000000003',
     'a5300000-0000-0000-0000-000000000004',
-    'a5400000-0000-0000-0000-000000000001',
-    3,
     'proposed',
     'a5500000-0000-0000-0000-000000000004'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'a5960000-0000-0000-0000-000000000001',
+    'send',
+    'a5400000-0000-0000-0000-000000000001',
+    10
+  ),
+  (
+    'a5960000-0000-0000-0000-000000000002',
+    'send',
+    'a5400000-0000-0000-0000-000000000001',
+    5
+  ),
+  (
+    'a5960000-0000-0000-0000-000000000003',
+    'send',
+    'a5400000-0000-0000-0000-000000000001',
+    3
   );
 
 -- Pre-seed NPC assignments for the PC-rejection and bulk-assignment tests.

@@ -68,12 +68,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     '82000000-0000-0000-0000-000000000001',
     'PC Test Private World',
-    '81000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -102,10 +101,11 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
-    role_type
+    role_type,
+    death_cause_category
   )
 values
   (
@@ -113,30 +113,33 @@ values
     '82000000-0000-0000-0000-000000000001',
     '84000000-0000-0000-0000-000000000001',
     'player_character',
-    'PC Holder Citizen',
+    'PC Holder',
     'alive',
     '81000000-0000-0000-0000-000000000003',
-    'none'
+    'none',
+    null
   ),
   (
     '85000000-0000-0000-0000-000000000004',
     '82000000-0000-0000-0000-000000000001',
     '84000000-0000-0000-0000-000000000001',
     'player_character',
-    'Suspended PC Holder Citizen',
+    'Suspended Holder',
     'alive',
     '81000000-0000-0000-0000-000000000004',
-    'none'
+    'none',
+    null
   ),
   (
     '85000000-0000-0000-0000-000000000005',
     '82000000-0000-0000-0000-000000000001',
     '84000000-0000-0000-0000-000000000001',
     'player_character',
-    'Dead PC Holder Citizen',
+    'Dead Holder',
     'dead',
     '81000000-0000-0000-0000-000000000005',
-    'none'
+    'none',
+    'unknown'
   );
 
 -- ===========================================================================

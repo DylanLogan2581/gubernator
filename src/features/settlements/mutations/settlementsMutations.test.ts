@@ -368,10 +368,23 @@ describe("updateSettlementCoordinatesMutationOptions", () => {
 
   it("updates coordinates scoped by id and nation", async () => {
     const settlementRow = createSettlementRow({ coord_x: 42, coord_z: -7 });
-    const { client, calls } = createUpdateClient({
-      data: settlementRow,
-      error: null,
-    });
+    const maybeSingle = vi
+      .fn()
+      .mockResolvedValue({
+        data: { id: SETTLEMENT_ID, coord_x: 42, coord_z: -7 },
+        error: null,
+      });
+    const rpc = vi.fn(() => ({ maybeSingle }));
+
+    const single = vi
+      .fn()
+      .mockResolvedValue({ data: settlementRow, error: null });
+    const eqNationId = vi.fn(() => ({ single }));
+    const eqId = vi.fn(() => ({ eq: eqNationId }));
+    const selectFn = vi.fn(() => ({ eq: eqId }));
+    const from = vi.fn(() => ({ select: selectFn }));
+
+    const client = { rpc, from } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
     const invalidateQueries = vi
       .spyOn(queryClient, "invalidateQueries")
@@ -389,10 +402,15 @@ describe("updateSettlementCoordinatesMutationOptions", () => {
       worldId: WORLD_ID,
     });
 
-    expect(calls.from).toHaveBeenCalledWith("settlements");
-    expect(calls.update).toHaveBeenCalledWith({ coord_x: 42, coord_z: -7 });
-    expect(calls.eqId).toHaveBeenCalledWith("id", SETTLEMENT_ID);
-    expect(calls.eqNationId).toHaveBeenCalledWith("nation_id", NATION_ID);
+    expect(rpc).toHaveBeenCalledWith("update_settlement_coordinates", {
+      p_settlement_id: SETTLEMENT_ID,
+      p_coord_x: 42,
+      p_coord_z: -7,
+    });
+    expect(from).toHaveBeenCalledWith("settlements");
+    expect(selectFn).toHaveBeenCalled();
+    expect(eqId).toHaveBeenCalledWith("id", SETTLEMENT_ID);
+    expect(eqNationId).toHaveBeenCalledWith("nation_id", NATION_ID);
     expect(options.mutationKey).toEqual([
       "settlements",
       "update-settlement-coordinates",
@@ -403,7 +421,9 @@ describe("updateSettlementCoordinatesMutationOptions", () => {
   });
 
   it("raises a not-found error when the update returns null", async () => {
-    const { client } = createUpdateClient({ data: null, error: null });
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const rpc = vi.fn(() => ({ maybeSingle }));
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
     const options = updateSettlementCoordinatesMutationOptions({
       client,
@@ -422,10 +442,12 @@ describe("updateSettlementCoordinatesMutationOptions", () => {
   });
 
   it("normalizes Supabase errors", async () => {
-    const { client } = createUpdateClient({
+    const maybeSingle = vi.fn().mockResolvedValue({
       data: null,
       error: { code: "42501", message: "permission denied" },
     });
+    const rpc = vi.fn(() => ({ maybeSingle }));
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
     const options = updateSettlementCoordinatesMutationOptions({
       client,

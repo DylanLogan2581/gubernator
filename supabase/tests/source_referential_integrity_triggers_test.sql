@@ -36,14 +36,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'SRIT Test World',
-    'f1000000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'f2000000-0000-0000-0000-000000000001',
+    'f1000000-0000-0000-0000-000000000001'
   );
 
 -- Resources: one referenced by configs, one unreferenced.

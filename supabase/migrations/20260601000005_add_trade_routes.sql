@@ -127,38 +127,41 @@ declare
   v_origin_nation_id      uuid;
   v_destination_nation_id uuid;
   v_citizen_nation_id     uuid;
+  v_world_id              uuid;
+  v_is_admin              boolean;
 begin
   select s.nation_id into v_origin_nation_id
   from public.settlements s
   where s.id = new.origin_settlement_id;
 
-  select s.nation_id into v_destination_nation_id
+  select s.nation_id, n.world_id into v_destination_nation_id, v_world_id
   from public.settlements s
+  join public.nations n on n.id = s.nation_id
   where s.id = new.destination_settlement_id;
 
-  if new.origin_approved_by_citizen_id is not null then
+  v_is_admin := public.is_super_admin () or public.is_world_admin (v_world_id);
+
+  if new.origin_approved_by_citizen_id is not null and not v_is_admin then
     select s.nation_id into v_citizen_nation_id
     from public.citizens c
     join public.settlements s on s.id = c.settlement_id
     where c.id = new.origin_approved_by_citizen_id;
 
     if v_origin_nation_id is distinct from v_citizen_nation_id then
-      raise exception 'origin approver citizen % does not belong to the origin settlement nation %',
-        new.origin_approved_by_citizen_id, v_origin_nation_id
-        using errcode = 'foreign_key_violation';
+      raise exception 'you can only approve on behalf of a citizen of the origin nation'
+        using errcode = 'P0001';
     end if;
   end if;
 
-  if new.destination_approved_by_citizen_id is not null then
+  if new.destination_approved_by_citizen_id is not null and not v_is_admin then
     select s.nation_id into v_citizen_nation_id
     from public.citizens c
     join public.settlements s on s.id = c.settlement_id
     where c.id = new.destination_approved_by_citizen_id;
 
     if v_destination_nation_id is distinct from v_citizen_nation_id then
-      raise exception 'destination approver citizen % does not belong to the destination settlement nation %',
-        new.destination_approved_by_citizen_id, v_destination_nation_id
-        using errcode = 'foreign_key_violation';
+      raise exception 'you can only approve on behalf of a citizen of the destination nation'
+        using errcode = 'P0001';
     end if;
   end if;
 

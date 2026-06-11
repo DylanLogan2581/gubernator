@@ -1,15 +1,14 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { textInputLimits } from "@/lib/inputLimits";
+import { notifyMutationError } from "@/lib/notify";
 
 import { updateNationDetailsMutationOptions } from "../../mutations/nationsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { Nation } from "../../types/nationTypes";
 
@@ -62,7 +61,7 @@ export function NationDetailsSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update nation.");
         },
         onSuccess: () => {
           setIsEditing(false);
@@ -75,7 +74,7 @@ export function NationDetailsSection({
     return (
       <section
         aria-labelledby="nation-details-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+        className="grid gap-3 p-4"
       >
         <div className="flex items-center justify-between gap-2">
           <h2 id="nation-details-heading" className="text-base font-medium">
@@ -109,7 +108,7 @@ export function NationDetailsSection({
   return (
     <form
       aria-label="Edit nation details"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >
@@ -125,7 +124,7 @@ export function NationDetailsSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
+      <Label className="grid gap-1 text-sm" htmlFor="nation-detail-name">
         <span className="text-muted-foreground">Name</span>
         <Input
           aria-invalid={nameError === undefined ? undefined : true}
@@ -133,6 +132,7 @@ export function NationDetailsSection({
             nameError === undefined ? undefined : "nation-detail-name-error"
           }
           disabled={updateMutation.isPending}
+          id="nation-detail-name"
           maxLength={textInputLimits.nationNameMax}
           required
           value={name}
@@ -152,17 +152,19 @@ export function NationDetailsSection({
             {nameError}
           </p>
         )}
-      </label>
-      <label className="grid gap-1 text-sm">
+      </Label>
+      <Label className="grid gap-1 text-sm" htmlFor="nation-detail-desc">
         <span className="text-muted-foreground">Description</span>
         <textarea
           className="min-h-[6rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
+          aria-label="Description"
+          id="nation-detail-desc"
           maxLength={textInputLimits.nationDescriptionMax}
           value={description}
           onChange={(event) => setDescription(event.currentTarget.value)}
         />
-      </label>
+      </Label>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (8);
+  plan (10);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -45,14 +45,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'fb200000-0000-0000-0000-000000000001',
     'RMPI World',
-    'fb100000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'fb200000-0000-0000-0000-000000000001',
+    'fb100000-0000-0000-0000-000000000001'
   );
 
 insert into
@@ -79,7 +86,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -105,7 +112,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     role_type
   )
@@ -302,6 +309,20 @@ select
     'managed population instance status is extinct after successful removal'
   );
 
+select
+  is (
+    (
+      select
+        mpi.current_count
+      from
+        public.managed_population_instances mpi
+      where
+        mpi.id = 'fb800000-0000-0000-0000-000000000002'
+    ),
+    0::numeric,
+    'managed population instance current_count is 0 after successful removal'
+  );
+
 -- ===========================================================================
 -- ADMIN SUCCESS: world owner can remove an active instance
 -- ===========================================================================
@@ -325,6 +346,20 @@ select
     ),
     'extinct',
     'managed population instance status is extinct after admin success'
+  );
+
+select
+  is (
+    (
+      select
+        mpi.current_count
+      from
+        public.managed_population_instances mpi
+      where
+        mpi.id = 'fb800000-0000-0000-0000-000000000001'
+    ),
+    0::numeric,
+    'managed population instance current_count is 0 after admin success'
   );
 
 reset role;

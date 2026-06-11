@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-
 export type Json =
   | string
   | number
@@ -11,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_create_user_idempotency_keys: {
+        Row: {
+          caller_user_id: string;
+          created_at: string;
+          created_user_email: string;
+          created_user_id: string;
+          created_user_username: string;
+          expires_at: string;
+          idempotency_key: string;
+        };
+        Insert: {
+          caller_user_id: string;
+          created_at?: string;
+          created_user_email: string;
+          created_user_id: string;
+          created_user_username: string;
+          expires_at?: string;
+          idempotency_key: string;
+        };
+        Update: {
+          caller_user_id?: string;
+          created_at?: string;
+          created_user_email?: string;
+          created_user_id?: string;
+          created_user_username?: string;
+          expires_at?: string;
+          idempotency_key?: string;
+        };
+        Relationships: [];
+      };
       building_blueprint_tiers: {
         Row: {
           building_blueprint_id: string;
@@ -193,8 +221,13 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -211,6 +244,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -220,8 +254,13 @@ export type Database = {
           citizen_type: string;
           created_at?: string;
           death_cause?: string | null;
+          death_cause_category?:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id?: string;
-          name: string;
+          name?: string | null;
+          nameset_id?: string | null;
           npc_flaw?: string | null;
           npc_goal?: string | null;
           npc_secret_contradiction?: string | null;
@@ -238,6 +277,7 @@ export type Database = {
           sex?: string | null;
           skills_text?: string | null;
           status?: string;
+          surname?: string | null;
           updated_at?: string;
           user_id?: string | null;
           world_id: string;
@@ -247,8 +287,13 @@ export type Database = {
           citizen_type?: string;
           created_at?: string;
           death_cause?: string | null;
+          death_cause_category?:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name?: string;
           id?: string;
-          name?: string;
+          name?: string | null;
+          nameset_id?: string | null;
           npc_flaw?: string | null;
           npc_goal?: string | null;
           npc_secret_contradiction?: string | null;
@@ -265,11 +310,19 @@ export type Database = {
           sex?: string | null;
           skills_text?: string | null;
           status?: string;
+          surname?: string | null;
           updated_at?: string;
           user_id?: string | null;
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "citizens_nameset_id_fkey";
+            columns: ["nameset_id"];
+            isOneToOne: false;
+            referencedRelation: "namesets";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "citizens_parent_a_citizen_id_fkey";
             columns: ["parent_a_citizen_id"];
@@ -339,6 +392,7 @@ export type Database = {
         Row: {
           activated_on_turn_number: number | null;
           building_blueprint_id: string;
+          cancelled_at: string | null;
           completed_in_transition_id: string | null;
           created_at: string;
           id: string;
@@ -352,6 +406,7 @@ export type Database = {
         Insert: {
           activated_on_turn_number?: number | null;
           building_blueprint_id: string;
+          cancelled_at?: string | null;
           completed_in_transition_id?: string | null;
           created_at?: string;
           id?: string;
@@ -365,6 +420,7 @@ export type Database = {
         Update: {
           activated_on_turn_number?: number | null;
           building_blueprint_id?: string;
+          cancelled_at?: string | null;
           completed_in_transition_id?: string | null;
           created_at?: string;
           id?: string;
@@ -494,6 +550,13 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "deposit_instances_discovered_by_event_id_fkey";
+            columns: ["discovered_by_event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "deposit_instances_settlement_id_fkey";
             columns: ["settlement_id"];
             isOneToOne: false;
@@ -549,6 +612,53 @@ export type Database = {
           },
           {
             foreignKeyName: "deposit_types_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      events: {
+        Row: {
+          activate_on_transition_after_turn_number: number;
+          created_at: string;
+          description: string | null;
+          effect_payload_jsonb: Json;
+          effect_type: string;
+          id: string;
+          name: string;
+          status: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          activate_on_transition_after_turn_number: number;
+          created_at?: string;
+          description?: string | null;
+          effect_payload_jsonb?: Json;
+          effect_type: string;
+          id?: string;
+          name: string;
+          status?: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          activate_on_transition_after_turn_number?: number;
+          created_at?: string;
+          description?: string | null;
+          effect_payload_jsonb?: Json;
+          effect_type?: string;
+          id?: string;
+          name?: string;
+          status?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "events_world_id_fkey";
             columns: ["world_id"];
             isOneToOne: false;
             referencedRelation: "worlds";
@@ -692,6 +802,7 @@ export type Database = {
           is_trashed: boolean;
           maintenance_rules_json: Json;
           name: string;
+          regular_outputs_json: Json;
           slug: string;
           updated_at: string;
           world_id: string;
@@ -707,6 +818,7 @@ export type Database = {
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
           name: string;
+          regular_outputs_json?: Json;
           slug: string;
           updated_at?: string;
           world_id: string;
@@ -722,6 +834,7 @@ export type Database = {
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
           name?: string;
+          regular_outputs_json?: Json;
           slug?: string;
           updated_at?: string;
           world_id?: string;
@@ -743,6 +856,47 @@ export type Database = {
           },
           {
             foreignKeyName: "managed_population_types_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      namesets: {
+        Row: {
+          config_json: Json;
+          created_at: string;
+          id: string;
+          is_default: boolean;
+          is_trashed: boolean;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          config_json?: Json;
+          created_at?: string;
+          id?: string;
+          is_default?: boolean;
+          is_trashed?: boolean;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          config_json?: Json;
+          created_at?: string;
+          id?: string;
+          is_default?: boolean;
+          is_trashed?: boolean;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "namesets_world_id_fkey";
             columns: ["world_id"];
             isOneToOne: false;
             referencedRelation: "worlds";
@@ -832,6 +986,7 @@ export type Database = {
           id: string;
           is_hidden: boolean;
           name: string;
+          nameset_id: string | null;
           updated_at: string;
           world_id: string;
         };
@@ -841,6 +996,7 @@ export type Database = {
           id?: string;
           is_hidden?: boolean;
           name: string;
+          nameset_id?: string | null;
           updated_at?: string;
           world_id: string;
         };
@@ -850,10 +1006,18 @@ export type Database = {
           id?: string;
           is_hidden?: boolean;
           name?: string;
+          nameset_id?: string | null;
           updated_at?: string;
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "nations_nameset_id_fkey";
+            columns: ["nameset_id"];
+            isOneToOne: false;
+            referencedRelation: "namesets";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "nations_world_id_fkey";
             columns: ["world_id"];
@@ -910,6 +1074,20 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "notifications_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "notifications_nation_id_fkey";
             columns: ["nation_id"];
@@ -1019,6 +1197,7 @@ export type Database = {
         Row: {
           base_stockpile_cap: number;
           created_at: string;
+          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -1031,6 +1210,7 @@ export type Database = {
         Insert: {
           base_stockpile_cap?: number;
           created_at?: string;
+          decay_rate?: number;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1043,6 +1223,7 @@ export type Database = {
         Update: {
           base_stockpile_cap?: number;
           created_at?: string;
+          decay_rate?: number;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1071,6 +1252,7 @@ export type Database = {
           deactivated_in_transition_id: string | null;
           id: string;
           missed_upkeep_count: number;
+          name: string | null;
           settlement_id: string;
           source_project_id: string | null;
           state: string;
@@ -1084,6 +1266,7 @@ export type Database = {
           deactivated_in_transition_id?: string | null;
           id?: string;
           missed_upkeep_count?: number;
+          name?: string | null;
           settlement_id: string;
           source_project_id?: string | null;
           state: string;
@@ -1097,6 +1280,7 @@ export type Database = {
           deactivated_in_transition_id?: string | null;
           id?: string;
           missed_upkeep_count?: number;
+          name?: string | null;
           settlement_id?: string;
           source_project_id?: string | null;
           state?: string;
@@ -1182,6 +1366,171 @@ export type Database = {
           },
         ];
       };
+      settlement_turn_resource_snapshots: {
+        Row: {
+          consumed_amount: number;
+          created_at: string;
+          id: string;
+          produced_amount: number;
+          quantity_after: number;
+          quantity_before: number;
+          resource_id: string;
+          settlement_id: string;
+          trade_in_amount: number;
+          trade_out_amount: number;
+          turn_number: number;
+          turn_transition_id: string | null;
+          world_id: string;
+        };
+        Insert: {
+          consumed_amount?: number;
+          created_at?: string;
+          id?: string;
+          produced_amount?: number;
+          quantity_after?: number;
+          quantity_before?: number;
+          resource_id: string;
+          settlement_id: string;
+          trade_in_amount?: number;
+          trade_out_amount?: number;
+          turn_number: number;
+          turn_transition_id?: string | null;
+          world_id: string;
+        };
+        Update: {
+          consumed_amount?: number;
+          created_at?: string;
+          id?: string;
+          produced_amount?: number;
+          quantity_after?: number;
+          quantity_before?: number;
+          resource_id?: string;
+          settlement_id?: string;
+          trade_in_amount?: number;
+          trade_out_amount?: number;
+          turn_number?: number;
+          turn_transition_id?: string | null;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_transition_world_fkey";
+            columns: ["turn_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      settlement_turn_snapshots: {
+        Row: {
+          birth_count: number;
+          buildings_summary_json: Json | null;
+          created_at: string;
+          death_count: number;
+          homeless_deaths_count: number;
+          id: string;
+          managed_populations_summary_json: Json | null;
+          partnerships_formed_count: number;
+          population_cap: number;
+          population_npc: number;
+          population_player_character: number;
+          population_total: number;
+          settlement_id: string;
+          starvation_deaths_count: number;
+          trade_summary_json: Json | null;
+          turn_number: number;
+          turn_transition_id: string | null;
+          warnings_summary_json: Json | null;
+          world_id: string;
+        };
+        Insert: {
+          birth_count?: number;
+          buildings_summary_json?: Json | null;
+          created_at?: string;
+          death_count?: number;
+          homeless_deaths_count?: number;
+          id?: string;
+          managed_populations_summary_json?: Json | null;
+          partnerships_formed_count?: number;
+          population_cap: number;
+          population_npc: number;
+          population_player_character: number;
+          population_total: number;
+          settlement_id: string;
+          starvation_deaths_count?: number;
+          trade_summary_json?: Json | null;
+          turn_number: number;
+          turn_transition_id?: string | null;
+          warnings_summary_json?: Json | null;
+          world_id: string;
+        };
+        Update: {
+          birth_count?: number;
+          buildings_summary_json?: Json | null;
+          created_at?: string;
+          death_count?: number;
+          homeless_deaths_count?: number;
+          id?: string;
+          managed_populations_summary_json?: Json | null;
+          partnerships_formed_count?: number;
+          population_cap?: number;
+          population_npc?: number;
+          population_player_character?: number;
+          population_total?: number;
+          settlement_id?: string;
+          starvation_deaths_count?: number;
+          trade_summary_json?: Json | null;
+          turn_number?: number;
+          turn_transition_id?: string | null;
+          warnings_summary_json?: Json | null;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_turn_snapshots_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_snapshots_transition_world_fkey";
+            columns: ["turn_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       settlements: {
         Row: {
           auto_ready_enabled: boolean;
@@ -1193,6 +1542,7 @@ export type Database = {
           is_ready_current_turn: boolean;
           last_ready_at: string | null;
           name: string;
+          nameset_id: string | null;
           nation_id: string;
           ready_set_at: string | null;
           ready_set_by_citizen_id: string | null;
@@ -1208,6 +1558,7 @@ export type Database = {
           is_ready_current_turn?: boolean;
           last_ready_at?: string | null;
           name: string;
+          nameset_id?: string | null;
           nation_id: string;
           ready_set_at?: string | null;
           ready_set_by_citizen_id?: string | null;
@@ -1223,12 +1574,20 @@ export type Database = {
           is_ready_current_turn?: boolean;
           last_ready_at?: string | null;
           name?: string;
+          nameset_id?: string | null;
           nation_id?: string;
           ready_set_at?: string | null;
           ready_set_by_citizen_id?: string | null;
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "settlements_nameset_id_fkey";
+            columns: ["nameset_id"];
+            isOneToOne: false;
+            referencedRelation: "namesets";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "settlements_nation_id_fkey";
             columns: ["nation_id"];
@@ -1245,6 +1604,51 @@ export type Database = {
           },
         ];
       };
+      trade_route_legs: {
+        Row: {
+          created_at: string;
+          direction: string;
+          id: string;
+          quantity_per_transition: number;
+          resource_id: string;
+          trade_route_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          direction: string;
+          id?: string;
+          quantity_per_transition: number;
+          resource_id: string;
+          trade_route_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          direction?: string;
+          id?: string;
+          quantity_per_transition?: number;
+          resource_id?: string;
+          trade_route_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "trade_route_legs_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_route_legs_trade_route_id_fkey";
+            columns: ["trade_route_id"];
+            isOneToOne: false;
+            referencedRelation: "trade_routes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       trade_routes: {
         Row: {
           created_at: string;
@@ -1257,9 +1661,7 @@ export type Database = {
           origin_settlement_id: string;
           pause_reason_last_transition: string | null;
           proposed_by_citizen_id: string;
-          quantity_per_transition: number;
           replacement_for_trade_route_id: string | null;
-          resource_id: string;
           status: string;
           updated_at: string;
         };
@@ -1274,9 +1676,7 @@ export type Database = {
           origin_settlement_id: string;
           pause_reason_last_transition?: string | null;
           proposed_by_citizen_id: string;
-          quantity_per_transition: number;
           replacement_for_trade_route_id?: string | null;
-          resource_id: string;
           status?: string;
           updated_at?: string;
         };
@@ -1291,9 +1691,7 @@ export type Database = {
           origin_settlement_id?: string;
           pause_reason_last_transition?: string | null;
           proposed_by_citizen_id?: string;
-          quantity_per_transition?: number;
           replacement_for_trade_route_id?: string | null;
-          resource_id?: string;
           status?: string;
           updated_at?: string;
         };
@@ -1338,13 +1736,6 @@ export type Database = {
             columns: ["replacement_for_trade_route_id"];
             isOneToOne: false;
             referencedRelation: "trade_routes";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "trade_routes_resource_id_fkey";
-            columns: ["resource_id"];
-            isOneToOne: false;
-            referencedRelation: "resources";
             referencedColumns: ["id"];
           },
         ];
@@ -1588,13 +1979,13 @@ export type Database = {
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
+          is_trashed: boolean;
           maximum_fertility_age_turns: number | null;
           minimum_partnership_age_turns: number;
           mourning_period_turns: number;
           name: string;
           naming_config_json: Json;
           npc_flavor_config_json: Json;
-          owner_id: string;
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
@@ -1612,13 +2003,13 @@ export type Database = {
           homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
+          is_trashed?: boolean;
           maximum_fertility_age_turns?: number | null;
           minimum_partnership_age_turns?: number;
           mourning_period_turns?: number;
           name: string;
           naming_config_json?: Json;
           npc_flavor_config_json?: Json;
-          owner_id: string;
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
@@ -1636,13 +2027,13 @@ export type Database = {
           homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
+          is_trashed?: boolean;
           maximum_fertility_age_turns?: number | null;
           minimum_partnership_age_turns?: number;
           mourning_period_turns?: number;
           name?: string;
           naming_config_json?: Json;
           npc_flavor_config_json?: Json;
-          owner_id?: string;
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
@@ -1650,18 +2041,31 @@ export type Database = {
           visibility?: string;
           water_consumption_per_citizen?: number;
         };
-        Relationships: [
-          {
-            foreignKeyName: "worlds_owner_id_fkey";
-            columns: ["owner_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
     };
     Views: {
+      pg_all_foreign_keys: {
+        Row: {
+          fk_columns: unknown[] | null;
+          fk_constraint_name: unknown;
+          fk_schema_name: unknown;
+          fk_table_name: unknown;
+          fk_table_oid: unknown;
+          is_deferrable: boolean | null;
+          is_deferred: boolean | null;
+          match_type: string | null;
+          on_delete: string | null;
+          on_update: string | null;
+          pk_columns: unknown[] | null;
+          pk_constraint_name: unknown;
+          pk_index_name: unknown;
+          pk_schema_name: unknown;
+          pk_table_name: unknown;
+          pk_table_oid: unknown;
+        };
+        Relationships: [];
+      };
       settlement_stockpiles_view: {
         Row: {
           effective_cap: number | null;
@@ -1688,25 +2092,80 @@ export type Database = {
           },
         ];
       };
+      tap_funky: {
+        Row: {
+          args: string | null;
+          is_definer: boolean | null;
+          is_strict: boolean | null;
+          is_visible: boolean | null;
+          kind: unknown;
+          langoid: unknown;
+          name: unknown;
+          oid: unknown;
+          owner: unknown;
+          returns: string | null;
+          returns_set: boolean | null;
+          schema: unknown;
+          volatility: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
-      advance_world_turn_if_current: {
+      _cleanup: { Args: never; Returns: boolean };
+      _contract_on: { Args: { "": string }; Returns: unknown };
+      _currtest: { Args: never; Returns: number };
+      _db_privs: { Args: never; Returns: unknown[] };
+      _extensions: { Args: never; Returns: unknown[] };
+      _get: { Args: { "": string }; Returns: number };
+      _get_latest: { Args: { "": string }; Returns: number[] };
+      _get_note: { Args: { "": string }; Returns: string };
+      _is_verbose: { Args: never; Returns: boolean };
+      _prokind: { Args: { p_oid: unknown }; Returns: unknown };
+      _query: { Args: { "": string }; Returns: string };
+      _refine_vol: { Args: { "": string }; Returns: string };
+      _retval: { Args: { "": string }; Returns: string };
+      _table_privs: { Args: never; Returns: unknown[] };
+      _temptypes: { Args: { "": string }; Returns: string };
+      _todo: { Args: never; Returns: string };
+      add_settlement_building_as_admin: {
         Args: {
-          p_expected_turn_number: number;
-          p_initiated_by_user_id: string;
-          p_log_payload_jsonb?: Json;
-          p_notification_payload_jsonb?: Json;
-          p_world_id: string;
+          p_blueprint_id: string;
+          p_name?: string;
+          p_settlement_id: string;
+          p_tier_id: string;
         };
         Returns: {
-          from_turn_number: number;
           id: string;
-          initiated_by_user_id: string;
-          started_at: string;
-          status: string;
-          to_turn_number: number;
+        }[];
+      };
+      admin_clear_user_active_player_character: {
+        Args: { p_user_id: string; p_world_id: string };
+        Returns: undefined;
+      };
+      admin_set_user_active_player_character: {
+        Args: { p_citizen_id: string; p_user_id: string; p_world_id: string };
+        Returns: {
+          citizen_id: string;
+          updated_at: string;
+          user_id: string;
           world_id: string;
         }[];
+        SetofOptions: {
+          from: "*";
+          to: "user_active_player_characters";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      apply_turn_transition: {
+        Args: {
+          p_expected_turn_number: number;
+          p_payload: Json;
+          p_transition_id: string;
+          p_world_id: string;
+        };
+        Returns: Json;
       };
       approve_trade_route_side: {
         Args: {
@@ -1733,8 +2192,13 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -1751,6 +2215,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -1799,24 +2264,62 @@ export type Database = {
         };
         Returns: boolean;
       };
+      col_is_null:
+        | {
+            Args: {
+              column_name: unknown;
+              description?: string;
+              schema_name: unknown;
+              table_name: unknown;
+            };
+            Returns: string;
+          }
+        | {
+            Args: {
+              column_name: unknown;
+              description?: string;
+              table_name: unknown;
+            };
+            Returns: string;
+          };
+      col_not_null:
+        | {
+            Args: {
+              column_name: unknown;
+              description?: string;
+              schema_name: unknown;
+              table_name: unknown;
+            };
+            Returns: string;
+          }
+        | {
+            Args: {
+              column_name: unknown;
+              description?: string;
+              table_name: unknown;
+            };
+            Returns: string;
+          };
       create_citizen_internal: {
         Args: {
-          p_born_on_turn_number: number;
+          p_born_on_turn_number?: number;
           p_citizen_type: string;
-          p_name: string;
-          p_npc_flaw: string;
-          p_npc_goal: string;
-          p_npc_secret_contradiction: string;
-          p_npc_trait_1: string;
-          p_npc_trait_2: string;
-          p_parent_a_citizen_id: string;
-          p_parent_b_citizen_id: string;
-          p_personality_text: string;
-          p_profile_photo_url: string;
+          p_given_name: string;
+          p_nameset_id?: string;
+          p_npc_flaw?: string;
+          p_npc_goal?: string;
+          p_npc_secret_contradiction?: string;
+          p_npc_trait_1?: string;
+          p_npc_trait_2?: string;
+          p_parent_a_citizen_id?: string;
+          p_parent_b_citizen_id?: string;
+          p_personality_text?: string;
+          p_profile_photo_url?: string;
           p_settlement_id: string;
-          p_sex: string;
-          p_skills_text: string;
-          p_user_id: string;
+          p_sex?: string;
+          p_skills_text?: string;
+          p_surname?: string;
+          p_user_id?: string;
           p_world_id: string;
         };
         Returns: {
@@ -1824,8 +2327,13 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -1842,6 +2350,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -1862,6 +2371,7 @@ export type Database = {
         Returns: {
           activated_on_turn_number: number | null;
           building_blueprint_id: string;
+          cancelled_at: string | null;
           completed_in_transition_id: string | null;
           created_at: string;
           id: string;
@@ -1934,7 +2444,8 @@ export type Database = {
       create_npc: {
         Args: {
           p_born_on_turn_number?: number;
-          p_name?: string;
+          p_given_name: string;
+          p_nameset_id?: string;
           p_npc_flaw?: string;
           p_npc_goal?: string;
           p_npc_secret_contradiction?: string;
@@ -1947,6 +2458,7 @@ export type Database = {
           p_settlement_id?: string;
           p_sex?: string;
           p_skills_text?: string;
+          p_surname?: string;
           p_world_id: string;
         };
         Returns: {
@@ -1954,8 +2466,13 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -1972,6 +2489,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2015,7 +2533,8 @@ export type Database = {
       create_player_character: {
         Args: {
           p_born_on_turn_number?: number;
-          p_name?: string;
+          p_given_name: string;
+          p_nameset_id?: string;
           p_parent_a_citizen_id?: string;
           p_parent_b_citizen_id?: string;
           p_personality_text?: string;
@@ -2023,7 +2542,8 @@ export type Database = {
           p_settlement_id?: string;
           p_sex?: string;
           p_skills_text?: string;
-          p_user_id?: string;
+          p_surname?: string;
+          p_user_id: string;
           p_world_id: string;
         };
         Returns: {
@@ -2031,8 +2551,13 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2049,6 +2574,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2056,6 +2582,39 @@ export type Database = {
         SetofOptions: {
           from: "*";
           to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      create_world: {
+        Args: { p_name: string; p_visibility?: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
           isOneToOne: false;
           isSetofReturn: true;
         };
@@ -2081,9 +2640,27 @@ export type Database = {
         Args: { p_world_id: string };
         Returns: string[];
       };
+      current_user_player_character_world_ids: {
+        Args: never;
+        Returns: string[];
+      };
       default_calendar_config: { Args: never; Returns: Json };
       default_naming_config: { Args: never; Returns: Json };
       default_npc_flavor_config: { Args: never; Returns: Json };
+      diag:
+        | {
+            Args: { msg: unknown };
+            Returns: {
+              error: true;
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved";
+          }
+        | {
+            Args: { msg: string };
+            Returns: {
+              error: true;
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved";
+          };
+      diag_test_name: { Args: { "": string }; Returns: string };
       dissolve_partnership: {
         Args: {
           p_change_reason: string;
@@ -2110,6 +2687,9 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      do_tap:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] };
       end_partnership_internal: {
         Args: {
           p_change_reason: string;
@@ -2138,6 +2718,28 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      fail:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string };
+      fail_stuck_turn_transition: {
+        Args: { p_transition_id: string; p_world_id: string };
+        Returns: Json;
+      };
+      findfuncs: { Args: { "": string }; Returns: string[] };
+      finish: { Args: { exception_on_failure?: boolean }; Returns: string[] };
+      format_type_string: { Args: { "": string }; Returns: string };
+      get_citizen_admin_details: {
+        Args: { p_citizen_id: string };
+        Returns: {
+          npc_flaw: string;
+          npc_goal: string;
+          npc_secret_contradiction: string;
+          npc_trait_1: string;
+          npc_trait_2: string;
+          personality_text: string;
+          skills_text: string;
+        }[];
+      };
       get_settlement_construction_project_counts: {
         Args: { p_settlement_id: string };
         Returns: {
@@ -2160,11 +2762,29 @@ export type Database = {
           world_id: string;
         }[];
       };
+      grant_world_admin: {
+        Args: { p_user_id: string; p_world_id: string };
+        Returns: undefined;
+      };
       hard_delete_building_blueprint: {
         Args: { p_blueprint_id: string; p_world_id: string };
         Returns: {
           id: string;
           world_id: string;
+        }[];
+      };
+      hard_delete_construction_project: {
+        Args: { p_project_id: string };
+        Returns: {
+          project_id: string;
+          success: boolean;
+        }[];
+      };
+      hard_delete_deposit_instance: {
+        Args: { p_deposit_instance_id: string };
+        Returns: {
+          id: string;
+          settlement_id: string;
         }[];
       };
       hard_delete_deposit_type: {
@@ -2188,6 +2808,13 @@ export type Database = {
           world_id: string;
         }[];
       };
+      hard_delete_nameset: {
+        Args: { p_nameset_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
       hard_delete_resource: {
         Args: { p_resource_id: string; p_world_id: string };
         Returns: {
@@ -2195,9 +2822,66 @@ export type Database = {
           world_id: string;
         }[];
       };
+      hard_delete_settlement_building: {
+        Args: { p_building_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
+      hard_delete_world: {
+        Args: { p_world_id: string };
+        Returns: {
+          id: string;
+        }[];
+      };
+      has_unique: { Args: { "": string }; Returns: string };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
+      in_todo: { Args: never; Returns: boolean };
+      internal_apply_turn_transition_advance_world_turn: {
+        Args: { p_expected_turn_number: number; p_world_id: string };
+        Returns: number;
+      };
+      internal_apply_turn_transition_citizen_partnership_patches: {
+        Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
+        Returns: Record<string, unknown>;
+      };
+      internal_apply_turn_transition_construction_patches: {
+        Args: {
+          p_payload: Json;
+          p_to_turn_number: number;
+          p_transition_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      internal_apply_turn_transition_deposit_managed_pop_patches: {
+        Args: { p_payload: Json };
+        Returns: Record<string, unknown>;
+      };
+      internal_apply_turn_transition_log_entries_and_notifications: {
+        Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
+        Returns: Record<string, unknown>;
+      };
+      internal_apply_turn_transition_settlement_snapshots: {
+        Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
+        Returns: number;
+      };
+      internal_apply_turn_transition_stockpile_deltas: {
+        Args: {
+          p_expected_turn_number: number;
+          p_payload: Json;
+          p_transition_id: string;
+          p_world_id: string;
+        };
+        Returns: number;
+      };
+      internal_apply_turn_transition_trade_route_patches: {
+        Args: { p_payload: Json };
+        Returns: number;
+      };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
+      is_empty: { Args: { "": string }; Returns: string };
       is_nation_manager_of: { Args: { p_nation_id: string }; Returns: boolean };
       is_settlement_manager_of: {
         Args: { p_settlement_id: string };
@@ -2228,6 +2912,7 @@ export type Database = {
         Returns: boolean;
       };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
+      isnt_empty: { Args: { "": string }; Returns: string };
       link_user_to_citizen: {
         Args: { p_citizen_id: string; p_user_id: string };
         Returns: {
@@ -2235,8 +2920,13 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2253,6 +2943,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2264,11 +2955,54 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      lives_ok: { Args: { "": string }; Returns: string };
       manual_deconstruct_settlement_building: {
         Args: { p_settlement_building_id: string };
         Returns: {
           settlement_building_id: string;
         }[];
+      };
+      mark_citizen_dead: {
+        Args: { p_citizen_id: string; p_reason: string };
+        Returns: {
+          born_on_turn_number: number | null;
+          citizen_type: string;
+          created_at: string;
+          death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
+          id: string;
+          name: string | null;
+          nameset_id: string | null;
+          npc_flaw: string | null;
+          npc_goal: string | null;
+          npc_secret_contradiction: string | null;
+          npc_trait_1: string | null;
+          npc_trait_2: string | null;
+          parent_a_citizen_id: string | null;
+          parent_b_citizen_id: string | null;
+          personality_text: string | null;
+          profile_photo_url: string | null;
+          role_nation_id: string | null;
+          role_settlement_id: string | null;
+          role_type: string;
+          settlement_id: string | null;
+          sex: string | null;
+          skills_text: string | null;
+          status: string;
+          surname: string | null;
+          updated_at: string;
+          user_id: string | null;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       mark_partnership_widowed: {
         Args: {
@@ -2300,19 +3034,35 @@ export type Database = {
         Args: { p_nation_id: string };
         Returns: boolean;
       };
+      no_plan: { Args: never; Returns: boolean[] };
+      num_failed: { Args: never; Returns: number };
+      os_name: { Args: never; Returns: string };
+      pass:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string };
+      pg_version: { Args: never; Returns: string };
+      pg_version_num: { Args: never; Returns: number };
+      pgtap_version: { Args: never; Returns: number };
       propose_trade_route: {
         Args: {
           p_destination: string;
+          p_legs: Json;
           p_origin: string;
           p_proposed_by_citizen_id: string;
-          p_quantity: number;
-          p_resource_id: string;
         };
         Returns: {
           destination_settlement_id: string;
           id: string;
           origin_settlement_id: string;
         }[];
+      };
+      prune_old_snapshots_and_logs: {
+        Args: {
+          p_prune_notifications?: boolean;
+          p_retention_turns?: number;
+          p_world_id: string;
+        };
+        Returns: Json;
       };
       reassign_partner: {
         Args: {
@@ -2369,6 +3119,39 @@ export type Database = {
           id: string;
           settlement_id: string;
         }[];
+      };
+      rename_world: {
+        Args: { p_name: string; p_world_id: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       reorder_construction_projects: {
         Args: { p_positions: Json; p_settlement_id: string };
@@ -2435,6 +3218,13 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      restore_deposit_instance: {
+        Args: { p_deposit_instance_id: string };
+        Returns: {
+          id: string;
+          settlement_id: string;
+        }[];
+      };
       restore_deposit_type: {
         Args: { p_deposit_type_id: string; p_world_id: string };
         Returns: {
@@ -2494,6 +3284,7 @@ export type Database = {
           is_trashed: boolean;
           maintenance_rules_json: Json;
           name: string;
+          regular_outputs_json: Json;
           slug: string;
           updated_at: string;
           world_id: string;
@@ -2505,11 +3296,19 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      restore_nameset: {
+        Args: { p_nameset_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
       restore_resource: {
         Args: { p_resource_id: string; p_world_id: string };
         Returns: {
           base_stockpile_cap: number;
           created_at: string;
+          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -2526,6 +3325,69 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      restore_settlement_building: {
+        Args: { p_building_id: string; p_world_id: string };
+        Returns: {
+          activated_on_turn_number: number;
+          building_blueprint_id: string;
+          created_at: string;
+          current_tier_id: string;
+          deactivated_in_transition_id: string | null;
+          id: string;
+          missed_upkeep_count: number;
+          name: string | null;
+          settlement_id: string;
+          source_project_id: string | null;
+          state: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "settlement_buildings";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      restore_world: {
+        Args: { p_world_id: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      resume_construction_project: {
+        Args: { p_project_id: string };
+        Returns: {
+          project_id: string;
+          success: boolean;
+        }[];
+      };
       revoke_citizen_role: {
         Args: { p_citizen_id: string };
         Returns: {
@@ -2533,8 +3395,13 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2551,6 +3418,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2562,8 +3430,31 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      revoke_world_admin: {
+        Args: { p_user_id: string; p_world_id: string };
+        Returns: undefined;
+      };
+      runtests:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] };
+      search_users_for_admin_picker: {
+        Args: { p_limit?: number; p_query?: string };
+        Returns: {
+          id: string;
+          username: string;
+        }[];
+      };
       set_bulk_construction_assignment: {
         Args: { p_construction_project_id: string; p_target_count: number };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
+      };
+      set_bulk_construction_pool: {
+        Args: { p_settlement_id: string; p_target_count: number };
         Returns: {
           added_citizen_ids: string[];
           after: number;
@@ -2591,6 +3482,15 @@ export type Database = {
           settlement_id: string;
         }[];
       };
+      set_construction_project_workers: {
+        Args: { p_project_id: string; p_target_count: number };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
+      };
       set_deposit_instance_max_workers: {
         Args: {
           p_deposit_instance_id: string;
@@ -2600,6 +3500,28 @@ export type Database = {
         Returns: {
           max_workers: number;
           unassigned_citizen_ids: string[];
+        }[];
+      };
+      set_deposit_instance_resource_quantities: {
+        Args: {
+          p_deposit_instance_resource_id: string;
+          p_initial_quantity: number;
+          p_remaining_quantity: number;
+        };
+        Returns: {
+          deposit_instance_id: string;
+          deposit_instance_resource_id: string;
+          initial_quantity: number;
+          remaining_quantity: number;
+          settlement_id: string;
+        }[];
+      };
+      set_nation_nameset: {
+        Args: { p_nameset_id: string; p_nation_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          nameset_id: string;
+          world_id: string;
         }[];
       };
       set_per_target_assignment: {
@@ -2615,6 +3537,21 @@ export type Database = {
           replaced_count: number;
         }[];
       };
+      set_per_target_bulk_assignment: {
+        Args: {
+          p_assignment_type: string;
+          p_settlement_id: string;
+          p_target_count: number;
+          p_target_id: string;
+          p_trade_route_end?: string;
+        };
+        Returns: {
+          added_citizen_ids: string[];
+          after: number;
+          before: number;
+          removed_citizen_ids: string[];
+        }[];
+      };
       set_settlement_auto_ready: {
         Args: { p_auto_ready_enabled: boolean; p_settlement_id: string };
         Returns: {
@@ -2622,6 +3559,18 @@ export type Database = {
           id: string;
           is_ready_current_turn: boolean;
           ready_set_at: string;
+        }[];
+      };
+      set_settlement_nameset: {
+        Args: {
+          p_nameset_id: string;
+          p_settlement_id: string;
+          p_world_id: string;
+        };
+        Returns: {
+          id: string;
+          nameset_id: string;
+          world_id: string;
         }[];
       };
       set_settlement_readiness: {
@@ -2645,6 +3594,66 @@ export type Database = {
           settlement_id: string;
         }[];
       };
+      set_user_super_admin: {
+        Args: { p_user_id: string; p_value: boolean };
+        Returns: undefined;
+      };
+      set_world_current_turn_number: {
+        Args: { p_turn_number: number; p_world_id: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      set_world_default_nameset: {
+        Args: { p_nameset_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
+      settlement_alive_citizen_count: {
+        Args: { p_settlement_id: string };
+        Returns: number;
+      };
+      settlement_alive_citizen_count_internal: {
+        Args: { p_settlement_id: string };
+        Returns: number;
+      };
+      settlement_effective_storage_cap: {
+        Args: { p_resource_id: string; p_settlement_id: string };
+        Returns: number;
+      };
+      settlement_effective_storage_cap_internal: {
+        Args: { p_resource_id: string; p_settlement_id: string };
+        Returns: number;
+      };
       settlement_job_capacity: {
         Args: { p_job_id: string; p_settlement_id: string };
         Returns: number;
@@ -2653,6 +3662,9 @@ export type Database = {
         Args: { p_settlement_id: string };
         Returns: number;
       };
+      skip:
+        | { Args: { "": string }; Returns: string }
+        | { Args: { how_many: number; why: string }; Returns: string };
       soft_delete_building_blueprint: {
         Args: { p_blueprint_id: string; p_world_id: string };
         Returns: {
@@ -2733,6 +3745,7 @@ export type Database = {
           is_trashed: boolean;
           maintenance_rules_json: Json;
           name: string;
+          regular_outputs_json: Json;
           slug: string;
           updated_at: string;
           world_id: string;
@@ -2744,11 +3757,19 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      soft_delete_nameset: {
+        Args: { p_nameset_id: string; p_world_id: string };
+        Returns: {
+          id: string;
+          world_id: string;
+        }[];
+      };
       soft_delete_resource: {
         Args: { p_resource_id: string; p_world_id: string };
         Returns: {
           base_stockpile_cap: number;
           created_at: string;
+          decay_rate: number;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -2765,6 +3786,56 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      start_turn_transition: {
+        Args: {
+          p_expected_turn_number: number;
+          p_initiated_by_user_id: string;
+          p_world_id: string;
+        };
+        Returns: string;
+      };
+      throws_ok: { Args: { "": string }; Returns: string };
+      todo:
+        | { Args: { how_many: number }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] }
+        | { Args: { why: string }; Returns: boolean[] };
+      todo_end: { Args: never; Returns: boolean[] };
+      todo_start:
+        | { Args: never; Returns: boolean[] }
+        | { Args: { "": string }; Returns: boolean[] };
+      trash_world: {
+        Args: { p_world_id: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       unlink_user_from_citizen: {
         Args: { p_citizen_id: string };
         Returns: {
@@ -2772,8 +3843,13 @@ export type Database = {
           citizen_type: string;
           created_at: string;
           death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
           id: string;
-          name: string;
+          name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2790,6 +3866,7 @@ export type Database = {
           sex: string | null;
           skills_text: string | null;
           status: string;
+          surname: string | null;
           updated_at: string;
           user_id: string | null;
           world_id: string;
@@ -2801,21 +3878,54 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      update_settlement_coordinates: {
+        Args: { p_coord_x: number; p_coord_z: number; p_settlement_id: string };
+        Returns: {
+          coord_x: number;
+          coord_z: number;
+          id: string;
+        }[];
+      };
       user_has_player_character_in_world: {
         Args: { p_world_id: string };
         Returns: boolean;
       };
+      world_is_archived: { Args: { p_world_id: string }; Returns: boolean };
     };
     Enums: {
+      death_cause_category:
+        | "starvation"
+        | "homeless"
+        | "event"
+        | "manual_admin"
+        | "unknown";
       notification_type:
         | "turn.completed"
         | "trade_proposal_received"
         | "trade_proposal_accepted"
         | "trade_proposal_rejected"
-        | "trade_route_cancelled";
+        | "trade_route_cancelled"
+        | "building.auto_deconstructed"
+        | "building.suspended"
+        | "citizen.born"
+        | "citizen.died"
+        | "construction.completed"
+        | "construction.paused"
+        | "deposit.depleted"
+        | "managed_population.declining"
+        | "managed_population.extinct"
+        | "partnership.formed"
+        | "partnership.widowed"
+        | "settlement.homelessness_occurred"
+        | "settlement.starvation_occurred"
+        | "trade_route.paused"
+        | "trade_route.resumed"
+        | "building.recovered";
     };
     CompositeTypes: {
-      [_ in never]: never;
+      _time_trial_type: {
+        a_time: number | null;
+      };
     };
   };
 };
@@ -2943,12 +4053,35 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      death_cause_category: [
+        "starvation",
+        "homeless",
+        "event",
+        "manual_admin",
+        "unknown",
+      ],
       notification_type: [
         "turn.completed",
         "trade_proposal_received",
         "trade_proposal_accepted",
         "trade_proposal_rejected",
         "trade_route_cancelled",
+        "building.auto_deconstructed",
+        "building.suspended",
+        "citizen.born",
+        "citizen.died",
+        "construction.completed",
+        "construction.paused",
+        "deposit.depleted",
+        "managed_population.declining",
+        "managed_population.extinct",
+        "partnership.formed",
+        "partnership.widowed",
+        "settlement.homelessness_occurred",
+        "settlement.starvation_occurred",
+        "trade_route.paused",
+        "trade_route.resumed",
+        "building.recovered",
       ],
     },
   },

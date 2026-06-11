@@ -1,15 +1,14 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { textInputLimits } from "@/lib/inputLimits";
+import { notifyMutationError } from "@/lib/notify";
 
 import { updateSettlementDetailsMutationOptions } from "../../mutations/settlementsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { SettlementWithNation } from "../../types/settlementTypes";
 
@@ -63,7 +62,7 @@ export function SettlementDetailsSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update settlement.");
         },
         onSuccess: () => {
           setIsEditing(false);
@@ -76,7 +75,7 @@ export function SettlementDetailsSection({
     return (
       <section
         aria-labelledby="settlement-details-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+        className="grid gap-3 p-4"
       >
         <div className="flex items-center justify-between gap-2">
           <h2 id="settlement-details-heading" className="text-base font-medium">
@@ -110,7 +109,7 @@ export function SettlementDetailsSection({
   return (
     <form
       aria-label="Edit settlement details"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >
@@ -126,7 +125,7 @@ export function SettlementDetailsSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
+      <Label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Name</span>
         <Input
           aria-invalid={nameError === undefined ? undefined : true}
@@ -153,17 +152,18 @@ export function SettlementDetailsSection({
             {nameError}
           </p>
         )}
-      </label>
-      <label className="grid gap-1 text-sm">
+      </Label>
+      <Label className="grid gap-1 text-sm">
         <span className="text-muted-foreground">Description</span>
         <textarea
+          aria-label="Description"
           className="min-h-[6rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
           maxLength={textInputLimits.settlementDescriptionMax}
           value={description}
           onChange={(event) => setDescription(event.currentTarget.value)}
         />
-      </label>
+      </Label>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />

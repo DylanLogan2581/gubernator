@@ -1,15 +1,17 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { textInputLimits } from "@/lib/inputLimits";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { updateCitizenCoreMutationOptions } from "../../mutations/citizensMutations";
 
-import { getCitizenMutationErrorDescription } from "./ErrorMessages";
 import { Readout } from "./Shared";
 
 import type { Citizen } from "../../types/citizenTypes";
@@ -24,18 +26,22 @@ export function CitizenCoreSection({
   readonly queryClient: QueryClient;
 }): JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(citizen.name);
+  const [givenName, setGivenName] = useState(citizen.givenName);
+  const [surname, setSurname] = useState(citizen.surname ?? "");
   const [sex, setSex] = useState(citizen.sex ?? "");
-  const [nameError, setNameError] = useState<string | undefined>(undefined);
+  const [givenNameError, setGivenNameError] = useState<string | undefined>(
+    undefined,
+  );
 
   const updateMutation = useMutation(
     updateCitizenCoreMutationOptions({ queryClient }),
   );
 
   function resetForm(): void {
-    setName(citizen.name);
+    setGivenName(citizen.givenName);
+    setSurname(citizen.surname ?? "");
     setSex(citizen.sex ?? "");
-    setNameError(undefined);
+    setGivenNameError(undefined);
     updateMutation.reset();
   }
 
@@ -46,26 +52,28 @@ export function CitizenCoreSection({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setNameError(undefined);
+    setGivenNameError(undefined);
     updateMutation.reset();
 
-    if (name.trim().length === 0) {
-      setNameError("Citizen name is required.");
+    if (givenName.trim().length === 0) {
+      setGivenNameError("Given name is required.");
       return;
     }
 
     updateMutation.mutate(
       {
         citizenId: citizen.id,
-        name,
+        givenName,
+        surname: surname.trim() !== "" ? surname : undefined,
         sex,
         worldId: citizen.worldId,
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update citizen.");
         },
         onSuccess: () => {
+          notifyMutationSuccess("Citizen info saved.");
           setIsEditing(false);
         },
       },
@@ -74,10 +82,7 @@ export function CitizenCoreSection({
 
   if (!isEditing) {
     return (
-      <section
-        aria-labelledby="citizen-core-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-      >
+      <Card aria-labelledby="citizen-core-heading" className="grid gap-3 p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 id="citizen-core-heading" className="text-base font-medium">
             Core info
@@ -95,7 +100,8 @@ export function CitizenCoreSection({
           ) : null}
         </div>
         <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Readout label="Name" value={citizen.name} />
+          <Readout label="Given name" value={citizen.givenName} />
+          <Readout label="Surname" value={citizen.surname} />
           <Readout label="Sex" value={citizen.sex} />
           <Readout
             label="Born on turn"
@@ -110,14 +116,14 @@ export function CitizenCoreSection({
             value={citizen.status === "alive" ? "Alive" : "Deceased"}
           />
         </dl>
-      </section>
+      </Card>
     );
   }
 
   return (
     <form
       aria-label="Edit citizen core"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >
@@ -133,47 +139,58 @@ export function CitizenCoreSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Name</span>
+      <div className="grid gap-1 text-sm">
+        <Label>Given name</Label>
         <Input
-          aria-invalid={nameError === undefined ? undefined : true}
+          aria-invalid={givenNameError === undefined ? undefined : true}
           aria-describedby={
-            nameError === undefined ? undefined : "citizen-core-name-error"
+            givenNameError === undefined
+              ? undefined
+              : "citizen-core-given-name-error"
           }
           disabled={updateMutation.isPending}
           maxLength={textInputLimits.citizenNameMax}
           required
-          value={name}
+          value={givenName}
           onChange={(event) => {
-            setName(event.currentTarget.value);
-            if (nameError !== undefined) {
-              setNameError(undefined);
+            setGivenName(event.currentTarget.value);
+            if (givenNameError !== undefined) {
+              setGivenNameError(undefined);
             }
           }}
         />
-        {nameError === undefined ? null : (
+        {givenNameError === undefined ? null : (
           <p
-            id="citizen-core-name-error"
+            id="citizen-core-given-name-error"
             role="alert"
             className="text-sm text-destructive"
           >
-            {nameError}
+            {givenNameError}
           </p>
         )}
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Sex</span>
-        <select
-          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+      </div>
+      <div className="grid gap-1 text-sm">
+        <Label>Surname</Label>
+        <Input
+          disabled={updateMutation.isPending}
+          maxLength={textInputLimits.citizenNameMax}
+          value={surname}
+          onChange={(event) => setSurname(event.currentTarget.value)}
+        />
+      </div>
+      <div className="grid gap-1 text-sm">
+        <Label>Sex</Label>
+        <NativeSelect
+          aria-label="Sex"
           disabled={updateMutation.isPending}
           value={sex}
           onChange={(event) => setSex(event.currentTarget.value)}
         >
-          <option value=""></option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-        </select>
-      </label>
+          <option value="">Unspecified</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </NativeSelect>
+      </div>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />

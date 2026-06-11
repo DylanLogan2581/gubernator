@@ -45,7 +45,6 @@ type SettlementReadinessAccessRow = {
 type SettlementReadinessWorldAccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -89,7 +88,7 @@ export type SettlementAutoReadyMutationResult = {
 };
 
 const SETTLEMENT_READINESS_ACCESS_SELECT =
-  "id,nations!inner(world_id,worlds!inner(archived_at,id,owner_id,status,visibility))";
+  "id,nations!inner(world_id,worlds!inner(archived_at,id,status,visibility))";
 
 export class SetSettlementReadinessError extends Error {
   readonly code: SetSettlementReadinessErrorCode;
@@ -206,17 +205,13 @@ export function isSetSettlementAutoReadyError(
 
 async function setSettlementReadiness(
   client: GubernatorSupabaseClient,
-  accessContext: WorldPermissionContext,
+  _accessContext: WorldPermissionContext,
   input: SetSettlementReadinessInput,
 ): Promise<SettlementReadinessMutationResult> {
   const accessRow = await getSettlementReadinessAccessRow(client, input);
   const world = accessRow?.nations.worlds ?? null;
 
-  if (
-    accessRow === null ||
-    world === null ||
-    !accessContext.canManageWorld(toWorldAccessTarget(world))
-  ) {
+  if (accessRow === null || world === null) {
     throw new SetSettlementReadinessError({
       code: "settlement_readiness_unauthorized",
       message: "You do not have permission to update this settlement.",

@@ -32,11 +32,11 @@ select
   );
 
 -- ---------------------------------------------------------------------------
--- UPDATE
+-- UPDATE: name and description for managers
 -- ---------------------------------------------------------------------------
 drop policy "settlements_update_world_admin" on public.settlements;
 
-create policy "settlements_update_managers" on public.settlements
+create policy "settlements_update_name_description_managers" on public.settlements
 for update
   to authenticated using (
     public.current_user_manages_settlement (settlements.id)
@@ -45,3 +45,9 @@ with
   check (
     public.current_user_manages_settlement (settlements.id)
   );
+
+-- Coordinate updates are handled exclusively via the update_settlement_coordinates
+-- SECURITY DEFINER function in 20260519000002_restrict_child_domain_writes.sql,
+-- which enforces super admin and world admin access. Direct UPDATE statements on
+-- coord_x and coord_z are blocked by the column grant restriction to name,
+-- description only.

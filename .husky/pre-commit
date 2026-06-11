@@ -1,1 +1,65 @@
 npx lint-staged
+
+# Typecheck the app project. Failure-only output: capture everything, stay
+# quiet on success, dump the full log only when tsc reports errors.
+echo "🔍 Typechecking..."
+tsc_out=$(npx tsc -b 2>&1)
+tsc_code=$?
+if [ "$tsc_code" -ne 0 ]; then
+  printf '%s\n' "$tsc_out"
+  exit "$tsc_code"
+fi
+
+# Run the unit/component suite. Same failure-only contract: suppress the
+# passing-test noise, print the report only when something fails.
+echo "🔍 Running tests..."
+test_out=$(npm run test 2>&1)
+test_code=$?
+if [ "$test_code" -ne 0 ]; then
+  printf '%s\n' "$test_out"
+  exit "$test_code"
+fi
+
+# When the ESLint config changes, a rule change can introduce or expose
+# violations anywhere in the repo that lint-staged (staged files only) would
+# miss. Run the full eslint suite over the whole repo. Failure-only output.
+if git diff --cached --name-only --diff-filter=ACMR | \
+     grep -qE '^eslint\.config\.(ts|js|mjs|cjs)$'; then
+  echo "🔍 ESLint config changed. Running full eslint over the repo..."
+  lint_out=$(npm run lint:eslint 2>&1)
+  lint_code=$?
+  if [ "$lint_code" -ne 0 ]; then
+    printf '%s\n' "$lint_out"
+    exit "$lint_code"
+  fi
+fi
+
+# Typecheck the edge functions when any are staged. They use a separate
+# Deno-targeted tsconfig that `tsc -b` does not cover. Failure-only output.
+if git diff --cached --name-only --diff-filter=ACMR | \
+     grep -qE '^supabase/functions/'; then
+  echo "🔍 Edge functions staged. Typechecking edge functions..."
+  edge_out=$(npx tsc -p tsconfig.edge-functions.json 2>&1)
+  edge_code=$?
+  if [ "$edge_code" -ne 0 ]; then
+    printf '%s\n' "$edge_out"
+    exit "$edge_code"
+  fi
+fi
+
+# Run database tests when schema/test files are staged. Pre-commit (not
+# pre-push) so the failure lands while an agent/author is still in-session and
+# can fix it, instead of after the commit during push.
+if git diff --cached --name-only --diff-filter=ACMR | \
+     grep -qE '^supabase/(migrations|tests)/'; then
+  echo "🔍 Schema or test files staged. Running database tests..."
+  # Failure-only output: suppress pgTAP's per-test "ok" lines on success,
+  # dump the full log only when something fails.
+  db_out=$(npx --no-install supabase test db 2>&1)
+  db_code=$?
+  if [ "$db_code" -ne 0 ]; then
+    printf '%s\n' "$db_out"
+    exit "$db_code"
+  fi
+  echo "✓ Database tests passed."
+fi

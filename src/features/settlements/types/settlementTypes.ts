@@ -5,6 +5,7 @@ export type Settlement = {
   readonly description: string | null;
   readonly id: string;
   readonly name: string;
+  readonly namesetId: string | null;
   readonly nationId: string;
   readonly updatedAt: string;
 };
@@ -12,6 +13,7 @@ export type Settlement = {
 export type SettlementNationSummary = {
   readonly id: string;
   readonly name: string;
+  readonly namesetId: string | null;
   readonly worldId: string;
 };
 

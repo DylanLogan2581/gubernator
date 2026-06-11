@@ -64,7 +64,7 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
 }));
 
-vi.mock("./PartnershipHistoryPanel", () => ({
+vi.mock("@/features/partnerships", () => ({
   PartnershipHistoryPanel: () => (
     <div data-testid="partnership-history-panel" />
   ),
@@ -147,6 +147,7 @@ describe("CitizenDetailPage", () => {
         adminRows: [{ world_id: WORLD_ID }],
         citizen: createCitizenRow({
           death_cause: "fever",
+          death_cause_category: "manual_admin",
           name: "Cael",
           status: "dead",
         }),
@@ -159,10 +160,86 @@ describe("CitizenDetailPage", () => {
       await screen.findByRole("heading", { level: 1, name: "Cael" }),
     ).toBeDefined();
     expect(screen.getAllByText("Deceased").length).toBeGreaterThan(0);
-    expect(screen.getByText("Cause of death: fever")).toBeDefined();
+    expect(screen.getByText("Admin")).toBeDefined();
+    expect(screen.getByText("fever")).toBeDefined();
     expect(
       screen.getByRole("button", { name: "Revive citizen" }),
     ).toBeDefined();
+  });
+
+  it("renders the starvation death category badge for dead citizens", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          death_cause: null,
+          death_cause_category: "starvation",
+          name: "Maret",
+          status: "dead",
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Maret" });
+    expect(screen.getByText("Starvation")).toBeDefined();
+  });
+
+  it("renders the homeless death category badge for dead citizens", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          death_cause_category: "homeless",
+          name: "Tova",
+          status: "dead",
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Tova" });
+    expect(screen.getByText("Homeless")).toBeDefined();
+  });
+
+  it("renders the event death category badge with detail line", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          death_cause: "Plague swept the settlement",
+          death_cause_category: "event",
+          name: "Soren",
+          status: "dead",
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Soren" });
+    expect(screen.getByText("Event")).toBeDefined();
+    expect(screen.getByText("Plague swept the settlement")).toBeDefined();
+  });
+
+  it("renders the unknown death category badge when category is unknown", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          death_cause_category: "unknown",
+          name: "Unnamed",
+          status: "dead",
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Unnamed" });
+    expect(screen.getByText("Unknown")).toBeDefined();
   });
 
   it("renders the page for the linked PC viewing themselves without admin or lifecycle controls", async () => {
@@ -174,7 +251,6 @@ describe("CitizenDetailPage", () => {
           name: "Brann",
           user_id: USER_ID,
         }),
-        worldOwnerId: OTHER_USER_ID,
         worldVisibility: "public",
       }),
     );
@@ -207,7 +283,6 @@ describe("CitizenDetailPage", () => {
           name: "Cael",
           user_id: null,
         }),
-        worldOwnerId: OTHER_USER_ID,
         worldVisibility: "public",
       }),
     );
@@ -241,7 +316,6 @@ describe("CitizenDetailPage", () => {
           name: "Renn",
           user_id: OTHER_USER_ID,
         }),
-        worldOwnerId: OTHER_USER_ID,
         worldVisibility: "public",
       }),
     );
@@ -278,7 +352,6 @@ describe("CitizenDetailPage", () => {
           settlement_id: null,
           user_id: null,
         }),
-        worldOwnerId: OTHER_USER_ID,
         worldVisibility: "public",
       }),
     );
@@ -294,7 +367,7 @@ describe("CitizenDetailPage", () => {
   });
 
   describe("CitizenLinkedUserControl", () => {
-    it("shows a user picker with username · email options when the admin opens the link editor", async () => {
+    it("shows a user picker with username options when the admin opens the link editor", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
@@ -320,8 +393,8 @@ describe("CitizenDetailPage", () => {
       const options = Array.from((select as HTMLSelectElement).options).map(
         (o) => o.text,
       );
-      expect(options).toContain("user · user@example.com");
-      expect(options).toContain("otheruser · other@example.com");
+      expect(options).toContain("user");
+      expect(options).toContain("otheruser");
     });
 
     it("shows an error message when the users query fails", async () => {
@@ -344,11 +417,11 @@ describe("CitizenDetailPage", () => {
       });
       await userEvent.click(linkButton);
 
-      expect(await screen.findByText(/Failed to load users/i)).toBeDefined();
+      expect(await screen.findByText(/Couldn't load users/i)).toBeDefined();
     });
 
     it("unlinks a plain PC immediately without a confirmation dialog", async () => {
-      const rpcMock = vi.fn().mockReturnValue({
+      const unlinkResult = {
         maybeSingle: vi.fn().mockResolvedValue({
           data: createCitizenRow({
             citizen_type: "player_character",
@@ -356,6 +429,12 @@ describe("CitizenDetailPage", () => {
           }),
           error: null,
         }),
+      };
+      const rpcMock = vi.fn().mockImplementation((name: string) => {
+        if (name === "current_user_player_character_world_ids") {
+          return Promise.resolve({ data: [], error: null });
+        }
+        return unlinkResult;
       });
       const client = createClient({
         adminRows: [{ world_id: WORLD_ID }],
@@ -439,7 +518,12 @@ describe("CitizenDetailPage", () => {
     });
 
     it("cancels the unlink confirmation dialog without calling the mutation", async () => {
-      const rpcMock = vi.fn();
+      const rpcMock = vi.fn().mockImplementation((name: string) => {
+        if (name === "current_user_player_character_world_ids") {
+          return Promise.resolve({ data: [], error: null });
+        }
+        return undefined;
+      });
       const client = createClient({
         adminRows: [{ world_id: WORLD_ID }],
         citizen: createCitizenRow({
@@ -470,7 +554,7 @@ describe("CitizenDetailPage", () => {
       );
     });
 
-    it("renders linked user as username · email when user data is available", async () => {
+    it("renders linked user as username when user data is available", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
@@ -486,7 +570,7 @@ describe("CitizenDetailPage", () => {
       renderPage();
 
       await screen.findByRole("heading", { level: 1, name: "Aldra" });
-      expect(await screen.findByText("user · user@example.com")).toBeDefined();
+      expect(await screen.findByText("user")).toBeDefined();
     });
 
     it("links the selected user when the form is submitted", async () => {
@@ -495,11 +579,23 @@ describe("CitizenDetailPage", () => {
         name: "Aldra",
         user_id: OTHER_USER_ID,
       });
-      const rpcMock = vi.fn().mockReturnValue({
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: linkedCitizenRow,
-          error: null,
-        }),
+      const pickerRows = [
+        { id: USER_ID, username: "user" },
+        { id: OTHER_USER_ID, username: "otheruser" },
+      ];
+      const rpcMock = vi.fn().mockImplementation((name: string) => {
+        if (name === "current_user_player_character_world_ids") {
+          return Promise.resolve({ data: [], error: null });
+        }
+        if (name === "search_users_for_admin_picker") {
+          return Promise.resolve({ data: pickerRows, error: null });
+        }
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: linkedCitizenRow,
+            error: null,
+          }),
+        };
       });
       const client = createClient({
         adminRows: [{ world_id: WORLD_ID }],
@@ -558,6 +654,47 @@ describe("CitizenDetailPage", () => {
     expect(screen.getByText("—")).toBeDefined();
   });
 
+  it("shows a 'Back to {name}' link pointing to the settlement for citizens with a settlement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({ citizen_type: "npc", name: "Theron" }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Theron" });
+    const backLink = await screen.findByRole("link", {
+      name: /Back to Hometown/i,
+    });
+    expect((backLink as HTMLAnchorElement).href).toContain(
+      `/worlds/${WORLD_ID}/nations/${NATION_ID}/settlements/${SETTLEMENT_ID}`,
+    );
+  });
+
+  it("shows a 'Back to world' fallback link for admin citizens without a settlement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "npc",
+          name: "Wanderer",
+          settlement_id: null,
+        }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Wanderer" });
+    const backLink = screen.getByRole("link", { name: /Back to world/i });
+    expect((backLink as HTMLAnchorElement).href).toContain(
+      `/worlds/${WORLD_ID}`,
+    );
+    expect((backLink as HTMLAnchorElement).href).not.toContain("/nations/");
+  });
+
   it("renders a standard-job assignment with the job name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -609,6 +746,13 @@ type CitizenRowFixture = {
   readonly citizen_type: "npc" | "player_character";
   readonly created_at: string;
   readonly death_cause: string | null;
+  readonly death_cause_category:
+    | "starvation"
+    | "homeless"
+    | "event"
+    | "manual_admin"
+    | "unknown"
+    | null;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -640,6 +784,7 @@ function createCitizenRow(
     citizen_type: "npc",
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
+    death_cause_category: null,
     id: CITIZEN_ID,
     name: "Citizen",
     npc_flaw: null,
@@ -703,7 +848,6 @@ function createClient({
   jobRows = [],
   usersRows = [USER_ROW],
   usersQueryFails = false,
-  worldOwnerId = USER_ID,
   worldVisibility = "private",
 }: {
   readonly adminRows: ReadonlyArray<{ readonly world_id: string }>;
@@ -713,7 +857,6 @@ function createClient({
   readonly jobRows?: readonly unknown[];
   readonly usersRows?: readonly (typeof USER_ROW)[];
   readonly usersQueryFails?: boolean;
-  readonly worldOwnerId?: string;
   readonly worldVisibility?: string;
 }): unknown {
   const worldRow = {
@@ -724,7 +867,6 @@ function createClient({
     id: WORLD_ID,
     incest_prevention_depth: 4,
     name: "Test World",
-    owner_id: worldOwnerId,
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: worldVisibility,
@@ -766,6 +908,24 @@ function createClient({
         return createSettlementsBuilder();
       }
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn().mockImplementation((name: string) => {
+      if (name === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      if (name === "search_users_for_admin_picker") {
+        if (usersQueryFails) {
+          return Promise.resolve({
+            data: null,
+            error: { code: "42501", message: "Forbidden" },
+          });
+        }
+        return Promise.resolve({
+          data: usersRows.map((u) => ({ id: u.id, username: u.username })),
+          error: null,
+        });
+      }
+      return undefined;
     }),
   };
 }

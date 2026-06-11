@@ -31,12 +31,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f8000000-0000-0000-0000-000000000001',
     'Citizen Text Limits World',
-    'f7000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -47,7 +46,7 @@ values
 select
   lives_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, personality_text)
+    insert into public.citizens (world_id, citizen_type, given_name, personality_text)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -61,7 +60,7 @@ select
 select
   throws_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, personality_text)
+    insert into public.citizens (world_id, citizen_type, given_name, personality_text)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -80,7 +79,7 @@ select
 select
   lives_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, npc_trait_1)
+    insert into public.citizens (world_id, citizen_type, given_name, npc_trait_1)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -94,7 +93,7 @@ select
 select
   throws_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, npc_trait_1)
+    insert into public.citizens (world_id, citizen_type, given_name, npc_trait_1)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -113,7 +112,7 @@ select
 select
   throws_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, skills_text)
+    insert into public.citizens (world_id, citizen_type, given_name, skills_text)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -129,7 +128,7 @@ select
 select
   throws_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, npc_trait_2)
+    insert into public.citizens (world_id, citizen_type, given_name, npc_trait_2)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -145,7 +144,7 @@ select
 select
   throws_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, npc_secret_contradiction)
+    insert into public.citizens (world_id, citizen_type, given_name, npc_secret_contradiction)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -161,7 +160,7 @@ select
 select
   throws_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, npc_goal)
+    insert into public.citizens (world_id, citizen_type, given_name, npc_goal)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -177,7 +176,7 @@ select
 select
   throws_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, npc_flaw)
+    insert into public.citizens (world_id, citizen_type, given_name, npc_flaw)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',
@@ -193,7 +192,7 @@ select
 select
   throws_ok (
     $test$
-    insert into public.citizens (world_id, citizen_type, name, death_cause)
+    insert into public.citizens (world_id, citizen_type, given_name, death_cause)
     values (
       'f8000000-0000-0000-0000-000000000001',
       'npc',

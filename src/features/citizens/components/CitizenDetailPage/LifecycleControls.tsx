@@ -1,17 +1,17 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Heart, Skull } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   markCitizenDeadMutationOptions,
   reviveCitizenMutationOptions,
 } from "../../mutations/citizensMutations";
-
-import { getCitizenMutationErrorDescription } from "./ErrorMessages";
 
 import type { Citizen } from "../../types/citizenTypes";
 
@@ -45,9 +45,10 @@ export function CitizenLifecycleSection({
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update citizen.");
         },
         onSuccess: () => {
+          notifyMutationSuccess("Citizen marked as deceased.");
           setIsMarkingDead(false);
           setDeathCause("");
         },
@@ -64,16 +65,19 @@ export function CitizenLifecycleSection({
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update citizen.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Citizen revived.");
         },
       },
     );
   }
 
   return (
-    <section
+    <Card
       aria-labelledby="citizen-lifecycle-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="space-y-1">
         <h2 id="citizen-lifecycle-heading" className="text-base font-medium">
@@ -90,16 +94,14 @@ export function CitizenLifecycleSection({
       {citizen.status === "alive" ? (
         isMarkingDead ? (
           <form className="grid gap-2" noValidate onSubmit={handleMarkDead}>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">
-                Cause of death (optional)
-              </span>
+            <div className="grid gap-1 text-sm">
+              <Label>Cause of death (optional)</Label>
               <Input
                 disabled={markDeadMutation.isPending || isArchived}
                 value={deathCause}
                 onChange={(event) => setDeathCause(event.currentTarget.value)}
               />
-            </label>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="submit"
@@ -159,6 +161,6 @@ export function CitizenLifecycleSection({
           </Button>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

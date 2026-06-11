@@ -40,7 +40,6 @@ describe("world configuration route", () => {
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000101",
             name: "Public World",
-            owner_id: "user-2",
             visibility: "public",
           }),
         ],
@@ -62,12 +61,12 @@ describe("world configuration route", () => {
   it("marks the jobs tab as selected when ?tab=jobs is in the URL", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
         session: { user: { id: "user-1" } },
         worldRows: [
           createWorldRow({
             id: "00000000-0000-0000-0000-000000000202",
             name: "Admin World",
-            owner_id: "user-1",
             visibility: "private",
           }),
         ],
@@ -120,7 +119,6 @@ type TestWorldRow = {
   readonly id: string;
   readonly incest_prevention_depth: number;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -161,14 +159,6 @@ function createClient({
         return createWorldsQueryBuilder(worldRows);
       }
 
-      if (table === "citizens") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        b.returns = vi.fn().mockResolvedValue({ data: [], error: null });
-        return { select: vi.fn(() => b) };
-      }
-
       if (table === "user_active_player_characters") {
         const b: Record<string, unknown> = {};
         b.eq = vi.fn(() => b);
@@ -177,6 +167,12 @@ function createClient({
       }
 
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
     }),
   };
 }
@@ -202,7 +198,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     id: "00000000-0000-0000-0000-000000000001",
     incest_prevention_depth: 4,
     name: "World",
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",

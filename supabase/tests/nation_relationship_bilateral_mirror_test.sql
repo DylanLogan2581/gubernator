@@ -58,12 +58,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'e1000000-0000-0000-0000-000000000001',
     'Bilateral Mirror World',
-    'e0000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -104,7 +103,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

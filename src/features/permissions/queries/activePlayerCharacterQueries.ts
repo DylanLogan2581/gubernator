@@ -37,8 +37,13 @@ type ActivePlayerCharacterRowQueryOptions = UseQueryOptions<
   ActivePlayerCharacterRowQueryKey
 >;
 
+// Only columns granted to the authenticated role (see migration
+// 20260611000002_restrict_citizen_npc_visibility). The seven NPC flavor
+// columns were revoked from authenticated; requesting them here yields a
+// PostgREST 403 that react-query retries forever. toCitizen reads none of
+// them, but does read given_name, surname, and death_cause_category.
 const SELECTABLE_PLAYER_CHARACTER_SELECT =
-  "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
 
 export function selectablePlayerCharactersQueryOptions(
   userId: string,

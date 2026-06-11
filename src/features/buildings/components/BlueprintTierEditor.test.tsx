@@ -427,7 +427,7 @@ describe("BlueprintTierEditor", () => {
     await screen.findByText("Tier 1");
     await user.click(screen.getByRole("button", { name: "Delete tier 1" }));
 
-    expect(await screen.findByRole("dialog")).toBeDefined();
+    expect(await screen.findByRole("alertdialog")).toBeDefined();
     expect(screen.getByText(/cannot be undone/)).toBeDefined();
     expect(toastSuccess).not.toHaveBeenCalled();
     expect(toastError).not.toHaveBeenCalled();
@@ -444,10 +444,10 @@ describe("BlueprintTierEditor", () => {
     await screen.findByText("Tier 1");
     await user.click(screen.getByRole("button", { name: "Delete tier 1" }));
 
-    await screen.findByRole("dialog");
+    await screen.findByRole("alertdialog");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
     expect(toastSuccess).not.toHaveBeenCalled();
     expect(toastError).not.toHaveBeenCalled();
   });
@@ -469,7 +469,7 @@ describe("BlueprintTierEditor", () => {
     await screen.findByText("Tier 1");
     await user.click(screen.getByRole("button", { name: "Delete tier 1" }));
 
-    await screen.findByRole("dialog");
+    await screen.findByRole("alertdialog");
     await user.click(screen.getByRole("button", { name: "Delete tier" }));
 
     await waitFor(() => {

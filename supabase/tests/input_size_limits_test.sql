@@ -31,12 +31,11 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a2000000-0000-0000-0000-000000000001',
     'Limits World',
-    'a1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -86,8 +85,8 @@ values
 select
   lives_ok (
     $test$
-    insert into public.worlds (name, owner_id)
-    values (repeat('w', 64), 'a1000000-0000-0000-0000-000000000001')
+    insert into public.worlds (name)
+    values (repeat('w', 64))
   $test$,
     'world name at 64 chars is accepted'
   );
@@ -95,8 +94,8 @@ select
 select
   throws_ok (
     $test$
-    insert into public.worlds (name, owner_id)
-    values (repeat('w', 65), 'a1000000-0000-0000-0000-000000000001')
+    insert into public.worlds (name)
+    values (repeat('w', 65))
   $test$,
     '23514',
     null,

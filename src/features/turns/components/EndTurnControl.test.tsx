@@ -5,11 +5,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EndTurnControl } from "./EndTurnControl";
 
-const { requireSupabaseClient, toastSuccess, toastError } = vi.hoisted(() => ({
-  requireSupabaseClient: vi.fn<() => unknown>(),
-  toastSuccess:
-    vi.fn<(message: string, options?: { description?: string }) => void>(),
-  toastError: vi.fn<(message: string) => void>(),
+const { navigateMock, requireSupabaseClient, toastSuccess, toastError } =
+  vi.hoisted(() => ({
+    navigateMock: vi.fn(),
+    requireSupabaseClient: vi.fn<() => unknown>(),
+    toastSuccess:
+      vi.fn<(message: string, options?: { description?: string }) => void>(),
+    toastError: vi.fn<(message: string) => void>(),
+  }));
+
+vi.mock("@tanstack/react-router", () => ({
+  useNavigate: () => navigateMock,
+  useRouter: () => ({
+    state: {
+      location: { href: "/worlds/world-1/turns" },
+    },
+  }),
 }));
 
 vi.mock("@/lib/supabase", () => ({
@@ -25,6 +36,7 @@ vi.mock("sonner", () => ({
 
 describe("EndTurnControl", () => {
   beforeEach(() => {
+    navigateMock.mockReset();
     requireSupabaseClient.mockReset();
     toastSuccess.mockReset();
     toastError.mockReset();
@@ -42,15 +54,12 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     expect(
-      await screen.findByRole("heading", { name: "End turn" }),
-    ).toBeDefined();
-    expect(
-      screen.getByText("Advance the world from turn 7", { exact: false }),
+      await screen.findByRole("heading", { name: "Run turn transition" }),
     ).toBeDefined();
     expect(await screen.findByText("Current turn")).toBeDefined();
     expect(screen.getByText("7")).toBeDefined();
     expect(screen.getByText("Ready")).toBeDefined();
-    expect(screen.getByText("Not ready")).toBeDefined();
+    expect(screen.getByText("Ready")).toBeDefined();
     expect(screen.getByText("50%")).toBeDefined();
   });
 
@@ -91,7 +100,9 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
 
     expect(
       await screen.findByText("2 of 3 settlements ready (66%). 1 not ready."),
@@ -115,10 +126,12 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
 
     expect(
-      await screen.findByRole("dialog", { name: "Confirm end turn" }),
+      await screen.findByRole("dialog", { name: "Confirm turn transition" }),
     ).toBeDefined();
     expect(screen.getAllByText("Current turn").length).toBeGreaterThan(0);
     expect(screen.getByText("Next turn")).toBeDefined();
@@ -131,9 +144,11 @@ describe("EndTurnControl", () => {
     expect(screen.getByText(/2 of 2 settlements ready/i)).toBeDefined();
     expect(screen.queryByRole("alert")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Confirm end turn" }));
+    await user.click(
+      screen.getByRole("button", { name: "Confirm turn transition" }),
+    );
 
-    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-basic", {
+    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-simulation", {
       body: {
         expectedTurnNumber: 7,
         worldId: "world-1",
@@ -156,10 +171,12 @@ describe("EndTurnControl", () => {
     });
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
 
     const dialog = await screen.findByRole("dialog", {
-      name: "Confirm end turn",
+      name: "Confirm turn transition",
     });
 
     expect(dialog).toHaveTextContent("Current turn");
@@ -172,39 +189,15 @@ describe("EndTurnControl", () => {
     expect(screen.getByText("Secondday, Dawn 2, 100 AG")).toBeDefined();
   });
 
-  it("warns about not-ready settlements without blocking confirmation", async () => {
-    const user = userEvent.setup();
-    const clientFixture = createClientFixture({
-      settlementRows: [
-        createSettlementRow({ auto_ready_enabled: true }),
-        createSettlementRow({ id: "settlement-2" }),
-      ],
-    });
-    requireSupabaseClient.mockReturnValue(clientFixture.client);
-
-    renderEndTurnControl();
-
-    await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
-
-    expect(await screen.findByText("Readiness summary")).toBeDefined();
-    expect(screen.getByText(/1 of 2 settlements ready/i)).toBeDefined();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      /some settlements are not ready/i,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Confirm end turn" }));
-
-    expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
-  });
-
   it("hides the control for non-admin users and cannot submit", () => {
     const clientFixture = createClientFixture({ settlementRows: [] });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
     renderEndTurnControl({ canAdmin: false });
 
-    expect(screen.queryByRole("button", { name: "End turn" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Run turn transition" }),
+    ).toBeNull();
     expect(clientFixture.invoke).not.toHaveBeenCalled();
   });
 
@@ -215,7 +208,9 @@ describe("EndTurnControl", () => {
 
     renderEndTurnControl({ isArchived: true });
 
-    const button = await screen.findByRole("button", { name: "End turn" });
+    const button = await screen.findByRole("button", {
+      name: "Run turn transition",
+    });
 
     expect(button).toBeDisabled();
     expect(
@@ -239,16 +234,18 @@ describe("EndTurnControl", () => {
 
     await screen.findByText("Current turn");
 
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     expect(
-      (await screen.findAllByRole("button", { name: "Ending turn..." }))[0],
+      (await screen.findAllByRole("button", { name: "Running..." }))[0],
     ).toBeDisabled();
     expect(screen.getByText("End-turn transition is running.")).toBeDefined();
-    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-basic", {
+    expect(clientFixture.invoke).toHaveBeenCalledWith("end-turn-simulation", {
       body: {
         expectedTurnNumber: 7,
         worldId: "world-1",
@@ -268,31 +265,52 @@ describe("EndTurnControl", () => {
 
     await screen.findByText("Current turn");
 
-    const button = await screen.findByRole("button", { name: "End turn" });
+    const button = await screen.findByRole("button", {
+      name: "Run turn transition",
+    });
 
     await user.click(button);
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
     await user.click(
-      (await screen.findAllByRole("button", { name: "Ending turn..." }))[0],
+      (await screen.findAllByRole("button", { name: "Running..." }))[0],
     );
 
     expect(clientFixture.invoke).toHaveBeenCalledTimes(1);
   });
 
-  it("toasts the new turn and date after ending the turn", async () => {
+  it("toasts the new turn and simulation counts after the transition", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: {
         data: {
           data: {
             actorId: "user-1",
-            transition: {
-              nextDateLabel: "Secondday, Ember 1, 101 AG",
-              nextTurnNumber: 8,
-              previousDateLabel: "Firstday, Dawn 2, 101 AG",
-              previousTurnNumber: 7,
+            summary: {
+              currentTurnNumber: 8,
+              fromTurnNumber: 7,
+              patchCounts: {
+                assignmentClears: 0,
+                bornOnTurnBackfill: 0,
+                buildingStateChanges: 3,
+                buildingsCreated: 0,
+                citizenBirths: 1,
+                citizenDeaths: 2,
+                constructionUpdates: 0,
+                depositUpdates: 1,
+                logEntries: 0,
+                managedPopulationUpdates: 0,
+                notifications: 0,
+                overshootStamped: 0,
+                partnershipChanges: 0,
+                readinessReset: 0,
+                settlementSnapshots: 0,
+                stockpileDeltas: 0,
+                tradeRouteOutcomes: 0,
+              },
+              toTurnNumber: 8,
+              transitionId: "transition-1",
             },
             worldId: "world-1",
           },
@@ -313,34 +331,54 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledTimes(1);
     });
     expect(toastSuccess).toHaveBeenCalledWith("Advanced to turn 8", {
-      description:
-        "Now Secondday, Ember 1, 101 AG (was turn 7 on Firstday, Dawn 2, 101 AG).",
+      description: "2 deaths, 1 births, 3 building changes, 1 deposit updates.",
     });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByText("End-turn transition completed.")).toBeNull();
   });
 
-  it("toasts authoritative date labels from the response, not pre-submit prop values", async () => {
+  it("toasts simulation counts sourced from the response summary", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: {
         data: {
           data: {
             actorId: "user-1",
-            transition: {
-              nextDateLabel: "Authoritative Next Date",
-              nextTurnNumber: 8,
-              previousDateLabel: "Authoritative Previous Date",
-              previousTurnNumber: 7,
+            summary: {
+              currentTurnNumber: 8,
+              fromTurnNumber: 7,
+              patchCounts: {
+                assignmentClears: 0,
+                bornOnTurnBackfill: 0,
+                buildingStateChanges: 2,
+                buildingsCreated: 0,
+                citizenBirths: 3,
+                citizenDeaths: 5,
+                constructionUpdates: 0,
+                depositUpdates: 4,
+                logEntries: 0,
+                managedPopulationUpdates: 0,
+                notifications: 0,
+                overshootStamped: 0,
+                partnershipChanges: 0,
+                readinessReset: 0,
+                settlementSnapshots: 0,
+                stockpileDeltas: 0,
+                tradeRouteOutcomes: 0,
+              },
+              toTurnNumber: 8,
+              transitionId: "transition-1",
             },
             worldId: "world-1",
           },
@@ -352,15 +390,14 @@ describe("EndTurnControl", () => {
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
-    renderEndTurnControl({
-      currentDateLabel: "Stale Current Date",
-      nextDateLabel: "Stale Next Date",
-    });
+    renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
@@ -368,19 +405,52 @@ describe("EndTurnControl", () => {
     });
     const [, options] = toastSuccess.mock.calls[0];
 
-    expect(options?.description).toContain("Authoritative Next Date");
-    expect(options?.description).toContain("Authoritative Previous Date");
-    expect(options?.description).not.toContain("Stale Current Date");
-    expect(options?.description).not.toContain("Stale Next Date");
+    expect(options?.description).toContain("5 deaths");
+    expect(options?.description).toContain("3 births");
+    expect(options?.description).toContain("2 building changes");
+    expect(options?.description).toContain("4 deposit updates");
   });
 
-  it("toasts a refresh-safe message for stale-turn failures", async () => {
+  it("toasts an error message for stale-turn failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
         code: "end_turn_stale_expected_turn",
         message: "Internal stale detail",
       }),
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
+    );
+
+    await vi.waitFor(() => {
+      expect(
+        screen.getByRole("dialog", {
+          name: "Confirm turn transition",
+        }),
+      ).toHaveTextContent(
+        "This turn has already changed. Refresh the page to review the latest world state.",
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("navigates to sign-in when the session has expired", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      invokeResult: createFunctionErrorResult({
+        code: "session_expired",
+        message: "Please sign in again.",
+      }),
       settlementRows: [],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
@@ -388,76 +458,190 @@ describe("EndTurnControl", () => {
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
-      expect(toastError).toHaveBeenCalledTimes(1);
+      expect(navigateMock).toHaveBeenCalledTimes(1);
     });
-    expect(toastError).toHaveBeenCalledWith(
-      "This turn has already changed. Refresh the page to review the latest world state.",
-    );
-    expect(toastError).not.toHaveBeenCalledWith("Internal stale detail");
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: "/sign-in",
+      search: { returnTo: "/worlds/world-1/turns" },
+    });
+    expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("toasts a safe message for unauthorized failures", async () => {
+  it("toasts an error message for unauthorized failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
         code: "unauthorized",
         message: "Internal authorization detail",
       }),
-      settlementRows: [],
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
     await vi.waitFor(() => {
-      expect(toastError).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getByRole("dialog", {
+          name: "Confirm turn transition",
+        }),
+      ).toHaveTextContent("End turn is unavailable for this world.");
     });
-    expect(toastError).toHaveBeenCalledWith(
-      "End turn is unavailable for this world.",
-    );
-    expect(toastError).not.toHaveBeenCalledWith(
-      "Internal authorization detail",
-    );
+    expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("toasts a safe message for transition persistence failures", async () => {
+  it("toasts an error message for transition persistence failures", async () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       invokeResult: createFunctionErrorResult({
         code: "end_turn_transition_failed",
         message: "Internal transition detail",
       }),
-      settlementRows: [],
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
     });
     requireSupabaseClient.mockReturnValue(clientFixture.client);
 
     renderEndTurnControl();
 
     await screen.findByText("Current turn");
-    await user.click(await screen.findByRole("button", { name: "End turn" }));
     await user.click(
-      await screen.findByRole("button", { name: "Confirm end turn" }),
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
     );
 
-    await vi.waitFor(() => {
-      expect(toastError).toHaveBeenCalledTimes(1);
+    const dialog = screen.getByRole("dialog", {
+      name: "Confirm turn transition",
     });
-    expect(toastError).toHaveBeenCalledWith(
+    expect(dialog).toBeDefined();
+    expect(dialog).toHaveTextContent(
       "End turn could not be saved. Refresh the page before trying again.",
     );
-    expect(toastError).not.toHaveBeenCalledWith("Internal transition detail");
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("shows inline error in the dialog body after a mutation failure", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      invokeResult: createFunctionErrorResult({
+        code: "end_turn_transition_failed",
+        message: "Internal transition detail",
+      }),
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Confirm turn transition",
+    });
+    expect(dialog).toBeDefined();
+    expect(dialog).toHaveTextContent(
+      "End turn could not be saved. Refresh the page before trying again.",
+    );
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("shows the actual error message when the readiness query fails", async () => {
+    const clientFixture = createClientFixture({
+      settlementQueryError: new Error("Row-level security check failed"),
+      settlementRows: [],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    expect(
+      await screen.findByText("Row-level security check failed"),
+    ).toBeDefined();
+    expect(
+      screen.getByText("End-turn readiness could not be loaded"),
+    ).toBeDefined();
+    expect(
+      screen.queryByText(
+        "Try refreshing the page. If the problem continues, contact an administrator.",
+      ),
+    ).toBeNull();
+  });
+
+  it("shows the specialized error message for mutation failures in the dialog", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      invokeResult: createFunctionErrorResult({
+        code: "end_turn_transition_failed",
+        message: "Internal transition detail",
+      }),
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Confirm turn transition" }),
+    );
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Confirm turn transition",
+    });
+    expect(dialog).toHaveTextContent(
+      "End turn could not be saved. Refresh the page before trying again.",
+    );
+    expect(dialog).not.toHaveTextContent("Internal transition detail");
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("closes the dialog when Escape is pressed", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [createSettlementRow({ auto_ready_enabled: true })],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderEndTurnControl();
+
+    await screen.findByText("Current turn");
+    await user.click(
+      await screen.findByRole("button", { name: "Run turn transition" }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Confirm turn transition" }),
+    ).toBeDefined();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
 
@@ -521,11 +705,30 @@ function createClientFixture({
     data: {
       data: {
         actorId: "user-1",
-        transition: {
-          nextDateLabel: "Secondday, Ember 1, 101 AG",
-          nextTurnNumber: 8,
-          previousDateLabel: "Firstday, Dawn 2, 101 AG",
-          previousTurnNumber: 7,
+        summary: {
+          currentTurnNumber: 8,
+          fromTurnNumber: 7,
+          patchCounts: {
+            assignmentClears: 0,
+            bornOnTurnBackfill: 0,
+            buildingStateChanges: 0,
+            buildingsCreated: 0,
+            citizenBirths: 0,
+            citizenDeaths: 0,
+            constructionUpdates: 0,
+            depositUpdates: 0,
+            logEntries: 0,
+            managedPopulationUpdates: 0,
+            notifications: 0,
+            overshootStamped: 0,
+            partnershipChanges: 0,
+            readinessReset: 0,
+            settlementSnapshots: 0,
+            stockpileDeltas: 0,
+            tradeRouteOutcomes: 0,
+          },
+          toTurnNumber: 8,
+          transitionId: "transition-1",
         },
         worldId: "world-1",
       },
@@ -533,9 +736,11 @@ function createClientFixture({
     },
     error: null,
   },
+  settlementQueryError,
   settlementRows,
 }: {
   readonly invokeResult?: FunctionInvokeResult;
+  readonly settlementQueryError?: Error;
   readonly settlementRows: readonly TestSettlementReadinessRow[];
 }): ClientFixture {
   const invoke = vi.fn().mockReturnValue(invokeResult);
@@ -544,10 +749,14 @@ function createClientFixture({
     client: {
       from: vi.fn((table: string) => {
         if (table === "settlements") {
-          return createSettlementsQueryBuilder(settlementRows);
+          return createSettlementsQueryBuilder(
+            settlementRows,
+            settlementQueryError,
+          );
         }
 
-        throw new Error(`Unexpected table ${table}`);
+        // Return empty builder for turn_transitions to avoid errors
+        return createTurnTransitionsQueryBuilder();
       }),
       functions: {
         invoke,
@@ -589,10 +798,28 @@ function createSettlementRow(
 
 function createSettlementsQueryBuilder(
   rows: readonly TestSettlementReadinessRow[],
+  queryError?: Error,
 ): unknown {
+  const resolvedValue =
+    queryError !== undefined
+      ? { data: null, error: { message: queryError.message } }
+      : { data: rows, error: null };
   const builder = {
     eq: vi.fn(() => builder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    returns: vi.fn().mockResolvedValue(resolvedValue),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
+}
+
+function createTurnTransitionsQueryBuilder(): unknown {
+  // Return null for turn transitions (no running transition in test)
+  const builder = {
+    eq: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    order: vi.fn(() => builder),
     select: vi.fn(() => builder),
   };
 

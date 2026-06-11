@@ -34,15 +34,7 @@ export function createAccessContext({
       return false;
     }
 
-    return (
-      effectiveIsSuperAdmin ||
-      worldAdminWorldIdSet.has(world.id) ||
-      (userId !== null && world.ownerId === userId)
-    );
-  }
-
-  function canManageWorld(world: WorldAccessTarget): boolean {
-    return canAdminWorld(world);
+    return effectiveIsSuperAdmin || worldAdminWorldIdSet.has(world.id);
   }
 
   function canAccessWorld(world: WorldAccessTarget): boolean {
@@ -51,7 +43,7 @@ export function createAccessContext({
     }
 
     return (
-      canManageWorld(world) ||
+      canAdminWorld(world) ||
       world.visibility === "public" ||
       playerCharacterWorldIdSet.has(world.id)
     );
@@ -60,7 +52,6 @@ export function createAccessContext({
   return {
     canAccessWorld,
     canAdminWorld,
-    canManageWorld,
     isActiveUser: hasActiveAppUser,
     isAuthenticated: userId !== null,
     isSuperAdmin: effectiveIsSuperAdmin,

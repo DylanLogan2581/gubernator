@@ -264,10 +264,10 @@ describe("JobsConfigPanel", () => {
     );
 
     expect(
-      within(dialog).getByText(
+      within(dialog).queryByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
-    ).toBeDefined();
+    ).toBeNull();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -305,10 +305,10 @@ describe("JobsConfigPanel", () => {
     );
 
     expect(
-      within(dialog).getByText(
+      within(dialog).queryByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
-    ).toBeDefined();
+    ).toBeNull();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -346,10 +346,10 @@ describe("JobsConfigPanel", () => {
     );
 
     expect(
-      within(dialog).getByText(
+      within(dialog).queryByText(
         "You can link this job to a deposit type or managed population type after creating it from the relevant configuration tab.",
       ),
-    ).toBeDefined();
+    ).toBeNull();
 
     await user.click(within(dialog).getByRole("button", { name: "Create" }));
 
@@ -1154,6 +1154,7 @@ type TestManagedPopulationTypeRow = {
   readonly maintenance_rules_json: readonly unknown[];
   readonly name: string;
   readonly referencing_jobs: ReadonlyArray<{ readonly id: string }>;
+  readonly regular_outputs_json: readonly unknown[];
   readonly slug: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -1229,6 +1230,7 @@ function createManagedPopulationTypeRow(
     maintenance_rules_json: [],
     name: "Test Population",
     referencing_jobs: [],
+    regular_outputs_json: [],
     slug: "test-population",
     updated_at: "2026-01-01T00:00:00.000Z",
     world_id: WORLD_ID,

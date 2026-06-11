@@ -2,11 +2,11 @@
 -- Run with: npx supabase test db
 --
 -- Covers:
---   • Non-owner world admin can update population-rule scalars
---   • Non-owner world admin can update naming_config_json
+--   • Non-creator world admin can update population-rule scalars
+--   • Non-creator world admin can update naming_config_json
 --   • Random authenticated user (no admin role) cannot update the world
---   • Non-owner world admin cannot update an archived world
---   • Owner can still update via worlds_update_owner (regression)
+--   • Non-creator world admin cannot update an archived world
+--   • Creator world admin can still update via worlds_update_world_admin (regression)
 begin;
 
 select
@@ -55,19 +55,17 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'a1000000-0000-0000-0000-000000000001',
     'WUWA Active World',
-    'a0000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'a1000000-0000-0000-0000-000000000002',
     'WUWA Archived World',
-    'a0000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -75,6 +73,16 @@ values
 insert into
   public.world_admins (world_id, user_id)
 values
+  -- Creator (user 001) gets an explicit world_admins row, mirroring the trigger.
+  (
+    'a1000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001'
+  ),
+  (
+    'a1000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000001'
+  ),
+  -- Delegated world admin (user 002).
   (
     'a1000000-0000-0000-0000-000000000001',
     'a0000000-0000-0000-0000-000000000002'
@@ -94,7 +102,7 @@ where
   id = 'a1000000-0000-0000-0000-000000000002';
 
 -- ===========================================================================
--- Non-owner world admin: can update population-rule scalar
+-- Non-creator world admin: can update population-rule scalar
 -- ===========================================================================
 set
   local role authenticated;
@@ -109,28 +117,29 @@ select
     set partnership_seek_chance = 0.42
     where id = 'a1000000-0000-0000-0000-000000000001'
   $test$,
-    'non-owner world admin can update partnership_seek_chance'
+    'non-creator world admin can update partnership_seek_chance'
   );
 
 -- ===========================================================================
--- Non-owner world admin: can update naming_config_json
+-- Non-creator world admin: can update naming_config_json
 -- ===========================================================================
 select
   lives_ok (
     $test$
     update public.worlds
     set naming_config_json = '{
-      "male_names": ["Aldric"],
-      "female_names": ["Mira"],
-      "convention": "random"
+      "male_given_names": ["Aldric"],
+      "female_given_names": ["Mira"],
+      "surnames": ["Ashvale"],
+      "convention": "pool"
     }'::jsonb
     where id = 'a1000000-0000-0000-0000-000000000001'
   $test$,
-    'non-owner world admin can update naming_config_json'
+    'non-creator world admin can update naming_config_json'
   );
 
 -- ===========================================================================
--- Non-owner world admin: cannot update archived world (RLS blocks the row,
+-- Non-creator world admin: cannot update archived world (RLS blocks the row,
 -- update silently affects 0 rows; read-back confirms unchanged value).
 -- ===========================================================================
 update public.worlds
@@ -150,7 +159,7 @@ select
         id = 'a1000000-0000-0000-0000-000000000002'
     ),
     0.3::numeric,
-    'non-owner world admin cannot update an archived world (value unchanged)'
+    'non-creator world admin cannot update an archived world (value unchanged)'
   );
 
 reset role;
@@ -187,7 +196,7 @@ select
   );
 
 -- ===========================================================================
--- Owner: still allowed to update via worlds_update_owner (regression)
+-- Creator world admin: can update via worlds_update_world_admin (regression)
 -- ===========================================================================
 set
   local role authenticated;
@@ -202,7 +211,7 @@ select
     set partnership_seek_chance = 0.25
     where id = 'a1000000-0000-0000-0000-000000000001'
   $test$,
-    'owner can still update partnership_seek_chance via worlds_update_owner'
+    'creator world admin can still update via worlds_update_world_admin'
   );
 
 reset role;

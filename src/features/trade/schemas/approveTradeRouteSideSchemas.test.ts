@@ -48,7 +48,7 @@ describe("approveTradeRouteSideInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.tradeRouteId).toContain(
-        "Trade route id must be a valid UUID.",
+        "Select a trade route.",
       );
     }
   });
@@ -62,7 +62,7 @@ describe("approveTradeRouteSideInputSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.approverCitizenId).toContain(
-        "Approver citizen id must be a valid UUID.",
+        "Select an approver.",
       );
     }
   });

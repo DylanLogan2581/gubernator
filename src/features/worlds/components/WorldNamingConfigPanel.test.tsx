@@ -7,10 +7,9 @@ import {
   createAccessContext,
   type AccessContext,
 } from "@/features/permissions";
+import type { WorldNamingConfig } from "@/lib/worldNamingConfigSchemas";
 
 import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
-
-import type { WorldNamingConfig } from "../schemas/worldNamingConfigSchemas";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -52,7 +51,7 @@ describe("WorldNamingConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -86,7 +85,7 @@ describe("WorldNamingConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -132,7 +131,7 @@ describe("WorldNamingConfigPanel", () => {
       createClient({
         worldRows: [
           createWorldRow({
-            naming_config_json: createNamingConfig({ male_names: [] }),
+            naming_config_json: createNamingConfig({ male_given_names: [] }),
           }),
         ],
       }),
@@ -157,7 +156,7 @@ describe("WorldNamingConfigPanel", () => {
       createClient({
         worldRows: [
           createWorldRow({
-            naming_config_json: createNamingConfig({ female_names: [] }),
+            naming_config_json: createNamingConfig({ female_given_names: [] }),
           }),
         ],
       }),
@@ -183,9 +182,9 @@ describe("WorldNamingConfigPanel", () => {
         worldRows: [
           createWorldRow({
             naming_config_json: createNamingConfig({
-              convention: "manual",
-              female_names: [],
-              male_names: [],
+              convention: "none",
+              female_given_names: [],
+              male_given_names: [],
             }),
           }),
         ],
@@ -206,7 +205,7 @@ describe("WorldNamingConfigPanel", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("renders Manual only as a radio option, not a checkbox", async () => {
+  it("renders No automatic surname as a radio option, not a checkbox", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ worldRows: [createWorldRow()] }),
     );
@@ -224,18 +223,20 @@ describe("WorldNamingConfigPanel", () => {
     await screen.findByRole("heading", { name: "Naming rules" });
 
     expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(screen.getByRole("radio", { name: /Manual only/i })).toBeDefined();
+    expect(
+      screen.getByRole("radio", { name: /No automatic surname/i }),
+    ).toBeDefined();
   });
 
-  it("selecting Manual only suppresses the empty pool warning", async () => {
+  it("selecting No automatic surname suppresses the empty pool warning", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
         worldRows: [
           createWorldRow({
             naming_config_json: createNamingConfig({
-              female_names: [],
-              male_names: [],
+              female_given_names: [],
+              male_given_names: [],
             }),
           }),
         ],
@@ -255,7 +256,9 @@ describe("WorldNamingConfigPanel", () => {
     await screen.findByRole("heading", { name: "Naming rules" });
     expect(screen.getByRole("alert")).toBeDefined();
 
-    await user.click(screen.getByRole("radio", { name: /Manual only/i }));
+    await user.click(
+      screen.getByRole("radio", { name: /No automatic surname/i }),
+    );
 
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -270,7 +273,7 @@ describe("WorldNamingConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: [WORLD_ID],
       }),
       canAdmin: true,
       isArchived: false,
@@ -354,7 +357,7 @@ describe("WorldNamingConfigPanel", () => {
       createClient({
         worldRows: [
           createWorldRow({
-            naming_config_json: createNamingConfig({ male_names: [] }),
+            naming_config_json: createNamingConfig({ male_given_names: [] }),
           }),
         ],
       }),
@@ -377,7 +380,9 @@ describe("WorldNamingConfigPanel", () => {
     const firstChildBefore = form.firstElementChild;
     expect(screen.getByRole("alert")).toBeDefined();
 
-    await user.click(screen.getByRole("radio", { name: /Manual only/i }));
+    await user.click(
+      screen.getByRole("radio", { name: /No automatic surname/i }),
+    );
 
     expect(screen.queryByRole("alert")).toBeNull();
     expect(form.firstElementChild).toBe(firstChildBefore);
@@ -440,7 +445,6 @@ type TestWorldRow = {
   readonly archived_at: string | null;
   readonly id: string;
   readonly naming_config_json: WorldNamingConfig;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -450,7 +454,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     archived_at: null,
     id: WORLD_ID,
     naming_config_json: createNamingConfig(),
-    owner_id: "user-1",
     status: "active",
     visibility: "private",
     ...overrides,
@@ -461,9 +464,10 @@ function createNamingConfig(
   overrides: Partial<WorldNamingConfig> = {},
 ): WorldNamingConfig {
   return {
-    convention: "random",
-    female_names: ["Alice"],
-    male_names: ["Bob"],
+    convention: "pool",
+    female_given_names: ["Alice"],
+    male_given_names: ["Bob"],
+    surnames: [],
     ...overrides,
   };
 }

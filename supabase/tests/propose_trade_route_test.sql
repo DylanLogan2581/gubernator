@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (14);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -61,21 +61,31 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'fc200000-0000-0000-0000-000000000001',
     'PTR World',
-    'fc100000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'fc200000-0000-0000-0000-000000000002',
     'PTR World 2',
-    'fc100000-0000-0000-0000-000000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'fc200000-0000-0000-0000-000000000001',
+    'fc100000-0000-0000-0000-000000000001'
+  ),
+  (
+    'fc200000-0000-0000-0000-000000000002',
+    'fc100000-0000-0000-0000-000000000001'
   );
 
 -- Nation A and Nation B in World 1; Nation B has no managers (fallback target)
@@ -153,7 +163,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -226,8 +236,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000001',
-      'fc500000-0000-0000-0000-000000000001',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -245,8 +258,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      0,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 0
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -264,8 +280,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000003',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000003',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -283,8 +302,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000002',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000002',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -296,14 +318,16 @@ select
 reset role;
 
 -- ===========================================================================
--- CITIZEN FROM WRONG NATION (non-admin): rejected (P0001)
--- Nation A manager calls, but proposing citizen (fc6...004) is in World 2 Nation C.
+-- INVALID LEG DIRECTION: rejected (P0001)
+-- Settlement A1 manager (fc100...003) is authorized, but a leg direction that is
+-- neither 'send' nor 'receive' is rejected. Citizen residency is no longer
+-- checked — the proposing citizen id is only an audit stamp.
 -- ===========================================================================
 set
   local role authenticated;
 
 set
-  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000003","role":"authenticated"}';
 
 select
   throws_ok (
@@ -311,14 +335,17 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'sideways',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000004'
     )
     $test$,
     'P0001',
     null,
-    'proposing citizen from wrong nation is rejected with P0001 for non-admin'
+    'invalid leg direction is rejected with P0001'
   );
 
 reset role;
@@ -339,8 +366,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      10,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -367,8 +397,11 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      25.5,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 25.5
+      )),
       'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
@@ -379,6 +412,7 @@ reset role;
 
 -- Verify trade route and notifications as superuser to bypass notification RLS
 -- (notifications are only visible to recipient; superuser sees all rows).
+-- The proposer (fc6...003) is in Nation A (origin), so origin is auto-approved.
 select
   is (
     (
@@ -390,11 +424,30 @@ select
         tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
         and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
         and tr.status = 'proposed'
-        and tr.origin_approval_status = 'pending'
+        and tr.origin_approval_status = 'approved'
         and tr.destination_approval_status = 'pending'
     ),
     1,
-    'trade route inserted with status=proposed and both approval statuses=pending'
+    'trade route inserted with origin auto-approved (proposer side) and destination pending'
+  );
+
+select
+  is (
+    (
+      select
+        tr.origin_approved_by_citizen_id
+      from
+        public.trade_routes tr
+      where
+        tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
+        and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
+        and tr.status = 'proposed'
+        and tr.origin_approval_status = 'approved'
+      limit
+        1
+    ),
+    'fc600000-0000-0000-0000-000000000003'::uuid,
+    'origin_approved_by_citizen_id is set to the proposing citizen'
   );
 
 -- ---------------------------------------------------------------------------
@@ -412,8 +465,8 @@ select
         n.notification_type = 'trade_proposal_received'
         and n.world_id = 'fc200000-0000-0000-0000-000000000001'
     ),
-    3,
-    'three notifications created (two origin managers + one world-admin fallback)'
+    4,
+    'four notifications created (two origin managers + one world-admin fallback + seeded super admin)'
   );
 
 select
@@ -471,7 +524,9 @@ select
   );
 
 -- ===========================================================================
--- ADMIN OVERRIDE: world admin can propose with a citizen from a wrong nation
+-- WORLD ADMIN MANAGES BOTH ENDPOINTS: both sides auto-approve and the route
+-- goes active immediately, since there is no separate recipient to wait on.
+-- Citizen residency is irrelevant; the citizen id is only an audit stamp.
 -- ===========================================================================
 set
   local role authenticated;
@@ -485,15 +540,90 @@ select
     select public.propose_trade_route(
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
-      'fc500000-0000-0000-0000-000000000001',
-      5,
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 5
+      )),
       'fc600000-0000-0000-0000-000000000004'
     )
     $test$,
-    'world admin can propose with citizen from wrong nation (admin override)'
+    'world admin can propose for both endpoints (admin override)'
   );
 
 reset role;
+
+-- World admin manages both endpoints → both sides approved and route active.
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.trade_routes tr
+      where
+        tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
+        and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
+        and tr.status = 'active'
+        and tr.origin_approval_status = 'approved'
+        and tr.destination_approval_status = 'approved'
+    ),
+    1,
+    'admin who manages both endpoints auto-approves both sides and activates the route'
+  );
+
+-- ===========================================================================
+-- MULTI-LEG HAPPY PATH: nation manager proposes trade with multiple resources
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(
+        jsonb_build_object(
+          'direction', 'send',
+          'resource_id', 'fc500000-0000-0000-0000-000000000001',
+          'quantity', 100
+        ),
+        jsonb_build_object(
+          'direction', 'receive',
+          'resource_id', 'fc500000-0000-0000-0000-000000000001',
+          'quantity', 50
+        )
+      ),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'nation manager can propose trade route with multiple legs'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.trade_routes tr
+      where
+        tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
+        and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
+        and tr.status = 'proposed'
+        and tr.origin_approval_status = 'approved'
+        and tr.destination_approval_status = 'pending'
+    ),
+    2,
+    'multi-leg proposal creates route with legs intact (2 total routes: first single-leg + this multi-leg)'
+  );
 
 -- ===========================================================================
 -- SECURITY DEFINER check

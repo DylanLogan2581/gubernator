@@ -61,12 +61,11 @@ where
   id = 'fe100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'fe200000-0000-0000-0000-000000000001',
     'FEPTA World',
-    'fe100000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -317,11 +316,12 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
-    role_settlement_id
+    role_settlement_id,
+    death_cause_category
   )
 values
   (
@@ -333,6 +333,7 @@ values
     'alive',
     null,
     'none',
+    null,
     null
   ),
   (
@@ -344,6 +345,7 @@ values
     'alive',
     null,
     'none',
+    null,
     null
   ),
   (
@@ -355,6 +357,7 @@ values
     'alive',
     null,
     'none',
+    null,
     null
   ),
   (
@@ -366,7 +369,8 @@ values
     'alive',
     'fe100000-0000-0000-0000-000000000002',
     'settlement_manager',
-    'fe400000-0000-0000-0000-000000000001'
+    'fe400000-0000-0000-0000-000000000001',
+    null
   ),
   (
     'feb00000-0000-0000-0000-000000000005',
@@ -377,7 +381,8 @@ values
     'dead',
     null,
     'none',
-    null
+    null,
+    'unknown'
   ),
   (
     'feb00000-0000-0000-0000-000000000006',
@@ -388,6 +393,7 @@ values
     'alive',
     null,
     'none',
+    null,
     null
   ),
   (
@@ -399,6 +405,7 @@ values
     'alive',
     'fe100000-0000-0000-0000-000000000003',
     'none',
+    null,
     null
   );
 
@@ -410,8 +417,6 @@ insert into
     id,
     origin_settlement_id,
     destination_settlement_id,
-    resource_id,
-    quantity_per_transition,
     status,
     proposed_by_citizen_id,
     origin_approval_status,
@@ -422,8 +427,6 @@ values
     'fea00000-0000-0000-0000-000000000001',
     'fe400000-0000-0000-0000-000000000001',
     'fe400000-0000-0000-0000-000000000002',
-    'fe500000-0000-0000-0000-000000000001',
-    10,
     'active',
     'feb00000-0000-0000-0000-000000000001',
     'approved',
@@ -433,12 +436,31 @@ values
     'fea00000-0000-0000-0000-000000000002',
     'fe400000-0000-0000-0000-000000000001',
     'fe400000-0000-0000-0000-000000000002',
-    'fe500000-0000-0000-0000-000000000001',
-    5,
     'proposed',
     'feb00000-0000-0000-0000-000000000001',
     'pending',
     'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'fea00000-0000-0000-0000-000000000001',
+    'send',
+    'fe500000-0000-0000-0000-000000000001',
+    10
+  ),
+  (
+    'fea00000-0000-0000-0000-000000000002',
+    'send',
+    'fe500000-0000-0000-0000-000000000001',
+    5
   );
 
 -- ===========================================================================

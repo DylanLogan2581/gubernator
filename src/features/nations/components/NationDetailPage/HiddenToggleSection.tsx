@@ -1,12 +1,10 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { notifyMutationError } from "@/lib/notify";
 
 import { setNationHiddenMutationOptions } from "../../mutations/nationsMutations";
-
-import { getMutationErrorDescription } from "./ErrorMessages";
 
 import type { Nation } from "../../types/nationTypes";
 import type { JSX } from "react";
@@ -32,17 +30,14 @@ export function NationHiddenToggleSection({
       },
       {
         onError: (error) => {
-          toast.error(getMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update nation.");
         },
       },
     );
   }
 
   return (
-    <section
-      aria-labelledby="nation-hidden-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
+    <section aria-labelledby="nation-hidden-heading" className="grid gap-3 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">
           <h2 id="nation-hidden-heading" className="text-base font-medium">

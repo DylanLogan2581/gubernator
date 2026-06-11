@@ -363,7 +363,7 @@ describe("WorldCalendarConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: ["00000000-0000-0000-0000-000000000001"],
       }),
       canAdmin: true,
       isArchived: false,
@@ -397,7 +397,7 @@ describe("WorldCalendarConfigPanel", () => {
       accessContext: createAccessContext({
         isSuperAdmin: false,
         userId: "user-1",
-        worldAdminWorldIds: [],
+        worldAdminWorldIds: ["00000000-0000-0000-0000-000000000001"],
       }),
       canAdmin: true,
       isArchived: false,
@@ -508,7 +508,6 @@ type TestWorldRow = {
   readonly archived_at: string | null;
   readonly calendar_config_json: WorldCalendarConfig;
   readonly id: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -518,7 +517,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     archived_at: null,
     calendar_config_json: createCalendarConfig(),
     id: "00000000-0000-0000-0000-000000000001",
-    owner_id: "user-1",
     status: "active",
     visibility: "private",
     ...overrides,

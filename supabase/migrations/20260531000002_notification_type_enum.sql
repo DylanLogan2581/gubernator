@@ -11,10 +11,12 @@
 -- four trade-route RPC migrations (…019–022) can INSERT their respective types
 -- without touching the constraint at all.
 --
--- Future epics: add new types with:
+-- Future epics: add new types with a separate migration:
 --   alter type public.notification_type add value 'your_new_type';
--- That is a single metadata-only statement, safe within a transaction on
--- Postgres 14+ (the value is visible immediately to the same transaction).
+-- Note: new values added via ALTER TYPE ADD VALUE are NOT usable in the same
+-- transaction that adds them (Postgres errors with "unsafe use of new value").
+-- Values become usable only after the transaction commits. Therefore, always
+-- isolate ADD VALUE in its own migration with no same-file usage.
 -- ---------------------------------------------------------------------------
 -- Drop the text CHECK constraints added by 20260519000003 and
 -- 20260519000004 (the max-length guard is redundant once the column is typed).

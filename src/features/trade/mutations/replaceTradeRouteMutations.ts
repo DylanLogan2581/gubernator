@@ -87,9 +87,8 @@ async function replaceTradeRoute(
       p_new_payload: {
         destination_settlement_id:
           values.newRoutePayload.destinationSettlementId,
+        legs: values.newRoutePayload.legs,
         origin_settlement_id: values.newRoutePayload.originSettlementId,
-        quantity_per_transition: values.newRoutePayload.quantityPerTransition,
-        resource_id: values.newRoutePayload.resourceId,
       },
       p_old_id: values.oldRouteId,
       p_proposing_citizen_id: values.proposingCitizenId,

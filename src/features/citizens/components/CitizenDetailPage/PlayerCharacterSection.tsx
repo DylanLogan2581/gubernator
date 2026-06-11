@@ -1,13 +1,16 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { nationByIdQueryOptions } from "@/features/nations";
 import { RoleAssignmentControls } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
   linkUserToCitizenMutationOptions,
@@ -15,7 +18,6 @@ import {
 } from "../../mutations/playerCharacterRoleMutations";
 import { isManagerRole, managerScopeLabel } from "../../utils/citizenRoles";
 
-import { getRoleMutationErrorDescription } from "./ErrorMessages";
 import { Readout } from "./Shared";
 
 import type { Citizen } from "../../types/citizenTypes";
@@ -37,9 +39,9 @@ export function CitizenPlayerCharacterSection({
   readonly queryClient: QueryClient;
 }): JSX.Element {
   return (
-    <section
+    <Card
       aria-labelledby="citizen-player-character-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
     >
       <div className="space-y-1">
         <h2
@@ -63,7 +65,7 @@ export function CitizenPlayerCharacterSection({
         isArchived={isArchived}
         variant="citizen"
       />
-    </section>
+    </Card>
   );
 }
 
@@ -125,9 +127,10 @@ function CitizenLinkedUserControl({
       },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update role.");
         },
         onSuccess: () => {
+          notifyMutationSuccess("User linked to citizen.");
           setIsEditing(false);
         },
       },
@@ -147,7 +150,7 @@ function CitizenLinkedUserControl({
       },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update role.");
         },
       },
     );
@@ -159,9 +162,10 @@ function CitizenLinkedUserControl({
       { citizenId: citizen.id, worldId: citizen.worldId },
       {
         onError: (error) => {
-          toast.error(getRoleMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to update role.");
         },
         onSuccess: () => {
+          notifyMutationSuccess("User unlinked from citizen.");
           setIsConfirmingUnlink(false);
         },
       },
@@ -174,7 +178,7 @@ function CitizenLinkedUserControl({
     citizen.userId === null
       ? null
       : linkedUser !== undefined
-        ? `${linkedUser.username} · ${linkedUser.email}`
+        ? linkedUser.username
         : citizen.userId;
 
   function unlinkRoleDescription(): string {
@@ -224,19 +228,18 @@ function CitizenLinkedUserControl({
       ) : null}
       {isEditing ? (
         <form className="grid gap-2" noValidate onSubmit={handleLink}>
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">User</span>
+          <div className="grid gap-1 text-sm">
+            <Label>User</Label>
             {usersQuery.isError ? (
               <p
                 role="alert"
                 className="flex h-9 items-center text-sm text-destructive"
               >
-                Failed to load users. Please try again.
+                Couldn't load users. Refresh and try again.
               </p>
             ) : (
-              <select
+              <NativeSelect
                 aria-invalid={inputError === undefined ? undefined : true}
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={linkMutation.isPending || usersQuery.isPending}
                 value={selectedUserId}
                 onChange={(event) => {
@@ -251,17 +254,17 @@ function CitizenLinkedUserControl({
                 </option>
                 {userChoices.map((appUser) => (
                   <option key={appUser.id} value={appUser.id}>
-                    {appUser.username} · {appUser.email}
+                    {appUser.username}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             )}
             {inputError === undefined ? null : (
               <p role="alert" className="text-sm text-destructive">
                 {inputError}
               </p>
             )}
-          </label>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               type="submit"

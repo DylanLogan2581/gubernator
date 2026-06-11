@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { EndTurnBasicError } from "../mutations/endTurnBasicMutations";
+import { EndTurnTransitionError } from "../mutations/endTurnTransitionMutations";
 
 import {
   getControlDescription,
@@ -39,14 +39,14 @@ describe("getControlDescription", () => {
     ).toBe("End-turn transition is running.");
   });
 
-  it("returns default submit description when ready", () => {
+  it("returns empty description when ready", () => {
     expect(
       getControlDescription({
         isArchived: false,
         isPending: false,
         isReadinessUnavailable: false,
       }),
-    ).toBe("Submitting starts one end-turn transition for the current turn.");
+    ).toBe("");
   });
 
   it("prefers archived over readiness unavailable", () => {
@@ -99,7 +99,7 @@ describe("getErrorDescription", () => {
   it("returns archived world message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_archived_world",
           message: "",
           worldId: "w",
@@ -111,7 +111,7 @@ describe("getErrorDescription", () => {
   it("returns running transition message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_running_transition",
           message: "",
           worldId: "w",
@@ -122,10 +122,22 @@ describe("getErrorDescription", () => {
     );
   });
 
+  it("returns session expired message", () => {
+    expect(
+      getErrorDescription(
+        new EndTurnTransitionError({
+          code: "end_turn_session_expired",
+          message: "",
+          worldId: "w",
+        }),
+      ),
+    ).toBe("Your session has expired. Please sign in again.");
+  });
+
   it("returns stale turn message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_stale_turn",
           message: "",
           worldId: "w",
@@ -139,7 +151,7 @@ describe("getErrorDescription", () => {
   it("returns transition failed message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_transition_failed",
           message: "",
           worldId: "w",
@@ -153,7 +165,7 @@ describe("getErrorDescription", () => {
   it("returns unauthorized message", () => {
     expect(
       getErrorDescription(
-        new EndTurnBasicError({
+        new EndTurnTransitionError({
           code: "end_turn_unauthorized",
           message: "",
           worldId: "w",

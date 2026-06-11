@@ -3,6 +3,7 @@ import { Save, Shuffle, UserPlus, Wand2 } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,10 +14,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
-  worldNamingConfigQueryOptions,
-  worldNpcFlavorConfigQueryOptions,
-} from "@/features/worlds";
+  activeNamesetsByWorldQueryOptions,
+  resolveNameset,
+  type Nameset,
+} from "@/features/namesets";
+import { settlementByIdQueryOptions } from "@/features/settlements";
+import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
@@ -58,7 +64,9 @@ export function CreateNpcDialog({
   settlementId,
   worldId,
 }: CreateNpcDialogProps): JSX.Element {
-  const nameId = useId();
+  const givenNameId = useId();
+  const surnameId = useId();
+  const namesetSelectId = useId();
   const [fields, setFields] = useState(EMPTY_COMMON_FIELDS);
   const [kinshipError, setKinshipError] = useState<string | undefined>(
     undefined,
@@ -69,7 +77,8 @@ export function CreateNpcDialog({
     citizensInSettlementQueryOptions(settlementId),
   );
   const flavorConfigQuery = useQuery(worldNpcFlavorConfigQueryOptions(worldId));
-  const namingConfigQuery = useQuery(worldNamingConfigQueryOptions(worldId));
+  const namesetsQuery = useQuery(activeNamesetsByWorldQueryOptions(worldId));
+  const settlementQuery = useQuery(settlementByIdQueryOptions(settlementId));
   const mutation = useMutation(createNpcMutationOptions({ queryClient }));
 
   const generatedFlavor = useMemo(() => {
@@ -93,12 +102,50 @@ export function CreateNpcDialog({
     (citizen) => citizen.status === "alive",
   );
 
-  const namingConfig = namingConfigQuery.data;
+  const activeNamesets = namesetsQuery.data ?? [];
+  const parentA = parentChoices.find((c) => c.id === fields.parentACitizenId);
+  const parentB = parentChoices.find((c) => c.id === fields.parentBCitizenId);
+
+  // Inherited nameset: 50/50 between the parents' namesets (invalid ones are
+  // skipped), falling back to settlement -> nation -> world default. The coin
+  // flip is seeded by the flavor seed so "Regenerate" also re-rolls it.
+  const namesetById = (id: string | null | undefined): Nameset | undefined =>
+    id === null || id === undefined
+      ? undefined
+      : activeNamesets.find((ns) => ns.id === id);
+  const namesetFromA = namesetById(parentA?.namesetId);
+  const namesetFromB = namesetById(parentB?.namesetId);
+  const namesetFromParents =
+    namesetFromA !== undefined && namesetFromB !== undefined
+      ? createSeededRng(`${seed}:nameset`)() < 0.5
+        ? namesetFromA
+        : namesetFromB
+      : (namesetFromA ?? namesetFromB);
+  const inheritedNameset =
+    namesetFromParents ??
+    resolveNameset(
+      activeNamesets,
+      settlementQuery.data?.namesetId,
+      settlementQuery.data?.nation.namesetId,
+    );
+
+  const [namesetChoice, setNamesetChoice] = useState<string>("");
+
+  const selectedNameset =
+    namesetChoice === ""
+      ? inheritedNameset
+      : activeNamesets.find((ns) => ns.id === namesetChoice);
+
+  const namingConfig =
+    namesetsQuery.data !== undefined ? selectedNameset?.configJson : undefined;
 
   const nameGenerationHint: string | null = (() => {
-    if (namingConfig === undefined) return null;
+    if (namesetsQuery.data === undefined) return null;
+    if (namingConfig === undefined) {
+      return "No nameset available. Enter the name manually or assign a nameset.";
+    }
     if (relevantPoolIsEmpty(namingConfig, fields.sex)) {
-      return "Name pool is empty. Add names in world naming settings.";
+      return "Given name pool is empty. Add names to the nameset.";
     }
     return null;
   })();
@@ -110,25 +157,31 @@ export function CreateNpcDialog({
 
   function handleGenerateName(): void {
     if (namingConfig === undefined) return;
-    const parentA = parentChoices.find((c) => c.id === fields.parentACitizenId);
-    const parentB = parentChoices.find((c) => c.id === fields.parentBCitizenId);
-    const name = generateNpcName({
+    const result = generateNpcName({
       config: namingConfig,
       rng: createSeededRng(generateLocalId()),
       sex: fields.sex !== "" ? fields.sex : null,
-      parentAName: parentA?.name ?? null,
-      parentBName: parentB?.name ?? null,
+      parentAGivenName: parentA?.givenName ?? null,
+      parentASex: parentA?.sex ?? null,
+      parentASurname: parentA?.surname ?? null,
+      parentBGivenName: parentB?.givenName ?? null,
+      parentBSex: parentB?.sex ?? null,
+      parentBSurname: parentB?.surname ?? null,
     });
-    if (name !== "") {
-      setFields((current) => ({ ...current, name }));
+    if (result.givenName !== "") {
+      setFields((current) => ({
+        ...current,
+        givenName: result.givenName,
+        surname: result.surname ?? "",
+      }));
     }
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    const trimmedName = fields.name.trim();
-    if (trimmedName === "") {
+    const trimmedGivenName = fields.givenName.trim();
+    if (trimmedGivenName === "") {
       return;
     }
 
@@ -148,7 +201,9 @@ export function CreateNpcDialog({
       setKinshipError(undefined);
       mutation.mutate(
         {
-          name: trimmedName,
+          givenName: trimmedGivenName,
+          namesetId: selectedNameset?.id ?? null,
+          surname: fields.surname.trim() !== "" ? fields.surname.trim() : null,
           npcFlaw: flavor.flaw !== "" ? flavor.flaw : null,
           npcGoal: flavor.goal !== "" ? flavor.goal : null,
           npcSecretContradiction:
@@ -213,26 +268,51 @@ export function CreateNpcDialog({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <form className="contents" noValidate onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create NPC</DialogTitle>
+            <DialogTitle>Create npc</DialogTitle>
             <DialogDescription>
               NPCs are managed by World Admins and are not linked to a user.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-1 text-sm">
-            <label className="text-muted-foreground" htmlFor={nameId}>
-              Name
-            </label>
+            <Label htmlFor={namesetSelectId}>Nameset</Label>
+            <NativeSelect
+              id={namesetSelectId}
+              disabled={mutation.isPending || namesetsQuery.isPending}
+              value={namesetChoice}
+              onChange={(event) => {
+                setNamesetChoice(event.currentTarget.value);
+              }}
+            >
+              <option value="">
+                {inheritedNameset !== undefined
+                  ? `Random (inherited: ${inheritedNameset.name})`
+                  : "Random (no nameset available)"}
+              </option>
+              {activeNamesets.map((nameset) => (
+                <option key={nameset.id} value={nameset.id}>
+                  {nameset.name}
+                </option>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground">
+              Random picks a parent&apos;s nameset 50/50, falling back to the
+              settlement, nation, then world default.
+            </p>
+          </div>
+
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={givenNameId}>Given name</Label>
             <div className="flex gap-2">
               <Input
-                id={nameId}
+                id={givenNameId}
                 disabled={mutation.isPending}
                 maxLength={textInputLimits.citizenNameMax}
                 required
-                value={fields.name}
+                value={fields.givenName}
                 onChange={(event) => {
                   const value = event.currentTarget.value;
-                  setFields((current) => ({ ...current, name: value }));
+                  setFields((current) => ({ ...current, givenName: value }));
                 }}
               />
               <Button
@@ -254,10 +334,24 @@ export function CreateNpcDialog({
             ) : null}
           </div>
 
-          <label className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Sex</span>
-            <select
-              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={surnameId}>Surname</Label>
+            <Input
+              id={surnameId}
+              disabled={mutation.isPending}
+              maxLength={textInputLimits.citizenNameMax}
+              value={fields.surname}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setFields((current) => ({ ...current, surname: value }));
+              }}
+            />
+          </div>
+
+          <div className="grid gap-1 text-sm">
+            <Label>Sex</Label>
+            <NativeSelect
+              aria-label="Sex"
               disabled={mutation.isPending}
               value={fields.sex}
               onChange={(event) => {
@@ -265,11 +359,11 @@ export function CreateNpcDialog({
                 setFields((current) => ({ ...current, sex: value }));
               }}
             >
-              <option value=""></option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-          </label>
+              <option value="">Unspecified</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </NativeSelect>
+          </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <ParentField
@@ -318,8 +412,8 @@ export function CreateNpcDialog({
               </Button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Trait 1</span>
+              <div className="grid gap-1 text-sm">
+                <Label>Trait 1</Label>
                 <Input
                   disabled={mutation.isPending}
                   value={flavor.trait1}
@@ -327,9 +421,9 @@ export function CreateNpcDialog({
                     handleFlavorChange("trait1", event.currentTarget.value)
                   }
                 />
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span className="text-muted-foreground">Trait 2</span>
+              </div>
+              <div className="grid gap-1 text-sm">
+                <Label>Trait 2</Label>
                 <Input
                   disabled={mutation.isPending}
                   value={flavor.trait2}
@@ -337,52 +431,50 @@ export function CreateNpcDialog({
                     handleFlavorChange("trait2", event.currentTarget.value)
                   }
                 />
-              </label>
+              </div>
             </div>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">
-                Secret / contradiction
-              </span>
+            <div className="grid gap-1 text-sm">
+              <Label>Secret / contradiction</Label>
               <textarea
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
                 value={flavor.contradiction}
+                aria-label="Secret / contradiction"
                 onChange={(event) =>
                   handleFlavorChange("contradiction", event.currentTarget.value)
                 }
               />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Goal</span>
+            </div>
+            <div className="grid gap-1 text-sm">
+              <Label>Goal</Label>
               <textarea
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
                 value={flavor.goal}
+                aria-label="Goal"
                 onChange={(event) =>
                   handleFlavorChange("goal", event.currentTarget.value)
                 }
               />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Flaw</span>
+            </div>
+            <div className="grid gap-1 text-sm">
+              <Label>Flaw</Label>
               <textarea
                 className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={mutation.isPending}
                 value={flavor.flaw}
+                aria-label="Flaw"
                 onChange={(event) =>
                   handleFlavorChange("flaw", event.currentTarget.value)
                 }
               />
-            </label>
+            </div>
           </div>
 
           {fieldError === undefined ? null : (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {fieldError}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{fieldError}</AlertDescription>
+            </Alert>
           )}
 
           <DialogFooter>
@@ -423,10 +515,9 @@ function ParentField({
   readonly value: string;
 }): JSX.Element {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <select
-        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+    <div className="grid gap-1 text-sm">
+      <Label>{label}</Label>
+      <NativeSelect
         disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
@@ -437,7 +528,7 @@ function ParentField({
             {citizen.name}
           </option>
         ))}
-      </select>
-    </label>
+      </NativeSelect>
+    </div>
   );
 }

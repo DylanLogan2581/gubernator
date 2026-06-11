@@ -83,6 +83,24 @@ values
     '{"username":"partnerships_world_b_owner"}'::jsonb,
     now(),
     now()
+  ),
+  (
+    'e1000000-0000-0000-0000-000000000006',
+    'partnerships-world-a-pc-extra@example.com',
+    'x',
+    now(),
+    '{"username":"partnerships_world_a_pc_extra"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'e1000000-0000-0000-0000-000000000007',
+    'partnerships-world-a-pc-cross@example.com',
+    'x',
+    now(),
+    '{"username":"partnerships_world_a_pc_cross"}'::jsonb,
+    now(),
+    now()
   );
 
 update public.users
@@ -92,21 +110,31 @@ where
   id = 'e1000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'e2000000-0000-0000-0000-000000000001',
     'Partnerships World A',
-    'e1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'e2000000-0000-0000-0000-000000000002',
     'Partnerships World B',
-    'e1000000-0000-0000-0000-000000000005',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'e2000000-0000-0000-0000-000000000001',
+    'e1000000-0000-0000-0000-000000000001'
+  ),
+  (
+    'e2000000-0000-0000-0000-000000000002',
+    'e1000000-0000-0000-0000-000000000005'
   );
 
 insert into
@@ -138,13 +166,14 @@ values
   );
 
 -- NPCs in World A used as partnership participants.
+-- name is a generated column (given_name || coalesce(' ' || surname, '')).
 insert into
   public.citizens (
     id,
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values
@@ -213,7 +242,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -228,6 +257,37 @@ values
     'e1000000-0000-0000-0000-000000000003'
   );
 
+-- Extra World A player characters used for PC-holder partnership visibility.
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id
+  )
+values
+  (
+    'e5000000-0000-0000-0000-0000000000a9',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-0000000000a1',
+    'player_character',
+    'PC Extra in World A',
+    'alive',
+    'e1000000-0000-0000-0000-000000000006'
+  ),
+  (
+    'e5000000-0000-0000-0000-0000000000aa',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-0000000000a1',
+    'player_character',
+    'PC Cross in World A',
+    'alive',
+    'e1000000-0000-0000-0000-000000000007'
+  );
+
 -- NPCs in World B used as partnership participants.
 insert into
   public.citizens (
@@ -235,7 +295,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values
@@ -261,6 +321,14 @@ values
     'e4000000-0000-0000-0000-0000000000b1',
     'npc',
     'NPC B3 (cross-world partner side B)',
+    'alive'
+  ),
+  (
+    'e5000000-0000-0000-0000-0000000000b4',
+    'e2000000-0000-0000-0000-000000000002',
+    'e4000000-0000-0000-0000-0000000000b1',
+    'npc',
+    'NPC B4 (PC-visible cross-world partner side B)',
     'alive'
   );
 
@@ -316,6 +384,44 @@ values
     'e6000000-0000-0000-0000-000000000003',
     'e5000000-0000-0000-0000-0000000000b3',
     'e5000000-0000-0000-0000-0000000000a3',
+    'active',
+    1
+  );
+
+-- World A partnership involving two player characters. PC holders can see this
+-- without exposing NPC-only partnerships.
+insert into
+  public.partnerships (
+    id,
+    citizen_a_id,
+    citizen_b_id,
+    status,
+    formed_on_turn_number
+  )
+values
+  (
+    'e6000000-0000-0000-0000-000000000005',
+    'e5000000-0000-0000-0000-0000000000a4',
+    'e5000000-0000-0000-0000-0000000000a9',
+    'active',
+    1
+  );
+
+-- Cross-world partnership visible to a PC holder only through the World A
+-- player-character participant.
+insert into
+  public.partnerships (
+    id,
+    citizen_a_id,
+    citizen_b_id,
+    status,
+    formed_on_turn_number
+  )
+values
+  (
+    'e6000000-0000-0000-0000-000000000006',
+    'e5000000-0000-0000-0000-0000000000b4',
+    'e5000000-0000-0000-0000-0000000000aa',
     'active',
     1
   );
@@ -410,7 +516,7 @@ select
 reset role;
 
 -- ===========================================================================
--- WORLD A ADMIN (owner): sees partnerships whose citizen_a or citizen_b is in
+-- WORLD A ADMIN: sees partnerships whose citizen_a or citizen_b is in
 -- World A. PA1 is fully in World A; PCross is visible via citizen_b in A.
 -- The pure World B partnership PB1 stays hidden.
 -- ===========================================================================
@@ -462,7 +568,7 @@ select
 reset role;
 
 -- ===========================================================================
--- WORLD B ADMIN (owner): symmetric view from the other side. Sees PB1 (fully
+-- WORLD B ADMIN: symmetric view from the other side. Sees PB1 (fully
 -- in B) and PCross (via citizen_a in B), but not PA1.
 -- ===========================================================================
 set
@@ -513,9 +619,8 @@ select
 reset role;
 
 -- ===========================================================================
--- PC HOLDER: holds a PC in World A and inherits citizen read visibility into
--- that world via user_has_player_character_in_world. Sees PA1 (both
--- participants in A) and PCross (citizen_b in A), not PB1.
+-- PC HOLDER: holds a PC in World A. NPC-only partnerships stay hidden, but
+-- partnerships with a visible player-character participant are readable.
 -- ===========================================================================
 set
   local role authenticated;
@@ -531,9 +636,9 @@ select
       from
         public.partnerships
       where
-        id = 'e6000000-0000-0000-0000-000000000001'
+        id = 'e6000000-0000-0000-0000-000000000005'
     ),
-    'PC holder reads a partnership in their world (mirrors citizen visibility)'
+    'PC holder reads a partnership involving visible player characters in their world'
   );
 
 select
@@ -544,9 +649,9 @@ select
       from
         public.partnerships
       where
-        id = 'e6000000-0000-0000-0000-000000000003'
+        id = 'e6000000-0000-0000-0000-000000000006'
     ),
-    'PC holder reads a cross-world partnership via the citizen participant they can see'
+    'PC holder reads a cross-world partnership via a visible player-character participant'
   );
 
 select
@@ -865,8 +970,8 @@ select
   );
 
 -- ===========================================================================
--- RPC defense-in-depth: dissolve_partnership and reassign_partner return zero
--- rows when ended_on_turn_number < formed_on_turn_number.
+-- RPC error contract: dissolve_partnership and reassign_partner raise P0001
+-- when ended_on_turn_number < formed_on_turn_number.
 --
 -- A fresh active partnership (0009) is inserted here as the migration owner so
 -- it exists when the authenticated-role RPC calls below run. A7 and A8 were
@@ -896,43 +1001,38 @@ set
   local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.dissolve_partnership (
-          'e6000000-0000-0000-0000-000000000009',
-          5,
-          'end before formed',
-          'e7000000-0000-0000-0000-000000000001'
-        )
-    ),
-    0,
-    'dissolve_partnership returns zero rows when ended turn is before formed turn'
+  throws_ok (
+    $test$
+    select public.dissolve_partnership (
+      'e6000000-0000-0000-0000-000000000009',
+      5,
+      'end before formed',
+      'e7000000-0000-0000-0000-000000000001'
+    )
+    $test$,
+    'P0001',
+    null,
+    'dissolve_partnership raises P0001 when ended_on_turn_number precedes formed_on_turn_number'
   );
 
--- 0009 is still active (RPC returned 0 rows). Use it as the old partnership
--- for the reassign_partner probe. The new-partner slot (A1) is already in an
--- active partnership; since the RPC returns before the insert, no conflict fires.
+-- 0009 is still active (dissolve raised rather than committing). Use it as the
+-- old partnership for the reassign_partner probe.
 select
-  is (
-    (
-      select
-        count(*)::integer
-      from
-        public.reassign_partner (
-          'e6000000-0000-0000-0000-000000000009',
-          'e5000000-0000-0000-0000-0000000000a7',
-          'e5000000-0000-0000-0000-0000000000a1',
-          5,
-          11,
-          'end before formed',
-          'e7000000-0000-0000-0000-000000000001'
-        )
-    ),
-    0,
-    'reassign_partner returns zero rows when ended turn is before old partnership formed turn'
+  throws_ok (
+    $test$
+    select public.reassign_partner (
+      'e6000000-0000-0000-0000-000000000009',
+      'e5000000-0000-0000-0000-0000000000a7',
+      'e5000000-0000-0000-0000-0000000000a1',
+      5,
+      11,
+      'end before formed',
+      'e7000000-0000-0000-0000-000000000001'
+    )
+    $test$,
+    'P0001',
+    null,
+    'reassign_partner raises P0001 when ended_on_turn_number precedes old partnership formed_on_turn_number'
   );
 
 reset role;

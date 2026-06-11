@@ -8,6 +8,7 @@
 --                                    or deposit type belongs to a different world
 --   42501 (insufficient_privilege) – caller is not world admin or super admin
 --   P0001 (raise_exception)        – deposit type is trashed, name length out of bounds,
+--                                    max_workers not positive, initial_quantity not positive,
 --                                    resource is soft-deleted, or resource belongs to a
 --                                    different world
 -- ---------------------------------------------------------------------------
@@ -32,6 +33,7 @@ declare
   v_resource_id     uuid;
   v_resource_world  uuid;
   v_is_res_trashed  boolean;
+  v_initial_qty     numeric;
   v_row             public.deposit_instances%rowtype;
 begin
   -- Null guard
@@ -59,6 +61,11 @@ begin
     raise exception 'deposit instance name length is out of bounds (1–64)' using errcode = 'P0001';
   end if;
 
+  -- Validate max_workers: if not null, must be > 0
+  if p_max_workers is not null and p_max_workers <= 0 then
+    raise exception 'max_workers must be > 0' using errcode = 'P0001';
+  end if;
+
   -- Validate deposit type: must exist in this world
   select dt.id, dt.is_trashed into v_deposit_type_id, v_is_trashed
   from public.deposit_types dt
@@ -73,12 +80,23 @@ begin
     raise exception 'deposit type is trashed' using errcode = 'P0001';
   end if;
 
-  -- Validate resources: soft-deleted and cross-world checks
+  -- Validate resources: soft-deleted, cross-world, and initial_quantity checks
   if p_resources is not null and jsonb_array_length(p_resources) > 0 then
     for v_resource_entry in
       select value from jsonb_array_elements(p_resources)
     loop
       v_resource_id := (v_resource_entry ->> 'resource_id')::uuid;
+      v_initial_qty := (v_resource_entry ->> 'initial_quantity')::numeric;
+
+      -- Null guard for initial_quantity
+      if v_initial_qty is null then
+        raise exception 'initial_quantity must not be null' using errcode = 'P0001';
+      end if;
+
+      -- Validate initial_quantity > 0
+      if v_initial_qty <= 0 then
+        raise exception 'initial_quantity must be > 0' using errcode = 'P0001';
+      end if;
 
       select r.world_id, r.is_trashed into v_resource_world, v_is_res_trashed
       from public.resources r

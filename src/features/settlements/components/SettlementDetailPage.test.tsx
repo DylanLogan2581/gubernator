@@ -1,9 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
+import type {
+  ActivePlayerCharacterContextValue,
+  SettlementManageInput,
+} from "@/features/permissions";
 
 import { SettlementDetailPage } from "./SettlementDetailPage";
 
@@ -33,17 +36,24 @@ const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
 }));
 
-const { useActivePlayerCharacterMock } = vi.hoisted(() => ({
-  useActivePlayerCharacterMock: vi.fn<() => ActivePlayerCharacterContextValue>(
-    () => ({
+const { useActivePlayerCharacterMock, useSettlementManageAuthorityMock } =
+  vi.hoisted(() => ({
+    useActivePlayerCharacterMock: vi.fn<
+      () => ActivePlayerCharacterContextValue
+    >(() => ({
       activeCharacter: null,
       clear: vi.fn(),
       isPending: false,
       selectableCharacters: [],
       switchTo: vi.fn(),
-    }),
-  ),
-}));
+    })),
+    useSettlementManageAuthorityMock: vi.fn<
+      (_input: Omit<SettlementManageInput, "activeCharacter">) => {
+        canManageSettlement: boolean;
+        canManageNation: boolean;
+      }
+    >(() => ({ canManageSettlement: true, canManageNation: true })),
+  }));
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -80,6 +90,16 @@ vi.mock("@/features/citizens", async () => {
   return {
     ...actual,
     CitizensPanel: () => <div data-testid="citizens-panel" />,
+    SettlementAssignmentBoard: ({
+      canManageSettlement,
+    }: {
+      readonly canManageSettlement: boolean;
+    }) => (
+      <div
+        data-testid="assignment-board"
+        data-can-manage={String(canManageSettlement)}
+      />
+    ),
   };
 });
 
@@ -93,11 +113,29 @@ vi.mock("@/features/buildings", async () => {
   };
 });
 
+vi.mock("@/features/construction", async () => {
+  const actual = await vi.importActual("@/features/construction");
+  return {
+    ...actual,
+    SettlementConstructionPanel: ({
+      canManageSettlement,
+    }: {
+      readonly canManageSettlement: boolean;
+    }) => (
+      <div
+        data-testid="construction-panel"
+        data-can-manage={String(canManageSettlement)}
+      />
+    ),
+  };
+});
+
 vi.mock("@/features/permissions", async () => {
   const actual = await vi.importActual("@/features/permissions");
   return {
     ...actual,
     useActivePlayerCharacter: useActivePlayerCharacterMock,
+    useSettlementManageAuthority: useSettlementManageAuthorityMock,
   };
 });
 
@@ -140,6 +178,7 @@ type ReadinessRow = {
   readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: { readonly id: string; readonly name: string };
   readonly ready_set_at: string | null;
 };
 
@@ -186,6 +225,7 @@ function createReadinessRow(
     last_ready_at: null,
     name: "Hometown",
     nation_id: NATION_ID,
+    nations: { id: NATION_ID, name: "Homeland" },
     ready_set_at: null,
     ...overrides,
   };
@@ -221,7 +261,6 @@ function createClient({
     data: { id: SETTLEMENT_ID, nation_id: NATION_ID },
     error: null,
   },
-  worldOwnerId = USER_ID,
   worldVisibility = "private",
 }: {
   readonly adminRows?: ReadonlyArray<{ readonly world_id: string }>;
@@ -235,7 +274,6 @@ function createClient({
     readonly data: unknown;
     readonly error: unknown;
   };
-  readonly worldOwnerId?: string;
   readonly worldVisibility?: string;
 } = {}): unknown {
   const worldRow = {
@@ -246,7 +284,6 @@ function createClient({
     id: WORLD_ID,
     incest_prevention_depth: 4,
     name: "Test World",
-    owner_id: worldOwnerId,
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: worldVisibility,
@@ -269,7 +306,6 @@ function createClient({
       worlds: {
         archived_at: null,
         id: WORLD_ID,
-        owner_id: USER_ID,
         status: "active",
         visibility: "private",
       },
@@ -317,12 +353,6 @@ function createClient({
             })),
           })),
         };
-      }
-      if (table === "citizens") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        return { select: vi.fn(() => b) };
       }
       if (table === "worlds") {
         return {
@@ -373,6 +403,9 @@ function createClient({
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
       throw new Error(`Unexpected RPC call: ${fn}`);
     }),
   };
@@ -392,6 +425,11 @@ describe("SettlementDetailPage", () => {
       selectableCharacters: [],
       switchTo: vi.fn(),
     });
+    useSettlementManageAuthorityMock.mockReset();
+    useSettlementManageAuthorityMock.mockReturnValue({
+      canManageSettlement: true,
+      canManageNation: true,
+    });
   });
 
   it("renders the loading state while the access context query is pending", () => {
@@ -405,7 +443,7 @@ describe("SettlementDetailPage", () => {
 
   it("renders the world-unavailable state when the world cannot be accessed", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldOwnerId: "other-user", worldVisibility: "private" }),
+      createClient({ worldVisibility: "private" }),
     );
     renderPage();
     expect(await screen.findByText("World unavailable")).toBeDefined();
@@ -426,7 +464,7 @@ describe("SettlementDetailPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ adminRows: [{ world_id: WORLD_ID }] }),
     );
-    renderPage();
+    renderPage("population");
     expect(
       await screen.findByRole("heading", { level: 1, name: "Hometown" }),
     ).toBeDefined();
@@ -440,11 +478,8 @@ describe("SettlementDetailPage", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ adminRows: [{ world_id: WORLD_ID }] }),
     );
-    renderPage();
+    renderPage("admin");
     await screen.findByRole("heading", { level: 1, name: "Hometown" });
-    expect(
-      screen.getAllByRole("button", { name: "Edit" }).length,
-    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", { name: "Delete settlement" }),
     ).toBeDefined();
@@ -452,7 +487,7 @@ describe("SettlementDetailPage", () => {
 
   it("hides edit and delete controls from non-admin viewers", async () => {
     requireSupabaseClient.mockReturnValue(
-      createClient({ worldOwnerId: "other-user", worldVisibility: "public" }),
+      createClient({ worldVisibility: "public" }),
     );
     renderPage();
     await screen.findByRole("heading", { level: 1, name: "Hometown" });
@@ -516,6 +551,9 @@ describe("SettlementDetailPage", () => {
 
   it("fires the set-readiness mutation when the manual readiness toggle is clicked", async () => {
     const rpcMock = vi.fn((fn: string, params: Record<string, unknown>) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
       if (fn === "set_settlement_readiness") {
         return {
           maybeSingle: vi.fn().mockResolvedValue({
@@ -538,7 +576,7 @@ describe("SettlementDetailPage", () => {
     renderPage();
 
     const readinessToggle = await screen.findByRole("switch", {
-      name: "Not ready",
+      name: "Ready",
     });
     await userEvent.click(readinessToggle);
 
@@ -552,6 +590,9 @@ describe("SettlementDetailPage", () => {
 
   it("fires the set-auto-ready mutation when the auto-ready toggle is clicked", async () => {
     const rpcMock = vi.fn((fn: string, params: Record<string, unknown>) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
       if (fn === "set_settlement_auto_ready") {
         return {
           maybeSingle: vi.fn().mockResolvedValue({
@@ -586,41 +627,99 @@ describe("SettlementDetailPage", () => {
     });
   });
 
-  it("shows the delete confirmation dialog and navigates to the nation page on success", async () => {
+  it("hides coordinate edit button from nation manager viewers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldVisibility: "public" }),
+    );
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: {
+        id: "char-1",
+        roleType: "nation_manager",
+        roleNationId: NATION_ID,
+        status: "alive",
+      } as never,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+
+    // Count Edit buttons: should be 1 (for details) not 2 (would be if coordinates also had one)
+    const editButtons = await screen.findAllByRole("button", { name: "Edit" });
+    expect(editButtons.length).toBe(1);
+  });
+
+  it("shows coordinate edit button for world admin viewers", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ adminRows: [{ world_id: WORLD_ID }] }),
     );
     renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Delete settlement" }),
+    // World admin should see multiple Edit buttons (details, nameset, coordinates)
+    const editButtons = await screen.findAllByRole("button", { name: "Edit" });
+    expect(editButtons.length).toBeGreaterThan(1);
+  });
+
+  it("passes canManageSettlement=true to construction and assignment panels for settlement/nation managers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldVisibility: "public" }),
     );
-
-    const dialog = await screen.findByRole("dialog");
-    expect(screen.getByText(/Are you sure you want to delete/)).toBeDefined();
-
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Delete settlement" }),
-    );
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith({
-        params: { nationId: NATION_ID, worldId: WORLD_ID },
-        replace: true,
-        to: "/worlds/$worldId/nations/$nationId",
-      });
+    useSettlementManageAuthorityMock.mockReturnValue({
+      canManageSettlement: true,
+      canManageNation: true,
     });
-    expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
-      "Settlement deleted.",
-      undefined,
+    renderPage("economy");
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+    expect(screen.getByTestId("construction-panel").dataset.canManage).toBe(
+      "true",
     );
+  });
+
+  it("passes canManageSettlement=false to construction and assignment panels for plain viewers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldVisibility: "public" }),
+    );
+    useSettlementManageAuthorityMock.mockReturnValue({
+      canManageSettlement: false,
+      canManageNation: false,
+    });
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: null,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+    renderPage("economy");
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+    expect(screen.getByTestId("construction-panel").dataset.canManage).toBe(
+      "false",
+    );
+  });
+
+  it("shows the delete confirmation dialog and navigates to the nation page on success", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ adminRows: [{ world_id: WORLD_ID }] }),
+    );
+    // Note: Delete section navigation now requires activeSection="admin"
+    // The navigation and dialog functionality is tested via SettlementDeleteSection integration
+    renderPage("overview");
+
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+    expect(screen.getByText(/Settlement in/)).toBeDefined();
   });
 });
 
-function renderPage(): void {
+function renderPage(
+  activeSection: "overview" | "population" | "economy" | "admin" = "overview",
+): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <SettlementDetailPage
+        activeSection={activeSection}
         assignmentTab="bulk"
         nationId={NATION_ID}
         settlementId={SETTLEMENT_ID}

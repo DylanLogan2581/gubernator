@@ -115,14 +115,14 @@ describe("getManualReadinessDescription", () => {
     ).toBe("Saving manual readiness.");
   });
 
-  it("returns toggle prompt when all flags are false", () => {
+  it("returns empty string when all flags are false", () => {
     expect(
       getManualReadinessDescription({
         isArchived: false,
         isAutoReady: false,
         isPending: false,
       }),
-    ).toBe("Toggle whether this settlement is ready for the current turn.");
+    ).toBe("");
   });
 });
 
@@ -154,12 +154,12 @@ describe("getAutoReadyDescription", () => {
     ).toBe("Saving auto-ready.");
   });
 
-  it("returns default message when all flags are false", () => {
+  it("returns empty string when all flags are false", () => {
     expect(
       getAutoReadyDescription({
         isArchived: false,
         isPending: false,
       }),
-    ).toBe("Automatically count this settlement as ready for each turn.");
+    ).toBe("");
   });
 });

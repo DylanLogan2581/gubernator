@@ -1,6 +1,5 @@
 export type WorldAccessTarget = {
   readonly id: string;
-  readonly ownerId?: string;
   readonly visibility?: string;
 };
 
@@ -11,7 +10,6 @@ export type AccessContextPredicates = {
    */
   readonly canAdminWorld: (world: WorldAccessTarget) => boolean;
   readonly canAccessWorld: (world: WorldAccessTarget) => boolean;
-  readonly canManageWorld: (world: WorldAccessTarget) => boolean;
 };
 
 export type AccessContext = AccessContextPredicates & {

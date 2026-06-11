@@ -1,16 +1,18 @@
 import { Globe2 } from "lucide-react";
 import { type JSX, type ReactNode } from "react";
 
+import { WorldBreadcrumb } from "./WorldBreadcrumb";
+
 type WorldContextBarProps = {
   readonly children?: ReactNode;
+  readonly worldId: string;
+  readonly worldName: string;
 };
 
-// World-scope context strip rendered at the top of the world layout. Provides
-// a visual container that callers fill with world/turn/calendar/character
-// controls; this component itself is purely structural so it can live in the
-// app-component layer without depending on features.
 export function WorldContextBar({
   children,
+  worldId,
+  worldName,
 }: WorldContextBarProps): JSX.Element {
   return (
     <div
@@ -19,7 +21,7 @@ export function WorldContextBar({
     >
       <div className="flex min-w-0 items-center gap-2">
         <Globe2 className="size-3.5 shrink-0" aria-hidden="true" />
-        <span className="truncate">Active world</span>
+        <WorldBreadcrumb worldId={worldId} worldName={worldName} />
       </div>
       {children}
     </div>

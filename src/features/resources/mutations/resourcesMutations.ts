@@ -109,6 +109,7 @@ async function createResource(
     .from("resources")
     .insert({
       base_stockpile_cap: values.baseStockpileCap ?? 0,
+      decay_rate: values.decayRate ?? 0,
       name: values.name.trim(),
       slug: values.slug.trim(),
       world_id: values.worldId,
@@ -146,6 +147,7 @@ async function updateResource(
 
   const updatePayload: {
     base_stockpile_cap?: number;
+    decay_rate?: number;
     name?: string;
     slug?: string;
   } = {};
@@ -158,6 +160,9 @@ async function updateResource(
   }
   if (values.baseStockpileCap !== undefined) {
     updatePayload.base_stockpile_cap = values.baseStockpileCap;
+  }
+  if (values.decayRate !== undefined) {
+    updatePayload.decay_rate = values.decayRate;
   }
 
   const { data, error } = await client

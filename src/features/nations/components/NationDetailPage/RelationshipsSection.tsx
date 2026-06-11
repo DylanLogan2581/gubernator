@@ -1,8 +1,15 @@
 import { useQuery, type QueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
+import { type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -13,10 +20,10 @@ import {
 import { nationsListQueryOptions } from "../../queries/nationsQueries";
 
 import { NationRelationshipRow } from "./RelationshipRow";
+import { getStanceIconConfig } from "./RelationshipUtils";
 
 import type { NationRelationship } from "../../types/nationRelationshipTypes";
 import type { Nation } from "../../types/nationTypes";
-import type { JSX } from "react";
 
 export function NationRelationshipsSection({
   canAdminWorld,
@@ -48,9 +55,9 @@ export function NationRelationshipsSection({
   return (
     <section
       aria-labelledby="nation-relationships-heading"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="rounded-md border border-border bg-card p-0 text-card-foreground"
     >
-      <div className="space-y-1">
+      <div className="px-4 py-4">
         <h2 id="nation-relationships-heading" className="text-base font-medium">
           Relationships
         </h2>
@@ -59,37 +66,47 @@ export function NationRelationshipsSection({
           side.
         </p>
       </div>
-      {nationsQuery.isPending ||
-      outgoingQuery.isPending ||
-      incomingQuery.isPending ? (
-        <LoadingState label="Loading relationships…" />
-      ) : nationsQuery.isError ? (
-        <ErrorState
-          title="Relationships could not be loaded"
-          description={getErrorDescription(nationsQuery.error)}
-        />
-      ) : outgoingQuery.isError ? (
-        <ErrorState
-          title="Relationships could not be loaded"
-          description={getErrorDescription(outgoingQuery.error)}
-        />
-      ) : incomingQuery.isError ? (
-        <ErrorState
-          title="Relationships could not be loaded"
-          description={getErrorDescription(incomingQuery.error)}
-        />
-      ) : (
-        <NationRelationshipsList
-          canControl={canControl}
-          incoming={incomingQuery.data}
-          nation={nation}
-          otherNations={nationsQuery.data.filter(
-            (candidate) => candidate.id !== nation.id,
-          )}
-          outgoing={outgoingQuery.data}
-          queryClient={queryClient}
-        />
-      )}
+      <div className="border-t border-border">
+        {nationsQuery.isPending ||
+        outgoingQuery.isPending ||
+        incomingQuery.isPending ? (
+          <div className="px-4 pb-4 pt-2">
+            <LoadingState label="Loading relationships…" />
+          </div>
+        ) : nationsQuery.isError ? (
+          <div className="px-4 pb-4 pt-2">
+            <ErrorState
+              title="Relationships could not be loaded"
+              description={getErrorDescription(nationsQuery.error)}
+            />
+          </div>
+        ) : outgoingQuery.isError ? (
+          <div className="px-4 pb-4 pt-2">
+            <ErrorState
+              title="Relationships could not be loaded"
+              description={getErrorDescription(outgoingQuery.error)}
+            />
+          </div>
+        ) : incomingQuery.isError ? (
+          <div className="px-4 pb-4 pt-2">
+            <ErrorState
+              title="Relationships could not be loaded"
+              description={getErrorDescription(incomingQuery.error)}
+            />
+          </div>
+        ) : (
+          <NationRelationshipsList
+            canControl={canControl}
+            incoming={incomingQuery.data}
+            nation={nation}
+            otherNations={nationsQuery.data.filter(
+              (candidate) => candidate.id !== nation.id,
+            )}
+            outgoing={outgoingQuery.data}
+            queryClient={queryClient}
+          />
+        )}
+      </div>
     </section>
   );
 }
@@ -111,10 +128,12 @@ function NationRelationshipsList({
 }): JSX.Element {
   if (otherNations.length === 0) {
     return (
-      <EmptyState
-        title="No other nations"
-        description="This world has no other nations to relate to yet."
-      />
+      <div className="px-4 pb-4 pt-2">
+        <EmptyState
+          title="No other nations"
+          description="This world has no other nations to relate to yet."
+        />
+      </div>
     );
   }
 
@@ -126,9 +145,9 @@ function NationRelationshipsList({
   );
 
   return (
-    <ul className="grid gap-2" aria-label="Relationships">
+    <div className="divide-y divide-border">
       {otherNations.map((other) => (
-        <NationRelationshipRow
+        <NationRelationshipAccordionRow
           key={other.id}
           canControl={canControl}
           incoming={incomingByFrom.get(other.id) ?? null}
@@ -138,6 +157,47 @@ function NationRelationshipsList({
           queryClient={queryClient}
         />
       ))}
-    </ul>
+    </div>
+  );
+}
+
+function NationRelationshipAccordionRow({
+  canControl,
+  incoming,
+  nation,
+  other,
+  outgoing,
+  queryClient,
+}: {
+  readonly canControl: boolean;
+  readonly incoming: NationRelationship | null;
+  readonly nation: Nation;
+  readonly other: Nation;
+  readonly outgoing: NationRelationship | null;
+  readonly queryClient: QueryClient;
+}): JSX.Element {
+  const currentStance = outgoing?.currentStance ?? "neutral";
+  const { Icon, colorClass, label } = getStanceIconConfig(currentStance);
+
+  return (
+    <Collapsible className="group">
+      <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors">
+        <span className="font-medium">{other.name}</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <Icon className={`h-4 w-4 ${colorClass}`} aria-label={label} />
+          <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="border-t border-border px-4 pb-4 pt-2">
+        <NationRelationshipRow
+          canControl={canControl}
+          incoming={incoming}
+          nation={nation}
+          other={other}
+          outgoing={outgoing}
+          queryClient={queryClient}
+        />
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

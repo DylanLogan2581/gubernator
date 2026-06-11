@@ -35,19 +35,17 @@ values
 -- World 1: where managed_population_types live.
 -- World 2: provides cross-world resources for rejection tests.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'MPTV Main World',
-    'f1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'f2000000-0000-0000-0000-000000000002',
     'MPTV Other World',
-    'f1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

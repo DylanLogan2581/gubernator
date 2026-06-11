@@ -18,9 +18,10 @@ const CONFIGURATION_TABS = [
   "deposits",
   "managed-populations",
   "calendar",
-  "naming",
+  "namesets",
   "npc-flavor",
   "population-rules",
+  "world-settings",
 ] as const;
 
 type ConfigurationTab = (typeof CONFIGURATION_TABS)[number];

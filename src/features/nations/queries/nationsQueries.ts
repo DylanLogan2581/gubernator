@@ -41,18 +41,27 @@ type NationRow = {
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
+  readonly nameset_id: string | null;
   readonly updated_at: string;
   readonly world_id: string;
 };
 type NationSettlementRow = {
+  readonly auto_ready_enabled: boolean;
   readonly id: string;
+  readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: {
+    readonly name: string;
+  };
+  readonly ready_set_at: string | null;
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,is_hidden,created_at,updated_at";
-const NATION_SETTLEMENT_SELECT = "id,name,nation_id";
+  "id,world_id,name,description,is_hidden,nameset_id,created_at,updated_at";
+const NATION_SETTLEMENT_SELECT =
+  "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner(name)";
 
 export function nationsListQueryOptions(
   worldId: string,
@@ -139,7 +148,25 @@ async function getNationSettlements(
     throw normalizeSupabaseError(error);
   }
 
-  return data.map(toNationSettlement);
+  // Fetch population counts via RPC for each settlement
+  const populationCounts = await Promise.all(
+    data.map(async (settlement) => {
+      const { data: count, error: rpcError } = await client.rpc(
+        "settlement_alive_citizen_count",
+        { p_settlement_id: settlement.id },
+      );
+
+      if (rpcError !== null) {
+        throw normalizeSupabaseError(rpcError);
+      }
+
+      return count;
+    }),
+  );
+
+  return data.map((row, index) =>
+    toNationSettlement(row, populationCounts[index]),
+  );
 }
 
 function toNation(row: NationRow): Nation {
@@ -149,15 +176,29 @@ function toNation(row: NationRow): Nation {
     id: row.id,
     isHidden: row.is_hidden,
     name: row.name,
+    namesetId: row.nameset_id,
     updatedAt: row.updated_at,
     worldId: row.world_id,
   };
 }
 
-function toNationSettlement(row: NationSettlementRow): NationSettlement {
+function toNationSettlement(
+  row: NationSettlementRow,
+  population: number,
+): NationSettlement {
+  // Derive isReadyForCurrentTurn: true if autoReady enabled OR manually set ready
+  const isReadyForCurrentTurn =
+    row.auto_ready_enabled || row.is_ready_current_turn;
   return {
+    autoReadyEnabled: row.auto_ready_enabled,
     id: row.id,
+    isReadyCurrentTurn: row.is_ready_current_turn,
+    isReadyForCurrentTurn,
+    lastReadyAt: row.last_ready_at,
     name: row.name,
     nationId: row.nation_id,
+    nationName: row.nations.name,
+    population,
+    readySetAt: row.ready_set_at,
   };
 }

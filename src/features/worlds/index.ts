@@ -6,6 +6,7 @@ export { WorldListPage } from "./components/WorldListPage";
 export { WorldNamingConfigPanel } from "./components/WorldNamingConfigPanel";
 export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
 export { WorldPopulationRulesConfigPanel } from "./components/WorldPopulationRulesConfigPanel";
+export { WorldSettingsPanel } from "./components/WorldSettingsPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
 export {
   currentUserAdminWorldIdsQueryOptions,
@@ -16,6 +17,7 @@ export {
   WorldNotFoundError,
   accessibleWorldsQueryOptions,
   isWorldNotFoundError,
+  trashedWorldsQueryOptions,
   worldRouteAccessQueryOptions,
 } from "./queries/worldQueries";
 export { worldQueryKeys } from "./queries/worldQueryKeys";
@@ -49,10 +51,20 @@ export {
   isSaveWorldPopulationRulesError,
   saveWorldPopulationRulesMutationOptions,
 } from "./mutations/worldPopulationRulesMutations";
-export type {
-  NameConvention,
-  WorldNamingConfig,
-} from "./schemas/worldNamingConfigSchemas";
+export {
+  WorldAdminError,
+  createWorldMutationOptions,
+  hardDeleteWorldMutationOptions,
+  isWorldAdminError,
+  restoreWorldMutationOptions,
+  trashWorldMutationOptions,
+} from "./mutations/worldAdminMutations";
+export {
+  WorldSettingsError,
+  isWorldSettingsError,
+  renameWorldMutationOptions,
+  setWorldCurrentTurnNumberMutationOptions,
+} from "./mutations/worldSettingsMutations";
 export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
 export type { WorldPopulationRules } from "./schemas/worldPopulationRulesSchemas";
 export type {

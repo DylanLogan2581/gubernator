@@ -5,6 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreatePlayerCharacterDialog } from "./CreatePlayerCharacterDialog";
 
+function getSelectByLabel(label: string): HTMLSelectElement {
+  const labelEl = screen.getByText(label);
+  const select = labelEl.parentElement?.querySelector("select");
+  if (select === null || select === undefined) {
+    throw new Error(`No select found for label "${label}"`);
+  }
+  return select;
+}
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
@@ -41,6 +50,7 @@ type CitizenRow = {
   readonly citizen_type: "npc" | "player_character";
   readonly created_at: string;
   readonly death_cause: string | null;
+  readonly given_name: string;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -59,18 +69,14 @@ type CitizenRow = {
   readonly sex: string | null;
   readonly skills_text: string | null;
   readonly status: "alive" | "dead";
+  readonly surname: string | null;
   readonly updated_at: string;
   readonly user_id: string | null;
   readonly world_id: string;
 };
 
 type UserRow = {
-  readonly created_at: string;
-  readonly email: string;
   readonly id: string;
-  readonly is_super_admin: boolean;
-  readonly status: string;
-  readonly updated_at: string;
   readonly username: string;
 };
 
@@ -80,6 +86,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     citizen_type: "player_character",
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
+    given_name: "New Character",
     id: NEW_CITIZEN_ID,
     name: "New Character",
     npc_flaw: null,
@@ -98,6 +105,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     sex: null,
     skills_text: null,
     status: "alive",
+    surname: null,
     updated_at: "2026-05-01T00:00:00.000Z",
     user_id: USER_ID,
     world_id: WORLD_ID,
@@ -119,12 +127,7 @@ const CITIZEN_B_ROW = createCitizenRow({
 });
 
 const USER_ROW: UserRow = {
-  created_at: "2026-01-01T00:00:00.000Z",
-  email: "testuser@example.com",
   id: USER_ID,
-  is_super_admin: false,
-  status: "active",
-  updated_at: "2026-01-01T00:00:00.000Z",
   username: "testuser",
 };
 
@@ -142,18 +145,19 @@ function createClient(
     .fn()
     .mockResolvedValue({ data: citizenRows, error: null });
 
-  const usersChain: Record<string, unknown> = {};
-  usersChain.select = vi.fn(() => usersChain);
-  usersChain.eq = vi.fn(() => usersChain);
-  usersChain.order = vi.fn().mockResolvedValue({ data: userRows, error: null });
-
   return {
     from: vi.fn((table: string) => {
       if (table === "citizens") return citizensChain;
-      if (table === "users") return usersChain;
       throw new Error(`Unexpected table in mock: ${table}`);
     }),
-    rpc: rpcMock,
+    rpc: vi
+      .fn()
+      .mockImplementation((name: string, ...args: unknown[]): unknown => {
+        if (name === "search_users_for_admin_picker") {
+          return Promise.resolve({ data: userRows, error: null });
+        }
+        return (rpcMock as (...a: unknown[]) => unknown)(name, ...args);
+      }),
   };
 }
 
@@ -222,7 +226,7 @@ describe("CreatePlayerCharacterDialog", () => {
     renderDialog();
 
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.click(
@@ -242,21 +246,15 @@ describe("CreatePlayerCharacterDialog", () => {
     await screen.findAllByRole("option", { name: "Alice" });
 
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "User" }),
       USER_ID,
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent A" }),
-      CITIZEN_A_ID,
-    );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent B" }),
-      CITIZEN_A_ID,
-    );
+    await userEvent.selectOptions(getSelectByLabel("Parent A"), CITIZEN_A_ID);
+    await userEvent.selectOptions(getSelectByLabel("Parent B"), CITIZEN_A_ID);
 
     await userEvent.click(
       screen.getByRole("button", { name: "Create player character" }),
@@ -276,21 +274,15 @@ describe("CreatePlayerCharacterDialog", () => {
     await screen.findAllByRole("option", { name: "Alice" });
 
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "User" }),
       USER_ID,
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent A" }),
-      CITIZEN_A_ID,
-    );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent B" }),
-      CITIZEN_B_ID,
-    );
+    await userEvent.selectOptions(getSelectByLabel("Parent A"), CITIZEN_A_ID);
+    await userEvent.selectOptions(getSelectByLabel("Parent B"), CITIZEN_B_ID);
 
     await userEvent.click(
       screen.getByRole("button", { name: "Create player character" }),
@@ -310,7 +302,7 @@ describe("CreatePlayerCharacterDialog", () => {
 
     await screen.findByRole("option", { name: "testuser" });
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.selectOptions(
@@ -340,7 +332,7 @@ describe("CreatePlayerCharacterDialog", () => {
 
     await screen.findByRole("option", { name: "testuser" });
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.selectOptions(
@@ -355,7 +347,7 @@ describe("CreatePlayerCharacterDialog", () => {
       expect(rpcMock).toHaveBeenCalledWith(
         "create_player_character",
         expect.objectContaining({
-          p_name: "Newborn",
+          p_given_name: "Newborn",
           p_settlement_id: SETTLEMENT_ID,
           p_world_id: WORLD_ID,
           p_user_id: USER_ID,

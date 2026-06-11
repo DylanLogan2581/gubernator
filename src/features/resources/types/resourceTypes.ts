@@ -3,6 +3,7 @@ import type { Json } from "@/types/database";
 export type Resource = {
   readonly baseStockpileCap: number;
   readonly createdAt: string;
+  readonly decayRate: number;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly isSystemResource: boolean;

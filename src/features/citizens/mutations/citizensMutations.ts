@@ -77,7 +77,7 @@ export const {
 export type CitizenMutationError = InstanceType<typeof CitizenMutationError>;
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
 
 export function createNpcMutationOptions({
   client = requireSupabaseClient(),
@@ -135,9 +135,14 @@ export function updateCitizenNpcFieldsMutationOptions({
       updateCitizenNpcFields(client, input),
     mutationKey: [...citizensQueryKeys.all, "update-citizen-npc-fields"],
     onSuccess: async (citizen): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: citizensQueryKeys.detail(citizen.id),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.detail(citizen.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.adminDetails(citizen.id),
+        }),
+      ]);
     },
   });
 }
@@ -205,7 +210,9 @@ async function createNpc(
   const { data, error } = await client
     .rpc("create_npc", {
       p_born_on_turn_number: values.bornOnTurnNumber ?? undefined,
-      p_name: values.name.trim(),
+      p_given_name: values.givenName.trim(),
+      p_nameset_id: values.namesetId ?? undefined,
+      p_surname: values.surname ?? undefined,
       p_npc_flaw: values.npcFlaw ?? undefined,
       p_npc_goal: values.npcGoal ?? undefined,
       p_npc_secret_contradiction: values.npcSecretContradiction ?? undefined,
@@ -242,7 +249,9 @@ async function createPlayerCharacter(
   const { data, error } = await client
     .rpc("create_player_character", {
       p_born_on_turn_number: values.bornOnTurnNumber ?? undefined,
-      p_name: values.name.trim(),
+      p_given_name: values.givenName.trim(),
+      p_nameset_id: values.namesetId ?? undefined,
+      p_surname: values.surname ?? undefined,
       p_parent_a_citizen_id: values.parentACitizenId ?? undefined,
       p_parent_b_citizen_id: values.parentBCitizenId ?? undefined,
       p_personality_text: values.personalityText ?? undefined,
@@ -275,7 +284,8 @@ async function updateCitizenCore(
   const { data, error } = await client
     .from("citizens")
     .update({
-      name: values.name.trim(),
+      given_name: values.givenName.trim(),
+      surname: values.surname,
       sex: values.sex,
     })
     .eq("id", values.citizenId)

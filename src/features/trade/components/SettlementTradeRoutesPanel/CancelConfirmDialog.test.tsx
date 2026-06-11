@@ -42,9 +42,15 @@ function makeRoute(): TradeRoute {
     destinationSettlementId: DEST_SETTLEMENT_ID,
     destinationSettlementName: "Far Settlement",
     destinationNationName: "Far Nation",
-    resourceId: "00000000-0000-0000-0000-000000000030",
-    resourceName: "Grain",
-    quantityPerTransition: 10,
+    legs: [
+      {
+        id: "00000000-0000-0000-0000-000000000031",
+        direction: "send" as const,
+        quantityPerTransition: 10,
+        resourceId: "00000000-0000-0000-0000-000000000030",
+        resourceName: "Grain",
+      },
+    ],
     status: "active",
     originApprovalStatus: "approved",
     destinationApprovalStatus: "approved",
@@ -117,7 +123,7 @@ describe("CancelConfirmDialog", () => {
   it("shows cancel dialog with counterpart name", () => {
     renderDialog();
     expect(
-      screen.getByRole("dialog", { name: "Cancel trade route?" }),
+      screen.getByRole("alertdialog", { name: "Cancel trade route?" }),
     ).toBeDefined();
     expect(screen.getByText(/Far Settlement \(Far Nation\)/)).toBeDefined();
   });
@@ -194,7 +200,7 @@ describe("CancelConfirmDialog", () => {
     const user = userEvent.setup();
     const { onClose, rpcMock } = renderDialog();
 
-    await user.click(screen.getByRole("button", { name: "Keep" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(onClose).toHaveBeenCalled();
     expect(rpcMock).not.toHaveBeenCalled();

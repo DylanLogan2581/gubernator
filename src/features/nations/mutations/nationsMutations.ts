@@ -55,6 +55,7 @@ type NationRow = {
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
+  readonly nameset_id: string | null;
   readonly updated_at: string;
   readonly world_id: string;
 };
@@ -65,7 +66,7 @@ export type DeleteNationResult = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,is_hidden,created_at,updated_at";
+  "id,world_id,name,description,is_hidden,nameset_id,created_at,updated_at";
 
 export type NationMutationIssue = MutationIssue;
 
@@ -305,6 +306,7 @@ function toNation(row: NationRow): Nation {
     id: row.id,
     isHidden: row.is_hidden,
     name: row.name,
+    namesetId: row.nameset_id,
     updatedAt: row.updated_at,
     worldId: row.world_id,
   };

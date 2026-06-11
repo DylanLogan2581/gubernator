@@ -240,6 +240,7 @@ describe("root error boundary", () => {
   });
 
   it("retries navigation silently when beforeLoad throws CancelledError", async () => {
+    const restoreConsole = suppressExpectedRouteErrorLogs();
     const queryClient = createTestQueryClient();
     const realEnsureQueryData = queryClient.ensureQueryData.bind(queryClient);
 
@@ -247,25 +248,70 @@ describe("root error boundary", () => {
       .mockImplementation(realEnsureQueryData)
       .mockRejectedValueOnce(new CancelledError());
 
-    renderAt("/worlds", queryClient);
+    try {
+      renderAt("/worlds", queryClient);
 
-    await screen.findByRole("link", { name: "Worlds" });
-    expect(screen.queryByText("Something went wrong")).toBeNull();
+      await screen.findByRole("link", { name: "Worlds" });
+      expect(screen.queryByText("Something went wrong")).toBeNull();
+    } finally {
+      restoreConsole();
+    }
   });
 
   it("renders an error state for non-CancelledError errors from beforeLoad", async () => {
+    const restoreConsole = suppressExpectedRouteErrorLogs();
     const queryClient = createTestQueryClient();
 
     vi.spyOn(queryClient, "ensureQueryData").mockRejectedValue(
       new Error("Unexpected auth failure"),
     );
 
-    renderAt("/worlds", queryClient);
+    try {
+      renderAt("/worlds", queryClient);
 
-    expect(await screen.findByText("Something went wrong")).toBeDefined();
-    expect(screen.queryByRole("link", { name: "Worlds" })).toBeNull();
+      expect(await screen.findByText("Something went wrong")).toBeDefined();
+      expect(screen.queryByRole("link", { name: "Worlds" })).toBeNull();
+    } finally {
+      restoreConsole();
+    }
   });
 });
+
+function suppressExpectedRouteErrorLogs(): () => void {
+  const originalError = console.error.bind(console) as (
+    ...args: readonly unknown[]
+  ) => void;
+  const originalWarn = console.warn.bind(console) as (
+    ...args: readonly unknown[]
+  ) => void;
+  const shouldSuppress = (args: readonly unknown[]): boolean => {
+    const message = args
+      .map((arg) => (arg instanceof Error ? arg.message : String(arg)))
+      .join("\n");
+
+    return (
+      message.includes("CancelledError") ||
+      message.includes("Unexpected auth failure") ||
+      message.includes("The above error occurred in the <MatchInnerImpl>") ||
+      message.includes("Warning: Error in route match: __root__/")
+    );
+  };
+  const errorSpy = vi
+    .spyOn(console, "error")
+    .mockImplementation((...args: unknown[]) => {
+      if (!shouldSuppress(args)) originalError(...args);
+    });
+  const warnSpy = vi
+    .spyOn(console, "warn")
+    .mockImplementation((...args: unknown[]) => {
+      if (!shouldSuppress(args)) originalWarn(...args);
+    });
+
+  return () => {
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+  };
+}
 
 function createTestQueryClient(): QueryClient {
   return new QueryClient({

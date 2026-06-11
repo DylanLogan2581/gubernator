@@ -5,8 +5,8 @@ import { managedPopulationInputLimits } from "@/lib/inputLimits";
 const managedPopulationTypeIdSchema = z.guid(
   "Managed population type id must be a valid UUID.",
 );
-const worldIdSchema = z.guid("World id must be a valid UUID.");
-const jobIdSchema = z.guid("Job id must be a valid UUID.");
+const worldIdSchema = z.guid("Select a world.");
+const jobIdSchema = z.guid("Select a job.");
 
 const populationTypeNameSchema = z
   .string()
@@ -40,7 +40,7 @@ export const populationResourceEntrySchema = z.strictObject({
   amountPerNAnimals: z
     .number()
     .min(0, "Amount per N animals must be non-negative."),
-  resourceId: z.guid("Resource id must be a valid UUID."),
+  resourceId: z.guid("Select a resource."),
 });
 
 const populationResourceArraySchema = z.array(populationResourceEntrySchema);
@@ -54,6 +54,7 @@ export const createManagedPopulationTypeInputSchema = z
     husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema,
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     name: populationTypeNameSchema,
+    regularOutputsJson: populationResourceArraySchema.optional(),
     slug: populationTypeSlugSchema,
     worldId: worldIdSchema,
   })
@@ -77,6 +78,7 @@ export const updateManagedPopulationTypeInputSchema = z
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     managedPopulationTypeId: managedPopulationTypeIdSchema,
     name: populationTypeNameSchema.optional(),
+    regularOutputsJson: populationResourceArraySchema.optional(),
     slug: populationTypeSlugSchema.optional(),
     worldId: worldIdSchema,
   })
@@ -89,7 +91,8 @@ export const updateManagedPopulationTypeInputSchema = z
       value.husbandryWorkersPerNAnimals === undefined &&
       value.growthRate === undefined &&
       value.maintenanceRulesJson === undefined &&
-      value.cullingOutputsJson === undefined
+      value.cullingOutputsJson === undefined &&
+      value.regularOutputsJson === undefined
     ) {
       ctx.addIssue({
         code: "custom",

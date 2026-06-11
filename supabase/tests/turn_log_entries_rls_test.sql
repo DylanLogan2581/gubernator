@@ -81,19 +81,11 @@ where
   id = '91000000-0000-0000-0000-000000000004';
 
 insert into
-  public.worlds (
-    id,
-    name,
-    owner_id,
-    current_turn_number,
-    visibility,
-    status
-  )
+  public.worlds (id, name, current_turn_number, visibility, status)
 values
   (
     '92000000-0000-0000-0000-000000000001',
     'Turn Log Private World',
-    '91000000-0000-0000-0000-000000000001',
     3,
     'private',
     'active'
@@ -101,7 +93,6 @@ values
   (
     '92000000-0000-0000-0000-000000000002',
     'Turn Log Outsider World',
-    '91000000-0000-0000-0000-000000000003',
     7,
     'private',
     'active'
@@ -110,6 +101,10 @@ values
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    '92000000-0000-0000-0000-000000000001',
+    '91000000-0000-0000-0000-000000000001'
+  ),
   (
     '92000000-0000-0000-0000-000000000001',
     '91000000-0000-0000-0000-000000000002'
@@ -139,10 +134,11 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
-    role_type
+    role_type,
+    death_cause_category
   )
 values
   (
@@ -153,7 +149,8 @@ values
     'PC Holder Citizen',
     'alive',
     '91000000-0000-0000-0000-000000000005',
-    'none'
+    'none',
+    null
   ),
   (
     '97000000-0000-0000-0000-000000000002',
@@ -163,7 +160,8 @@ values
     'Dead PC Holder Citizen',
     'dead',
     '91000000-0000-0000-0000-000000000006',
-    'none'
+    'none',
+    'unknown'
   );
 
 insert into

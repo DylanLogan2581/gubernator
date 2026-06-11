@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { depositInputLimits } from "@/lib/inputLimits";
 
-const settlementIdSchema = z.guid("Settlement id must be a valid UUID.");
-const depositTypeIdSchema = z.guid("Deposit type id must be a valid UUID.");
+const settlementIdSchema = z.guid("Select a settlement.");
+const depositTypeIdSchema = z.guid("Select a deposit type.");
 
 const depositInstanceNameSchema = z
   .string()
@@ -18,7 +18,7 @@ const depositInstanceNameSchema = z
 
 export const depositInstanceResourceEntrySchema = z.strictObject({
   initialQuantity: z.number().positive("Initial quantity must be positive."),
-  resourceId: z.guid("Resource id must be a valid UUID."),
+  resourceId: z.guid("Select a resource."),
 });
 
 const resourcesArraySchema = z

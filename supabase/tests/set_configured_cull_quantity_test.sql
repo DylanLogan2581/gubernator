@@ -56,14 +56,21 @@ values
   );
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'e2000000-0000-0000-0000-100000000001',
     'SCCQ World',
-    'e1000000-0000-0000-0000-100000000001',
     'private',
     'active'
+  );
+
+insert into
+  public.world_admins (world_id, user_id)
+values
+  (
+    'e2000000-0000-0000-0000-100000000001',
+    'e1000000-0000-0000-0000-100000000001'
   );
 
 insert into
@@ -90,7 +97,7 @@ insert into
     id,
     world_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,

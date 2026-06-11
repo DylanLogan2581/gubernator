@@ -1,0 +1,15 @@
+-- Migration: drop_advance_world_turn_if_current
+-- §489 (Option B): Delete advance_world_turn_if_current entirely.
+--
+-- The legacy RPC was the sole end-turn surface before the simulation engine
+-- landed. Its responsibilities have all migrated to apply_turn_transition:
+--   - World turn advancement  → §C35 (20260603000009)
+--   - Settlement readiness    → §C35 (20260603000009)
+--   - turn.advanced log entry → §C34 (20260603000007)
+--   - turn.completed notifs   → §C34 (20260603000007)
+--
+-- The end-turn-basic edge function was deleted in a prior commit.
+-- end-turn-simulation calls apply_turn_transition exclusively.
+-- No active code path writes log_category='basic_turn_advancement' after this.
+-- ---------------------------------------------------------------------------
+drop function if exists public.advance_world_turn_if_current (uuid, integer, uuid, jsonb, jsonb);

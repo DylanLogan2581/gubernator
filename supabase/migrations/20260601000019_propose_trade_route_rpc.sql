@@ -6,8 +6,9 @@
 -- Error contract:
 --   P0002 (no_data_found)          – null params, settlement not found, resource not found
 --   42501 (insufficient_privilege) – caller lacks nation-manager authority on either side
---   P0001 (raise_exception)        – self-loop, cross-world resource, soft-deleted resource,
---                                    quantity <= 0, proposing citizen not in endpoint nation
+--   P0001 (raise_exception)        – world is archived, self-loop, cross-world resource,
+--                                    soft-deleted resource, quantity <= 0, proposing citizen
+--                                    not in endpoint nation
 --
 -- Notifications: fires 'trade_proposal_received' in the same transaction for
 -- all Nation Manager and Settlement Manager PCs on each endpoint side.
@@ -88,6 +89,11 @@ begin
 
   if v_destination_nation_id is null then
     raise exception 'not found' using errcode = 'P0002';
+  end if;
+
+  -- Archived world guard
+  if public.world_is_archived(v_world_id) then
+    raise exception 'world is archived' using errcode = 'P0001';
   end if;
 
   -- Auth: manager of either endpoint nation (includes super admin and world admin)

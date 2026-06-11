@@ -9,15 +9,30 @@ export {
   isCreateDepositInstanceMutationError,
 } from "./mutations/createDepositInstanceMutations";
 export {
+  HardDeleteDepositInstanceMutationError,
+  hardDeleteDepositInstanceMutationOptions,
+  isHardDeleteDepositInstanceMutationError,
+} from "./mutations/hardDeleteDepositInstanceMutations";
+export {
   RemoveDepositInstanceMutationError,
   isRemoveDepositInstanceMutationError,
   removeDepositInstanceMutationOptions,
 } from "./mutations/removeDepositInstanceMutations";
 export {
+  isRestoreDepositInstanceMutationError,
+  RestoreDepositInstanceMutationError,
+  restoreDepositInstanceMutationOptions,
+} from "./mutations/restoreDepositInstanceMutations";
+export {
   SetDepositInstanceMaxWorkersMutationError,
   isSetDepositInstanceMaxWorkersMutationError,
   setDepositInstanceMaxWorkersMutationOptions,
 } from "./mutations/setDepositInstanceMaxWorkersMutations";
+export {
+  SetDepositInstanceResourceQuantitiesMutationError,
+  isSetDepositInstanceResourceQuantitiesMutationError,
+  setDepositInstanceResourceQuantitiesMutationOptions,
+} from "./mutations/setDepositInstanceResourceQuantitiesMutations";
 export {
   DepositTypeMutationError,
   createDepositTypeMutationOptions,
@@ -38,8 +53,11 @@ export {
   createDepositInstanceInputSchema,
   depositInstanceResourceEntrySchema,
 } from "./schemas/createDepositInstanceSchemas";
+export { hardDeleteDepositInstanceInputSchema } from "./schemas/hardDeleteDepositInstanceSchemas";
 export { removeDepositInstanceInputSchema } from "./schemas/removeDepositInstanceSchemas";
+export { restoreDepositInstanceInputSchema } from "./schemas/restoreDepositInstanceSchemas";
 export { setDepositInstanceMaxWorkersInputSchema } from "./schemas/setDepositInstanceMaxWorkersSchemas";
+export { setDepositInstanceResourceQuantitiesInputSchema } from "./schemas/setDepositInstanceResourceQuantitiesSchemas";
 export {
   createDepositTypeInputSchema,
   hardDeleteDepositTypeInputSchema,
@@ -52,8 +70,11 @@ export { validateDepositTypeReferencesAgainstWorld } from "./utils/validateDepos
 
 export type { CreateDepositInstanceMutationIssue } from "./mutations/createDepositInstanceMutations";
 export type { DepositTypeMutationIssue } from "./mutations/depositsMutations";
+export type { HardDeleteDepositInstanceMutationIssue } from "./mutations/hardDeleteDepositInstanceMutations";
 export type { RemoveDepositInstanceMutationIssue } from "./mutations/removeDepositInstanceMutations";
+export type { RestoreDepositInstanceMutationIssue } from "./mutations/restoreDepositInstanceMutations";
 export type { SetDepositInstanceMaxWorkersMutationIssue } from "./mutations/setDepositInstanceMaxWorkersMutations";
+export type { SetDepositInstanceResourceQuantitiesMutationIssue } from "./mutations/setDepositInstanceResourceQuantitiesMutations";
 export type {
   CreateDepositInstanceInput,
   CreateDepositInstanceValues,
@@ -61,13 +82,25 @@ export type {
   DepositInstanceResourceEntryValues,
 } from "./schemas/createDepositInstanceSchemas";
 export type {
+  HardDeleteDepositInstanceInput,
+  HardDeleteDepositInstanceValues,
+} from "./schemas/hardDeleteDepositInstanceSchemas";
+export type {
   RemoveDepositInstanceInput,
   RemoveDepositInstanceValues,
 } from "./schemas/removeDepositInstanceSchemas";
 export type {
+  RestoreDepositInstanceInput,
+  RestoreDepositInstanceValues,
+} from "./schemas/restoreDepositInstanceSchemas";
+export type {
   SetDepositInstanceMaxWorkersInput,
   SetDepositInstanceMaxWorkersValues,
 } from "./schemas/setDepositInstanceMaxWorkersSchemas";
+export type {
+  SetDepositInstanceResourceQuantitiesInput,
+  SetDepositInstanceResourceQuantitiesValues,
+} from "./schemas/setDepositInstanceResourceQuantitiesSchemas";
 export type {
   CreateDepositTypeInput,
   CreateDepositTypeValues,
@@ -87,8 +120,11 @@ export type {
   DepositInstance,
   DepositInstanceResource,
   DepositInstanceStatus,
+  HardDeleteDepositInstanceResult,
   RemoveDepositInstanceResult,
+  RestoreDepositInstanceResult,
   SetDepositInstanceMaxWorkersResult,
+  SetDepositInstanceResourceQuantitiesResult,
 } from "./types/depositInstanceTypes";
 export type {
   DepositType,

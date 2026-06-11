@@ -84,10 +84,7 @@ describe("currentAccessContextQueryOptions", () => {
           username: "player",
         },
         worldAdminRows: [],
-        playerCharacterWorldRows: [
-          { world_id: "world-pc-1" },
-          { world_id: "world-pc-2" },
-        ],
+        playerCharacterWorldIds: ["world-pc-1", "world-pc-2"],
       }),
     );
 
@@ -171,7 +168,7 @@ type FakeClientInput = {
   } | null;
   readonly user?: unknown;
   readonly worldAdminRows?: readonly { readonly world_id: string }[];
-  readonly playerCharacterWorldRows?: readonly { readonly world_id: string }[];
+  readonly playerCharacterWorldIds?: readonly string[];
 };
 
 function createClient({
@@ -179,7 +176,7 @@ function createClient({
   session,
   user = null,
   worldAdminRows = [],
-  playerCharacterWorldRows = [],
+  playerCharacterWorldIds = [],
 }: FakeClientInput): unknown {
   const fromHandler = from ?? vi.fn(createQueryBuilder);
 
@@ -190,10 +187,6 @@ function createClient({
 
     if (table === "world_admins") {
       return createMultiEqOrderQueryBuilder(worldAdminRows);
-    }
-
-    if (table === "citizens") {
-      return createMultiEqOrderQueryBuilder(playerCharacterWorldRows);
     }
 
     throw new Error(`Unexpected table: ${table}`);
@@ -207,6 +200,12 @@ function createClient({
       }),
     },
     from: fromHandler,
+    rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: playerCharacterWorldIds, error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    }),
   };
 }
 

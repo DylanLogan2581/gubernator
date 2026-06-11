@@ -108,12 +108,11 @@ where
   id = 'f1000000-0000-0000-0000-000000000007';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'Nation Relationships World',
-    'f1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -181,7 +180,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -219,7 +218,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -623,12 +622,11 @@ reset role;
 -- Insert a second world and one nation in it so we have a foreign nation to
 -- target.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f2000000-0000-0000-0000-000000000002',
     'Other World',
-    'f1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );

@@ -1,31 +1,36 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Pencil, Save, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { updateCitizenNpcFieldsMutationOptions } from "../../mutations/citizensMutations";
 
-import { getCitizenMutationErrorDescription } from "./ErrorMessages";
 import { Readout } from "./Shared";
 
-import type { Citizen } from "../../types/citizenTypes";
+import type { CitizenAdminDetails } from "../../types/citizenTypes";
 
 export function CitizenNpcNotesSection({
+  adminDetails,
   canEdit,
-  citizen,
+  citizenId,
   queryClient,
+  worldId,
 }: {
+  readonly adminDetails: CitizenAdminDetails | null;
   readonly canEdit: boolean;
-  readonly citizen: Citizen;
+  readonly citizenId: string;
   readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): JSX.Element {
   const [isEditing, setIsEditing] = useState(false);
   const [personalityText, setPersonalityText] = useState(
-    citizen.personalityText ?? "",
+    adminDetails?.personalityText ?? "",
   );
-  const [skillsText, setSkillsText] = useState(citizen.skillsText ?? "");
+  const [skillsText, setSkillsText] = useState(adminDetails?.skillsText ?? "");
 
   const updateMutation = useMutation(
     updateCitizenNpcFieldsMutationOptions({ queryClient }),
@@ -33,8 +38,8 @@ export function CitizenNpcNotesSection({
 
   function closeEditor(): void {
     setIsEditing(false);
-    setPersonalityText(citizen.personalityText ?? "");
-    setSkillsText(citizen.skillsText ?? "");
+    setPersonalityText(adminDetails?.personalityText ?? "");
+    setSkillsText(adminDetails?.skillsText ?? "");
     updateMutation.reset();
   }
 
@@ -43,21 +48,22 @@ export function CitizenNpcNotesSection({
     updateMutation.reset();
     updateMutation.mutate(
       {
-        citizenId: citizen.id,
-        npcFlaw: citizen.npcFlaw ?? "",
-        npcGoal: citizen.npcGoal ?? "",
-        npcSecretContradiction: citizen.npcSecretContradiction ?? "",
-        npcTrait1: citizen.npcTrait1 ?? "",
-        npcTrait2: citizen.npcTrait2 ?? "",
+        citizenId,
+        npcFlaw: adminDetails?.npcFlaw ?? "",
+        npcGoal: adminDetails?.npcGoal ?? "",
+        npcSecretContradiction: adminDetails?.npcSecretContradiction ?? "",
+        npcTrait1: adminDetails?.npcTrait1 ?? "",
+        npcTrait2: adminDetails?.npcTrait2 ?? "",
         personalityText,
         skillsText,
-        worldId: citizen.worldId,
+        worldId,
       },
       {
         onError: (error) => {
-          toast.error(getCitizenMutationErrorDescription(error));
+          notifyMutationError(error, "Failed to save notes.");
         },
         onSuccess: () => {
+          notifyMutationSuccess("Personality and skills saved.");
           setIsEditing(false);
         },
       },
@@ -66,9 +72,9 @@ export function CitizenNpcNotesSection({
 
   if (!isEditing) {
     return (
-      <section
+      <Card
         aria-labelledby="citizen-npc-notes-heading"
-        className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+        className="grid gap-3 p-4"
       >
         <div className="flex items-center justify-between gap-2">
           <h2 id="citizen-npc-notes-heading" className="text-base font-medium">
@@ -87,17 +93,25 @@ export function CitizenNpcNotesSection({
           ) : null}
         </div>
         <dl className="flex flex-col gap-2">
-          <Readout label="Personality" value={citizen.personalityText} block />
-          <Readout label="Skills" value={citizen.skillsText} block />
+          <Readout
+            label="Personality"
+            value={adminDetails?.personalityText ?? null}
+            block
+          />
+          <Readout
+            label="Skills"
+            value={adminDetails?.skillsText ?? null}
+            block
+          />
         </dl>
-      </section>
+      </Card>
     );
   }
 
   return (
     <form
       aria-label="Edit personality and skills"
-      className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground"
+      className="grid gap-3 p-4"
       noValidate
       onSubmit={handleSubmit}
     >
@@ -113,24 +127,28 @@ export function CitizenNpcNotesSection({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Personality</span>
+      <div className="grid gap-1 text-sm">
+        <Label htmlFor="personality">Personality</Label>
         <textarea
+          aria-label="Personality"
+          id="personality"
           className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
           value={personalityText}
           onChange={(event) => setPersonalityText(event.currentTarget.value)}
         />
-      </label>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">Skills</span>
+      </div>
+      <div className="grid gap-1 text-sm">
+        <Label htmlFor="skills">Skills</Label>
         <textarea
+          aria-label="Skills"
+          id="skills"
           className="min-h-16 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={updateMutation.isPending}
           value={skillsText}
           onChange={(event) => setSkillsText(event.currentTarget.value)}
         />
-      </label>
+      </div>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={updateMutation.isPending}>
           <Save aria-hidden="true" />

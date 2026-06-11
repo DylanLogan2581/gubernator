@@ -16,7 +16,7 @@
 begin;
 
 select
-  plan (6);
+  plan (9);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -109,19 +109,17 @@ where
 --          paths can be tested without triggering user_has_player_character_in_world
 --          for World A.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f2000000-0000-0000-0000-000000000001',
     'CVTCU World A',
-    'f1000000-0000-0000-0000-000000000001',
     'public',
     'active'
   ),
   (
     'f2000000-0000-0000-0000-000000000002',
     'CVTCU World B (manager PCs)',
-    'f1000000-0000-0000-0000-000000000001',
     'public',
     'active'
   );
@@ -162,14 +160,15 @@ values
     'CVTCU Settlement B1 (manager PCs)'
   );
 
--- Target NPC in World A, Settlement A1: the citizen whose visibility is tested.
+-- Target NPC in World A, Settlement A1: used to verify NPC is invisible to
+-- non-admin callers.
 insert into
   public.citizens (
     id,
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values
@@ -182,6 +181,29 @@ values
     'alive'
   );
 
+-- Target PC in World A, Settlement A1: used to verify player_character rows
+-- remain visible to non-admin callers under the manager and PC-holder paths.
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id
+  )
+values
+  (
+    'f5000000-0000-0000-0000-000000000011',
+    'f2000000-0000-0000-0000-000000000001',
+    'f4000000-0000-0000-0000-000000000001',
+    'player_character',
+    'CVTCU Target PC',
+    'alive',
+    'f1000000-0000-0000-0000-000000000006'
+  );
+
 -- Nation Manager's PC lives in World B but governs Nation A in World A.
 insert into
   public.citizens (
@@ -189,7 +211,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -215,7 +237,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -242,7 +264,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -294,7 +316,7 @@ select
 reset role;
 
 -- ===========================================================================
--- NATION MANAGER: sees citizens whose settlement belongs to the managed nation.
+-- NATION MANAGER: NPC is not visible; PC in their settlement is visible.
 -- Manager's PC is in World B; visibility into World A comes solely from the
 -- nation manager path.
 -- ===========================================================================
@@ -307,14 +329,21 @@ set
 select
   is (
     public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000010'::uuid),
+    false,
+    'nation manager cannot see NPC in a settlement within their nation'
+  );
+
+select
+  is (
+    public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000011'::uuid),
     true,
-    'nation manager can see a citizen whose settlement is within their nation'
+    'nation manager can see PC in a settlement within their nation'
   );
 
 reset role;
 
 -- ===========================================================================
--- SETTLEMENT MANAGER: sees citizens in the managed settlement.
+-- SETTLEMENT MANAGER: NPC is not visible; PC in their settlement is visible.
 -- Manager's PC is in World B, so the PC-holder rule does not broaden
 -- visibility into World A.
 -- ===========================================================================
@@ -327,14 +356,21 @@ set
 select
   is (
     public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000010'::uuid),
+    false,
+    'settlement manager cannot see NPC in their settlement'
+  );
+
+select
+  is (
+    public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000011'::uuid),
     true,
-    'settlement manager can see a citizen in their settlement'
+    'settlement manager can see PC in their settlement'
   );
 
 reset role;
 
 -- ===========================================================================
--- PC HOLDER: sees any citizen in a world where they hold a player character.
+-- PC HOLDER: NPC is not visible; PC in same world is visible.
 -- ===========================================================================
 set
   local role authenticated;
@@ -345,8 +381,15 @@ set
 select
   is (
     public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000010'::uuid),
+    false,
+    'pc holder in the same world cannot see NPC'
+  );
+
+select
+  is (
+    public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000011'::uuid),
     true,
-    'pc holder in the same world can see the citizen'
+    'pc holder in the same world can see PC'
   );
 
 reset role;

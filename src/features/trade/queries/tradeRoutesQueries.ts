@@ -12,12 +12,21 @@ import { tradeRoutesQueryKeys } from "./tradeRoutesQueryKeys";
 import type {
   TradeRoute,
   TradeRouteApprovalStatus,
+  TradeRouteLeg,
   TradeRouteStatus,
 } from "../types/tradeRouteTypes";
 
 type SettlementWithNationRow = {
   readonly name: string;
   readonly nation: { readonly name: string };
+};
+
+type TradeRouteLegRow = {
+  readonly direction: string;
+  readonly id: string;
+  readonly quantity_per_transition: number;
+  readonly resource_id: string;
+  readonly resource: { readonly name: string };
 };
 
 type TradeRouteRow = {
@@ -33,11 +42,9 @@ type TradeRouteRow = {
   readonly origin_settlement_id: string;
   readonly pause_reason_last_transition: string | null;
   readonly proposed_by_citizen_id: string;
-  readonly quantity_per_transition: number;
   readonly replacement_for_trade_route_id: string | null;
-  readonly resource: { readonly name: string };
-  readonly resource_id: string;
   readonly status: TradeRouteStatus;
+  readonly trade_route_legs: readonly TradeRouteLegRow[];
   readonly updated_at: string;
 };
 
@@ -45,8 +52,6 @@ const TRADE_ROUTE_SELECT = [
   "id",
   "origin_settlement_id",
   "destination_settlement_id",
-  "resource_id",
-  "quantity_per_transition",
   "status",
   "proposed_by_citizen_id",
   "origin_approval_status",
@@ -59,7 +64,7 @@ const TRADE_ROUTE_SELECT = [
   "updated_at",
   "origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(name,nation:nations(name))",
   "destination_settlement:settlements!trade_routes_destination_settlement_id_fkey(name,nation:nations(name))",
-  "resource:resources(name)",
+  "trade_route_legs(id,direction,resource_id,quantity_per_transition,resource:resources(name))",
 ].join(",");
 
 type TradeRoutesForSettlementQueryKey = ReturnType<
@@ -114,6 +119,7 @@ function toTradeRoute(row: TradeRouteRow): TradeRoute {
     destinationSettlementId: row.destination_settlement_id,
     destinationSettlementName: row.destination_settlement.name,
     id: row.id,
+    legs: row.trade_route_legs.map(toLeg),
     originApprovalStatus: row.origin_approval_status,
     originApprovedByCitizenId: row.origin_approved_by_citizen_id,
     originNationName: row.origin_settlement.nation.name,
@@ -121,11 +127,18 @@ function toTradeRoute(row: TradeRouteRow): TradeRoute {
     originSettlementName: row.origin_settlement.name,
     pauseReasonLastTransition: row.pause_reason_last_transition,
     proposedByCitizenId: row.proposed_by_citizen_id,
-    quantityPerTransition: row.quantity_per_transition,
     replacementForTradeRouteId: row.replacement_for_trade_route_id,
-    resourceId: row.resource_id,
-    resourceName: row.resource.name,
     status: row.status,
     updatedAt: row.updated_at,
+  };
+}
+
+function toLeg(row: TradeRouteLegRow): TradeRouteLeg {
+  return {
+    direction: row.direction as TradeRouteLeg["direction"],
+    id: row.id,
+    quantityPerTransition: row.quantity_per_transition,
+    resourceId: row.resource_id,
+    resourceName: row.resource.name,
   };
 }

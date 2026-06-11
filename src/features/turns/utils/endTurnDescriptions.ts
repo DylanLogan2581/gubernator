@@ -3,7 +3,7 @@ import {
   type SettlementReadinessSummary,
 } from "@/features/settlements";
 
-import { isEndTurnBasicError } from "../mutations/endTurnBasicMutations";
+import { isEndTurnTransitionError } from "../mutations/endTurnTransitionMutations";
 
 export function getControlDescription({
   isArchived,
@@ -26,7 +26,7 @@ export function getControlDescription({
     return "End-turn transition is running.";
   }
 
-  return "Submitting starts one end-turn transition for the current turn.";
+  return "";
 }
 
 export function getReadinessSummaryDescription(
@@ -40,12 +40,14 @@ export function getReadinessSummaryDescription(
 }
 
 export function getErrorDescription(error: unknown): string {
-  if (isEndTurnBasicError(error)) {
+  if (isEndTurnTransitionError(error)) {
     switch (error.code) {
       case "end_turn_archived_world":
         return "This world is archived. End turn is unavailable.";
       case "end_turn_running_transition":
         return "Another end-turn transition is already running. Refresh the page before trying again.";
+      case "end_turn_session_expired":
+        return "Your session has expired. Please sign in again.";
       case "end_turn_stale_turn":
         return "This turn has already changed. Refresh the page to review the latest world state.";
       case "end_turn_transition_failed":

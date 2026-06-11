@@ -13,7 +13,7 @@
 begin;
 
 select
-  plan (26);
+  plan (29);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -76,34 +76,35 @@ where
 
 -- Create a private world owned by owner, and a public world.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'f1000000-0000-0000-0000-000000000001',
     'Private World',
-    'aa000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'f2000000-0000-0000-0000-000000000002',
     'Public World',
-    'aa000000-0000-0000-0000-000000000001',
     'public',
     'active'
   ),
   (
     'f3000000-0000-0000-0000-000000000003',
     'Hidden World',
-    'aa000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
 
--- Grant admin on private world to the admin user.
+-- Grant admin on private world to the creator (owner) and the admin user.
 insert into
   public.world_admins (world_id, user_id)
 values
+  (
+    'f1000000-0000-0000-0000-000000000001',
+    'aa000000-0000-0000-0000-000000000001'
+  ),
   (
     'f1000000-0000-0000-0000-000000000001',
     'bb000000-0000-0000-0000-000000000002'
@@ -178,7 +179,7 @@ reset role;
 -- ===========================================================================
 -- is_world_admin()
 -- ===========================================================================
--- Owner of the world
+-- Creator / explicit world admin
 set
   local role authenticated;
 
@@ -189,7 +190,7 @@ select
   is (
     public.is_world_admin ('f1000000-0000-0000-0000-000000000001'),
     true,
-    'is_world_admin returns true for the world owner'
+    'is_world_admin returns true for a world admin'
   );
 
 reset role;
@@ -242,10 +243,70 @@ select
 
 reset role;
 
+-- Super admin without an explicit world_admins row
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  is (
+    public.is_world_admin ('f1000000-0000-0000-0000-000000000001'),
+    true,
+    'is_world_admin returns true for super admin without an explicit world_admins row'
+  );
+
+reset role;
+
+-- Super admin in suspended status returns false
+update public.users
+set
+  status = 'suspended'
+where
+  id = 'dd000000-0000-0000-0000-000000000004';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  is (
+    public.is_world_admin ('f1000000-0000-0000-0000-000000000001'),
+    false,
+    'is_world_admin returns false for a suspended super admin'
+  );
+
+reset role;
+
+update public.users
+set
+  status = 'active'
+where
+  id = 'dd000000-0000-0000-0000-000000000004';
+
+-- Non-super-admin without a world_admins row returns false
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"cc000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  is (
+    public.is_world_admin ('f2000000-0000-0000-0000-000000000002'),
+    false,
+    'is_world_admin returns false for a non-super-admin without a world_admins row'
+  );
+
+reset role;
+
 -- ===========================================================================
 -- has_world_access()
 -- ===========================================================================
--- Owner can access their own private world
+-- World admin can access the private world
 set
   local role authenticated;
 
@@ -256,7 +317,7 @@ select
   is (
     public.has_world_access ('f1000000-0000-0000-0000-000000000001'),
     true,
-    'has_world_access returns true for the world owner (private world)'
+    'has_world_access returns true for a world admin (private world)'
   );
 
 reset role;
@@ -381,7 +442,7 @@ select
   is (
     public.is_world_admin ('f1000000-0000-0000-0000-000000000001'),
     false,
-    'is_world_admin returns false for a suspended world owner'
+    'is_world_admin returns false for a suspended world admin'
   );
 
 reset role;
@@ -465,7 +526,7 @@ select
   is (
     public.has_world_access ('f1000000-0000-0000-0000-000000000001'),
     false,
-    'has_world_access returns false for a deleted world owner'
+    'has_world_access returns false for a deleted world admin'
   );
 
 reset role;

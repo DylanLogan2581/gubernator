@@ -8,7 +8,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementReadinessListQueryOptions } from "../queries/settlementReadinessQueries";
 
-import { SettlementReadinessTable } from "./SettlementReadinessTable";
+import { SettlementNationAccordion } from "./SettlementNationAccordion";
 
 import type { SettlementReadinessListItem } from "../types/settlementReadinessTypes";
 import type { JSX, ReactNode } from "react";
@@ -96,13 +96,10 @@ export function SettlementReadinessListPanelContent({
           id="settlement-readiness-list-title"
           className="text-lg font-semibold tracking-normal"
         >
-          Settlement readiness list
+          Readiness Summary
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Current turn readiness by settlement.
-        </p>
       </div>
-      <SettlementReadinessTable
+      <SettlementNationAccordion
         accessContext={accessContext}
         canAdmin={canAdmin}
         canManage={canManage}

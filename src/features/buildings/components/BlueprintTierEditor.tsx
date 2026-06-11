@@ -6,14 +6,20 @@ import {
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Plus, Trash2 } from "lucide-react";
-import { useState, type FormEvent, type JSX } from "react";
-import { toast } from "sonner";
+import { useEffect, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   activeJobsByWorldQueryOptions,
   type JobDefinition,
@@ -23,8 +29,9 @@ import {
   type Resource,
 } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { notifyMutationSuccess } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
+import { useTierDraftForm } from "../hooks/useTierDraftForm";
 import {
   createTierMutationOptions,
   deleteTierMutationOptions,
@@ -35,25 +42,12 @@ import {
   tiersByBlueprintQueryOptions,
 } from "../queries/buildingsQueries";
 import {
-  createTierInputSchema,
-  updateTierInputSchema,
   type CreateTierInput,
   type UpdateTierInput,
 } from "../schemas/buildingSchemas";
-import {
-  buildCostInputs,
-  buildEffectInputs,
-  extractFieldErrors,
-  extractRefErrors,
-  tierCostsToState,
-  tierEffectsToState,
-  type CostRowState,
-  type EffectRowState,
-  type TierFormErrors,
-} from "../utils/tierEditorUtils";
-import { validateBlueprintTierReferencesAgainstWorld } from "../utils/validateBuildingReferences";
+import { tierCostsToState, tierEffectsToState } from "../utils/tierEditorUtils";
 
-import { CostEditor, EffectsEditor } from "./TierEditorFields";
+import { TierDraftFields } from "./TierDraftFields";
 
 import type {
   BuildingBlueprint,
@@ -249,24 +243,17 @@ function BlueprintTierEditorContent({
         />
       ) : null}
 
-      {deletingTier !== null ? (
+      {deletingTier !== null && (
         <TierDeleteConfirmDialog
           isPending={deleteMutation.isPending}
+          open
           tier={deletingTier}
-          onCancel={() => {
-            setDeletingTier(null);
-            deleteMutation.reset();
-          }}
           onConfirm={() => {
             deleteMutation.mutate(
               { tierId: deletingTier.id },
               {
                 onError: (error) => {
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Failed to delete tier.",
-                  );
+                  notifyMutationError(error, "Failed to delete tier.");
                 },
                 onSuccess: () => {
                   setDeletingTier(null);
@@ -275,8 +262,14 @@ function BlueprintTierEditorContent({
               },
             );
           }}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeletingTier(null);
+              deleteMutation.reset();
+            }
+          }}
         />
-      ) : null}
+      )}
 
       {canEdit && showCreateForm ? (
         <CreateTierForm
@@ -291,11 +284,7 @@ function BlueprintTierEditorContent({
           onSubmit={(input) => {
             createMutation.mutate(input, {
               onError: (error) => {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to create tier.",
-                );
+                notifyMutationError(error, "Failed to create tier.");
               },
               onSuccess: () => {
                 notifyMutationSuccess("Tier created.");
@@ -383,45 +372,30 @@ function TierRow({
 
 function TierDeleteConfirmDialog({
   isPending,
+  open,
   tier,
-  onCancel,
   onConfirm,
+  onOpenChange,
 }: {
   readonly isPending: boolean;
+  readonly open: boolean;
   readonly tier: BuildingBlueprintTier;
-  readonly onCancel: () => void;
   readonly onConfirm: () => void;
+  readonly onOpenChange: (open: boolean) => void;
 }): JSX.Element {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-4">
-      <div
-        aria-labelledby="tier-delete-confirm-title"
-        aria-modal="true"
-        className="grid w-full max-w-md gap-4 rounded-md border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-      >
-        <div className="space-y-1">
-          <h3
-            id="tier-delete-confirm-title"
-            className="text-lg font-semibold tracking-normal"
-          >
-            Delete tier
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete{" "}
-            <span className="font-medium">Tier {tier.tierNumber}</span>? This
-            action cannot be undone.
-          </p>
-        </div>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete tier</AlertDialogTitle>
+        </AlertDialogHeader>
+        <AlertDialogDescription>
+          Are you sure you want to delete{" "}
+          <span className="font-medium">Tier {tier.tierNumber}</span>? This
+          action cannot be undone.
+        </AlertDialogDescription>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending}
-            onClick={onCancel}
-          >
-            Cancel
-          </Button>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <Button
             type="button"
             variant="destructive"
@@ -432,8 +406,8 @@ function TierDeleteConfirmDialog({
             {isPending ? "Deleting…" : "Delete tier"}
           </Button>
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -454,56 +428,29 @@ function CreateTierForm({
   readonly onCancel: () => void;
   readonly onSubmit: (input: CreateTierInput) => void;
 }): JSX.Element {
-  const nextTierNumber =
-    tiers.length > 0 ? Math.max(...tiers.map((t) => t.tierNumber)) + 1 : 1;
-  const [tierNumber, setTierNumber] = useState(String(nextTierNumber));
-  const [workerTurns, setWorkerTurns] = useState("0");
-  const [constructionCosts, setConstructionCosts] = useState<CostRowState[]>(
-    [],
-  );
-  const [upkeepCosts, setUpkeepCosts] = useState<CostRowState[]>([]);
-  const [effects, setEffects] = useState<EffectRowState[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<TierFormErrors>({});
+  const form = useTierDraftForm();
+
+  useEffect(() => {
+    const nextTierNumber =
+      tiers.length > 0 ? Math.max(...tiers.map((t) => t.tierNumber)) + 1 : 1;
+    form.setTierNumber(String(nextTierNumber));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    setFieldErrors({});
 
-    const constructionCostInputs = buildCostInputs(constructionCosts);
-    const upkeepCostInputs = buildCostInputs(upkeepCosts);
-    const effectInputs = buildEffectInputs(effects);
+    const data = form.validate(activeResources, activeJobs);
+    if (data === null) return;
 
     const input: CreateTierInput = {
       blueprintId,
-      constructionCostsJson:
-        constructionCostInputs.length > 0 ? constructionCostInputs : undefined,
-      effectsJson: effectInputs.length > 0 ? effectInputs : undefined,
-      tierNumber: tierNumber !== "" ? parseInt(tierNumber, 10) : 0,
-      upkeepCostsJson:
-        upkeepCostInputs.length > 0 ? upkeepCostInputs : undefined,
-      workerTurnsRequired:
-        workerTurns !== "" ? parseInt(workerTurns, 10) : undefined,
+      constructionCostsJson: data.constructionCostsJson,
+      effectsJson: data.effectsJson,
+      tierNumber: data.tierNumber,
+      upkeepCostsJson: data.upkeepCostsJson,
+      workerTurnsRequired: data.workerTurnsRequired,
     };
-
-    const parseResult = createTierInputSchema.safeParse(input);
-    if (!parseResult.success) {
-      setFieldErrors(extractFieldErrors(parseResult.error.issues));
-      return;
-    }
-
-    const refIssues = validateBlueprintTierReferencesAgainstWorld(
-      {
-        constructionCostsJson: constructionCostInputs,
-        effectsJson: effectInputs,
-        upkeepCostsJson: upkeepCostInputs,
-      },
-      activeResources,
-      activeJobs,
-    );
-    if (refIssues.length > 0) {
-      setFieldErrors(extractRefErrors(refIssues));
-      return;
-    }
 
     onSubmit(input);
   }
@@ -517,63 +464,23 @@ function CreateTierForm({
     >
       <h3 className="text-sm font-medium">New tier</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Tier number</span>
-          <Input
-            aria-invalid={fieldErrors.tierNumber !== undefined}
-            disabled={isPending}
-            inputMode="numeric"
-            placeholder="1"
-            value={tierNumber}
-            onChange={(e) => {
-              setTierNumber(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.tierNumber !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.tierNumber}</p>
-          ) : null}
-        </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Worker turns required</span>
-          <Input
-            aria-invalid={fieldErrors.workerTurnsRequired !== undefined}
-            disabled={isPending}
-            inputMode="numeric"
-            placeholder="0"
-            value={workerTurns}
-            onChange={(e) => {
-              setWorkerTurns(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.workerTurnsRequired !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.workerTurnsRequired}
-            </p>
-          ) : null}
-        </label>
-        <CostEditor
-          activeResources={activeResources}
-          disabled={isPending}
-          error={fieldErrors.constructionCostsJson}
-          label="Construction costs"
-          rows={constructionCosts}
-          onChange={setConstructionCosts}
-        />
-        <CostEditor
-          activeResources={activeResources}
-          disabled={isPending}
-          error={fieldErrors.upkeepCostsJson}
-          label="Upkeep costs"
-          rows={upkeepCosts}
-          onChange={setUpkeepCosts}
-        />
-        <EffectsEditor
+        <TierDraftFields
           activeJobs={activeJobs}
           activeResources={activeResources}
+          constructionCosts={form.constructionCosts}
           disabled={isPending}
-          error={fieldErrors.effectsJson}
-          rows={effects}
-          onChange={setEffects}
+          effects={form.effects}
+          fieldErrors={form.fieldErrors}
+          onConstructionCostsChange={form.setConstructionCosts}
+          onEffectsChange={form.setEffects}
+          onTierNumberChange={form.setTierNumber}
+          onUpkeepCostsChange={form.setUpkeepCosts}
+          onWorkerTurnsChange={form.setWorkerTurns}
+          tierNumber={form.tierNumber}
+          tierNumberInputId="tier-number"
+          upkeepCosts={form.upkeepCosts}
+          workerTurns={form.workerTurns}
+          workerTurnsInputId="worker-turns-required"
         />
       </div>
       <div className="flex gap-2">
@@ -611,67 +518,40 @@ function EditTierForm({
     updateTierMutationOptions({ queryClient }),
   );
 
-  const [workerTurns, setWorkerTurns] = useState(
-    String(tier.workerTurnsRequired),
-  );
-  const [constructionCosts, setConstructionCosts] = useState<CostRowState[]>(
-    () => tierCostsToState(tier.constructionCostsJson),
-  );
-  const [upkeepCosts, setUpkeepCosts] = useState<CostRowState[]>(() =>
-    tierCostsToState(tier.upkeepCostsJson),
-  );
-  const [effects, setEffects] = useState<EffectRowState[]>(() =>
-    tierEffectsToState(tier.effectsJson),
-  );
-  const [fieldErrors, setFieldErrors] = useState<TierFormErrors>({});
+  const form = useTierDraftForm();
+
+  // Initialize form with existing tier data
+  useEffect(() => {
+    form.setTierNumber(String(tier.tierNumber));
+    form.setWorkerTurns(String(tier.workerTurnsRequired));
+    form.setConstructionCosts(tierCostsToState(tier.constructionCostsJson));
+    form.setUpkeepCosts(tierCostsToState(tier.upkeepCostsJson));
+    form.setEffects(tierEffectsToState(tier.effectsJson));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tier.id]);
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    setFieldErrors({});
 
-    const constructionCostInputs = buildCostInputs(constructionCosts);
-    const upkeepCostInputs = buildCostInputs(upkeepCosts);
-    const effectInputs = buildEffectInputs(effects);
+    const data = form.validate(activeResources, activeJobs);
+    if (data === null) return;
 
     const input: UpdateTierInput = {
-      constructionCostsJson: constructionCostInputs,
-      effectsJson: effectInputs,
+      constructionCostsJson: data.constructionCostsJson ?? [],
+      effectsJson: data.effectsJson ?? [],
       tierId: tier.id,
-      upkeepCostsJson: upkeepCostInputs,
-      workerTurnsRequired:
-        workerTurns !== "" ? parseInt(workerTurns, 10) : undefined,
+      upkeepCostsJson: data.upkeepCostsJson ?? [],
+      workerTurnsRequired: data.workerTurnsRequired,
     };
-
-    const parseResult = updateTierInputSchema.safeParse(input);
-    if (!parseResult.success) {
-      setFieldErrors(extractFieldErrors(parseResult.error.issues));
-      return;
-    }
-
-    const refIssues = validateBlueprintTierReferencesAgainstWorld(
-      {
-        constructionCostsJson: constructionCostInputs,
-        effectsJson: effectInputs,
-        upkeepCostsJson: upkeepCostInputs,
-      },
-      activeResources,
-      activeJobs,
-    );
-    if (refIssues.length > 0) {
-      setFieldErrors(extractRefErrors(refIssues));
-      return;
-    }
 
     try {
       await updateMutation.mutateAsync(input);
       notifyMutationSuccess("Tier saved.");
       onClose();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save tier.",
-      );
+      notifyMutationError(error, "Failed to save tier.");
     }
   }
 
@@ -686,47 +566,23 @@ function EditTierForm({
     >
       <h3 className="text-sm font-medium">Edit tier {tier.tierNumber}</h3>
       <div className="grid gap-3">
-        <label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Worker turns required</span>
-          <Input
-            aria-invalid={fieldErrors.workerTurnsRequired !== undefined}
-            disabled={updateMutation.isPending}
-            inputMode="numeric"
-            placeholder="0"
-            value={workerTurns}
-            onChange={(e) => {
-              setWorkerTurns(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.workerTurnsRequired !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.workerTurnsRequired}
-            </p>
-          ) : null}
-        </label>
-        <CostEditor
-          activeResources={activeResources}
-          disabled={updateMutation.isPending}
-          error={fieldErrors.constructionCostsJson}
-          label="Construction costs"
-          rows={constructionCosts}
-          onChange={setConstructionCosts}
-        />
-        <CostEditor
-          activeResources={activeResources}
-          disabled={updateMutation.isPending}
-          error={fieldErrors.upkeepCostsJson}
-          label="Upkeep costs"
-          rows={upkeepCosts}
-          onChange={setUpkeepCosts}
-        />
-        <EffectsEditor
+        <TierDraftFields
           activeJobs={activeJobs}
           activeResources={activeResources}
+          constructionCosts={form.constructionCosts}
           disabled={updateMutation.isPending}
-          error={fieldErrors.effectsJson}
-          rows={effects}
-          onChange={setEffects}
+          effects={form.effects}
+          fieldErrors={form.fieldErrors}
+          onConstructionCostsChange={form.setConstructionCosts}
+          onEffectsChange={form.setEffects}
+          onTierNumberChange={form.setTierNumber}
+          onUpkeepCostsChange={form.setUpkeepCosts}
+          onWorkerTurnsChange={form.setWorkerTurns}
+          tierNumber={form.tierNumber}
+          tierNumberInputId="edit-tier-number"
+          upkeepCosts={form.upkeepCosts}
+          workerTurns={form.workerTurns}
+          workerTurnsInputId="edit-worker-turns-required"
         />
       </div>
       <div className="flex gap-2">

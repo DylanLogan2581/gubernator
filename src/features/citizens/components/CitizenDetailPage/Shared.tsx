@@ -1,4 +1,4 @@
-import type { Citizen } from "../../types/citizenTypes";
+import type { Citizen, DeathCauseCategory } from "../../types/citizenTypes";
 import type { JSX } from "react";
 
 export function Readout({
@@ -60,6 +60,26 @@ export function TypeChip({
   return (
     <span className="inline-flex items-center rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
       {citizenType === "npc" ? "NPC" : "Player character"}
+    </span>
+  );
+}
+
+const DEATH_CATEGORY_LABELS: Record<DeathCauseCategory, string> = {
+  event: "Event",
+  homeless: "Homeless",
+  manual_admin: "Admin",
+  starvation: "Starvation",
+  unknown: "Unknown",
+};
+
+export function DeathCategoryChip({
+  category,
+}: {
+  readonly category: DeathCauseCategory;
+}): JSX.Element {
+  return (
+    <span className="inline-flex items-center rounded-sm bg-destructive/15 px-2 py-0.5 text-xs text-destructive">
+      {DEATH_CATEGORY_LABELS[category]}
     </span>
   );
 }

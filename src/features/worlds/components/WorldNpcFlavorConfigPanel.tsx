@@ -14,11 +14,9 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
-import {
-  generateNpcFlavor,
-  renderNpcFlavorLine,
-  roleLabelForAssignmentType,
-} from "@/features/citizens";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { generateNpcFlavor, renderNpcFlavorLine } from "@/features/citizens";
+import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 
@@ -91,9 +89,11 @@ function WorldNpcFlavorConfigPanelContent({
       queryClient,
     }),
   );
+  const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
   const [draftConfig, setDraftConfig] =
     useState<WorldNpcFlavorConfig>(initialConfig);
   const [exampleOutput, setExampleOutput] = useState<string | null>(null);
+  const [exampleDialogOpen, setExampleDialogOpen] = useState(false);
   const [previewSeed, setPreviewSeed] = useState<number>(0);
 
   const canEdit = canAdmin && !isArchived;
@@ -124,8 +124,19 @@ function WorldNpcFlavorConfigPanelContent({
     const rng = createSeededRng(previewSeed);
     setPreviewSeed((current) => current + 1);
     const flavor = generateNpcFlavor(draftConfig, rng);
-    const roleLabel = roleLabelForAssignmentType("standard_job");
+
+    // Get random job name from world jobs, fallback to "Worker"
+    let roleLabel = "Worker";
+    if (jobsQuery.data !== undefined && jobsQuery.data.length > 0) {
+      const jobIndex = Math.floor(rng() * jobsQuery.data.length);
+      const randomJob = jobsQuery.data[jobIndex];
+      if (randomJob !== undefined) {
+        roleLabel = randomJob.name;
+      }
+    }
+
     setExampleOutput(renderNpcFlavorLine(flavor, roleLabel));
+    setExampleDialogOpen(true);
   }
 
   return (
@@ -138,11 +149,12 @@ function WorldNpcFlavorConfigPanelContent({
           >
             NPC flavor pools
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {canEdit
-              ? "World admins can edit the option pools used to generate NPC flavor."
-              : "NPC flavor pool configuration is read-only for your current access."}
-          </p>
+          {canEdit && (
+            <p className="text-sm text-muted-foreground">
+              World admins can edit the option pools used to generate NPC
+              flavor.
+            </p>
+          )}
         </div>
         {!canEdit ? (
           <span className="inline-flex w-fit rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground">
@@ -152,74 +164,77 @@ function WorldNpcFlavorConfigPanelContent({
       </div>
 
       {canEdit ? (
-        <form
-          aria-label="World NPC flavor pool configuration"
-          className="grid gap-5"
-          noValidate
-          onSubmit={handleSubmit}
-        >
-          <Tabs.Root defaultValue="traits">
-            <Tabs.List className="flex gap-1 rounded-md border border-border bg-muted p-1">
-              <NpcFlavorTab
-                value="traits"
-                label="Traits"
-                count={draftConfig.traits.length}
-              />
-              <NpcFlavorTab
-                value="contradictions"
-                label="Contradictions"
-                count={draftConfig.contradictions.length}
-              />
-              <NpcFlavorTab
-                value="goals"
-                label="Goals"
-                count={draftConfig.goals.length}
-              />
-              <NpcFlavorTab
-                value="flaws"
-                label="Flaws"
-                count={draftConfig.flaws.length}
-              />
-            </Tabs.List>
-            <Tabs.Content value="traits" className="mt-3">
-              <PoolEditor
-                label="Traits"
-                entries={draftConfig.traits}
-                onChange={(traits) =>
-                  setDraftConfig((current) => ({ ...current, traits }))
-                }
-              />
-            </Tabs.Content>
-            <Tabs.Content value="contradictions" className="mt-3">
-              <PoolEditor
-                label="Contradictions"
-                entries={draftConfig.contradictions}
-                onChange={(contradictions) =>
-                  setDraftConfig((current) => ({ ...current, contradictions }))
-                }
-              />
-            </Tabs.Content>
-            <Tabs.Content value="goals" className="mt-3">
-              <PoolEditor
-                label="Goals"
-                entries={draftConfig.goals}
-                onChange={(goals) =>
-                  setDraftConfig((current) => ({ ...current, goals }))
-                }
-              />
-            </Tabs.Content>
-            <Tabs.Content value="flaws" className="mt-3">
-              <PoolEditor
-                label="Flaws"
-                entries={draftConfig.flaws}
-                onChange={(flaws) =>
-                  setDraftConfig((current) => ({ ...current, flaws }))
-                }
-              />
-            </Tabs.Content>
-          </Tabs.Root>
+        <>
+          <form
+            aria-label="World NPC flavor pool configuration"
+            className="grid gap-5"
+            noValidate
+            onSubmit={handleSubmit}
+          >
+            <Tabs.Root defaultValue="traits">
+              <Tabs.List className="flex gap-1 rounded-md border border-border bg-muted p-1">
+                <NpcFlavorTab
+                  value="traits"
+                  label="Traits"
+                  count={draftConfig.traits.length}
+                />
+                <NpcFlavorTab
+                  value="contradictions"
+                  label="Contradictions"
+                  count={draftConfig.contradictions.length}
+                />
+                <NpcFlavorTab
+                  value="goals"
+                  label="Goals"
+                  count={draftConfig.goals.length}
+                />
+                <NpcFlavorTab
+                  value="flaws"
+                  label="Flaws"
+                  count={draftConfig.flaws.length}
+                />
+              </Tabs.List>
+              <Tabs.Content value="traits" className="mt-3">
+                <PoolEditor
+                  label="Traits"
+                  entries={draftConfig.traits}
+                  onChange={(traits) =>
+                    setDraftConfig((current) => ({ ...current, traits }))
+                  }
+                />
+              </Tabs.Content>
+              <Tabs.Content value="contradictions" className="mt-3">
+                <PoolEditor
+                  label="Contradictions"
+                  entries={draftConfig.contradictions}
+                  onChange={(contradictions) =>
+                    setDraftConfig((current) => ({
+                      ...current,
+                      contradictions,
+                    }))
+                  }
+                />
+              </Tabs.Content>
+              <Tabs.Content value="goals" className="mt-3">
+                <PoolEditor
+                  label="Goals"
+                  entries={draftConfig.goals}
+                  onChange={(goals) =>
+                    setDraftConfig((current) => ({ ...current, goals }))
+                  }
+                />
+              </Tabs.Content>
+              <Tabs.Content value="flaws" className="mt-3">
+                <PoolEditor
+                  label="Flaws"
+                  entries={draftConfig.flaws}
+                  onChange={(flaws) =>
+                    setDraftConfig((current) => ({ ...current, flaws }))
+                  }
+                />
+              </Tabs.Content>
+            </Tabs.Root>
 
-          <div className="grid gap-3">
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saveMutation.isPending}>
                 <Save aria-hidden="true" />
@@ -234,13 +249,14 @@ function WorldNpcFlavorConfigPanelContent({
                 Generate example output
               </Button>
             </div>
-            {exampleOutput !== null ? (
-              <p className="text-sm italic text-muted-foreground">
-                {exampleOutput}
-              </p>
-            ) : null}
-          </div>
-        </form>
+          </form>
+
+          <Dialog open={exampleDialogOpen} onOpenChange={setExampleDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <p className="text-sm text-foreground">{exampleOutput}</p>
+            </DialogContent>
+          </Dialog>
+        </>
       ) : (
         <NpcFlavorPoolReadOnlySummary config={draftConfig} />
       )}

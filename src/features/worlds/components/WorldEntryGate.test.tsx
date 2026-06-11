@@ -34,6 +34,7 @@ vi.mock("@tanstack/react-router", () => ({
           );
     return <a href={href}>{children}</a>;
   },
+  useParams: vi.fn().mockReturnValue({}),
 }));
 
 const USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -71,7 +72,8 @@ describe("WorldEntryGate", () => {
   it("admin direct entry: renders children when admin has no selectable PC", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [createWorldRow({ owner_id: USER_ID })],
+        adminRows: [{ world_id: WORLD_ID }],
+        worldRows: [createWorldRow()],
         playerCharacters: [],
         activeRow: null,
       }),
@@ -87,7 +89,7 @@ describe("WorldEntryGate", () => {
       createClient({
         worldRows: [
           // Public world so the user can access but isn't an admin.
-          createWorldRow({ owner_id: "another-user", visibility: "public" }),
+          createWorldRow({ visibility: "public" }),
         ],
         playerCharacters: [],
         activeRow: null,
@@ -103,9 +105,7 @@ describe("WorldEntryGate", () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [
-          createWorldRow({ owner_id: "another-user", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
         playerCharacters: [createCitizenRow({ id: PC_ID_A, name: "Solo" })],
         activeRow: null,
         upsertActiveRow: upsert,
@@ -131,9 +131,7 @@ describe("WorldEntryGate", () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [
-          createWorldRow({ owner_id: "another-user", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
         playerCharacters: [createCitizenRow({ id: PC_ID_A, name: "Solo" })],
         activeRow: {
           citizen_id: PC_ID_A,
@@ -154,9 +152,7 @@ describe("WorldEntryGate", () => {
   it("renders the chooser when multiple PCs and no persisted selection", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [
-          createWorldRow({ owner_id: "another-user", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -178,9 +174,7 @@ describe("WorldEntryGate", () => {
   it("resumes when the persisted active row resolves to a selectable PC", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [
-          createWorldRow({ owner_id: "another-user", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -207,9 +201,7 @@ describe("WorldEntryGate", () => {
     const DEAD_PC_ID = "00000000-0000-0000-0000-0000000000cc";
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [
-          createWorldRow({ owner_id: "another-user", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -241,9 +233,7 @@ describe("WorldEntryGate", () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [
-          createWorldRow({ owner_id: "another-user", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -276,9 +266,7 @@ describe("WorldEntryGate", () => {
     const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
     requireSupabaseClient.mockReturnValue(
       createClient({
-        worldRows: [
-          createWorldRow({ owner_id: "another-user", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
         playerCharacters: [
           createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
           createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
@@ -368,7 +356,6 @@ type TestWorldRow = {
   readonly id: string;
   readonly incest_prevention_depth: number;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -418,7 +405,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     id: WORLD_ID,
     incest_prevention_depth: 4,
     name: "Test World",
-    owner_id: USER_ID,
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",
@@ -530,6 +516,12 @@ function createClient({
       }
       throw new Error(`Unexpected table ${table}`);
     }),
+    rpc: vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    }),
   };
 }
 
@@ -575,13 +567,7 @@ function createSettlementsBuilder(): unknown {
 
 function createCitizensBuilder(rows: readonly CitizenRowFixture[]): unknown {
   return {
-    select: vi.fn((columns: string) => {
-      if (columns === "world_id") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        return b;
-      }
+    select: vi.fn(() => {
       const filters: Record<string, unknown> = {};
       const builder: Record<string, unknown> = {
         eq: vi.fn((column: string, value: unknown) => {

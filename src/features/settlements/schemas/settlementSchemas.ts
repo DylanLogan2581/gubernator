@@ -2,9 +2,9 @@ import { z } from "zod";
 
 import { textInputLimits } from "@/lib/inputLimits";
 
-const settlementIdSchema = z.guid("Settlement id must be a valid UUID.");
-const nationIdSchema = z.guid("Nation id must be a valid UUID.");
-const worldIdSchema = z.guid("World id must be a valid UUID.");
+const settlementIdSchema = z.guid("Select a settlement.");
+const nationIdSchema = z.guid("Select a nation.");
+const worldIdSchema = z.guid("Select a world.");
 
 const settlementNameSchema = z
   .string()
@@ -30,8 +30,9 @@ const optionalSettlementDescriptionSchema = z
   .optional();
 
 const coordinateSchema = z
-  .number()
-  .finite("Coordinates must be finite numbers.");
+  .int("Coordinates must be whole numbers.")
+  .min(-33554432, "Coordinate must be at least -33,554,432.")
+  .max(33554432, "Coordinate must be at most 33,554,432.");
 
 const optionalCoordinateSchema = z
   .union([coordinateSchema, z.null()])

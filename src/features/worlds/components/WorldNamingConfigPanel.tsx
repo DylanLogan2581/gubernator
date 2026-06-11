@@ -12,15 +12,16 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
-
-import { saveWorldNamingConfigMutationOptions } from "../mutations/worldNamingConfigMutations";
-import { worldNamingConfigQueryOptions } from "../queries/worldNamingConfigQueries";
 import {
   NAME_CONVENTIONS,
   type NameConvention,
   type WorldNamingConfig,
-} from "../schemas/worldNamingConfigSchemas";
+} from "@/lib/worldNamingConfigSchemas";
+
+import { saveWorldNamingConfigMutationOptions } from "../mutations/worldNamingConfigMutations";
+import { worldNamingConfigQueryOptions } from "../queries/worldNamingConfigQueries";
 
 import type { WorldPermissionContext } from "../types/worldTypes";
 
@@ -97,17 +98,18 @@ function WorldNamingConfigPanelContent({
   const canEdit = canAdmin && !isArchived;
 
   const hasEmptyPool =
-    draftConfig.male_names.length === 0 ||
-    draftConfig.female_names.length === 0;
+    draftConfig.male_given_names.length === 0 ||
+    draftConfig.female_given_names.length === 0;
   const showEmptyPoolWarning =
-    draftConfig.convention !== "manual" && hasEmptyPool;
+    draftConfig.convention !== "none" && hasEmptyPool;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const sanitizedConfig: WorldNamingConfig = {
       ...draftConfig,
-      female_names: sanitizePoolEntries(draftConfig.female_names),
-      male_names: sanitizePoolEntries(draftConfig.male_names),
+      female_given_names: sanitizePoolEntries(draftConfig.female_given_names),
+      male_given_names: sanitizePoolEntries(draftConfig.male_given_names),
+      surnames: sanitizePoolEntries(draftConfig.surnames),
     };
     setDraftConfig(sanitizedConfig);
     saveMutation.mutate(
@@ -140,11 +142,12 @@ function WorldNamingConfigPanelContent({
           >
             Naming rules
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {canEdit
-              ? "World admins can configure name pools and conventions for random NPC creation."
-              : "Naming configuration is read-only for your current access."}
-          </p>
+          {canEdit && (
+            <p className="text-sm text-muted-foreground">
+              World admins can configure name pools and conventions for random
+              NPC creation.
+            </p>
+          )}
         </div>
         {!canEdit ? (
           <span className="inline-flex w-fit rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground">
@@ -181,32 +184,40 @@ function WorldNamingConfigPanelContent({
           ) : null}
 
           <PoolEditor
-            label="Male name pool"
-            entries={draftConfig.male_names}
-            onChange={(maleNames) =>
-              setDraftConfig((c) => ({ ...c, male_names: maleNames }))
+            label="Male given name pool"
+            entries={draftConfig.male_given_names}
+            onChange={(entries) =>
+              setDraftConfig((c) => ({ ...c, male_given_names: entries }))
             }
           />
 
           <PoolEditor
-            label="Female name pool"
-            entries={draftConfig.female_names}
-            onChange={(femaleNames) =>
-              setDraftConfig((c) => ({ ...c, female_names: femaleNames }))
+            label="Female given name pool"
+            entries={draftConfig.female_given_names}
+            onChange={(entries) =>
+              setDraftConfig((c) => ({ ...c, female_given_names: entries }))
+            }
+          />
+
+          <PoolEditor
+            label="Surname pool"
+            entries={draftConfig.surnames}
+            onChange={(entries) =>
+              setDraftConfig((c) => ({ ...c, surnames: entries }))
             }
           />
 
           <fieldset className="grid gap-2">
-            <legend className="text-base font-semibold">
-              Naming convention
-            </legend>
+            <legend className="text-base font-semibold">Surname rule</legend>
             <div className="grid gap-1.5">
               {NAME_CONVENTIONS.map((convention) => (
-                <label
+                <Label
                   key={convention}
                   className="flex items-center gap-2 text-sm"
+                  htmlFor={`convention-${convention}`}
                 >
                   <input
+                    id={`convention-${convention}`}
                     type="radio"
                     name="convention"
                     className="h-4 w-4 accent-primary"
@@ -217,7 +228,7 @@ function WorldNamingConfigPanelContent({
                     }
                   />
                   <ConventionLabel convention={convention} />
-                </label>
+                </Label>
               ))}
             </div>
           </fieldset>
@@ -251,20 +262,35 @@ function ConventionLabel({
   readonly convention: NameConvention;
 }): JSX.Element {
   switch (convention) {
-    case "random":
-      return <span>Random — pick any name from the pool</span>;
-    case "patronymic":
-      return <span>Patronymic — family name derived from father</span>;
-    case "matronymic":
-      return <span>Matronymic — family name derived from mother</span>;
-    case "inherited family name":
-      return <span>Inherited family name — surname passed from parents</span>;
-    case "manual":
+    case "pool":
       return (
         <span>
-          Manual only — names must be set manually; no automatic generation
+          Surname pool — each NPC gets a random surname from the surname pool
         </span>
       );
+    case "patronymic":
+      return (
+        <span>
+          Patronymic — surname is the father&apos;s given name (falls back to
+          the other parent if no male parent)
+        </span>
+      );
+    case "matronymic":
+      return (
+        <span>
+          Matronymic — surname is the mother&apos;s given name (falls back to
+          the other parent if no female parent)
+        </span>
+      );
+    case "family-name":
+      return (
+        <span>
+          Family name — child inherits a parent&apos;s surname (50/50 which
+          parent; falls back to the other if one has none)
+        </span>
+      );
+    case "none":
+      return <span>No automatic surname — surnames are entered manually</span>;
   }
 }
 
@@ -276,19 +302,27 @@ function NamingConfigReadOnlySummary({
   return (
     <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       <ReadoutItem
-        label="Male name pool"
+        label="Male given name pool"
         value={
-          config.male_names.length === 1
+          config.male_given_names.length === 1
             ? "1 entry"
-            : `${String(config.male_names.length)} entries`
+            : `${String(config.male_given_names.length)} entries`
         }
       />
       <ReadoutItem
-        label="Female name pool"
+        label="Female given name pool"
         value={
-          config.female_names.length === 1
+          config.female_given_names.length === 1
             ? "1 entry"
-            : `${String(config.female_names.length)} entries`
+            : `${String(config.female_given_names.length)} entries`
+        }
+      />
+      <ReadoutItem
+        label="Surname pool"
+        value={
+          config.surnames.length === 1
+            ? "1 entry"
+            : `${String(config.surnames.length)} entries`
         }
       />
       <ReadoutItem label="Convention" value={config.convention} />

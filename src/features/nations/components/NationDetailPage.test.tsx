@@ -56,6 +56,18 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
 }));
 
+vi.mock(
+  "@/features/settlements/mutations/settlementReadinessMutations",
+  () => ({
+    setSettlementReadinessMutationOptions: vi.fn(
+      () =>
+        ({
+          mutationFn: vi.fn().mockResolvedValue({}),
+        }) as never,
+    ),
+  }),
+);
+
 const worldId = "00000000-0000-0000-0000-000000000101";
 const nationId = "11111111-1111-1111-1111-111111111111";
 const otherNationId = "22222222-2222-2222-2222-222222222222";
@@ -79,7 +91,8 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -100,7 +113,8 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ name: "Highmark" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -117,9 +131,7 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ name: "Highmark" })],
         session: { user: { id: "user-2" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
       }),
     );
 
@@ -140,12 +152,18 @@ describe("NationDetailPage", () => {
         session: { user: { id: "user-1" } },
         settlementRows: [
           {
+            auto_ready_enabled: false,
             id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            is_ready_current_turn: false,
+            last_ready_at: null,
             name: "Stonehold",
             nation_id: nationId,
+            nations: { name: "Highmark" },
+            ready_set_at: null,
           },
         ],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -164,9 +182,7 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-2" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
       }),
     );
 
@@ -187,7 +203,8 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -207,9 +224,7 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-2" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
       }),
     );
 
@@ -229,9 +244,7 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ is_hidden: true, name: "Veilreach" })],
         session: { user: { id: "user-3" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "private" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "private" })],
       }),
     );
 
@@ -267,14 +280,19 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
 
-    const list = await screen.findByRole("list", { name: "Relationships" });
-    expect(list).toBeDefined();
+    // Open relationship for Veilreach by clicking its nation name
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
+
     expect(
       await screen.findByText(
         (_, element) => element?.textContent === "Current stance: Neutral",
@@ -297,15 +315,19 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-2" } },
         settlementRows: [],
-        worldRows: [
-          createWorldRow({ owner_id: "user-1", visibility: "public" }),
-        ],
+        worldRows: [createWorldRow({ visibility: "public" })],
       }),
     );
 
     renderPage();
 
-    await screen.findByRole("list", { name: "Relationships" });
+    // Open relationship for Veilreach by clicking its nation name
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
+
+    // Verify controls are hidden (not present even after opening)
     expect(
       screen.queryByRole("button", { name: /Propose alliance/ }),
     ).toBeNull();
@@ -329,13 +351,20 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
 
-    await screen.findByRole("list", { name: "Relationships" });
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
+
     expect(await screen.findByText(/Sent proposal:/)).toBeDefined();
     expect(screen.getByText(/Allied — awaiting Veilreach\./)).toBeDefined();
     expect(
@@ -372,11 +401,19 @@ describe("NationDetailPage", () => {
         respondToBilateralResult: respondToBilateral,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
 
     await screen.findByText(/Incoming proposal:/);
     expect(
@@ -421,11 +458,19 @@ describe("NationDetailPage", () => {
         respondToBilateralResult: respondToBilateral,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
 
     const decline = await screen.findByRole("button", {
       name: /Decline proposal/,
@@ -457,11 +502,19 @@ describe("NationDetailPage", () => {
         relationshipsUpsertResult: upsertMock,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
 
     const propose = await screen.findByRole("button", {
       name: /Propose alliance/,
@@ -499,11 +552,19 @@ describe("NationDetailPage", () => {
         relationshipsUpsertResult: upsertMock,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
 
     const select = await screen.findByRole("combobox", {
       name: /Set stance/,
@@ -545,11 +606,19 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
 
     expect(
       await screen.findByRole("button", { name: /Withdraw agreement/ }),
@@ -575,11 +644,19 @@ describe("NationDetailPage", () => {
         ],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
 
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
@@ -617,11 +694,19 @@ describe("NationDetailPage", () => {
         relationshipsUpsertResult: upsertMock,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
 
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
@@ -652,7 +737,8 @@ describe("NationDetailPage", () => {
         nationRows: [createNationRow({ id: nationId, name: "Highmark" })],
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
@@ -662,7 +748,7 @@ describe("NationDetailPage", () => {
       await screen.findByRole("button", { name: /Delete nation/ }),
     );
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     await userEvent.click(
       within(dialog).getByRole("button", { name: /Delete nation/ }),
     );
@@ -702,11 +788,19 @@ describe("NationDetailPage", () => {
         relationshipsUpsertResult: upsertMock,
         session: { user: { id: "user-1" } },
         settlementRows: [],
-        worldRows: [createWorldRow({ owner_id: "user-1" })],
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow()],
       }),
     );
 
     renderPage();
+
+    // Open relationships collapsible
+    // Click on Veilreach nation to expand its relationships
+    const veilreachTrigger = await screen.findByRole("button", {
+      name: /Veilreach/,
+    });
+    await userEvent.click(veilreachTrigger);
 
     const select = await screen.findByRole("combobox", { name: /Set stance/ });
     await userEvent.selectOptions(select, "hostile");
@@ -746,9 +840,16 @@ type TestNationRow = {
 };
 
 type TestSettlementRow = {
+  readonly auto_ready_enabled: boolean;
   readonly id: string;
+  readonly is_ready_current_turn: boolean;
+  readonly last_ready_at: string | null;
   readonly name: string;
   readonly nation_id: string;
+  readonly nations: {
+    readonly name: string;
+  };
+  readonly ready_set_at: string | null;
 };
 
 type TestRelationshipRow = {
@@ -770,7 +871,6 @@ type TestWorldRow = {
   readonly current_turn_number: number;
   readonly id: string;
   readonly name: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly updated_at: string;
   readonly visibility: string;
@@ -873,15 +973,15 @@ function createClient({
       if (table === "settlements") {
         return createSettlementsQueryBuilder(settlementRows);
       }
-      if (table === "citizens") {
-        const b: Record<string, unknown> = {};
-        b.eq = vi.fn(() => b);
-        b.order = vi.fn().mockResolvedValue({ data: [], error: null });
-        return { select: vi.fn(() => b) };
-      }
       throw new Error(`Unexpected table ${table}`);
     }),
     rpc: vi.fn((fn: string, params: Record<string, unknown>) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      if (fn === "settlement_alive_citizen_count") {
+        return Promise.resolve({ data: 10, error: null });
+      }
       if (fn === "respond_to_bilateral") {
         return {
           maybeSingle: vi.fn().mockImplementation(() => {
@@ -917,7 +1017,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     current_turn_number: 1,
     id: worldId,
     name: "World",
-    owner_id: "user-1",
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "private",

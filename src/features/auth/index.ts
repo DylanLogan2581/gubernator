@@ -1,8 +1,12 @@
 export {
   signInMutationOptions,
   signOutMutationOptions,
+  verifyOtpMutationOptions,
+  updatePasswordMutationOptions,
 } from "./mutations/authMutations";
+export { AuthCallbackPage } from "./components/AuthCallbackPage";
 export { AuthNavigationControl } from "./components/AuthNavigationControl";
+export { SetPasswordPage } from "./components/SetPasswordPage";
 export { SignInPage } from "./components/SignInPage";
 export { SignOutControl } from "./components/SignOutControl";
 export { authQueryKeys } from "./queries/authQueryKeys";
@@ -24,6 +28,7 @@ export {
 export { AuthUiError, normalizeSupabaseError } from "./utils/authErrors";
 
 export type {
+  AdminPickerUser,
   AppUser,
   AuthErrorDetails,
   SignInWithPasswordInput,

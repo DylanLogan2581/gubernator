@@ -5,6 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreateNpcDialog } from "./CreateNpcDialog";
 
+function getSelectByLabel(label: string): HTMLSelectElement {
+  const labelEl = screen.getByText(label);
+  const select = labelEl.parentElement?.querySelector("select");
+  if (select === null || select === undefined) {
+    throw new Error(`No select found for label "${label}"`);
+  }
+  return select;
+}
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
@@ -40,6 +49,7 @@ type CitizenRow = {
   readonly citizen_type: "npc" | "player_character";
   readonly created_at: string;
   readonly death_cause: string | null;
+  readonly given_name: string;
   readonly id: string;
   readonly name: string;
   readonly npc_flaw: string | null;
@@ -58,6 +68,7 @@ type CitizenRow = {
   readonly sex: string | null;
   readonly skills_text: string | null;
   readonly status: "alive" | "dead";
+  readonly surname: string | null;
   readonly updated_at: string;
   readonly user_id: string | null;
   readonly world_id: string;
@@ -69,6 +80,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     citizen_type: "npc",
     created_at: "2026-05-01T00:00:00.000Z",
     death_cause: null,
+    given_name: "New Citizen",
     id: NEW_CITIZEN_ID,
     name: "New Citizen",
     npc_flaw: null,
@@ -87,6 +99,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     sex: null,
     skills_text: null,
     status: "alive",
+    surname: null,
     updated_at: "2026-05-01T00:00:00.000Z",
     user_id: null,
     world_id: WORLD_ID,
@@ -94,8 +107,16 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
   };
 }
 
-const CITIZEN_A_ROW = createCitizenRow({ id: CITIZEN_A_ID, name: "Alice" });
-const CITIZEN_B_ROW = createCitizenRow({ id: CITIZEN_B_ID, name: "Bob" });
+const CITIZEN_A_ROW = createCitizenRow({
+  id: CITIZEN_A_ID,
+  given_name: "Alice",
+  name: "Alice",
+});
+const CITIZEN_B_ROW = createCitizenRow({
+  id: CITIZEN_B_ID,
+  given_name: "Bob",
+  name: "Bob",
+});
 
 const rpcMock = vi.fn();
 
@@ -168,12 +189,12 @@ describe("CreateNpcDialog", () => {
   it("renders Parent A and Parent B side by side in a sm:grid-cols-2 container", () => {
     renderDialog();
 
-    const parentALabel = screen.getByRole("combobox", { name: "Parent A" });
-    const parentBLabel = screen.getByRole("combobox", { name: "Parent B" });
-    const container = parentALabel.closest("label")?.parentElement;
+    const parentASelect = getSelectByLabel("Parent A");
+    const parentBSelect = getSelectByLabel("Parent B");
+    const container = parentASelect.closest("div")?.parentElement;
     expect(container).not.toBeNull();
     expect(container?.className).toContain("sm:grid-cols-2");
-    expect(container).toContainElement(parentBLabel);
+    expect(container).toContainElement(parentBSelect);
   });
 
   it("does not call the mutation when the name is blank", async () => {
@@ -190,17 +211,11 @@ describe("CreateNpcDialog", () => {
 
     await screen.findAllByRole("option", { name: "Alice" });
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent A" }),
-      CITIZEN_A_ID,
-    );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent B" }),
-      CITIZEN_A_ID,
-    );
+    await userEvent.selectOptions(getSelectByLabel("Parent A"), CITIZEN_A_ID);
+    await userEvent.selectOptions(getSelectByLabel("Parent B"), CITIZEN_A_ID);
 
     await userEvent.click(screen.getByRole("button", { name: "Create NPC" }));
 
@@ -216,17 +231,11 @@ describe("CreateNpcDialog", () => {
 
     await screen.findAllByRole("option", { name: "Alice" });
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent A" }),
-      CITIZEN_A_ID,
-    );
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Parent B" }),
-      CITIZEN_B_ID,
-    );
+    await userEvent.selectOptions(getSelectByLabel("Parent A"), CITIZEN_A_ID);
+    await userEvent.selectOptions(getSelectByLabel("Parent B"), CITIZEN_B_ID);
 
     await userEvent.click(screen.getByRole("button", { name: "Create NPC" }));
 
@@ -243,7 +252,7 @@ describe("CreateNpcDialog", () => {
     renderDialog();
 
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.click(screen.getByRole("button", { name: "Create NPC" }));
@@ -259,14 +268,14 @@ describe("CreateNpcDialog", () => {
   });
 
   it("calls the mutation with the correct arguments and closes the dialog on success", async () => {
-    const newRow = createCitizenRow({ name: "Newborn" });
+    const newRow = createCitizenRow({ given_name: "Newborn", name: "Newborn" });
     rpcMock.mockReturnValue({
       maybeSingle: vi.fn().mockResolvedValue({ data: newRow, error: null }),
     });
     renderDialog();
 
     await userEvent.type(
-      screen.getByRole("textbox", { name: "Name" }),
+      screen.getByRole("textbox", { name: "Given name" }),
       "Newborn",
     );
     await userEvent.click(screen.getByRole("button", { name: "Create NPC" }));
@@ -275,7 +284,7 @@ describe("CreateNpcDialog", () => {
       expect(rpcMock).toHaveBeenCalledWith(
         "create_npc",
         expect.objectContaining({
-          p_name: "Newborn",
+          p_given_name: "Newborn",
           p_settlement_id: SETTLEMENT_ID,
           p_world_id: WORLD_ID,
           p_parent_a_citizen_id: undefined,

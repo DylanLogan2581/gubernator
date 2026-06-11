@@ -13,13 +13,12 @@ import {
 } from "./worldNpcFlavorConfigMutations";
 
 const WORLD_ID = "11111111-1111-1111-1111-111111111111";
-const OWNER_ID = "22222222-2222-2222-2222-222222222222";
+const ADMIN_USER_ID = "22222222-2222-2222-2222-222222222222";
 const OTHER_USER_ID = "33333333-3333-3333-3333-333333333333";
 
 type AccessRow = {
   readonly archived_at: string | null;
   readonly id: string;
-  readonly owner_id: string;
   readonly status: string;
   readonly visibility: string;
 };
@@ -33,7 +32,6 @@ function createAccessRow(overrides: Partial<AccessRow> = {}): AccessRow {
   return {
     archived_at: null,
     id: WORLD_ID,
-    owner_id: OWNER_ID,
     status: "active",
     visibility: "private",
     ...overrides,
@@ -112,8 +110,8 @@ function executeMutation(
 function createOwnerAccessContext(): WorldPermissionContext {
   return createAccessContext({
     isSuperAdmin: false,
-    userId: OWNER_ID,
-    worldAdminWorldIds: [],
+    userId: ADMIN_USER_ID,
+    worldAdminWorldIds: [WORLD_ID],
   });
 }
 

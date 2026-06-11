@@ -356,6 +356,7 @@ function createQueryClient(): QueryClient {
 type TestResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
+  readonly decay_rate: number;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
@@ -372,6 +373,7 @@ function createResourceRow(
   return {
     base_stockpile_cap: 0,
     created_at: "2026-01-01T00:00:00.000Z",
+    decay_rate: 0,
     id: RESOURCE_ID,
     is_trashed: false,
     is_system_resource: false,

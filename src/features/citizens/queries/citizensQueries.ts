@@ -10,13 +10,18 @@ import { citizensQueryKeys } from "./citizensQueryKeys";
 
 import type {
   Citizen,
+  CitizenAdminDetails,
   CitizenAggregateStats,
   CitizenAssignmentType,
   CitizenRoleType,
   CitizenStatus,
   CitizenType,
+  DeathCauseCategory,
 } from "../types/citizenTypes";
 
+type CitizenAdminDetailsQueryKey = ReturnType<
+  typeof citizensQueryKeys.adminDetails
+>;
 type CitizenListQueryKey = ReturnType<typeof citizensQueryKeys.settlementList>;
 type CitizenDetailQueryKey = ReturnType<typeof citizensQueryKeys.detail>;
 type PlayerCharactersInNationQueryKey = ReturnType<
@@ -43,6 +48,12 @@ type UnpairedAliveInWorldQueryOptions = UseQueryOptions<
   AuthUiError,
   readonly Citizen[],
   UnpairedAliveInWorldQueryKey
+>;
+type CitizenAdminDetailsQueryOptions = UseQueryOptions<
+  CitizenAdminDetails | null,
+  AuthUiError,
+  CitizenAdminDetails | null,
+  CitizenAdminDetailsQueryKey
 >;
 type CitizenDetailQueryOptions = UseQueryOptions<
   Citizen | null,
@@ -74,27 +85,34 @@ type CitizenRow = {
   readonly citizen_type: CitizenType;
   readonly created_at: string;
   readonly death_cause: string | null;
+  readonly death_cause_category: DeathCauseCategory | null;
+  readonly given_name: string;
   readonly id: string;
   readonly name: string;
-  readonly npc_flaw: string | null;
-  readonly npc_goal: string | null;
-  readonly npc_secret_contradiction: string | null;
-  readonly npc_trait_1: string | null;
-  readonly npc_trait_2: string | null;
+  readonly nameset_id: string | null;
   readonly parent_a_citizen_id: string | null;
   readonly parent_b_citizen_id: string | null;
-  readonly personality_text: string | null;
   readonly profile_photo_url: string | null;
   readonly role_nation_id: string | null;
   readonly role_settlement_id: string | null;
   readonly role_type: CitizenRoleType;
   readonly settlement_id: string | null;
   readonly sex: string | null;
-  readonly skills_text: string | null;
   readonly status: CitizenStatus;
+  readonly surname: string | null;
   readonly updated_at: string;
   readonly user_id: string | null;
   readonly world_id: string;
+};
+
+type CitizenAdminDetailsRow = {
+  readonly npc_flaw: string | null;
+  readonly npc_goal: string | null;
+  readonly npc_secret_contradiction: string | null;
+  readonly npc_trait_1: string | null;
+  readonly npc_trait_2: string | null;
+  readonly personality_text: string | null;
+  readonly skills_text: string | null;
 };
 
 type CitizenAggregateRow = {
@@ -110,7 +128,7 @@ type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
 };
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,personality_text,skills_text,npc_trait_1,npc_trait_2,npc_secret_contradiction,npc_goal,npc_flaw,death_cause,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
 
 const CITIZEN_AGGREGATE_SELECT =
   "id,citizen_type,status,citizen_assignments(assignment_type)";
@@ -156,6 +174,17 @@ export function playerCharactersInNationQueryOptions(
   return queryOptions({
     queryFn: () => getPlayerCharactersInNation(client, nationId),
     queryKey: citizensQueryKeys.playerCharactersInNation(nationId),
+  });
+}
+
+export function citizenAdminDetailsQueryOptions(
+  citizenId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CitizenAdminDetailsQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getCitizenAdminDetails(client, citizenId),
+    queryKey: citizensQueryKeys.adminDetails(citizenId),
   });
 }
 
@@ -445,30 +474,54 @@ function emptyAggregateStats(): CitizenAggregateStats {
   };
 }
 
+async function getCitizenAdminDetails(
+  client: GubernatorSupabaseClient,
+  citizenId: string,
+): Promise<CitizenAdminDetails | null> {
+  const { data, error } = await client
+    .rpc("get_citizen_admin_details", { p_citizen_id: citizenId })
+    .maybeSingle<CitizenAdminDetailsRow>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    return null;
+  }
+
+  return {
+    npcFlaw: data.npc_flaw,
+    npcGoal: data.npc_goal,
+    npcSecretContradiction: data.npc_secret_contradiction,
+    npcTrait1: data.npc_trait_1,
+    npcTrait2: data.npc_trait_2,
+    personalityText: data.personality_text,
+    skillsText: data.skills_text,
+  };
+}
+
 export function toCitizen(row: CitizenRow): Citizen {
   return {
     bornOnTurnNumber: row.born_on_turn_number,
     citizenType: row.citizen_type,
     createdAt: row.created_at,
     deathCause: row.death_cause,
+    deathCauseCategory: row.death_cause_category,
+    givenName: row.given_name,
     id: row.id,
     name: row.name,
-    npcFlaw: row.npc_flaw,
-    npcGoal: row.npc_goal,
-    npcSecretContradiction: row.npc_secret_contradiction,
-    npcTrait1: row.npc_trait_1,
-    npcTrait2: row.npc_trait_2,
+    namesetId: row.nameset_id,
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
-    personalityText: row.personality_text,
     profilePhotoUrl: row.profile_photo_url,
     roleNationId: row.role_nation_id,
     roleSettlementId: row.role_settlement_id,
     roleType: row.role_type,
     settlementId: row.settlement_id,
     sex: row.sex,
-    skillsText: row.skills_text,
     status: row.status,
+    surname: row.surname,
     updatedAt: row.updated_at,
     userId: row.user_id,
     worldId: row.world_id,

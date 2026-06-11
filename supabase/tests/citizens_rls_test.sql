@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (46);
+  plan (70);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -111,7 +111,7 @@ where
 --          visibility paths can be exercised without also satisfying
 --          user_has_player_character_in_world for World A.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     -- World A is public so the citizens RLS subquery against settlements
@@ -120,7 +120,6 @@ values
     -- policy has no public-world visibility arm of its own, so this does not
     -- broaden citizen visibility for unrelated users.
     'c2000000-0000-0000-0000-000000000001',
-    'Citizens World A',
     'c1000000-0000-0000-0000-000000000001',
     'public',
     'active'
@@ -128,14 +127,12 @@ values
   (
     'c2000000-0000-0000-0000-000000000002',
     'Citizens World B',
-    'c1000000-0000-0000-0000-000000000006',
     'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000003',
     'Citizens World C',
-    'c1000000-0000-0000-0000-000000000001',
     'public',
     'active'
   );
@@ -198,7 +195,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -224,7 +221,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -250,7 +247,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -274,7 +271,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id
   )
@@ -296,7 +293,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status
   )
 values
@@ -418,6 +415,74 @@ select
     'world admin cannot read citizens outside administered world'
   );
 
+-- Column-level SELECT restriction: flavor columns are not readable via
+-- direct table SELECT even for world admins. Admins must use the
+-- get_citizen_admin_details RPC.
+select
+  throws_ok (
+    $test$
+    select
+      personality_text
+    from
+      public.citizens
+    where
+      id = 'c5000000-0000-0000-0000-000000000010'
+    $test$,
+    '42501',
+    null,
+    'world admin cannot select personality_text directly from the table API'
+  );
+
+select
+  throws_ok (
+    $test$
+    select
+      npc_secret_contradiction
+    from
+      public.citizens
+    where
+      id = 'c5000000-0000-0000-0000-000000000010'
+    $test$,
+    '42501',
+    null,
+    'world admin cannot select npc_secret_contradiction directly from the table API'
+  );
+
+-- Getter RPC: world admin can retrieve flavor columns for any citizen in the
+-- administered world.
+select
+  lives_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
+    $test$,
+    'world admin can call get_citizen_admin_details for a citizen in their world'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- SUPER ADMIN: getter RPC works across worlds
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000007","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000020')
+    $test$,
+    'super admin can call get_citizen_admin_details for a citizen in any world'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -433,7 +498,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -441,12 +506,12 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000010'
     ),
-    'nation manager can read NPC in a settlement within their nation'
+    'nation manager cannot read NPC in a settlement within their nation'
   );
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -454,7 +519,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000011'
     ),
-    'nation manager can read NPC in another settlement within their nation'
+    'nation manager cannot read NPC in another settlement within their nation'
   );
 
 select
@@ -483,6 +548,34 @@ select
     'nation manager cannot read NPC in another world'
   );
 
+-- Nation manager can still see player_character rows in their managed nation.
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.citizens
+      where
+        id = 'c5000000-0000-0000-0000-000000000003'
+    ),
+    'nation manager can read PC in a settlement within their nation'
+  );
+
+-- Getter RPC must be denied for non-admin callers.
+select
+  throws_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
+    $test$,
+    '42501',
+    null,
+    'nation manager cannot call get_citizen_admin_details'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -498,7 +591,7 @@ set
 
 select
   ok (
-    exists (
+    not exists (
       select
         1
       from
@@ -506,7 +599,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000010'
     ),
-    'settlement manager can read NPC in their settlement'
+    'settlement manager cannot read NPC in their settlement'
   );
 
 select
@@ -535,6 +628,20 @@ select
     'settlement manager cannot read NPC in a settlement outside their nation'
   );
 
+-- Getter RPC must be denied for settlement managers.
+select
+  throws_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
+    $test$,
+    '42501',
+    null,
+    'settlement manager cannot call get_citizen_admin_details'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -557,8 +664,21 @@ select
       where
         world_id = 'c2000000-0000-0000-0000-000000000001'
     ),
-    5,
-    'PC holder can read every citizen in their world'
+    2,
+    'PC holder can read only player_character citizens in their world (NPCs hidden)'
+  );
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.citizens
+      where
+        id = 'c5000000-0000-0000-0000-000000000010'
+    ),
+    'PC holder cannot read NPC rows in their world'
   );
 
 select
@@ -572,6 +692,20 @@ select
         id = 'c5000000-0000-0000-0000-000000000020'
     ),
     'PC holder cannot read citizens in another world where they hold no PC'
+  );
+
+-- Getter RPC must be denied for PC holders.
+select
+  throws_ok (
+    $test$
+    select
+      *
+    from
+      public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
+    $test$,
+    '42501',
+    null,
+    'PC holder cannot call get_citizen_admin_details'
   );
 
 reset role;
@@ -674,7 +808,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, user_id
+      world_id, citizen_type, given_name, user_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -691,7 +825,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name
+      world_id, citizen_type, given_name
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'player_character',
@@ -707,7 +841,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, role_type
+      world_id, citizen_type, given_name, role_type
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -724,7 +858,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, role_type, role_nation_id, role_settlement_id
+      world_id, citizen_type, given_name, role_type, role_nation_id, role_settlement_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -743,7 +877,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, role_type
+      world_id, citizen_type, given_name, role_type
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -760,7 +894,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, role_type, role_nation_id
+      world_id, citizen_type, given_name, role_type, role_nation_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -778,7 +912,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, parent_a_citizen_id
+      world_id, citizen_type, given_name, parent_a_citizen_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -795,7 +929,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, parent_a_citizen_id
+      world_id, citizen_type, given_name, parent_a_citizen_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -812,7 +946,7 @@ select
   throws_ok (
     $test$
     insert into public.citizens (
-      world_id, citizen_type, name, parent_b_citizen_id
+      world_id, citizen_type, given_name, parent_b_citizen_id
     ) values (
       'c2000000-0000-0000-0000-000000000001',
       'npc',
@@ -913,7 +1047,7 @@ select
   lives_ok (
     $test$
     update public.citizens
-    set name = 'Renamed PC'
+    set given_name = 'Renamed PC'
     where id = 'c5000000-0000-0000-0000-000000000003'
   $test$,
     'PC can change their own name via the table API'
@@ -1001,7 +1135,7 @@ select
       n integer;
     begin
       update public.citizens
-      set name = 'Hacked Name'
+      set given_name = 'Hacked Name'
       where id = 'c5000000-0000-0000-0000-000000000004';
       get diagnostics n = row_count;
       if n != 0 then
@@ -1058,11 +1192,12 @@ select
 select
   lives_ok (
     $test$
-    update public.citizens
-    set status = 'dead'
-    where id = 'c5000000-0000-0000-0000-000000000010'
+    select * from public.mark_citizen_dead (
+      'c5000000-0000-0000-0000-000000000010',
+      'admin action'
+    )
   $test$,
-    'world admin can update status on any citizen in the administered world'
+    'world admin can mark a citizen dead via the mark_citizen_dead RPC'
   );
 
 select
@@ -1083,6 +1218,294 @@ select
     where id = 'c5000000-0000-0000-0000-000000000010'
   $test$,
     'world admin can update death_cause on any citizen in the administered world'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- RPC TESTS: create_npc and create_player_character user-facing RPCs
+-- ===========================================================================
+-- ---------------------------------------------------------------------------
+-- NEGATIVE: non-admin cannot create NPCs (authz guard returns empty, no error)
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000006","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'Unauth NPC'
+        )
+    ),
+    0,
+    'non-admin cannot create NPC (returns 0 rows, not error)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000006',
+          'Unauth PC'
+        )
+    ),
+    0,
+    'non-admin cannot create player_character (returns 0 rows, not error)'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- NEGATIVE: world-A admin cannot create in world-B (cross-world authz guard)
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000002',
+          'Cross-World NPC'
+        )
+    ),
+    0,
+    'world-A admin cannot create NPC in world-B (returns 0 rows, not error)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000002',
+          'c1000000-0000-0000-0000-000000000005',
+          'Cross-World PC'
+        )
+    ),
+    0,
+    'world-A admin cannot create player_character in world-B (returns 0 rows, not error)'
+  );
+
+-- ---------------------------------------------------------------------------
+-- POSITIVE: world admin can create NPC and PC with correct attributes
+-- ---------------------------------------------------------------------------
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'Admin NPC',
+          p_surname => 'Surname'
+        )
+    ),
+    1,
+    'world admin can create NPC (returns 1 row)'
+  );
+
+select
+  is (
+    (
+      select
+        citizen_type
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'Type Check NPC'
+        )
+      limit
+        1
+    ),
+    'npc',
+    'create_npc sets citizen_type=npc'
+  );
+
+select
+  is (
+    (
+      select
+        given_name || coalesce(' ' || surname, '')
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'Given Only'
+        )
+      limit
+        1
+    ),
+    'Given Only',
+    'create_npc with given_name only produces correct full name'
+  );
+
+select
+  is (
+    (
+      select
+        given_name || coalesce(' ' || surname, '')
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000001',
+          'First',
+          p_surname => 'Last'
+        )
+      limit
+        1
+    ),
+    'First Last',
+    'create_npc with given_name and surname produces correct full name'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000005',
+          'Admin PC',
+          p_surname => 'PC Surname'
+        )
+    ),
+    1,
+    'world admin can create player_character (returns 1 row)'
+  );
+
+select
+  is (
+    (
+      select
+        citizen_type
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000005',
+          'Type Check PC'
+        )
+      limit
+        1
+    ),
+    'player_character',
+    'create_player_character sets citizen_type=player_character'
+  );
+
+select
+  is (
+    (
+      select
+        user_id
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000001',
+          'c1000000-0000-0000-0000-000000000005',
+          'User Link PC'
+        )
+      limit
+        1
+    ),
+    'c1000000-0000-0000-0000-000000000005'::uuid,
+    'create_player_character establishes user_id link'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- SUPER ADMIN: can create in any world
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000007","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (
+          'c2000000-0000-0000-0000-000000000002',
+          'Super Admin NPC'
+        )
+    ),
+    1,
+    'super admin can create NPC in any world'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_player_character (
+          'c2000000-0000-0000-0000-000000000002',
+          'c1000000-0000-0000-0000-000000000005',
+          'Super Admin PC'
+        )
+    ),
+    1,
+    'super admin can create player_character in any world'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- GUARD: empty given_name and null world_id return no rows (authz guard)
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc ('c2000000-0000-0000-0000-000000000001', '')
+    ),
+    0,
+    'create_npc with empty given_name returns 0 rows (guard check)'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.create_npc (null::uuid, 'Given Name')
+    ),
+    0,
+    'create_npc with null world_id returns 0 rows (guard check)'
   );
 
 reset role;

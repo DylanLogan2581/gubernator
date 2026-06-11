@@ -12,31 +12,38 @@ import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { DepositsConfigPanel } from "@/features/deposits";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
+import { NamesetsConfigPanel } from "@/features/namesets";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
-import { WorldNamingConfigPanel } from "./WorldNamingConfigPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
+import { WorldSettingsPanel } from "./WorldSettingsPanel";
 
 import type { JSX, ReactNode } from "react";
 
-const TABS = [
+const BASE_TABS = [
   { key: "resources", label: "Resources" },
   { key: "jobs", label: "Jobs" },
   { key: "buildings", label: "Buildings" },
   { key: "deposits", label: "Deposits" },
   { key: "managed-populations", label: "Managed Populations" },
   { key: "calendar", label: "Calendar" },
-  { key: "naming", label: "Naming" },
+  { key: "namesets", label: "Namesets" },
   { key: "npc-flavor", label: "NPC Flavor" },
   { key: "population-rules", label: "Population Rules" },
 ] as const;
 
-type TabKey = (typeof TABS)[number]["key"];
+const SUPER_ADMIN_TABS = [
+  { key: "world-settings", label: "World settings" },
+] as const;
+
+type TabKey =
+  | (typeof BASE_TABS)[number]["key"]
+  | (typeof SUPER_ADMIN_TABS)[number]["key"];
 
 type WorldConfigurationPageProps = {
   readonly activeTab: string;
@@ -54,6 +61,12 @@ export function WorldConfigurationPage({
   const accessContextQuery = useQuery(
     currentAccessContextQueryOptions(queryClient),
   );
+
+  const isSuperAdmin = accessContextQuery.data?.isSuperAdmin ?? false;
+  const visibleTabs: ReadonlyArray<{
+    readonly key: string;
+    readonly label: string;
+  }> = isSuperAdmin ? [...BASE_TABS, ...SUPER_ADMIN_TABS] : [...BASE_TABS];
 
   function handleTabSelect(key: TabKey): void {
     void navigate({
@@ -81,7 +94,7 @@ export function WorldConfigurationPage({
           value={activeTab}
           onChange={(e) => handleTabSelect(e.target.value as TabKey)}
         >
-          {TABS.map(({ key, label }) => (
+          {visibleTabs.map(({ key, label }) => (
             <option key={key} value={key}>
               {label}
             </option>
@@ -97,7 +110,7 @@ export function WorldConfigurationPage({
         }}
       >
         <TabsList className="hidden overflow-x-auto [scrollbar-width:none] md:flex">
-          {TABS.map(({ key, label }) => (
+          {visibleTabs.map(({ key, label }) => (
             <TabsTrigger key={key} value={key} className="shrink-0">
               {label}
             </TabsTrigger>
@@ -119,6 +132,7 @@ export function WorldConfigurationPage({
           <WorldConfigurationContent
             accessContext={accessContextQuery.data}
             activeTab={activeTab}
+            queryClient={queryClient}
             selectedBlueprintId={selectedBlueprintId}
             worldId={worldId}
           />
@@ -131,11 +145,13 @@ export function WorldConfigurationPage({
 function WorldConfigurationContent({
   accessContext,
   activeTab,
+  queryClient,
   selectedBlueprintId,
   worldId,
 }: {
   readonly accessContext: Parameters<typeof worldRouteAccessQueryOptions>[1];
   readonly activeTab: string;
+  readonly queryClient: ReturnType<typeof useQueryClient>;
   readonly selectedBlueprintId?: string;
   readonly worldId: string;
 }): JSX.Element | null {
@@ -230,11 +246,10 @@ function WorldConfigurationContent({
     );
   }
 
-  if (activeTab === "naming") {
+  if (activeTab === "namesets") {
     return (
       <ConfigPanelShell>
-        <WorldNamingConfigPanel
-          accessContext={accessContext}
+        <NamesetsConfigPanel
           canAdmin={worldQuery.data.canAdmin}
           isArchived={worldQuery.data.header.isArchived}
           worldId={worldId}
@@ -264,6 +279,22 @@ function WorldConfigurationContent({
           canAdmin={worldQuery.data.canAdmin}
           isArchived={worldQuery.data.header.isArchived}
           worldId={worldId}
+        />
+      </ConfigPanelShell>
+    );
+  }
+
+  if (activeTab === "world-settings") {
+    if (!accessContext.isSuperAdmin) {
+      return null;
+    }
+    return (
+      <ConfigPanelShell>
+        <WorldSettingsPanel
+          currentTurnNumber={worldQuery.data.header.currentTurnNumber}
+          queryClient={queryClient}
+          worldId={worldId}
+          worldName={worldQuery.data.header.name}
         />
       </ConfigPanelShell>
     );

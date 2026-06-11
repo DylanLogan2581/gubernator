@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (18);
+  plan (21);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -58,12 +58,11 @@ where
   id = 'ba100000-0000-0000-0000-000000000001';
 
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'ba200000-0000-0000-0000-000000000001',
     'BSJA World',
-    'ba100000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -148,7 +147,7 @@ insert into
     world_id,
     settlement_id,
     citizen_type,
-    name,
+    given_name,
     status,
     user_id,
     role_type,
@@ -532,10 +531,12 @@ select
   );
 
 -- ===========================================================================
--- REJECTION: non-standard job (construction)
+-- ACCEPTANCE: construction-typed job
+-- §20260604000008 merged construction into set_bulk_standard_job_assignment so
+-- the single RPC handles both standard and construction job types.
 -- ===========================================================================
 select
-  throws_ok (
+  lives_ok (
     $test$
     select public.set_bulk_standard_job_assignment(
       'ba400000-0000-0000-0000-000000000001',
@@ -543,9 +544,7 @@ select
       1
     )
     $test$,
-    'P0001',
-    null,
-    'non-standard job (construction) is rejected with P0001'
+    'construction-typed job is accepted by the merged RPC'
   );
 
 -- ===========================================================================
@@ -764,6 +763,160 @@ select
     )
     $test$,
     'settlement manager can lower count'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- get_settlement_standard_job_counts: alive filter (defense-in-depth)
+--
+-- Set up: NPC 001 and NPC 002 assigned to ba5...001 (standard, capacity=5).
+-- Mark NPC 001 as dead (status = 'dead') without touching citizen_assignments —
+-- simulating a missed cleanup (the scenario the alive filter guards against).
+-- Verify that get_settlement_standard_job_counts reports current_count = 1,
+-- not 2.
+-- ===========================================================================
+delete from public.citizen_assignments
+where
+  citizen_id in (
+    'ba600000-0000-0000-0000-000000000001',
+    'ba600000-0000-0000-0000-000000000002',
+    'ba600000-0000-0000-0000-000000000003',
+    'ba600000-0000-0000-0000-000000000004',
+    'ba600000-0000-0000-0000-000000000005',
+    'ba600000-0000-0000-0000-000000000007'
+  );
+
+insert into
+  public.citizen_assignments (
+    citizen_id,
+    assignment_type,
+    job_id,
+    assigned_on_turn_number
+  )
+values
+  (
+    'ba600000-0000-0000-0000-000000000001',
+    'standard_job',
+    'ba500000-0000-0000-0000-000000000001',
+    1
+  ),
+  (
+    'ba600000-0000-0000-0000-000000000002',
+    'standard_job',
+    'ba500000-0000-0000-0000-000000000001',
+    1
+  );
+
+-- Mark NPC 001 as dead without deleting their assignment (simulates missed cleanup).
+update public.citizens
+set
+  status = 'dead',
+  death_cause_category = 'manual_admin',
+  death_cause = 'test fixture'
+where
+  id = 'ba600000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        r.current_count
+      from
+        public.get_settlement_standard_job_counts ('ba400000-0000-0000-0000-000000000001') r
+      where
+        r.job_id = 'ba500000-0000-0000-0000-000000000001'
+    ),
+    1,
+    'get_settlement_standard_job_counts: dead NPC assignment does not inflate count'
+  );
+
+reset role;
+
+-- Restore NPC 001 to alive for cleanliness.
+update public.citizens
+set
+  status = 'alive',
+  death_cause_category = null,
+  death_cause = null
+where
+  id = 'ba600000-0000-0000-0000-000000000001';
+
+-- ===========================================================================
+-- get_settlement_standard_job_counts: alive count after all NPCs marked dead
+-- ===========================================================================
+update public.citizens
+set
+  status = 'dead',
+  death_cause_category = 'manual_admin',
+  death_cause = 'test fixture'
+where
+  id in (
+    'ba600000-0000-0000-0000-000000000001',
+    'ba600000-0000-0000-0000-000000000002'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        r.current_count
+      from
+        public.get_settlement_standard_job_counts ('ba400000-0000-0000-0000-000000000001') r
+      where
+        r.job_id = 'ba500000-0000-0000-0000-000000000001'
+    ),
+    0,
+    'get_settlement_standard_job_counts: all assigned NPCs dead yields count = 0'
+  );
+
+reset role;
+
+-- Restore for safety.
+update public.citizens
+set
+  status = 'alive',
+  death_cause_category = null,
+  death_cause = null
+where
+  id in (
+    'ba600000-0000-0000-0000-000000000001',
+    'ba600000-0000-0000-0000-000000000002'
+  );
+
+-- ===========================================================================
+-- get_settlement_standard_job_counts: alive NPC still counted correctly
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        r.current_count
+      from
+        public.get_settlement_standard_job_counts ('ba400000-0000-0000-0000-000000000001') r
+      where
+        r.job_id = 'ba500000-0000-0000-0000-000000000001'
+    ),
+    2,
+    'get_settlement_standard_job_counts: alive assigned NPCs are counted correctly'
   );
 
 reset role;
