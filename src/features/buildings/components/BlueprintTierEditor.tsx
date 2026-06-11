@@ -246,7 +246,7 @@ function BlueprintTierEditorContent({
       {deletingTier !== null && (
         <TierDeleteConfirmDialog
           isPending={deleteMutation.isPending}
-          open={deletingTier !== null}
+          open
           tier={deletingTier}
           onConfirm={() => {
             deleteMutation.mutate(
