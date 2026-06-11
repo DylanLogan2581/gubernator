@@ -443,6 +443,12 @@ describe("SettlementBuildingsPanel", () => {
 
     renderPanel({ canAdmin: false, isArchived: false });
 
+    // Click trash toggle to show deconstructed buildings
+    const trashToggle = screen.getByRole("button", {
+      name: "Show deconstructed",
+    });
+    await userEvent.click(trashToggle);
+
     await screen.findByText("Granary");
     const badge = screen.getByRole("generic", {
       name: "State: Auto-deconstructed",

@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -55,6 +55,7 @@ export function SettlementBuildingsPanel({
   worldId,
 }: SettlementBuildingsPanelProps): JSX.Element {
   const [addOpen, setAddOpen] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const buildingsQuery = useQuery(
     settlementBuildingsBySettlementQueryOptions(settlementId),
   );
@@ -80,19 +81,36 @@ export function SettlementBuildingsPanel({
           >
             Buildings
           </h2>
-          {canAdd ? (
+          <div className="flex items-center gap-2">
+            {canAdd && !showTrash ? (
+              <Button
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setAddOpen(true);
+                }}
+              >
+                <Plus aria-hidden="true" />
+                Add building
+              </Button>
+            ) : null}
             <Button
-              size="sm"
+              aria-label={
+                showTrash ? "Hide deconstructed" : "Show deconstructed"
+              }
+              aria-pressed={showTrash}
+              size="icon-sm"
+              title={showTrash ? "Hide deconstructed" : "Show deconstructed"}
               type="button"
-              variant="outline"
+              variant={showTrash ? "secondary" : "ghost"}
               onClick={() => {
-                setAddOpen(true);
+                setShowTrash((prev) => !prev);
               }}
             >
-              <Plus aria-hidden="true" />
-              Add building
+              <Trash2 aria-hidden="true" />
             </Button>
-          ) : null}
+          </div>
         </div>
       </div>
 
@@ -119,6 +137,7 @@ export function SettlementBuildingsPanel({
             queryClient={queryClient}
             resourceNames={resourceNames}
             settlementId={settlementId}
+            showTrash={showTrash}
             worldId={worldId}
           />
         )}
@@ -161,6 +180,7 @@ function BuildingsGroups({
   queryClient,
   resourceNames,
   settlementId,
+  showTrash,
   worldId,
 }: {
   readonly buildings: readonly SettlementBuilding[];
@@ -171,13 +191,17 @@ function BuildingsGroups({
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
+  readonly showTrash: boolean;
   readonly worldId: string;
 }): JSX.Element {
   const canDeconstruct = canAdmin && !isArchived;
+  const visibleStateGroups = STATE_GROUPS.filter(
+    (group) => showTrash || group.label !== "Trash",
+  );
 
   return (
     <div className="grid gap-3">
-      {STATE_GROUPS.map((group) => {
+      {visibleStateGroups.map((group) => {
         const groupBuildings = buildings.filter((b) =>
           (group.states as readonly string[]).includes(b.state),
         );
