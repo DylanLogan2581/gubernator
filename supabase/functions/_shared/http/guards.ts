@@ -7,5 +7,7 @@ export function hasProperty<T extends string>(
   prop: T,
   type: "string" | "number" | "boolean" | "object" | "function" | "undefined",
 ): obj is Record<string, unknown> & { [P in T]: unknown } {
+  // `type` is constrained to the valid typeof result strings by the signature.
+  // deno-lint-ignore valid-typeof
   return typeof obj[prop] === type;
 }

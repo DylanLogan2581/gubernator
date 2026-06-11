@@ -12,6 +12,8 @@ export type SupabaseHeaders = {
   readonly authorization: string;
 };
 
+type TimeoutCapable = { timeout(ms: number): AbortSignal };
+
 /**
  * Classify HTTP status code as client error (4xx) vs server error (5xx).
  * Used to distinguish retryable (5xx) from non-retryable (4xx) errors.
@@ -34,7 +36,7 @@ export function classifyHttpError(status: number): {
  * @returns Response from Supabase
  * @throws AbortError if request times out
  */
-export async function supabaseFetch(
+export function supabaseFetch(
   url: string,
   options: {
     readonly headers: Record<string, string>;
@@ -50,8 +52,7 @@ export async function supabaseFetch(
 
   if ("timeout" in AbortSignal) {
     // Modern API (ES2024+, Deno >= 1.40)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    signal = (AbortSignal as any).timeout(timeoutMs);
+    signal = (AbortSignal as TimeoutCapable).timeout(timeoutMs);
   } else {
     // Fallback to AbortController pattern
     const controller = new AbortController();
