@@ -62,6 +62,13 @@ const exampleResult: SimulationResult = {
       toStatus: "depleted",
     },
   ],
+  eventStatusPatches: [
+    {
+      eventId: "event-1",
+      remainingTransitions: 2,
+      toStatus: "active",
+    },
+  ],
   logEntries: [
     {
       category: "construction",

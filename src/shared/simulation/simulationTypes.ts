@@ -51,6 +51,7 @@ export type SimSettlement = {
   readonly id: string;
   readonly isReadyCurrentTurn?: boolean;
   readonly name: string;
+  readonly nationId?: string;
 };
 
 export type SimStockpile = {
@@ -227,20 +228,43 @@ export type SimManagedPopulation = {
 // Events
 // ---------------------------------------------------------------------------
 
-export type SimEventStatus = "active" | "expired" | "pending" | "resolved";
+export type SimEventStatus =
+  | "active"
+  | "cancelled"
+  | "expired"
+  | "pending"
+  | "resolved";
 
 // Exhaustive union — adding a new value here requires a matching case in the
 // phaseEvents switch, which is the Epic 7 hand-off contract.
 export type EventEffectType =
+  | "building_damage"
+  | "consumption_multiplier"
   | "deposit_discovered"
+  | "managed_population_change"
+  | "population_boost"
   | "population_loss"
-  | "resource_grant";
+  | "production_multiplier"
+  | "resource_drain"
+  | "resource_grant"
+  | "upkeep_multiplier";
+
+export type EventStatusPatch = {
+  readonly eventId: string;
+  readonly remainingTransitions?: number;
+  readonly toStatus: SimEventStatus;
+};
 
 export type SimEvent = {
   readonly activateOnTransitionAfterTurnNumber: number;
   readonly effectPayloadJsonb: Record<string, unknown>;
   readonly effectType: EventEffectType;
+  readonly groupId?: string;
   readonly id: string;
+  readonly remainingTransitions?: number;
+  readonly scopeNationId?: string;
+  readonly scopeSettlementId?: string;
+  readonly scopeType: "nation" | "settlement" | "world";
   readonly status: SimEventStatus;
 };
 
@@ -534,6 +558,7 @@ export type SimulationResult = {
   readonly citizenPatches: readonly CitizenPatch[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
   readonly notifications: readonly SimulationNotification[];

@@ -105,6 +105,7 @@ export type ApplyTurnTransitionPayload = {
   readonly citizenDeaths: readonly CitizenDeathEntry[];
   readonly constructionUpdates: readonly ConstructionUpdateEntry[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
   readonly notifications: readonly SimulationNotification[];
@@ -335,6 +336,8 @@ export function mapSimulationResultToPayload(
     citizenDeaths,
     constructionUpdates,
     depositUpdates: result.depositUpdates,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    eventStatusPatches: result.eventStatusPatches,
     logEntries: result.logEntries,
     managedPopulationUpdates: result.managedPopulationUpdates,
     notifications: result.notifications,

@@ -15,49 +15,341 @@
 
 import type {
   EventEffectType,
+  EventStatusPatch,
+  SimEventStatus,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
 } from "../simulationTypes.ts";
 
 export type PhaseEventsOutput = {
+  readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logs: readonly SimulationLogEntry[];
   readonly notifications: readonly SimulationNotification[];
 };
 
 export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
-  const { events, turnNumber } = context.input;
+  const { events, settlements, turnNumber } = context.input;
 
-  let skippedCount = 0;
+  const logs: SimulationLogEntry[] = [];
+  const eventStatusPatches: EventStatusPatch[] = [];
 
-  for (const event of events) {
-    if (event.status !== "pending" && event.status !== "active") continue;
-    if (event.activateOnTransitionAfterTurnNumber > turnNumber) continue;
-
-    const effectType: EventEffectType = event.effectType;
-    switch (effectType) {
-      case "deposit_discovered":
-      case "population_loss":
-      case "resource_grant":
-        // No-op: Epic 7 implements effect resolution for each case.
-        skippedCount++;
-        break;
-      default: {
-        const _: never = effectType;
-        void _;
-        break;
+  // Build a settlement lookup for scope resolution
+  const settlementById = new Map(settlements.map((s) => [s.id, s]));
+  const settlementIdsByNationId = new Map<string, string[]>();
+  for (const settlement of settlements) {
+    const nationId = settlement.nationId;
+    if (typeof nationId === "string") {
+      if (!settlementIdsByNationId.has(nationId)) {
+        settlementIdsByNationId.set(nationId, []);
+      }
+      const ids = settlementIdsByNationId.get(nationId);
+      if (ids !== undefined) {
+        ids.push(settlement.id);
       }
     }
   }
 
-  const logs: SimulationLogEntry[] = [];
-  if (skippedCount > 0) {
-    logs.push({
-      category: "event.skipped",
-      payload: { count: skippedCount, reason: "epic-7-pending" },
-      phase: "events",
-    });
+  for (const event of events) {
+    // Skip already-resolved or already-expired or cancelled events
+    if (
+      event.status === "resolved" ||
+      event.status === "expired" ||
+      event.status === "cancelled"
+    ) {
+      continue;
+    }
+
+    // Skip if not yet activated
+    if (event.activateOnTransitionAfterTurnNumber > turnNumber) {
+      continue;
+    }
+
+    // Event is eligible for processing
+    const effectType: EventEffectType = event.effectType;
+    const payload = event.effectPayloadJsonb;
+
+    // Resolve scope to settlement IDs
+    const targetSettlementIds: string[] = [];
+    if (event.scopeType === "world") {
+      targetSettlementIds.push(...settlementById.keys());
+    } else if (event.scopeType === "nation") {
+      const nationId = event.scopeNationId;
+      if (nationId !== undefined && nationId !== null) {
+        const ids = settlementIdsByNationId.get(nationId) ?? [];
+        targetSettlementIds.push(...ids);
+      }
+    } else if (event.scopeType === "settlement") {
+      const settlementId = event.scopeSettlementId;
+      if (settlementId !== undefined && settlementId !== null) {
+        targetSettlementIds.push(settlementId);
+      }
+    }
+
+    // Process effect and log per target settlement
+    try {
+      switch (effectType) {
+        case "building_damage": {
+          const buildingId = payload.buildingId;
+          if (typeof buildingId === "string") {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.building_damage",
+                payload: {
+                  buildingId,
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        case "consumption_multiplier": {
+          const multiplier = payload.multiplier;
+          if (typeof multiplier === "number") {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.consumption_multiplier",
+                payload: {
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  multiplier,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        case "deposit_discovered": {
+          for (const settlementId of targetSettlementIds) {
+            logs.push({
+              category: "event.deposit_discovered",
+              payload: {
+                eventId: event.id,
+                groupId: event.groupId,
+                scope: event.scopeType,
+                settlementId,
+              },
+              phase: "events",
+            });
+          }
+          break;
+        }
+
+        case "managed_population_change": {
+          const managedPopulationId = payload.managedPopulationId;
+          const delta = payload.delta;
+          if (
+            typeof managedPopulationId === "string" &&
+            typeof delta === "number"
+          ) {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.managed_population_change",
+                payload: {
+                  delta,
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  managedPopulationId,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        case "population_boost": {
+          const amount = payload.amount;
+          if (typeof amount === "number") {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.population_boost",
+                payload: {
+                  amount,
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        case "population_loss": {
+          const amount = payload.amount;
+          if (typeof amount === "number") {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.population_loss",
+                payload: {
+                  amount,
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        case "production_multiplier": {
+          const multiplier = payload.multiplier;
+          const jobId = payload.jobId;
+          const buildingBlueprintId = payload.buildingBlueprintId;
+          if (typeof multiplier === "number") {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.production_multiplier",
+                payload: {
+                  buildingBlueprintId,
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  jobId,
+                  multiplier,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        case "resource_drain": {
+          const resourceId = payload.resourceId;
+          const amount = payload.amount;
+          if (typeof resourceId === "string" && typeof amount === "number") {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.resource_drain",
+                payload: {
+                  amount,
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  resourceId,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        case "resource_grant": {
+          const resourceId = payload.resourceId;
+          const amount = payload.amount;
+          if (typeof resourceId === "string" && typeof amount === "number") {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.resource_grant",
+                payload: {
+                  amount,
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  resourceId,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        case "upkeep_multiplier": {
+          const multiplier = payload.multiplier;
+          if (typeof multiplier === "number") {
+            for (const settlementId of targetSettlementIds) {
+              logs.push({
+                category: "event.upkeep_multiplier",
+                payload: {
+                  eventId: event.id,
+                  groupId: event.groupId,
+                  multiplier,
+                  scope: event.scopeType,
+                  settlementId,
+                },
+                phase: "events",
+              });
+            }
+          }
+          break;
+        }
+
+        default: {
+          const _: never = effectType;
+          void _;
+          break;
+        }
+      }
+    } catch (caught) {
+      let errorMsg = "Unknown error";
+      if (caught instanceof Error) {
+        errorMsg = caught.message;
+      } else if (typeof caught === "string") {
+        errorMsg = caught;
+      }
+      logs.push({
+        category: "event.error",
+        payload: {
+          error: errorMsg,
+          eventId: event.id,
+        },
+        phase: "events",
+      });
+    }
+
+    // Update event status patches for sustained duration and expiry
+    let newStatus: SimEventStatus = event.status;
+    let newRemainingTransitions = event.remainingTransitions;
+
+    if (event.status === "pending") {
+      // Transition pending → active
+      newStatus = "active";
+    } else if (
+      event.status === "active" &&
+      event.remainingTransitions !== undefined &&
+      event.remainingTransitions !== null
+    ) {
+      // Decrement and check for expiry
+      newRemainingTransitions = event.remainingTransitions - 1;
+      if (newRemainingTransitions <= 0) {
+        newStatus = "expired";
+        newRemainingTransitions = undefined;
+      }
+    }
+
+    // Record patch if status changed
+    if (newStatus !== event.status) {
+      eventStatusPatches.push({
+        eventId: event.id,
+        remainingTransitions: newRemainingTransitions,
+        toStatus: newStatus,
+      });
+    }
   }
 
-  return { logs, notifications: [] };
+  return { eventStatusPatches, logs, notifications: [] };
 }

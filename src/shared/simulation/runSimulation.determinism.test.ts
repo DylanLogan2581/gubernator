@@ -598,6 +598,7 @@ const EVENTS: readonly SimEvent[] = [
     effectPayloadJsonb: { amount: 20, resourceId: COINS_ID },
     effectType: "resource_grant",
     id: "event-1",
+    scopeType: "world",
     status: "pending",
   },
 ];
