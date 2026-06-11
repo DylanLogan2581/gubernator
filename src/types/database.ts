@@ -1,3 +1,5 @@
+ 
+
 export type Json =
   | string
   | number
@@ -619,44 +621,165 @@ export type Database = {
           },
         ];
       };
+      event_groups: {
+        Row: {
+          created_at: string;
+          created_by_user_id: string | null;
+          created_during_turn_number: number;
+          description: string | null;
+          id: string;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          created_during_turn_number: number;
+          description?: string | null;
+          id?: string;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          created_during_turn_number?: number;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_groups_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       events: {
         Row: {
           activate_on_transition_after_turn_number: number;
+          amount_value: number | null;
+          building_blueprint_id: string | null;
+          create_citizen_memories: boolean;
           created_at: string;
           description: string | null;
+          duration_transitions: number | null;
+          duration_type: string;
           effect_payload_jsonb: Json;
           effect_type: string;
+          event_group_id: string | null;
+          extra_data_jsonb: Json;
           id: string;
+          job_id: number | null;
+          managed_population_type_id: string | null;
+          memory_text: string | null;
+          multiplier_value: number | null;
           name: string;
+          remaining_transitions: number | null;
+          scope_nation_id: string | null;
+          scope_settlement_id: string | null;
+          scope_type: string | null;
           status: string;
           updated_at: string;
           world_id: string;
         };
         Insert: {
           activate_on_transition_after_turn_number: number;
+          amount_value?: number | null;
+          building_blueprint_id?: string | null;
+          create_citizen_memories?: boolean;
           created_at?: string;
           description?: string | null;
+          duration_transitions?: number | null;
+          duration_type?: string;
           effect_payload_jsonb?: Json;
           effect_type: string;
+          event_group_id?: string | null;
+          extra_data_jsonb?: Json;
           id?: string;
+          job_id?: number | null;
+          managed_population_type_id?: string | null;
+          memory_text?: string | null;
+          multiplier_value?: number | null;
           name: string;
+          remaining_transitions?: number | null;
+          scope_nation_id?: string | null;
+          scope_settlement_id?: string | null;
+          scope_type?: string | null;
           status?: string;
           updated_at?: string;
           world_id: string;
         };
         Update: {
           activate_on_transition_after_turn_number?: number;
+          amount_value?: number | null;
+          building_blueprint_id?: string | null;
+          create_citizen_memories?: boolean;
           created_at?: string;
           description?: string | null;
+          duration_transitions?: number | null;
+          duration_type?: string;
           effect_payload_jsonb?: Json;
           effect_type?: string;
+          event_group_id?: string | null;
+          extra_data_jsonb?: Json;
           id?: string;
+          job_id?: number | null;
+          managed_population_type_id?: string | null;
+          memory_text?: string | null;
+          multiplier_value?: number | null;
           name?: string;
+          remaining_transitions?: number | null;
+          scope_nation_id?: string | null;
+          scope_settlement_id?: string | null;
+          scope_type?: string | null;
           status?: string;
           updated_at?: string;
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "events_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_event_group_id_fkey";
+            columns: ["event_group_id"];
+            isOneToOne: false;
+            referencedRelation: "event_groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_managed_population_type_id_fkey";
+            columns: ["managed_population_type_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_scope_nation_id_fkey";
+            columns: ["scope_nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_scope_settlement_id_fkey";
+            columns: ["scope_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "events_world_id_fkey";
             columns: ["world_id"];
@@ -3798,7 +3921,8 @@ export type Database = {
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
-        | { Args: { why: string }; Returns: boolean[] };
+        | { Args: { why: string }; Returns: boolean[] }
+         ;
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }
