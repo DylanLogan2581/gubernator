@@ -318,14 +318,16 @@ select
 reset role;
 
 -- ===========================================================================
--- CITIZEN FROM WRONG NATION (non-admin): rejected (P0001)
--- Nation A manager calls, but proposing citizen (fc6...004) is in World 2 Nation C.
+-- INVALID LEG DIRECTION: rejected (P0001)
+-- Settlement A1 manager (fc100...003) is authorized, but a leg direction that is
+-- neither 'send' nor 'receive' is rejected. Citizen residency is no longer
+-- checked — the proposing citizen id is only an audit stamp.
 -- ===========================================================================
 set
   local role authenticated;
 
 set
-  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000003","role":"authenticated"}';
 
 select
   throws_ok (
@@ -334,7 +336,7 @@ select
       'fc400000-0000-0000-0000-000000000001',
       'fc400000-0000-0000-0000-000000000002',
       jsonb_build_array(jsonb_build_object(
-        'direction', 'send',
+        'direction', 'sideways',
         'resource_id', 'fc500000-0000-0000-0000-000000000001',
         'quantity', 10
       )),
@@ -343,7 +345,7 @@ select
     $test$,
     'P0001',
     null,
-    'proposing citizen from wrong nation is rejected with P0001 for non-admin'
+    'invalid leg direction is rejected with P0001'
   );
 
 reset role;
@@ -522,8 +524,9 @@ select
   );
 
 -- ===========================================================================
--- ADMIN OVERRIDE: world admin can propose with a citizen from a wrong nation;
--- both sides stay pending because the citizen belongs to neither endpoint nation.
+-- WORLD ADMIN MANAGES BOTH ENDPOINTS: both sides auto-approve and the route
+-- goes active immediately, since there is no separate recipient to wait on.
+-- Citizen residency is irrelevant; the citizen id is only an audit stamp.
 -- ===========================================================================
 set
   local role authenticated;
@@ -545,12 +548,12 @@ select
       'fc600000-0000-0000-0000-000000000004'
     )
     $test$,
-    'world admin can propose with citizen from wrong nation (admin override)'
+    'world admin can propose for both endpoints (admin override)'
   );
 
 reset role;
 
--- Admin-proposed route uses a citizen outside either endpoint nation → both pending.
+-- World admin manages both endpoints → both sides approved and route active.
 select
   is (
     (
@@ -561,12 +564,12 @@ select
       where
         tr.origin_settlement_id = 'fc400000-0000-0000-0000-000000000001'
         and tr.destination_settlement_id = 'fc400000-0000-0000-0000-000000000002'
-        and tr.status = 'proposed'
-        and tr.origin_approval_status = 'pending'
-        and tr.destination_approval_status = 'pending'
+        and tr.status = 'active'
+        and tr.origin_approval_status = 'approved'
+        and tr.destination_approval_status = 'approved'
     ),
     1,
-    'admin route with foreign citizen leaves both sides pending'
+    'admin who manages both endpoints auto-approves both sides and activates the route'
   );
 
 -- ===========================================================================

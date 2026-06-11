@@ -567,22 +567,31 @@ select
 reset role;
 
 -- ===========================================================================
--- CONSTRAINT: approver citizen from wrong nation rejected (errcode = 23503)
+-- GRANT: approval columns are not directly writable by authenticated users
 -- ===========================================================================
--- Citizen c6..002 (destination manager) lives in destination settlement
--- (nation c3..002). Setting them as the origin approver targets nation c3..001 —
--- a mismatch that the approver-nation trigger must reject.
+-- Approval is role-based and flows only through the SECURITY DEFINER RPCs. Even
+-- the origin nation manager (c1..003), who passes the UPDATE RLS policy, lacks a
+-- column grant on origin_approved_by_citizen_id, so a direct write is denied
+-- (errcode 42501). This is what forces all approvals through approve/reject.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c1000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
 select
   throws_ok (
     $test$
     update public.trade_routes
-    set origin_approved_by_citizen_id = 'c6000000-0000-0000-0000-000000000002'
+    set origin_approved_by_citizen_id = 'c6000000-0000-0000-0000-000000000003'
     where id = 'c7000000-0000-0000-0000-000000000001'
   $test$,
-    '23503',
+    '42501',
     null,
-    'approver citizen from wrong nation is rejected by the approver-nation trigger'
+    'authenticated manager cannot directly write approval columns (RPC-only)'
   );
+
+reset role;
 
 -- ===========================================================================
 -- CONSTRAINT: origin_settlement_id = destination_settlement_id rejected (23514)

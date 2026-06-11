@@ -294,7 +294,7 @@ function TradeRoutesDirection({
                 </TableHead>
                 <TableHead scope="col">Resources</TableHead>
                 <TableHead scope="col">Status</TableHead>
-                <TableHead scope="col">Origin / Dest</TableHead>
+                <TableHead scope="col">Approval</TableHead>
                 {canManageRoutes ? (
                   <TableHead
                     scope="col"
@@ -361,8 +361,7 @@ function TradeRouteRow({
   const canApproveOrReject =
     canManageRoutes &&
     activeCharacterId !== null &&
-    route.status === "proposed" &&
-    side === "destination";
+    route.status === "proposed";
   const thisSideApproval =
     side === "origin"
       ? route.originApprovalStatus
@@ -412,14 +411,7 @@ function TradeRouteRow({
           ) : null}
         </TableCell>
         <TableCell className="py-2 pr-4">
-          <span className="flex items-center gap-1">
-            <ApprovalBadge status={route.originApprovalStatus} label="Orig" />
-            <span className="text-muted-foreground">/</span>
-            <ApprovalBadge
-              status={route.destinationApprovalStatus}
-              label="Dest"
-            />
-          </span>
+          <ApprovalBadge status={combinedApprovalStatus(route)} />
         </TableCell>
         {canManageRoutes ? (
           <TableCell className="w-48 py-2 text-right">
@@ -618,11 +610,30 @@ function StatusBadge({
   );
 }
 
+// Only the recipient side requires approval (the proposer's side is auto-approved
+// at propose time), so the two per-side statuses collapse to one route-level
+// status: rejected wins, then any still-pending side, otherwise approved.
+function combinedApprovalStatus(route: TradeRoute): TradeRouteApprovalStatus {
+  if (
+    route.originApprovalStatus === "rejected" ||
+    route.destinationApprovalStatus === "rejected"
+  ) {
+    return "rejected";
+  }
+  if (
+    route.originApprovalStatus === "pending" ||
+    route.destinationApprovalStatus === "pending"
+  ) {
+    return "pending";
+  }
+  return "approved";
+}
+
 function ApprovalBadge({
   label,
   status,
 }: {
-  readonly label: string;
+  readonly label?: string;
   readonly status: TradeRouteApprovalStatus;
 }): JSX.Element {
   const statusLabels: Record<TradeRouteApprovalStatus, string> = {
@@ -649,7 +660,9 @@ function ApprovalBadge({
   return (
     <Badge className={className} variant={variantMap[status]}>
       <span>
-        {label} {statusLabels[status]}
+        {label === undefined
+          ? statusLabels[status]
+          : `${label} ${statusLabels[status]}`}
       </span>
       {iconMap[status]}
     </Badge>

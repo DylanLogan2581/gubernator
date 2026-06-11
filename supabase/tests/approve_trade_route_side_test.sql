@@ -326,8 +326,47 @@ select
 reset role;
 
 -- ===========================================================================
--- APPROVER CITIZEN FROM WRONG NATION: origin manager uses destination citizen
+-- CITIZEN RESIDENCY IS NOT REQUIRED: authority is role-based only. The origin
+-- manager may stamp the approval with any citizen id (here one residing in the
+-- destination settlement) because residency no longer gates approval. Uses a
+-- dedicated route so the main route's approval sequence is untouched.
 -- ===========================================================================
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000004',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'pending',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000004',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    8
+  );
+
 set
   local role authenticated;
 
@@ -335,17 +374,15 @@ set
   local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 select
-  throws_ok (
+  lives_ok (
     $test$
     select public.approve_trade_route_side(
-      'af700000-0000-0000-0000-000000000001',
+      'af700000-0000-0000-0000-000000000004',
       'origin',
       'af600000-0000-0000-0000-000000000004'
     )
     $test$,
-    'P0001',
-    null,
-    'approver citizen from wrong nation is rejected with P0001'
+    'approver citizen residency is not required (role authority only)'
   );
 
 reset role;

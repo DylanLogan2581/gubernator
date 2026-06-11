@@ -531,8 +531,11 @@ describe("SettlementTradeRoutesPanel", () => {
     ).toBeNull();
   });
 
-  it("hides approve/reject buttons for outgoing route (origin side only receives cancel)", async () => {
-    // Origin settlement can only propose and cancel. Only destination can approve/reject.
+  it("shows approve/reject on outgoing route when the origin side is the pending recipient", async () => {
+    // Approval is role-based, not direction-based: when this settlement is the
+    // origin and its side is still pending (e.g. the route was proposed by the
+    // other endpoint's manager), the origin manager is the recipient and must be
+    // able to approve/reject from the outgoing view.
     requireSupabaseClient.mockReturnValue(
       createClient({
         routeRows: [
@@ -540,7 +543,7 @@ describe("SettlementTradeRoutesPanel", () => {
             status: "proposed",
             origin_settlement_id: SETTLEMENT_ID,
             origin_approval_status: "pending",
-            destination_approval_status: "pending",
+            destination_approval_status: "approved",
           }),
         ],
       }),
@@ -562,12 +565,12 @@ describe("SettlementTradeRoutesPanel", () => {
       screen.queryByRole("button", {
         name: /Approve trade route/,
       }),
-    ).toBeNull();
+    ).not.toBeNull();
     expect(
       screen.queryByRole("button", {
         name: /Reject trade route/,
       }),
-    ).toBeNull();
+    ).not.toBeNull();
   });
 
   it("hides approve/reject for outgoing route when proposer's origin side is auto-approved", async () => {
