@@ -19,7 +19,7 @@ import { restoreDepositInstanceMutationOptions } from "../../mutations/restoreDe
 import { EditResourceQuantitiesDialog } from "./EditResourceQuantitiesDialog";
 import { HardDeleteDepositConfirmDialog } from "./HardDeleteDepositConfirmDialog";
 import { MaxWorkersEditDialog } from "./MaxWorkersEditDialog";
-import { RemoveDepositConfirmDialog } from "./RemoveDepositConfirmDialog";
+import { ExhaustDepositConfirmDialog } from "./RemoveDepositConfirmDialog";
 
 import type { DepositInstance } from "../../types/depositInstanceTypes";
 
@@ -204,22 +204,22 @@ export function DepositInstanceRow({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            aria-label={`Remove ${instance.name}`}
+                            aria-label={`Exhaust ${instance.name}`}
                             disabled
                             size="sm"
                             type="button"
                             variant="destructive"
                           >
-                            Remove
+                            Exhaust
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          Cannot remove: deposit has assigned workers.
+                          Cannot exhaust: deposit has assigned workers.
                         </TooltipContent>
                       </Tooltip>
                     ) : (
                       <Button
-                        aria-label={`Remove ${instance.name}`}
+                        aria-label={`Exhaust ${instance.name}`}
                         size="sm"
                         type="button"
                         variant="destructive"
@@ -227,7 +227,7 @@ export function DepositInstanceRow({
                           setShowRemoveConfirm(true);
                         }}
                       >
-                        Remove
+                        Exhaust
                       </Button>
                     )
                   ) : null}
@@ -259,7 +259,7 @@ export function DepositInstanceRow({
         />
       ) : null}
       {showRemoveConfirm ? (
-        <RemoveDepositConfirmDialog
+        <ExhaustDepositConfirmDialog
           instance={instance}
           queryClient={queryClient}
           onClose={() => {

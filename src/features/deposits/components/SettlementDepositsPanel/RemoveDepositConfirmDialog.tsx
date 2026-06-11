@@ -14,7 +14,7 @@ type RemoveDepositConfirmDialogProps = {
   readonly queryClient: QueryClient;
 };
 
-export function RemoveDepositConfirmDialog({
+export function ExhaustDepositConfirmDialog({
   instance,
   onClose,
   queryClient,
@@ -26,10 +26,10 @@ export function RemoveDepositConfirmDialog({
   async function handleConfirm(): Promise<void> {
     try {
       await mutation.mutateAsync({ depositInstanceId: instance.id });
-      notifyMutationSuccess(`${instance.name} removed.`);
+      notifyMutationSuccess(`${instance.name} exhausted.`);
       onClose();
     } catch (error) {
-      notifyMutationError(error, "Failed to remove deposit instance.");
+      notifyMutationError(error, "Failed to exhaust deposit instance.");
     }
   }
 
@@ -39,15 +39,15 @@ export function RemoveDepositConfirmDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={`Remove ${instance.name}?`}
+      title={`Exhaust ${instance.name}?`}
       description={
         <>
-          This will permanently remove{" "}
+          This will permanently exhaust{" "}
           <span className="font-medium text-foreground">{instance.name}</span>.
-          This action cannot be undone.
+          All assigned workers will be unassigned. This action cannot be undone.
         </>
       }
-      confirmLabel="Remove"
+      confirmLabel="Exhaust"
       isPending={mutation.isPending}
       onConfirm={handleConfirm}
     />

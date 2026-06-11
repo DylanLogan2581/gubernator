@@ -1009,7 +1009,7 @@ describe("SettlementDepositsPanel", () => {
 
     await screen.findByText("North Mine");
     const removeButton = screen.getByRole("button", {
-      name: "Remove North Mine",
+      name: "Exhaust North Mine",
     });
     expect(removeButton).toBeDisabled();
   });
@@ -1026,7 +1026,7 @@ describe("SettlementDepositsPanel", () => {
 
     await screen.findByText("North Mine");
     const removeButton = screen.getByRole("button", {
-      name: "Remove North Mine",
+      name: "Exhaust North Mine",
     });
     expect(removeButton).not.toBeDisabled();
   });
@@ -1056,12 +1056,14 @@ describe("SettlementDepositsPanel", () => {
     renderPanel({ canAdmin: true, canManage: false });
 
     await screen.findByText("North Mine");
-    await user.click(screen.getByRole("button", { name: "Remove North Mine" }));
+    await user.click(
+      screen.getByRole("button", { name: "Exhaust North Mine" }),
+    );
 
     const dialog = await screen.findByRole("alertdialog", {
-      name: "Remove North Mine?",
+      name: "Exhaust North Mine?",
     });
-    await user.click(within(dialog).getByRole("button", { name: "Remove" }));
+    await user.click(within(dialog).getByRole("button", { name: "Exhaust" }));
 
     await waitFor(() => {
       expect(rpcMock).toHaveBeenCalledWith("remove_deposit_instance", {
@@ -1071,7 +1073,7 @@ describe("SettlementDepositsPanel", () => {
 
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledWith(
-        "North Mine removed.",
+        "North Mine exhausted.",
         undefined,
       );
     });
