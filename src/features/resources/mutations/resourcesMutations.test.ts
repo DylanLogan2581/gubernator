@@ -93,6 +93,7 @@ describe("createResourceMutationOptions", () => {
     expect(calls.from).toHaveBeenCalledWith("resources");
     expect(calls.insert).toHaveBeenCalledWith({
       base_stockpile_cap: 100.5,
+      decay_rate: 0,
       name: "Iron Ore",
       slug: "iron-ore",
       world_id: WORLD_ID,
@@ -114,6 +115,41 @@ describe("createResourceMutationOptions", () => {
 
     expect(calls.insert).toHaveBeenCalledWith(
       expect.objectContaining({ base_stockpile_cap: 0 }),
+    );
+  });
+
+  it("defaults decayRate to 0 when omitted", async () => {
+    const row = createResourceRow();
+    const { client, calls } = createInsertClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = createResourceMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      name: "Iron Ore",
+      slug: "iron-ore",
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ decay_rate: 0 }),
+    );
+  });
+
+  it("inserts with provided decayRate", async () => {
+    const row = createResourceRow();
+    const { client, calls } = createInsertClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = createResourceMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      decayRate: "25.50",
+      name: "Iron Ore",
+      slug: "iron-ore",
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ decay_rate: 25.5 }),
     );
   });
 

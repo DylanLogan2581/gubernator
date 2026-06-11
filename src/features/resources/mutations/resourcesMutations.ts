@@ -109,6 +109,7 @@ async function createResource(
     .from("resources")
     .insert({
       base_stockpile_cap: values.baseStockpileCap ?? 0,
+      decay_rate: values.decayRate ?? 0,
       name: values.name.trim(),
       slug: values.slug.trim(),
       world_id: values.worldId,

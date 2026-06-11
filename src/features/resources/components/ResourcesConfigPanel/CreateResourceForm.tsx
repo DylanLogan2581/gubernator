@@ -23,6 +23,7 @@ import {
 
 type CreateResourceFieldErrors = {
   readonly baseStockpileCap?: string;
+  readonly decayRate?: string;
   readonly name?: string;
   readonly slug?: string;
 };
@@ -42,6 +43,7 @@ export function CreateResourceForm({
 }: CreateResourceFormProps): JSX.Element {
   const [name, setName] = useState("");
   const [baseStockpileCap, setBaseStockpileCap] = useState("");
+  const [decayRate, setDecayRate] = useState("");
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof CreateResourceFieldErrors>();
 
@@ -55,6 +57,7 @@ export function CreateResourceForm({
 
     const input: CreateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
+      decayRate: decayRate !== "" ? decayRate : undefined,
       name,
       slug: derivedSlug,
       worldId,
@@ -122,6 +125,28 @@ export function CreateResourceForm({
               {fieldErrors.baseStockpileCap !== undefined ? (
                 <p className="text-xs text-destructive">
                   {fieldErrors.baseStockpileCap}
+                </p>
+              ) : null}
+            </Label>
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="create-resource-decay"
+            >
+              <span className="text-muted-foreground">Decay rate (%)</span>
+              <Input
+                aria-invalid={fieldErrors.decayRate !== undefined}
+                disabled={isPending}
+                id="create-resource-decay"
+                inputMode="decimal"
+                placeholder="0"
+                value={decayRate}
+                onChange={(e) => {
+                  setDecayRate(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.decayRate !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.decayRate}
                 </p>
               ) : null}
             </Label>

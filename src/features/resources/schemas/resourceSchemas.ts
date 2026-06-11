@@ -29,13 +29,6 @@ const baseStockpileCapSchema = z
   )
   .transform((value): number => parseFloat(value));
 
-export const createResourceInputSchema = z.strictObject({
-  baseStockpileCap: baseStockpileCapSchema.optional(),
-  name: resourceNameSchema,
-  slug: resourceSlugSchema,
-  worldId: worldIdSchema,
-});
-
 const decayRateSchema = z
   .string()
   .regex(
@@ -49,6 +42,14 @@ const decayRateSchema = z
       .min(0, "Decay rate must be at least 0.")
       .max(100, "Decay rate cannot exceed 100."),
   );
+
+export const createResourceInputSchema = z.strictObject({
+  baseStockpileCap: baseStockpileCapSchema.optional(),
+  decayRate: decayRateSchema.optional(),
+  name: resourceNameSchema,
+  slug: resourceSlugSchema,
+  worldId: worldIdSchema,
+});
 
 export const updateResourceInputSchema = z
   .strictObject({
