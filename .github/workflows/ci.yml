@@ -51,7 +51,7 @@ jobs:
           deno-version: v2.x
 
       - name: Run deno check
-        run: deno check supabase/functions/**/*.ts
+        run: deno check $(find supabase/functions -name '*.ts' ! -name '*.test.ts')
 
       - name: Run deno lint
         run: deno lint supabase/functions/

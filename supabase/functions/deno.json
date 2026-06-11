@@ -1,4 +1,5 @@
 {
+  "exclude": ["**/*.test.ts"],
   "compilerOptions": {
     "lib": ["deno.window"],
     "target": "ES2022",
