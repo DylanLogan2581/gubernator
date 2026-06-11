@@ -210,7 +210,7 @@ export function BuildingRow({
                 Deconstruct
               </Button>
             ) : null}
-            {isDeconstructed && canAdmin ? (
+            {isDeconstructed ? (
               <div className="flex gap-1 justify-end">
                 <Button
                   aria-label={`Restore ${building.blueprintName}`}
