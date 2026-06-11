@@ -48,8 +48,7 @@ export function applyWidowing(
     const survivorId = aDied ? partnership.citizenBId : partnership.citizenAId;
     const survivorAlive = !priorDeadIds.has(survivorId);
     const survivor = citizenById.get(survivorId);
-    const survivorSettlementId =
-      survivor !== undefined ? survivor.settlementId : null;
+    const survivorSettlementId = survivor !== undefined ? survivor.settlementId : null;
 
     logs.push({
       category: "partnership.widowed",

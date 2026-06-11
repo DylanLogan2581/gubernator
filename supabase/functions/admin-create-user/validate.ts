@@ -1,9 +1,6 @@
 import { createErrorResponse } from "./http.ts";
 
-import type {
-  AdminCreateUserErrorResponse,
-  AdminCreateUserRequestBody,
-} from "./types.ts";
+import type { AdminCreateUserErrorResponse, AdminCreateUserRequestBody } from "./types.ts";
 
 type ValidateResult =
   | { readonly body: AdminCreateUserRequestBody; readonly ok: true }
@@ -100,16 +97,12 @@ export async function parseAdminCreateUserRequestBody(
     }
   }
 
-  const email =
-    typeof obj["email"] === "string" ? obj["email"].trim() : undefined;
-  const username =
-    typeof obj["username"] === "string" ? obj["username"].trim() : undefined;
-  const password =
-    typeof obj["password"] === "string" ? obj["password"] : undefined;
-  const sendMagicLink =
-    typeof obj["sendMagicLink"] === "boolean"
-      ? obj["sendMagicLink"]
-      : undefined;
+  const email = typeof obj["email"] === "string" ? obj["email"].trim() : undefined;
+  const username = typeof obj["username"] === "string" ? obj["username"].trim() : undefined;
+  const password = typeof obj["password"] === "string" ? obj["password"] : undefined;
+  const sendMagicLink = typeof obj["sendMagicLink"] === "boolean"
+    ? obj["sendMagicLink"]
+    : undefined;
 
   if (email === undefined || email.length === 0 || !isValidEmail(email)) {
     return {
@@ -158,8 +151,7 @@ export async function parseAdminCreateUserRequestBody(
     return {
       error: createErrorResponse({
         code: "invalid_request",
-        message:
-          "A password of at least 8 characters is required when not using magic link.",
+        message: "A password of at least 8 characters is required when not using magic link.",
       }),
       ok: false,
     };

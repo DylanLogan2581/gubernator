@@ -1,7 +1,4 @@
-import {
-  logAdminCreateUserSuccess,
-  logAuthorizationDenial,
-} from "../_shared/auditLog.ts";
+import { logAdminCreateUserSuccess, logAuthorizationDenial } from "../_shared/auditLog.ts";
 import {
   getEdgeRuntime,
   getRequiredRuntimeEnv,
@@ -45,10 +42,10 @@ type CheckSuperAdminResult =
 type CreateAuthUserResult =
   | { readonly data: AdminCreateUserSuccessData; readonly ok: true }
   | {
-      readonly error: ReturnType<typeof createErrorResponse>;
-      readonly ok: false;
-      readonly status: number;
-    };
+    readonly error: ReturnType<typeof createErrorResponse>;
+    readonly ok: false;
+    readonly status: number;
+  };
 
 export async function handleAdminCreateUserRequest(
   request: Request,
@@ -164,10 +161,9 @@ export async function handleAdminCreateUserRequest(
     );
     const allowedOrigin = request.headers.get("origin");
     const allowedOrigins = options.allowedOrigins ?? getAllowedOrigins();
-    const safeAllowedOrigin =
-      allowedOrigin !== null && allowedOrigins.includes(allowedOrigin)
-        ? allowedOrigin
-        : null;
+    const safeAllowedOrigin = allowedOrigin !== null && allowedOrigins.includes(allowedOrigin)
+      ? allowedOrigin
+      : null;
     return createJsonResponse(
       createErrorResponse({
         code: "auth_admin_error",
@@ -425,7 +421,9 @@ async function getIdempotencyKeyResult(
 
   try {
     const response = await supabaseFetch(
-      `${supabaseUrl}/rest/v1/admin_create_user_idempotency_keys?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&expires_at=gt.now()`,
+      `${supabaseUrl}/rest/v1/admin_create_user_idempotency_keys?idempotency_key=eq.${
+        encodeURIComponent(idempotencyKey)
+      }&expires_at=gt.now()`,
       {
         headers: {
           apikey: serviceRoleKey,
@@ -440,7 +438,6 @@ async function getIdempotencyKeyResult(
       return null;
     }
 
-     
     const body: unknown = await response.json();
     if (!Array.isArray(body) || body.length === 0) {
       return null;

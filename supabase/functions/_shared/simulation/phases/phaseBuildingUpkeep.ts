@@ -56,8 +56,7 @@ export function phaseBuildingUpkeep(
     // Check whether the stockpile can cover all upkeep costs.
     let canPay = true;
     for (const cost of tier.upkeepCostsJson) {
-      const available =
-        stockpileQty.get(`${building.settlementId}:${cost.resourceId}`) ?? 0;
+      const available = stockpileQty.get(`${building.settlementId}:${cost.resourceId}`) ?? 0;
       if (available < cost.amount) {
         canPay = false;
         break;
@@ -92,7 +91,8 @@ export function phaseBuildingUpkeep(
           settlementId: building.settlementId,
         });
         allNotifications.push({
-          messageText: `A suspended building in "${settlementName}" resumed operation after upkeep costs were met.`,
+          messageText:
+            `A suspended building in "${settlementName}" resumed operation after upkeep costs were met.`,
           notificationType: "building.recovered",
           scope: "settlement",
           settlementId: building.settlementId,
@@ -120,7 +120,8 @@ export function phaseBuildingUpkeep(
           settlementId: building.settlementId,
         });
         allNotifications.push({
-          messageText: `A building in "${settlementName}" was auto-deconstructed after missing upkeep too many times.`,
+          messageText:
+            `A building in "${settlementName}" was auto-deconstructed after missing upkeep too many times.`,
           notificationType: "building.auto_deconstructed",
           scope: "settlement",
           settlementId: building.settlementId,
@@ -142,7 +143,8 @@ export function phaseBuildingUpkeep(
           settlementId: building.settlementId,
         });
         allNotifications.push({
-          messageText: `A building in "${settlementName}" was suspended due to insufficient upkeep resources.`,
+          messageText:
+            `A building in "${settlementName}" was suspended due to insufficient upkeep resources.`,
           notificationType: "building.suspended",
           scope: "settlement",
           settlementId: building.settlementId,

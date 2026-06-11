@@ -14,10 +14,7 @@ import { resolveSupabaseEndTurnSimulationInput } from "./state.ts";
 import { planSimulationTransition } from "./transition.ts";
 import { parseEndTurnSimulationRequestBody } from "./validate.ts";
 
-import type {
-  EndTurnSimulationHandlerOptions,
-  EndTurnSimulationResponse,
-} from "./types.ts";
+import type { EndTurnSimulationHandlerOptions, EndTurnSimulationResponse } from "./types.ts";
 
 export type {
   EndTurnSimulationAuthContext,
@@ -81,17 +78,15 @@ export async function handleEndTurnSimulationRequest(
       return respond(validateResult.error, 400);
     }
 
-    const authContextResult =
-      await resolveSupabaseSimulationAuthContext(request);
+    const authContextResult = await resolveSupabaseSimulationAuthContext(request);
     if (!authContextResult.ok) {
       return respond(authContextResult.error, authContextResult.status);
     }
 
-    const authorizationResult =
-      await resolveSupabaseEndTurnSimulationAuthorization(
-        validateResult.body,
-        authContextResult.context,
-      );
+    const authorizationResult = await resolveSupabaseEndTurnSimulationAuthorization(
+      validateResult.body,
+      authContextResult.context,
+    );
     if (!authorizationResult.ok) {
       return respond(authorizationResult.error, authorizationResult.status);
     }
@@ -153,8 +148,7 @@ export async function handleEndTurnSimulationRequest(
     // Handle unexpected errors with CORS headers
     const origin = request.headers.get("origin");
     const allowedOrigins = options.allowedOrigins ?? getAllowedOrigins();
-    const allowedOrigin =
-      origin !== null && allowedOrigins.includes(origin) ? origin : null;
+    const allowedOrigin = origin !== null && allowedOrigins.includes(origin) ? origin : null;
 
     console.error("[end-turn-simulation] Unexpected error:", error);
 

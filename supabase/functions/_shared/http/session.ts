@@ -28,7 +28,7 @@ export function validateAuthUserPayload(
   }
 
   const obj = value as Record<string, unknown>;
-  return typeof obj.id === "string" && (obj.id).length > 0;
+  return typeof obj.id === "string" && obj.id.length > 0;
 }
 
 export async function resolveAuthContext<
@@ -52,10 +52,10 @@ export async function resolveAuthContext<
   },
 ): Promise<
   | {
-      readonly ok: false;
-      readonly error: TErrorResponse;
-      readonly status: number;
-    }
+    readonly ok: false;
+    readonly error: TErrorResponse;
+    readonly status: number;
+  }
   | { readonly ok: true; readonly context: TAuthContext }
 > {
   const authHeader = getAuthorizationHeader(request);

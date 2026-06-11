@@ -83,7 +83,9 @@ export function phaseHomelessness(
     });
 
     const toKill = sorted.slice(0, homelessDeaths);
-    const deathDetail = `cap: ${formatStockpileForDisplay(cap)}, alive: ${formatStockpileForDisplay(aliveNpcCount)}`;
+    const deathDetail = `cap: ${formatStockpileForDisplay(cap)}, alive: ${
+      formatStockpileForDisplay(aliveNpcCount)
+    }`;
 
     for (const citizen of toKill) {
       allDeaths.push({

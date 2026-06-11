@@ -26,8 +26,7 @@ export function hashStringToSeed(input: string): number {
 }
 
 export function createSeededRng(seed: number | string): SeededRng {
-  const numericSeed =
-    typeof seed === "string" ? hashStringToSeed(seed) : seed >>> 0;
+  const numericSeed = typeof seed === "string" ? hashStringToSeed(seed) : seed >>> 0;
   return mulberry32(numericSeed);
 }
 

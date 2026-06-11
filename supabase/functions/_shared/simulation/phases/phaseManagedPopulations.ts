@@ -25,8 +25,7 @@ export type PhaseManagedPopulationsOutput = {
 export function phaseManagedPopulations(
   context: SimulationContext,
 ): PhaseManagedPopulationsOutput {
-  const { citizenAssignments, managedPopulationTypes, managedPopulations } =
-    context.input;
+  const { citizenAssignments, managedPopulationTypes, managedPopulations } = context.input;
 
   const popTypeById = new Map(managedPopulationTypes.map((t) => [t.id, t]));
 
@@ -82,8 +81,7 @@ export function phaseManagedPopulations(
     }
     // Consume maintenance scaled by the coverage ratio.
     for (const entry of type.maintenanceRulesJson) {
-      const consumed =
-        entry.amountPerNAnimals * currentCount * maintenanceCoverage;
+      const consumed = entry.amountPerNAnimals * currentCount * maintenanceCoverage;
       if (consumed <= 0) continue;
       const key = `${sid}:${entry.resourceId}`;
       allDeltas.push({
@@ -118,8 +116,7 @@ export function phaseManagedPopulations(
     }
 
     // --- Growth / decline ---
-    const fullySupported =
-      maintenanceCoverage >= 1.0 && husbandryCoverage >= 1.0;
+    const fullySupported = maintenanceCoverage >= 1.0 && husbandryCoverage >= 1.0;
     const growthCountDelta = fullySupported
       ? Math.floor(currentCount * type.growthRate)
       : -Math.ceil(currentCount * type.growthRate);
@@ -197,7 +194,8 @@ export function phaseManagedPopulations(
         settlementId: sid,
       });
       allNotifications.push({
-        messageText: `Population "${pop.name}" is declining due to insufficient maintenance or husbandry.`,
+        messageText:
+          `Population "${pop.name}" is declining due to insufficient maintenance or husbandry.`,
         notificationType: "managed_population.declining",
         scope: "settlement",
         settlementId: sid,

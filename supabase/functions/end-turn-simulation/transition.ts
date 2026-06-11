@@ -1,10 +1,7 @@
 // Runs the simulation engine and maps the SimulationResult to the JSONB
 // payload shape expected by the apply_turn_transition RPC.
 
-import {
-  runSimulation,
-  SimulationRejectionError,
-} from "../_shared/simulation/runSimulation.ts";
+import { runSimulation, SimulationRejectionError } from "../_shared/simulation/runSimulation.ts";
 
 import type { EndTurnSimulationErrorResponse } from "./types.ts";
 import type {
@@ -124,16 +121,16 @@ export type ApplyTurnTransitionPayload = {
 
 export type SimulationTransitionResult =
   | {
-      readonly ok: true;
-      readonly payload: ApplyTurnTransitionPayload;
-      readonly result: SimulationResult;
-      readonly transitionId: string;
-    }
+    readonly ok: true;
+    readonly payload: ApplyTurnTransitionPayload;
+    readonly result: SimulationResult;
+    readonly transitionId: string;
+  }
   | {
-      readonly error: EndTurnSimulationErrorResponse;
-      readonly ok: false;
-      readonly status: number;
-    };
+    readonly error: EndTurnSimulationErrorResponse;
+    readonly ok: false;
+    readonly status: number;
+  };
 
 // ---------------------------------------------------------------------------
 // planSimulationTransition
@@ -228,23 +225,22 @@ export function mapSimulationResultToPayload(
   // activatedOnTurnNumber is set only when the project transitions to 'in_progress'
   // for the first time (was 'queued' before).
   const projectById = new Map(input.constructionProjects.map((p) => [p.id, p]));
-  const constructionUpdates: ConstructionUpdateEntry[] =
-    result.constructionUpdates.map((upd) => {
-      const project = projectById.get(upd.projectId);
-      const currentProgress = project?.progressWorkerTurns ?? 0;
-      const currentStatus = project?.status ?? "queued";
-      const newStatus: SimConstructionStatus = upd.toStatus ?? currentStatus;
-      const entry: ConstructionUpdateEntry = {
-        projectId: upd.projectId,
-        progressWorkerTurns: currentProgress + upd.progressWorkerTurnsDelta,
-        status: newStatus,
-      };
-      // Only stamp activatedOnTurnNumber when the project first becomes in_progress.
-      if (currentStatus === "queued" && newStatus === "in_progress") {
-        return { ...entry, activatedOnTurnNumber: newTurnNumber };
-      }
-      return entry;
-    });
+  const constructionUpdates: ConstructionUpdateEntry[] = result.constructionUpdates.map((upd) => {
+    const project = projectById.get(upd.projectId);
+    const currentProgress = project?.progressWorkerTurns ?? 0;
+    const currentStatus = project?.status ?? "queued";
+    const newStatus: SimConstructionStatus = upd.toStatus ?? currentStatus;
+    const entry: ConstructionUpdateEntry = {
+      projectId: upd.projectId,
+      progressWorkerTurns: currentProgress + upd.progressWorkerTurnsDelta,
+      status: newStatus,
+    };
+    // Only stamp activatedOnTurnNumber when the project first becomes in_progress.
+    if (currentStatus === "queued" && newStatus === "in_progress") {
+      return { ...entry, activatedOnTurnNumber: newTurnNumber };
+    }
+    return entry;
+  });
 
   // §C29b: buildingsCreated — rename tierId → currentTierId.
   const buildingsCreated: BuildingCreatedEntry[] = result.buildingsCreated.map(
@@ -257,24 +253,22 @@ export function mapSimulationResultToPayload(
 
   // §C29c: buildingStateChanges — convert missedUpkeepCountDelta to absolute value.
   const buildingById = new Map(input.settlementBuildings.map((b) => [b.id, b]));
-  const buildingStateChanges: BuildingStateChangeEntry[] =
-    result.buildingStateChanges.map((sc) => {
-      const building = buildingById.get(sc.settlementBuildingId);
-      const baseMissed = building?.missedUpkeepCount ?? 0;
-      return {
-        buildingId: sc.settlementBuildingId,
-        missedUpkeepCount: baseMissed + (sc.missedUpkeepCountDelta ?? 0),
-        state: sc.toState,
-      };
-    });
+  const buildingStateChanges: BuildingStateChangeEntry[] = result.buildingStateChanges.map((sc) => {
+    const building = buildingById.get(sc.settlementBuildingId);
+    const baseMissed = building?.missedUpkeepCount ?? 0;
+    return {
+      buildingId: sc.settlementBuildingId,
+      missedUpkeepCount: baseMissed + (sc.missedUpkeepCountDelta ?? 0),
+      state: sc.toState,
+    };
+  });
 
   // §C31: tradeRouteOutcomes — derive toStatus from pauseReason.
-  const tradeRouteOutcomes: TradeRouteOutcomeEntry[] =
-    result.tradeRouteOutcomes.map((tro) => ({
-      pauseReason: tro.pauseReason,
-      toStatus: tro.pauseReason !== null ? "paused" : "active",
-      tradeRouteId: tro.tradeRouteId,
-    }));
+  const tradeRouteOutcomes: TradeRouteOutcomeEntry[] = result.tradeRouteOutcomes.map((tro) => ({
+    pauseReason: tro.pauseReason,
+    toStatus: tro.pauseReason !== null ? "paused" : "active",
+    tradeRouteId: tro.tradeRouteId,
+  }));
 
   // §C32 pre-pass: bornOnTurnBackfill — CitizenPatch fields match the payload contract.
   const bornOnTurnBackfill = result.citizenPatches.map((cp) => ({
@@ -309,29 +303,28 @@ export function mapSimulationResultToPayload(
   // §C32c: partnershipChanges — flatten discriminated union; resolve partnershipId
   // to citizenAId/citizenBId for status_changed entries.
   const partnershipById = new Map(input.partnerships.map((p) => [p.id, p]));
-  const partnershipChanges: PartnershipChangeEntry[] =
-    result.partnershipChanges.map((pc) => {
-      if (pc.type === "formed") {
-        return {
-          citizenAId: pc.citizenAId,
-          citizenBId: pc.citizenBId,
-          formedOnTurnNumber: newTurnNumber,
-          toStatus: "active",
-        };
-      }
-      const partnership = partnershipById.get(pc.partnershipId);
-      if (partnership === undefined) {
-        throw new Error(
-          `Partnership ${pc.partnershipId} not found in input state`,
-        );
-      }
+  const partnershipChanges: PartnershipChangeEntry[] = result.partnershipChanges.map((pc) => {
+    if (pc.type === "formed") {
       return {
-        citizenAId: partnership.citizenAId,
-        citizenBId: partnership.citizenBId,
-        endedOnTurnNumber: newTurnNumber,
-        toStatus: pc.toStatus,
+        citizenAId: pc.citizenAId,
+        citizenBId: pc.citizenBId,
+        formedOnTurnNumber: newTurnNumber,
+        toStatus: "active",
       };
-    });
+    }
+    const partnership = partnershipById.get(pc.partnershipId);
+    if (partnership === undefined) {
+      throw new Error(
+        `Partnership ${pc.partnershipId} not found in input state`,
+      );
+    }
+    return {
+      citizenAId: partnership.citizenAId,
+      citizenBId: partnership.citizenBId,
+      endedOnTurnNumber: newTurnNumber,
+      toStatus: pc.toStatus,
+    };
+  });
 
   return {
     assignmentClears: result.assignmentClears,

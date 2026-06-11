@@ -1,14 +1,11 @@
 import {
   generateRequestId,
-  logRequestEntry,
   logCaughtError,
-  logRequestSuccess,
+  logRequestEntry,
   logRequestFailure,
+  logRequestSuccess,
 } from "../_shared/edgeRequestLogger.ts";
-import {
-  getRequiredRuntimeEnv,
-  getRequiredRuntimeUrl,
-} from "../_shared/http/env.ts";
+import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../_shared/http/env.ts";
 import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import { createErrorResponse } from "./http.ts";
@@ -31,14 +28,14 @@ type SupabaseRpcError = {
 
 type StartTurnTransitionResult =
   | {
-      readonly ok: true;
-      readonly transitionId: string;
-    }
+    readonly ok: true;
+    readonly transitionId: string;
+  }
   | {
-      readonly error: EndTurnSimulationErrorResponse;
-      readonly ok: false;
-      readonly status: number;
-    };
+    readonly error: EndTurnSimulationErrorResponse;
+    readonly ok: false;
+    readonly status: number;
+  };
 
 function isSupabaseRpcError(value: unknown): value is SupabaseRpcError {
   return (
@@ -409,8 +406,7 @@ function rpcErrorToResult(
       return {
         error: createErrorResponse({
           code: "end_turn_state_drifted",
-          message:
-            "World state changed during end-turn processing. Refresh and retry.",
+          message: "World state changed during end-turn processing. Refresh and retry.",
         }),
         ok: false,
         status: 409,

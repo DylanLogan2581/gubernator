@@ -1,7 +1,4 @@
-import {
-  classifyHttpError,
-  supabaseFetch,
-} from "../../_shared/supabaseFetch.ts";
+import { classifyHttpError, supabaseFetch } from "../../_shared/supabaseFetch.ts";
 
 import { isWorldRow } from "./rowTypes.ts";
 
@@ -121,8 +118,7 @@ async function fetchRowsPaginated({
         },
       );
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       // eslint-disable-next-line no-restricted-syntax
       console.log(
         JSON.stringify({
@@ -440,8 +436,7 @@ export function fetchEvents(
       world_id: `eq.${worldId}`,
       status: "in.(active,pending)",
       order: "id.asc",
-      select:
-        "id,status,effect_type,activate_on_transition_after_turn_number,effect_payload_jsonb",
+      select: "id,status,effect_type,activate_on_transition_after_turn_number,effect_payload_jsonb",
     },
   });
 }

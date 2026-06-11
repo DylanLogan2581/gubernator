@@ -1,9 +1,6 @@
 import { isRecord } from "../utils.ts";
 
-import type {
-  NpcFlavorConfig,
-  SimNamingConfig,
-} from "../../_shared/simulation/simulationTypes.ts";
+import type { NpcFlavorConfig, SimNamingConfig } from "../../_shared/simulation/simulationTypes.ts";
 import type { TurnCalendarConfig } from "../../_shared/turnCalendarPrimitives.ts";
 
 // ---------------------------------------------------------------------------
@@ -180,7 +177,7 @@ function hasOnlyExpectedFields(
   expectedFields: readonly string[],
 ): boolean {
   return Object.keys(body).every((fieldName) =>
-    expectedFields.some((expectedField) => expectedField === fieldName),
+    expectedFields.some((expectedField) => expectedField === fieldName)
   );
 }
 

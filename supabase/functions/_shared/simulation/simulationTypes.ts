@@ -92,24 +92,24 @@ export type SimTierCostEntry = {
 
 export type SimTierEffect =
   | {
-      readonly amount: number;
-      readonly jobId: string;
-      readonly type: "job_capacity_increase";
-    }
+    readonly amount: number;
+    readonly jobId: string;
+    readonly type: "job_capacity_increase";
+  }
   | {
-      readonly amount: number;
-      readonly resourceId: string;
-      readonly type: "passive_resource_production";
-    }
+    readonly amount: number;
+    readonly resourceId: string;
+    readonly type: "passive_resource_production";
+  }
   | {
-      readonly amount: number;
-      readonly resourceId: string;
-      readonly type: "resource_storage_increase";
-    }
+    readonly amount: number;
+    readonly resourceId: string;
+    readonly type: "resource_storage_increase";
+  }
   | {
-      readonly amount: number;
-      readonly type: "population_cap_increase";
-    };
+    readonly amount: number;
+    readonly type: "population_cap_increase";
+  };
 
 export type SimBuildingBlueprint = {
   readonly gracePeriodTurns: number;
@@ -454,16 +454,16 @@ export type CitizenPatch = {
 
 export type PartnershipChange =
   | {
-      readonly citizenAId: string;
-      readonly citizenBId: string;
-      readonly type: "formed";
-    }
+    readonly citizenAId: string;
+    readonly citizenBId: string;
+    readonly type: "formed";
+  }
   | {
-      readonly partnershipId: string;
-      readonly reason: string;
-      readonly toStatus: "dissolved" | "widowed";
-      readonly type: "status_changed";
-    };
+    readonly partnershipId: string;
+    readonly reason: string;
+    readonly toStatus: "dissolved" | "widowed";
+    readonly type: "status_changed";
+  };
 
 export type AssignmentClear = {
   readonly citizenId: string;

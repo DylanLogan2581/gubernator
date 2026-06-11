@@ -51,24 +51,24 @@ export type EndTurnSimulationAuthContext = {
 
 export type EndTurnSimulationAuthContextResult =
   | {
-      readonly context: EndTurnSimulationAuthContext;
-      readonly ok: true;
-    }
+    readonly context: EndTurnSimulationAuthContext;
+    readonly ok: true;
+  }
   | {
-      readonly error: EndTurnSimulationErrorResponse;
-      readonly ok: false;
-      readonly status: number;
-    };
+    readonly error: EndTurnSimulationErrorResponse;
+    readonly ok: false;
+    readonly status: number;
+  };
 
 export type EndTurnSimulationAuthorizationResult =
   | {
-      readonly ok: true;
-    }
+    readonly ok: true;
+  }
   | {
-      readonly error: EndTurnSimulationErrorResponse;
-      readonly ok: false;
-      readonly status: number;
-    };
+    readonly error: EndTurnSimulationErrorResponse;
+    readonly ok: false;
+    readonly status: number;
+  };
 
 export type EndTurnSimulationHandlerOptions = {
   readonly allowedOrigins?: readonly string[];
@@ -78,14 +78,14 @@ import type { SimulationInputState } from "../_shared/simulation/simulationTypes
 
 export type EndTurnSimulationStateResult =
   | {
-      readonly input: SimulationInputState;
-      readonly ok: true;
-    }
+    readonly input: SimulationInputState;
+    readonly ok: true;
+  }
   | {
-      readonly error: EndTurnSimulationErrorResponse;
-      readonly ok: false;
-      readonly status: number;
-    };
+    readonly error: EndTurnSimulationErrorResponse;
+    readonly ok: false;
+    readonly status: number;
+  };
 
 export type ApplyTurnTransitionSummary = {
   readonly currentTurnNumber: number;
@@ -97,11 +97,11 @@ export type ApplyTurnTransitionSummary = {
 
 export type EndTurnSimulationPersistResult =
   | {
-      readonly ok: true;
-      readonly summary: ApplyTurnTransitionSummary;
-    }
+    readonly ok: true;
+    readonly summary: ApplyTurnTransitionSummary;
+  }
   | {
-      readonly error: EndTurnSimulationErrorResponse;
-      readonly ok: false;
-      readonly status: number;
-    };
+    readonly error: EndTurnSimulationErrorResponse;
+    readonly ok: false;
+    readonly status: number;
+  };

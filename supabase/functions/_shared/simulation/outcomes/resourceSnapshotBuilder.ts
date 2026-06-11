@@ -3,11 +3,7 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import type {
-  ResourceSnapshot,
-  SimulationContext,
-  StockpileDelta,
-} from "../simulationTypes.ts";
+import type { ResourceSnapshot, SimulationContext, StockpileDelta } from "../simulationTypes.ts";
 
 export type { ResourceSnapshot } from "../simulationTypes.ts";
 

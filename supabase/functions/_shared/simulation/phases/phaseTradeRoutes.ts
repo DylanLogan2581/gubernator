@@ -22,8 +22,7 @@ export type PhaseTradeRoutesOutput = {
 export function phaseTradeRoutes(
   context: SimulationContext,
 ): PhaseTradeRoutesOutput {
-  const { citizenAssignments, jobs, settlements, stockpiles, tradeRoutes } =
-    context.input;
+  const { citizenAssignments, jobs, settlements, stockpiles, tradeRoutes } = context.input;
 
   const jobById = new Map(jobs.map((j) => [j.id, j]));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
@@ -63,14 +62,11 @@ export function phaseTradeRoutes(
   for (const route of tradeRoutes) {
     if (route.status !== "active" && route.status !== "paused") continue;
 
-    const { id, originSettlementId, destinationSettlementId, legs, status } =
-      route;
+    const { id, originSettlementId, destinationSettlementId, legs, status } = route;
 
     const wasPaused = status === "paused";
-    const originName =
-      settlementById.get(originSettlementId)?.name ?? originSettlementId;
-    const destinationName =
-      settlementById.get(destinationSettlementId)?.name ??
+    const originName = settlementById.get(originSettlementId)?.name ?? originSettlementId;
+    const destinationName = settlementById.get(destinationSettlementId)?.name ??
       destinationSettlementId;
 
     // Total quantity across all legs for trader capacity checks.
@@ -98,7 +94,8 @@ export function phaseTradeRoutes(
       });
       if (!previouslyPaused) {
         allNotifications.push({
-          messageText: `Trade route from "${originName}" to "${destinationName}" paused: ${pauseReason}.`,
+          messageText:
+            `Trade route from "${originName}" to "${destinationName}" paused: ${pauseReason}.`,
           notificationType: "trade_route.paused",
           scope: "settlement",
           settlementId: originSettlementId,

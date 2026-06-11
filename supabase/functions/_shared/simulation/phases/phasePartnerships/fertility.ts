@@ -58,15 +58,14 @@ function generateBirthName(
   }
 
   const normalized = sex.trim().toLowerCase();
-  const pool =
-    normalized === "male"
-      ? namingConfig.male_given_names
-      : normalized === "female"
-        ? namingConfig.female_given_names
-        : [
-            ...namingConfig.male_given_names,
-            ...namingConfig.female_given_names,
-          ];
+  const pool = normalized === "male"
+    ? namingConfig.male_given_names
+    : normalized === "female"
+    ? namingConfig.female_given_names
+    : [
+      ...namingConfig.male_given_names,
+      ...namingConfig.female_given_names,
+    ];
 
   if (pool.length === 0) return { givenName: "", surname: null };
 
@@ -140,8 +139,7 @@ export function applyFertilityForSettlement(
 ): FertilityResult {
   const sid = settlement.id;
   const foodStock = stockpileQty.get(`${sid}:${systemResourceIds.foodId}`) ?? 0;
-  const waterStock =
-    stockpileQty.get(`${sid}:${systemResourceIds.freshWaterId}`) ?? 0;
+  const waterStock = stockpileQty.get(`${sid}:${systemResourceIds.freshWaterId}`) ?? 0;
   const popCap = popCapBySettlement.get(sid) ?? 0;
   let currentAliveCount = aliveCountBySettlement.get(sid) ?? 0;
 
@@ -152,8 +150,9 @@ export function applyFertilityForSettlement(
     const citizenA = citizenById.get(partnership.citizenAId);
     const citizenB = citizenById.get(partnership.citizenBId);
     if (citizenA === undefined || citizenB === undefined) continue;
-    if (citizenA.settlementId !== sid || citizenB.settlementId !== sid)
+    if (citizenA.settlementId !== sid || citizenB.settlementId !== sid) {
       continue;
+    }
     if (citizenA.status !== "alive" || citizenB.status !== "alive") continue;
 
     const bornA = citizenA.bornOnTurnNumber;
@@ -187,8 +186,7 @@ export function applyFertilityForSettlement(
       (namesetId) => namesetConfigById[namesetId] !== undefined,
       fallbackNamesetId,
     );
-    const namingConfig =
-      childNamesetId !== null ? namesetConfigById[childNamesetId] : null;
+    const namingConfig = childNamesetId !== null ? namesetConfigById[childNamesetId] : null;
     const { givenName, surname } = generateBirthName(
       rng,
       namingConfig,

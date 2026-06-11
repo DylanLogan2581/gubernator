@@ -446,10 +446,9 @@ function computeReadinessSummary(
     (s) => (s.isReadyCurrentTurn ?? false) || (s.autoReadyEnabled ?? false),
   ).length;
   const notReadySettlementCount = totalSettlementCount - readySettlementCount;
-  const readyPercentage =
-    totalSettlementCount === 0
-      ? 0
-      : (readySettlementCount / totalSettlementCount) * 100;
+  const readyPercentage = totalSettlementCount === 0
+    ? 0
+    : (readySettlementCount / totalSettlementCount) * 100;
   return {
     notReadySettlementCount,
     readyPercentage,

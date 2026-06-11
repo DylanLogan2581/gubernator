@@ -45,14 +45,14 @@ export type AdminCreateUserAuthContext = {
 
 export type AdminCreateUserAuthContextResult =
   | {
-      readonly context: AdminCreateUserAuthContext;
-      readonly ok: true;
-    }
+    readonly context: AdminCreateUserAuthContext;
+    readonly ok: true;
+  }
   | {
-      readonly error: AdminCreateUserErrorResponse;
-      readonly ok: false;
-      readonly status: number;
-    };
+    readonly error: AdminCreateUserErrorResponse;
+    readonly ok: false;
+    readonly status: number;
+  };
 
 export type AdminCreateUserHandlerOptions = {
   readonly allowedOrigins?: readonly string[];

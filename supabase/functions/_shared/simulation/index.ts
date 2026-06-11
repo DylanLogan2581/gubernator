@@ -54,13 +54,13 @@ export type {
   SimTradeRoute,
   SimTradeRouteLeg,
   SimTradeRouteStatus,
-  SimWorkerInputEntry,
   SimulationContext,
   SimulationInputState,
   SimulationLogEntry,
   SimulationNotification,
   SimulationNotificationScope,
   SimulationResult,
+  SimWorkerInputEntry,
   StockpileDelta,
   TradeRouteOutcome,
   WorldPopulationRules,
@@ -89,12 +89,7 @@ export {
 export { compareById } from "./sortUtils.ts";
 export type { DecimalValue } from "./decimalMath.ts";
 
-export {
-  createSeededRng,
-  hashStringToSeed,
-  mulberry32,
-  pickDeterministic,
-} from "./seededRng.ts";
+export { createSeededRng, hashStringToSeed, mulberry32, pickDeterministic } from "./seededRng.ts";
 export type { SeededRng } from "./seededRng.ts";
 
 export { runSimulation, SimulationRejectionError } from "./runSimulation.ts";

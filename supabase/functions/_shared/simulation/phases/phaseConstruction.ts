@@ -79,8 +79,9 @@ export function phaseConstruction(
   type ProjectEntry = (typeof constructionProjects)[number];
   const projectsBySettlement = new Map<string, ProjectEntry[]>();
   for (const project of constructionProjects) {
-    if (project.status !== "in_progress" && project.status !== "queued")
+    if (project.status !== "in_progress" && project.status !== "queued") {
       continue;
+    }
     const sid = project.settlementId;
     const arr = projectsBySettlement.get(sid);
     if (arr === undefined) {
@@ -154,7 +155,8 @@ export function phaseConstruction(
           settlementId: sid,
         });
         allNotifications.push({
-          messageText: `A construction project in "${settlement.name}" was paused due to insufficient resources.`,
+          messageText:
+            `A construction project in "${settlement.name}" was paused due to insufficient resources.`,
           notificationType: "construction.paused",
           scope: "settlement",
           settlementId: sid,
@@ -184,11 +186,7 @@ export function phaseConstruction(
       const newProgress = project.progressWorkerTurns + workers;
       const isComplete = newProgress >= project.workerTurnsRequired;
 
-      const toStatus = isComplete
-        ? "complete"
-        : project.status === "queued"
-          ? "in_progress"
-          : null;
+      const toStatus = isComplete ? "complete" : project.status === "queued" ? "in_progress" : null;
 
       allConstructionUpdates.push({
         progressWorkerTurnsDelta: workers,

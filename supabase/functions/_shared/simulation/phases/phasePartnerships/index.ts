@@ -71,8 +71,7 @@ export function phasePartnerships(
   );
 
   const activeInputPartnerships = partnerships.filter(
-    (p) =>
-      p.status === "active" && !widowing.newlyWidowedPartnershipIds.has(p.id),
+    (p) => p.status === "active" && !widowing.newlyWidowedPartnershipIds.has(p.id),
   );
 
   const popCapBySettlement = context.shared.pendingPopCapBySettlement;

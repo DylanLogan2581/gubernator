@@ -102,8 +102,7 @@ export function buildSettlementSnapshots(
     managedPopCountById.set(mp.id, mp.currentCount);
   }
   for (const update of managedPopulationUpdates) {
-    const cur =
-      managedPopCountById.get(update.managedPopulationInstanceId) ?? 0;
+    const cur = managedPopCountById.get(update.managedPopulationInstanceId) ?? 0;
     managedPopCountById.set(
       update.managedPopulationInstanceId,
       cur + update.countDelta,

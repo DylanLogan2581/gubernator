@@ -3,11 +3,7 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import type {
-  SimulationContext,
-  SimulationLogEntry,
-  StockpileDelta,
-} from "../simulationTypes.ts";
+import type { SimulationContext, SimulationLogEntry, StockpileDelta } from "../simulationTypes.ts";
 
 export type PhasePassiveEffectsOutput = {
   readonly logs: readonly SimulationLogEntry[];

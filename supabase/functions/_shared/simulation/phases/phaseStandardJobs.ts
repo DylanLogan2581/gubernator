@@ -19,8 +19,7 @@ export type PhaseStandardJobsOutput = {
 export function phaseStandardJobs(
   context: SimulationContext,
 ): PhaseStandardJobsOutput {
-  const { citizenAssignments, citizens, jobs, settlements, stockpiles } =
-    context.input;
+  const { citizenAssignments, citizens, jobs, settlements, stockpiles } = context.input;
 
   const citizenById = new Map(citizens.map((c) => [c.id, c]));
 

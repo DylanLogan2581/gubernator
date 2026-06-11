@@ -5,11 +5,7 @@
 
 import { clampToRange } from "../decimalMath.ts";
 
-import type {
-  SimulationContext,
-  SimulationLogEntry,
-  StockpileDelta,
-} from "../simulationTypes.ts";
+import type { SimulationContext, SimulationLogEntry, StockpileDelta } from "../simulationTypes.ts";
 
 export type PhaseStockpileClampOutput = {
   readonly logs: readonly SimulationLogEntry[];

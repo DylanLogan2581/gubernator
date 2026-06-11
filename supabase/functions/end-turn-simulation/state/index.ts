@@ -1,9 +1,6 @@
 // Orchestrates the full SimulationInputState load from PostgREST.
 
-import {
-  getRequiredRuntimeEnv,
-  getRequiredRuntimeUrl,
-} from "../../_shared/http/env.ts";
+import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../../_shared/http/env.ts";
 import { createErrorResponse } from "../http.ts";
 
 import {
@@ -229,8 +226,10 @@ export async function resolveSupabaseEndTurnSimulationInput(
     namesetsResult as Extract<typeof namesetsResult, { ok: true }>
   ).rows.filter(isNamesetRow);
 
-  const { fallbackNamesetIdBySettlementId, namesetConfigById } =
-    resolveNamesetsBySettlement(settlementRows, namesetRows);
+  const { fallbackNamesetIdBySettlementId, namesetConfigById } = resolveNamesetsBySettlement(
+    settlementRows,
+    namesetRows,
+  );
 
   // -------------------------------------------------------------------------
   // Map raw rows → Sim types
@@ -383,12 +382,11 @@ function resolveNamesetsBySettlement(
       row.nameset_id !== null && namesetConfigById[row.nameset_id] !== undefined
         ? row.nameset_id
         : null;
-    const nationNamesetId =
-      row.nations?.nameset_id !== null &&
-      row.nations?.nameset_id !== undefined &&
-      namesetConfigById[row.nations.nameset_id] !== undefined
-        ? row.nations.nameset_id
-        : null;
+    const nationNamesetId = row.nations?.nameset_id !== null &&
+        row.nations?.nameset_id !== undefined &&
+        namesetConfigById[row.nations.nameset_id] !== undefined
+      ? row.nations.nameset_id
+      : null;
     const resolved = settlementNamesetId ?? nationNamesetId ?? defaultNamesetId;
 
     if (resolved !== null) {
@@ -433,8 +431,7 @@ function stateResultFromFetchError(
     console.log(
       JSON.stringify({
         event: "truncated_response_error",
-        message:
-          "PostgREST response truncated at 1000 rows limit. Pagination may have failed.",
+        message: "PostgREST response truncated at 1000 rows limit. Pagination may have failed.",
         timestamp: new Date().toISOString(),
       }),
     );

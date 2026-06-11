@@ -1,15 +1,11 @@
 import { createErrorResponse } from "./http.ts";
 import { isRecord } from "./utils.ts";
 
-import type {
-  EndTurnSimulationErrorResponse,
-  EndTurnSimulationRequestBody,
-} from "./types.ts";
+import type { EndTurnSimulationErrorResponse, EndTurnSimulationRequestBody } from "./types.ts";
 
 const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const MAX_BODY_SIZE = 1024 * 10; // 10 KB
 
@@ -31,13 +27,13 @@ export async function parseEndTurnSimulationRequestBody(
   request: Request,
 ): Promise<
   | {
-      readonly body: EndTurnSimulationRequestBody;
-      readonly ok: true;
-    }
+    readonly body: EndTurnSimulationRequestBody;
+    readonly ok: true;
+  }
   | {
-      readonly error: EndTurnSimulationErrorResponse;
-      readonly ok: false;
-    }
+    readonly error: EndTurnSimulationErrorResponse;
+    readonly ok: false;
+  }
 > {
   // Check Content-Type
   const contentTypeError = validateContentType(request);
@@ -103,13 +99,13 @@ export async function parseEndTurnSimulationRequestBody(
 
 function parseEndTurnSimulationRequestBodyShape(body: unknown):
   | {
-      readonly body: EndTurnSimulationRequestBody;
-      readonly ok: true;
-    }
+    readonly body: EndTurnSimulationRequestBody;
+    readonly ok: true;
+  }
   | {
-      readonly ok: false;
-      readonly validationErrors: readonly string[];
-    } {
+    readonly ok: false;
+    readonly validationErrors: readonly string[];
+  } {
   const validationErrors = validateEndTurnSimulationRequestBody(body);
 
   if (validationErrors.length > 0 || !isEndTurnSimulationRequestBody(body)) {
@@ -175,6 +171,6 @@ function hasOnlyExpectedFields(
   expectedFields: readonly string[],
 ): boolean {
   return Object.keys(body).every((fieldName) =>
-    expectedFields.some((expectedField) => expectedField === fieldName),
+    expectedFields.some((expectedField) => expectedField === fieldName)
   );
 }

@@ -1,8 +1,5 @@
 import { logAuthorizationDenial } from "../_shared/auditLog.ts";
-import {
-  getRequiredRuntimeEnv,
-  getRequiredRuntimeUrl,
-} from "../_shared/http/env.ts";
+import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../_shared/http/env.ts";
 
 import { createErrorResponse } from "./http.ts";
 
@@ -18,24 +15,24 @@ type SupabaseAuthorizationFetchError = {
 
 type SupabaseBooleanFetchResult =
   | {
-      readonly ok: true;
-      readonly value: boolean;
-    }
+    readonly ok: true;
+    readonly value: boolean;
+  }
   | {
-      readonly error: SupabaseAuthorizationFetchError;
-      readonly ok: false;
-    };
+    readonly error: SupabaseAuthorizationFetchError;
+    readonly ok: false;
+  };
 
 type SupabaseWorldStatusResult =
   | {
-      readonly ok: true;
-      readonly status: string;
-      readonly currentTurnNumber: number;
-    }
+    readonly ok: true;
+    readonly status: string;
+    readonly currentTurnNumber: number;
+  }
   | {
-      readonly error: SupabaseAuthorizationFetchError;
-      readonly ok: false;
-    };
+    readonly error: SupabaseAuthorizationFetchError;
+    readonly ok: false;
+  };
 
 export async function resolveSupabaseEndTurnSimulationAuthorization(
   requestBody: EndTurnSimulationRequestBody,

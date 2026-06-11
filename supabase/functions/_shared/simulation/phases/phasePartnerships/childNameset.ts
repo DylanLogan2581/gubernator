@@ -16,14 +16,12 @@ export function pickChildNamesetId(
   isValidNamesetId: (namesetId: string) => boolean,
   fallbackNamesetId: string | null,
 ): string | null {
-  const validA =
-    parentANamesetId !== null && isValidNamesetId(parentANamesetId)
-      ? parentANamesetId
-      : null;
-  const validB =
-    parentBNamesetId !== null && isValidNamesetId(parentBNamesetId)
-      ? parentBNamesetId
-      : null;
+  const validA = parentANamesetId !== null && isValidNamesetId(parentANamesetId)
+    ? parentANamesetId
+    : null;
+  const validB = parentBNamesetId !== null && isValidNamesetId(parentBNamesetId)
+    ? parentBNamesetId
+    : null;
 
   if (validA !== null && validB !== null) {
     return rng() < 0.5 ? validA : validB;

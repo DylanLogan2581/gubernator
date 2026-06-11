@@ -24,8 +24,7 @@ export type PhaseCitizenConsumptionOutput = {
 export function phaseCitizenConsumption(
   context: SimulationContext,
 ): PhaseCitizenConsumptionOutput {
-  const { citizens, populationRules, settlements, systemResourceIds } =
-    context.input;
+  const { citizens, populationRules, settlements, systemResourceIds } = context.input;
 
   const { foodId, freshWaterId } = systemResourceIds;
 
@@ -49,16 +48,13 @@ export function phaseCitizenConsumption(
     if (aliveCount === 0) continue;
 
     const foodRequired = aliveCount * populationRules.foodConsumptionPerCitizen;
-    const waterRequired =
-      aliveCount * populationRules.waterConsumptionPerCitizen;
+    const waterRequired = aliveCount * populationRules.waterConsumptionPerCitizen;
 
     const foodStock = stockpileQty.get(`${sid}:${foodId}`) ?? 0;
     const waterStock = stockpileQty.get(`${sid}:${freshWaterId}`) ?? 0;
 
-    const foodDeficit =
-      foodRequired > 0 ? Math.max(0, 1 - foodStock / foodRequired) : 0;
-    const waterDeficit =
-      waterRequired > 0 ? Math.max(0, 1 - waterStock / waterRequired) : 0;
+    const foodDeficit = foodRequired > 0 ? Math.max(0, 1 - foodStock / foodRequired) : 0;
+    const waterDeficit = waterRequired > 0 ? Math.max(0, 1 - waterStock / waterRequired) : 0;
 
     const deficitRatio = Math.max(foodDeficit, waterDeficit);
 
@@ -118,7 +114,11 @@ export function phaseCitizenConsumption(
         });
 
         const toKill = sorted.slice(0, starvationDeaths);
-        const deathDetail = `food: ${formatStockpileForDisplay(foodStock)}/${formatStockpileForDisplay(foodRequired)}, water: ${formatStockpileForDisplay(waterStock)}/${formatStockpileForDisplay(waterRequired)}`;
+        const deathDetail = `food: ${formatStockpileForDisplay(foodStock)}/${
+          formatStockpileForDisplay(foodRequired)
+        }, water: ${formatStockpileForDisplay(waterStock)}/${
+          formatStockpileForDisplay(waterRequired)
+        }`;
 
         for (const citizen of toKill) {
           allDeaths.push({

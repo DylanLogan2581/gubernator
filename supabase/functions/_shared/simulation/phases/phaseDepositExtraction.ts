@@ -25,8 +25,7 @@ export type PhaseDepositExtractionOutput = {
 export function phaseDepositExtraction(
   context: SimulationContext,
 ): PhaseDepositExtractionOutput {
-  const { citizenAssignments, depositTypes, deposits, stockpiles } =
-    context.input;
+  const { citizenAssignments, depositTypes, deposits, stockpiles } = context.input;
 
   const depositTypeById = new Map(depositTypes.map((dt) => [dt.id, dt]));
 
@@ -74,10 +73,9 @@ export function phaseDepositExtraction(
 
     // Cap workers by maxWorkers if set.
     const rawWorkers = workerCountByDeposit.get(deposit.id) ?? 0;
-    const workers =
-      deposit.maxWorkers !== null
-        ? Math.min(rawWorkers, deposit.maxWorkers)
-        : rawWorkers;
+    const workers = deposit.maxWorkers !== null
+      ? Math.min(rawWorkers, deposit.maxWorkers)
+      : rawWorkers;
 
     if (workers === 0) continue;
 
@@ -105,8 +103,7 @@ export function phaseDepositExtraction(
     }
 
     // Distribute total extraction across deposit resources weighted by remainingQuantity.
-    const totalExtraction =
-      workers * depositType.outputUnitsPerWorker * inputShortfallScale;
+    const totalExtraction = workers * depositType.outputUnitsPerWorker * inputShortfallScale;
     const weights = deposit.resources.map((r) => r.remainingQuantity);
     const rawShares = proportionalShare(totalExtraction, weights);
 

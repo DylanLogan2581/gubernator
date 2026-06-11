@@ -1,11 +1,6 @@
 import { isRecord } from "../utils.ts";
 
-import {
-  isBlueprintRow,
-  isDepositResourceRow,
-  isDepositRow,
-  isTierRow,
-} from "./rowTypes.ts";
+import { isBlueprintRow, isDepositResourceRow, isDepositRow, isTierRow } from "./rowTypes.ts";
 
 import type {
   SupabaseAssignmentRow,
@@ -39,6 +34,7 @@ import type {
   SimManagedPopulation,
   SimManagedPopulationType,
   SimPartnership,
+  SimPopulationResourceEntry,
   SimSettlement,
   SimSettlementBuilding,
   SimStockpile,
@@ -46,7 +42,6 @@ import type {
   SimTierEffect,
   SimTradeRoute,
   SimWorkerInputEntry,
-  SimPopulationResourceEntry,
   WorldPopulationRules,
 } from "../../_shared/simulation/simulationTypes.ts";
 
@@ -295,8 +290,7 @@ export function toSimCitizenAssignment(
 ): SimCitizenAssignment {
   return {
     assignedOnTurnNumber: row.assigned_on_turn_number,
-    assignmentType:
-      row.assignment_type as SimCitizenAssignment["assignmentType"],
+    assignmentType: row.assignment_type as SimCitizenAssignment["assignmentType"],
     citizenId: row.citizen_id,
     constructionProjectId: row.construction_project_id,
     depositInstanceId: row.deposit_instance_id,
@@ -320,11 +314,8 @@ export function toSimPartnership(row: SupabasePartnershipRow): SimPartnership {
 
 export function toSimEvent(row: SupabaseEventRow): SimEvent {
   return {
-    activateOnTransitionAfterTurnNumber:
-      row.activate_on_transition_after_turn_number,
-    effectPayloadJsonb: isRecord(row.effect_payload_jsonb)
-      ? row.effect_payload_jsonb
-      : {},
+    activateOnTransitionAfterTurnNumber: row.activate_on_transition_after_turn_number,
+    effectPayloadJsonb: isRecord(row.effect_payload_jsonb) ? row.effect_payload_jsonb : {},
     effectType: row.effect_type as SimEvent["effectType"],
     id: row.id,
     status: row.status as SimEvent["status"],
