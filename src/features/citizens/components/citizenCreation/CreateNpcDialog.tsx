@@ -18,7 +18,8 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
   activeNamesetsByWorldQueryOptions,
-  resolveNamingConfig,
+  resolveNameset,
+  type Nameset,
 } from "@/features/namesets";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 import { worldNpcFlavorConfigQueryOptions } from "@/features/worlds";
@@ -65,6 +66,7 @@ export function CreateNpcDialog({
 }: CreateNpcDialogProps): JSX.Element {
   const givenNameId = useId();
   const surnameId = useId();
+  const namesetSelectId = useId();
   const [fields, setFields] = useState(EMPTY_COMMON_FIELDS);
   const [kinshipError, setKinshipError] = useState<string | undefined>(
     undefined,
@@ -100,25 +102,50 @@ export function CreateNpcDialog({
     (citizen) => citizen.status === "alive",
   );
 
+  const activeNamesets = namesetsQuery.data ?? [];
+  const parentA = parentChoices.find((c) => c.id === fields.parentACitizenId);
+  const parentB = parentChoices.find((c) => c.id === fields.parentBCitizenId);
+
+  // Inherited nameset: 50/50 between the parents' namesets (invalid ones are
+  // skipped), falling back to settlement -> nation -> world default. The coin
+  // flip is seeded by the flavor seed so "Regenerate" also re-rolls it.
+  const namesetById = (id: string | null | undefined): Nameset | undefined =>
+    id === null || id === undefined
+      ? undefined
+      : activeNamesets.find((ns) => ns.id === id);
+  const namesetFromA = namesetById(parentA?.namesetId);
+  const namesetFromB = namesetById(parentB?.namesetId);
+  const namesetFromParents =
+    namesetFromA !== undefined && namesetFromB !== undefined
+      ? createSeededRng(`${seed}:nameset`)() < 0.5
+        ? namesetFromA
+        : namesetFromB
+      : (namesetFromA ?? namesetFromB);
+  const inheritedNameset =
+    namesetFromParents ??
+    resolveNameset(
+      activeNamesets,
+      settlementQuery.data?.namesetId,
+      settlementQuery.data?.nation.namesetId,
+    );
+
+  const [namesetChoice, setNamesetChoice] = useState<string>("");
+
+  const selectedNameset =
+    namesetChoice === ""
+      ? inheritedNameset
+      : activeNamesets.find((ns) => ns.id === namesetChoice);
+
   const namingConfig =
-    namesetsQuery.data !== undefined
-      ? resolveNamingConfig(
-          namesetsQuery.data,
-          {
-            convention: "random",
-            female_given_names: [],
-            male_given_names: [],
-            surnames: [],
-          },
-          settlementQuery.data?.namesetId,
-          settlementQuery.data?.nation.namesetId,
-        )
-      : undefined;
+    namesetsQuery.data !== undefined ? selectedNameset?.configJson : undefined;
 
   const nameGenerationHint: string | null = (() => {
-    if (namingConfig === undefined) return null;
+    if (namesetsQuery.data === undefined) return null;
+    if (namingConfig === undefined) {
+      return "No nameset available. Enter the name manually or assign a nameset.";
+    }
     if (relevantPoolIsEmpty(namingConfig, fields.sex)) {
-      return "Given name pool is empty. Add names in world naming settings.";
+      return "Given name pool is empty. Add names to the nameset.";
     }
     return null;
   })();
@@ -130,15 +157,15 @@ export function CreateNpcDialog({
 
   function handleGenerateName(): void {
     if (namingConfig === undefined) return;
-    const parentA = parentChoices.find((c) => c.id === fields.parentACitizenId);
-    const parentB = parentChoices.find((c) => c.id === fields.parentBCitizenId);
     const result = generateNpcName({
       config: namingConfig,
       rng: createSeededRng(generateLocalId()),
       sex: fields.sex !== "" ? fields.sex : null,
       parentAGivenName: parentA?.givenName ?? null,
+      parentASex: parentA?.sex ?? null,
       parentASurname: parentA?.surname ?? null,
       parentBGivenName: parentB?.givenName ?? null,
+      parentBSex: parentB?.sex ?? null,
       parentBSurname: parentB?.surname ?? null,
     });
     if (result.givenName !== "") {
@@ -175,6 +202,7 @@ export function CreateNpcDialog({
       mutation.mutate(
         {
           givenName: trimmedGivenName,
+          namesetId: selectedNameset?.id ?? null,
           surname: fields.surname.trim() !== "" ? fields.surname.trim() : null,
           npcFlaw: flavor.flaw !== "" ? flavor.flaw : null,
           npcGoal: flavor.goal !== "" ? flavor.goal : null,
@@ -245,6 +273,33 @@ export function CreateNpcDialog({
               NPCs are managed by World Admins and are not linked to a user.
             </DialogDescription>
           </DialogHeader>
+
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor={namesetSelectId}>Nameset</Label>
+            <NativeSelect
+              id={namesetSelectId}
+              disabled={mutation.isPending || namesetsQuery.isPending}
+              value={namesetChoice}
+              onChange={(event) => {
+                setNamesetChoice(event.currentTarget.value);
+              }}
+            >
+              <option value="">
+                {inheritedNameset !== undefined
+                  ? `Random (inherited: ${inheritedNameset.name})`
+                  : "Random (no nameset available)"}
+              </option>
+              {activeNamesets.map((nameset) => (
+                <option key={nameset.id} value={nameset.id}>
+                  {nameset.name}
+                </option>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground">
+              Random picks a parent&apos;s nameset 50/50, falling back to the
+              settlement, nation, then world default.
+            </p>
+          </div>
 
           <div className="grid gap-1 text-sm">
             <Label htmlFor={givenNameId}>Given name</Label>

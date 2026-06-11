@@ -1,5 +1,3 @@
- 
-
 export type Json =
   | string
   | number
@@ -229,6 +227,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -261,6 +260,7 @@ export type Database = {
           given_name: string;
           id?: string;
           name?: string | null;
+          nameset_id?: string | null;
           npc_flaw?: string | null;
           npc_goal?: string | null;
           npc_secret_contradiction?: string | null;
@@ -293,6 +293,7 @@ export type Database = {
           given_name?: string;
           id?: string;
           name?: string | null;
+          nameset_id?: string | null;
           npc_flaw?: string | null;
           npc_goal?: string | null;
           npc_secret_contradiction?: string | null;
@@ -315,6 +316,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "citizens_nameset_id_fkey";
+            columns: ["nameset_id"];
+            isOneToOne: false;
+            referencedRelation: "namesets";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "citizens_parent_a_citizen_id_fkey";
             columns: ["parent_a_citizen_id"];
@@ -2190,6 +2198,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2296,6 +2305,7 @@ export type Database = {
           p_born_on_turn_number?: number;
           p_citizen_type: string;
           p_given_name: string;
+          p_nameset_id?: string;
           p_npc_flaw?: string;
           p_npc_goal?: string;
           p_npc_secret_contradiction?: string;
@@ -2323,6 +2333,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2434,6 +2445,7 @@ export type Database = {
         Args: {
           p_born_on_turn_number?: number;
           p_given_name: string;
+          p_nameset_id?: string;
           p_npc_flaw?: string;
           p_npc_goal?: string;
           p_npc_secret_contradiction?: string;
@@ -2460,6 +2472,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2521,6 +2534,7 @@ export type Database = {
         Args: {
           p_born_on_turn_number?: number;
           p_given_name: string;
+          p_nameset_id?: string;
           p_parent_a_citizen_id?: string;
           p_parent_b_citizen_id?: string;
           p_personality_text?: string;
@@ -2543,6 +2557,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2911,6 +2926,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -2959,6 +2975,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -3384,6 +3401,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;
@@ -3780,8 +3798,7 @@ export type Database = {
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
-        | { Args: { why: string }; Returns: boolean[] }
-         ;
+        | { Args: { why: string }; Returns: boolean[] };
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }
@@ -3832,6 +3849,7 @@ export type Database = {
           given_name: string;
           id: string;
           name: string | null;
+          nameset_id: string | null;
           npc_flaw: string | null;
           npc_goal: string | null;
           npc_secret_contradiction: string | null;

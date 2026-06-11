@@ -204,6 +204,7 @@ function createCitizen(overrides: Partial<Citizen>): Citizen {
     givenName: "Player",
     id: "pc-1",
     name: "Player",
+    namesetId: null,
     parentACitizenId: null,
     parentBCitizenId: null,
     profilePhotoUrl: null,

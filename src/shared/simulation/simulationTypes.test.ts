@@ -26,6 +26,7 @@ const exampleResult: SimulationResult = {
   ],
   citizenBirths: [
     {
+      namesetId: null,
       givenName: "Newborn",
       npcFlaw: null,
       npcGoal: "a seat on the council",

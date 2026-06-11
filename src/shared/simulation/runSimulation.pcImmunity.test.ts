@@ -61,6 +61,7 @@ function makeSettlement(id: string): SimSettlement {
 
 function makeNpc(id: string, settlementId: string): SimCitizen {
   return {
+    namesetId: null,
     bornOnTurnNumber: 1,
     citizenType: "npc",
     givenName: id,
@@ -76,6 +77,7 @@ function makeNpc(id: string, settlementId: string): SimCitizen {
 
 function makePc(id: string, settlementId: string): SimCitizen {
   return {
+    namesetId: null,
     bornOnTurnNumber: 1,
     citizenType: "player_character",
     givenName: id,

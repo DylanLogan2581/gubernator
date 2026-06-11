@@ -82,9 +82,14 @@ const citizenRoleTypeSchema = z.enum([
   "settlement_manager",
 ]);
 
+const optionalNamesetIdSchema = z
+  .union([z.guid("Select a nameset."), z.null()])
+  .optional();
+
 const baseCitizenWriteShape = {
   bornOnTurnNumber: optionalIntegerSchema,
   givenName: givenNameSchema,
+  namesetId: optionalNamesetIdSchema,
   npcFlaw: optionalNpcTextSchema,
   npcGoal: optionalNpcTextSchema,
   npcSecretContradiction: optionalNpcTextSchema,

@@ -150,7 +150,6 @@ export async function resolveSupabaseEndTurnSimulationInput(
   const settlementIds = settlements.map((s) => s.id);
 
   const populationRules = toWorldPopulationRules(worldRow);
-  const namingConfig = parseWorldNamingConfig(worldRow.naming_config_json);
   const npcFlavorConfig = parseWorldNpcFlavorConfig(
     worldRow.npc_flavor_config_json,
   );
@@ -230,11 +229,8 @@ export async function resolveSupabaseEndTurnSimulationInput(
     namesetsResult as Extract<typeof namesetsResult, { ok: true }>
   ).rows.filter(isNamesetRow);
 
-  const namingConfigBySettlementId = resolveNamingConfigBySettlement(
-    settlementRows,
-    namesetRows,
-    namingConfig,
-  );
+  const { fallbackNamesetIdBySettlementId, namesetConfigById } =
+    resolveNamesetsBySettlement(settlementRows, namesetRows);
 
   // -------------------------------------------------------------------------
   // Map raw rows → Sim types
@@ -301,8 +297,8 @@ export async function resolveSupabaseEndTurnSimulationInput(
     ).rows
       .filter(isManagedPopRow)
       .map(toSimManagedPop),
-    namingConfig,
-    namingConfigBySettlementId,
+    fallbackNamesetIdBySettlementId,
+    namesetConfigById,
     npcFlavorConfig,
     partnerships: (
       partnershipsResult as Extract<typeof partnershipsResult, { ok: true }>
@@ -360,41 +356,47 @@ function createStateUnavailableResult(): EndTurnSimulationStateResult {
 // Per-settlement naming config resolution
 // ---------------------------------------------------------------------------
 
-function resolveNamingConfigBySettlement(
+function resolveNamesetsBySettlement(
   settlementRows: readonly SupabaseSettlementRow[],
   namesetRows: readonly SupabaseNamesetRow[],
-  worldFallback: SimNamingConfig | null,
-): Record<string, SimNamingConfig> {
-  const configById = new Map<string, SimNamingConfig>();
-  let defaultConfig: SimNamingConfig | null = null;
+): {
+  fallbackNamesetIdBySettlementId: Record<string, string>;
+  namesetConfigById: Record<string, SimNamingConfig>;
+} {
+  const namesetConfigById: Record<string, SimNamingConfig> = {};
+  let defaultNamesetId: string | null = null;
 
   for (const ns of namesetRows) {
     const config = parseWorldNamingConfig(ns.config_json);
     if (config !== null) {
-      configById.set(ns.id, config);
+      namesetConfigById[ns.id] = config;
       if (ns.is_default) {
-        defaultConfig = config;
+        defaultNamesetId = ns.id;
       }
     }
   }
 
-  const result: Record<string, SimNamingConfig> = {};
+  const fallbackNamesetIdBySettlementId: Record<string, string> = {};
 
   for (const row of settlementRows) {
-    const resolved =
-      (row.nameset_id !== null ? configById.get(row.nameset_id) : undefined) ??
-      (row.nations?.nameset_id !== null && row.nations?.nameset_id !== undefined
-        ? configById.get(row.nations.nameset_id)
-        : undefined) ??
-      defaultConfig ??
-      worldFallback;
+    const settlementNamesetId =
+      row.nameset_id !== null && namesetConfigById[row.nameset_id] !== undefined
+        ? row.nameset_id
+        : null;
+    const nationNamesetId =
+      row.nations?.nameset_id !== null &&
+      row.nations?.nameset_id !== undefined &&
+      namesetConfigById[row.nations.nameset_id] !== undefined
+        ? row.nations.nameset_id
+        : null;
+    const resolved = settlementNamesetId ?? nationNamesetId ?? defaultNamesetId;
 
-    if (resolved !== null && resolved !== undefined) {
-      result[row.id] = resolved;
+    if (resolved !== null) {
+      fallbackNamesetIdBySettlementId[row.id] = resolved;
     }
   }
 
-  return result;
+  return { fallbackNamesetIdBySettlementId, namesetConfigById };
 }
 
 function stateResultFromFetchError(

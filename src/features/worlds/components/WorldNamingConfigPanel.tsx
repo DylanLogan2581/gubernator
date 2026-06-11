@@ -101,7 +101,7 @@ function WorldNamingConfigPanelContent({
     draftConfig.male_given_names.length === 0 ||
     draftConfig.female_given_names.length === 0;
   const showEmptyPoolWarning =
-    draftConfig.convention !== "manual" && hasEmptyPool;
+    draftConfig.convention !== "none" && hasEmptyPool;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -208,9 +208,7 @@ function WorldNamingConfigPanelContent({
           />
 
           <fieldset className="grid gap-2">
-            <legend className="text-base font-semibold">
-              Naming convention
-            </legend>
+            <legend className="text-base font-semibold">Surname rule</legend>
             <div className="grid gap-1.5">
               {NAME_CONVENTIONS.map((convention) => (
                 <Label
@@ -264,20 +262,35 @@ function ConventionLabel({
   readonly convention: NameConvention;
 }): JSX.Element {
   switch (convention) {
-    case "random":
-      return <span>Random — pick any name from the pool</span>;
-    case "patronymic":
-      return <span>Patronymic — family name derived from father</span>;
-    case "matronymic":
-      return <span>Matronymic — family name derived from mother</span>;
-    case "inherited family name":
-      return <span>Inherited family name — surname passed from parents</span>;
-    case "manual":
+    case "pool":
       return (
         <span>
-          Manual only — names must be set manually; no automatic generation
+          Surname pool — each NPC gets a random surname from the surname pool
         </span>
       );
+    case "patronymic":
+      return (
+        <span>
+          Patronymic — surname is the father&apos;s given name (falls back to
+          the other parent if no male parent)
+        </span>
+      );
+    case "matronymic":
+      return (
+        <span>
+          Matronymic — surname is the mother&apos;s given name (falls back to
+          the other parent if no female parent)
+        </span>
+      );
+    case "family-name":
+      return (
+        <span>
+          Family name — child inherits a parent&apos;s surname (50/50 which
+          parent; falls back to the other if one has none)
+        </span>
+      );
+    case "none":
+      return <span>No automatic surname — surnames are entered manually</span>;
   }
 }
 

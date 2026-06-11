@@ -422,6 +422,7 @@ const MANAGED_POPS: readonly SimManagedPopulation[] = [
 const CITIZENS: readonly SimCitizen[] = [
   // assigned workers
   {
+    namesetId: null,
     bornOnTurnNumber: 0,
     citizenType: "npc",
     id: "c1",
@@ -434,6 +435,7 @@ const CITIZENS: readonly SimCitizen[] = [
     status: "alive",
   },
   {
+    namesetId: null,
     bornOnTurnNumber: 0,
     citizenType: "npc",
     id: "c2",
@@ -446,6 +448,7 @@ const CITIZENS: readonly SimCitizen[] = [
     status: "alive",
   },
   {
+    namesetId: null,
     bornOnTurnNumber: 0,
     citizenType: "npc",
     id: "c3",
@@ -458,6 +461,7 @@ const CITIZENS: readonly SimCitizen[] = [
     status: "alive",
   },
   {
+    namesetId: null,
     bornOnTurnNumber: 0,
     citizenType: "npc",
     id: "c4",
@@ -470,6 +474,7 @@ const CITIZENS: readonly SimCitizen[] = [
     status: "alive",
   },
   {
+    namesetId: null,
     bornOnTurnNumber: 0,
     citizenType: "npc",
     id: "c5",
@@ -483,6 +488,7 @@ const CITIZENS: readonly SimCitizen[] = [
   },
   // unpartnered, eligible to seek partnerships (phase 9)
   {
+    namesetId: null,
     bornOnTurnNumber: 0,
     citizenType: "npc",
     id: "c6",
@@ -495,6 +501,7 @@ const CITIZENS: readonly SimCitizen[] = [
     status: "alive",
   },
   {
+    namesetId: null,
     bornOnTurnNumber: 0,
     citizenType: "npc",
     id: "c7",

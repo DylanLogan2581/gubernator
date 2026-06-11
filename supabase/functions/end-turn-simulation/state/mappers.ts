@@ -280,6 +280,7 @@ export function toSimCitizen(row: SupabaseCitizenRow): SimCitizen {
     citizenType: row.citizen_type as SimCitizen["citizenType"],
     givenName: row.given_name,
     id: row.id,
+    namesetId: row.nameset_id ?? null,
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
     settlementId: row.settlement_id,

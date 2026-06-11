@@ -430,6 +430,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     given_name: "Aldra",
     id: CITIZEN_ID,
     name: "Aldra",
+    nameset_id: null,
     parent_a_citizen_id: null,
     parent_b_citizen_id: null,
     profile_photo_url: null,

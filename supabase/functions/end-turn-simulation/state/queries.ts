@@ -424,7 +424,7 @@ export function fetchCitizens(
       status: "eq.alive",
       order: "id.asc",
       select:
-        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id",
+        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,nameset_id",
     },
   });
 }

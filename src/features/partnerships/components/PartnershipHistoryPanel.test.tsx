@@ -661,6 +661,7 @@ function toCitizenType(row: CitizenRowFixture): Citizen {
     givenName: row.given_name,
     id: row.id,
     name: row.name,
+    namesetId: null,
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
     profilePhotoUrl: row.profile_photo_url,

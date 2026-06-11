@@ -24,6 +24,7 @@ export type Citizen = {
   readonly givenName: string;
   readonly id: string;
   readonly name: string;
+  readonly namesetId: string | null;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
   readonly profilePhotoUrl: string | null;

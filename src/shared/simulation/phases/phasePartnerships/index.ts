@@ -34,8 +34,8 @@ export function phasePartnerships(
 ): PhasePartnershipsOutput {
   const {
     citizens: inputCitizens,
-    namingConfig,
-    namingConfigBySettlementId,
+    fallbackNamesetIdBySettlementId,
+    namesetConfigById,
     npcFlavorConfig,
     partnerships,
     populationRules,
@@ -113,9 +113,6 @@ export function phasePartnerships(
     allLogs.push(...formation.logs);
     allNotifications.push(...formation.notifications);
 
-    const resolvedNamingConfig =
-      namingConfigBySettlementId?.[settlement.id] ?? namingConfig;
-
     const fertility = applyFertilityForSettlement(
       settlement,
       activeInputPartnerships,
@@ -128,7 +125,8 @@ export function phasePartnerships(
       minimumPartnershipAgeTurns,
       maximumFertilityAgeTurns,
       npcFlavorConfig,
-      resolvedNamingConfig,
+      namesetConfigById ?? {},
+      fallbackNamesetIdBySettlementId?.[settlement.id] ?? null,
       turnNumber,
       rng,
     );

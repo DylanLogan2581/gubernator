@@ -36,7 +36,7 @@ function toNameset(row: NamesetRow): Nameset {
     configJson: configResult.success
       ? configResult.data
       : {
-          convention: "random",
+          convention: "pool",
           female_given_names: [],
           male_given_names: [],
           surnames: [],

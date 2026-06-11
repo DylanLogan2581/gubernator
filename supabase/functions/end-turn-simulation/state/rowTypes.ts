@@ -165,6 +165,7 @@ export type SupabaseTradeRouteRow = {
 
 export type SupabaseCitizenRow = {
   readonly id: string;
+  readonly nameset_id: string | null;
   readonly settlement_id: string | null;
   readonly citizen_type: string;
   readonly given_name: string;

@@ -5,7 +5,7 @@ import { namingInputLimits } from "@/lib/inputLimits";
 import { worldNamingConfigSchema } from "./worldNamingConfigSchemas";
 
 const validConfig = {
-  convention: "random" as const,
+  convention: "pool" as const,
   female_given_names: ["Alice"],
   male_given_names: ["Bob"],
   surnames: ["Smith"],
@@ -31,11 +31,11 @@ describe("worldNamingConfigSchema", () => {
 
   it("accepts all valid convention values", () => {
     for (const convention of [
-      "random",
+      "pool",
       "patronymic",
       "matronymic",
-      "inherited family name",
-      "manual",
+      "family-name",
+      "none",
     ] as const) {
       const result = worldNamingConfigSchema.safeParse({
         ...validConfig,

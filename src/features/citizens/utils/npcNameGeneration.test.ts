@@ -15,7 +15,7 @@ const SURNAMES = ["Ironwood", "Silverleaf", "Stormborn"];
 
 function config(overrides: Partial<WorldNamingConfig> = {}): WorldNamingConfig {
   return {
-    convention: "random",
+    convention: "pool",
     female_given_names: FEMALE_NAMES,
     male_given_names: MALE_NAMES,
     surnames: SURNAMES,
@@ -92,10 +92,10 @@ describe("generateNpcName — pool selection", () => {
   });
 });
 
-describe("generateNpcName — random convention", () => {
+describe("generateNpcName — pool convention", () => {
   it("picks a surname from the surnames pool", () => {
     const result = generateNpcName(
-      input({ config: config({ convention: "random" }), sex: "male" }),
+      input({ config: config({ convention: "pool" }), sex: "male" }),
     );
     expect(MALE_NAMES).toContain(result.givenName);
     expect(SURNAMES).toContain(result.surname);
@@ -104,7 +104,7 @@ describe("generateNpcName — random convention", () => {
   it("returns null surname when the surnames pool is empty", () => {
     const result = generateNpcName(
       input({
-        config: config({ convention: "random", surnames: [] }),
+        config: config({ convention: "pool", surnames: [] }),
         sex: "male",
       }),
     );
@@ -120,11 +120,14 @@ describe("generateNpcName — random convention", () => {
 });
 
 describe("generateNpcName — patronymic convention", () => {
-  it("uses parent A's given name as the surname", () => {
+  it("uses the male parent's given name regardless of slot (parent A male)", () => {
     const result = generateNpcName(
       input({
         config: config({ convention: "patronymic" }),
         parentAGivenName: "Erik",
+        parentASex: "male",
+        parentBGivenName: "Astrid",
+        parentBSex: "female",
         sex: "male",
       }),
     );
@@ -132,149 +135,164 @@ describe("generateNpcName — patronymic convention", () => {
     expect(result.surname).toBe("Erik");
   });
 
-  it("returns null surname when parent A given name is not set", () => {
+  it("uses the male parent's given name when parent B is the male", () => {
     const result = generateNpcName(
       input({
         config: config({ convention: "patronymic" }),
-        parentAGivenName: null,
-        sex: "male",
+        parentAGivenName: "Astrid",
+        parentASex: "female",
+        parentBGivenName: "Erik",
+        parentBSex: "male",
+        sex: "female",
       }),
     );
-    expect(MALE_NAMES).toContain(result.givenName);
-    expect(result.surname).toBeNull();
+    expect(result.surname).toBe("Erik");
   });
 
-  it("returns null surname when parent A given name is blank", () => {
+  it("falls back to the other parent when no parent is male", () => {
     const result = generateNpcName(
       input({
         config: config({ convention: "patronymic" }),
-        parentAGivenName: "   ",
-        sex: "male",
-      }),
-    );
-    expect(result.surname).toBeNull();
-  });
-
-  it("ignores parent B for patronymic", () => {
-    const withB = generateNpcName(
-      input({
-        config: config({ convention: "patronymic" }),
-        parentAGivenName: null,
+        parentAGivenName: "Astrid",
+        parentASex: "female",
         parentBGivenName: "Freya",
-        rng: mulberry32(5),
+        parentBSex: "female",
       }),
     );
-    const withoutB = generateNpcName(
+    expect(["Astrid", "Freya"]).toContain(result.surname);
+  });
+
+  it("falls back to a random pool surname when no parent has a given name", () => {
+    const result = generateNpcName(
       input({
         config: config({ convention: "patronymic" }),
+        parentAGivenName: null,
+        parentBGivenName: "   ",
+        sex: "male",
+      }),
+    );
+    expect(SURNAMES).toContain(result.surname);
+  });
+
+  it("returns null surname when no parent and the pool is empty", () => {
+    const result = generateNpcName(
+      input({
+        config: config({ convention: "patronymic", surnames: [] }),
         parentAGivenName: null,
         parentBGivenName: null,
-        rng: mulberry32(5),
+        sex: "male",
       }),
     );
-    expect(withB.surname).toBe(withoutB.surname);
+    expect(result.surname).toBeNull();
   });
 });
 
 describe("generateNpcName — matronymic convention", () => {
-  it("uses parent B's given name as the surname", () => {
+  it("uses the female parent's given name regardless of slot (parent B female)", () => {
     const result = generateNpcName(
       input({
         config: config({ convention: "matronymic" }),
+        parentAGivenName: "Erik",
+        parentASex: "male",
         parentBGivenName: "Astrid",
+        parentBSex: "female",
         sex: "male",
       }),
     );
-    expect(MALE_NAMES).toContain(result.givenName);
     expect(result.surname).toBe("Astrid");
   });
 
-  it("returns null surname when parent B given name is not set", () => {
+  it("uses the female parent's given name when parent A is the female", () => {
     const result = generateNpcName(
       input({
         config: config({ convention: "matronymic" }),
-        parentBGivenName: null,
+        parentAGivenName: "Astrid",
+        parentASex: "female",
+        parentBGivenName: "Erik",
+        parentBSex: "male",
         sex: "male",
       }),
     );
-    expect(result.surname).toBeNull();
+    expect(result.surname).toBe("Astrid");
   });
 
-  it("ignores parent A for matronymic", () => {
-    const withA = generateNpcName(
+  it("falls back to the other parent when no parent is female", () => {
+    const result = generateNpcName(
       input({
         config: config({ convention: "matronymic" }),
-        parentAGivenName: "Bjorn",
-        parentBGivenName: null,
-        rng: mulberry32(5),
+        parentAGivenName: "Erik",
+        parentASex: "male",
+        parentBGivenName: "Bjorn",
+        parentBSex: "male",
       }),
     );
-    const withoutA = generateNpcName(
+    expect(["Erik", "Bjorn"]).toContain(result.surname);
+  });
+
+  it("falls back to a random pool surname when no parent has a given name", () => {
+    const result = generateNpcName(
       input({
         config: config({ convention: "matronymic" }),
         parentAGivenName: null,
         parentBGivenName: null,
-        rng: mulberry32(5),
+        sex: "male",
       }),
     );
-    expect(withA.surname).toBe(withoutA.surname);
+    expect(SURNAMES).toContain(result.surname);
   });
 });
 
-describe("generateNpcName — inherited family name convention", () => {
-  it("uses parent A's surname", () => {
-    const result = generateNpcName(
-      input({
-        config: config({ convention: "inherited family name" }),
-        parentASurname: "Ironwood",
-        sex: "male",
-      }),
-    );
-    expect(result.surname).toBe("Ironwood");
+describe("generateNpcName — family-name convention", () => {
+  it("uses a parent's surname (50/50 between the two)", () => {
+    const seen = new Set<string | null>();
+    for (let seed = 0; seed < 32; seed++) {
+      const result = generateNpcName(
+        input({
+          config: config({ convention: "family-name" }),
+          parentASurname: "Ironwood",
+          parentBSurname: "Silverleaf",
+          rng: mulberry32(seed),
+          sex: "male",
+        }),
+      );
+      seen.add(result.surname);
+    }
+    expect(seen).toEqual(new Set(["Ironwood", "Silverleaf"]));
   });
 
-  it("falls back to parent B's surname when parent A has none", () => {
-    const result = generateNpcName(
-      input({
-        config: config({ convention: "inherited family name" }),
-        parentASurname: null,
-        parentBSurname: "Silverleaf",
-        sex: "male",
-      }),
-    );
-    expect(result.surname).toBe("Silverleaf");
+  it("falls back to the other parent's surname when one is missing", () => {
+    for (let seed = 0; seed < 8; seed++) {
+      const result = generateNpcName(
+        input({
+          config: config({ convention: "family-name" }),
+          parentASurname: null,
+          parentBSurname: "Silverleaf",
+          rng: mulberry32(seed),
+          sex: "male",
+        }),
+      );
+      expect(result.surname).toBe("Silverleaf");
+    }
   });
 
-  it("returns null surname when neither parent has a surname", () => {
+  it("falls back to a random pool surname when neither parent has a surname", () => {
     const result = generateNpcName(
       input({
-        config: config({ convention: "inherited family name" }),
+        config: config({ convention: "family-name" }),
         parentASurname: null,
         parentBSurname: null,
         sex: "male",
       }),
     );
-    expect(result.surname).toBeNull();
-  });
-
-  it("prefers parent A's surname over parent B's", () => {
-    const result = generateNpcName(
-      input({
-        config: config({ convention: "inherited family name" }),
-        parentASurname: "Ironwood",
-        parentBSurname: "Silverleaf",
-        sex: "male",
-      }),
-    );
-    expect(result.surname).toBe("Ironwood");
+    expect(SURNAMES).toContain(result.surname);
   });
 });
 
-describe("generateNpcName — manual convention", () => {
+describe("generateNpcName — none convention", () => {
   it("returns null surname regardless of parents", () => {
     const result = generateNpcName(
       input({
-        config: config({ convention: "manual" }),
+        config: config({ convention: "none" }),
         parentAGivenName: "Erik",
         parentASurname: "Ironwood",
         sex: "male",

@@ -135,7 +135,7 @@ export function CreateNamesetDialog({
 }): JSX.Element {
   const [name, setName] = useState("");
   const [config, setConfig] = useState<WorldNamingConfig>({
-    convention: "random",
+    convention: "pool",
     female_given_names: [],
     male_given_names: [],
     surnames: [],

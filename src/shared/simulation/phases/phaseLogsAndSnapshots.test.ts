@@ -149,6 +149,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
       const ctx = makeContext({
         citizens: [
           {
+            namesetId: null,
             id: "npc1",
             givenName: "npc1",
             surname: null,
@@ -161,6 +162,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
             sex: "male",
           },
           {
+            namesetId: null,
             id: "npc2",
             givenName: "npc2",
             surname: null,
@@ -173,6 +175,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
             sex: "female",
           },
           {
+            namesetId: null,
             id: "pc1",
             givenName: "pc1",
             surname: null,
@@ -198,6 +201,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
       const ctx = makeContext({
         citizens: [
           {
+            namesetId: null,
             id: "npc1",
             givenName: "npc1",
             surname: null,
@@ -210,6 +214,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
             sex: "male",
           },
           {
+            namesetId: null,
             id: "npc2",
             givenName: "npc2",
             surname: null,
@@ -243,6 +248,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
       const ctx = makeContext({
         citizens: [
           {
+            namesetId: null,
             id: "npc1",
             givenName: "npc1",
             surname: null,
@@ -271,6 +277,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
       const ctx = makeContext({
         citizens: [
           {
+            namesetId: null,
             id: "npc1",
             givenName: "npc1",
             surname: null,
@@ -289,6 +296,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
         ...acc,
         citizenBirths: [
           {
+            namesetId: null,
             givenName: "Newborn",
             settlementId: "s1",
             parentACitizenId: "npc1",
@@ -460,6 +468,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
       const ctx = makeContext({
         citizens: [
           {
+            namesetId: null,
             id: "npc1",
             givenName: "npc1",
             surname: null,
@@ -472,6 +481,7 @@ describe("phaseLogsAndSnapshots — settlement snapshot", () => {
             sex: "male",
           },
           {
+            namesetId: null,
             id: "npc2",
             givenName: "npc2",
             surname: null,
@@ -811,6 +821,7 @@ describe("phaseLogsAndSnapshots — resource snapshot", () => {
         ],
         citizens: [
           {
+            namesetId: null,
             id: "npc1",
             givenName: "npc1",
             surname: null,

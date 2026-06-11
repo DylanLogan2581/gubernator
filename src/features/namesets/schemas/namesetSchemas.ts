@@ -5,7 +5,7 @@ import { worldNamingConfigSchema } from "@/lib/worldNamingConfigSchemas";
 const NAMESET_NAME_MAX = 64;
 
 export const createNamesetInputSchema = z.object({
-  worldId: z.string().uuid(),
+  worldId: z.guid(),
   name: z
     .string()
     .min(1, "Name is required.")
@@ -20,8 +20,8 @@ export const createNamesetInputSchema = z.object({
 export type CreateNamesetInput = z.input<typeof createNamesetInputSchema>;
 
 export const updateNamesetInputSchema = z.object({
-  namesetId: z.string().uuid(),
-  worldId: z.string().uuid(),
+  namesetId: z.guid(),
+  worldId: z.guid(),
   name: z
     .string()
     .min(1, "Name is required.")
@@ -36,8 +36,8 @@ export const updateNamesetInputSchema = z.object({
 export type UpdateNamesetInput = z.input<typeof updateNamesetInputSchema>;
 
 export const softDeleteNamesetInputSchema = z.object({
-  namesetId: z.string().uuid(),
-  worldId: z.string().uuid(),
+  namesetId: z.guid(),
+  worldId: z.guid(),
 });
 
 export type SoftDeleteNamesetInput = z.input<
@@ -45,15 +45,15 @@ export type SoftDeleteNamesetInput = z.input<
 >;
 
 export const restoreNamesetInputSchema = z.object({
-  namesetId: z.string().uuid(),
-  worldId: z.string().uuid(),
+  namesetId: z.guid(),
+  worldId: z.guid(),
 });
 
 export type RestoreNamesetInput = z.input<typeof restoreNamesetInputSchema>;
 
 export const hardDeleteNamesetInputSchema = z.object({
-  namesetId: z.string().uuid(),
-  worldId: z.string().uuid(),
+  namesetId: z.guid(),
+  worldId: z.guid(),
 });
 
 export type HardDeleteNamesetInput = z.input<
@@ -61,8 +61,8 @@ export type HardDeleteNamesetInput = z.input<
 >;
 
 export const setDefaultNamesetInputSchema = z.object({
-  namesetId: z.string().uuid(),
-  worldId: z.string().uuid(),
+  namesetId: z.guid(),
+  worldId: z.guid(),
 });
 
 export type SetDefaultNamesetInput = z.input<
@@ -70,17 +70,17 @@ export type SetDefaultNamesetInput = z.input<
 >;
 
 export const setNationNamesetInputSchema = z.object({
-  nationId: z.string().uuid(),
-  worldId: z.string().uuid(),
-  namesetId: z.string().uuid().nullable(),
+  nationId: z.guid(),
+  worldId: z.guid(),
+  namesetId: z.guid().nullable(),
 });
 
 export type SetNationNamesetInput = z.input<typeof setNationNamesetInputSchema>;
 
 export const setSettlementNamesetInputSchema = z.object({
-  settlementId: z.string().uuid(),
-  worldId: z.string().uuid(),
-  namesetId: z.string().uuid().nullable(),
+  settlementId: z.guid(),
+  worldId: z.guid(),
+  namesetId: z.guid().nullable(),
 });
 
 export type SetSettlementNamesetInput = z.input<

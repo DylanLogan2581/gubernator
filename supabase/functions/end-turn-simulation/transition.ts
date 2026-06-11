@@ -65,6 +65,7 @@ type TradeRouteOutcomeEntry = {
 type CitizenBirthEntry = {
   readonly bornOnTurnNumber: number;
   readonly givenName: string;
+  readonly namesetId: string | null;
   readonly npcFlaw: string | null;
   readonly npcGoal: string | null;
   readonly npcSecretContradiction: string | null;
@@ -285,6 +286,7 @@ export function mapSimulationResultToPayload(
   const citizenBirths: CitizenBirthEntry[] = result.citizenBirths.map((b) => ({
     bornOnTurnNumber: newTurnNumber,
     givenName: b.givenName,
+    namesetId: b.namesetId,
     npcFlaw: b.npcFlaw,
     npcGoal: b.npcGoal,
     npcSecretContradiction: b.npcSecretContradiction,

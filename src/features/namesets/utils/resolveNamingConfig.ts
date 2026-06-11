@@ -15,6 +15,22 @@ export function resolveNamingConfig(
   settlementNamesetId: string | null | undefined,
   nationNamesetId: string | null | undefined,
 ): WorldNamingConfig {
+  return (
+    resolveNameset(namesets, settlementNamesetId, nationNamesetId)
+      ?.configJson ?? worldFallback
+  );
+}
+
+/**
+ * Resolves the effective default nameset (not just its config) for a
+ * settlement: settlement.nameset_id ?? nation.nameset_id ?? world default.
+ * Returns undefined when no active nameset matches.
+ */
+export function resolveNameset(
+  namesets: readonly Nameset[],
+  settlementNamesetId: string | null | undefined,
+  nationNamesetId: string | null | undefined,
+): Nameset | undefined {
   const active = namesets.filter((ns) => !ns.isTrashed);
 
   const findById = (id: string | null | undefined): Nameset | undefined => {
@@ -22,10 +38,9 @@ export function resolveNamingConfig(
     return active.find((ns) => ns.id === id);
   };
 
-  const resolved =
+  return (
     findById(settlementNamesetId) ??
     findById(nationNamesetId) ??
-    active.find((ns) => ns.isDefault);
-
-  return resolved?.configJson ?? worldFallback;
+    active.find((ns) => ns.isDefault)
+  );
 }

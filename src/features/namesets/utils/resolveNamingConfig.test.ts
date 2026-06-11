@@ -7,7 +7,7 @@ import { resolveNamingConfig } from "./resolveNamingConfig";
 import type { Nameset } from "../types/namesetTypes";
 
 const FALLBACK: WorldNamingConfig = {
-  convention: "random",
+  convention: "pool",
   female_given_names: ["fallback-f"],
   male_given_names: ["fallback-m"],
   surnames: ["fallback-s"],
@@ -18,7 +18,7 @@ function makeNameset(overrides: Partial<Nameset> & { id: string }): Nameset {
     worldId: "world-1",
     name: "Test Nameset",
     configJson: {
-      convention: "random",
+      convention: "pool",
       female_given_names: [],
       male_given_names: [],
       surnames: [],
@@ -35,7 +35,7 @@ const WORLD_DEFAULT = makeNameset({
   id: "ns-world",
   isDefault: true,
   configJson: {
-    convention: "random",
+    convention: "pool",
     female_given_names: ["world-f"],
     male_given_names: ["world-m"],
     surnames: ["world-s"],
@@ -55,7 +55,7 @@ const NATION_NAMESET = makeNameset({
 const SETTLEMENT_NAMESET = makeNameset({
   id: "ns-settlement",
   configJson: {
-    convention: "inherited family name",
+    convention: "family-name",
     female_given_names: ["settlement-f"],
     male_given_names: ["settlement-m"],
     surnames: ["settlement-s"],

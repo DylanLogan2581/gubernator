@@ -288,6 +288,7 @@ export type SimCitizen = {
   readonly citizenType: SimCitizenType;
   readonly givenName: string;
   readonly id: string;
+  readonly namesetId: string | null;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
   readonly settlementId: string | null;
@@ -341,10 +342,8 @@ export type SimulationInputState = {
   readonly jobs: readonly SimJob[];
   readonly managedPopulationTypes: readonly SimManagedPopulationType[];
   readonly managedPopulations: readonly SimManagedPopulation[];
-  readonly namingConfig?: SimNamingConfig | null;
-  readonly namingConfigBySettlementId?: Readonly<
-    Record<string, SimNamingConfig>
-  >;
+  readonly fallbackNamesetIdBySettlementId?: Readonly<Record<string, string>>;
+  readonly namesetConfigById?: Readonly<Record<string, SimNamingConfig>>;
   readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];
   readonly populationRules: WorldPopulationRules;
@@ -430,6 +429,7 @@ export type CitizenDeath = {
 
 export type CitizenBirth = {
   readonly givenName: string;
+  readonly namesetId: string | null;
   readonly npcFlaw: string | null;
   readonly npcGoal: string | null;
   readonly npcSecretContradiction: string | null;

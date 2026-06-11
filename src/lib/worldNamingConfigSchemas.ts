@@ -3,11 +3,11 @@ import { z } from "zod";
 import { namingInputLimits } from "@/lib/inputLimits";
 
 export const NAME_CONVENTIONS = [
-  "random",
+  "pool",
   "patronymic",
   "matronymic",
-  "inherited family name",
-  "manual",
+  "family-name",
+  "none",
 ] as const;
 
 export type NameConvention = (typeof NAME_CONVENTIONS)[number];

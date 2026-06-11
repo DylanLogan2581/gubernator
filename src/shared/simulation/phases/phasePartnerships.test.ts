@@ -56,6 +56,7 @@ function makeNpc(
   status: SimCitizen["status"] = "alive",
 ): SimCitizen {
   return {
+    namesetId: null,
     bornOnTurnNumber,
     citizenType: "npc",
     givenName: id,
@@ -78,6 +79,7 @@ function makeNpcWithParents(
   bornOnTurnNumber = 0,
 ): SimCitizen {
   return {
+    namesetId: null,
     bornOnTurnNumber,
     citizenType: "npc",
     givenName: id,

@@ -1,5 +1,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import { pickChildNamesetId } from "./childNameset.ts";
+
 import type { SeededRng } from "../../seededRng.ts";
 import type {
   CitizenBirth,
@@ -72,18 +74,25 @@ function generateBirthName(
 
   let surname: string | null;
   switch (namingConfig.convention) {
-    case "random":
+    case "pool":
       surname = pickFromPool(rng, namingConfig.surnames);
       break;
-    case "patronymic":
-      surname = nonEmpty(parentA.givenName);
+    case "patronymic": {
+      const [father, other] = parentsBySex(parentA, parentB, "male");
+      surname = nonEmpty(father?.givenName) ?? nonEmpty(other?.givenName);
       break;
-    case "matronymic":
-      surname = nonEmpty(parentB.givenName);
+    }
+    case "matronymic": {
+      const [mother, other] = parentsBySex(parentA, parentB, "female");
+      surname = nonEmpty(mother?.givenName) ?? nonEmpty(other?.givenName);
       break;
-    case "inherited family name":
-      surname = nonEmpty(parentA.surname) ?? nonEmpty(parentB.surname);
+    }
+    case "family-name": {
+      const first = rng() < 0.5 ? parentA : parentB;
+      const second = first === parentA ? parentB : parentA;
+      surname = nonEmpty(first.surname) ?? nonEmpty(second.surname);
       break;
+    }
     default:
       surname = null;
   }
@@ -95,6 +104,16 @@ function nonEmpty(value: string | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   const trimmed = value.trim();
   return trimmed.length === 0 ? null : trimmed;
+}
+
+function parentsBySex(
+  parentA: SimCitizen,
+  parentB: SimCitizen,
+  sex: "male" | "female",
+): [SimCitizen | undefined, SimCitizen | undefined] {
+  if (parentA.sex === sex) return [parentA, parentB];
+  if (parentB.sex === sex) return [parentB, parentA];
+  return [undefined, parentA];
 }
 
 export type FertilityResult = {
@@ -114,7 +133,8 @@ export function applyFertilityForSettlement(
   minimumPartnershipAgeTurns: number,
   maximumFertilityAgeTurns: number | null,
   npcFlavorConfig: NpcFlavorConfig | null | undefined,
-  namingConfig: SimNamingConfig | null | undefined,
+  namesetConfigById: Readonly<Record<string, SimNamingConfig>>,
+  fallbackNamesetId: string | null,
   turnNumber: number,
   rng: SeededRng,
 ): FertilityResult {
@@ -160,6 +180,15 @@ export function applyFertilityForSettlement(
 
     const sex = rng() < 0.5 ? "male" : "female";
     const flavor = pickNpcFlavor(rng, npcFlavorConfig);
+    const childNamesetId = pickChildNamesetId(
+      rng,
+      citizenA.namesetId,
+      citizenB.namesetId,
+      (namesetId) => namesetConfigById[namesetId] !== undefined,
+      fallbackNamesetId,
+    );
+    const namingConfig =
+      childNamesetId !== null ? namesetConfigById[childNamesetId] : null;
     const { givenName, surname } = generateBirthName(
       rng,
       namingConfig,
@@ -171,6 +200,7 @@ export function applyFertilityForSettlement(
     citizenBirths.push({
       ...flavor,
       givenName,
+      namesetId: childNamesetId,
       parentACitizenId: partnership.citizenAId,
       parentBCitizenId: partnership.citizenBId,
       sex,

@@ -21,5 +21,8 @@ export {
   namesetsByWorldQueryOptions,
 } from "./queries/namesetsQueries";
 export { namesetsQueryKeys } from "./queries/namesetsQueryKeys";
-export { resolveNamingConfig } from "./utils/resolveNamingConfig";
+export {
+  resolveNameset,
+  resolveNamingConfig,
+} from "./utils/resolveNamingConfig";
 export type { Nameset } from "./types/namesetTypes";

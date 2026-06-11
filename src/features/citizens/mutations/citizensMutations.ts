@@ -211,6 +211,7 @@ async function createNpc(
     .rpc("create_npc", {
       p_born_on_turn_number: values.bornOnTurnNumber ?? undefined,
       p_given_name: values.givenName.trim(),
+      p_nameset_id: values.namesetId ?? undefined,
       p_surname: values.surname ?? undefined,
       p_npc_flaw: values.npcFlaw ?? undefined,
       p_npc_goal: values.npcGoal ?? undefined,
@@ -249,6 +250,7 @@ async function createPlayerCharacter(
     .rpc("create_player_character", {
       p_born_on_turn_number: values.bornOnTurnNumber ?? undefined,
       p_given_name: values.givenName.trim(),
+      p_nameset_id: values.namesetId ?? undefined,
       p_surname: values.surname ?? undefined,
       p_parent_a_citizen_id: values.parentACitizenId ?? undefined,
       p_parent_b_citizen_id: values.parentBCitizenId ?? undefined,

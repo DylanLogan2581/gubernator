@@ -89,6 +89,7 @@ type CitizenRow = {
   readonly given_name: string;
   readonly id: string;
   readonly name: string;
+  readonly nameset_id: string | null;
   readonly parent_a_citizen_id: string | null;
   readonly parent_b_citizen_id: string | null;
   readonly profile_photo_url: string | null;
@@ -127,7 +128,7 @@ type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
 };
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
 
 const CITIZEN_AGGREGATE_SELECT =
   "id,citizen_type,status,citizen_assignments(assignment_type)";
@@ -510,6 +511,7 @@ export function toCitizen(row: CitizenRow): Citizen {
     givenName: row.given_name,
     id: row.id,
     name: row.name,
+    namesetId: row.nameset_id,
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
     profilePhotoUrl: row.profile_photo_url,

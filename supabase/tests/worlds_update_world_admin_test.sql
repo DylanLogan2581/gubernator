@@ -131,7 +131,7 @@ select
       "male_given_names": ["Aldric"],
       "female_given_names": ["Mira"],
       "surnames": ["Ashvale"],
-      "convention": "random"
+      "convention": "pool"
     }'::jsonb
     where id = 'a1000000-0000-0000-0000-000000000001'
   $test$,

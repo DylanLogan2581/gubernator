@@ -91,6 +91,7 @@ function makeNpc(
   sex: "male" | "female" = "female",
 ): SimCitizen {
   return {
+    namesetId: null,
     bornOnTurnNumber: 1,
     citizenType: "npc",
     givenName: id,
@@ -346,6 +347,7 @@ describe("cross-phase stockpile flow", () => {
         settlementId: "s1",
         sex: "male",
         status: "alive" as const,
+        namesetId: null,
         surname: null,
       };
       const c2 = { ...c1, id: "c2", givenName: "c2", bornOnTurnNumber: 2 };
@@ -406,6 +408,7 @@ describe("cross-phase stockpile flow", () => {
         settlementId: "s1",
         sex: "male",
         status: "alive" as const,
+        namesetId: null,
         surname: null,
       };
       const c2 = { ...c1, id: "c2", givenName: "c2", bornOnTurnNumber: 2 };
