@@ -361,7 +361,8 @@ function TradeRouteRow({
   const canApproveOrReject =
     canManageRoutes &&
     activeCharacterId !== null &&
-    route.status === "proposed";
+    route.status === "proposed" &&
+    side === "destination";
   const thisSideApproval =
     side === "origin"
       ? route.originApprovalStatus

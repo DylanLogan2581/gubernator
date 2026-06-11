@@ -531,8 +531,8 @@ describe("SettlementTradeRoutesPanel", () => {
     ).toBeNull();
   });
 
-  it("shows approve/reject buttons for outgoing route when origin side is still pending", async () => {
-    // This can happen when an admin proposes with a citizen outside either endpoint nation.
+  it("hides approve/reject buttons for outgoing route (origin side only receives cancel)", async () => {
+    // Origin settlement can only propose and cancel. Only destination can approve/reject.
     requireSupabaseClient.mockReturnValue(
       createClient({
         routeRows: [
@@ -559,15 +559,15 @@ describe("SettlementTradeRoutesPanel", () => {
 
     await screen.findByText("Outgoing (1)");
     expect(
-      screen.getByRole("button", {
-        name: "Approve trade route with Far Settlement (Far Nation)",
+      screen.queryByRole("button", {
+        name: /Approve trade route/,
       }),
-    ).toBeDefined();
+    ).toBeNull();
     expect(
-      screen.getByRole("button", {
-        name: "Reject trade route with Far Settlement (Far Nation)",
+      screen.queryByRole("button", {
+        name: /Reject trade route/,
       }),
-    ).toBeDefined();
+    ).toBeNull();
   });
 
   it("hides approve/reject for outgoing route when proposer's origin side is auto-approved", async () => {
@@ -636,8 +636,8 @@ describe("SettlementTradeRoutesPanel", () => {
           maybeSingle: vi.fn().mockResolvedValue({
             data: {
               id: ROUTE_ID_1,
-              origin_settlement_id: SETTLEMENT_ID,
-              destination_settlement_id: DEST_SETTLEMENT_ID,
+              origin_settlement_id: DEST_SETTLEMENT_ID,
+              destination_settlement_id: SETTLEMENT_ID,
               status: "proposed",
             },
             error: null,
@@ -651,8 +651,14 @@ describe("SettlementTradeRoutesPanel", () => {
       createClient({
         routeRows: [
           createRouteRow({
+            id: ROUTE_ID_2,
             status: "proposed",
-            origin_settlement_id: SETTLEMENT_ID,
+            origin_settlement_id: DEST_SETTLEMENT_ID,
+            destination_settlement_id: SETTLEMENT_ID,
+            origin_settlement: {
+              name: "Far Settlement",
+              nation: { name: "Far Nation" },
+            },
           }),
         ],
         rpcMock,
@@ -661,16 +667,16 @@ describe("SettlementTradeRoutesPanel", () => {
     useActivePlayerCharacter.mockReturnValue({
       activeCharacter: {
         id: CITIZEN_ID_1,
-        roleType: "nation_manager",
-        roleNationId: NATION_ID,
-        roleSettlementId: null,
+        roleType: "settlement_manager",
+        roleNationId: null,
+        roleSettlementId: SETTLEMENT_ID,
         status: "alive",
       },
     });
 
     renderPanel({ canManage: true });
 
-    await screen.findByText("Outgoing (1)");
+    await screen.findByText("Incoming (1)");
     await user.click(
       screen.getByRole("button", {
         name: "Approve trade route with Far Settlement (Far Nation)",
@@ -686,9 +692,9 @@ describe("SettlementTradeRoutesPanel", () => {
       expect(rpcMock).toHaveBeenCalledWith(
         "approve_trade_route_side",
         expect.objectContaining({
-          p_route_id: ROUTE_ID_1,
+          p_route_id: ROUTE_ID_2,
           p_approver_citizen_id: CITIZEN_ID_1,
-          p_side: "origin",
+          p_side: "destination",
         }),
       );
     });
@@ -709,8 +715,8 @@ describe("SettlementTradeRoutesPanel", () => {
           maybeSingle: vi.fn().mockResolvedValue({
             data: {
               id: ROUTE_ID_1,
-              origin_settlement_id: SETTLEMENT_ID,
-              destination_settlement_id: DEST_SETTLEMENT_ID,
+              origin_settlement_id: DEST_SETTLEMENT_ID,
+              destination_settlement_id: SETTLEMENT_ID,
               status: "active",
             },
             error: null,
@@ -724,8 +730,14 @@ describe("SettlementTradeRoutesPanel", () => {
       createClient({
         routeRows: [
           createRouteRow({
+            id: ROUTE_ID_2,
             status: "proposed",
-            origin_settlement_id: SETTLEMENT_ID,
+            origin_settlement_id: DEST_SETTLEMENT_ID,
+            destination_settlement_id: SETTLEMENT_ID,
+            origin_settlement: {
+              name: "Far Settlement",
+              nation: { name: "Far Nation" },
+            },
           }),
         ],
         rpcMock,
@@ -734,16 +746,16 @@ describe("SettlementTradeRoutesPanel", () => {
     useActivePlayerCharacter.mockReturnValue({
       activeCharacter: {
         id: CITIZEN_ID_1,
-        roleType: "nation_manager",
-        roleNationId: NATION_ID,
-        roleSettlementId: null,
+        roleType: "settlement_manager",
+        roleNationId: null,
+        roleSettlementId: SETTLEMENT_ID,
         status: "alive",
       },
     });
 
     renderPanel({ canManage: true });
 
-    await screen.findByText("Outgoing (1)");
+    await screen.findByText("Incoming (1)");
     await user.click(
       screen.getByRole("button", {
         name: "Approve trade route with Far Settlement (Far Nation)",
@@ -771,8 +783,8 @@ describe("SettlementTradeRoutesPanel", () => {
           maybeSingle: vi.fn().mockResolvedValue({
             data: {
               id: ROUTE_ID_1,
-              origin_settlement_id: SETTLEMENT_ID,
-              destination_settlement_id: DEST_SETTLEMENT_ID,
+              origin_settlement_id: DEST_SETTLEMENT_ID,
+              destination_settlement_id: SETTLEMENT_ID,
               status: "cancelled",
             },
             error: null,
@@ -786,8 +798,14 @@ describe("SettlementTradeRoutesPanel", () => {
       createClient({
         routeRows: [
           createRouteRow({
+            id: ROUTE_ID_2,
             status: "proposed",
-            origin_settlement_id: SETTLEMENT_ID,
+            origin_settlement_id: DEST_SETTLEMENT_ID,
+            destination_settlement_id: SETTLEMENT_ID,
+            origin_settlement: {
+              name: "Far Settlement",
+              nation: { name: "Far Nation" },
+            },
           }),
         ],
         rpcMock,
@@ -796,16 +814,16 @@ describe("SettlementTradeRoutesPanel", () => {
     useActivePlayerCharacter.mockReturnValue({
       activeCharacter: {
         id: CITIZEN_ID_1,
-        roleType: "nation_manager",
-        roleNationId: NATION_ID,
-        roleSettlementId: null,
+        roleType: "settlement_manager",
+        roleNationId: null,
+        roleSettlementId: SETTLEMENT_ID,
         status: "alive",
       },
     });
 
     renderPanel({ canManage: true });
 
-    await screen.findByText("Outgoing (1)");
+    await screen.findByText("Incoming (1)");
     await user.click(
       screen.getByRole("button", {
         name: "Reject trade route with Far Settlement (Far Nation)",
@@ -821,9 +839,9 @@ describe("SettlementTradeRoutesPanel", () => {
       expect(rpcMock).toHaveBeenCalledWith(
         "reject_trade_route_side",
         expect.objectContaining({
-          p_route_id: ROUTE_ID_1,
+          p_route_id: ROUTE_ID_2,
           p_rejector_citizen_id: CITIZEN_ID_1,
-          p_side: "origin",
+          p_side: "destination",
         }),
       );
     });
