@@ -57,12 +57,14 @@ export function CitizensPanel({
         </div>
         {canAdmin ? (
           <div className="flex items-center gap-2">
-            <CitizensCreateActions
-              incestPreventionDepth={incestPreventionDepth}
-              isArchived={isArchived}
-              settlementId={settlementId}
-              worldId={worldId}
-            />
+            {!includeDead ? (
+              <CitizensCreateActions
+                incestPreventionDepth={incestPreventionDepth}
+                isArchived={isArchived}
+                settlementId={settlementId}
+                worldId={worldId}
+              />
+            ) : null}
             <Button
               aria-label={includeDead ? "Hide deceased" : "Show deceased"}
               aria-pressed={includeDead}
@@ -197,7 +199,7 @@ function CitizensAdminList({
       return [];
     }
     return includeDead
-      ? citizensQuery.data
+      ? citizensQuery.data.filter((citizen) => citizen.status === "dead")
       : citizensQuery.data.filter((citizen) => citizen.status === "alive");
   }, [citizensQuery.data, includeDead]);
 

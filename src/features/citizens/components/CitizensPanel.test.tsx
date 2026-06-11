@@ -156,6 +156,14 @@ describe("CitizensPanel", () => {
     expect(await screen.findByText("Cael")).toBeDefined();
     const caelRow = screen.getByText("Cael").closest("li");
     expect(caelRow).toHaveTextContent("Deceased");
+
+    // Dead toggle shows only dead and hides create buttons
+    expect(screen.queryByText("Aldra")).toBeNull();
+    expect(screen.queryByText("Brann")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Create NPC" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Create player character" }),
+    ).toBeNull();
   });
 
   it("exposes Create NPC and Create player character actions for world admins on active worlds", async () => {
