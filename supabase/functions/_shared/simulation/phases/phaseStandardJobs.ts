@@ -20,6 +20,7 @@ export function phaseStandardJobs(
   context: SimulationContext,
 ): PhaseStandardJobsOutput {
   const { citizenAssignments, citizens, jobs, settlements, stockpiles } = context.input;
+  const { pendingEventMultipliers } = context.shared;
 
   const citizenById = new Map(citizens.map((c) => [c.id, c]));
 
@@ -78,6 +79,8 @@ export function phaseStandardJobs(
       resourceScale.set(resourceId, scaleDeficit(required, available));
     }
 
+    const settlementMults = pendingEventMultipliers.get(sid);
+
     for (const { job, workerCount } of activeJobs) {
       // Scale by the tightest input constraint (min across all input resources).
       let jobScale = 1.0;
@@ -98,8 +101,10 @@ export function phaseStandardJobs(
       }
 
       const outputsProduced: Record<string, number> = {};
+      // Apply production multipliers: job-specific first, then building-specific.
+      const jobMultiplier = settlementMults?.productionByJobId.get(job.id) ?? 1.0;
       for (const output of job.outputsJson) {
-        const produced = jobScale * workerCount * output.amountPerWorker;
+        const produced = jobScale * workerCount * output.amountPerWorker * jobMultiplier;
         outputsProduced[output.resourceId] = produced;
         allDeltas.push({
           delta: produced,

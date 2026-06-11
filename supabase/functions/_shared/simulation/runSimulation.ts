@@ -71,9 +71,30 @@ export function runSimulation(
 
   const pendingDeaths = new Set<string>();
 
+  const pendingEventMultipliers = new Map<
+    string,
+    {
+      productionByJobId: Map<string, number>;
+      productionByBuildingId: Map<string, number>;
+      consumption: number;
+      upkeep: number;
+    }
+  >();
+
+  const pendingBuildingDamage = new Set<string>();
+
+  const pendingManagedPopulationDeltas = new Map<string, number>();
+
   const context: SimulationContext = {
     input,
-    shared: { pendingDeaths, pendingPopCapBySettlement, pendingStockpiles },
+    shared: {
+      pendingBuildingDamage,
+      pendingDeaths,
+      pendingEventMultipliers,
+      pendingManagedPopulationDeltas,
+      pendingPopCapBySettlement,
+      pendingStockpiles,
+    },
   };
 
   function applyDeltas(deltas: readonly StockpileDelta[]): void {

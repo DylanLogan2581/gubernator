@@ -233,9 +233,16 @@ export type SimEventStatus = "active" | "expired" | "pending" | "resolved";
 // Exhaustive union — adding a new value here requires a matching case in the
 // phaseEvents switch, which is the Epic 7 hand-off contract.
 export type EventEffectType =
+  | "building_damage"
+  | "consumption_multiplier"
   | "deposit_discovered"
+  | "managed_population_change"
+  | "population_boost"
   | "population_loss"
-  | "resource_grant";
+  | "production_multiplier"
+  | "resource_drain"
+  | "resource_grant"
+  | "upkeep_multiplier";
 
 export type SimEvent = {
   readonly activateOnTransitionAfterTurnNumber: number;
@@ -563,6 +570,22 @@ export type SimulationSharedState = {
   // Citizen IDs that have died in earlier phases this turn (populated after
   // phase 8 so that phase 10 homelessness does not double-count starvation deaths).
   readonly pendingDeaths: Set<string>;
+  // Event-triggered multipliers per settlement: production (by job_id or building_id),
+  // consumption, upkeep. Applied by phaseStandardJobs, phaseCitizenConsumption,
+  // phaseBuildingUpkeep. Maps are always present after initialization.
+  readonly pendingEventMultipliers: Map<
+    string,
+    {
+      productionByJobId: Map<string, number>;
+      productionByBuildingId: Map<string, number>;
+      consumption: number;
+      upkeep: number;
+    }
+  >;
+  // Settlement building IDs to suspend due to building_damage effects.
+  readonly pendingBuildingDamage: Set<string>;
+  // Managed population ID -> population delta from managed_population_change effects.
+  readonly pendingManagedPopulationDeltas: Map<string, number>;
 };
 
 // ---------------------------------------------------------------------------
