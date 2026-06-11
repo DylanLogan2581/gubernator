@@ -21,7 +21,7 @@
     "test": "vitest run --passWithNoTests",
     "functions:cache-clear": "docker stop supabase_edge_runtime_gubernator && docker run --rm -v supabase_edge_runtime_gubernator:/cache alpine sh -c \"rm -rf /cache/*\" && docker start supabase_edge_runtime_gubernator",
     "test:db": "supabase test db",
-    "test:integration": "vitest run supabase/functions/end-turn-simulation/integration.test.ts",
+    "test:integration": "VITEST_INTEGRATION=true vitest run supabase/functions/end-turn-simulation/integration.test.ts",
     "test:coverage": "vitest run --coverage"
   },
   "lint-staged": {
