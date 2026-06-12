@@ -4,13 +4,6 @@ import { useEffect, useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import type { AccessContext } from "@/features/permissions";
 import { worldRouteAccessQueryOptions } from "@/features/worlds";
 
@@ -33,8 +26,7 @@ import type { CreateEventGroupInput } from "../schemas/eventSchemas";
 type EventCreateWizardProps = {
   readonly accessContext: AccessContext;
   readonly worldId: string;
-  readonly open: boolean;
-  readonly onOpenChange: (open: boolean) => void;
+  readonly onClose: () => void;
 };
 
 export type EventCreateWizardState = {
@@ -75,8 +67,7 @@ const createInitialState = (
 export function EventCreateWizard({
   accessContext,
   worldId,
-  open,
-  onOpenChange,
+  onClose,
 }: EventCreateWizardProps): JSX.Element {
   const queryClient = useQueryClient();
   const worldQuery = useQuery(
@@ -92,14 +83,14 @@ export function EventCreateWizard({
 
   // Update activation turn when world data changes and state hasn't been customized
   useEffect(() => {
-    if (open && nextTurnNumber > 1 && state.activationTurn === 1) {
+    if (nextTurnNumber > 1 && state.activationTurn === 1) {
       // eslint-disable-next-line react-hooks/set-state-in-effect, @eslint-react/set-state-in-effect
       setState((prev) => ({
         ...prev,
         activationTurn: nextTurnNumber,
       }));
     }
-  }, [nextTurnNumber, open, state.activationTurn]);
+  }, [nextTurnNumber, state.activationTurn]);
 
   const createMutation = useMutation(
     createEventGroupMutationOptions({
@@ -168,13 +159,13 @@ export function EventCreateWizard({
       await createMutation.mutateAsync(input);
 
       toast.success("Event created successfully");
-      onOpenChange(false);
       setState(createInitialState(nextTurnNumber));
       setGroupName("");
       setGroupDescription("");
       await queryClient.invalidateQueries({
         queryKey: eventQueryKeys.byWorld(worldId),
       });
+      onClose();
     } catch (error) {
       if (isEventMutationError(error)) {
         toast.error(error.message);
@@ -185,171 +176,168 @@ export function EventCreateWizard({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="max-w-md sm:w-full">
-        <SheetHeader>
-          <SheetTitle>Create Event</SheetTitle>
-          <SheetDescription>Step {state.step} of 6</SheetDescription>
-        </SheetHeader>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-normal">Create Event</h1>
+        <p className="text-sm text-muted-foreground">Step {state.step} of 6</p>
+      </div>
 
-        <div className="mt-6 space-y-6 px-4 overflow-y-auto max-h-[calc(100vh-200px)]">
-          {state.step === 1 && (
-            <EventCreateNameDescriptionStep
-              groupName={groupName}
-              groupDescription={groupDescription}
-              onGroupNameChange={setGroupName}
-              onGroupDescriptionChange={setGroupDescription}
+      <div className="space-y-6">
+        {state.step === 1 && (
+          <EventCreateNameDescriptionStep
+            groupName={groupName}
+            groupDescription={groupDescription}
+            onGroupNameChange={setGroupName}
+            onGroupDescriptionChange={setGroupDescription}
+          />
+        )}
+
+        {state.step === 2 && (
+          <div className="space-y-6">
+            <EventCreateStep1
+              scopeType={state.scopeType}
+              onScopeTypeChange={(scopeType) => {
+                setState((prev) => ({
+                  ...prev,
+                  scopeType,
+                  selectedIds: [],
+                }));
+              }}
             />
-          )}
 
-          {state.step === 2 && (
-            <div className="space-y-6">
-              <EventCreateStep1
+            {state.scopeType !== null && (
+              <EventCreateStep2
+                worldId={worldId}
                 scopeType={state.scopeType}
-                onScopeTypeChange={(scopeType) => {
+                selectedIds={state.selectedIds}
+                onSelectedIdsChange={(ids) => {
                   setState((prev) => ({
                     ...prev,
-                    scopeType,
-                    selectedIds: [],
+                    selectedIds: ids,
                   }));
                 }}
               />
-
-              {state.scopeType !== null && (
-                <EventCreateStep2
-                  worldId={worldId}
-                  scopeType={state.scopeType}
-                  selectedIds={state.selectedIds}
-                  onSelectedIdsChange={(ids) => {
-                    setState((prev) => ({
-                      ...prev,
-                      selectedIds: ids,
-                    }));
-                  }}
-                />
-              )}
-            </div>
-          )}
-
-          {state.step === 3 && (
-            <EventCreateEffectsStep
-              effects={state.effects}
-              onEffectsChange={(effects) => {
-                setState((prev) => ({
-                  ...prev,
-                  effects,
-                }));
-              }}
-            />
-          )}
-
-          {state.step === 4 && (
-            <EventCreateStep3
-              worldId={worldId}
-              currentTurnNumber={worldQuery.data?.world.currentTurnNumber ?? 0}
-              durationType={state.durationType}
-              durationTransitions={state.durationTransitions}
-              activationTurn={state.activationTurn}
-              onDurationTypeChange={(type) => {
-                setState((prev) => ({
-                  ...prev,
-                  durationType: type,
-                }));
-              }}
-              onDurationTransitionsChange={(trans) => {
-                setState((prev) => ({
-                  ...prev,
-                  durationTransitions: trans,
-                }));
-              }}
-              onActivationTurnChange={(turn) => {
-                setState((prev) => ({
-                  ...prev,
-                  activationTurn: turn,
-                }));
-              }}
-            />
-          )}
-
-          {state.step === 5 && (
-            <EventCreateStep4
-              createCitizenMemories={state.createCitizenMemories}
-              memoryText={state.memoryText}
-              groupDescription={groupDescription}
-              onCreateCitizenMemoriesChange={(create) => {
-                setState((prev) => ({
-                  ...prev,
-                  createCitizenMemories: create,
-                }));
-              }}
-              onMemoryTextChange={(text) => {
-                setState((prev) => ({
-                  ...prev,
-                  memoryText: text,
-                }));
-              }}
-            />
-          )}
-
-          {state.step === 6 && (
-            <EventCreateStep5
-              groupName={groupName}
-              groupDescription={groupDescription}
-              scopeType={state.scopeType ?? "world"}
-              effects={state.effects}
-              durationType={state.durationType}
-              durationTransitions={state.durationTransitions}
-              activationTurn={state.activationTurn}
-              createCitizenMemories={state.createCitizenMemories}
-            />
-          )}
-
-          <div className="flex gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={handlePrev}
-              disabled={state.step === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-
-            {state.step < 6 && (
-              <Button
-                onClick={handleNext}
-                className="ml-auto"
-                disabled={
-                  (state.step === 1 && groupName.trim().length === 0) ||
-                  (state.step === 2 && state.scopeType === null) ||
-                  (state.step === 2 &&
-                    state.scopeType !== "world" &&
-                    state.selectedIds.length === 0) ||
-                  (state.step === 3 && state.effects.length === 0)
-                }
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            )}
-            {state.step >= 6 && (
-              <Button
-                onClick={() => {
-                  void handleSubmit();
-                }}
-                disabled={
-                  createMutation.isPending ||
-                  state.scopeType === null ||
-                  (state.scopeType !== "world" &&
-                    state.selectedIds.length === 0)
-                }
-                className="ml-auto"
-              >
-                {createMutation.isPending ? "Creating…" : "Create Event"}
-              </Button>
             )}
           </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+        )}
+
+        {state.step === 3 && (
+          <EventCreateEffectsStep
+            effects={state.effects}
+            onEffectsChange={(effects) => {
+              setState((prev) => ({
+                ...prev,
+                effects,
+              }));
+            }}
+          />
+        )}
+
+        {state.step === 4 && (
+          <EventCreateStep3
+            worldId={worldId}
+            currentTurnNumber={worldQuery.data?.world.currentTurnNumber ?? 0}
+            durationType={state.durationType}
+            durationTransitions={state.durationTransitions}
+            activationTurn={state.activationTurn}
+            onDurationTypeChange={(type) => {
+              setState((prev) => ({
+                ...prev,
+                durationType: type,
+              }));
+            }}
+            onDurationTransitionsChange={(trans) => {
+              setState((prev) => ({
+                ...prev,
+                durationTransitions: trans,
+              }));
+            }}
+            onActivationTurnChange={(turn) => {
+              setState((prev) => ({
+                ...prev,
+                activationTurn: turn,
+              }));
+            }}
+          />
+        )}
+
+        {state.step === 5 && (
+          <EventCreateStep4
+            createCitizenMemories={state.createCitizenMemories}
+            memoryText={state.memoryText}
+            groupDescription={groupDescription}
+            onCreateCitizenMemoriesChange={(create) => {
+              setState((prev) => ({
+                ...prev,
+                createCitizenMemories: create,
+              }));
+            }}
+            onMemoryTextChange={(text) => {
+              setState((prev) => ({
+                ...prev,
+                memoryText: text,
+              }));
+            }}
+          />
+        )}
+
+        {state.step === 6 && (
+          <EventCreateStep5
+            groupName={groupName}
+            groupDescription={groupDescription}
+            scopeType={state.scopeType ?? "world"}
+            effects={state.effects}
+            durationType={state.durationType}
+            durationTransitions={state.durationTransitions}
+            activationTurn={state.activationTurn}
+            createCitizenMemories={state.createCitizenMemories}
+          />
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={handlePrev}
+          disabled={state.step === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+
+        {state.step < 6 && (
+          <Button
+            onClick={handleNext}
+            className="ml-auto"
+            disabled={
+              (state.step === 1 && groupName.trim().length === 0) ||
+              (state.step === 2 && state.scopeType === null) ||
+              (state.step === 2 &&
+                state.scopeType !== "world" &&
+                state.selectedIds.length === 0) ||
+              (state.step === 3 && state.effects.length === 0)
+            }
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
+        {state.step >= 6 && (
+          <Button
+            onClick={() => {
+              void handleSubmit();
+            }}
+            disabled={
+              createMutation.isPending ||
+              state.scopeType === null ||
+              (state.scopeType !== "world" && state.selectedIds.length === 0)
+            }
+            className="ml-auto"
+          >
+            {createMutation.isPending ? "Creating…" : "Create Event"}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

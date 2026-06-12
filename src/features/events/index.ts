@@ -5,6 +5,7 @@ export { ActiveEventsCard } from "./components/ActiveEventsCard";
 export { EventsPage } from "./components/EventsPage";
 export { EventsList } from "./components/EventsList";
 export { EventCreateWizard } from "./components/EventCreateWizard";
+export { EventCreateNewPage } from "./components/EventCreateNewPage";
 export { EventDetail } from "./components/EventDetail";
 
 export {

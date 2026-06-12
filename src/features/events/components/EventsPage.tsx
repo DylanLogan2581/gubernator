@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type JSX } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -13,9 +13,10 @@ import {
 import type { WorldRouteAccess } from "@/features/worlds";
 import { getErrorDescription } from "@/lib/errorUtils";
 
-import { EventCreateWizard } from "./EventCreateWizard";
 import { EventsList } from "./EventsList";
 import { EventsPageFrame } from "./EventsPageFrame";
+
+import type { JSX } from "react";
 
 type EventsPageProps = {
   readonly worldId: string;
@@ -113,7 +114,7 @@ function EventsPageGate({
 }
 
 function EventsPageContent({
-  accessContext,
+  accessContext: _accessContext,
   worldAccess,
   worldId,
 }: {
@@ -121,7 +122,7 @@ function EventsPageContent({
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
 }): JSX.Element {
-  const [showCreateWizard, setShowCreateWizard] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <EventsPageFrame worldId={worldId}>
@@ -139,18 +140,14 @@ function EventsPageContent({
         <EventsList
           worldId={worldId}
           canCreate={worldAccess.canAdmin && !worldAccess.header.isArchived}
-          onCreateClick={() => setShowCreateWizard(true)}
+          onCreateClick={() => {
+            void navigate({
+              to: "/worlds/$worldId/events/new",
+              params: { worldId },
+            });
+          }}
         />
       </div>
-
-      {showCreateWizard && (
-        <EventCreateWizard
-          accessContext={accessContext}
-          worldId={worldId}
-          open={showCreateWizard}
-          onOpenChange={setShowCreateWizard}
-        />
-      )}
     </EventsPageFrame>
   );
 }
