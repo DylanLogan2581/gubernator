@@ -47,7 +47,12 @@ type EventsListProps = {
   readonly onCreateClick: () => void;
 };
 
-const EVENT_STATUSES: EventStatus[] = ["pending", "active", "expired", "cancelled"];
+const EVENT_STATUSES: EventStatus[] = [
+  "pending",
+  "active",
+  "expired",
+  "cancelled",
+];
 
 const statusColors: Record<EventStatus, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -79,9 +84,19 @@ export function EventsList({
 
   if (eventsQuery.isError) {
     if (isEventsError(eventsQuery.error)) {
-      return <ErrorState title="Events error" description={eventsQuery.error.message} />;
+      return (
+        <ErrorState
+          title="Events error"
+          description={eventsQuery.error.message}
+        />
+      );
     }
-    return <ErrorState title="Failed to load events" description="Please try again" />;
+    return (
+      <ErrorState
+        title="Failed to load events"
+        description="Please try again"
+      />
+    );
   }
 
   const events = eventsQuery.data ?? [];
@@ -96,9 +111,9 @@ export function EventsList({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex gap-2">
           <Select
-            value={statusFilter.length === 0 ? "" : statusFilter[0]}
+            value={statusFilter.length === 0 ? "all" : statusFilter[0]}
             onValueChange={(value) => {
-              if (value === "") {
+              if (value === "all") {
                 setStatusFilter([]);
               } else {
                 setStatusFilter([value as EventStatus]);
@@ -110,7 +125,7 @@ export function EventsList({
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All statuses</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
               {EVENT_STATUSES.map((status) => (
                 <SelectItem key={status} value={status}>
                   {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -152,11 +167,7 @@ export function EventsList({
             </TableHeader>
             <TableBody>
               {paginatedEvents.map((event) => (
-                <EventRow
-                  key={event.id}
-                  event={event}
-                  worldId={worldId}
-                />
+                <EventRow key={event.id} event={event} worldId={worldId} />
               ))}
             </TableBody>
           </Table>
@@ -175,11 +186,16 @@ export function EventsList({
                     pageIndex: Math.max(0, p.pageIndex - 1),
                   }))
                 }
-                className={pagination.pageIndex === 0 ? "pointer-events-none opacity-50" : ""}
+                className={
+                  pagination.pageIndex === 0
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
               />
             </PaginationItem>
 
             {Array.from({ length: pageCount }).map((_, i) => (
+              // eslint-disable-next-line @eslint-react/no-array-index-key
               <PaginationItem key={i}>
                 <PaginationLink
                   isActive={pagination.pageIndex === i}
@@ -199,7 +215,11 @@ export function EventsList({
                     pageIndex: Math.min(pageCount - 1, p.pageIndex + 1),
                   }))
                 }
-                className={pagination.pageIndex >= pageCount - 1 ? "pointer-events-none opacity-50" : ""}
+                className={
+                  pagination.pageIndex >= pageCount - 1
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
               />
             </PaginationItem>
           </PaginationContent>
@@ -221,14 +241,16 @@ function EventRow({
   return (
     <TableRow
       className="cursor-pointer hover:bg-muted"
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onClick={() => (navigate as any)({ to: "/worlds/$worldId/events/$eventId", params: { worldId, eventId: event.id } })}
+      onClick={() => {
+        void navigate({
+          to: "/worlds/$worldId/events/$eventId",
+          params: { worldId, eventId: event.id },
+        });
+      }}
     >
       <TableCell className="font-medium">{event.name}</TableCell>
       <TableCell>
-        <Badge className={statusColors[event.status]}>
-          {event.status}
-        </Badge>
+        <Badge className={statusColors[event.status]}>{event.status}</Badge>
       </TableCell>
       <TableCell className="capitalize">{event.scope_type}</TableCell>
       <TableCell>{event.effect_type}</TableCell>
