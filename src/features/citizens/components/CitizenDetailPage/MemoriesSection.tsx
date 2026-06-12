@@ -19,12 +19,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  calendarDateToTurnNumber,
   resolveTurnCalendarDate,
   worldCalendarConfigQueryOptions,
-  type CalendarDateInput,
+  WorldDatePicker,
 } from "@/features/calendar";
-import { WorldDatePicker } from "@/features/calendar";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -41,6 +39,28 @@ import {
 
 function memorySourceLabel(source: string): string {
   return source === "manual" ? "Manual" : "Event";
+}
+
+function turnNumberToCalendarDate(
+  config: unknown,
+  turnNumber: number | null,
+): { dayOfMonth: number; monthIndex: number; year: number } | null {
+  if (config === null || config === undefined || turnNumber === null) {
+    return null;
+  }
+  try {
+    const resolved = resolveTurnCalendarDate(
+      config as Parameters<typeof resolveTurnCalendarDate>[0],
+      turnNumber,
+    );
+    return {
+      year: resolved.year,
+      monthIndex: resolved.monthIndex,
+      dayOfMonth: resolved.dayOfMonth,
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ---- add form -----------------------------------------------------------
@@ -67,38 +87,14 @@ function AddMemoryForm({
 
   const calendarConfig = calendarQuery.data ?? null;
 
-  const defaultDate: CalendarDateInput | null =
-    calendarConfig !== null
-      ? (() => {
-          const resolved = resolveTurnCalendarDate(
-            calendarConfig,
-            currentTurnNumber,
-          );
-          return {
-            year: resolved.year,
-            monthIndex: resolved.monthIndex,
-            dayOfMonth: resolved.dayOfMonth,
-          };
-        })()
-      : null;
-
   const [text, setText] = useState("");
-  const [date, setDate] = useState<CalendarDateInput | null>(defaultDate);
+  const [turnNumber, setTurnNumber] = useState<number | null>(
+    currentTurnNumber,
+  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    if (calendarConfig === null || date === null) return;
-
-    let turnNumber: number;
-    try {
-      turnNumber = calendarDateToTurnNumber(calendarConfig, date);
-    } catch {
-      notifyMutationError(
-        new Error("Date maps to before turn 1."),
-        "Invalid date selected.",
-      );
-      return;
-    }
+    if (turnNumber === null) return;
 
     createMutation.mutate(
       {
@@ -141,10 +137,11 @@ function AddMemoryForm({
         {calendarConfig !== null ? (
           <WorldDatePicker
             config={calendarConfig}
+            currentTurnNumber={currentTurnNumber}
             disabled={createMutation.isPending}
             label="Memory date"
-            onChange={setDate}
-            value={date}
+            onTurnNumberChange={setTurnNumber}
+            value={turnNumberToCalendarDate(calendarConfig, turnNumber)}
           />
         ) : null}
       </div>
@@ -164,7 +161,9 @@ function AddMemoryForm({
         <Button
           type="submit"
           disabled={
-            createMutation.isPending || text.trim() === "" || date === null
+            createMutation.isPending ||
+            text.trim() === "" ||
+            turnNumber === null
           }
         >
           {createMutation.isPending ? "Saving…" : "Add memory"}
@@ -204,38 +203,14 @@ function EditMemoryForm({
 
   const calendarConfig = calendarQuery.data ?? null;
 
-  const initialDate: CalendarDateInput | null =
-    calendarConfig !== null
-      ? (() => {
-          const resolved = resolveTurnCalendarDate(
-            calendarConfig,
-            memory.occurredOnTurnNumber,
-          );
-          return {
-            year: resolved.year,
-            monthIndex: resolved.monthIndex,
-            dayOfMonth: resolved.dayOfMonth,
-          };
-        })()
-      : null;
-
   const [text, setText] = useState(memory.memoryText);
-  const [date, setDate] = useState<CalendarDateInput | null>(initialDate);
+  const [turnNumber, setTurnNumber] = useState<number | null>(
+    memory.occurredOnTurnNumber,
+  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    if (calendarConfig === null || date === null) return;
-
-    let turnNumber: number;
-    try {
-      turnNumber = calendarDateToTurnNumber(calendarConfig, date);
-    } catch {
-      notifyMutationError(
-        new Error("Date maps to before turn 1."),
-        "Invalid date selected.",
-      );
-      return;
-    }
+    if (turnNumber === null) return;
 
     updateMutation.mutate(
       {
@@ -280,10 +255,11 @@ function EditMemoryForm({
         {calendarConfig !== null ? (
           <WorldDatePicker
             config={calendarConfig}
+            currentTurnNumber={memory.occurredOnTurnNumber}
             disabled={updateMutation.isPending}
             label="Memory date"
-            onChange={setDate}
-            value={date}
+            onTurnNumberChange={setTurnNumber}
+            value={turnNumberToCalendarDate(calendarConfig, turnNumber)}
           />
         ) : null}
       </div>
@@ -302,7 +278,9 @@ function EditMemoryForm({
         <Button
           type="submit"
           disabled={
-            updateMutation.isPending || text.trim() === "" || date === null
+            updateMutation.isPending ||
+            text.trim() === "" ||
+            turnNumber === null
           }
         >
           {updateMutation.isPending ? "Saving…" : "Save changes"}
