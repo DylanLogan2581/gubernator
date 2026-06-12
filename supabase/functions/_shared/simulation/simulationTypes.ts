@@ -235,6 +235,7 @@ export type SimEventStatus = "active" | "expired" | "pending" | "resolved";
 export type EventEffectType =
   | "building_damage"
   | "consumption_multiplier"
+  | "deposit_destroyed"
   | "deposit_discovered"
   | "managed_population_change"
   | "population_boost"
@@ -609,6 +610,8 @@ export type SimulationSharedState = {
   readonly pendingBuildingDamage: Set<string>;
   // Managed population ID -> population delta from managed_population_change effects.
   readonly pendingManagedPopulationDeltas: Map<string, number>;
+  // Deposit instance IDs to mark as removed due to deposit_destroyed effects.
+  readonly pendingDepositDestroys: Set<string>;
 };
 
 // ---------------------------------------------------------------------------

@@ -3,15 +3,17 @@
 --
 -- New table: event_effects
 -- - Links to events (FK)
--- - effect_type: one of 10 types (building_damage, consumption_multiplier, etc.)
+-- - effect_type: one of 11 types (building_damage, consumption_multiplier, deposit_destroyed, etc.)
 -- - amount_value: numeric for flat amounts (resource drain/grant, population loss/boost)
 -- - multiplier_value: numeric for multipliers (production, consumption, upkeep)
 -- - is_percent: boolean, true if amount_value is a percent of current value
 -- - resource_id: FK to resources (for resource_grant, resource_drain)
 -- - job_id: FK to job_definitions (filter for population_loss)
 -- - managed_population_instance_id: FK to managed_population_instances (for managed_population_change)
--- - deposit_instance_id: FK to deposit_instances (for deposit_discovered)
+-- - deposit_instance_id: FK to deposit_instances (for deposit_destroyed and legacy deposit_discovered)
 -- - Extra fields for extensibility
+--
+-- NOTE: deposit_discovered retained for backward compat (existing rows); UI picker offers deposit_destroyed only.
 --
 -- RLS:
 -- - SELECT: world members
@@ -30,6 +32,7 @@ create table public.event_effects (
     effect_type in (
       'building_damage',
       'consumption_multiplier',
+      'deposit_destroyed',
       'deposit_discovered',
       'managed_population_change',
       'population_boost',
@@ -56,7 +59,8 @@ create table public.event_effects (
   -- Constraints: each effect type has required and optional fields
   -- building_damage: no fields required (payload in event itself if needed)
   -- consumption_multiplier: multiplier_value required
-  -- deposit_discovered: no fields required
+  -- deposit_destroyed: deposit_instance_id required
+  -- deposit_discovered: no fields required (legacy, not used in UI)
   -- managed_population_change: amount_value required
   -- population_boost: amount_value required, is_percent optional
   -- population_loss: amount_value required, is_percent optional, job_id optional
@@ -104,6 +108,13 @@ create table public.event_effects (
       and resource_id is not null
     )
     or effect_type not in ('resource_grant', 'resource_drain')
+  ),
+  constraint event_effects_deposit_required_for_deposit_destroyed check (
+    (
+      effect_type = 'deposit_destroyed'
+      and deposit_instance_id is not null
+    )
+    or effect_type != 'deposit_destroyed'
   )
 );
 

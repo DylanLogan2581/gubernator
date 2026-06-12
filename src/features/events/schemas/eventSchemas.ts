@@ -29,6 +29,7 @@ export type EventTargetSchema = z.input<typeof eventTargetSchema>;
 export type EventEffectType =
   | "building_damage"
   | "consumption_multiplier"
+  | "deposit_destroyed"
   | "deposit_discovered"
   | "managed_population_change"
   | "population_boost"
@@ -43,6 +44,7 @@ const eventEffectBaseSchema = z.strictObject({
   effectType: z.enum([
     "building_damage",
     "consumption_multiplier",
+    "deposit_destroyed",
     "deposit_discovered",
     "managed_population_change",
     "population_boost",

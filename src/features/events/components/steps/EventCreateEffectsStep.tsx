@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
@@ -14,12 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { depositInstancesBySettlementQueryOptions } from "@/features/deposits";
+import type { DepositInstance } from "@/features/deposits";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 
 type EventEffectType =
   | "building_damage"
   | "consumption_multiplier"
-  | "deposit_discovered"
+  | "deposit_destroyed"
   | "managed_population_change"
   | "modify_population"
   | "modify_resource"
@@ -48,6 +50,8 @@ type EventCreateEffectsStepProps = {
   readonly effects: EffectData[];
   readonly onEffectsChange: (effects: EffectData[]) => void;
   readonly worldId: string;
+  readonly selectedIds: string[];
+  readonly scopeType: "world" | "nation" | "settlement" | null;
 };
 
 const EFFECT_TYPE_OPTIONS: Array<{
@@ -93,9 +97,9 @@ const EFFECT_TYPE_OPTIONS: Array<{
     description: "Damage buildings",
   },
   {
-    value: "deposit_discovered",
-    label: "Deposit Discovered",
-    description: "Discover new deposits",
+    value: "deposit_destroyed",
+    label: "Deposit Destroyed",
+    description: "Destroy existing deposits",
   },
 ];
 
@@ -131,14 +135,53 @@ function EffectEditor({
   onUpdate,
   onRemove,
   worldId,
+  selectedIds,
+  scopeType,
 }: {
   readonly effect: EffectData;
   readonly onUpdate: (updated: EffectData) => void;
   readonly onRemove: () => void;
   readonly worldId: string;
+  readonly selectedIds: string[];
+  readonly scopeType: "world" | "nation" | "settlement" | null;
 }): JSX.Element {
   // Query for resources if this is a modify_resource or resource effect
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+
+  // Query for deposits if this is a deposit_destroyed effect
+  const depositQueries = useQueries({
+    queries:
+      scopeType === "settlement" && selectedIds.length > 0
+        ? selectedIds.map((settlementId) =>
+            depositInstancesBySettlementQueryOptions(settlementId),
+          )
+        : [],
+  });
+
+  // Pool all deposits from selected settlements with settlement labels
+  const allDeposits: Array<{
+    readonly id: string;
+    readonly settlementId: string;
+    readonly name: string;
+    readonly label: string;
+  }> = [];
+
+  if (scopeType === "settlement") {
+    depositQueries.forEach((query, index) => {
+      const settlementId = selectedIds[index];
+      const deposits = query.data as DepositInstance[] | undefined;
+      if (deposits !== undefined && Array.isArray(deposits)) {
+        deposits.forEach((deposit) => {
+          allDeposits.push({
+            id: deposit.id,
+            settlementId,
+            name: deposit.name,
+            label: `${deposit.name} (Settlement: ${settlementId.slice(0, 8)})`,
+          });
+        });
+      }
+    });
+  }
 
   // Determine display label and whether to show special UIs
   const isModifyResource =
@@ -417,6 +460,49 @@ function EffectEditor({
             />
           </div>
         )}
+
+        {effect.effectType === "deposit_destroyed" && (
+          <div className="space-y-2">
+            <Label>Deposits to Destroy</Label>
+            {scopeType !== "settlement" ? (
+              <p className="text-sm text-muted-foreground">
+                Select settlements in step 2 to target deposits
+              </p>
+            ) : selectedIds.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No settlements selected
+              </p>
+            ) : allDeposits.length === 0 && depositQueries.some(q => q.isLoading) ? (
+              <p className="text-sm text-muted-foreground">
+                Loading deposits...
+              </p>
+            ) : allDeposits.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No deposits available in selected settlements
+              </p>
+            ) : (
+              <div className="space-y-2 rounded-md border p-3">
+                {allDeposits.map((deposit) => (
+                  <label
+                    key={deposit.id}
+                    className="flex items-center gap-2"
+                  >
+                    <Checkbox
+                      checked={effect.depositInstanceId === deposit.id}
+                      onCheckedChange={(checked) => {
+                        onUpdate({
+                          ...effect,
+                          depositInstanceId: checked === true ? deposit.id : null,
+                        });
+                      }}
+                    />
+                    <span className="text-sm">{deposit.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -426,6 +512,8 @@ export function EventCreateEffectsStep({
   effects,
   onEffectsChange,
   worldId,
+  selectedIds,
+  scopeType,
 }: EventCreateEffectsStepProps): JSX.Element {
   const [selectedType, setSelectedType] = useState<EventEffectType | "">("");
 
@@ -497,6 +585,8 @@ export function EventCreateEffectsStep({
                 onUpdate={(updated) => updateEffect(idx, updated)}
                 onRemove={() => removeEffect(idx)}
                 worldId={worldId}
+                selectedIds={selectedIds}
+                scopeType={scopeType}
               />
             ))}
           </div>

@@ -294,6 +294,8 @@ export function EventCreateWizard({
               }));
             }}
             worldId={worldId}
+            selectedIds={state.selectedIds}
+            scopeType={state.scopeType}
           />
         )}
 

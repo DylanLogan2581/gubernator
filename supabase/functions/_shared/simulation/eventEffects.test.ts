@@ -98,6 +98,7 @@ function makeContext(input: SimulationInputState): SimulationContext {
       pendingManagedPopulationDeltas: new Map(),
       pendingPopCapBySettlement: new Map(),
       pendingStockpiles,
+      pendingDepositDestroys: new Set(),
     },
   };
 }

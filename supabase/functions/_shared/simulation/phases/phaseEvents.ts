@@ -14,6 +14,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import type {
+  DepositUpdate,
   EventStatusPatch,
   SimEffect,
   SimulationContext,
@@ -22,6 +23,7 @@ import type {
 } from "../simulationTypes.ts";
 
 export type PhaseEventsOutput = {
+  readonly depositUpdates: readonly DepositUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logs: readonly SimulationLogEntry[];
   readonly notifications: readonly SimulationNotification[];
@@ -44,6 +46,7 @@ function applyEffect(
   >,
   pendingManagedPopulationDeltas: Map<string, number>,
   pendingStockpiles: Map<string, number>,
+  pendingDepositDestroys: Set<string>,
   logs: SimulationLogEntry[],
 ): void {
   const effectType = effect.effectType;
@@ -93,6 +96,19 @@ function applyEffect(
           payload: { eventId },
           phase: "events",
         });
+        break;
+      }
+
+      case "deposit_destroyed": {
+        const depositInstanceId = effect.depositInstanceId ?? payload.depositInstanceId;
+        if (typeof depositInstanceId === "string") {
+          pendingDepositDestroys.add(depositInstanceId);
+          logs.push({
+            category: "event.deposit_destroyed",
+            payload: { depositInstanceId, eventId },
+            phase: "events",
+          });
+        }
         break;
       }
 
@@ -285,6 +301,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     pendingEventMultipliers,
     pendingManagedPopulationDeltas,
     pendingStockpiles,
+    pendingDepositDestroys,
   } = context.shared;
 
   const eventStatusPatches: EventStatusPatch[] = [];
@@ -319,6 +336,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         pendingEventMultipliers,
         pendingManagedPopulationDeltas,
         pendingStockpiles,
+        pendingDepositDestroys,
         logs,
       );
     }
@@ -365,5 +383,13 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     });
   }
 
-  return { eventStatusPatches, logs, notifications };
+  const depositUpdates: DepositUpdate[] = Array.from(pendingDepositDestroys).map(
+    (depositInstanceId) => ({
+      depositInstanceId,
+      resourceDeltas: [],
+      toStatus: "removed" as const,
+    }),
+  );
+
+  return { depositUpdates, eventStatusPatches, logs, notifications };
 }

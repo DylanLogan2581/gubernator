@@ -85,6 +85,8 @@ export function runSimulation(
 
   const pendingManagedPopulationDeltas = new Map<string, number>();
 
+  const pendingDepositDestroys = new Set<string>();
+
   const context: SimulationContext = {
     input,
     shared: {
@@ -94,6 +96,7 @@ export function runSimulation(
       pendingManagedPopulationDeltas,
       pendingPopCapBySettlement,
       pendingStockpiles,
+      pendingDepositDestroys,
     },
   };
 
@@ -446,7 +449,7 @@ export function runSimulation(
     citizenDeaths: allDeaths,
     citizenPatches: p9.citizenPatches,
     constructionUpdates: p3.constructionUpdates,
-    depositUpdates: p2.depositUpdates,
+    depositUpdates: [...p2.depositUpdates, ...p11.depositUpdates],
     eventStatusPatches: p11.eventStatusPatches,
     logEntries,
     managedPopulationUpdates: p7.managedPopulationUpdates,
