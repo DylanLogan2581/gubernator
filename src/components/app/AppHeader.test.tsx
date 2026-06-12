@@ -80,8 +80,8 @@ describe("AppHeader", () => {
     expect(
       await screen.findByRole("button", { name: "Notifications (2 unread)" }),
     ).toBeDefined();
-    // NotificationsPopover makes two queries: unread count + turn completed notifications
-    // Initial render: 2 calls, after invalidation: 2 calls = 4 total
+    // NotificationsPopover makes one allNotificationsQueryOptions query that internally
+    // issues two select calls (count + data). Initial render: 2, after invalidation: 2 = 4 total.
     expect(clientFixture.select).toHaveBeenCalledTimes(4);
   });
 
@@ -135,6 +135,7 @@ function createClient({
           }),
         ),
         order: vi.fn().mockReturnThis(),
+        range: vi.fn().mockReturnThis(),
       };
       return queryChain;
     }),

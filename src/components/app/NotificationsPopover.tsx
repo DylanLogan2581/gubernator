@@ -11,10 +11,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { currentSessionQueryOptions } from "@/features/auth";
 import {
+  allNotificationsQueryOptions,
   markAllNotificationsReadMutationOptions,
   markNotificationReadMutationOptions,
-  turnCompletedNotificationsQueryOptions,
-  unreadNotificationsCountQueryOptions,
 } from "@/features/notifications";
 
 type NotificationsPopoverProps = {
@@ -27,15 +26,11 @@ export function NotificationsPopover({
   const currentSessionQuery = useQuery(currentSessionQueryOptions());
   const userId = currentSessionQuery.data?.user.id ?? null;
 
-  const unreadCountQuery = useQuery(
-    unreadNotificationsCountQueryOptions(userId),
-  );
-  const unreadCount = unreadCountQuery.data ?? 0;
-
   const notificationsQuery = useQuery(
-    turnCompletedNotificationsQueryOptions(userId),
+    allNotificationsQueryOptions(userId, { isRead: false }),
   );
-  const notifications = notificationsQuery.data ?? [];
+  const unreadCount = notificationsQuery.data?.total ?? 0;
+  const notifications = notificationsQuery.data?.notifications ?? [];
 
   const markReadMutation = useMutation(markNotificationReadMutationOptions());
 
@@ -46,7 +41,6 @@ export function NotificationsPopover({
   const handleMarkRead = (notificationId: string): void => {
     markReadMutation.mutate(notificationId, {
       onSuccess: () => {
-        void unreadCountQuery.refetch();
         void notificationsQuery.refetch();
       },
     });
@@ -55,7 +49,6 @@ export function NotificationsPopover({
   const handleMarkAllRead = (): void => {
     markAllReadMutation.mutate(undefined, {
       onSuccess: () => {
-        void unreadCountQuery.refetch();
         void notificationsQuery.refetch();
       },
     });
