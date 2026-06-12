@@ -23,6 +23,21 @@ import { EventCreateStep5 } from "./steps/EventCreateStep5";
 
 import type { CreateEventGroupInput } from "../schemas/eventSchemas";
 
+// Import EffectData type for expandMultiResourceEffects
+type EffectData = {
+  effectType: string;
+  isPercent: boolean;
+  amountValue: number | null;
+  multiplierValue: number | null;
+  resourceId: string | null;
+  resourceIds?: string[];
+  populationType?: "boost" | "loss";
+  jobId: number | null;
+  managedPopulationInstanceId: string | null;
+  depositInstanceId: string | null;
+  _id?: string;
+};
+
 type EventCreateWizardProps = {
   readonly accessContext: AccessContext;
   readonly worldId: string;
@@ -112,6 +127,52 @@ export function EventCreateWizard({
     }));
   };
 
+  const expandMultiResourceEffects = (effects: EffectData[]): EffectData[] => {
+    const expanded: EffectData[] = [];
+
+    for (const effect of effects) {
+      // Handle modify_resource: expand to individual resource_grant/drain effects
+      if (
+        effect.effectType === "modify_resource" &&
+        effect.resourceIds !== undefined &&
+        effect.resourceIds.length > 0
+      ) {
+        const isNegative = (effect.amountValue ?? 0) < 0;
+        const absAmount = Math.abs(effect.amountValue ?? 0);
+
+        for (const resourceId of effect.resourceIds) {
+          expanded.push({
+            ...effect,
+            effectType: isNegative ? "resource_drain" : "resource_grant",
+            amountValue: absAmount,
+            resourceId,
+            resourceIds: undefined,
+          });
+        }
+      } else if (
+        effect.effectType === "modify_population" &&
+        effect.populationType !== undefined
+      ) {
+        // Handle modify_population: convert to population_boost/loss
+        const effectType =
+          effect.populationType === "boost"
+            ? "population_boost"
+            : "population_loss";
+
+        expanded.push({
+          ...effect,
+          effectType,
+          populationType: undefined,
+        });
+      } else {
+        // Keep other effects as-is
+        expanded.push(effect);
+      }
+    }
+
+    return expanded;
+  };
+
   const handleSubmit = async (): Promise<void> => {
     if (state.scopeType === null || state.effects.length === 0) return;
     try {
@@ -131,11 +192,13 @@ export function EventCreateWizard({
         managed_population_type_id: null,
       }));
 
+      const expandedEffects = expandMultiResourceEffects(state.effects);
+
       const input: CreateEventGroupInput = {
         worldId,
         groupName,
         groupDescription,
-        effects: state.effects.map((e) => ({
+        effects: expandedEffects.map((e) => ({
           effectType:
             e.effectType as CreateEventGroupInput["effects"][number]["effectType"],
           isPercent: e.isPercent,
@@ -230,6 +293,7 @@ export function EventCreateWizard({
                 effects,
               }));
             }}
+            worldId={worldId}
           />
         )}
 

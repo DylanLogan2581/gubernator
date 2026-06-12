@@ -1,14 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,12 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 
 type EventEffectType =
   | "building_damage"
   | "consumption_multiplier"
   | "deposit_discovered"
   | "managed_population_change"
+  | "modify_population"
+  | "modify_resource"
   | "population_boost"
   | "population_loss"
   | "production_multiplier"
@@ -37,6 +36,8 @@ type EffectData = {
   amountValue: number | null;
   multiplierValue: number | null;
   resourceId: string | null;
+  resourceIds?: string[];
+  populationType?: "boost" | "loss";
   jobId: number | null;
   managedPopulationInstanceId: string | null;
   depositInstanceId: string | null;
@@ -46,6 +47,7 @@ type EffectData = {
 type EventCreateEffectsStepProps = {
   readonly effects: EffectData[];
   readonly onEffectsChange: (effects: EffectData[]) => void;
+  readonly worldId: string;
 };
 
 const EFFECT_TYPE_OPTIONS: Array<{
@@ -54,24 +56,16 @@ const EFFECT_TYPE_OPTIONS: Array<{
   description: string;
 }> = [
   {
-    value: "resource_grant",
-    label: "Grant Resource",
-    description: "Add resources to a settlement",
+    value: "modify_resource",
+    label: "Modify Resource",
+    description:
+      "Add or remove resources (positive for grant, negative for drain)",
   },
   {
-    value: "resource_drain",
-    label: "Drain Resource",
-    description: "Remove resources from a settlement",
-  },
-  {
-    value: "population_loss",
-    label: "Population Loss",
-    description: "Reduce population (optionally by job type)",
-  },
-  {
-    value: "population_boost",
-    label: "Population Boost",
-    description: "Increase population",
+    value: "modify_population",
+    label: "Modify Population",
+    description:
+      "Increase or decrease population (positive for boost, negative for loss)",
   },
   {
     value: "managed_population_change",
@@ -105,18 +99,57 @@ const EFFECT_TYPE_OPTIONS: Array<{
   },
 ];
 
+// Reference map for all effect types (for editing existing effects)
+const ALL_EFFECT_TYPES: Record<string, { label: string; description: string }> =
+  {
+    resource_grant: {
+      label: "Modify Resource",
+      description: "Add or remove resources",
+    },
+    resource_drain: {
+      label: "Modify Resource",
+      description: "Add or remove resources",
+    },
+    population_boost: {
+      label: "Modify Population",
+      description: "Increase or decrease population",
+    },
+    population_loss: {
+      label: "Modify Population",
+      description: "Increase or decrease population",
+    },
+    ...Object.fromEntries(
+      EFFECT_TYPE_OPTIONS.map((opt) => [
+        opt.value,
+        { label: opt.label, description: opt.description },
+      ]),
+    ),
+  };
+
 function EffectEditor({
   effect,
   onUpdate,
   onRemove,
+  worldId,
 }: {
   readonly effect: EffectData;
   readonly onUpdate: (updated: EffectData) => void;
   readonly onRemove: () => void;
+  readonly worldId: string;
 }): JSX.Element {
-  const effectTypeOption = EFFECT_TYPE_OPTIONS.find(
-    (opt) => opt.value === effect.effectType,
-  );
+  // Query for resources if this is a modify_resource or resource effect
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+
+  // Determine display label and whether to show special UIs
+  const isModifyResource =
+    effect.effectType === "modify_resource" ||
+    effect.effectType === "resource_grant" ||
+    effect.effectType === "resource_drain";
+
+  const isModifyPopulation =
+    effect.effectType === "modify_population" ||
+    effect.effectType === "population_boost" ||
+    effect.effectType === "population_loss";
 
   const isAmountEffect = [
     "resource_grant",
@@ -124,6 +157,8 @@ function EffectEditor({
     "population_loss",
     "population_boost",
     "managed_population_change",
+    "modify_resource",
+    "modify_population",
   ].includes(effect.effectType);
 
   const isMultiplierEffect = [
@@ -132,15 +167,27 @@ function EffectEditor({
     "upkeep_multiplier",
   ].includes(effect.effectType);
 
+  // Get label from options or mapping
+  let displayLabel = "";
+  const option = EFFECT_TYPE_OPTIONS.find(
+    (opt) => opt.value === effect.effectType,
+  );
+  if (option !== undefined) {
+    displayLabel = option.label;
+  } else if (isModifyResource) {
+    displayLabel = "Modify Resource";
+  } else if (isModifyPopulation) {
+    displayLabel = "Modify Population";
+  } else if (ALL_EFFECT_TYPES[effect.effectType] !== undefined) {
+    displayLabel = ALL_EFFECT_TYPES[effect.effectType]?.label ?? "";
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-base">
-              {effectTypeOption?.label}
-            </CardTitle>
-            <CardDescription>{effectTypeOption?.description}</CardDescription>
+            <CardTitle className="text-base">{displayLabel}</CardTitle>
           </div>
           <Button
             variant="ghost"
@@ -154,7 +201,155 @@ function EffectEditor({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {isAmountEffect && (
+        {isModifyResource && (
+          <>
+            <div className="space-y-2">
+              <Label>Mode</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={!effect.isPercent}
+                    onChange={() => onUpdate({ ...effect, isPercent: false })}
+                  />
+                  <span className="text-sm">Flat amount</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={effect.isPercent}
+                    onChange={() => onUpdate({ ...effect, isPercent: true })}
+                  />
+                  <span className="text-sm">Percent of current</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`amount-${effect.effectType}`}>
+                {effect.isPercent ? "Percent" : "Amount"} (positive = grant,
+                negative = drain)
+              </Label>
+              <Input
+                id={`amount-${effect.effectType}`}
+                type="number"
+                placeholder={
+                  effect.isPercent ? "e.g., 10 for 10%" : "e.g., 100 or -50"
+                }
+                value={effect.amountValue ?? ""}
+                onChange={(e) =>
+                  onUpdate({
+                    ...effect,
+                    amountValue:
+                      e.target.value !== "" ? parseFloat(e.target.value) : null,
+                  })
+                }
+              />
+            </div>
+
+            {/* Resource multi-selector */}
+            {resourcesQuery.data !== undefined && (
+              <div className="space-y-2">
+                <Label>Resources</Label>
+                <div className="space-y-2 rounded-md border p-3">
+                  {resourcesQuery.data.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No resources available
+                    </p>
+                  ) : (
+                    resourcesQuery.data.map((resource) => (
+                      <label
+                        key={resource.id}
+                        className="flex items-center gap-2"
+                      >
+                        <Checkbox
+                          checked={
+                            effect.resourceIds?.includes(resource.id) ?? false
+                          }
+                          onCheckedChange={(checked) => {
+                            const currentIds =
+                              effect.resourceIds ??
+                              (effect.resourceId !== null
+                                ? [effect.resourceId]
+                                : []);
+                            const newIds = new Set(currentIds);
+                            if (checked === true) {
+                              newIds.add(resource.id);
+                            } else if (checked === false) {
+                              newIds.delete(resource.id);
+                            }
+                            onUpdate({
+                              ...effect,
+                              resourceIds: Array.from(newIds),
+                            });
+                          }}
+                        />
+                        <span className="text-sm">{resource.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {resourcesQuery.isLoading && (
+              <p className="text-sm text-muted-foreground">
+                Loading resources...
+              </p>
+            )}
+          </>
+        )}
+
+        {isModifyPopulation && (
+          <>
+            <div className="space-y-2">
+              <Label>Population Change Type</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={effect.populationType !== "loss"}
+                    onChange={() =>
+                      onUpdate({ ...effect, populationType: "boost" })
+                    }
+                  />
+                  <span className="text-sm">Boost (positive amount)</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={effect.populationType === "loss"}
+                    onChange={() =>
+                      onUpdate({ ...effect, populationType: "loss" })
+                    }
+                  />
+                  <span className="text-sm">Loss (positive amount → loss)</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`amount-${effect.effectType}`}>
+                Amount (always enter as positive)
+              </Label>
+              <Input
+                id={`amount-${effect.effectType}`}
+                type="number"
+                placeholder="e.g., 100"
+                value={effect.amountValue ?? ""}
+                onChange={(e) =>
+                  onUpdate({
+                    ...effect,
+                    amountValue:
+                      e.target.value !== "" ? parseFloat(e.target.value) : null,
+                  })
+                }
+              />
+            </div>
+          </>
+        )}
+
+        {isAmountEffect && !isModifyResource && !isModifyPopulation && (
           <>
             <div className="space-y-2">
               <Label>Mode</Label>
@@ -230,6 +425,7 @@ function EffectEditor({
 export function EventCreateEffectsStep({
   effects,
   onEffectsChange,
+  worldId,
 }: EventCreateEffectsStepProps): JSX.Element {
   const [selectedType, setSelectedType] = useState<EventEffectType | "">("");
 
@@ -276,7 +472,7 @@ export function EventCreateEffectsStep({
             <SelectContent>
               {EFFECT_TYPE_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label} — {opt.description}
+                  {opt.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -300,6 +496,7 @@ export function EventCreateEffectsStep({
                 effect={effect}
                 onUpdate={(updated) => updateEffect(idx, updated)}
                 onRemove={() => removeEffect(idx)}
+                worldId={worldId}
               />
             ))}
           </div>
