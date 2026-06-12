@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
 import {
+  allNotificationsQueryOptions,
   turnCompletedNotificationsQueryOptions,
   unreadNotificationsCountQueryOptions,
 } from "./notificationQueries";
@@ -208,6 +209,114 @@ describe("turnCompletedNotificationsQueryOptions", () => {
     });
   });
 });
+
+describe("allNotificationsQueryOptions", () => {
+  it("maps embedded world, nation, and settlement names", async () => {
+    const row = {
+      citizen_id: null,
+      event_id: null,
+      generated_at: "2026-05-03T10:00:00.000Z",
+      generated_in_transition_id: null,
+      id: "notif-1",
+      is_read: false,
+      message_text: "Turn 2 is complete.",
+      nation_id: "nation-1",
+      nation: { name: "Gondor" },
+      notification_type: "turn.completed",
+      settlement_id: "settlement-1",
+      settlement: { name: "Minas Tirith" },
+      trade_route_id: null,
+      world_id: "world-1",
+      world: { name: "Earth" },
+    };
+    const client = createAllNotificationsClient({ rows: [row], total: 1 });
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions("user-1", {}, client),
+    );
+
+    expect(result.notifications).toHaveLength(1);
+    expect(result.notifications[0]).toMatchObject({
+      worldName: "Earth",
+      nationName: "Gondor",
+      settlementName: "Minas Tirith",
+    });
+  });
+
+  it("maps null nation and settlement names when embeds are null", async () => {
+    const row = {
+      citizen_id: null,
+      event_id: null,
+      generated_at: "2026-05-03T10:00:00.000Z",
+      generated_in_transition_id: null,
+      id: "notif-2",
+      is_read: true,
+      message_text: "World event occurred.",
+      nation_id: null,
+      nation: null,
+      notification_type: "turn.completed",
+      settlement_id: null,
+      settlement: null,
+      trade_route_id: null,
+      world_id: "world-1",
+      world: { name: "Earth" },
+    };
+    const client = createAllNotificationsClient({ rows: [row], total: 1 });
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions("user-1", {}, client),
+    );
+
+    expect(result.notifications[0]).toMatchObject({
+      worldName: "Earth",
+      nationName: null,
+      settlementName: null,
+    });
+  });
+
+  it("returns empty list when userId is null", async () => {
+    const from = vi.fn();
+    const client = { from } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions(null, {}, client),
+    );
+
+    expect(result).toEqual({ notifications: [], total: 0 });
+    expect(from).not.toHaveBeenCalled();
+  });
+});
+
+function createAllNotificationsClient({
+  rows,
+  total,
+}: {
+  readonly rows: readonly unknown[];
+  readonly total: number;
+}): GubernatorSupabaseClient {
+  // Count query: from → select → eq(recipient) → awaitable { count, error }
+  // Default filters (isRead=null, type=null) → no extra .eq() after recipient eq.
+  const countRecipientEq = vi
+    .fn()
+    .mockResolvedValue({ count: total, error: null });
+  const countSelect = vi.fn(() => ({ eq: countRecipientEq }));
+
+  // Data query: from → select → eq(recipient) → order → range → awaitable { data, error }
+  const range = vi.fn().mockResolvedValue({ data: rows, error: null });
+  const order = vi.fn(() => ({ range }));
+  const dataRecipientEq = vi.fn(() => ({ order }));
+  const dataSelect = vi.fn(() => ({ eq: dataRecipientEq }));
+
+  const from = vi
+    .fn()
+    .mockReturnValueOnce({ select: countSelect })
+    .mockReturnValueOnce({ select: dataSelect });
+
+  return { from } as unknown as GubernatorSupabaseClient;
+}
 
 function createClient({
   secondEq,

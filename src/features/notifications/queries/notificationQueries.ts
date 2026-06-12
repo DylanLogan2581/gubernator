@@ -78,10 +78,13 @@ type AllNotificationRow = {
   readonly is_read: boolean;
   readonly message_text: string;
   readonly nation_id: string | null;
+  readonly nation: { readonly name: string } | null;
   readonly notification_type: string;
   readonly settlement_id: string | null;
+  readonly settlement: { readonly name: string } | null;
   readonly trade_route_id: string | null;
   readonly world_id: string;
+  readonly world: { readonly name: string };
 };
 
 export type AllNotification = {
@@ -93,10 +96,13 @@ export type AllNotification = {
   readonly isRead: boolean;
   readonly messageText: string;
   readonly nationId: string | null;
+  readonly nationName: string | null;
   readonly notificationType: string;
   readonly settlementId: string | null;
+  readonly settlementName: string | null;
   readonly tradeRouteId: string | null;
   readonly worldId: string;
+  readonly worldName: string;
 };
 
 type AllNotificationsResponse = {
@@ -118,7 +124,7 @@ const TURN_COMPLETED_NOTIFICATION_SELECT =
   "id,world_id,generated_in_transition_id,message_text,is_read,generated_at";
 const TURN_COMPLETED_NOTIFICATION_TYPE = "turn.completed";
 const ALL_NOTIFICATIONS_SELECT =
-  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,message_text,is_read,generated_at,generated_in_transition_id";
+  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,message_text,is_read,generated_at,generated_in_transition_id,world:worlds!notifications_world_id_fkey(name),nation:nations(name),settlement:settlements(name)";
 
 export function unreadNotificationsCountQueryOptions(
   userId: string | null,
@@ -313,10 +319,13 @@ function toAllNotification(row: AllNotificationRow): AllNotification {
     isRead: row.is_read,
     messageText: row.message_text,
     nationId: row.nation_id,
+    nationName: row.nation?.name ?? null,
     notificationType: row.notification_type,
     settlementId: row.settlement_id,
+    settlementName: row.settlement?.name ?? null,
     tradeRouteId: row.trade_route_id,
     worldId: row.world_id,
+    worldName: row.world.name,
   };
 }
 

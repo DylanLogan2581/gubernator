@@ -1,4 +1,3 @@
-import { ChevronRight } from "lucide-react";
 import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,16 +16,15 @@ export function NotificationListItem({
 }: NotificationListItemProps): JSX.Element {
   const deepLink = getDeepLink(notification);
 
-  const deepLinkElement =
-    deepLink !== null ? (
-      <Button variant="ghost" size="sm" asChild className="text-xs h-7 px-2">
-        <a href={deepLink.href}>{deepLink.label}</a>
-      </Button>
-    ) : null;
+  const contextParts = [
+    notification.worldName,
+    notification.nationName,
+    notification.settlementName,
+  ].filter((name): name is string => name !== null);
 
   return (
     <div
-      className={`flex items-start justify-between gap-4 p-4 transition-colors hover:bg-muted ${
+      className={`flex items-start gap-4 p-4 transition-colors hover:bg-muted ${
         !notification.isRead ? "bg-muted/50" : ""
       }`}
     >
@@ -37,24 +35,39 @@ export function NotificationListItem({
             <span className="inline-block size-2 rounded-full bg-primary shrink-0" />
           ) : null}
         </div>
+        {contextParts.length > 0 ? (
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {contextParts.join(" · ")}
+          </p>
+        ) : null}
         <p className="text-xs text-muted-foreground mt-1">
           {/* eslint-disable-next-line no-restricted-syntax */}
           {new Date(notification.generatedAt).toLocaleString()}
         </p>
-        <div className="flex gap-2 mt-2">{deepLinkElement}</div>
+        <div className="flex gap-2 mt-2">
+          {deepLink !== null ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="text-xs h-7 px-2"
+            >
+              <a href={deepLink.href}>{deepLink.label}</a>
+            </Button>
+          ) : null}
+          {!notification.isRead ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMarkRead}
+              disabled={isMarkingRead}
+              className="text-xs h-7 px-2"
+            >
+              Clear
+            </Button>
+          ) : null}
+        </div>
       </div>
-
-      {!notification.isRead ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onMarkRead}
-          disabled={isMarkingRead}
-          className="shrink-0"
-        >
-          <ChevronRight className="size-4" />
-        </Button>
-      ) : null}
     </div>
   );
 }
