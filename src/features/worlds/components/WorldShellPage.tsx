@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
-  Globe2,
   Settings2,
 } from "lucide-react";
 
@@ -13,7 +12,6 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
-import { nationsListQueryOptions } from "@/features/nations";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
@@ -80,10 +78,8 @@ function WorldShellContent({
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
   const { activeCharacter } = useActivePlayerCharacter();
-  const nationsQuery = useQuery(nationsListQueryOptions(worldId));
-  const settlementSummaryQuery = useQuery(
-    settlementReadinessSummaryQueryOptions(worldId),
-  );
+  // Prefetch settlement readiness summary for SettlementReadinessListPanel
+  void useQuery(settlementReadinessSummaryQueryOptions(worldId));
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
@@ -125,14 +121,6 @@ function WorldShellContent({
       </WorldShellFrame>
     );
   }
-
-  const nationCount = nationsQuery.data?.length ?? null;
-  const settlementCount =
-    settlementSummaryQuery.data?.totalSettlementCount ?? null;
-  const nationsSubhead =
-    nationCount !== null && settlementCount !== null
-      ? `${nationCount} ${nationCount === 1 ? "nation" : "nations"} · ${settlementCount} ${settlementCount === 1 ? "settlement" : "settlements"}`
-      : null;
 
   return (
     <WorldShellFrame>
@@ -201,28 +189,6 @@ function WorldShellContent({
         ) : null}
       </section>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Link
-          to="/worlds/$worldId/nations"
-          params={{ worldId }}
-          className="flex flex-col gap-3 rounded-md border border-border bg-card p-6 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Globe2
-                className="size-5 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <h2 className="text-xl font-semibold">Nations</h2>
-            </div>
-            <ArrowRight
-              className="size-4 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-          </div>
-          {nationsSubhead !== null ? (
-            <p className="text-sm text-muted-foreground">{nationsSubhead}</p>
-          ) : null}
-        </Link>
         <Link
           to="/worlds/$worldId/events"
           params={{ worldId }}
