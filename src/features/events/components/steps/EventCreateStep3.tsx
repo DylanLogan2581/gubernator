@@ -4,9 +4,12 @@ import { type JSX } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import {
-  formatCalendarDate,
+  worldCalendarConfigQueryOptions,
+  WorldDatePicker,
+} from "@/features/calendar";
+import {
+  type CalendarDateInput,
   resolveTurnCalendarDate,
 } from "@/shared/turnCalendarPrimitives";
 
@@ -37,21 +40,20 @@ export function EventCreateStep3({
 
   const calendarConfig = calendarConfigQuery.data;
 
-  // Resolve calendar date for activation turn if config is available
-  let activationTurnDateLabel: string | undefined;
+  // Convert activation turn to calendar date for the picker
+  let activationTurnDate: CalendarDateInput | null = null;
   if (
     calendarConfig !== null &&
     calendarConfig !== undefined &&
     activationTurn > 0
   ) {
     try {
-      const calendarDate = resolveTurnCalendarDate(
-        calendarConfig,
-        activationTurn,
-      );
-      activationTurnDateLabel = formatCalendarDate(calendarDate, {
-        dateFormatTemplate: calendarConfig.dateFormatTemplate,
-      });
+      const resolved = resolveTurnCalendarDate(calendarConfig, activationTurn);
+      activationTurnDate = {
+        year: resolved.year,
+        monthIndex: resolved.monthIndex,
+        dayOfMonth: resolved.dayOfMonth,
+      };
     } catch {
       // Silently fail if turn number is invalid
     }
@@ -111,36 +113,42 @@ export function EventCreateStep3({
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="activationTurn" className="font-medium">
-          Activation Turn
-        </Label>
-        <Input
-          id="activationTurn"
-          type="number"
-          min="0"
-          value={activationTurn}
-          onChange={(e) => onActivationTurnChange(parseInt(e.target.value, 10))}
-          placeholder="When should this event start?"
-        />
+        <Label className="font-medium">Activation Turn</Label>
+        <div className="rounded-md bg-muted px-3 py-2">
+          <p className="text-sm text-muted-foreground">
+            Current turn:{" "}
+            <span className="font-semibold text-foreground">
+              {currentTurnNumber}
+            </span>
+          </p>
+        </div>
+        {calendarConfig !== null && calendarConfig !== undefined ? (
+          <WorldDatePicker
+            config={calendarConfig}
+            currentTurnNumber={currentTurnNumber}
+            value={activationTurnDate}
+            onTurnNumberChange={onActivationTurnChange}
+            label="Select activation date"
+          />
+        ) : (
+          <Input
+            type="number"
+            min={currentTurnNumber}
+            value={activationTurn}
+            onChange={(e) =>
+              onActivationTurnChange(parseInt(e.target.value, 10))
+            }
+            placeholder="When should this event start?"
+          />
+        )}
         <p className="text-xs text-muted-foreground">
           The event will activate after this turn number completes
         </p>
-        {activationTurnDateLabel !== undefined &&
-          activationTurnDateLabel !== null && (
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Date:</span>{" "}
-              {activationTurnDateLabel}
-            </p>
-          )}
-        {(activationTurnDateLabel === undefined ||
-          activationTurnDateLabel === null) &&
-          activationTurn > 0 &&
-          currentTurnNumber > 0 && (
-            <p className="text-xs text-amber-600">
-              Turn {activationTurn} is {activationTurn - currentTurnNumber}{" "}
-              turns from now
-            </p>
-          )}
+        {activationTurn < currentTurnNumber && activationTurn > 0 && (
+          <p className="text-xs text-amber-600">
+            Activation turn must be ≥ current turn (turn {currentTurnNumber})
+          </p>
+        )}
       </div>
     </div>
   );
