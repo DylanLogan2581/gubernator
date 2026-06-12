@@ -8,7 +8,7 @@
 -- - multiplier_value: numeric for multipliers (production, consumption, upkeep)
 -- - is_percent: boolean, true if amount_value is a percent of current value
 -- - resource_id: FK to resources (for resource_grant, resource_drain)
--- - job_id: FK to jobs (filter for population_loss)
+-- - job_id: FK to job_definitions (filter for population_loss)
 -- - managed_population_instance_id: FK to managed_population_instances (for managed_population_change)
 -- - deposit_instance_id: FK to deposit_instances (for deposit_discovered)
 -- - Extra fields for extensibility
@@ -46,7 +46,7 @@ create table public.event_effects (
   is_percent boolean not null default false,
   -- Target FKs
   resource_id uuid references public.resources (id) on delete set null,
-  job_id bigint references public.jobs (id) on delete set null,
+  job_id uuid references public.job_definitions (id) on delete set null,
   managed_population_instance_id uuid references public.managed_population_instances (id) on delete set null,
   deposit_instance_id uuid references public.deposit_instances (id) on delete set null,
   -- Extra data for future extensions

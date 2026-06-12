@@ -36,19 +36,17 @@ values
 -- World 1: where blueprints and tiers live.
 -- World 2: provides cross-world resources and jobs for rejection tests.
 insert into
-  public.worlds (id, name, owner_id, visibility, status)
+  public.worlds (id, name, visibility, status)
 values
   (
     'c2000000-0000-0000-0000-000000000001',
     'BTV Main World',
-    'c1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   ),
   (
     'c2000000-0000-0000-0000-000000000002',
     'BTV Other World',
-    'c1000000-0000-0000-0000-000000000001',
     'private',
     'active'
   );
@@ -77,7 +75,7 @@ values
 
 -- Old Stone: soft-deleted resource in world 1
 insert into
-  public.resources (id, world_id, name, slug, is_deleted)
+  public.resources (id, world_id, name, slug, is_trashed)
 values
   (
     'c3000000-0000-0000-0000-000000000003',
@@ -109,7 +107,7 @@ insert into
     slug,
     job_type,
     base_capacity,
-    is_active
+    is_trashed
   )
 values
   (
@@ -119,7 +117,7 @@ values
     'retired-farming',
     'standard',
     5,
-    false
+    true
   );
 
 -- Foreign Trade: active job in world 2 (cross-world rejection tests)
