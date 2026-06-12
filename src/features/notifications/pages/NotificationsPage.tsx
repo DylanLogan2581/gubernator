@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { type JSX, useState } from "react";
 
@@ -11,11 +11,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { currentSessionQueryOptions } from "@/features/auth";
+import { nationsListQueryOptions } from "@/features/nations";
 import {
   allNotificationsQueryOptions,
   markNotificationReadMutationOptions,
   type AllNotification,
 } from "@/features/notifications";
+import { currentAccessContextQueryOptions } from "@/features/permissions";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
+import { accessibleWorldsQueryOptions } from "@/features/worlds";
 
 import { NotificationListItem } from "../components/NotificationListItem";
 import { NotificationsPageFrame } from "../components/NotificationsPageFrame";
@@ -36,12 +40,49 @@ const READ_STATUS_OPTIONS = [
 ];
 
 export function NotificationsPage(): JSX.Element {
+  const queryClient = useQueryClient();
+  const accessContextQuery = useQuery(
+    currentAccessContextQueryOptions(queryClient),
+  );
   const currentSessionQuery = useQuery(currentSessionQueryOptions());
   const userId = currentSessionQuery.data?.user.id ?? null;
 
   const [page, setPage] = useState(1);
   const [selectedType, setSelectedType] = useState("all");
   const [readStatus, setReadStatus] = useState("all");
+  const [selectedWorldId, setSelectedWorldId] = useState<string | null>(null);
+  const [selectedNationId, setSelectedNationId] = useState<string | null>(null);
+  const [selectedSettlementId, setSelectedSettlementId] = useState<
+    string | null
+  >(null);
+
+  const accessContext = accessContextQuery.data ?? null;
+
+  const worldsQuery = useQuery({
+    ...accessibleWorldsQueryOptions(
+      accessContext ?? {
+        canAccessWorld: () => false,
+        canAdminWorld: () => false,
+        isActiveUser: false,
+        isAuthenticated: false,
+        isSuperAdmin: false,
+        userId: null,
+        worldAdminWorldIds: [],
+        playerCharacterWorldIds: [],
+      },
+    ),
+    enabled: accessContext !== null,
+  });
+
+  const nationsQuery = useQuery({
+    ...nationsListQueryOptions(selectedWorldId ?? ""),
+    enabled: selectedWorldId !== null,
+  });
+
+  const settlementsQuery = useQuery({
+    ...settlementsByWorldQueryOptions(selectedWorldId ?? ""),
+    enabled: selectedWorldId !== null,
+  });
 
   const offset = (page - 1) * PAGE_SIZE;
   const isRead =
@@ -54,6 +95,9 @@ export function NotificationsPage(): JSX.Element {
       offset,
       isRead,
       type,
+      worldId: selectedWorldId,
+      nationId: selectedNationId,
+      settlementId: selectedSettlementId,
     }),
   );
 
@@ -69,6 +113,37 @@ export function NotificationsPage(): JSX.Element {
     }
   };
 
+  const handleWorldChange = (value: string): void => {
+    const worldId = value === "all" ? null : value;
+    setSelectedWorldId(worldId);
+    setSelectedNationId(null);
+    setSelectedSettlementId(null);
+    setPage(1);
+  };
+
+  const handleNationChange = (value: string): void => {
+    setSelectedNationId(value === "all" ? null : value);
+    setPage(1);
+  };
+
+  const handleSettlementChange = (value: string): void => {
+    setSelectedSettlementId(value === "all" ? null : value);
+    setPage(1);
+  };
+
+  const handleTypeChange = (value: string): void => {
+    setSelectedType(value);
+    setPage(1);
+  };
+
+  const handleReadStatusChange = (value: string): void => {
+    setReadStatus(value);
+    setPage(1);
+  };
+
+  const worlds = worldsQuery.data ?? [];
+  const nations = nationsQuery.data ?? [];
+  const settlements = settlementsQuery.data ?? [];
   const notifications = notificationsQuery.data?.notifications ?? [];
   const total = notificationsQuery.data?.total ?? 0;
   const pageCount = Math.ceil(total / PAGE_SIZE);
@@ -77,8 +152,8 @@ export function NotificationsPage(): JSX.Element {
     <NotificationsPageFrame>
       <div className="flex flex-col gap-4">
         {/* Filters */}
-        <div className="flex gap-3">
-          <Select value={selectedType} onValueChange={setSelectedType}>
+        <div className="flex flex-wrap gap-3">
+          <Select value={selectedType} onValueChange={handleTypeChange}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
@@ -91,7 +166,7 @@ export function NotificationsPage(): JSX.Element {
             </SelectContent>
           </Select>
 
-          <Select value={readStatus} onValueChange={setReadStatus}>
+          <Select value={readStatus} onValueChange={handleReadStatusChange}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -99,6 +174,59 @@ export function NotificationsPage(): JSX.Element {
               {READ_STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedWorldId ?? "all"}
+            onValueChange={handleWorldChange}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All worlds" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All worlds</SelectItem>
+              {worlds.map((world) => (
+                <SelectItem key={world.id} value={world.id}>
+                  {world.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedNationId ?? "all"}
+            onValueChange={handleNationChange}
+            disabled={selectedWorldId === null}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All nations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All nations</SelectItem>
+              {nations.map((nation) => (
+                <SelectItem key={nation.id} value={nation.id}>
+                  {nation.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedSettlementId ?? "all"}
+            onValueChange={handleSettlementChange}
+            disabled={selectedWorldId === null}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All settlements" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All settlements</SelectItem>
+              {settlements.map((settlement) => (
+                <SelectItem key={settlement.id} value={settlement.id}>
+                  {settlement.name}
                 </SelectItem>
               ))}
             </SelectContent>

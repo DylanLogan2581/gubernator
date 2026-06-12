@@ -8,6 +8,9 @@ export const notificationQueryKeys = {
     offset: number,
     isRead: boolean | null = null,
     type: string | null = null,
+    worldId: string | null = null,
+    nationId: string | null = null,
+    settlementId: string | null = null,
   ) =>
     [
       ...notificationQueryKeys.all,
@@ -17,6 +20,9 @@ export const notificationQueryKeys = {
       offset,
       isRead,
       type,
+      worldId,
+      nationId,
+      settlementId,
     ] as const,
   turnCompleted: (userId: string | null, worldId: string | null = null) =>
     [...notificationQueryKeys.all, "turn-completed", userId, worldId] as const,

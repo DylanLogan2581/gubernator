@@ -48,8 +48,11 @@ export type TurnCompletedNotificationsFilters = {
 export type AllNotificationsFilters = {
   readonly isRead?: boolean | null;
   readonly limit?: number;
+  readonly nationId?: string | null;
   readonly offset?: number;
+  readonly settlementId?: string | null;
   readonly type?: string | null;
+  readonly worldId?: string | null;
 };
 type TurnCompletedNotificationRow = {
   readonly generated_at: string;
@@ -164,19 +167,35 @@ export function allNotificationsQueryOptions(
   const offset = filters.offset ?? 0;
   const isRead = filters.isRead ?? null;
   const type = filters.type ?? null;
+  const worldId = filters.worldId ?? null;
+  const nationId = filters.nationId ?? null;
+  const settlementId = filters.settlementId ?? null;
 
   // The client is the configured Supabase singleton in app code; tests inject a fake.
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
     enabled: userId !== null,
     queryFn: () =>
-      getAllNotifications(client, userId, limit, offset, isRead, type),
+      getAllNotifications(
+        client,
+        userId,
+        limit,
+        offset,
+        isRead,
+        type,
+        worldId,
+        nationId,
+        settlementId,
+      ),
     queryKey: notificationQueryKeys.allNotifications(
       userId,
       limit,
       offset,
       isRead,
       type,
+      worldId,
+      nationId,
+      settlementId,
     ),
   });
 }
@@ -239,6 +258,9 @@ async function getAllNotifications(
   offset: number,
   isRead: boolean | null,
   type: string | null,
+  worldId: string | null,
+  nationId: string | null,
+  settlementId: string | null,
 ): Promise<AllNotificationsResponse> {
   if (userId === null) {
     return { notifications: [], total: 0 };
@@ -258,6 +280,18 @@ async function getAllNotifications(
       "notification_type",
       type as Database["public"]["Enums"]["notification_type"],
     );
+  }
+
+  if (worldId !== null) {
+    countQuery = countQuery.eq("world_id", worldId);
+  }
+
+  if (nationId !== null) {
+    countQuery = countQuery.eq("nation_id", nationId);
+  }
+
+  if (settlementId !== null) {
+    countQuery = countQuery.eq("settlement_id", settlementId);
   }
 
   const { count, error: countError } = await countQuery;
@@ -282,6 +316,18 @@ async function getAllNotifications(
       "notification_type",
       type as Database["public"]["Enums"]["notification_type"],
     );
+  }
+
+  if (worldId !== null) {
+    dataQuery = dataQuery.eq("world_id", worldId);
+  }
+
+  if (nationId !== null) {
+    dataQuery = dataQuery.eq("nation_id", nationId);
+  }
+
+  if (settlementId !== null) {
+    dataQuery = dataQuery.eq("settlement_id", settlementId);
   }
 
   const { data, error } = await dataQuery;
