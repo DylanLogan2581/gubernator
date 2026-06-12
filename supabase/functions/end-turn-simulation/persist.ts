@@ -11,6 +11,7 @@ import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 import { createErrorResponse } from "./http.ts";
 import { isRecord } from "./utils.ts";
 
+import type { ForecastSnapshot } from "./forecast.ts";
 import type { ApplyTurnTransitionPayload } from "./transition.ts";
 import type {
   ApplyTurnTransitionSummary,
@@ -173,6 +174,7 @@ export async function persistSimulationTransition(
   payload: ApplyTurnTransitionPayload,
   transitionId: string,
   actorUserId: string,
+  forecastSnapshot: ForecastSnapshot,
 ): Promise<EndTurnSimulationPersistResult> {
   const requestId = generateRequestId();
   logRequestEntry(
@@ -203,6 +205,7 @@ export async function persistSimulationTransition(
       {
         body: JSON.stringify({
           p_expected_turn_number: body.expectedTurnNumber,
+          p_forecast_snapshot_jsonb: forecastSnapshot,
           p_payload: payload,
           p_transition_id: transitionId,
           p_world_id: body.worldId,

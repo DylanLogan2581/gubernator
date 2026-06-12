@@ -634,11 +634,42 @@ describe("end-turn-simulation integration", () => {
     // turn_transitions row — engine seed and stored id are the same UUID.
     const { data: transitionRow } = await svc
       .from("turn_transitions")
-      .select("id,status")
+      .select("id,status,forecast_snapshot_jsonb")
       .eq("id", transitionId)
       .single();
     expect(transitionRow?.id).toBe(transitionId);
     expect(transitionRow?.status).toBe("completed");
+
+    // Forecast snapshot must be populated for every completed transition.
+    expect(transitionRow?.forecast_snapshot_jsonb).toBeDefined();
+    expect(transitionRow?.forecast_snapshot_jsonb).not.toBeNull();
+    const forecast = transitionRow?.forecast_snapshot_jsonb as unknown as {
+      bySettlement?: Record<string, unknown>;
+    };
+    expect(forecast?.bySettlement).toBeDefined();
+    // At least one settlement should have forecast data.
+    expect(Object.keys(forecast?.bySettlement ?? {})).toHaveLength(
+      SETTLEMENT_IDS.length,
+    );
+    // Each settlement forecast should have the required structure.
+    for (const [settlementId, settlementForecast] of Object.entries(
+      forecast?.bySettlement ?? {},
+    )) {
+      const sf = settlementForecast as {
+        settlementId?: string;
+        resourceDeltas?: unknown[];
+        deathsBy?: unknown;
+        completedProjects?: unknown[];
+        buildingUpkeepFailures?: unknown[];
+        tradeChanges?: unknown[];
+      };
+      expect(sf?.settlementId).toBe(settlementId);
+      expect(Array.isArray(sf?.resourceDeltas)).toBe(true);
+      expect(sf?.deathsBy).toBeDefined();
+      expect(Array.isArray(sf?.completedProjects)).toBe(true);
+      expect(Array.isArray(sf?.buildingUpkeepFailures)).toBe(true);
+      expect(Array.isArray(sf?.tradeChanges)).toBe(true);
+    }
 
     // At least one settlement snapshot per settlement for this transition.
     for (const settlementId of SETTLEMENT_IDS) {

@@ -2,6 +2,7 @@ import { logEndTurnSuccess } from "../_shared/auditLog.ts";
 import { getEdgeRuntime } from "../_shared/http/env.ts";
 
 import { resolveSupabaseEndTurnSimulationAuthorization } from "./authorize.ts";
+import { computeForecastSnapshot } from "./forecast.ts";
 import {
   buildCorsHeaders,
   createErrorResponse,
@@ -115,11 +116,17 @@ export async function handleEndTurnSimulationRequest(
       return respond(transitionResult.error, transitionResult.status);
     }
 
+    const forecastSnapshot = computeForecastSnapshot(
+      transitionResult.result,
+      stateResult.input,
+    );
+
     const persistResult = await persistSimulationTransition(
       validateResult.body,
       transitionResult.payload,
       startResult.transitionId,
       authContextResult.context.userId,
+      forecastSnapshot,
     );
     if (!persistResult.ok) {
       return respond(persistResult.error, persistResult.status);
