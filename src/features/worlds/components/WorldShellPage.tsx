@@ -4,6 +4,7 @@ import {
   Archive,
   ArrowLeft,
   ArrowRight,
+  CalendarDays,
   Globe2,
   Settings2,
 } from "lucide-react";
@@ -221,6 +222,28 @@ function WorldShellContent({
           {nationsSubhead !== null ? (
             <p className="text-sm text-muted-foreground">{nationsSubhead}</p>
           ) : null}
+        </Link>
+        <Link
+          to="/worlds/$worldId/events"
+          params={{ worldId }}
+          className="flex flex-col gap-3 rounded-md border border-border bg-card p-6 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarDays
+                className="size-5 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <h2 className="text-xl font-semibold">Events</h2>
+            </div>
+            <ArrowRight
+              className="size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            active and scheduled world events
+          </p>
         </Link>
         {worldQuery.data.canAdmin ? (
           <Link
