@@ -69,6 +69,12 @@ export function cancelTradeRouteMutationOptions({
             result.destinationSettlementId,
           ),
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
       ]);
     },
   });

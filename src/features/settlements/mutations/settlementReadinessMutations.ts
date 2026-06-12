@@ -159,6 +159,9 @@ export function setSettlementReadinessMutationOptions({
         queryClient.invalidateQueries({
           queryKey: settlementReadinessQueryKeys.summary(input.worldId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
       ]);
     },
   });
@@ -184,6 +187,9 @@ export function setSettlementAutoReadyMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: settlementReadinessQueryKeys.summary(input.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
         }),
       ]);
     },

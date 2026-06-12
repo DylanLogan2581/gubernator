@@ -59,11 +59,16 @@ export function createConstructionProjectMutationOptions({
       createConstructionProject(client, input),
     mutationKey: [...buildingsQueryKeys.all, "create-construction-project"],
     onSuccess: async (result): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: buildingsQueryKeys.constructionProjectsBySettlement(
-          result.settlementId,
-        ),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: buildingsQueryKeys.constructionProjectsBySettlement(
+            result.settlementId,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
+      ]);
     },
   });
 }

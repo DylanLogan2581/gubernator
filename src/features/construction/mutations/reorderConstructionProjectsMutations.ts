@@ -59,11 +59,16 @@ export function reorderConstructionProjectsMutationOptions({
     onSuccess: async (_, input): Promise<void> => {
       const values = reorderConstructionProjectsInputSchema.safeParse(input);
       if (values.success) {
-        await queryClient.invalidateQueries({
-          queryKey: buildingsQueryKeys.constructionProjectsBySettlement(
-            values.data.settlementId,
-          ),
-        });
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: buildingsQueryKeys.constructionProjectsBySettlement(
+              values.data.settlementId,
+            ),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: ["forecast"],
+          }),
+        ]);
       }
     },
   });

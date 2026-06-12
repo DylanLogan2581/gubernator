@@ -8,7 +8,13 @@ import { SettlementDetailPage } from "@/features/settlements";
 import type { JSX } from "react";
 
 const ASSIGNMENT_TABS = ["bulk", "per-target"] as const;
-const SECTION_TABS = ["overview", "population", "economy", "admin"] as const;
+const SECTION_TABS = [
+  "overview",
+  "population",
+  "economy",
+  "forecast",
+  "admin",
+] as const;
 
 type AssignmentTab = (typeof ASSIGNMENT_TABS)[number];
 type SectionTab = (typeof SECTION_TABS)[number];

@@ -95,6 +95,9 @@ export function setPerTargetBulkAssignmentMutationOptions({
             values.settlementId,
           ),
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
       ]);
     },
   });

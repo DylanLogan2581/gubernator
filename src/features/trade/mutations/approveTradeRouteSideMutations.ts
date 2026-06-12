@@ -71,6 +71,12 @@ export function approveTradeRouteSideMutationOptions({
             result.destinationSettlementId,
           ),
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
       ]);
     },
   });

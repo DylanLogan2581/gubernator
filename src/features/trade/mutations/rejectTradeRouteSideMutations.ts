@@ -70,6 +70,12 @@ export function rejectTradeRouteSideMutationOptions({
             result.destinationSettlementId,
           ),
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
       ]);
     },
   });
