@@ -255,7 +255,6 @@ function CitizenDetailLoaded({
         <CitizenNpcAdminSections
           canEdit={canEdit}
           citizenId={citizen.id}
-          currentTurnNumber={currentTurnNumber}
           queryClient={queryClient}
           worldId={worldId}
         />
@@ -268,6 +267,16 @@ function CitizenDetailLoaded({
           citizen={citizen}
           isArchived={isArchived}
           queryClient={queryClient}
+        />
+      ) : null}
+
+      {canAdmin ? (
+        <CitizenMemoriesSection
+          canEdit={canEdit}
+          citizenId={citizen.id}
+          currentTurnNumber={currentTurnNumber}
+          queryClient={queryClient}
+          worldId={worldId}
         />
       ) : null}
 
@@ -291,13 +300,11 @@ function CitizenDetailLoaded({
 function CitizenNpcAdminSections({
   canEdit,
   citizenId,
-  currentTurnNumber,
   queryClient,
   worldId,
 }: {
   readonly canEdit: boolean;
   readonly citizenId: string;
-  readonly currentTurnNumber: number;
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
@@ -333,13 +340,6 @@ function CitizenNpcAdminSections({
         adminDetails={adminDetails}
         canEdit={canEdit}
         citizenId={citizenId}
-        queryClient={queryClient}
-        worldId={worldId}
-      />
-      <CitizenMemoriesSection
-        canEdit={canEdit}
-        citizenId={citizenId}
-        currentTurnNumber={currentTurnNumber}
         queryClient={queryClient}
         worldId={worldId}
       />
