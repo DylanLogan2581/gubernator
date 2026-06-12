@@ -239,8 +239,10 @@ export type SimEventStatus =
 // phaseEvents switch, which is the Epic 7 hand-off contract.
 export type EventEffectType =
   | "building_damage"
+  | "building_destroyed"
   | "consumption_multiplier"
   | "deposit_discovered"
+  | "deposit_destroyed"
   | "managed_population_change"
   | "population_boost"
   | "population_loss"

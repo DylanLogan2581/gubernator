@@ -109,6 +109,23 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
           break;
         }
 
+        case "building_destroyed": {
+          const settlementBuildingId = payload.settlementBuildingId;
+          if (typeof settlementBuildingId === "string") {
+            logs.push({
+              category: "event.building_destroyed",
+              payload: {
+                settlementBuildingId,
+                eventId: event.id,
+                groupId: event.groupId,
+                scope: event.scopeType,
+              },
+              phase: "events",
+            });
+          }
+          break;
+        }
+
         case "consumption_multiplier": {
           const multiplier = payload.multiplier;
           if (typeof multiplier === "number") {
@@ -138,6 +155,23 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
                 groupId: event.groupId,
                 scope: event.scopeType,
                 settlementId,
+              },
+              phase: "events",
+            });
+          }
+          break;
+        }
+
+        case "deposit_destroyed": {
+          const depositInstanceId = payload.depositInstanceId;
+          if (typeof depositInstanceId === "string") {
+            logs.push({
+              category: "event.deposit_destroyed",
+              payload: {
+                depositInstanceId,
+                eventId: event.id,
+                groupId: event.groupId,
+                scope: event.scopeType,
               },
               phase: "events",
             });

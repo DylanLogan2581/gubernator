@@ -28,6 +28,7 @@ export type EventTargetSchema = z.input<typeof eventTargetSchema>;
 // Effect type definitions for structured event effects
 export type EventEffectType =
   | "building_damage"
+  | "building_destroyed"
   | "consumption_multiplier"
   | "deposit_destroyed"
   | "deposit_discovered"
@@ -43,6 +44,7 @@ export type EventEffectType =
 const eventEffectBaseSchema = z.strictObject({
   effectType: z.enum([
     "building_damage",
+    "building_destroyed",
     "consumption_multiplier",
     "deposit_destroyed",
     "deposit_discovered",
@@ -61,6 +63,7 @@ const eventEffectBaseSchema = z.strictObject({
   jobId: z.number().int().optional().nullable(),
   managedPopulationInstanceId: z.string().uuid().optional().nullable(),
   depositInstanceId: z.string().uuid().optional().nullable(),
+  settlementBuildingId: z.string().uuid().optional().nullable(),
 });
 
 export const eventEffectSchema = eventEffectBaseSchema;

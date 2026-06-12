@@ -57,6 +57,7 @@ export type EventCreateWizardState = {
     jobId: number | null;
     managedPopulationInstanceId: string | null;
     depositInstanceId: string | null;
+    settlementBuildingId: string | null;
   }>;
   durationType: "instant" | "sustained";
   durationTransitions: number | null;

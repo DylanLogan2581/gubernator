@@ -234,6 +234,7 @@ export type SimEventStatus = "active" | "expired" | "pending" | "resolved";
 // phaseEvents switch, which is the Epic 7 hand-off contract.
 export type EventEffectType =
   | "building_damage"
+  | "building_destroyed"
   | "consumption_multiplier"
   | "deposit_destroyed"
   | "deposit_discovered"
@@ -255,6 +256,7 @@ export type SimEffect = {
   readonly jobId: string | null;
   readonly managedPopulationInstanceId: string | null;
   readonly depositInstanceId: string | null;
+  readonly settlementBuildingId: string | null;
 };
 
 export type SimEvent = {

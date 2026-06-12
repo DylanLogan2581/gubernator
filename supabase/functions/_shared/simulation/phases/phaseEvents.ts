@@ -14,6 +14,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import type {
+  BuildingStateChange,
   DepositUpdate,
   EventStatusPatch,
   SimEffect,
@@ -23,6 +24,7 @@ import type {
 } from "../simulationTypes.ts";
 
 export type PhaseEventsOutput = {
+  readonly buildingStateChanges: readonly BuildingStateChange[];
   readonly depositUpdates: readonly DepositUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logs: readonly SimulationLogEntry[];
@@ -35,6 +37,7 @@ function applyEffect(
   eventId: string,
   payload: Record<string, unknown>,
   pendingBuildingDamage: Set<string>,
+  pendingBuildingDestroys: BuildingStateChange[],
   pendingEventMultipliers: Map<
     string,
     {
@@ -60,6 +63,23 @@ function applyEffect(
           logs.push({
             category: "event.building_damage",
             payload: { buildingId, eventId },
+            phase: "events",
+          });
+        }
+        break;
+      }
+
+      case "building_destroyed": {
+        const settlementBuildingId = effect.settlementBuildingId ?? payload.settlementBuildingId;
+        if (typeof settlementBuildingId === "string") {
+          pendingBuildingDestroys.push({
+            settlementBuildingId,
+            toState: "auto_deconstructed",
+            missedUpkeepCountDelta: null,
+          });
+          logs.push({
+            category: "event.building_destroyed",
+            payload: { settlementBuildingId, eventId },
             phase: "events",
           });
         }
@@ -304,6 +324,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     pendingDepositDestroys,
   } = context.shared;
 
+  const buildingStateChanges: BuildingStateChange[] = [];
   const eventStatusPatches: EventStatusPatch[] = [];
   const logs: SimulationLogEntry[] = [];
   const notifications: SimulationNotification[] = [];
@@ -325,6 +346,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         jobId: null,
         managedPopulationInstanceId: null,
         depositInstanceId: null,
+        settlementBuildingId: null,
       }];
     
     for (const effect of effectsToApply) {
@@ -333,6 +355,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         event.id,
         event.effectPayloadJsonb,
         pendingBuildingDamage,
+        buildingStateChanges,
         pendingEventMultipliers,
         pendingManagedPopulationDeltas,
         pendingStockpiles,
@@ -391,5 +414,5 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     }),
   );
 
-  return { depositUpdates, eventStatusPatches, logs, notifications };
+  return { buildingStateChanges, depositUpdates, eventStatusPatches, logs, notifications };
 }

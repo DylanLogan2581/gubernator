@@ -373,7 +373,7 @@ export function runSimulation(
 
   const p13 = phaseLogsAndSnapshots(context, {
     allDeaths,
-    buildingStateChanges: p4.buildingStateChanges,
+    buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
     citizenBirths: p9.citizenBirths,
     consumptionDeltas,
     depositUpdates: p2.depositUpdates,
@@ -443,7 +443,7 @@ export function runSimulation(
         reason: "citizen_died",
       })),
     ],
-    buildingStateChanges: p4.buildingStateChanges,
+    buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
     buildingsCreated: p3.buildingsCreated,
     citizenBirths: p9.citizenBirths,
     citizenDeaths: allDeaths,

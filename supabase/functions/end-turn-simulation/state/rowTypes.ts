@@ -219,6 +219,7 @@ export type SupabaseEventEffectRow = {
   readonly job_id: string | null;
   readonly managed_population_instance_id: string | null;
   readonly deposit_instance_id: string | null;
+  readonly settlement_building_id: string | null;
 };
 
 // ---------------------------------------------------------------------------
