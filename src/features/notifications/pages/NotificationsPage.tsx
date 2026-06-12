@@ -123,6 +123,7 @@ export function NotificationsPage(): JSX.Element {
 
   const handleNationChange = (value: string): void => {
     setSelectedNationId(value === "all" ? null : value);
+    setSelectedSettlementId(null);
     setPage(1);
   };
 
@@ -144,6 +145,10 @@ export function NotificationsPage(): JSX.Element {
   const worlds = worldsQuery.data ?? [];
   const nations = nationsQuery.data ?? [];
   const settlements = settlementsQuery.data ?? [];
+  const filteredSettlements =
+    selectedNationId !== null
+      ? settlements.filter((s) => s.nationId === selectedNationId)
+      : settlements;
   const notifications = notificationsQuery.data?.notifications ?? [];
   const total = notificationsQuery.data?.total ?? 0;
   const pageCount = Math.ceil(total / PAGE_SIZE);
@@ -224,7 +229,7 @@ export function NotificationsPage(): JSX.Element {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All settlements</SelectItem>
-              {settlements.map((settlement) => (
+              {filteredSettlements.map((settlement) => (
                 <SelectItem key={settlement.id} value={settlement.id}>
                   {settlement.name}
                 </SelectItem>
