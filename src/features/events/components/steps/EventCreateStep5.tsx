@@ -11,7 +11,16 @@ type EventCreateStep5Props = {
   readonly groupName: string;
   readonly groupDescription: string;
   readonly scopeType: EventScopeType;
-  readonly effectType: string;
+  readonly effects: Array<{
+    effectType: string;
+    isPercent: boolean;
+    amountValue: number | null;
+    multiplierValue: number | null;
+    resourceId: string | null;
+    jobId: number | null;
+    managedPopulationInstanceId: string | null;
+    depositInstanceId: string | null;
+  }>;
   readonly durationType: EventDurationType;
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
@@ -24,7 +33,7 @@ export function EventCreateStep5({
   groupName,
   groupDescription,
   scopeType,
-  effectType,
+  effects,
   durationType,
   durationTransitions,
   activationTurn,
@@ -70,7 +79,8 @@ export function EventCreateStep5({
           rows={3}
         />
         <p className="text-xs text-muted-foreground">
-          {groupDescription.length} / {eventInputLimits.eventGroupDescriptionMax} characters
+          {groupDescription.length} /{" "}
+          {eventInputLimits.eventGroupDescriptionMax} characters
         </p>
       </div>
 
@@ -82,8 +92,10 @@ export function EventCreateStep5({
             <dd className="font-medium capitalize">{scopeType}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Effect type:</dt>
-            <dd className="font-medium">{effectType}</dd>
+            <dt className="text-muted-foreground">Effects:</dt>
+            <dd className="font-medium">
+              {effects.length} effect{effects.length === 1 ? "" : "s"}
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Duration:</dt>

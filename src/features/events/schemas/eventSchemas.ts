@@ -25,6 +25,46 @@ export type EventTargetSchema = z.input<typeof eventTargetSchema>;
 /**
  * Input for creating an event group with multiple events atomically.
  */
+// Effect type definitions for structured event effects
+export type EventEffectType =
+  | "building_damage"
+  | "consumption_multiplier"
+  | "deposit_discovered"
+  | "managed_population_change"
+  | "population_boost"
+  | "population_loss"
+  | "production_multiplier"
+  | "resource_drain"
+  | "resource_grant"
+  | "upkeep_multiplier";
+
+// Base effect schema with common fields
+const eventEffectBaseSchema = z.strictObject({
+  effectType: z.enum([
+    "building_damage",
+    "consumption_multiplier",
+    "deposit_discovered",
+    "managed_population_change",
+    "population_boost",
+    "population_loss",
+    "production_multiplier",
+    "resource_drain",
+    "resource_grant",
+    "upkeep_multiplier",
+  ]),
+  isPercent: z.boolean().default(false),
+  amountValue: z.number().optional().nullable(),
+  multiplierValue: z.number().optional().nullable(),
+  resourceId: z.string().uuid().optional().nullable(),
+  jobId: z.number().int().optional().nullable(),
+  managedPopulationInstanceId: z.string().uuid().optional().nullable(),
+  depositInstanceId: z.string().uuid().optional().nullable(),
+});
+
+export const eventEffectSchema = eventEffectBaseSchema;
+
+export type EventEffectSchema = z.input<typeof eventEffectSchema>;
+
 export const createEventGroupInputSchema = z.strictObject({
   worldId: worldIdSchema,
   groupName: z
@@ -36,11 +76,13 @@ export const createEventGroupInputSchema = z.strictObject({
     .max(eventInputLimits.eventGroupDescriptionMax, "Description is too long.")
     .optional()
     .nullable(),
-  effectType: z
-    .string()
-    .refine((v): boolean => v.trim().length > 0, "Effect type is required."),
+  effects: z
+    .array(eventEffectSchema)
+    .min(1, "At least one effect is required."),
   scopeType: z.enum(["world", "nation", "settlement"]),
-  targets: z.array(eventTargetSchema).min(1, "At least one target is required."),
+  targets: z
+    .array(eventTargetSchema)
+    .min(1, "At least one target is required."),
   durationType: z.enum(["instant", "sustained"]),
   durationTransitions: z
     .number()

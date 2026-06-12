@@ -11,7 +11,6 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -26,18 +25,14 @@ type EventCreateStep2Props = {
   readonly worldId: string;
   readonly scopeType: "world" | "nation" | "settlement" | null;
   readonly selectedIds: string[];
-  readonly effectType: string;
   readonly onSelectedIdsChange: (ids: string[]) => void;
-  readonly onEffectTypeChange: (type: string) => void;
 };
 
 export function EventCreateStep2({
   worldId,
   scopeType,
   selectedIds,
-  effectType,
   onSelectedIdsChange,
-  onEffectTypeChange,
 }: EventCreateStep2Props): JSX.Element {
   const [openPopover, setOpenPopover] = useState(false);
 
@@ -47,18 +42,22 @@ export function EventCreateStep2({
   const items: Array<{ id: string; name: string }> = (() => {
     if (scopeType === "nation") {
       return Array.from(
-        (nationsQuery.data as readonly { id: string; name: string }[] | undefined) ?? [],
+        (nationsQuery.data as
+          | readonly { id: string; name: string }[]
+          | undefined) ?? [],
       );
     }
     if (scopeType === "settlement") {
       return Array.from(
-        (settlementsQuery.data as unknown as readonly { id: string; name: string }[] | undefined) ?? [],
+        (settlementsQuery.data as unknown as
+          | readonly { id: string; name: string }[]
+          | undefined) ?? [],
       );
     }
     return [];
   })();
 
-  const toggleSelection = (id: string) => {
+  const toggleSelection = (id: string): void => {
     if (selectedIds.includes(id)) {
       onSelectedIdsChange(selectedIds.filter((sid) => sid !== id));
     } else {
@@ -66,7 +65,7 @@ export function EventCreateStep2({
     }
   };
 
-  const getSelectedLabel = () => {
+  const getSelectedLabel = (): string => {
     if (selectedIds.length === 0) {
       return scopeType === "nation"
         ? "Select nations…"
@@ -83,18 +82,6 @@ export function EventCreateStep2({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="effectType" className="text-base font-semibold">
-          Effect Type
-        </Label>
-        <Input
-          id="effectType"
-          placeholder="e.g., plague, abundance, famine"
-          value={effectType}
-          onChange={(e) => onEffectTypeChange(e.target.value)}
-        />
-      </div>
-
       {scopeType !== "world" && (
         <div className="space-y-2">
           <Label className="text-base font-semibold">
@@ -106,7 +93,10 @@ export function EventCreateStep2({
               <Button
                 variant="outline"
                 role="combobox"
-                className={cn("w-full justify-between", !selectedIds && "text-muted-foreground")}
+                className={cn(
+                  "w-full justify-between",
+                  selectedIds.length === 0 && "text-muted-foreground",
+                )}
               >
                 {getSelectedLabel()}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

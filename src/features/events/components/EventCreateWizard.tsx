@@ -18,6 +18,7 @@ import {
 } from "../mutations/eventMutations";
 import { eventQueryKeys } from "../queries/eventQueryKeys";
 
+import { EventCreateEffectsStep } from "./steps/EventCreateEffectsStep";
 import { EventCreateStep1 } from "./steps/EventCreateStep1";
 import { EventCreateStep2 } from "./steps/EventCreateStep2";
 import { EventCreateStep3 } from "./steps/EventCreateStep3";
@@ -33,10 +34,19 @@ type EventCreateWizardProps = {
 };
 
 export type EventCreateWizardState = {
-  step: 1 | 2 | 3 | 4 | 5;
+  step: 1 | 2 | 3 | 4 | 5 | 6;
   scopeType: "world" | "nation" | "settlement" | null;
   selectedIds: string[]; // nation or settlement IDs
-  effectType: string;
+  effects: Array<{
+    effectType: string;
+    isPercent: boolean;
+    amountValue: number | null;
+    multiplierValue: number | null;
+    resourceId: string | null;
+    jobId: number | null;
+    managedPopulationInstanceId: string | null;
+    depositInstanceId: string | null;
+  }>;
   durationType: "instant" | "sustained";
   durationTransitions: number | null;
   activationTurn: number;
@@ -48,7 +58,7 @@ const initialState: EventCreateWizardState = {
   step: 1,
   scopeType: null,
   selectedIds: [],
-  effectType: "",
+  effects: [],
   durationType: "instant",
   durationTransitions: null,
   activationTurn: 0,
@@ -75,19 +85,19 @@ export function EventCreateWizard({
   const handleNext = (): void => {
     setState((prev) => ({
       ...prev,
-      step: Math.min(5, prev.step + 1) as 1 | 2 | 3 | 4 | 5,
+      step: Math.min(6, prev.step + 1) as 1 | 2 | 3 | 4 | 5 | 6,
     }));
   };
 
   const handlePrev = (): void => {
     setState((prev) => ({
       ...prev,
-      step: Math.max(1, prev.step - 1) as 1 | 2 | 3 | 4 | 5,
+      step: Math.max(1, prev.step - 1) as 1 | 2 | 3 | 4 | 5 | 6,
     }));
   };
 
   const handleSubmit = async (): Promise<void> => {
-    if (state.scopeType === null) return;
+    if (state.scopeType === null || state.effects.length === 0) return;
     try {
       // Build targets array based on scope and selected IDs
       const targets = state.selectedIds.map((id) => ({
@@ -109,7 +119,17 @@ export function EventCreateWizard({
         worldId,
         groupName,
         groupDescription,
-        effectType: state.effectType,
+        effects: state.effects.map((e) => ({
+          effectType:
+            e.effectType as CreateEventGroupInput["effects"][number]["effectType"],
+          isPercent: e.isPercent,
+          amountValue: e.amountValue,
+          multiplierValue: e.multiplierValue,
+          resourceId: e.resourceId,
+          jobId: e.jobId,
+          managedPopulationInstanceId: e.managedPopulationInstanceId,
+          depositInstanceId: e.depositInstanceId,
+        })),
         scopeType: state.scopeType,
         targets,
         durationType: state.durationType,
@@ -144,7 +164,7 @@ export function EventCreateWizard({
       <SheetContent className="max-w-md sm:w-full">
         <SheetHeader>
           <SheetTitle>Create Event</SheetTitle>
-          <SheetDescription>Step {state.step} of 5</SheetDescription>
+          <SheetDescription>Step {state.step} of 6</SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-6 px-4 overflow-y-auto max-h-[calc(100vh-200px)]">
@@ -166,23 +186,28 @@ export function EventCreateWizard({
               worldId={worldId}
               scopeType={state.scopeType}
               selectedIds={state.selectedIds}
-              effectType={state.effectType}
               onSelectedIdsChange={(ids) => {
                 setState((prev) => ({
                   ...prev,
                   selectedIds: ids,
                 }));
               }}
-              onEffectTypeChange={(type) => {
+            />
+          )}
+
+          {state.step === 3 && (
+            <EventCreateEffectsStep
+              effects={state.effects}
+              onEffectsChange={(effects) => {
                 setState((prev) => ({
                   ...prev,
-                  effectType: type,
+                  effects,
                 }));
               }}
             />
           )}
 
-          {state.step === 3 && (
+          {state.step === 4 && (
             <EventCreateStep3
               durationType={state.durationType}
               durationTransitions={state.durationTransitions}
@@ -208,7 +233,7 @@ export function EventCreateWizard({
             />
           )}
 
-          {state.step === 4 && (
+          {state.step === 5 && (
             <EventCreateStep4
               createCitizenMemories={state.createCitizenMemories}
               memoryText={state.memoryText}
@@ -228,12 +253,12 @@ export function EventCreateWizard({
             />
           )}
 
-          {state.step === 5 && (
+          {state.step === 6 && (
             <EventCreateStep5
               groupName={groupName}
               groupDescription={groupDescription}
               scopeType={state.scopeType ?? "world"}
-              effectType={state.effectType}
+              effects={state.effects}
               durationType={state.durationType}
               durationTransitions={state.durationTransitions}
               activationTurn={state.activationTurn}
@@ -253,8 +278,15 @@ export function EventCreateWizard({
               Previous
             </Button>
 
-            {state.step < 5 ? (
-              <Button onClick={handleNext} className="ml-auto">
+            {state.step < 6 ? (
+              <Button
+                onClick={handleNext}
+                className="ml-auto"
+                disabled={
+                  (state.step === 2 && state.selectedIds.length === 0) ||
+                  (state.step === 3 && state.effects.length === 0)
+                }
+              >
                 Next
                 <ChevronRight className="h-4 w-4" />
               </Button>

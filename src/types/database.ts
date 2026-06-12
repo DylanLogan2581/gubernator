@@ -684,6 +684,90 @@ export type Database = {
           },
         ];
       };
+      event_effects: {
+        Row: {
+          amount_value: number | null;
+          created_at: string;
+          deposit_instance_id: string | null;
+          effect_type: string;
+          event_id: string;
+          extra_data_jsonb: Json;
+          id: string;
+          is_percent: boolean;
+          job_id: string | null;
+          managed_population_instance_id: string | null;
+          multiplier_value: number | null;
+          resource_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          amount_value?: number | null;
+          created_at?: string;
+          deposit_instance_id?: string | null;
+          effect_type: string;
+          event_id: string;
+          extra_data_jsonb?: Json;
+          id?: string;
+          is_percent?: boolean;
+          job_id?: string | null;
+          managed_population_instance_id?: string | null;
+          multiplier_value?: number | null;
+          resource_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          amount_value?: number | null;
+          created_at?: string;
+          deposit_instance_id?: string | null;
+          effect_type?: string;
+          event_id?: string;
+          extra_data_jsonb?: Json;
+          id?: string;
+          is_percent?: boolean;
+          job_id?: string | null;
+          managed_population_instance_id?: string | null;
+          multiplier_value?: number | null;
+          resource_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_effects_deposit_instance_id_fkey";
+            columns: ["deposit_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_managed_population_instance_id_fkey";
+            columns: ["managed_population_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       event_groups: {
         Row: {
           created_at: string;

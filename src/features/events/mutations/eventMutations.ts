@@ -60,6 +60,14 @@ export function createEventGroupMutationOptions({
     mutationFn: async (input: CreateEventGroupInput) => {
       const values = createEventGroupInputSchema.parse(input);
 
+      // Validate effects
+      if (values.effects.length === 0) {
+        throw new EventMutationError({
+          code: "event_input_invalid",
+          message: "At least one effect is required",
+        });
+      }
+
       // Validate that sustained events have duration_transitions
       if (
         values.durationType === "sustained" &&
@@ -80,7 +88,16 @@ export function createEventGroupMutationOptions({
           p_world_id: values.worldId,
           p_group_name: values.groupName,
           p_group_description: values.groupDescription ?? null,
-          p_effect_type: values.effectType,
+          p_effects: values.effects.map((e) => ({
+            effect_type: e.effectType,
+            is_percent: e.isPercent,
+            amount_value: e.amountValue,
+            multiplier_value: e.multiplierValue,
+            resource_id: e.resourceId,
+            job_id: e.jobId,
+            managed_population_instance_id: e.managedPopulationInstanceId,
+            deposit_instance_id: e.depositInstanceId,
+          })),
           p_scope_type: values.scopeType,
           p_targets: values.targets,
           p_duration_type: values.durationType,
