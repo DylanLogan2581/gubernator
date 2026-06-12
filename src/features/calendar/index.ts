@@ -1,6 +1,7 @@
 // Calendar feature — in-world calendar state tied to turn progression.
 // Implemented in Epic 2.
 export { WorldCalendarConfigPanel } from "./components/WorldCalendarConfigPanel";
+export { WorldDatePicker } from "./components/WorldDatePicker";
 export { calendarQueryKeys } from "./queries/calendarQueryKeys";
 export {
   SaveWorldCalendarConfigError,
@@ -19,7 +20,9 @@ export {
   type WorldCalendarConfig,
 } from "./schemas/calendarConfigSchemas";
 export {
+  calendarDateToTurnNumber,
   resolveTurnCalendarDate,
+  type CalendarDateInput,
   type TurnCalendarDate,
 } from "./utils/turnCalendarDates";
 export {

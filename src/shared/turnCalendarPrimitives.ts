@@ -66,6 +66,43 @@ export function resolveTurnCalendarDate(
   };
 }
 
+export type CalendarDateInput = {
+  readonly dayOfMonth: number;
+  readonly monthIndex: number;
+  readonly year: number;
+};
+
+/**
+ * Inverse of resolveTurnCalendarDate. Maps a calendar date back to a turn number.
+ * Throws RangeError if the date is before turn 1.
+ */
+export function calendarDateToTurnNumber(
+  config: TurnCalendarConfig,
+  date: CalendarDateInput,
+): number {
+  const daysPerYear = getDaysPerYear(config.months);
+  const startingDayOfYearIndex = getStartingDayOfYearIndex(config);
+
+  // Compute 0-based day-of-year index for the given date.
+  let dayOfYearIndex = date.dayOfMonth - 1;
+  for (const month of config.months) {
+    if (month.index === date.monthIndex) {
+      break;
+    }
+    dayOfYearIndex += month.dayCount;
+  }
+
+  const yearOffset = date.year - config.startingYear;
+  const resolvedDayIndex = yearOffset * daysPerYear + dayOfYearIndex;
+  const turnNumber = resolvedDayIndex - startingDayOfYearIndex + 1;
+
+  if (!Number.isInteger(turnNumber) || turnNumber < 1) {
+    throw new RangeError("Calendar date maps to a turn number before turn 1.");
+  }
+
+  return turnNumber;
+}
+
 export type CalendarDateFormatOptions = {
   dateFormatTemplate: string;
 };

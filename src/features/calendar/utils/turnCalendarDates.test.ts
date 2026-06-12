@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveTurnCalendarDate } from "./turnCalendarDates";
+import {
+  calendarDateToTurnNumber,
+  resolveTurnCalendarDate,
+} from "./turnCalendarDates";
 
 import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
 
@@ -114,5 +117,99 @@ describe("resolveTurnCalendarDate", () => {
     expect(() => resolveTurnCalendarDate(calendarConfig, 0)).toThrow(
       RangeError,
     );
+  });
+});
+
+describe("calendarDateToTurnNumber", () => {
+  it("round-trips turn 1 through resolveTurnCalendarDate", () => {
+    const date = resolveTurnCalendarDate(calendarConfig, 1);
+    expect(
+      calendarDateToTurnNumber(calendarConfig, {
+        year: date.year,
+        monthIndex: date.monthIndex,
+        dayOfMonth: date.dayOfMonth,
+      }),
+    ).toBe(1);
+  });
+
+  it("round-trips a mid-year turn", () => {
+    const turnNumber = 5;
+    const date = resolveTurnCalendarDate(calendarConfig, turnNumber);
+    expect(
+      calendarDateToTurnNumber(calendarConfig, {
+        year: date.year,
+        monthIndex: date.monthIndex,
+        dayOfMonth: date.dayOfMonth,
+      }),
+    ).toBe(turnNumber);
+  });
+
+  it("round-trips across a year boundary", () => {
+    // turn 9 = last day of year 12, turn 10 = first day of year 13
+    const turnNumber = 10;
+    const date = resolveTurnCalendarDate(calendarConfig, turnNumber);
+    expect(date.year).toBe(13);
+    expect(
+      calendarDateToTurnNumber(calendarConfig, {
+        year: date.year,
+        monthIndex: date.monthIndex,
+        dayOfMonth: date.dayOfMonth,
+      }),
+    ).toBe(turnNumber);
+  });
+
+  it("round-trips across a month boundary", () => {
+    // turn 3 = first day of Rainmonth
+    const turnNumber = 3;
+    const date = resolveTurnCalendarDate(calendarConfig, turnNumber);
+    expect(date.monthIndex).toBe(1);
+    expect(
+      calendarDateToTurnNumber(calendarConfig, {
+        year: date.year,
+        monthIndex: date.monthIndex,
+        dayOfMonth: date.dayOfMonth,
+      }),
+    ).toBe(turnNumber);
+  });
+
+  it("round-trips with a custom starting config (later month and day)", () => {
+    const customConfig = {
+      ...calendarConfig,
+      startingMonthIndex: 1,
+      startingDayOfMonth: 2,
+    };
+    for (const turnNumber of [1, 2, 4, 7]) {
+      const date = resolveTurnCalendarDate(customConfig, turnNumber);
+      expect(
+        calendarDateToTurnNumber(customConfig, {
+          year: date.year,
+          monthIndex: date.monthIndex,
+          dayOfMonth: date.dayOfMonth,
+        }),
+      ).toBe(turnNumber);
+    }
+  });
+
+  it("round-trips with a negative starting year", () => {
+    const customConfig = { ...calendarConfig, startingYear: -1 };
+    const turnNumber = 10;
+    const date = resolveTurnCalendarDate(customConfig, turnNumber);
+    expect(
+      calendarDateToTurnNumber(customConfig, {
+        year: date.year,
+        monthIndex: date.monthIndex,
+        dayOfMonth: date.dayOfMonth,
+      }),
+    ).toBe(turnNumber);
+  });
+
+  it("rejects a date that maps before turn 1", () => {
+    expect(() =>
+      calendarDateToTurnNumber(calendarConfig, {
+        year: calendarConfig.startingYear - 1,
+        monthIndex: 0,
+        dayOfMonth: 1,
+      }),
+    ).toThrow(RangeError);
   });
 });
