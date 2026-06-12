@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorldsRouteImport } from './routes/worlds'
 import { Route as SuperadminRouteImport } from './routes/superadmin'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorldsIndexRouteImport } from './routes/worlds.index'
 import { Route as SuperadminIndexRouteImport } from './routes/superadmin.index'
@@ -43,6 +44,11 @@ const SuperadminRoute = SuperadminRouteImport.update({
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -141,6 +147,7 @@ const WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/notifications': typeof NotificationsRoute
   '/sign-in': typeof SignInRoute
   '/superadmin': typeof SuperadminRouteWithChildren
   '/worlds': typeof WorldsRouteWithChildren
@@ -163,6 +170,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/notifications': typeof NotificationsRoute
   '/sign-in': typeof SignInRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
@@ -180,6 +188,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/notifications': typeof NotificationsRoute
   '/sign-in': typeof SignInRoute
   '/superadmin': typeof SuperadminRouteWithChildren
   '/worlds': typeof WorldsRouteWithChildren
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/notifications'
     | '/sign-in'
     | '/superadmin'
     | '/worlds'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/notifications'
     | '/sign-in'
     | '/auth/callback'
     | '/auth/set-password'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/notifications'
     | '/sign-in'
     | '/superadmin'
     | '/worlds'
@@ -265,6 +277,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  NotificationsRoute: typeof NotificationsRoute
   SignInRoute: typeof SignInRoute
   SuperadminRoute: typeof SuperadminRouteWithChildren
   WorldsRoute: typeof WorldsRouteWithChildren
@@ -293,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -509,6 +529,7 @@ const WorldsRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  NotificationsRoute: NotificationsRoute,
   SignInRoute: SignInRoute,
   SuperadminRoute: SuperadminRouteWithChildren,
   WorldsRoute: WorldsRouteWithChildren,

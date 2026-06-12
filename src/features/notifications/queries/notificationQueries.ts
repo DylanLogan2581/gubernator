@@ -1,10 +1,16 @@
-import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
+import {
+  mutationOptions,
+  queryOptions,
+  type UseMutationOptions,
+  type UseQueryOptions,
+} from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
+import { type Database } from "@/types/database";
 
 import { notificationQueryKeys } from "./notificationQueryKeys";
 
@@ -26,8 +32,24 @@ type TurnCompletedNotificationsQueryOptions = UseQueryOptions<
   readonly TurnCompletedNotification[],
   TurnCompletedNotificationsQueryKey
 >;
+type MarkNotificationReadMutationOptions = UseMutationOptions<
+  void,
+  AuthUiError,
+  string
+>;
+type MarkAllNotificationsReadMutationOptions = UseMutationOptions<
+  void,
+  AuthUiError,
+  void
+>;
 export type TurnCompletedNotificationsFilters = {
   readonly worldId?: string | null;
+};
+export type AllNotificationsFilters = {
+  readonly isRead?: boolean | null;
+  readonly limit?: number;
+  readonly offset?: number;
+  readonly type?: string | null;
 };
 type TurnCompletedNotificationRow = {
   readonly generated_at: string;
@@ -47,9 +69,56 @@ export type TurnCompletedNotification = {
   readonly worldId: string;
 };
 
+type AllNotificationRow = {
+  readonly citizen_id: string | null;
+  readonly event_id: string | null;
+  readonly generated_at: string;
+  readonly generated_in_transition_id: string | null;
+  readonly id: string;
+  readonly is_read: boolean;
+  readonly message_text: string;
+  readonly nation_id: string | null;
+  readonly notification_type: string;
+  readonly settlement_id: string | null;
+  readonly trade_route_id: string | null;
+  readonly world_id: string;
+};
+
+export type AllNotification = {
+  readonly citizenId: string | null;
+  readonly eventId: string | null;
+  readonly generatedAt: string;
+  readonly generatedInTransitionId: string | null;
+  readonly id: string;
+  readonly isRead: boolean;
+  readonly messageText: string;
+  readonly nationId: string | null;
+  readonly notificationType: string;
+  readonly settlementId: string | null;
+  readonly tradeRouteId: string | null;
+  readonly worldId: string;
+};
+
+type AllNotificationsResponse = {
+  readonly notifications: readonly AllNotification[];
+  readonly total: number;
+};
+
+type AllNotificationsQueryKey = ReturnType<
+  typeof notificationQueryKeys.allNotifications
+>;
+type AllNotificationsQueryOptions = UseQueryOptions<
+  AllNotificationsResponse,
+  AuthUiError,
+  AllNotificationsResponse,
+  AllNotificationsQueryKey
+>;
+
 const TURN_COMPLETED_NOTIFICATION_SELECT =
   "id,world_id,generated_in_transition_id,message_text,is_read,generated_at";
 const TURN_COMPLETED_NOTIFICATION_TYPE = "turn.completed";
+const ALL_NOTIFICATIONS_SELECT =
+  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,message_text,is_read,generated_at,generated_in_transition_id";
 
 export function unreadNotificationsCountQueryOptions(
   userId: string | null,
@@ -77,6 +146,32 @@ export function turnCompletedNotificationsQueryOptions(
     enabled: userId !== null,
     queryFn: () => getTurnCompletedNotifications(client, userId, worldId),
     queryKey: notificationQueryKeys.turnCompleted(userId, worldId),
+  });
+}
+
+export function allNotificationsQueryOptions(
+  userId: string | null,
+  filters: AllNotificationsFilters = {},
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): AllNotificationsQueryOptions {
+  const limit = filters.limit ?? 20;
+  const offset = filters.offset ?? 0;
+  const isRead = filters.isRead ?? null;
+  const type = filters.type ?? null;
+
+  // The client is the configured Supabase singleton in app code; tests inject a fake.
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    enabled: userId !== null,
+    queryFn: () =>
+      getAllNotifications(client, userId, limit, offset, isRead, type),
+    queryKey: notificationQueryKeys.allNotifications(
+      userId,
+      limit,
+      offset,
+      isRead,
+      type,
+    ),
   });
 }
 
@@ -131,6 +226,70 @@ async function getTurnCompletedNotifications(
   return data.map(toTurnCompletedNotification);
 }
 
+async function getAllNotifications(
+  client: GubernatorSupabaseClient,
+  userId: string | null,
+  limit: number,
+  offset: number,
+  isRead: boolean | null,
+  type: string | null,
+): Promise<AllNotificationsResponse> {
+  if (userId === null) {
+    return { notifications: [], total: 0 };
+  }
+
+  let countQuery = client
+    .from("notifications")
+    .select("count", { count: "exact", head: true })
+    .eq("recipient_user_id", userId);
+
+  if (isRead !== null) {
+    countQuery = countQuery.eq("is_read", isRead);
+  }
+
+  if (type !== null) {
+    countQuery = countQuery.eq(
+      "notification_type",
+      type as Database["public"]["Enums"]["notification_type"],
+    );
+  }
+
+  const { count, error: countError } = await countQuery;
+
+  if (countError !== null) {
+    throw normalizeSupabaseError(countError);
+  }
+
+  let dataQuery = client
+    .from("notifications")
+    .select(ALL_NOTIFICATIONS_SELECT)
+    .eq("recipient_user_id", userId)
+    .order("generated_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (isRead !== null) {
+    dataQuery = dataQuery.eq("is_read", isRead);
+  }
+
+  if (type !== null) {
+    dataQuery = dataQuery.eq(
+      "notification_type",
+      type as Database["public"]["Enums"]["notification_type"],
+    );
+  }
+
+  const { data, error } = await dataQuery;
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return {
+    notifications: data.map(toAllNotification),
+    total: count ?? 0,
+  };
+}
+
 function toTurnCompletedNotification(
   row: TurnCompletedNotificationRow,
 ): TurnCompletedNotification {
@@ -142,4 +301,61 @@ function toTurnCompletedNotification(
     messageText: row.message_text,
     worldId: row.world_id,
   };
+}
+
+function toAllNotification(row: AllNotificationRow): AllNotification {
+  return {
+    citizenId: row.citizen_id,
+    eventId: row.event_id,
+    generatedAt: row.generated_at,
+    generatedInTransitionId: row.generated_in_transition_id,
+    id: row.id,
+    isRead: row.is_read,
+    messageText: row.message_text,
+    nationId: row.nation_id,
+    notificationType: row.notification_type,
+    settlementId: row.settlement_id,
+    tradeRouteId: row.trade_route_id,
+    worldId: row.world_id,
+  };
+}
+
+export function markNotificationReadMutationOptions(
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): MarkNotificationReadMutationOptions {
+  return mutationOptions({
+    mutationFn: (notificationId: string) =>
+      markNotificationRead(client, notificationId),
+  });
+}
+
+export function markAllNotificationsReadMutationOptions(
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): MarkAllNotificationsReadMutationOptions {
+  return mutationOptions({
+    mutationFn: () => markAllNotificationsRead(client),
+  });
+}
+
+async function markNotificationRead(
+  client: GubernatorSupabaseClient,
+  notificationId: string,
+): Promise<void> {
+  const { error } = await client.rpc("mark_notification_read", {
+    notification_id: notificationId,
+  });
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+}
+
+async function markAllNotificationsRead(
+  client: GubernatorSupabaseClient,
+): Promise<void> {
+  const { error } = await client.rpc("mark_all_notifications_read");
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
 }

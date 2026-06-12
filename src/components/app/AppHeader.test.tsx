@@ -80,7 +80,9 @@ describe("AppHeader", () => {
     expect(
       await screen.findByRole("button", { name: "Notifications (2 unread)" }),
     ).toBeDefined();
-    expect(clientFixture.select).toHaveBeenCalledTimes(2);
+    // NotificationsPopover makes two queries: unread count + turn completed notifications
+    // Initial render: 2 calls, after invalidation: 2 calls = 4 total
+    expect(clientFixture.select).toHaveBeenCalledTimes(4);
   });
 
   it("keeps notification control after header actions", () => {
@@ -123,14 +125,19 @@ function createClient({
 } {
   let unreadCount = initialUnreadCount;
   const select = vi.fn(() => ({
-    eq: vi.fn(() => ({
-      eq: vi.fn().mockImplementation(() =>
-        Promise.resolve({
-          count: unreadCount,
-          error: null,
-        }),
-      ),
-    })),
+    eq: vi.fn(function (this: unknown) {
+      const queryChain = {
+        eq: vi.fn().mockImplementation(() =>
+          Promise.resolve({
+            count: unreadCount,
+            data: [],
+            error: null,
+          }),
+        ),
+        order: vi.fn().mockReturnThis(),
+      };
+      return queryChain;
+    }),
   }));
 
   return {

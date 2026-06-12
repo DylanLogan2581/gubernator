@@ -1,0 +1,152 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ChevronRight, Bell } from "lucide-react";
+import { type JSX } from "react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { currentSessionQueryOptions } from "@/features/auth";
+import {
+  markAllNotificationsReadMutationOptions,
+  markNotificationReadMutationOptions,
+  turnCompletedNotificationsQueryOptions,
+  unreadNotificationsCountQueryOptions,
+} from "@/features/notifications";
+
+type NotificationsPopoverProps = {
+  readonly className?: string;
+};
+
+export function NotificationsPopover({
+  className,
+}: NotificationsPopoverProps): JSX.Element {
+  const currentSessionQuery = useQuery(currentSessionQueryOptions());
+  const userId = currentSessionQuery.data?.user.id ?? null;
+
+  const unreadCountQuery = useQuery(
+    unreadNotificationsCountQueryOptions(userId),
+  );
+  const unreadCount = unreadCountQuery.data ?? 0;
+
+  const notificationsQuery = useQuery(
+    turnCompletedNotificationsQueryOptions(userId),
+  );
+  const notifications = notificationsQuery.data ?? [];
+
+  const markReadMutation = useMutation(markNotificationReadMutationOptions());
+
+  const markAllReadMutation = useMutation(
+    markAllNotificationsReadMutationOptions(),
+  );
+
+  const handleMarkRead = (notificationId: string): void => {
+    markReadMutation.mutate(notificationId, {
+      onSuccess: () => {
+        void unreadCountQuery.refetch();
+        void notificationsQuery.refetch();
+      },
+    });
+  };
+
+  const handleMarkAllRead = (): void => {
+    markAllReadMutation.mutate(undefined, {
+      onSuccess: () => {
+        void unreadCountQuery.refetch();
+        void notificationsQuery.refetch();
+      },
+    });
+  };
+
+  const badgeText = unreadCount > 99 ? "99+" : unreadCount.toString();
+  const notificationLabel =
+    unreadCount > 0
+      ? `Notifications (${badgeText} unread)`
+      : ("Notifications" as const);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={notificationLabel}
+          className={`relative ${className ?? ""}`}
+        >
+          <Bell className="size-4" />
+          {unreadCount > 0 ? (
+            <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[0.625rem] font-medium leading-none text-destructive-foreground">
+              {badgeText}
+            </span>
+          ) : null}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0">
+        <div className="flex flex-col">
+          <div className="border-b px-4 py-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Notifications</h2>
+              {unreadCount > 0 ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAllRead}
+                  disabled={markAllReadMutation.isPending}
+                >
+                  Mark all as read
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          <ScrollArea className="h-96">
+            <div className="flex flex-col">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  No notifications
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`border-b px-4 py-3 transition-colors hover:bg-muted ${
+                      !notification.isRead ? "bg-muted/50" : ""
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="text-sm">{notification.messageText}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {/* eslint-disable-next-line no-restricted-syntax */}
+                          {new Date(notification.generatedAt).toLocaleString()}
+                        </p>
+                      </div>
+                      {!notification.isRead ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMarkRead(notification.id)}
+                          disabled={markReadMutation.isPending}
+                          className="shrink-0"
+                        >
+                          <ChevronRight className="size-4" />
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+          <div className="border-t px-4 py-2">
+            <Button variant="ghost" className="w-full" size="sm" asChild>
+              <a href="/notifications">View all notifications</a>
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}

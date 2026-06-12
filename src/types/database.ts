@@ -3085,6 +3085,12 @@ export type Database = {
           settlement_building_id: string;
         }[];
       };
+      mark_all_notifications_read: {
+        Args: never;
+        Returns: {
+          updated_count: number;
+        }[];
+      };
       mark_citizen_dead: {
         Args: { p_citizen_id: string; p_reason: string };
         Returns: {
@@ -3126,6 +3132,14 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      mark_notification_read: {
+        Args: { notification_id: string };
+        Returns: {
+          id: string;
+          is_read: boolean;
+          updated_at: string;
+        }[];
       };
       mark_partnership_widowed: {
         Args: {
