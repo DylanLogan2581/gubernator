@@ -155,7 +155,7 @@ begin
       (v_target->>'scope_name')::text,
       null,
       'pending',
-      (p_effects->>0->>'effect_type')::text,
+      (p_effects->0->>'effect_type')::text,
       '{}'::jsonb,
       p_activate_on_transition_after_turn_number,
       p_scope_type,
