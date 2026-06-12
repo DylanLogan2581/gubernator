@@ -5,9 +5,7 @@ import { Label } from "@/components/ui/label";
 
 type EventCreateStep1Props = {
   readonly scopeType: "world" | "nation" | "settlement" | null;
-  readonly onScopeTypeChange: (
-    type: "world" | "nation" | "settlement"
-  ) => void;
+  readonly onScopeTypeChange: (type: "world" | "nation" | "settlement") => void;
 };
 
 export function EventCreateStep1({
@@ -28,7 +26,7 @@ export function EventCreateStep1({
       <div className="space-y-2">
         <Button
           variant={scopeType === "world" ? "default" : "outline"}
-          className="w-full justify-start"
+          className="w-full justify-start py-3 h-auto"
           onClick={() => onScopeTypeChange("world")}
         >
           <div className="text-left">
@@ -41,7 +39,7 @@ export function EventCreateStep1({
 
         <Button
           variant={scopeType === "nation" ? "default" : "outline"}
-          className="w-full justify-start"
+          className="w-full justify-start py-3 h-auto"
           onClick={() => onScopeTypeChange("nation")}
         >
           <div className="text-left">
@@ -54,7 +52,7 @@ export function EventCreateStep1({
 
         <Button
           variant={scopeType === "settlement" ? "default" : "outline"}
-          className="w-full justify-start"
+          className="w-full justify-start py-3 h-auto"
           onClick={() => onScopeTypeChange("settlement")}
         >
           <div className="text-left">

@@ -147,7 +147,7 @@ export function EventCreateWizard({
           <SheetDescription>Step {state.step} of 5</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-6 space-y-6 px-4 overflow-y-auto max-h-[calc(100vh-200px)]">
           {state.step === 1 && (
             <EventCreateStep1
               scopeType={state.scopeType}
