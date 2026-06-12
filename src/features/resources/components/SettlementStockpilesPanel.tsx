@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { useState, type FormEvent, type JSX } from "react";
+import { useMemo, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { settlementForecastQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -40,21 +41,81 @@ import { updateSettlementStockpileInputSchema } from "../schemas/settlementStock
 
 import type { SettlementStockpile } from "../queries/settlementStockpilesQueries";
 
+type ForecastDeltaMap = ReadonlyMap<string, number>;
+
+function parseForecastDeltaMap(
+  forecastSnapshot: unknown,
+  settlementId: string,
+): ForecastDeltaMap {
+  if (
+    typeof forecastSnapshot !== "object" ||
+    forecastSnapshot === null ||
+    !("bySettlement" in forecastSnapshot)
+  ) {
+    return new Map();
+  }
+  const bySettlement = (forecastSnapshot as Record<string, unknown>)
+    .bySettlement;
+  if (typeof bySettlement !== "object" || bySettlement === null) {
+    return new Map();
+  }
+  const settlement = (bySettlement as Record<string, unknown>)[settlementId];
+  if (
+    typeof settlement !== "object" ||
+    settlement === null ||
+    !("resourceDeltas" in settlement)
+  ) {
+    return new Map();
+  }
+  const deltas = (settlement as Record<string, unknown>).resourceDeltas;
+  if (!Array.isArray(deltas)) {
+    return new Map();
+  }
+  const map = new Map<string, number>();
+  for (const delta of deltas) {
+    if (
+      typeof delta === "object" &&
+      delta !== null &&
+      "resourceId" in delta &&
+      "netDelta" in delta &&
+      typeof (delta as Record<string, unknown>).resourceId === "string" &&
+      typeof (delta as Record<string, unknown>).netDelta === "number"
+    ) {
+      map.set(
+        (delta as Record<string, unknown>).resourceId as string,
+        (delta as Record<string, unknown>).netDelta as number,
+      );
+    }
+  }
+  return map;
+}
+
 type SettlementStockpilesPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
   readonly settlementId: string;
+  readonly worldId: string;
 };
 
 export function SettlementStockpilesPanel({
   canAdmin,
   isArchived,
   settlementId,
+  worldId,
 }: SettlementStockpilesPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const stockpilesQuery = useQuery(
     settlementStockpilesByIdQueryOptions(settlementId),
   );
+  const forecastQuery = useQuery(settlementForecastQueryOptions(worldId));
+
+  const forecastDeltaMap = useMemo<ForecastDeltaMap>(() => {
+    const snapshot = forecastQuery.data?.forecastSnapshot;
+    if (snapshot === undefined || snapshot === null) {
+      return new Map();
+    }
+    return parseForecastDeltaMap(snapshot, settlementId);
+  }, [forecastQuery.data, settlementId]);
 
   return (
     <Card
@@ -69,7 +130,7 @@ export function SettlementStockpilesPanel({
       </h2>
       <CardContent>
         {stockpilesQuery.isPending ? (
-          <TableSkeleton columnCount={5} rowCount={5} />
+          <TableSkeleton columnCount={6} rowCount={5} />
         ) : stockpilesQuery.isError ? (
           <ErrorState
             title="Stockpiles could not be loaded"
@@ -83,6 +144,7 @@ export function SettlementStockpilesPanel({
         ) : (
           <StockpilesTable
             canAdmin={canAdmin}
+            forecastDeltaMap={forecastDeltaMap}
             isArchived={isArchived}
             queryClient={queryClient}
             stockpiles={sortStockpiles(stockpilesQuery.data)}
@@ -106,11 +168,13 @@ function sortStockpiles(
 
 function StockpilesTable({
   canAdmin,
+  forecastDeltaMap,
   isArchived,
   queryClient,
   stockpiles,
 }: {
   readonly canAdmin: boolean;
+  readonly forecastDeltaMap: ForecastDeltaMap;
   readonly isArchived: boolean;
   readonly queryClient: QueryClient;
   readonly stockpiles: readonly SettlementStockpile[];
@@ -131,6 +195,9 @@ function StockpilesTable({
             <TableHead scope="col" className="tabular-nums">
               Cap
             </TableHead>
+            <TableHead scope="col" className="tabular-nums">
+              Forecast
+            </TableHead>
             <TableHead scope="col" className="w-16" aria-label="Status" />
             <TableHead scope="col" className="w-24" aria-label="Actions" />
           </TableRow>
@@ -140,6 +207,7 @@ function StockpilesTable({
             <StockpileRow
               key={stockpile.resourceId}
               canEdit={canEdit}
+              forecastDelta={forecastDeltaMap.get(stockpile.resourceId)}
               stockpile={stockpile}
               onEdit={() => {
                 setEditingStockpile(stockpile);
@@ -164,10 +232,12 @@ function StockpilesTable({
 
 function StockpileRow({
   canEdit,
+  forecastDelta,
   stockpile,
   onEdit,
 }: {
   readonly canEdit: boolean;
+  readonly forecastDelta: number | undefined;
   readonly onEdit: () => void;
   readonly stockpile: SettlementStockpile;
 }): JSX.Element {
@@ -188,6 +258,21 @@ function StockpileRow({
       </TableCell>
       <TableCell className="py-2 pr-4 tabular-nums">
         {stockpile.effectiveCap.toLocaleString()}
+      </TableCell>
+      <TableCell className="py-2 pr-4 tabular-nums">
+        {forecastDelta === undefined ? (
+          <span className="text-muted-foreground">—</span>
+        ) : forecastDelta > 0 ? (
+          <span className="text-green-600 dark:text-green-500">
+            +{forecastDelta.toLocaleString()}
+          </span>
+        ) : forecastDelta < 0 ? (
+          <span className="text-red-600 dark:text-red-500">
+            {forecastDelta.toLocaleString()}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">0</span>
+        )}
       </TableCell>
       <TableCell className="w-16 py-2 pr-2">
         {atCap ? (

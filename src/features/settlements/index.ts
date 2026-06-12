@@ -26,6 +26,7 @@ export {
   updateSettlementCoordinatesMutationOptions,
   updateSettlementDetailsMutationOptions,
 } from "./mutations/settlementsMutations";
+export { settlementForecastQueryOptions } from "./queries/settlementForecastQueries";
 export {
   settlementByIdQueryOptions,
   settlementsByWorldQueryOptions,

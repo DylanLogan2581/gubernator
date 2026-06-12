@@ -29,6 +29,7 @@ vi.mock("sonner", () => ({
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000001";
 const FOOD_RESOURCE_ID = "00000000-0000-0000-0000-000000000002";
 const WATER_RESOURCE_ID = "00000000-0000-0000-0000-000000000003";
+const WORLD_ID = "00000000-0000-0000-0000-000000000010";
 
 describe("SettlementStockpilesPanel", () => {
   beforeEach(() => {
@@ -294,6 +295,114 @@ describe("SettlementStockpilesPanel", () => {
 
     expect(await screen.findByText("No stockpiles")).toBeDefined();
   });
+
+  it("shows forecast column header", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [createStockpileRow({ resource_name: "Food" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByText("Forecast")).toBeDefined();
+  });
+
+  it("shows — when no forecast snapshot exists", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [createStockpileRow({ resource_name: "Food" })],
+        forecastRow: null,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByText("—")).toBeDefined();
+  });
+
+  it("shows positive net delta with + prefix for forecast", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [createStockpileRow({ resource_name: "Food" })],
+        forecastRow: {
+          id: "transition-1",
+          forecast_snapshot_jsonb: {
+            bySettlement: {
+              [SETTLEMENT_ID]: {
+                resourceDeltas: [
+                  { resourceId: FOOD_RESOURCE_ID, netDelta: 10 },
+                ],
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByText("+10")).toBeDefined();
+  });
+
+  it("shows negative net delta for forecast", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [createStockpileRow({ resource_name: "Food" })],
+        forecastRow: {
+          id: "transition-1",
+          forecast_snapshot_jsonb: {
+            bySettlement: {
+              [SETTLEMENT_ID]: {
+                resourceDeltas: [
+                  { resourceId: FOOD_RESOURCE_ID, netDelta: -20 },
+                ],
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByText("-20")).toBeDefined();
+  });
+
+  it("shows — for resources not in forecast snapshot", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [
+          createStockpileRow({ resource_name: "Food" }),
+          createStockpileRow({
+            resource_id: WATER_RESOURCE_ID,
+            resource_name: "Fresh Water",
+          }),
+        ],
+        forecastRow: {
+          id: "transition-1",
+          forecast_snapshot_jsonb: {
+            bySettlement: {
+              [SETTLEMENT_ID]: {
+                // only Food in forecast, not Water
+                resourceDeltas: [{ resourceId: FOOD_RESOURCE_ID, netDelta: 5 }],
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByText("+5")).toBeDefined();
+    expect(screen.getByText("—")).toBeDefined();
+  });
 });
 
 function renderPanel({
@@ -309,6 +418,7 @@ function renderPanel({
         canAdmin={canAdmin}
         isArchived={isArchived}
         settlementId={SETTLEMENT_ID}
+        worldId={WORLD_ID}
       />
     </QueryClientProvider>,
   );
@@ -345,28 +455,47 @@ function createStockpileRow(
   };
 }
 
+type TestForecastRow = {
+  readonly id: string;
+  readonly forecast_snapshot_jsonb: unknown;
+};
+
 function createClient({
   stockpileRows,
+  forecastRow = null,
   rpcMock = vi.fn().mockReturnValue({
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   }),
 }: {
   readonly stockpileRows: readonly TestStockpileRow[];
+  readonly forecastRow?: TestForecastRow | null;
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 }): {
   readonly from: ReturnType<typeof vi.fn>;
   readonly rpc: ReturnType<typeof vi.fn>;
 } {
-  const selectBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => selectBuilder),
-    order: vi.fn(() => selectBuilder),
+  const stockpilesSelectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => stockpilesSelectBuilder),
+    order: vi.fn(() => stockpilesSelectBuilder),
     returns: vi.fn().mockResolvedValue({ data: stockpileRows, error: null }),
+  };
+
+  const forecastSelectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => forecastSelectBuilder),
+    neq: vi.fn(() => forecastSelectBuilder),
+    order: vi.fn(() => forecastSelectBuilder),
+    limit: vi.fn(() => forecastSelectBuilder),
+    returns: vi.fn(() => forecastSelectBuilder),
+    maybeSingle: vi.fn().mockResolvedValue({ data: forecastRow, error: null }),
   };
 
   return {
     from: vi.fn((table: string) => {
       if (table === "settlement_stockpiles_view") {
-        return { select: vi.fn(() => selectBuilder) };
+        return { select: vi.fn(() => stockpilesSelectBuilder) };
+      }
+      if (table === "turn_transitions") {
+        return { select: vi.fn(() => forecastSelectBuilder) };
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
