@@ -217,6 +217,71 @@ export type Database = {
           },
         ];
       };
+      citizen_memories: {
+        Row: {
+          citizen_id: string;
+          created_at: string;
+          created_by_user_id: string | null;
+          event_id: string | null;
+          id: string;
+          memory_text: string;
+          occurred_on_turn_number: number;
+          source: string;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id: string;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          event_id?: string | null;
+          id?: string;
+          memory_text: string;
+          occurred_on_turn_number: number;
+          source: string;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          event_id?: string | null;
+          id?: string;
+          memory_text?: string;
+          occurred_on_turn_number?: number;
+          source?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "citizen_memories_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_memories_created_by_user_id_fkey";
+            columns: ["created_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_memories_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_memories_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       citizens: {
         Row: {
           born_on_turn_number: number | null;
@@ -2251,6 +2316,16 @@ export type Database = {
       _table_privs: { Args: never; Returns: unknown[] };
       _temptypes: { Args: { "": string }; Returns: string };
       _todo: { Args: never; Returns: string };
+      add_citizen_memory: {
+        Args: {
+          p_citizen_id: string;
+          p_memory_text: string;
+          p_occurred_on_turn_number: number;
+        };
+        Returns: {
+          id: string;
+        }[];
+      };
       add_settlement_building_as_admin: {
         Args: {
           p_blueprint_id: string;
@@ -2284,6 +2359,7 @@ export type Database = {
       apply_turn_transition: {
         Args: {
           p_expected_turn_number: number;
+          p_forecast_snapshot_jsonb?: Json;
           p_payload: Json;
           p_transition_id: string;
           p_world_id: string;
@@ -2356,6 +2432,10 @@ export type Database = {
           project_id: string;
           unassigned_citizen_count: number;
         }[];
+      };
+      cancel_event_or_group: {
+        Args: { p_event_id: string; p_group_id: string };
+        Returns: Json;
       };
       cancel_trade_route: {
         Args: { p_route_id: string };
@@ -2537,6 +2617,22 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      create_event_group_with_events: {
+        Args: {
+          p_activate_on_transition_after_turn_number: number;
+          p_create_citizen_memories: boolean;
+          p_duration_transitions: number;
+          p_duration_type: string;
+          p_effect_type: string;
+          p_group_description: string;
+          p_group_name: string;
+          p_memory_text: string;
+          p_scope_type: string;
+          p_targets: Json;
+          p_world_id: string;
+        };
+        Returns: Json;
       };
       create_managed_population_instance: {
         Args: {
@@ -2770,6 +2866,10 @@ export type Database = {
       default_calendar_config: { Args: never; Returns: Json };
       default_naming_config: { Args: never; Returns: Json };
       default_npc_flavor_config: { Args: never; Returns: Json };
+      delete_citizen_memory: {
+        Args: { p_memory_id: string };
+        Returns: undefined;
+      };
       diag:
         | {
             Args: { msg: unknown };
@@ -3138,7 +3238,6 @@ export type Database = {
         Returns: {
           id: string;
           is_read: boolean;
-          updated_at: string;
         }[];
       };
       mark_partnership_widowed: {
@@ -4016,6 +4115,16 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      update_citizen_memory: {
+        Args: {
+          p_memory_id: string;
+          p_memory_text: string;
+          p_occurred_on_turn_number: number;
+        };
+        Returns: {
+          id: string;
+        }[];
+      };
       update_settlement_coordinates: {
         Args: { p_coord_x: number; p_coord_z: number; p_settlement_id: string };
         Returns: {
@@ -4058,7 +4167,11 @@ export type Database = {
         | "settlement.starvation_occurred"
         | "trade_route.paused"
         | "trade_route.resumed"
-        | "building.recovered";
+        | "building.recovered"
+        | "event.activated"
+        | "event.expired"
+        | "player.died"
+        | "player.widowed";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -4220,6 +4333,10 @@ export const Constants = {
         "trade_route.paused",
         "trade_route.resumed",
         "building.recovered",
+        "event.activated",
+        "event.expired",
+        "player.died",
+        "player.widowed",
       ],
     },
   },

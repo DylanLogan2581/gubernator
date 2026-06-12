@@ -496,7 +496,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'nation manager (non-world-admin) cannot execute apply_turn_transition'
@@ -509,7 +509,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'settlement manager (non-world-admin) cannot execute apply_turn_transition'
@@ -522,7 +522,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'outsider (no world access) cannot execute apply_turn_transition'
@@ -535,7 +535,7 @@ select
   ok (
     not has_function_privilege(
       'anon',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'anon role cannot execute apply_turn_transition'
