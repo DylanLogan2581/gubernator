@@ -54,6 +54,12 @@ type EventCreateEffectsStepProps = {
   readonly scopeType: "world" | "nation" | "settlement" | null;
 };
 
+// Multiplier effect types and their targets:
+// - production_multiplier: job output (optionally scoped by job or building)
+// - consumption_multiplier: citizen food/water consumption
+// - upkeep_multiplier: building upkeep costs only (managed populations have no upkeep)
+// Note: managed population upkeep multiplier not added because managed populations
+// (animals, etc.) do not incur upkeep costs in the simulation.
 const EFFECT_TYPE_OPTIONS: Array<{
   value: EventEffectType;
   label: string;
@@ -78,18 +84,19 @@ const EFFECT_TYPE_OPTIONS: Array<{
   },
   {
     value: "production_multiplier",
-    label: "Production Multiplier",
-    description: "Modify production rates",
+    label: "Job Production Multiplier",
+    description:
+      "Multiply job output production (optionally scoped by job or building)",
   },
   {
     value: "consumption_multiplier",
-    label: "Consumption Multiplier",
-    description: "Modify resource consumption rates",
+    label: "Citizen Consumption Multiplier",
+    description: "Multiply citizen food and water consumption",
   },
   {
     value: "upkeep_multiplier",
-    label: "Upkeep Multiplier",
-    description: "Modify building upkeep rates",
+    label: "Building Upkeep Multiplier",
+    description: "Multiply building upkeep costs",
   },
   {
     value: "building_damage",
@@ -458,6 +465,24 @@ function EffectEditor({
                 })
               }
             />
+            {effect.effectType === "production_multiplier" && (
+              <p className="text-sm text-muted-foreground">
+                Affects job output production. Can optionally be scoped to a
+                specific job or building type by setting job ID or building
+                blueprint ID in the event payload.
+              </p>
+            )}
+            {effect.effectType === "consumption_multiplier" && (
+              <p className="text-sm text-muted-foreground">
+                Affects citizen food and water consumption rates.
+              </p>
+            )}
+            {effect.effectType === "upkeep_multiplier" && (
+              <p className="text-sm text-muted-foreground">
+                Affects building upkeep costs for all buildings in the
+                settlement.
+              </p>
+            )}
           </div>
         )}
 
@@ -472,7 +497,8 @@ function EffectEditor({
               <p className="text-sm text-muted-foreground">
                 No settlements selected
               </p>
-            ) : allDeposits.length === 0 && depositQueries.some(q => q.isLoading) ? (
+            ) : allDeposits.length === 0 &&
+              depositQueries.some((q) => q.isLoading) ? (
               <p className="text-sm text-muted-foreground">
                 Loading deposits...
               </p>
@@ -483,16 +509,14 @@ function EffectEditor({
             ) : (
               <div className="space-y-2 rounded-md border p-3">
                 {allDeposits.map((deposit) => (
-                  <label
-                    key={deposit.id}
-                    className="flex items-center gap-2"
-                  >
+                  <label key={deposit.id} className="flex items-center gap-2">
                     <Checkbox
                       checked={effect.depositInstanceId === deposit.id}
                       onCheckedChange={(checked) => {
                         onUpdate({
                           ...effect,
-                          depositInstanceId: checked === true ? deposit.id : null,
+                          depositInstanceId:
+                            checked === true ? deposit.id : null,
                         });
                       }}
                     />
