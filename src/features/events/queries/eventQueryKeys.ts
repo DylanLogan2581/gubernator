@@ -12,4 +12,8 @@ export const eventQueryKeys = {
   groupDetail: (worldId: string, groupId: string) =>
     [...eventQueryKeys.byWorld(worldId), "group", groupId] as const,
   effectTypes: () => [...eventQueryKeys.all, "effect-types"] as const,
+  bySettlement: (worldId: string, settlementId: string) =>
+    [...eventQueryKeys.byWorld(worldId), "settlement", settlementId] as const,
+  byNation: (worldId: string, nationId: string) =>
+    [...eventQueryKeys.byWorld(worldId), "nation", nationId] as const,
 } as const;

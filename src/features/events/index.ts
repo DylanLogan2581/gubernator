@@ -1,6 +1,7 @@
 // Events feature — create, list, and manage world events.
 // UI components and RPC mutations for atomic multi-target event creation.
 
+export { ActiveEventsCard } from "./components/ActiveEventsCard";
 export { EventsPage } from "./components/EventsPage";
 export { EventsList } from "./components/EventsList";
 export { EventCreateWizard } from "./components/EventCreateWizard";
@@ -15,6 +16,8 @@ export {
 } from "./mutations/eventMutations";
 
 export {
+  activeNationEventsQueryOptions,
+  activeSettlementEventsQueryOptions,
   eventDetailQueryOptions,
   eventsListQueryOptions,
   isEventsError,

@@ -6,6 +6,7 @@ import { useEffect, type JSX } from "react";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { ActiveEventsCard } from "@/features/events";
 import { NationNamesetCard } from "@/features/namesets";
 import {
   currentAccessContextQueryOptions,
@@ -254,6 +255,8 @@ function NationDetailLoaded({
         nation={nation}
         queryClient={queryClient}
       />
+
+      <ActiveEventsCard scope="nation" scopeId={nation.id} worldId={worldId} />
 
       {canToggleHidden ? (
         <NationHiddenToggleSection nation={nation} queryClient={queryClient} />

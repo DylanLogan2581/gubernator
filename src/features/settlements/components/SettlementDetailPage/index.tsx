@@ -10,6 +10,7 @@ import { SettlementBuildingsPanel } from "@/features/buildings";
 import { CitizensPanel, SettlementAssignmentBoard } from "@/features/citizens";
 import { SettlementConstructionPanel } from "@/features/construction";
 import { SettlementDepositsPanel } from "@/features/deposits";
+import { ActiveEventsCard } from "@/features/events";
 import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
 import { SettlementNamesetCard } from "@/features/namesets";
 import {
@@ -361,6 +362,12 @@ function SettlementDetailLoaded({
             canManage={canManageSettlement}
             isArchived={isArchived}
             settlementId={settlement.id}
+            worldId={worldId}
+          />
+
+          <ActiveEventsCard
+            scope="settlement"
+            scopeId={settlement.id}
             worldId={worldId}
           />
 

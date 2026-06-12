@@ -45,16 +45,6 @@ type MutationFactoryOpts = {
   readonly queryClient: QueryClient;
 };
 
-function makeInvalidator(queryClient: QueryClient) {
-  return {
-    onSuccess: async (): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: eventQueryKeys.all,
-      });
-    },
-  };
-}
-
 /**
  * Mutation for creating an event group with multiple events atomically.
  */
@@ -73,15 +63,17 @@ export function createEventGroupMutationOptions({
       // Validate that sustained events have duration_transitions
       if (
         values.durationType === "sustained" &&
-        (!values.durationTransitions || values.durationTransitions <= 0)
+        (values.durationTransitions === null ||
+          values.durationTransitions === undefined ||
+          values.durationTransitions <= 0)
       ) {
-        throw new EventMutationError(
-          "event_input_invalid",
-          "Duration transitions required for sustained events",
-        );
+        throw new EventMutationError({
+          code: "event_input_invalid",
+          message: "Duration transitions required for sustained events",
+        });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const { data, error } = await (client.rpc as any)(
         "create_event_group_with_events",
         {
@@ -102,12 +94,12 @@ export function createEventGroupMutationOptions({
         },
       );
 
-      if (error) {
+      if (error !== null) {
         const normalized = normalizeSupabaseError(error);
-        throw new EventMutationError(
-          "event_mutation_failed",
-          normalized.message,
-        );
+        throw new EventMutationError({
+          code: "event_mutation_failed",
+          message: normalized.message,
+        });
       }
 
       return data as CreateEventGroupResult;
@@ -136,7 +128,7 @@ export function cancelEventMutationOptions({
     mutationFn: async (input: CancelEventInput) => {
       const values = cancelEventInputSchema.parse(input);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const { data, error } = await (client.rpc as any)(
         "cancel_event_or_group",
         {
@@ -145,12 +137,12 @@ export function cancelEventMutationOptions({
         },
       );
 
-      if (error) {
+      if (error !== null) {
         const normalized = normalizeSupabaseError(error);
-        throw new EventMutationError(
-          "event_mutation_failed",
-          normalized.message,
-        );
+        throw new EventMutationError({
+          code: "event_mutation_failed",
+          message: normalized.message,
+        });
       }
 
       return data as CancelEventResult;
@@ -179,7 +171,7 @@ export function cancelEventGroupMutationOptions({
     mutationFn: async (input: CancelEventGroupInput) => {
       const values = cancelEventGroupInputSchema.parse(input);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const { data, error } = await (client.rpc as any)(
         "cancel_event_or_group",
         {
@@ -188,12 +180,12 @@ export function cancelEventGroupMutationOptions({
         },
       );
 
-      if (error) {
+      if (error !== null) {
         const normalized = normalizeSupabaseError(error);
-        throw new EventMutationError(
-          "event_mutation_failed",
-          normalized.message,
-        );
+        throw new EventMutationError({
+          code: "event_mutation_failed",
+          message: normalized.message,
+        });
       }
 
       return data as CancelEventResult;
