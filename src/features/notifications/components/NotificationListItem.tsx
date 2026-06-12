@@ -2,7 +2,7 @@ import { ChevronRight } from "lucide-react";
 import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
-import { type AllNotification } from "@/features/notifications";
+import { type AllNotification, getDeepLink } from "@/features/notifications";
 
 type NotificationListItemProps = {
   readonly notification: AllNotification;
@@ -15,7 +15,7 @@ export function NotificationListItem({
   onMarkRead,
   isMarkingRead,
 }: NotificationListItemProps): JSX.Element {
-  const deepLink = getDeeLink(notification);
+  const deepLink = getDeepLink(notification);
 
   const deepLinkElement =
     deepLink !== null ? (
@@ -57,34 +57,4 @@ export function NotificationListItem({
       ) : null}
     </div>
   );
-}
-
-function getDeeLink(
-  notification: AllNotification,
-): { href: string; label: string } | null {
-  if (notification.settlementId !== null && notification.nationId !== null) {
-    return {
-      href: `/worlds/${notification.worldId}/nations/${notification.nationId}/settlements/${notification.settlementId}`,
-      label: "View settlement",
-    };
-  }
-
-  if (notification.nationId !== null) {
-    return {
-      href: `/worlds/${notification.worldId}/nations/${notification.nationId}`,
-      label: "View nation",
-    };
-  }
-
-  if (notification.eventId !== null) {
-    return {
-      href: `/worlds/${notification.worldId}/events/${notification.eventId}`,
-      label: "View event",
-    };
-  }
-
-  return {
-    href: `/worlds/${notification.worldId}`,
-    label: "View world",
-  };
 }

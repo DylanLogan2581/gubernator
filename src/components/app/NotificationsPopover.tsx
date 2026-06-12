@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ChevronRight, Bell } from "lucide-react";
+import { Bell, ChevronRight, X } from "lucide-react";
 import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { currentSessionQueryOptions } from "@/features/auth";
 import {
   allNotificationsQueryOptions,
+  getDeepLink,
   markAllNotificationsReadMutationOptions,
   markNotificationReadMutationOptions,
 } from "@/features/notifications";
@@ -101,35 +102,62 @@ export function NotificationsPopover({
                   No notifications
                 </div>
               ) : (
-                notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`border-b px-4 py-3 transition-colors hover:bg-muted ${
-                      !notification.isRead ? "bg-muted/50" : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <p className="text-sm">{notification.messageText}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {/* eslint-disable-next-line no-restricted-syntax */}
-                          {new Date(notification.generatedAt).toLocaleString()}
-                        </p>
+                notifications.map((notification) => {
+                  const deepLink = getDeepLink(notification);
+                  return (
+                    <div
+                      key={notification.id}
+                      className={`border-b px-4 py-3 transition-colors hover:bg-muted ${
+                        !notification.isRead ? "bg-muted/50" : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="text-sm">{notification.messageText}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {/* eslint-disable-next-line no-restricted-syntax */}
+                            {new Date(
+                              notification.generatedAt,
+                            ).toLocaleString()}
+                          </p>
+                        </div>
+                        {!notification.isRead ? (
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarkRead(notification.id)}
+                              disabled={markReadMutation.isPending}
+                              aria-label="Mark as read"
+                              className="shrink-0"
+                            >
+                              <X className="size-4" />
+                            </Button>
+                            {deepLink !== null ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={markReadMutation.isPending}
+                                aria-label={deepLink.label}
+                                className="shrink-0"
+                                asChild
+                              >
+                                <a
+                                  href={deepLink.href}
+                                  onClick={() =>
+                                    handleMarkRead(notification.id)
+                                  }
+                                >
+                                  <ChevronRight className="size-4" />
+                                </a>
+                              </Button>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
-                      {!notification.isRead ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMarkRead(notification.id)}
-                          disabled={markReadMutation.isPending}
-                          className="shrink-0"
-                        >
-                          <ChevronRight className="size-4" />
-                        </Button>
-                      ) : null}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </ScrollArea>
