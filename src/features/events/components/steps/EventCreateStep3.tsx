@@ -64,7 +64,7 @@ export function EventCreateStep3({
         <div className="space-y-2">
           <Button
             variant={durationType === "instant" ? "default" : "outline"}
-            className="w-full justify-start"
+            className="w-full justify-start h-auto py-3"
             onClick={() => onDurationTypeChange("instant")}
           >
             <div className="text-left">
@@ -77,7 +77,7 @@ export function EventCreateStep3({
 
           <Button
             variant={durationType === "sustained" ? "default" : "outline"}
-            className="w-full justify-start"
+            className="w-full justify-start h-auto py-3"
             onClick={() => onDurationTypeChange("sustained")}
           >
             <div className="text-left">
