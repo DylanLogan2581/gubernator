@@ -66,3 +66,10 @@ export const namingInputLimits = {
   namePoolSizeMax: 100,
   namePoolEntryMax: 64,
 } as const;
+
+export const eventInputLimits = {
+  eventGroupNameMax: 128,
+  eventGroupDescriptionMax: 1000,
+  eventNameMax: 128,
+  eventMemoryTextMax: 1000,
+} as const;

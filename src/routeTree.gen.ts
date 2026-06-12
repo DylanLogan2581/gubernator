@@ -20,9 +20,12 @@ import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as WorldsWorldIdIndexRouteImport } from './routes/worlds.$worldId.index'
 import { Route as WorldsWorldIdNationsRouteImport } from './routes/worlds.$worldId.nations'
+import { Route as WorldsWorldIdEventsRouteImport } from './routes/worlds.$worldId.events'
 import { Route as WorldsWorldIdConfigurationRouteImport } from './routes/worlds.$worldId.configuration'
 import { Route as WorldsWorldIdNationsIndexRouteImport } from './routes/worlds.$worldId.nations.index'
+import { Route as WorldsWorldIdEventsIndexRouteImport } from './routes/worlds.$worldId.events.index'
 import { Route as WorldsWorldIdNationsNationIdRouteImport } from './routes/worlds.$worldId.nations.$nationId'
+import { Route as WorldsWorldIdEventsEventIdRouteImport } from './routes/worlds.$worldId.events.$eventId'
 import { Route as WorldsWorldIdCitizensCitizenIdRouteImport } from './routes/worlds.$worldId.citizens.$citizenId'
 import { Route as WorldsWorldIdNationsNationIdIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId.index'
 import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId'
@@ -82,6 +85,11 @@ const WorldsWorldIdNationsRoute = WorldsWorldIdNationsRouteImport.update({
   path: '/nations',
   getParentRoute: () => WorldsWorldIdRoute,
 } as any)
+const WorldsWorldIdEventsRoute = WorldsWorldIdEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => WorldsWorldIdRoute,
+} as any)
 const WorldsWorldIdConfigurationRoute =
   WorldsWorldIdConfigurationRouteImport.update({
     id: '/configuration',
@@ -94,11 +102,23 @@ const WorldsWorldIdNationsIndexRoute =
     path: '/',
     getParentRoute: () => WorldsWorldIdNationsRoute,
   } as any)
+const WorldsWorldIdEventsIndexRoute =
+  WorldsWorldIdEventsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => WorldsWorldIdEventsRoute,
+  } as any)
 const WorldsWorldIdNationsNationIdRoute =
   WorldsWorldIdNationsNationIdRouteImport.update({
     id: '/$nationId',
     path: '/$nationId',
     getParentRoute: () => WorldsWorldIdNationsRoute,
+  } as any)
+const WorldsWorldIdEventsEventIdRoute =
+  WorldsWorldIdEventsEventIdRouteImport.update({
+    id: '/$eventId',
+    path: '/$eventId',
+    getParentRoute: () => WorldsWorldIdEventsRoute,
   } as any)
 const WorldsWorldIdCitizensCitizenIdRoute =
   WorldsWorldIdCitizensCitizenIdRouteImport.update({
@@ -130,10 +150,13 @@ export interface FileRoutesByFullPath {
   '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
+  '/worlds/$worldId/events': typeof WorldsWorldIdEventsRouteWithChildren
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
   '/worlds/$worldId/': typeof WorldsWorldIdIndexRoute
   '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
+  '/worlds/$worldId/events/$eventId': typeof WorldsWorldIdEventsEventIdRoute
   '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRouteWithChildren
+  '/worlds/$worldId/events/': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdIndexRoute
   '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
@@ -148,6 +171,8 @@ export interface FileRoutesByTo {
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
   '/worlds/$worldId': typeof WorldsWorldIdIndexRoute
   '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
+  '/worlds/$worldId/events/$eventId': typeof WorldsWorldIdEventsEventIdRoute
+  '/worlds/$worldId/events': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdIndexRoute
   '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
@@ -164,10 +189,13 @@ export interface FileRoutesById {
   '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
+  '/worlds/$worldId/events': typeof WorldsWorldIdEventsRouteWithChildren
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
   '/worlds/$worldId/': typeof WorldsWorldIdIndexRoute
   '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
+  '/worlds/$worldId/events/$eventId': typeof WorldsWorldIdEventsEventIdRoute
   '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRouteWithChildren
+  '/worlds/$worldId/events/': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdIndexRoute
   '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
@@ -185,10 +213,13 @@ export interface FileRouteTypes {
     | '/superadmin/'
     | '/worlds/'
     | '/worlds/$worldId/configuration'
+    | '/worlds/$worldId/events'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/'
     | '/worlds/$worldId/citizens/$citizenId'
+    | '/worlds/$worldId/events/$eventId'
     | '/worlds/$worldId/nations/$nationId'
+    | '/worlds/$worldId/events/'
     | '/worlds/$worldId/nations/'
     | '/worlds/$worldId/nations/$nationId/'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
@@ -203,6 +234,8 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/configuration'
     | '/worlds/$worldId'
     | '/worlds/$worldId/citizens/$citizenId'
+    | '/worlds/$worldId/events/$eventId'
+    | '/worlds/$worldId/events'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/nations/$nationId'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
@@ -218,10 +251,13 @@ export interface FileRouteTypes {
     | '/superadmin/'
     | '/worlds/'
     | '/worlds/$worldId/configuration'
+    | '/worlds/$worldId/events'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/'
     | '/worlds/$worldId/citizens/$citizenId'
+    | '/worlds/$worldId/events/$eventId'
     | '/worlds/$worldId/nations/$nationId'
+    | '/worlds/$worldId/events/'
     | '/worlds/$worldId/nations/'
     | '/worlds/$worldId/nations/$nationId/'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
@@ -315,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdNationsRouteImport
       parentRoute: typeof WorldsWorldIdRoute
     }
+    '/worlds/$worldId/events': {
+      id: '/worlds/$worldId/events'
+      path: '/events'
+      fullPath: '/worlds/$worldId/events'
+      preLoaderRoute: typeof WorldsWorldIdEventsRouteImport
+      parentRoute: typeof WorldsWorldIdRoute
+    }
     '/worlds/$worldId/configuration': {
       id: '/worlds/$worldId/configuration'
       path: '/configuration'
@@ -329,12 +372,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdNationsIndexRouteImport
       parentRoute: typeof WorldsWorldIdNationsRoute
     }
+    '/worlds/$worldId/events/': {
+      id: '/worlds/$worldId/events/'
+      path: '/'
+      fullPath: '/worlds/$worldId/events/'
+      preLoaderRoute: typeof WorldsWorldIdEventsIndexRouteImport
+      parentRoute: typeof WorldsWorldIdEventsRoute
+    }
     '/worlds/$worldId/nations/$nationId': {
       id: '/worlds/$worldId/nations/$nationId'
       path: '/$nationId'
       fullPath: '/worlds/$worldId/nations/$nationId'
       preLoaderRoute: typeof WorldsWorldIdNationsNationIdRouteImport
       parentRoute: typeof WorldsWorldIdNationsRoute
+    }
+    '/worlds/$worldId/events/$eventId': {
+      id: '/worlds/$worldId/events/$eventId'
+      path: '/$eventId'
+      fullPath: '/worlds/$worldId/events/$eventId'
+      preLoaderRoute: typeof WorldsWorldIdEventsEventIdRouteImport
+      parentRoute: typeof WorldsWorldIdEventsRoute
     }
     '/worlds/$worldId/citizens/$citizenId': {
       id: '/worlds/$worldId/citizens/$citizenId'
@@ -372,6 +429,19 @@ const SuperadminRouteWithChildren = SuperadminRoute._addFileChildren(
   SuperadminRouteChildren,
 )
 
+interface WorldsWorldIdEventsRouteChildren {
+  WorldsWorldIdEventsEventIdRoute: typeof WorldsWorldIdEventsEventIdRoute
+  WorldsWorldIdEventsIndexRoute: typeof WorldsWorldIdEventsIndexRoute
+}
+
+const WorldsWorldIdEventsRouteChildren: WorldsWorldIdEventsRouteChildren = {
+  WorldsWorldIdEventsEventIdRoute: WorldsWorldIdEventsEventIdRoute,
+  WorldsWorldIdEventsIndexRoute: WorldsWorldIdEventsIndexRoute,
+}
+
+const WorldsWorldIdEventsRouteWithChildren =
+  WorldsWorldIdEventsRoute._addFileChildren(WorldsWorldIdEventsRouteChildren)
+
 interface WorldsWorldIdNationsNationIdRouteChildren {
   WorldsWorldIdNationsNationIdIndexRoute: typeof WorldsWorldIdNationsNationIdIndexRoute
   WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
@@ -406,6 +476,7 @@ const WorldsWorldIdNationsRouteWithChildren =
 
 interface WorldsWorldIdRouteChildren {
   WorldsWorldIdConfigurationRoute: typeof WorldsWorldIdConfigurationRoute
+  WorldsWorldIdEventsRoute: typeof WorldsWorldIdEventsRouteWithChildren
   WorldsWorldIdNationsRoute: typeof WorldsWorldIdNationsRouteWithChildren
   WorldsWorldIdIndexRoute: typeof WorldsWorldIdIndexRoute
   WorldsWorldIdCitizensCitizenIdRoute: typeof WorldsWorldIdCitizensCitizenIdRoute
@@ -413,6 +484,7 @@ interface WorldsWorldIdRouteChildren {
 
 const WorldsWorldIdRouteChildren: WorldsWorldIdRouteChildren = {
   WorldsWorldIdConfigurationRoute: WorldsWorldIdConfigurationRoute,
+  WorldsWorldIdEventsRoute: WorldsWorldIdEventsRouteWithChildren,
   WorldsWorldIdNationsRoute: WorldsWorldIdNationsRouteWithChildren,
   WorldsWorldIdIndexRoute: WorldsWorldIdIndexRoute,
   WorldsWorldIdCitizensCitizenIdRoute: WorldsWorldIdCitizensCitizenIdRoute,
