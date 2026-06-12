@@ -22,7 +22,7 @@ import { NotificationsPageFrame } from "../components/NotificationsPageFrame";
 
 const PAGE_SIZE = 20;
 const NOTIFICATION_TYPES = [
-  { value: "", label: "All types" },
+  { value: "all", label: "All types" },
   { value: "turn.completed", label: "Turn completed" },
   { value: "settlement.threat", label: "Settlement threat" },
   { value: "trade.proposed", label: "Trade proposed" },
@@ -30,7 +30,7 @@ const NOTIFICATION_TYPES = [
 ];
 
 const READ_STATUS_OPTIONS = [
-  { value: "", label: "All" },
+  { value: "all", label: "All" },
   { value: "unread", label: "Unread" },
   { value: "read", label: "Read" },
 ];
@@ -40,13 +40,13 @@ export function NotificationsPage(): JSX.Element {
   const userId = currentSessionQuery.data?.user.id ?? null;
 
   const [page, setPage] = useState(1);
-  const [selectedType, setSelectedType] = useState("");
-  const [readStatus, setReadStatus] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
+  const [readStatus, setReadStatus] = useState("all");
 
   const offset = (page - 1) * PAGE_SIZE;
   const isRead =
     readStatus === "read" ? true : readStatus === "unread" ? false : null;
-  const type = selectedType.length > 0 ? selectedType : null;
+  const type = selectedType !== "all" ? selectedType : null;
 
   const notificationsQuery = useQuery(
     allNotificationsQueryOptions(userId, {
