@@ -8,6 +8,7 @@ import type {
   AssignmentClear,
   DeathCauseCategory,
   DepositUpdate,
+  EventStatusPatch,
   ManagedPopulationUpdate,
   ReadinessSummary,
   SettlementSnapshot,
@@ -336,7 +337,6 @@ export function mapSimulationResultToPayload(
     citizenDeaths,
     constructionUpdates,
     depositUpdates: result.depositUpdates,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     eventStatusPatches: result.eventStatusPatches,
     logEntries: result.logEntries,
     managedPopulationUpdates: result.managedPopulationUpdates,

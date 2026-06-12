@@ -203,6 +203,8 @@ export type SupabaseEventRow = {
   readonly status: string;
   readonly effect_type: string;
   readonly activate_on_transition_after_turn_number: number;
+  readonly duration_type: string;
+  readonly remaining_transitions: number | null;
   readonly effect_payload_jsonb: unknown;
 };
 
@@ -473,6 +475,8 @@ export function isEventRow(v: unknown): v is SupabaseEventRow {
     typeof v.id === "string" &&
     typeof v.status === "string" &&
     typeof v.effect_type === "string" &&
-    typeof v.activate_on_transition_after_turn_number === "number"
+    typeof v.activate_on_transition_after_turn_number === "number" &&
+    typeof v.duration_type === "string" &&
+    (v.remaining_transitions === null || typeof v.remaining_transitions === "number")
   );
 }

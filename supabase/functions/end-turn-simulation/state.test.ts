@@ -344,9 +344,11 @@ function makeAllSuccessResponses(): Record<
       body: [
         {
           activate_on_transition_after_turn_number: 4,
+          duration_type: "instant",
           effect_payload_jsonb: { amount: 100, resource_id: RESOURCE_ID },
           effect_type: "resource_grant",
           id: EVENT_ID,
+          remaining_transitions: null,
           status: "pending",
         },
       ],

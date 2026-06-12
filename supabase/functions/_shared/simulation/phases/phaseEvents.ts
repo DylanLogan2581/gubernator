@@ -15,12 +15,14 @@
 
 import type {
   EventEffectType,
+  EventStatusPatch,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
 } from "../simulationTypes.ts";
 
 export type PhaseEventsOutput = {
+  readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logs: readonly SimulationLogEntry[];
   readonly notifications: readonly SimulationNotification[];
 };
@@ -34,6 +36,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     pendingStockpiles,
   } = context.shared;
 
+  const eventStatusPatches: EventStatusPatch[] = [];
   const logs: SimulationLogEntry[] = [];
   const notifications: SimulationNotification[] = [];
 
@@ -274,8 +277,50 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         },
         phase: "events",
       });
+      continue;
     }
+
+    // Compute new status and emit patch.
+    // pending → first activation this turn
+    // active  → sustained event already running, count down
+    const fromStatus = event.status;
+    let toStatus: "active" | "expired";
+    let nextRemainingTransitions: number | null;
+
+    if (fromStatus === "pending") {
+      if (event.durationType === "sustained") {
+        const rt = event.remainingTransitions ?? 1;
+        if (rt <= 1) {
+          toStatus = "expired";
+          nextRemainingTransitions = 0;
+        } else {
+          toStatus = "active";
+          nextRemainingTransitions = rt - 1;
+        }
+      } else {
+        // instant
+        toStatus = "expired";
+        nextRemainingTransitions = null;
+      }
+    } else {
+      // active (sustained, counting down)
+      const rt = event.remainingTransitions ?? 1;
+      if (rt <= 1) {
+        toStatus = "expired";
+        nextRemainingTransitions = 0;
+      } else {
+        toStatus = "active";
+        nextRemainingTransitions = rt - 1;
+      }
+    }
+
+    eventStatusPatches.push({
+      eventId: event.id,
+      fromStatus,
+      remainingTransitions: nextRemainingTransitions,
+      toStatus,
+    });
   }
 
-  return { logs, notifications };
+  return { eventStatusPatches, logs, notifications };
 }

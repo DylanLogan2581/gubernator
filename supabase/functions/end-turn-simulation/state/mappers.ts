@@ -315,9 +315,11 @@ export function toSimPartnership(row: SupabasePartnershipRow): SimPartnership {
 export function toSimEvent(row: SupabaseEventRow): SimEvent {
   return {
     activateOnTransitionAfterTurnNumber: row.activate_on_transition_after_turn_number,
+    durationType: row.duration_type === "sustained" ? "sustained" : "instant",
     effectPayloadJsonb: isRecord(row.effect_payload_jsonb) ? row.effect_payload_jsonb : {},
     effectType: row.effect_type as SimEvent["effectType"],
     id: row.id,
+    remainingTransitions: row.remaining_transitions,
     status: row.status as SimEvent["status"],
   };
 }

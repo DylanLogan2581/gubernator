@@ -246,10 +246,19 @@ export type EventEffectType =
 
 export type SimEvent = {
   readonly activateOnTransitionAfterTurnNumber: number;
+  readonly durationType: "instant" | "sustained";
   readonly effectPayloadJsonb: Record<string, unknown>;
   readonly effectType: EventEffectType;
   readonly id: string;
+  readonly remainingTransitions: number | null;
   readonly status: SimEventStatus;
+};
+
+export type EventStatusPatch = {
+  readonly eventId: string;
+  readonly fromStatus: SimEventStatus;
+  readonly remainingTransitions: number | null;
+  readonly toStatus: "active" | "expired";
 };
 
 export type SimTradeRouteStatus =
@@ -546,6 +555,7 @@ export type SimulationResult = {
   readonly citizenPatches: readonly CitizenPatch[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
   readonly notifications: readonly SimulationNotification[];

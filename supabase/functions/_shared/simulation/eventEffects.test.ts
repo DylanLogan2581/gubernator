@@ -72,9 +72,11 @@ function makeInput(
 function makeEvent(overrides: Partial<SimEvent>): SimEvent {
   return {
     activateOnTransitionAfterTurnNumber: 0,
+    durationType: "instant",
     effectPayloadJsonb: {},
     effectType: "resource_grant",
     id: "evt1",
+    remainingTransitions: null,
     status: "active",
     ...overrides,
   };

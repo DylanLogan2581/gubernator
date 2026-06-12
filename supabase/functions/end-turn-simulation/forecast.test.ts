@@ -14,13 +14,12 @@ describe("forecast computation", () => {
   it("computeForecastSnapshot is pure (no mutations)", () => {
     // Minimal input/result for testing purity: verify the function
     // doesn't modify input structures and returns independent data.
-    const input: SimulationInputState = {
+    // Minimal fixture — only fields accessed by computeForecastSnapshot.
+    // Cast bypasses required-field checking for this purity-only test.
+    const input = {
       isWorldArchived: false,
       turnNumber: 0,
-      settlements: [
-        { id: "settlement-1", name: "Test Settlement", nationId: "nation-1" },
-      ],
-      nations: [{ id: "nation-1", worldId: "world-1", name: "Test Nation" }],
+      settlements: [{ id: "settlement-1", name: "Test Settlement" }],
       resources: [],
       stockpiles: [],
       buildingTiers: [],
@@ -30,10 +29,8 @@ describe("forecast computation", () => {
       partnerships: [],
       citizens: [],
       deposits: [],
-      depositInstances: [],
-      managedPopulationInstances: [],
       events: [],
-    };
+    } as unknown as SimulationInputState;
 
     const result: SimulationResult = {
       assignmentClears: [],

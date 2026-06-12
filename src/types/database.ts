@@ -1,5 +1,3 @@
- 
-
 export type Json =
   | string
   | number
@@ -3081,6 +3079,15 @@ export type Database = {
         Args: { p_payload: Json };
         Returns: Record<string, unknown>;
       };
+      internal_apply_turn_transition_event_patches: {
+        Args: {
+          p_payload: Json;
+          p_to_turn_number: number;
+          p_transition_id: string;
+          p_world_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
       internal_apply_turn_transition_log_entries_and_notifications: {
         Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
         Returns: Record<string, unknown>;
@@ -4034,8 +4041,7 @@ export type Database = {
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
-        | { Args: { why: string }; Returns: boolean[] }
-         ;
+        | { Args: { why: string }; Returns: boolean[] };
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }

@@ -98,6 +98,7 @@ function makeEmptyResult(): SimulationResult {
     citizenPatches: [],
     constructionUpdates: [],
     depositUpdates: [],
+    eventStatusPatches: [],
     logEntries: [],
     managedPopulationUpdates: [],
     notifications: [],

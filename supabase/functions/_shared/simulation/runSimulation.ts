@@ -447,7 +447,6 @@ export function runSimulation(
     citizenPatches: p9.citizenPatches,
     constructionUpdates: p3.constructionUpdates,
     depositUpdates: p2.depositUpdates,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     eventStatusPatches: p11.eventStatusPatches,
     logEntries,
     managedPopulationUpdates: p7.managedPopulationUpdates,

@@ -18,7 +18,6 @@ import {
 } from "../mutations/eventMutations";
 import { eventQueryKeys } from "../queries/eventQueryKeys";
 
-
 import { EventCreateStep1 } from "./steps/EventCreateStep1";
 import { EventCreateStep2 } from "./steps/EventCreateStep2";
 import { EventCreateStep3 } from "./steps/EventCreateStep3";
@@ -73,21 +72,22 @@ export function EventCreateWizard({
     }),
   );
 
-  const handleNext = () => {
+  const handleNext = (): void => {
     setState((prev) => ({
       ...prev,
       step: Math.min(5, prev.step + 1) as 1 | 2 | 3 | 4 | 5,
     }));
   };
 
-  const handlePrev = () => {
+  const handlePrev = (): void => {
     setState((prev) => ({
       ...prev,
       step: Math.max(1, prev.step - 1) as 1 | 2 | 3 | 4 | 5,
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
+    if (state.scopeType === null) return;
     try {
       // Build targets array based on scope and selected IDs
       const targets = state.selectedIds.map((id) => ({
@@ -110,7 +110,7 @@ export function EventCreateWizard({
         groupName,
         groupDescription,
         effectType: state.effectType,
-        scopeType: state.scopeType!,
+        scopeType: state.scopeType,
         targets,
         durationType: state.durationType,
         durationTransitions:
@@ -212,6 +212,7 @@ export function EventCreateWizard({
             <EventCreateStep4
               createCitizenMemories={state.createCitizenMemories}
               memoryText={state.memoryText}
+              groupDescription={groupDescription}
               onCreateCitizenMemoriesChange={(create) => {
                 setState((prev) => ({
                   ...prev,
@@ -231,7 +232,7 @@ export function EventCreateWizard({
             <EventCreateStep5
               groupName={groupName}
               groupDescription={groupDescription}
-              scopeType={state.scopeType!}
+              scopeType={state.scopeType ?? "world"}
               effectType={state.effectType}
               durationType={state.durationType}
               durationTransitions={state.durationTransitions}
@@ -259,8 +260,10 @@ export function EventCreateWizard({
               </Button>
             ) : (
               <Button
-                onClick={handleSubmit}
-                disabled={createMutation.isPending || !groupName.trim()}
+                onClick={() => {
+                  void handleSubmit();
+                }}
+                disabled={createMutation.isPending || groupName.trim() === ""}
                 className="ml-auto"
               >
                 {createMutation.isPending ? "Creating…" : "Create Event"}

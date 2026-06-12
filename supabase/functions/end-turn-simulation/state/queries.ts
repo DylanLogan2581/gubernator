@@ -436,7 +436,7 @@ export function fetchEvents(
       world_id: `eq.${worldId}`,
       status: "in.(active,pending)",
       order: "id.asc",
-      select: "id,status,effect_type,activate_on_transition_after_turn_number,effect_payload_jsonb",
+      select: "id,status,effect_type,activate_on_transition_after_turn_number,duration_type,remaining_transitions,effect_payload_jsonb",
     },
   });
 }

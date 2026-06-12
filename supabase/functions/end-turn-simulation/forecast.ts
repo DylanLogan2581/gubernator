@@ -130,7 +130,7 @@ export function computeForecastSnapshot(
 
   // Construction completions
   for (const update of simulationResult.constructionUpdates) {
-    if (update.toStatus === "completed") {
+    if (update.toStatus === "complete") {
       const project = projectById.get(update.projectId);
       if (project !== undefined) {
         const forecast = bySettlement[project.settlementId];
