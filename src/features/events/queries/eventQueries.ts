@@ -131,14 +131,30 @@ export function activeSettlementEventsQueryOptions(
   return queryOptions({
     queryKey: eventQueryKeys.bySettlement(worldId, settlementId),
     queryFn: async (): Promise<readonly Event[]> => {
+      // PostgREST or() does not support subqueries, so resolve nation_id first.
+      const { data: settlement, error: settlementError } = await client
+        .from("settlements")
+        .select("nation_id")
+        .eq("id", settlementId)
+        .single();
+
+      if (settlementError !== null) {
+        throw normalizeSupabaseError(settlementError);
+      }
+
+      const nationId = settlement.nation_id;
+
+      const orFilter =
+        nationId !== null
+          ? `and(scope_type.eq.settlement,scope_settlement_id.eq.${settlementId}),and(scope_type.eq.nation,scope_nation_id.eq.${nationId}),scope_type.eq.world`
+          : `and(scope_type.eq.settlement,scope_settlement_id.eq.${settlementId}),scope_type.eq.world`;
+
       const { data, error } = await client
         .from("events")
         .select<"*", Event>("*")
         .eq("world_id", worldId)
         .eq("status", "active")
-        .or(
-          `and(scope_type.eq.settlement,scope_settlement_id.eq.${settlementId}),and(scope_type.eq.nation,scope_nation_id.eq.(select nation_id from settlements where id.eq.${settlementId})),scope_type.eq.world`,
-        )
+        .or(orFilter)
         .order("created_at", { ascending: false });
 
       if (error !== null) {
