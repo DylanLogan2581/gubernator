@@ -1,10 +1,5 @@
 import { type JSX } from "react";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { eventInputLimits } from "@/lib/inputLimits";
-
 import type { EventDurationType, EventScopeType } from "../../types/eventTypes";
 
 type EventCreateStep5Props = {
@@ -24,9 +19,8 @@ type EventCreateStep5Props = {
   readonly durationType: EventDurationType;
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
+  readonly activationTurnCalendarDate?: string;
   readonly createCitizenMemories: boolean;
-  readonly onGroupNameChange: (name: string) => void;
-  readonly onGroupDescriptionChange: (desc: string) => void;
 };
 
 export function EventCreateStep5({
@@ -37,56 +31,37 @@ export function EventCreateStep5({
   durationType,
   durationTransitions,
   activationTurn,
+  activationTurnCalendarDate,
   createCitizenMemories,
-  onGroupNameChange,
-  onGroupDescriptionChange,
 }: EventCreateStep5Props): JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-base font-semibold">Review & Name</h3>
+        <h3 className="text-base font-semibold">Review</h3>
         <p className="text-sm text-muted-foreground">
-          Give your event group a name and review the details
+          Review your event configuration before creating
         </p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="groupName" className="font-medium">
-          Group Name
-        </Label>
-        <Input
-          id="groupName"
-          placeholder="e.g., Spring Plague Outbreak"
-          value={groupName}
-          onChange={(e) => onGroupNameChange(e.target.value)}
-          maxLength={eventInputLimits.eventGroupNameMax}
-        />
-        <p className="text-xs text-muted-foreground">
-          {groupName.length} / {eventInputLimits.eventGroupNameMax} characters
-        </p>
+      <div className="space-y-3 rounded-lg bg-muted p-4">
+        <h4 className="font-semibold">Event Details</h4>
+        <dl className="space-y-3 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Name:</dt>
+            <dd className="font-medium">{groupName}</dd>
+          </div>
+          {groupDescription.length > 0 && (
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Description:</dt>
+              <dd className="font-medium">{groupDescription}</dd>
+            </div>
+          )}
+        </dl>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="groupDescription" className="font-medium">
-          Description (optional)
-        </Label>
-        <Textarea
-          id="groupDescription"
-          placeholder="Additional context for this event"
-          value={groupDescription}
-          onChange={(e) => onGroupDescriptionChange(e.target.value)}
-          maxLength={eventInputLimits.eventGroupDescriptionMax}
-          rows={3}
-        />
-        <p className="text-xs text-muted-foreground">
-          {groupDescription.length} /{" "}
-          {eventInputLimits.eventGroupDescriptionMax} characters
-        </p>
-      </div>
-
-      <div className="space-y-3 rounded-lg bg-muted p-3">
-        <h4 className="font-medium">Event Summary</h4>
-        <dl className="space-y-2 text-sm">
+      <div className="space-y-3 rounded-lg bg-muted p-4">
+        <h4 className="font-semibold">Configuration Summary</h4>
+        <dl className="space-y-3 text-sm">
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Scope:</dt>
             <dd className="font-medium capitalize">{scopeType}</dd>
@@ -102,12 +77,23 @@ export function EventCreateStep5({
             <dd className="font-medium">
               {durationType === "instant"
                 ? "Instant"
-                : `${durationTransitions} transitions`}
+                : `${durationTransitions} transition${durationTransitions === 1 ? "" : "s"}`}
             </dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Activation:</dt>
-            <dd className="font-medium">After turn {activationTurn}</dd>
+          <div className="flex flex-col gap-1">
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Activation Turn:</dt>
+              <dd className="font-medium">{activationTurn}</dd>
+            </div>
+            {activationTurnCalendarDate !== undefined &&
+              activationTurnCalendarDate !== null && (
+                <div className="flex justify-between">
+                  <dt className="text-xs text-muted-foreground">Date:</dt>
+                  <dd className="text-xs font-medium">
+                    {activationTurnCalendarDate}
+                  </dd>
+                </div>
+              )}
           </div>
           {createCitizenMemories && (
             <div className="flex justify-between">

@@ -1,10 +1,18 @@
+import { useQuery } from "@tanstack/react-query";
 import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { worldCalendarConfigQueryOptions } from "@/features/calendar";
+import {
+  formatCalendarDate,
+  resolveTurnCalendarDate,
+} from "@/shared/turnCalendarPrimitives";
 
 type EventCreateStep3Props = {
+  readonly worldId: string;
+  readonly currentTurnNumber: number;
   readonly durationType: "instant" | "sustained";
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
@@ -14,6 +22,8 @@ type EventCreateStep3Props = {
 };
 
 export function EventCreateStep3({
+  worldId,
+  currentTurnNumber,
   durationType,
   durationTransitions,
   activationTurn,
@@ -21,6 +31,32 @@ export function EventCreateStep3({
   onDurationTransitionsChange,
   onActivationTurnChange,
 }: EventCreateStep3Props): JSX.Element {
+  const calendarConfigQuery = useQuery(
+    worldCalendarConfigQueryOptions(worldId),
+  );
+
+  const calendarConfig = calendarConfigQuery.data;
+
+  // Resolve calendar date for activation turn if config is available
+  let activationTurnDateLabel: string | undefined;
+  if (
+    calendarConfig !== null &&
+    calendarConfig !== undefined &&
+    activationTurn > 0
+  ) {
+    try {
+      const calendarDate = resolveTurnCalendarDate(
+        calendarConfig,
+        activationTurn,
+      );
+      activationTurnDateLabel = formatCalendarDate(calendarDate, {
+        dateFormatTemplate: calendarConfig.dateFormatTemplate,
+      });
+    } catch {
+      // Silently fail if turn number is invalid
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -66,7 +102,7 @@ export function EventCreateStep3({
             value={durationTransitions ?? ""}
             onChange={(e) =>
               onDurationTransitionsChange(
-                e.target.value ? parseInt(e.target.value, 10) : null,
+                e.target.value.length > 0 ? parseInt(e.target.value, 10) : null,
               )
             }
             placeholder="Number of turns"
@@ -89,6 +125,22 @@ export function EventCreateStep3({
         <p className="text-xs text-muted-foreground">
           The event will activate after this turn number completes
         </p>
+        {activationTurnDateLabel !== undefined &&
+          activationTurnDateLabel !== null && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Date:</span>{" "}
+              {activationTurnDateLabel}
+            </p>
+          )}
+        {(activationTurnDateLabel === undefined ||
+          activationTurnDateLabel === null) &&
+          activationTurn > 0 &&
+          currentTurnNumber > 0 && (
+            <p className="text-xs text-amber-600">
+              Turn {activationTurn} is {activationTurn - currentTurnNumber}{" "}
+              turns from now
+            </p>
+          )}
       </div>
     </div>
   );

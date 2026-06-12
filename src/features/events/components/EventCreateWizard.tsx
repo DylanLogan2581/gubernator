@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import type { AccessContext } from "@/features/permissions";
+import { worldRouteAccessQueryOptions } from "@/features/worlds";
 
 import {
   createEventGroupMutationOptions,
@@ -19,6 +21,7 @@ import {
 import { eventQueryKeys } from "../queries/eventQueryKeys";
 
 import { EventCreateEffectsStep } from "./steps/EventCreateEffectsStep";
+import { EventCreateNameDescriptionStep } from "./steps/EventCreateNameDescriptionStep";
 import { EventCreateStep1 } from "./steps/EventCreateStep1";
 import { EventCreateStep2 } from "./steps/EventCreateStep2";
 import { EventCreateStep3 } from "./steps/EventCreateStep3";
@@ -28,6 +31,7 @@ import { EventCreateStep5 } from "./steps/EventCreateStep5";
 import type { CreateEventGroupInput } from "../schemas/eventSchemas";
 
 type EventCreateWizardProps = {
+  readonly accessContext: AccessContext;
   readonly worldId: string;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -54,27 +58,48 @@ export type EventCreateWizardState = {
   memoryText: string;
 };
 
-const initialState: EventCreateWizardState = {
+const createInitialState = (
+  nextTurnNumber: number = 1,
+): EventCreateWizardState => ({
   step: 1,
   scopeType: null,
   selectedIds: [],
   effects: [],
   durationType: "instant",
   durationTransitions: null,
-  activationTurn: 0,
+  activationTurn: nextTurnNumber,
   createCitizenMemories: false,
   memoryText: "",
-};
+});
 
 export function EventCreateWizard({
+  accessContext,
   worldId,
   open,
   onOpenChange,
 }: EventCreateWizardProps): JSX.Element {
   const queryClient = useQueryClient();
-  const [state, setState] = useState<EventCreateWizardState>(initialState);
+  const worldQuery = useQuery(
+    worldRouteAccessQueryOptions(worldId, accessContext),
+  );
+
+  const nextTurnNumber = worldQuery.data?.world.nextTurnNumber ?? 1;
+  const [state, setState] = useState<EventCreateWizardState>(() =>
+    createInitialState(nextTurnNumber),
+  );
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
+
+  // Update activation turn when world data changes and state hasn't been customized
+  useEffect(() => {
+    if (open && nextTurnNumber > 1 && state.activationTurn === 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect, @eslint-react/set-state-in-effect
+      setState((prev) => ({
+        ...prev,
+        activationTurn: nextTurnNumber,
+      }));
+    }
+  }, [nextTurnNumber, open, state.activationTurn]);
 
   const createMutation = useMutation(
     createEventGroupMutationOptions({
@@ -144,7 +169,7 @@ export function EventCreateWizard({
 
       toast.success("Event created successfully");
       onOpenChange(false);
-      setState(initialState);
+      setState(createInitialState(nextTurnNumber));
       setGroupName("");
       setGroupDescription("");
       await queryClient.invalidateQueries({
@@ -169,30 +194,41 @@ export function EventCreateWizard({
 
         <div className="mt-6 space-y-6 px-4 overflow-y-auto max-h-[calc(100vh-200px)]">
           {state.step === 1 && (
-            <EventCreateStep1
-              scopeType={state.scopeType}
-              onScopeTypeChange={(scopeType) => {
-                setState((prev) => ({
-                  ...prev,
-                  scopeType,
-                  selectedIds: [],
-                }));
-              }}
+            <EventCreateNameDescriptionStep
+              groupName={groupName}
+              groupDescription={groupDescription}
+              onGroupNameChange={setGroupName}
+              onGroupDescriptionChange={setGroupDescription}
             />
           )}
 
           {state.step === 2 && (
-            <EventCreateStep2
-              worldId={worldId}
-              scopeType={state.scopeType}
-              selectedIds={state.selectedIds}
-              onSelectedIdsChange={(ids) => {
-                setState((prev) => ({
-                  ...prev,
-                  selectedIds: ids,
-                }));
-              }}
-            />
+            <div className="space-y-6">
+              <EventCreateStep1
+                scopeType={state.scopeType}
+                onScopeTypeChange={(scopeType) => {
+                  setState((prev) => ({
+                    ...prev,
+                    scopeType,
+                    selectedIds: [],
+                  }));
+                }}
+              />
+
+              {state.scopeType !== null && (
+                <EventCreateStep2
+                  worldId={worldId}
+                  scopeType={state.scopeType}
+                  selectedIds={state.selectedIds}
+                  onSelectedIdsChange={(ids) => {
+                    setState((prev) => ({
+                      ...prev,
+                      selectedIds: ids,
+                    }));
+                  }}
+                />
+              )}
+            </div>
           )}
 
           {state.step === 3 && (
@@ -209,6 +245,8 @@ export function EventCreateWizard({
 
           {state.step === 4 && (
             <EventCreateStep3
+              worldId={worldId}
+              currentTurnNumber={worldQuery.data?.world.currentTurnNumber ?? 0}
               durationType={state.durationType}
               durationTransitions={state.durationTransitions}
               activationTurn={state.activationTurn}
@@ -263,8 +301,6 @@ export function EventCreateWizard({
               durationTransitions={state.durationTransitions}
               activationTurn={state.activationTurn}
               createCitizenMemories={state.createCitizenMemories}
-              onGroupNameChange={setGroupName}
-              onGroupDescriptionChange={setGroupDescription}
             />
           )}
 
@@ -278,24 +314,34 @@ export function EventCreateWizard({
               Previous
             </Button>
 
-            {state.step < 6 ? (
+            {state.step < 6 && (
               <Button
                 onClick={handleNext}
                 className="ml-auto"
                 disabled={
-                  (state.step === 2 && state.selectedIds.length === 0) ||
+                  (state.step === 1 && groupName.trim().length === 0) ||
+                  (state.step === 2 && state.scopeType === null) ||
+                  (state.step === 2 &&
+                    state.scopeType !== "world" &&
+                    state.selectedIds.length === 0) ||
                   (state.step === 3 && state.effects.length === 0)
                 }
               >
                 Next
                 <ChevronRight className="h-4 w-4" />
               </Button>
-            ) : (
+            )}
+            {state.step >= 6 && (
               <Button
                 onClick={() => {
                   void handleSubmit();
                 }}
-                disabled={createMutation.isPending || groupName.trim() === ""}
+                disabled={
+                  createMutation.isPending ||
+                  state.scopeType === null ||
+                  (state.scopeType !== "world" &&
+                    state.selectedIds.length === 0)
+                }
                 className="ml-auto"
               >
                 {createMutation.isPending ? "Creating…" : "Create Event"}

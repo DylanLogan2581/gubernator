@@ -47,10 +47,7 @@ export function EventsPage({ worldId }: EventsPageProps): JSX.Element {
   }
 
   return (
-    <EventsPageGate
-      accessContext={accessContextQuery.data}
-      worldId={worldId}
-    />
+    <EventsPageGate accessContext={accessContextQuery.data} worldId={worldId} />
   );
 }
 
@@ -106,13 +103,21 @@ function EventsPageGate({
     );
   }
 
-  return <EventsPageContent worldAccess={worldQuery.data} worldId={worldId} />;
+  return (
+    <EventsPageContent
+      accessContext={accessContext}
+      worldAccess={worldQuery.data}
+      worldId={worldId}
+    />
+  );
 }
 
 function EventsPageContent({
+  accessContext,
   worldAccess,
   worldId,
 }: {
+  readonly accessContext: AccessContext;
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
 }): JSX.Element {
@@ -140,6 +145,7 @@ function EventsPageContent({
 
       {showCreateWizard && (
         <EventCreateWizard
+          accessContext={accessContext}
           worldId={worldId}
           open={showCreateWizard}
           onOpenChange={setShowCreateWizard}

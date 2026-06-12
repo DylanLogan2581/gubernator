@@ -82,6 +82,15 @@ export function EventCreateStep2({
 
   return (
     <div className="space-y-6">
+      {scopeType === "world" && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            This event will affect the entire world. No specific selection
+            needed.
+          </p>
+        </div>
+      )}
+
       {scopeType !== "world" && (
         <div className="space-y-2">
           <Label className="text-base font-semibold">
