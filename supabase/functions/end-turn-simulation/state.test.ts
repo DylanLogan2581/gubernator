@@ -354,6 +354,10 @@ function makeAllSuccessResponses(): Record<
       ],
       status: 200,
     },
+    "/rest/v1/event_effects": {
+      body: [],
+      status: 200,
+    },
     "/rest/v1/citizen_assignments": {
       body: [
         {
@@ -758,6 +762,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/trade_routes": { body: [], status: 200 },
       "/rest/v1/citizens": { body: [], status: 200 },
       "/rest/v1/events": { body: [], status: 200 },
+      "/rest/v1/event_effects": { body: [], status: 200 },
       "/rest/v1/citizen_assignments": { body: [], status: 200 },
       "/rest/v1/partnerships": { body: [], status: 200 },
     });

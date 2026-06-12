@@ -7,6 +7,7 @@ import type {
   SupabaseBuildingRow,
   SupabaseCitizenRow,
   SupabaseDepositTypeRow,
+  SupabaseEventEffectRow,
   SupabaseEventRow,
   SupabaseJobRow,
   SupabaseManagedPopRow,
@@ -28,6 +29,7 @@ import type {
   SimDeposit,
   SimDepositResource,
   SimDepositType,
+  SimEffect,
   SimEvent,
   SimJob,
   SimJobIoEntry,
@@ -312,12 +314,31 @@ export function toSimPartnership(row: SupabasePartnershipRow): SimPartnership {
   };
 }
 
-export function toSimEvent(row: SupabaseEventRow): SimEvent {
+export function toSimEffect(row: SupabaseEventEffectRow): SimEffect & { eventId: string } {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    effectType: row.effect_type as SimEffect["effectType"],
+    amountValue: row.amount_value,
+    multiplierValue: row.multiplier_value,
+    isPercent: row.is_percent,
+    resourceId: row.resource_id,
+    jobId: row.job_id,
+    managedPopulationInstanceId: row.managed_population_instance_id,
+    depositInstanceId: row.deposit_instance_id,
+  };
+}
+
+export function toSimEvent(
+  row: SupabaseEventRow,
+  effects: readonly SimEffect[] = [],
+): SimEvent {
   return {
     activateOnTransitionAfterTurnNumber: row.activate_on_transition_after_turn_number,
     durationType: row.duration_type === "sustained" ? "sustained" : "instant",
     effectPayloadJsonb: isRecord(row.effect_payload_jsonb) ? row.effect_payload_jsonb : {},
     effectType: row.effect_type as SimEvent["effectType"],
+    effects,
     id: row.id,
     remainingTransitions: row.remaining_transitions,
     status: row.status as SimEvent["status"],

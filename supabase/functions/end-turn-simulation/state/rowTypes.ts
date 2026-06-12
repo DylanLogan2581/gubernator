@@ -208,6 +208,19 @@ export type SupabaseEventRow = {
   readonly effect_payload_jsonb: unknown;
 };
 
+export type SupabaseEventEffectRow = {
+  readonly id: string;
+  readonly event_id: string;
+  readonly effect_type: string;
+  readonly amount_value: number | null;
+  readonly multiplier_value: number | null;
+  readonly is_percent: boolean;
+  readonly resource_id: string | null;
+  readonly job_id: string | null;
+  readonly managed_population_instance_id: string | null;
+  readonly deposit_instance_id: string | null;
+};
+
 // ---------------------------------------------------------------------------
 // Type guards
 // ---------------------------------------------------------------------------
@@ -478,5 +491,21 @@ export function isEventRow(v: unknown): v is SupabaseEventRow {
     typeof v.activate_on_transition_after_turn_number === "number" &&
     typeof v.duration_type === "string" &&
     (v.remaining_transitions === null || typeof v.remaining_transitions === "number")
+  );
+}
+
+export function isEventEffectRow(v: unknown): v is SupabaseEventEffectRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.event_id === "string" &&
+    typeof v.effect_type === "string" &&
+    (v.amount_value === null || typeof v.amount_value === "number") &&
+    (v.multiplier_value === null || typeof v.multiplier_value === "number") &&
+    typeof v.is_percent === "boolean" &&
+    (v.resource_id === null || typeof v.resource_id === "string") &&
+    (v.job_id === null || typeof v.job_id === "string") &&
+    (v.managed_population_instance_id === null || typeof v.managed_population_instance_id === "string") &&
+    (v.deposit_instance_id === null || typeof v.deposit_instance_id === "string")
   );
 }

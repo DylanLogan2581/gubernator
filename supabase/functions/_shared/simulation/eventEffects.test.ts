@@ -75,6 +75,7 @@ function makeEvent(overrides: Partial<SimEvent>): SimEvent {
     durationType: "instant",
     effectPayloadJsonb: {},
     effectType: "resource_grant",
+    effects: [],
     id: "evt1",
     remainingTransitions: null,
     status: "active",

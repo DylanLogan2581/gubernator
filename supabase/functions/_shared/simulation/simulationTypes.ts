@@ -244,11 +244,24 @@ export type EventEffectType =
   | "resource_grant"
   | "upkeep_multiplier";
 
+export type SimEffect = {
+  readonly id: string;
+  readonly effectType: EventEffectType;
+  readonly amountValue: number | null;
+  readonly multiplierValue: number | null;
+  readonly isPercent: boolean;
+  readonly resourceId: string | null;
+  readonly jobId: string | null;
+  readonly managedPopulationInstanceId: string | null;
+  readonly depositInstanceId: string | null;
+};
+
 export type SimEvent = {
   readonly activateOnTransitionAfterTurnNumber: number;
   readonly durationType: "instant" | "sustained";
   readonly effectPayloadJsonb: Record<string, unknown>;
   readonly effectType: EventEffectType;
+  readonly effects: readonly SimEffect[];
   readonly id: string;
   readonly remainingTransitions: number | null;
   readonly status: SimEventStatus;

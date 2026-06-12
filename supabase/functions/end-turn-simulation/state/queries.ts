@@ -441,6 +441,21 @@ export function fetchEvents(
   });
 }
 
+export function fetchEventEffects(
+  ctx: FetchContext,
+  _worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "event_effects",
+    params: {
+      select:
+        "id,event_id,effect_type,amount_value,multiplier_value,is_percent,resource_id,job_id,managed_population_instance_id,deposit_instance_id",
+      order: "event_id.asc,id.asc",
+    },
+  });
+}
+
 export function fetchAssignments(
   ctx: FetchContext,
   worldId: string,
