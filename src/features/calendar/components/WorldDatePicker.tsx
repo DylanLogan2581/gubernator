@@ -45,10 +45,12 @@ export function WorldDatePicker({
   value,
 }: WorldDatePickerProps): JSX.Element {
   // Resolve current date from turn number
+  // For turn 0, clamp to turn 1 for display purposes
+  const displayTurnNumber = Math.max(currentTurnNumber, 1);
   let todayDate: CalendarDateInput;
   let todayWeekday: string;
   try {
-    const resolved = resolveTurnCalendarDate(config, currentTurnNumber);
+    const resolved = resolveTurnCalendarDate(config, displayTurnNumber);
     todayDate = {
       year: resolved.year,
       monthIndex: resolved.monthIndex,
@@ -86,9 +88,10 @@ export function WorldDatePicker({
     });
     const resolved = resolveTurnCalendarDate(config, selectedTurnNumber);
     selectedWeekday = resolved.weekdayName;
+    // For turn 0, clamp to turn 1 for relative time calculation
     const diff = getRelativeTurnDifference(
       config,
-      currentTurnNumber,
+      displayTurnNumber,
       selectedTurnNumber,
     );
     relativeTimeDisplay = formatRelativeTurnDifference(diff);

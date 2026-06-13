@@ -243,4 +243,38 @@ describe("WorldDatePicker", () => {
     const button = screen.getByRole("button", { name: /test picker/i });
     expect(button).toBeDisabled();
   });
+
+  it("handles turn 0 worlds without displaying Invalid", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <WorldDatePicker
+        config={mockConfig}
+        currentTurnNumber={0}
+        disabled={false}
+        label="Test picker"
+        onTurnNumberChange={vi.fn()}
+        value={{
+          year: 1000,
+          monthIndex: 0,
+          dayOfMonth: 1,
+        }}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: /test picker/i });
+    await user.click(button);
+
+    // Should display valid weekday, not "Invalid"
+    expect(screen.getByText("Sunday")).toBeInTheDocument();
+    expect(screen.queryByText("Invalid")).not.toBeInTheDocument();
+
+    // Should display valid relative time, not "Invalid"
+    const allTexts = screen.getAllByText(/today|from today|ago/i);
+    // Find the one in the relative-time div (not in button text)
+    const relativeTimeText = allTexts.find(
+      (el) => el.className.includes("mt-1") || el.textContent === "Today",
+    );
+    expect(relativeTimeText).toBeInTheDocument();
+  });
 });
