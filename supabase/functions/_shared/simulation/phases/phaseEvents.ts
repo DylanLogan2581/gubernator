@@ -36,7 +36,6 @@ function applyEffect(
   effect: SimEffect,
   eventId: string,
   payload: Record<string, unknown>,
-  pendingBuildingDamage: Set<string>,
   pendingBuildingDestroys: BuildingStateChange[],
   pendingEventMultipliers: Map<
     string,
@@ -57,19 +56,6 @@ function applyEffect(
 
   try {
     switch (effectType) {
-      case "building_damage": {
-        const buildingId = payload.buildingId;
-        if (typeof buildingId === "string") {
-          pendingBuildingDamage.add(buildingId);
-          logs.push({
-            category: "event.building_damage",
-            payload: { buildingId, eventId },
-            phase: "events",
-          });
-        }
-        break;
-      }
-
       case "building_destroyed": {
         const settlementBuildingId = effect.settlementBuildingId ?? payload.settlementBuildingId;
         if (typeof settlementBuildingId === "string") {
@@ -339,7 +325,6 @@ function applyEffect(
 export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
   const { events, turnNumber } = context.input;
   const {
-    pendingBuildingDamage,
     pendingEventMultipliers,
     pendingManagedPopulationDeltas,
     pendingStockpiles,
@@ -376,7 +361,6 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         effect,
         event.id,
         event.effectPayloadJsonb,
-        pendingBuildingDamage,
         buildingStateChanges,
         pendingEventMultipliers,
         pendingManagedPopulationDeltas,

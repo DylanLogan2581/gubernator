@@ -446,7 +446,6 @@ describe("phaseEvents", () => {
 
   describe("effect type coverage", () => {
     const effectTypes: EventEffectType[] = [
-      "building_damage",
       "consumption_multiplier",
       "deposit_discovered",
       "managed_population_change",
@@ -486,19 +485,17 @@ describe("phaseEvents", () => {
                 effectType === "production_multiplier" ||
                 effectType === "upkeep_multiplier"
                   ? { multiplier: 1.5 }
-                  : effectType === "building_damage"
-                    ? { buildingId: "b1" }
-                    : effectType === "deposit_discovered"
-                      ? {}
-                      : effectType === "managed_population_change"
-                        ? { managedPopulationId: "mp1", delta: 5 }
-                        : effectType === "population_boost"
-                          ? { amount: 10 }
-                          : effectType === "population_loss"
-                            ? { amount: 5 }
-                            : effectType === "resource_drain"
-                              ? { resourceId: "r1", amount: 100 }
-                              : { resourceId: "r1", amount: 100 },
+                  : effectType === "deposit_discovered"
+                    ? {}
+                    : effectType === "managed_population_change"
+                      ? { managedPopulationId: "mp1", delta: 5 }
+                      : effectType === "population_boost"
+                        ? { amount: 10 }
+                        : effectType === "population_loss"
+                          ? { amount: 5 }
+                          : effectType === "resource_drain"
+                            ? { resourceId: "r1", amount: 100 }
+                            : { resourceId: "r1", amount: 100 },
             }),
           ],
         });

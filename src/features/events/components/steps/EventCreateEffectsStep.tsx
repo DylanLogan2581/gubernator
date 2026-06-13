@@ -34,7 +34,6 @@ import {
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 
 type EventEffectType =
-  | "building_damage"
   | "building_destroyed"
   | "consumption_multiplier"
   | "deposit_destroyed"
@@ -122,11 +121,6 @@ const EFFECT_TYPE_OPTIONS: Array<{
     value: "upkeep_multiplier",
     label: "Building Upkeep Multiplier",
     description: "Multiply building upkeep costs",
-  },
-  {
-    value: "building_damage",
-    label: "Building Damage",
-    description: "Damage buildings",
   },
   {
     value: "building_destroyed",

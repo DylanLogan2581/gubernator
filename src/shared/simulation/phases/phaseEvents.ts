@@ -89,26 +89,6 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     // Process effect and log per target settlement
     try {
       switch (effectType) {
-        case "building_damage": {
-          const buildingId = payload.buildingId;
-          if (typeof buildingId === "string") {
-            for (const settlementId of targetSettlementIds) {
-              logs.push({
-                category: "event.building_damage",
-                payload: {
-                  buildingId,
-                  eventId: event.id,
-                  groupId: event.groupId,
-                  scope: event.scopeType,
-                  settlementId,
-                },
-                phase: "events",
-              });
-            }
-          }
-          break;
-        }
-
         case "building_destroyed": {
           const settlementBuildingId = payload.settlementBuildingId;
           if (typeof settlementBuildingId === "string") {

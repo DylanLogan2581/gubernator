@@ -82,8 +82,6 @@ export function runSimulation(
     }
   >();
 
-  const pendingBuildingDamage = new Set<string>();
-
   const pendingManagedPopulationDeltas = new Map<string, number>();
 
   const pendingDepositDestroys = new Set<string>();
@@ -91,7 +89,6 @@ export function runSimulation(
   const context: SimulationContext = {
     input,
     shared: {
-      pendingBuildingDamage,
       pendingDeaths,
       pendingEventMultipliers,
       pendingManagedPopulationDeltas,

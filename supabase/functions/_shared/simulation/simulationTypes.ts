@@ -233,7 +233,6 @@ export type SimEventStatus = "active" | "expired" | "pending" | "resolved";
 // Exhaustive union — adding a new value here requires a matching case in the
 // phaseEvents switch, which is the Epic 7 hand-off contract.
 export type EventEffectType =
-  | "building_damage"
   | "building_destroyed"
   | "consumption_multiplier"
   | "deposit_destroyed"
@@ -610,8 +609,6 @@ export type SimulationSharedState = {
       upkeepByBlueprintId: Map<string, number>;
     }
   >;
-  // Settlement building IDs to suspend due to building_damage effects.
-  readonly pendingBuildingDamage: Set<string>;
   // Managed population ID -> population delta from managed_population_change effects.
   readonly pendingManagedPopulationDeltas: Map<string, number>;
   // Deposit instance IDs to mark as removed due to deposit_destroyed effects.

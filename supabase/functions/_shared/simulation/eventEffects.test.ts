@@ -92,7 +92,6 @@ function makeContext(input: SimulationInputState): SimulationContext {
   return {
     input,
     shared: {
-      pendingBuildingDamage: new Set(),
       pendingDeaths: new Set(),
       pendingEventMultipliers: new Map(),
       pendingManagedPopulationDeltas: new Map(),
@@ -471,53 +470,6 @@ describe("phaseEvents — population_boost", () => {
           amount: 5,
           eventId: "boost123",
           settlementId: "settlement1",
-        }),
-      }),
-    );
-  });
-});
-
-describe("phaseEvents — building_damage", () => {
-  it("tracks building damage in shared state", () => {
-    const input = makeInput({
-      events: [
-        makeEvent({
-          effectPayloadJsonb: {
-            buildingId: "building1",
-          },
-          effectType: "building_damage",
-        }),
-      ],
-    });
-    const context = makeContext(input);
-
-    phaseEvents(context);
-
-    expect(context.shared.pendingBuildingDamage.has("building1")).toBe(true);
-  });
-
-  it("logs building_damage event", () => {
-    const input = makeInput({
-      events: [
-        makeEvent({
-          effectPayloadJsonb: {
-            buildingId: "building1",
-          },
-          effectType: "building_damage",
-          id: "dmg123",
-        }),
-      ],
-    });
-    const context = makeContext(input);
-
-    const result = phaseEvents(context);
-
-    expect(result.logs).toContainEqual(
-      expect.objectContaining({
-        category: "event.building_damage",
-        payload: expect.objectContaining({
-          buildingId: "building1",
-          eventId: "dmg123",
         }),
       }),
     );

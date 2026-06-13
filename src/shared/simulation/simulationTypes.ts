@@ -238,7 +238,6 @@ export type SimEventStatus =
 // Exhaustive union — adding a new value here requires a matching case in the
 // phaseEvents switch, which is the Epic 7 hand-off contract.
 export type EventEffectType =
-  | "building_damage"
   | "building_destroyed"
   | "consumption_multiplier"
   | "deposit_discovered"
