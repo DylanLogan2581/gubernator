@@ -4,10 +4,17 @@ import { useEffect, useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import { jobsByWorldQueryOptions } from "@/features/jobs";
 import type { AccessContext } from "@/features/permissions";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { worldRouteAccessQueryOptions } from "@/features/worlds";
+import {
+  formatCalendarDate,
+  formatRelativeTurnDifference,
+  getRelativeTurnDifference,
+  resolveTurnCalendarDate,
+} from "@/shared/turnCalendarPrimitives";
 
 import {
   createEventGroupMutationOptions,
@@ -100,13 +107,43 @@ export function EventCreateWizard({
   const worldQuery = useQuery(
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
+  const calendarConfigQuery = useQuery(
+    worldCalendarConfigQueryOptions(worldId),
+  );
 
   const nextTurnNumber = worldQuery.data?.world.nextTurnNumber ?? 1;
+  const currentTurnNumber = worldQuery.data?.world.currentTurnNumber ?? 1;
   const [state, setState] = useState<EventCreateWizardState>(() =>
     createInitialState(nextTurnNumber),
   );
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
+
+  // Compute calendar date and relative time for activation turn
+  let activationTurnCalendarDate: string | undefined;
+  let activationTurnRelativeTime: string | undefined;
+  if (
+    calendarConfigQuery.data !== undefined &&
+    calendarConfigQuery.data !== null
+  ) {
+    try {
+      const resolved = resolveTurnCalendarDate(
+        calendarConfigQuery.data,
+        state.activationTurn,
+      );
+      activationTurnCalendarDate = formatCalendarDate(resolved, {
+        dateFormatTemplate: calendarConfigQuery.data.dateFormatTemplate,
+      });
+      const relativeDiff = getRelativeTurnDifference(
+        calendarConfigQuery.data,
+        currentTurnNumber,
+        state.activationTurn,
+      );
+      activationTurnRelativeTime = formatRelativeTurnDifference(relativeDiff);
+    } catch {
+      // Silently fail if turn number is invalid
+    }
+  }
 
   // Update activation turn when world data changes and state hasn't been customized
   useEffect(() => {
@@ -443,11 +480,15 @@ export function EventCreateWizard({
             groupName={groupName}
             groupDescription={groupDescription}
             scopeType={state.scopeType ?? "world"}
+            selectedIds={state.selectedIds}
             effects={state.effects}
             durationType={state.durationType}
             durationTransitions={state.durationTransitions}
             activationTurn={state.activationTurn}
+            activationTurnCalendarDate={activationTurnCalendarDate}
+            activationTurnRelativeTime={activationTurnRelativeTime}
             createCitizenMemories={state.createCitizenMemories}
+            worldId={worldId}
           />
         )}
       </div>
