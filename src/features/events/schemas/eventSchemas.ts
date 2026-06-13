@@ -60,7 +60,7 @@ const eventEffectBaseSchema = z.strictObject({
   amountValue: z.number().optional().nullable(),
   multiplierValue: z.number().optional().nullable(),
   resourceId: z.string().uuid().optional().nullable(),
-  jobId: z.number().int().optional().nullable(),
+  jobId: z.string().uuid().optional().nullable(),
   managedPopulationInstanceId: z.string().uuid().optional().nullable(),
   managedPopulationTypeId: z.string().uuid().optional().nullable(),
   managedPopulationMode: z

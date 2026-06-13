@@ -4,6 +4,7 @@ import { useEffect, useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { jobsByWorldQueryOptions } from "@/features/jobs";
 import type { AccessContext } from "@/features/permissions";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { worldRouteAccessQueryOptions } from "@/features/worlds";
@@ -34,7 +35,9 @@ type EffectData = {
   resourceIds?: string[];
   resourceMode?: "all" | "select";
   populationType?: "boost" | "loss";
-  jobId: number | null;
+  jobId: string | null;
+  jobIds?: string[];
+  jobMode?: "all" | "select";
   managedPopulationInstanceId: string | null;
   managedPopulationTypeId?: string | null;
   managedPopulationMode?: "all" | "type" | "instance";
@@ -60,7 +63,7 @@ export type EventCreateWizardState = {
     amountValue: number | null;
     multiplierValue: number | null;
     resourceId: string | null;
-    jobId: number | null;
+    jobId: string | null;
     managedPopulationInstanceId: string | null;
     managedPopulationTypeId: string | null;
     managedPopulationMode?: "all" | "type" | "instance";
@@ -139,6 +142,7 @@ export function EventCreateWizard({
   const expandMultiResourceEffects = (
     effects: EffectData[],
     allResourceIds?: string[],
+    allJobIds?: string[],
   ): EffectData[] => {
     const expanded: EffectData[] = [];
 
@@ -186,6 +190,38 @@ export function EventCreateWizard({
           amountValue: absAmount,
           populationType: undefined,
         });
+      } else if (effect.effectType === "production_multiplier") {
+        // Handle production_multiplier: expand to individual per-job effects if in select mode
+        let jobIdsToExpand: string[] = [];
+
+        if (effect.jobMode === "all" && allJobIds !== undefined) {
+          // Expand "all" mode to all available job IDs
+          jobIdsToExpand = allJobIds;
+        } else if (effect.jobIds !== undefined && effect.jobIds.length > 0) {
+          // Use explicitly selected job IDs
+          jobIdsToExpand = effect.jobIds;
+        }
+
+        if (jobIdsToExpand.length > 0) {
+          // Create one effect per job
+          for (const jobId of jobIdsToExpand) {
+            expanded.push({
+              ...effect,
+              effectType: "production_multiplier",
+              jobId,
+              jobIds: undefined,
+              jobMode: undefined,
+            });
+          }
+        } else {
+          // No jobs selected, keep as-is with null jobId (affects all jobs)
+          expanded.push({
+            ...effect,
+            jobId: null,
+            jobIds: undefined,
+            jobMode: undefined,
+          });
+        }
       } else if (
         effect.effectType === "building_destroyed" &&
         effect.settlementBuildingIds !== undefined &&
@@ -234,9 +270,16 @@ export function EventCreateWizard({
       );
       const allResourceIds = resourcesQuery.map((r) => r.id);
 
+      // Fetch all jobs to expand "all" mode if needed
+      const jobsQuery = await queryClient.ensureQueryData(
+        jobsByWorldQueryOptions(worldId),
+      );
+      const allJobIds = jobsQuery.map((j) => j.id);
+
       const expandedEffects = expandMultiResourceEffects(
         state.effects,
         allResourceIds,
+        allJobIds,
       );
 
       const input: CreateEventGroupInput = {

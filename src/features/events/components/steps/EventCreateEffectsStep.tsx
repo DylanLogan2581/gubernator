@@ -19,6 +19,7 @@ import type { SettlementBuilding } from "@/features/buildings";
 import { settlementBuildingsBySettlementQueryOptions } from "@/features/buildings";
 import type { DepositInstance } from "@/features/deposits";
 import { depositInstancesBySettlementQueryOptions } from "@/features/deposits";
+import { jobsByWorldQueryOptions, type JobDefinition } from "@/features/jobs";
 import type {
   ManagedPopulationInstance,
   ManagedPopulationType,
@@ -53,7 +54,9 @@ type EffectData = {
   resourceIds?: string[];
   resourceMode?: "all" | "select";
   populationType?: "boost" | "loss";
-  jobId: number | null;
+  jobId: string | null;
+  jobIds?: string[];
+  jobMode?: "all" | "select";
   managedPopulationInstanceId: string | null;
   managedPopulationTypeId: string | null;
   managedPopulationMode?: "all" | "type" | "instance";
@@ -176,6 +179,9 @@ function EffectEditor({
 }): JSX.Element {
   // Query for resources if this is a modify_resource or resource effect
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+
+  // Query for jobs if this is a production_multiplier effect
+  const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
 
   // Query for deposits if this is a deposit_destroyed effect
   const depositQueries = useQueries({
@@ -736,11 +742,85 @@ function EffectEditor({
               }
             />
             {effect.effectType === "production_multiplier" && (
-              <p className="text-sm text-muted-foreground">
-                Affects job output production. Can optionally be scoped to a
-                specific job or building type by setting job ID or building
-                blueprint ID in the event payload.
-              </p>
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Multiply job output production. Can optionally be scoped to
+                  all jobs or specific jobs.
+                </p>
+
+                {/* Job target mode toggle and selector */}
+                {jobsQuery.data !== undefined && (
+                  <div className="space-y-2 pt-2">
+                    <Label>Target Jobs</Label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={effect.jobMode !== "select"}
+                          onChange={() =>
+                            onUpdate({
+                              ...effect,
+                              jobMode: "all",
+                              jobIds: undefined,
+                            })
+                          }
+                        />
+                        <span className="text-sm">All Jobs</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={effect.jobMode === "select"}
+                          onChange={() =>
+                            onUpdate({
+                              ...effect,
+                              jobMode: "select",
+                              jobIds: effect.jobIds ?? [],
+                            })
+                          }
+                        />
+                        <span className="text-sm">Select Jobs</span>
+                      </label>
+                    </div>
+
+                    {effect.jobMode === "all" ? (
+                      <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
+                        <p className="text-sm font-medium">
+                          ✓ All {jobsQuery.data.length} jobs selected
+                        </p>
+                      </div>
+                    ) : (
+                      jobsQuery.data.length > 0 && (
+                        <SearchableResourcePicker
+                          resources={jobsQuery.data.map((j: JobDefinition) => ({
+                            id: j.id,
+                            name: j.name,
+                          }))}
+                          selectedIds={effect.jobIds ?? []}
+                          onSelectionChange={(ids) =>
+                            onUpdate({
+                              ...effect,
+                              jobIds: ids,
+                            })
+                          }
+                        />
+                      )
+                    )}
+
+                    {jobsQuery.data.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No jobs available
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {jobsQuery.isLoading && (
+                  <p className="text-sm text-muted-foreground">
+                    Loading jobs...
+                  </p>
+                )}
+              </>
             )}
             {effect.effectType === "consumption_multiplier" && (
               <p className="text-sm text-muted-foreground">
@@ -875,6 +955,7 @@ export function EventCreateEffectsStep({
       multiplierValue: null,
       resourceId: null,
       jobId: null,
+      jobMode: undefined,
       managedPopulationInstanceId: null,
       managedPopulationTypeId: null,
       managedPopulationMode: undefined,

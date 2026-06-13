@@ -12,7 +12,7 @@ type EventCreateStep5Props = {
     amountValue: number | null;
     multiplierValue: number | null;
     resourceId: string | null;
-    jobId: number | null;
+    jobId: string | null;
     managedPopulationInstanceId: string | null;
     depositInstanceId: string | null;
   }>;
