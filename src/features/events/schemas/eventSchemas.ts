@@ -9,12 +9,12 @@ const groupIdSchema = z.guid("Group ID is invalid.");
 
 // Target object in create wizard
 export const eventTargetSchema = z.strictObject({
-  scope_id: z.string().uuid().optional().nullable(),
-  nation_id: z.string().uuid().optional().nullable(),
-  settlement_id: z.string().uuid().optional().nullable(),
+  scope_id: z.guid().optional().nullable(),
+  nation_id: z.guid().optional().nullable(),
+  settlement_id: z.guid().optional().nullable(),
   job_id: z.number().int().optional().nullable(),
-  building_blueprint_id: z.string().uuid().optional().nullable(),
-  managed_population_type_id: z.string().uuid().optional().nullable(),
+  building_blueprint_id: z.guid().optional().nullable(),
+  managed_population_type_id: z.guid().optional().nullable(),
   amount_value: z.number().optional().nullable(),
   multiplier_value: z.number().optional().nullable(),
   scope_name: z.string(), // Display name for the target
@@ -57,18 +57,18 @@ const eventEffectBaseSchema = z.strictObject({
   isPercent: z.boolean().default(false),
   amountValue: z.number().optional().nullable(),
   multiplierValue: z.number().optional().nullable(),
-  resourceId: z.string().uuid().optional().nullable(),
-  jobId: z.string().uuid().optional().nullable(),
-  managedPopulationInstanceId: z.string().uuid().optional().nullable(),
-  managedPopulationTypeId: z.string().uuid().optional().nullable(),
+  resourceId: z.guid().optional().nullable(),
+  jobId: z.guid().optional().nullable(),
+  managedPopulationInstanceId: z.guid().optional().nullable(),
+  managedPopulationTypeId: z.guid().optional().nullable(),
   managedPopulationMode: z
     .enum(["all", "type", "instance"])
     .optional()
     .nullable(),
-  depositInstanceId: z.string().uuid().optional().nullable(),
-  settlementBuildingId: z.string().uuid().optional().nullable(),
+  depositInstanceId: z.guid().optional().nullable(),
+  settlementBuildingId: z.guid().optional().nullable(),
   buildingBlueprintMode: z.enum(["all", "select"]).optional().nullable(),
-  buildingBlueprintIds: z.array(z.string().uuid()).optional().nullable(),
+  buildingBlueprintIds: z.array(z.guid()).optional().nullable(),
 });
 
 export const eventEffectSchema = eventEffectBaseSchema;

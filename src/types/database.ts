@@ -1,5 +1,3 @@
- 
-
 export type Json =
   | string
   | number
@@ -852,7 +850,7 @@ export type Database = {
           duration_transitions: number | null;
           duration_type: string;
           effect_payload_jsonb: Json;
-          effect_type: string;
+          effect_type: string | null;
           event_group_id: string | null;
           extra_data_jsonb: Json;
           id: string;
@@ -879,7 +877,7 @@ export type Database = {
           duration_transitions?: number | null;
           duration_type?: string;
           effect_payload_jsonb?: Json;
-          effect_type: string;
+          effect_type?: string | null;
           event_group_id?: string | null;
           extra_data_jsonb?: Json;
           id?: string;
@@ -906,7 +904,7 @@ export type Database = {
           duration_transitions?: number | null;
           duration_type?: string;
           effect_payload_jsonb?: Json;
-          effect_type?: string;
+          effect_type?: string | null;
           event_group_id?: string | null;
           extra_data_jsonb?: Json;
           id?: string;
@@ -2732,39 +2730,22 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      create_event_group_with_events:
-        | {
-            Args: {
-              p_activate_on_transition_after_turn_number: number;
-              p_create_citizen_memories: boolean;
-              p_duration_transitions: number;
-              p_duration_type: string;
-              p_effect_type: string;
-              p_group_description: string;
-              p_group_name: string;
-              p_memory_text: string;
-              p_scope_type: string;
-              p_targets: Json;
-              p_world_id: string;
-            };
-            Returns: Json;
-          }
-        | {
-            Args: {
-              p_activate_on_transition_after_turn_number: number;
-              p_create_citizen_memories: boolean;
-              p_duration_transitions: number;
-              p_duration_type: string;
-              p_effects: Json;
-              p_group_description: string;
-              p_group_name: string;
-              p_memory_text: string;
-              p_scope_type: string;
-              p_targets: Json;
-              p_world_id: string;
-            };
-            Returns: Json;
-          };
+      create_event_group_with_events: {
+        Args: {
+          p_activate_on_transition_after_turn_number: number;
+          p_create_citizen_memories: boolean;
+          p_duration_transitions: number;
+          p_duration_type: string;
+          p_effects: Json;
+          p_group_description: string;
+          p_group_name: string;
+          p_memory_text: string;
+          p_scope_type: string;
+          p_targets: Json;
+          p_world_id: string;
+        };
+        Returns: Json;
+      };
       create_managed_population_instance: {
         Args: {
           p_initial_count: number;
@@ -4174,8 +4155,7 @@ export type Database = {
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
-        | { Args: { why: string }; Returns: boolean[] }
-         ;
+        | { Args: { why: string }; Returns: boolean[] };
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }

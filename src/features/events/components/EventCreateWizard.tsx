@@ -285,21 +285,34 @@ export function EventCreateWizard({
   const handleSubmit = async (): Promise<void> => {
     if (state.scopeType === null) return;
     try {
-      // Build targets array based on scope and selected IDs
-      const targets = state.selectedIds.map((id) => ({
-        scope_id: state.scopeType === "world" ? null : id,
-        nation_id: state.scopeType === "nation" ? id : null,
-        settlement_id: state.scopeType === "settlement" ? id : null,
-        scope_name:
-          state.scopeType === "world"
-            ? "World"
-            : state.scopeType === "nation"
-              ? `Nation ${id}`
-              : `Settlement ${id}`,
-        job_id: null,
-        building_blueprint_id: null,
-        managed_population_type_id: null,
-      }));
+      // Build targets array based on scope and selected IDs.
+      // World scope has no selectable IDs but the RPC still needs one
+      // target row to create the single world-wide event.
+      const targets =
+        state.scopeType === "world"
+          ? [
+              {
+                scope_id: null,
+                nation_id: null,
+                settlement_id: null,
+                scope_name: "World",
+                job_id: null,
+                building_blueprint_id: null,
+                managed_population_type_id: null,
+              },
+            ]
+          : state.selectedIds.map((id) => ({
+              scope_id: id,
+              nation_id: state.scopeType === "nation" ? id : null,
+              settlement_id: state.scopeType === "settlement" ? id : null,
+              scope_name:
+                state.scopeType === "nation"
+                  ? `Nation ${id}`
+                  : `Settlement ${id}`,
+              job_id: null,
+              building_blueprint_id: null,
+              managed_population_type_id: null,
+            }));
 
       // Fetch all resources to expand "all" mode if needed
       const resourcesQuery = await queryClient.ensureQueryData(
