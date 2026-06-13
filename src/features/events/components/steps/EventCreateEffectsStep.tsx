@@ -425,39 +425,38 @@ function EffectEditor({
         {isModifyPopulation && (
           <>
             <div className="space-y-2">
-              <Label>Population Change Type</Label>
+              <Label>Mode</Label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2">
                   <input
                     type="radio"
-                    checked={effect.populationType !== "loss"}
-                    onChange={() =>
-                      onUpdate({ ...effect, populationType: "boost" })
-                    }
+                    checked={!effect.isPercent}
+                    onChange={() => onUpdate({ ...effect, isPercent: false })}
                   />
-                  <span className="text-sm">Boost (positive amount)</span>
+                  <span className="text-sm">Flat amount</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="radio"
-                    checked={effect.populationType === "loss"}
-                    onChange={() =>
-                      onUpdate({ ...effect, populationType: "loss" })
-                    }
+                    checked={effect.isPercent}
+                    onChange={() => onUpdate({ ...effect, isPercent: true })}
                   />
-                  <span className="text-sm">Loss (positive amount → loss)</span>
+                  <span className="text-sm">Percent of current</span>
                 </label>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor={`amount-${effect.effectType}`}>
-                Amount (always enter as positive)
+                {effect.isPercent ? "Percent" : "Amount"} (positive = boost,
+                negative = loss)
               </Label>
               <Input
                 id={`amount-${effect.effectType}`}
                 type="number"
-                placeholder="e.g., 100"
+                placeholder={
+                  effect.isPercent ? "e.g., 10 for 10%" : "e.g., 100 or -50"
+                }
                 value={effect.amountValue ?? ""}
                 onChange={(e) =>
                   onUpdate({

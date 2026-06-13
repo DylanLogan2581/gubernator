@@ -170,19 +170,16 @@ export function EventCreateWizard({
             });
           }
         }
-      } else if (
-        effect.effectType === "modify_population" &&
-        effect.populationType !== undefined
-      ) {
-        // Handle modify_population: convert to population_boost/loss
-        const effectType =
-          effect.populationType === "boost"
-            ? "population_boost"
-            : "population_loss";
+      } else if (effect.effectType === "modify_population") {
+        // Handle modify_population: convert to population_boost/loss based on sign
+        const isNegative = (effect.amountValue ?? 0) < 0;
+        const absAmount = Math.abs(effect.amountValue ?? 0);
+        const effectType = isNegative ? "population_loss" : "population_boost";
 
         expanded.push({
           ...effect,
           effectType,
+          amountValue: absAmount,
           populationType: undefined,
         });
       } else if (
