@@ -19,6 +19,14 @@ import type { SettlementBuilding } from "@/features/buildings";
 import { settlementBuildingsBySettlementQueryOptions } from "@/features/buildings";
 import type { DepositInstance } from "@/features/deposits";
 import { depositInstancesBySettlementQueryOptions } from "@/features/deposits";
+import type {
+  ManagedPopulationInstance,
+  ManagedPopulationType,
+} from "@/features/managed-populations";
+import {
+  managedPopulationTypesByWorldQueryOptions,
+  managedPopulationInstancesBySettlementQueryOptions,
+} from "@/features/managed-populations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 
 type EventEffectType =
@@ -47,6 +55,8 @@ type EffectData = {
   populationType?: "boost" | "loss";
   jobId: number | null;
   managedPopulationInstanceId: string | null;
+  managedPopulationTypeId: string | null;
+  managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
@@ -187,6 +197,23 @@ function EffectEditor({
         : [],
   });
 
+  // Query for managed population types for type-targeted effects
+  const typesQuery = useQuery(
+    managedPopulationTypesByWorldQueryOptions(worldId),
+  );
+
+  // Query for managed population instances if this is a managed_population_change effect
+  const instanceQueries = useQueries({
+    queries:
+      effect.effectType === "managed_population_change" &&
+      scopeType === "settlement" &&
+      selectedIds.length > 0
+        ? selectedIds.map((settlementId) =>
+            managedPopulationInstancesBySettlementQueryOptions(settlementId),
+          )
+        : [],
+  });
+
   // Pool all deposits from selected settlements with settlement labels
   const allDeposits: Array<{
     readonly id: string;
@@ -238,6 +265,36 @@ function EffectEditor({
         });
       }
     });
+  }
+
+  // Pool all managed population instances from selected settlements
+  type InstanceWithLocation = {
+    readonly id: string;
+    readonly settlementId: string;
+    readonly name: string;
+    readonly typeName: string;
+    readonly label: string;
+  };
+  const allInstances: InstanceWithLocation[] = [];
+
+  if (effect.effectType === "managed_population_change") {
+    if (scopeType === "settlement") {
+      instanceQueries.forEach((query, index) => {
+        const settlementId = selectedIds[index];
+        const instances = query.data as ManagedPopulationInstance[] | undefined;
+        if (instances !== undefined && Array.isArray(instances)) {
+          instances.forEach((instance) => {
+            allInstances.push({
+              id: instance.id,
+              settlementId,
+              name: instance.name,
+              typeName: instance.managedPopulationTypeName,
+              label: `${instance.name} [${instance.managedPopulationTypeName}] (Settlement: ${settlementId.slice(0, 8)})`,
+            });
+          });
+        }
+      });
+    }
   }
 
   // Determine display label and whether to show special UIs
@@ -517,6 +574,148 @@ function EffectEditor({
           </>
         )}
 
+        {effect.effectType === "managed_population_change" && (
+          <div className="space-y-2">
+            <Label>Target Selection</Label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={
+                    effect.managedPopulationMode === undefined ||
+                    effect.managedPopulationMode === "all"
+                  }
+                  onChange={() =>
+                    onUpdate({
+                      ...effect,
+                      managedPopulationMode: "all",
+                      managedPopulationTypeId: null,
+                      managedPopulationInstanceId: null,
+                    })
+                  }
+                />
+                <span className="text-sm">
+                  All managed populations in scope
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={effect.managedPopulationMode === "type"}
+                  onChange={() =>
+                    onUpdate({
+                      ...effect,
+                      managedPopulationMode: "type",
+                      managedPopulationInstanceId: null,
+                    })
+                  }
+                />
+                <span className="text-sm">All of a population type</span>
+              </label>
+
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={effect.managedPopulationMode === "instance"}
+                  onChange={() =>
+                    onUpdate({
+                      ...effect,
+                      managedPopulationMode: "instance",
+                      managedPopulationTypeId: null,
+                    })
+                  }
+                />
+                <span className="text-sm">Specific instances</span>
+              </label>
+            </div>
+
+            {effect.managedPopulationMode === "type" && (
+              <div className="space-y-2">
+                <Label htmlFor="population-type-select">Select Type</Label>
+                {typesQuery.isLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading population types...
+                  </p>
+                ) : typesQuery.data === undefined ||
+                  typesQuery.data.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No population types available
+                  </p>
+                ) : (
+                  <Select
+                    value={effect.managedPopulationTypeId ?? ""}
+                    onValueChange={(value) =>
+                      onUpdate({
+                        ...effect,
+                        managedPopulationTypeId: value !== "" ? value : null,
+                      })
+                    }
+                  >
+                    <SelectTrigger id="population-type-select">
+                      <SelectValue placeholder="Choose a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {typesQuery.data.map((type: ManagedPopulationType) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
+            {effect.managedPopulationMode === "instance" && (
+              <div className="space-y-2">
+                <Label>Select Instances</Label>
+                {scopeType !== "settlement" ? (
+                  <p className="text-sm text-muted-foreground">
+                    Select settlements in step 2 to target instances
+                  </p>
+                ) : selectedIds.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No settlements selected
+                  </p>
+                ) : allInstances.length === 0 &&
+                  instanceQueries.some((q) => q.isLoading) ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading instances...
+                  </p>
+                ) : allInstances.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No managed populations available in selected settlements
+                  </p>
+                ) : (
+                  <div className="space-y-2 rounded-md border p-3 max-h-64 overflow-y-auto">
+                    {allInstances.map((instance) => (
+                      <label
+                        key={instance.id}
+                        className="flex items-center gap-2"
+                      >
+                        <Checkbox
+                          checked={
+                            effect.managedPopulationInstanceId === instance.id
+                          }
+                          onCheckedChange={(checked) => {
+                            onUpdate({
+                              ...effect,
+                              managedPopulationInstanceId:
+                                checked === true ? instance.id : null,
+                            });
+                          }}
+                        />
+                        <span className="text-sm">{instance.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {isMultiplierEffect && (
           <div className="space-y-2">
             <Label htmlFor={`multiplier-${effect.effectType}`}>
@@ -677,6 +876,8 @@ export function EventCreateEffectsStep({
       resourceId: null,
       jobId: null,
       managedPopulationInstanceId: null,
+      managedPopulationTypeId: null,
+      managedPopulationMode: undefined,
       depositInstanceId: null,
       settlementBuildingId: null,
     };

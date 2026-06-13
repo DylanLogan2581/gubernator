@@ -14,14 +14,16 @@
 --   p_effects: JSON array of effect objects
 --     Format: [
 --       {
---         "effect_type": "resource_grant" | "resource_drain" | ... (10 types),
+--         "effect_type": "resource_grant" | "resource_drain" | ... (12 types),
 --         "is_percent": boolean,
 --         "amount_value": numeric or null,
 --         "multiplier_value": numeric or null,
 --         "resource_id": uuid or null,
 --         "job_id": uuid or null,
 --         "managed_population_instance_id": uuid or null,
---         "deposit_instance_id": uuid or null
+--         "managed_population_type_id": uuid or null,
+--         "deposit_instance_id": uuid or null,
+--         "extra_data_jsonb": object or null (for managed_population_change: {"managed_population_mode": "all"|"type"|"instance"})
 --       }
 --     ]
 --   p_scope_type: 'world' | 'nation' | 'settlement'
@@ -156,7 +158,16 @@ begin
       null,
       'pending',
       (p_effects->0->>'effect_type')::text,
-      '{}'::jsonb,
+      case
+        when (p_effects->0->>'effect_type')::text = 'managed_population_change' then
+          jsonb_build_object(
+            'delta', (p_effects->0->>'amount_value')::numeric,
+            'managed_population_id', (p_effects->0->>'managed_population_instance_id')::text,
+            'managed_population_type_id', (p_effects->0->>'managed_population_type_id')::text,
+            'managed_population_mode', (p_effects->0->'extra_data_jsonb'->>'managed_population_mode')::text
+          )
+        else '{}' :: jsonb
+      end,
       p_activate_on_transition_after_turn_number,
       p_scope_type,
       v_scope_nation_id,
@@ -188,8 +199,10 @@ begin
         resource_id,
         job_id,
         managed_population_instance_id,
+        managed_population_type_id,
         deposit_instance_id,
-        settlement_building_id
+        settlement_building_id,
+        extra_data_jsonb
       ) values (
         v_event_id,
         (v_effect->>'effect_type')::text,
@@ -199,8 +212,10 @@ begin
         (v_effect->>'resource_id')::uuid,
         (v_effect->>'job_id')::uuid,
         (v_effect->>'managed_population_instance_id')::uuid,
+        (v_effect->>'managed_population_type_id')::uuid,
         (v_effect->>'deposit_instance_id')::uuid,
-        (v_effect->>'settlement_building_id')::uuid
+        (v_effect->>'settlement_building_id')::uuid,
+        coalesce((v_effect->>'extra_data_jsonb')::jsonb, '{}' :: jsonb)
       );
     end loop;
   end loop;

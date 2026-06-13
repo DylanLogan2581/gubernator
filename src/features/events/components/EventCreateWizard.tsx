@@ -36,6 +36,8 @@ type EffectData = {
   populationType?: "boost" | "loss";
   jobId: number | null;
   managedPopulationInstanceId: string | null;
+  managedPopulationTypeId?: string | null;
+  managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
@@ -60,6 +62,8 @@ export type EventCreateWizardState = {
     resourceId: string | null;
     jobId: number | null;
     managedPopulationInstanceId: string | null;
+    managedPopulationTypeId: string | null;
+    managedPopulationMode?: "all" | "type" | "instance";
     depositInstanceId: string | null;
     settlementBuildingId: string | null;
   }>;
@@ -248,6 +252,8 @@ export function EventCreateWizard({
           resourceId: e.resourceId,
           jobId: e.jobId,
           managedPopulationInstanceId: e.managedPopulationInstanceId,
+          managedPopulationTypeId: e.managedPopulationTypeId,
+          managedPopulationMode: e.managedPopulationMode,
           depositInstanceId: e.depositInstanceId,
           settlementBuildingId: e.settlementBuildingId,
         })),

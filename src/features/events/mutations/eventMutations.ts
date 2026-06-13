@@ -156,16 +156,28 @@ export function createEventGroupMutationOptions({
           p_world_id: values.worldId,
           p_group_name: values.groupName,
           p_group_description: values.groupDescription ?? null,
-          p_effects: values.effects.map((e) => ({
-            effect_type: e.effectType,
-            is_percent: e.isPercent,
-            amount_value: e.amountValue,
-            multiplier_value: e.multiplierValue,
-            resource_id: e.resourceId,
-            job_id: e.jobId,
-            managed_population_instance_id: e.managedPopulationInstanceId,
-            deposit_instance_id: e.depositInstanceId,
-          })),
+          p_effects: values.effects.map((e) => {
+            const extraData =
+              e.effectType === "managed_population_change" &&
+              typeof e.managedPopulationMode === "string"
+                ? {
+                    managed_population_mode: e.managedPopulationMode,
+                  }
+                : {};
+            return {
+              effect_type: e.effectType,
+              is_percent: e.isPercent,
+              amount_value: e.amountValue,
+              multiplier_value: e.multiplierValue,
+              resource_id: e.resourceId,
+              job_id: e.jobId,
+              managed_population_instance_id: e.managedPopulationInstanceId,
+
+              managed_population_type_id: e.managedPopulationTypeId,
+              deposit_instance_id: e.depositInstanceId,
+              extra_data_jsonb: extraData,
+            };
+          }),
           p_scope_type: values.scopeType,
           p_targets: values.targets,
           p_duration_type: values.durationType,

@@ -62,6 +62,11 @@ const eventEffectBaseSchema = z.strictObject({
   resourceId: z.string().uuid().optional().nullable(),
   jobId: z.number().int().optional().nullable(),
   managedPopulationInstanceId: z.string().uuid().optional().nullable(),
+  managedPopulationTypeId: z.string().uuid().optional().nullable(),
+  managedPopulationMode: z
+    .enum(["all", "type", "instance"])
+    .optional()
+    .nullable(),
   depositInstanceId: z.string().uuid().optional().nullable(),
   settlementBuildingId: z.string().uuid().optional().nullable(),
 });

@@ -460,7 +460,23 @@ describe("phaseEvents", () => {
 
     for (const effectType of effectTypes) {
       it(`generates log for ${effectType}`, () => {
+        const managedPopulations =
+          effectType === "managed_population_change"
+            ? [
+                {
+                  id: "mp1",
+                  managedPopulationTypeId: "mpt1",
+                  settlementId: "s1",
+                  name: "Test Population",
+                  currentCount: 10,
+                  configuredCullQuantity: 5,
+                  status: "active" as const,
+                },
+              ]
+            : [];
+
         const ctx = makeContext({
+          managedPopulations,
           events: [
             makeEvent(effectType, {
               scopeType: "settlement",

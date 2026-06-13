@@ -180,27 +180,81 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         }
 
         case "managed_population_change": {
-          const managedPopulationId = payload.managedPopulationId;
           const delta = payload.delta;
-          if (
-            typeof managedPopulationId === "string" &&
-            typeof delta === "number"
-          ) {
-            for (const settlementId of targetSettlementIds) {
-              logs.push({
-                category: "event.managed_population_change",
-                payload: {
-                  delta,
-                  eventId: event.id,
-                  groupId: event.groupId,
-                  managedPopulationId,
-                  scope: event.scopeType,
-                  settlementId,
-                },
-                phase: "events",
-              });
+          const mode = payload.managed_population_mode ?? "instance";
+          const managedPopulationTypeId = payload.managed_population_type_id;
+
+          if (typeof delta !== "number") {
+            break;
+          }
+
+          // Collect target populations based on mode
+          const targetPopulations: Array<{
+            readonly id: string;
+            readonly settlementId: string;
+          }> = [];
+
+          if (mode === "all") {
+            // Mode 1: All managed populations in target settlements
+            for (const population of context.input.managedPopulations) {
+              if (targetSettlementIds.includes(population.settlementId)) {
+                targetPopulations.push({
+                  id: population.id,
+                  settlementId: population.settlementId,
+                });
+              }
+            }
+          } else if (mode === "type") {
+            // Mode 2: All populations of a specific type in target settlements
+            if (typeof managedPopulationTypeId === "string") {
+              for (const population of context.input.managedPopulations) {
+                if (
+                  population.managedPopulationTypeId ===
+                    managedPopulationTypeId &&
+                  targetSettlementIds.includes(population.settlementId)
+                ) {
+                  targetPopulations.push({
+                    id: population.id,
+                    settlementId: population.settlementId,
+                  });
+                }
+              }
+            }
+          } else {
+            // Mode 3 (or default): Specific instance (legacy/explicit)
+            const managedPopulationId = payload.managedPopulationId;
+            if (typeof managedPopulationId === "string") {
+              const population = context.input.managedPopulations.find(
+                (p) => p.id === managedPopulationId,
+              );
+              if (
+                population !== undefined &&
+                targetSettlementIds.includes(population.settlementId)
+              ) {
+                targetPopulations.push({
+                  id: population.id,
+                  settlementId: population.settlementId,
+                });
+              }
             }
           }
+
+          // Emit logs for each target population
+          for (const population of targetPopulations) {
+            logs.push({
+              category: "event.managed_population_change",
+              payload: {
+                delta,
+                eventId: event.id,
+                groupId: event.groupId,
+                managedPopulationId: population.id,
+                scope: event.scopeType,
+                settlementId: population.settlementId,
+              },
+              phase: "events",
+            });
+          }
+
           break;
         }
 
