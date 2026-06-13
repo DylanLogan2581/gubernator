@@ -188,7 +188,8 @@ begin
         resource_id,
         job_id,
         managed_population_instance_id,
-        deposit_instance_id
+        deposit_instance_id,
+        settlement_building_id
       ) values (
         v_event_id,
         (v_effect->>'effect_type')::text,
@@ -198,7 +199,8 @@ begin
         (v_effect->>'resource_id')::uuid,
         (v_effect->>'job_id')::uuid,
         (v_effect->>'managed_population_instance_id')::uuid,
-        (v_effect->>'deposit_instance_id')::uuid
+        (v_effect->>'deposit_instance_id')::uuid,
+        (v_effect->>'settlement_building_id')::uuid
       );
     end loop;
   end loop;

@@ -35,6 +35,8 @@ type EffectData = {
   jobId: number | null;
   managedPopulationInstanceId: string | null;
   depositInstanceId: string | null;
+  settlementBuildingId: string | null;
+  settlementBuildingIds?: string[];
   _id?: string;
 };
 
@@ -165,6 +167,20 @@ export function EventCreateWizard({
           effectType,
           populationType: undefined,
         });
+      } else if (
+        effect.effectType === "building_destroyed" &&
+        effect.settlementBuildingIds !== undefined &&
+        effect.settlementBuildingIds.length > 0
+      ) {
+        // Handle building_destroyed: expand to individual per-building effects
+        for (const settlementBuildingId of effect.settlementBuildingIds) {
+          expanded.push({
+            ...effect,
+            effectType: "building_destroyed",
+            settlementBuildingId,
+            settlementBuildingIds: undefined,
+          });
+        }
       } else {
         // Keep other effects as-is
         expanded.push(effect);
@@ -209,6 +225,7 @@ export function EventCreateWizard({
           jobId: e.jobId,
           managedPopulationInstanceId: e.managedPopulationInstanceId,
           depositInstanceId: e.depositInstanceId,
+          settlementBuildingId: e.settlementBuildingId,
         })),
         scopeType: state.scopeType,
         targets,
