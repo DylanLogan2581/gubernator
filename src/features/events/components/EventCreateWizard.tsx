@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import type { AccessContext } from "@/features/permissions";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { worldRouteAccessQueryOptions } from "@/features/worlds";
 
 import {
@@ -31,6 +32,7 @@ type EffectData = {
   multiplierValue: number | null;
   resourceId: string | null;
   resourceIds?: string[];
+  resourceMode?: "all" | "select";
   populationType?: "boost" | "loss";
   jobId: number | null;
   managedPopulationInstanceId: string | null;
@@ -130,27 +132,43 @@ export function EventCreateWizard({
     }));
   };
 
-  const expandMultiResourceEffects = (effects: EffectData[]): EffectData[] => {
+  const expandMultiResourceEffects = (
+    effects: EffectData[],
+    allResourceIds?: string[],
+  ): EffectData[] => {
     const expanded: EffectData[] = [];
 
     for (const effect of effects) {
       // Handle modify_resource: expand to individual resource_grant/drain effects
-      if (
-        effect.effectType === "modify_resource" &&
-        effect.resourceIds !== undefined &&
-        effect.resourceIds.length > 0
-      ) {
-        const isNegative = (effect.amountValue ?? 0) < 0;
-        const absAmount = Math.abs(effect.amountValue ?? 0);
+      if (effect.effectType === "modify_resource") {
+        // Determine which resources to expand to
+        let resourceIdsToExpand: string[] = [];
 
-        for (const resourceId of effect.resourceIds) {
-          expanded.push({
-            ...effect,
-            effectType: isNegative ? "resource_drain" : "resource_grant",
-            amountValue: absAmount,
-            resourceId,
-            resourceIds: undefined,
-          });
+        if (effect.resourceMode === "all" && allResourceIds !== undefined) {
+          // Expand "all" mode to all available resource IDs
+          resourceIdsToExpand = allResourceIds;
+        } else if (
+          effect.resourceIds !== undefined &&
+          effect.resourceIds.length > 0
+        ) {
+          // Use explicitly selected resource IDs
+          resourceIdsToExpand = effect.resourceIds;
+        }
+
+        if (resourceIdsToExpand.length > 0) {
+          const isNegative = (effect.amountValue ?? 0) < 0;
+          const absAmount = Math.abs(effect.amountValue ?? 0);
+
+          for (const resourceId of resourceIdsToExpand) {
+            expanded.push({
+              ...effect,
+              effectType: isNegative ? "resource_drain" : "resource_grant",
+              amountValue: absAmount,
+              resourceId,
+              resourceIds: undefined,
+              resourceMode: undefined,
+            });
+          }
         }
       } else if (
         effect.effectType === "modify_population" &&
@@ -209,7 +227,16 @@ export function EventCreateWizard({
         managed_population_type_id: null,
       }));
 
-      const expandedEffects = expandMultiResourceEffects(state.effects);
+      // Fetch all resources to expand "all" mode if needed
+      const resourcesQuery = await queryClient.ensureQueryData(
+        activeResourcesByWorldQueryOptions(worldId),
+      );
+      const allResourceIds = resourcesQuery.map((r) => r.id);
+
+      const expandedEffects = expandMultiResourceEffects(
+        state.effects,
+        allResourceIds,
+      );
 
       const input: CreateEventGroupInput = {
         worldId,

@@ -2,6 +2,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
+import { SearchableResourcePicker } from "@/components/shared/SearchableResourcePicker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,6 +43,7 @@ type EffectData = {
   multiplierValue: number | null;
   resourceId: string | null;
   resourceIds?: string[];
+  resourceMode?: "all" | "select";
   populationType?: "boost" | "loss";
   jobId: number | null;
   managedPopulationInstanceId: string | null;
@@ -345,48 +347,70 @@ function EffectEditor({
               />
             </div>
 
-            {/* Resource multi-selector */}
+            {/* Resource target mode toggle and selector */}
             {resourcesQuery.data !== undefined && (
               <div className="space-y-2">
-                <Label>Resources</Label>
-                <div className="space-y-2 rounded-md border p-3">
-                  {resourcesQuery.data.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No resources available
-                    </p>
-                  ) : (
-                    resourcesQuery.data.map((resource) => (
-                      <label
-                        key={resource.id}
-                        className="flex items-center gap-2"
-                      >
-                        <Checkbox
-                          checked={
-                            effect.resourceIds?.includes(resource.id) ?? false
-                          }
-                          onCheckedChange={(checked) => {
-                            const currentIds =
-                              effect.resourceIds ??
-                              (effect.resourceId !== null
-                                ? [effect.resourceId]
-                                : []);
-                            const newIds = new Set(currentIds);
-                            if (checked === true) {
-                              newIds.add(resource.id);
-                            } else if (checked === false) {
-                              newIds.delete(resource.id);
-                            }
-                            onUpdate({
-                              ...effect,
-                              resourceIds: Array.from(newIds),
-                            });
-                          }}
-                        />
-                        <span className="text-sm">{resource.name}</span>
-                      </label>
-                    ))
-                  )}
+                <Label>Target Resources</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={effect.resourceMode !== "select"}
+                      onChange={() =>
+                        onUpdate({
+                          ...effect,
+                          resourceMode: "all",
+                          resourceIds: undefined,
+                        })
+                      }
+                    />
+                    <span className="text-sm">All Resources</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={effect.resourceMode === "select"}
+                      onChange={() =>
+                        onUpdate({
+                          ...effect,
+                          resourceMode: "select",
+                          resourceIds: effect.resourceIds ?? [],
+                        })
+                      }
+                    />
+                    <span className="text-sm">Select Resources</span>
+                  </label>
                 </div>
+
+                {effect.resourceMode === "all" ? (
+                  <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
+                    <p className="text-sm font-medium">
+                      ✓ All {resourcesQuery.data.length} resources selected
+                    </p>
+                  </div>
+                ) : (
+                  resourcesQuery.data.length > 0 && (
+                    <SearchableResourcePicker
+                      resources={resourcesQuery.data.map((r) => ({
+                        id: r.id,
+                        name: r.name,
+                      }))}
+                      selectedIds={effect.resourceIds ?? []}
+                      onSelectionChange={(ids) =>
+                        onUpdate({
+                          ...effect,
+                          resourceIds: ids,
+                        })
+                      }
+                    />
+                  )
+                )}
+
+                {resourcesQuery.data.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No resources available
+                  </p>
+                )}
               </div>
             )}
 
