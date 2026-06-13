@@ -14,4 +14,8 @@ export const depositsQueryKeys = {
       "instances-by-settlement",
       settlementId,
     ] as const,
+  instancesByNations: (nationIds: readonly string[]) =>
+    [...depositsQueryKeys.all, "instances-by-nations", ...nationIds] as const,
+  instancesByWorld: (worldId: string) =>
+    [...depositsQueryKeys.all, "instances-by-world", worldId] as const,
 } as const;

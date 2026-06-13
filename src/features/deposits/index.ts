@@ -42,7 +42,12 @@ export {
   softDeleteDepositTypeMutationOptions,
   updateDepositTypeMutationOptions,
 } from "./mutations/depositsMutations";
-export { depositInstancesBySettlementQueryOptions } from "./queries/depositInstancesQueries";
+export {
+  depositInstancesBySettlementQueryOptions,
+  depositInstancesByNationsQueryOptions,
+  depositInstancesByWorldQueryOptions,
+  type DepositInstanceWithLocation,
+} from "./queries/depositInstancesQueries";
 export {
   activeDepositTypesByWorldQueryOptions,
   depositTypeByIdQueryOptions,

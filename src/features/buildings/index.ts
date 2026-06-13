@@ -52,7 +52,12 @@ export {
   tierByIdQueryOptions,
   tiersByBlueprintQueryOptions,
 } from "./queries/buildingsQueries";
-export { settlementBuildingsBySettlementQueryOptions } from "./queries/settlementBuildingsQueries";
+export {
+  settlementBuildingsBySettlementQueryOptions,
+  settlementBuildingsByNationsQueryOptions,
+  settlementBuildingsByWorldQueryOptions,
+  type SettlementBuildingWithLocation,
+} from "./queries/settlementBuildingsQueries";
 export { settlementPopulationCapQueryOptions } from "./queries/settlementPopulationCapQueries";
 export { buildingsQueryKeys } from "./queries/buildingsQueryKeys";
 export {

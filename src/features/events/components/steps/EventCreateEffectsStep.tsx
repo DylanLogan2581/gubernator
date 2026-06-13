@@ -15,13 +15,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { SettlementBuilding } from "@/features/buildings";
+import type {
+  SettlementBuilding,
+  SettlementBuildingWithLocation,
+} from "@/features/buildings";
 import {
   blueprintsByWorldQueryOptions,
   settlementBuildingsBySettlementQueryOptions,
+  settlementBuildingsByNationsQueryOptions,
+  settlementBuildingsByWorldQueryOptions,
 } from "@/features/buildings";
-import type { DepositInstance } from "@/features/deposits";
-import { depositInstancesBySettlementQueryOptions } from "@/features/deposits";
+import type {
+  DepositInstance,
+  DepositInstanceWithLocation,
+} from "@/features/deposits";
+import {
+  depositInstancesBySettlementQueryOptions,
+  depositInstancesByNationsQueryOptions,
+  depositInstancesByWorldQueryOptions,
+} from "@/features/deposits";
 import { jobsByWorldQueryOptions, type JobDefinition } from "@/features/jobs";
 import type {
   ManagedPopulationInstance,
@@ -63,6 +75,7 @@ type EffectData = {
   managedPopulationTypeId: string | null;
   managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
+  depositInstanceIds?: string[];
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
   buildingBlueprintMode?: "all" | "select";
@@ -183,7 +196,8 @@ function EffectEditor({
   const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
 
   // Query for deposits if this is a deposit_destroyed effect
-  const depositQueries = useQueries({
+  // For settlement scope: fetch individually per settlement
+  const settlementDepositQueries = useQueries({
     queries:
       scopeType === "settlement" && selectedIds.length > 0
         ? selectedIds.map((settlementId) =>
@@ -192,8 +206,34 @@ function EffectEditor({
         : [],
   });
 
+  // For nation/world scope: fetch in bulk
+  const nationDepositQueryOptions =
+    scopeType === "nation" && selectedIds.length > 0
+      ? depositInstancesByNationsQueryOptions(selectedIds)
+      : null;
+  const nationDepositQuery = useQuery(
+    (nationDepositQueryOptions ?? {
+      queryKey: ["deposits", "nations-disabled"] as const,
+      queryFn: () =>
+        Promise.resolve([] as readonly DepositInstanceWithLocation[]),
+      enabled: false,
+    }) as never,
+  );
+
+  const worldDepositQueryOptions =
+    scopeType === "world" ? depositInstancesByWorldQueryOptions(worldId) : null;
+  const worldDepositQuery = useQuery(
+    (worldDepositQueryOptions ?? {
+      queryKey: ["deposits", "world-disabled"] as const,
+      queryFn: () =>
+        Promise.resolve([] as readonly DepositInstanceWithLocation[]),
+      enabled: false,
+    }) as never,
+  );
+
   // Query for buildings if this is a building_destroyed effect
-  const buildingQueries = useQueries({
+  // For settlement scope: fetch individually per settlement
+  const settlementBuildingQueries = useQueries({
     queries:
       scopeType === "settlement" && selectedIds.length > 0
         ? selectedIds.map((settlementId) =>
@@ -201,6 +241,33 @@ function EffectEditor({
           )
         : [],
   });
+
+  // For nation/world scope: fetch in bulk
+  const nationBuildingQueryOptions =
+    scopeType === "nation" && selectedIds.length > 0
+      ? settlementBuildingsByNationsQueryOptions(selectedIds)
+      : null;
+  const nationBuildingQuery = useQuery(
+    (nationBuildingQueryOptions ?? {
+      queryKey: ["buildings", "nations-disabled"] as const,
+      queryFn: () =>
+        Promise.resolve([] as readonly SettlementBuildingWithLocation[]),
+      enabled: false,
+    }) as never,
+  );
+
+  const worldBuildingQueryOptions =
+    scopeType === "world"
+      ? settlementBuildingsByWorldQueryOptions(worldId)
+      : null;
+  const worldBuildingQuery = useQuery(
+    (worldBuildingQueryOptions ?? {
+      queryKey: ["buildings", "world-disabled"] as const,
+      queryFn: () =>
+        Promise.resolve([] as readonly SettlementBuildingWithLocation[]),
+      enabled: false,
+    }) as never,
+  );
 
   // Query for managed population types for type-targeted effects
   const typesQuery = useQuery(
@@ -222,16 +289,20 @@ function EffectEditor({
         : [],
   });
 
-  // Pool all deposits from selected settlements with settlement labels
-  const allDeposits: Array<{
+  // Pool all deposits from selected settlements with settlement and nation labels
+  type DepositWithLocation = {
     readonly id: string;
     readonly settlementId: string;
+    readonly settlementName: string;
+    readonly nationName: string;
     readonly name: string;
     readonly label: string;
-  }> = [];
+    readonly groupLabel: string;
+  };
+  const allDeposits: DepositWithLocation[] = [];
 
   if (scopeType === "settlement") {
-    depositQueries.forEach((query, index) => {
+    settlementDepositQueries.forEach((query, index) => {
       const settlementId = selectedIds[index];
       const deposits = query.data as DepositInstance[] | undefined;
       if (deposits !== undefined && Array.isArray(deposits)) {
@@ -239,26 +310,65 @@ function EffectEditor({
           allDeposits.push({
             id: deposit.id,
             settlementId,
+            settlementName: settlementId,
+            nationName: "",
             name: deposit.name,
             label: `${deposit.name} (Settlement: ${settlementId.slice(0, 8)})`,
+            groupLabel: `Settlement: ${settlementId.slice(0, 8)}`,
           });
         });
       }
     });
+  } else if (scopeType === "nation") {
+    const deposits = nationDepositQuery.data as
+      | DepositInstanceWithLocation[]
+      | undefined;
+    if (deposits !== undefined && Array.isArray(deposits)) {
+      deposits.forEach((deposit) => {
+        allDeposits.push({
+          id: deposit.id,
+          settlementId: deposit.settlementId,
+          settlementName: deposit.settlementName,
+          nationName: deposit.nationName,
+          name: deposit.name,
+          label: `${deposit.name} - ${deposit.settlementName} - ${deposit.nationName}`,
+          groupLabel: `${deposit.settlementName}`,
+        });
+      });
+    }
+  } else if (scopeType === "world") {
+    const deposits = worldDepositQuery.data as
+      | DepositInstanceWithLocation[]
+      | undefined;
+    if (deposits !== undefined && Array.isArray(deposits)) {
+      deposits.forEach((deposit) => {
+        allDeposits.push({
+          id: deposit.id,
+          settlementId: deposit.settlementId,
+          settlementName: deposit.settlementName,
+          nationName: deposit.nationName,
+          name: deposit.name,
+          label: `${deposit.name} - ${deposit.settlementName} - ${deposit.nationName}`,
+          groupLabel: `${deposit.settlementName}`,
+        });
+      });
+    }
   }
 
   // Pool all buildings from selected settlements, grouped by nation/settlement
-  type BuildingWithLocation = {
+  type BuildingWithLocationInfo = {
     readonly id: string;
     readonly settlementId: string;
+    readonly settlementName: string;
+    readonly nationName: string;
     readonly blueprintName: string;
     readonly label: string;
     readonly groupLabel: string;
   };
-  const allBuildings: BuildingWithLocation[] = [];
+  const allBuildings: BuildingWithLocationInfo[] = [];
 
   if (scopeType === "settlement") {
-    buildingQueries.forEach((query, index) => {
+    settlementBuildingQueries.forEach((query, index) => {
       const settlementId = selectedIds[index];
       const buildings = query.data as SettlementBuilding[] | undefined;
       if (buildings !== undefined && Array.isArray(buildings)) {
@@ -266,6 +376,8 @@ function EffectEditor({
           allBuildings.push({
             id: building.id,
             settlementId,
+            settlementName: settlementId,
+            nationName: "",
             blueprintName: building.blueprintName,
             label: `${building.blueprintName} (Settlement: ${settlementId.slice(0, 8)})`,
             groupLabel: `Settlement: ${settlementId.slice(0, 8)}`,
@@ -273,6 +385,40 @@ function EffectEditor({
         });
       }
     });
+  } else if (scopeType === "nation") {
+    const buildings = nationBuildingQuery.data as
+      | SettlementBuildingWithLocation[]
+      | undefined;
+    if (buildings !== undefined && Array.isArray(buildings)) {
+      buildings.forEach((building) => {
+        allBuildings.push({
+          id: building.id,
+          settlementId: building.settlementId,
+          settlementName: building.settlementName,
+          nationName: building.nationName,
+          blueprintName: building.blueprintName,
+          label: `${building.blueprintName} - ${building.settlementName} - ${building.nationName}`,
+          groupLabel: `${building.settlementName}`,
+        });
+      });
+    }
+  } else if (scopeType === "world") {
+    const buildings = worldBuildingQuery.data as
+      | SettlementBuildingWithLocation[]
+      | undefined;
+    if (buildings !== undefined && Array.isArray(buildings)) {
+      buildings.forEach((building) => {
+        allBuildings.push({
+          id: building.id,
+          settlementId: building.settlementId,
+          settlementName: building.settlementName,
+          nationName: building.nationName,
+          blueprintName: building.blueprintName,
+          label: `${building.blueprintName} - ${building.settlementName} - ${building.nationName}`,
+          groupLabel: `${building.settlementName}`,
+        });
+      });
+    }
   }
 
   // Pool all managed population instances from selected settlements
@@ -904,7 +1050,7 @@ function EffectEditor({
                   </div>
                 )}
 
-                {blueprintsQuery.isLoading && (
+                {blueprintsQuery.isLoading === true && (
                   <p className="text-sm text-muted-foreground">
                     Loading building types...
                   </p>
@@ -917,39 +1063,85 @@ function EffectEditor({
         {effect.effectType === "deposit_destroyed" && (
           <div className="space-y-2">
             <Label>Deposits to Destroy</Label>
-            {scopeType !== "settlement" ? (
+            {scopeType === null ? (
               <p className="text-sm text-muted-foreground">
-                Select settlements in step 2 to target deposits
+                Select a scope in step 1 to target deposits
               </p>
             ) : selectedIds.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No settlements selected
+                {scopeType === "settlement"
+                  ? "No settlements selected"
+                  : scopeType === "nation"
+                    ? "No nations selected"
+                    : "No world selected"}
               </p>
             ) : allDeposits.length === 0 &&
-              depositQueries.some((q) => q.isLoading) ? (
+              (scopeType === "settlement"
+                ? settlementDepositQueries.some((q) => q.isLoading)
+                : scopeType === "nation"
+                  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/strict-boolean-expressions
+                    !!(nationDepositQuery as any).isLoading
+                  : // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/strict-boolean-expressions
+                    !!(worldDepositQuery as any).isLoading) ? (
               <p className="text-sm text-muted-foreground">
                 Loading deposits...
               </p>
             ) : allDeposits.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No deposits available in selected settlements
+                No deposits available in selected {scopeType}
               </p>
             ) : (
-              <div className="space-y-2 rounded-md border p-3">
-                {allDeposits.map((deposit) => (
-                  <label key={deposit.id} className="flex items-center gap-2">
-                    <Checkbox
-                      checked={effect.depositInstanceId === deposit.id}
-                      onCheckedChange={(checked) => {
-                        onUpdate({
-                          ...effect,
-                          depositInstanceId:
-                            checked === true ? deposit.id : null,
-                        });
-                      }}
-                    />
-                    <span className="text-sm">{deposit.label}</span>
-                  </label>
+              <div className="space-y-2 rounded-md border p-3 max-h-64 overflow-y-auto">
+                {/* Group deposits by settlement for clarity at scale */}
+                {Object.entries(
+                  allDeposits.reduce(
+                    (acc, deposit) => {
+                      const group = deposit.groupLabel;
+                      if (!(group in acc)) acc[group] = [];
+                      acc[group].push(deposit);
+                      return acc;
+                    },
+                    {} as Record<string, DepositWithLocation[]>,
+                  ),
+                ).map(([group, groupDeposits]) => (
+                  <div key={group}>
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">
+                      {group}
+                    </p>
+                    <div className="space-y-2 ml-2">
+                      {groupDeposits.map((deposit) => (
+                        <label
+                          key={deposit.id}
+                          className="flex items-center gap-2"
+                        >
+                          <Checkbox
+                            checked={
+                              effect.depositInstanceIds?.includes(deposit.id) ??
+                              effect.depositInstanceId === deposit.id
+                            }
+                            onCheckedChange={(checked) => {
+                              const currentIds =
+                                effect.depositInstanceIds ??
+                                (effect.depositInstanceId !== null
+                                  ? [effect.depositInstanceId]
+                                  : []);
+                              const newIds = new Set(currentIds);
+                              if (checked === true) {
+                                newIds.add(deposit.id);
+                              } else if (checked === false) {
+                                newIds.delete(deposit.id);
+                              }
+                              onUpdate({
+                                ...effect,
+                                depositInstanceIds: Array.from(newIds),
+                              });
+                            }}
+                          />
+                          <span className="text-sm">{deposit.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -959,52 +1151,84 @@ function EffectEditor({
         {effect.effectType === "building_destroyed" && (
           <div className="space-y-2">
             <Label>Buildings to Destroy</Label>
-            {scopeType !== "settlement" ? (
+            {scopeType === null ? (
               <p className="text-sm text-muted-foreground">
-                Select settlements in step 2 to target buildings
+                Select a scope in step 1 to target buildings
               </p>
             ) : selectedIds.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No settlements selected
+                {scopeType === "settlement"
+                  ? "No settlements selected"
+                  : scopeType === "nation"
+                    ? "No nations selected"
+                    : "No world selected"}
               </p>
             ) : allBuildings.length === 0 &&
-              buildingQueries.some((q) => q.isLoading) ? (
+              (scopeType === "settlement"
+                ? settlementBuildingQueries.some((q) => q.isLoading)
+                : scopeType === "nation"
+                  ? nationBuildingQuery.isLoading
+                  : worldBuildingQuery.isLoading) ? (
               <p className="text-sm text-muted-foreground">
                 Loading buildings...
               </p>
             ) : allBuildings.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No buildings available in selected settlements
+                No buildings available in selected {scopeType}
               </p>
             ) : (
-              <div className="space-y-2 rounded-md border p-3">
-                {allBuildings.map((building) => (
-                  <label key={building.id} className="flex items-center gap-2">
-                    <Checkbox
-                      checked={
-                        effect.settlementBuildingIds?.includes(building.id) ??
-                        effect.settlementBuildingId === building.id
-                      }
-                      onCheckedChange={(checked) => {
-                        const currentIds =
-                          effect.settlementBuildingIds ??
-                          (effect.settlementBuildingId !== null
-                            ? [effect.settlementBuildingId]
-                            : []);
-                        const newIds = new Set(currentIds);
-                        if (checked === true) {
-                          newIds.add(building.id);
-                        } else if (checked === false) {
-                          newIds.delete(building.id);
-                        }
-                        onUpdate({
-                          ...effect,
-                          settlementBuildingIds: Array.from(newIds),
-                        });
-                      }}
-                    />
-                    <span className="text-sm">{building.label}</span>
-                  </label>
+              <div className="space-y-2 rounded-md border p-3 max-h-64 overflow-y-auto">
+                {/* Group buildings by settlement for clarity at scale */}
+                {Object.entries(
+                  allBuildings.reduce(
+                    (acc, building) => {
+                      const group = building.groupLabel;
+                      if (!(group in acc)) acc[group] = [];
+                      acc[group].push(building);
+                      return acc;
+                    },
+                    {} as Record<string, BuildingWithLocationInfo[]>,
+                  ),
+                ).map(([group, groupBuildings]) => (
+                  <div key={group}>
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">
+                      {group}
+                    </p>
+                    <div className="space-y-2 ml-2">
+                      {groupBuildings.map((building) => (
+                        <label
+                          key={building.id}
+                          className="flex items-center gap-2"
+                        >
+                          <Checkbox
+                            checked={
+                              effect.settlementBuildingIds?.includes(
+                                building.id,
+                              ) ?? effect.settlementBuildingId === building.id
+                            }
+                            onCheckedChange={(checked) => {
+                              const currentIds =
+                                effect.settlementBuildingIds ??
+                                (effect.settlementBuildingId !== null
+                                  ? [effect.settlementBuildingId]
+                                  : []);
+                              const newIds = new Set(currentIds);
+                              if (checked === true) {
+                                newIds.add(building.id);
+                              } else if (checked === false) {
+                                newIds.delete(building.id);
+                              }
+                              onUpdate({
+                                ...effect,
+                                settlementBuildingIds: Array.from(newIds),
+                              });
+                            }}
+                          />
+                          <span className="text-sm">{building.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -1038,6 +1262,7 @@ export function EventCreateEffectsStep({
       managedPopulationTypeId: null,
       managedPopulationMode: undefined,
       depositInstanceId: null,
+      depositInstanceIds: undefined,
       settlementBuildingId: null,
       buildingBlueprintMode: undefined,
     };
