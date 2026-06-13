@@ -18,6 +18,8 @@ import {
 
 import {
   calendarDateToTurnNumber,
+  formatRelativeTurnDifference,
+  getRelativeTurnDifference,
   resolveTurnCalendarDate,
   type CalendarDateInput,
   type TurnCalendarConfig,
@@ -73,18 +75,26 @@ export function WorldDatePicker({
   );
   const dayCount = selectedMonth?.dayCount ?? 1;
 
-  // Resolve selected date for weekday display
+  // Resolve selected date for weekday display and relative time
   let selectedWeekday: string;
+  let relativeTimeDisplay: string;
   try {
-    const turnNumber = calendarDateToTurnNumber(config, {
+    const selectedTurnNumber = calendarDateToTurnNumber(config, {
       year: currentYear,
       monthIndex: currentMonthIndex,
       dayOfMonth: currentDay,
     });
-    const resolved = resolveTurnCalendarDate(config, turnNumber);
+    const resolved = resolveTurnCalendarDate(config, selectedTurnNumber);
     selectedWeekday = resolved.weekdayName;
+    const diff = getRelativeTurnDifference(
+      config,
+      currentTurnNumber,
+      selectedTurnNumber,
+    );
+    relativeTimeDisplay = formatRelativeTurnDifference(diff);
   } catch {
     selectedWeekday = "Invalid";
+    relativeTimeDisplay = "Invalid";
   }
 
   function emitChange(date: CalendarDateInput): void {
@@ -219,10 +229,15 @@ export function WorldDatePicker({
             </div>
           </div>
 
-          {/* Weekday display */}
-          <div className="flex items-center justify-between rounded-md bg-muted px-2 py-1.5">
-            <span className="text-xs text-muted-foreground">Weekday:</span>
-            <span className="text-sm font-medium">{selectedWeekday}</span>
+          {/* Weekday and relative time display */}
+          <div className="rounded-md bg-muted px-2 py-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Weekday:</span>
+              <span className="text-sm font-medium">{selectedWeekday}</span>
+            </div>
+            <div className="mt-1 text-center text-xs text-muted-foreground">
+              {relativeTimeDisplay}
+            </div>
           </div>
 
           {/* Today marker */}
