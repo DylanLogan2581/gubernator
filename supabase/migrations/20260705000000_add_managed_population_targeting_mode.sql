@@ -1,21 +1,10 @@
 -- Migration: add_managed_population_targeting_mode
 -- Purpose: Support targeting modes for managed_population_change effect (all/by-type/specific instances).
 --
--- Changes:
--- - Add managed_population_type_id column to event_effects for type-targeted effects
--- - Document extra_data_jsonb usage for managed_population_mode field
--- - Update constraints and column grants
+-- NOTE: managed_population_type_id column and its indexes are now added in
+--       20260702500000_add_event_effects_columns.sql to fix migration ordering.
+--       This migration is now a no-op (columns were added earlier in the sequence).
 -- ---------------------------------------------------------------------------
--- Add managed_population_type_id column
-alter table public.event_effects
-add column managed_population_type_id uuid references public.managed_population_types (id) on delete set null;
-
--- Create index for query performance
-create index event_effects_managed_population_type_id_idx on public.event_effects (managed_population_type_id)
-where
-  managed_population_type_id is not null;
-
--- Grant access to new column
-grant
-select
-  (managed_population_type_id) on public.event_effects to authenticated;
+-- This migration is kept for compatibility with existing deployments.
+-- The managed_population_type_id column is added in 20260702500000 to ensure
+-- it exists before the RPC definition in 20260703 references it.

@@ -49,7 +49,7 @@ create or replace function public.create_event_group_with_events (
   p_memory_text text
 ) returns jsonb language plpgsql security definer
 set
-  search_path = public as $$
+  search_path = '' as $$
 declare
   v_group_id uuid;
   v_event_ids uuid[];
@@ -61,7 +61,7 @@ declare
   v_effect jsonb;
 begin
   -- Permission check: caller must be world admin or superadmin
-  if not (is_world_admin(p_world_id) or is_super_admin()) then
+  if not (public.is_world_admin(p_world_id) or public.is_super_admin()) then
     raise exception 'Not authorized to create events in this world'
     using errcode = 'P0001';
   end if;
