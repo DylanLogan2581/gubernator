@@ -99,6 +99,16 @@ function validateEffectFields(
     }
   }
 
+  // Building destroyed: require settlement_building_id
+  if (effect.effectType === "building_destroyed") {
+    if (
+      effect.settlementBuildingId === null ||
+      effect.settlementBuildingId === undefined
+    ) {
+      return `${baseMsg} is missing a building selection`;
+    }
+  }
+
   return null;
 }
 
@@ -190,6 +200,7 @@ export function createEventGroupMutationOptions({
 
               managed_population_type_id: e.managedPopulationTypeId,
               deposit_instance_id: e.depositInstanceId,
+              settlement_building_id: e.settlementBuildingId,
               extra_data_jsonb: extraData,
             };
           }),
