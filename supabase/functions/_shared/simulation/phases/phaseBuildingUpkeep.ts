@@ -54,7 +54,25 @@ export function phaseBuildingUpkeep(
     const settlement = settlementById.get(building.settlementId);
     const settlementName = settlement?.name ?? building.settlementId;
 
-    const upkeepMultiplier = pendingEventMultipliers.get(building.settlementId)?.upkeep ?? 1.0;
+    const mults = pendingEventMultipliers.get(building.settlementId);
+    const blueprintId = tier.buildingBlueprintId;
+
+    // Apply blueprint-specific multiplier if available, otherwise use global upkeep multiplier
+    let upkeepMultiplier = 1.0;
+    if (
+      typeof blueprintId === "string" &&
+      mults !== null &&
+      mults !== undefined
+    ) {
+      const blueprintMult = mults.upkeepByBlueprintId.get(blueprintId);
+      if (blueprintMult !== null && blueprintMult !== undefined) {
+        upkeepMultiplier = blueprintMult;
+      } else if (mults.upkeep !== null && mults.upkeep !== undefined) {
+        upkeepMultiplier = mults.upkeep;
+      }
+    } else if (mults !== null && mults !== undefined && mults.upkeep !== null && mults.upkeep !== undefined) {
+      upkeepMultiplier = mults.upkeep;
+    }
 
     // Check whether the stockpile can cover all upkeep costs.
     let canPay = true;

@@ -257,6 +257,7 @@ export type SimEffect = {
   readonly managedPopulationInstanceId: string | null;
   readonly depositInstanceId: string | null;
   readonly settlementBuildingId: string | null;
+  readonly extraDataJsonb?: Record<string, unknown>;
 };
 
 export type SimEvent = {
@@ -606,6 +607,7 @@ export type SimulationSharedState = {
       productionByBuildingId: Map<string, number>;
       consumption: number;
       upkeep: number;
+      upkeepByBlueprintId: Map<string, number>;
     }
   >;
   // Settlement building IDs to suspend due to building_damage effects.

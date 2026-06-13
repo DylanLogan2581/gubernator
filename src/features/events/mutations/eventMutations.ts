@@ -157,13 +157,28 @@ export function createEventGroupMutationOptions({
           p_group_name: values.groupName,
           p_group_description: values.groupDescription ?? null,
           p_effects: values.effects.map((e) => {
-            const extraData =
+            const extraData: Record<string, unknown> = {};
+
+            if (
               e.effectType === "managed_population_change" &&
               typeof e.managedPopulationMode === "string"
-                ? {
-                    managed_population_mode: e.managedPopulationMode,
-                  }
-                : {};
+            ) {
+              extraData.managed_population_mode = e.managedPopulationMode;
+            }
+
+            if (
+              e.effectType === "upkeep_multiplier" &&
+              typeof e.buildingBlueprintMode === "string"
+            ) {
+              extraData.building_blueprint_mode = e.buildingBlueprintMode;
+              if (
+                e.buildingBlueprintMode === "select" &&
+                Array.isArray(e.buildingBlueprintIds)
+              ) {
+                extraData.building_blueprint_ids = e.buildingBlueprintIds;
+              }
+            }
+
             return {
               effect_type: e.effectType,
               is_percent: e.isPercent,

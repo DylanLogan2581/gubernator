@@ -78,6 +78,7 @@ export function runSimulation(
       productionByBuildingId: Map<string, number>;
       consumption: number;
       upkeep: number;
+      upkeepByBlueprintId: Map<string, number>;
     }
   >();
 

@@ -69,6 +69,8 @@ const eventEffectBaseSchema = z.strictObject({
     .nullable(),
   depositInstanceId: z.string().uuid().optional().nullable(),
   settlementBuildingId: z.string().uuid().optional().nullable(),
+  buildingBlueprintMode: z.enum(["all", "select"]).optional().nullable(),
+  buildingBlueprintIds: z.array(z.string().uuid()).optional().nullable(),
 });
 
 export const eventEffectSchema = eventEffectBaseSchema;

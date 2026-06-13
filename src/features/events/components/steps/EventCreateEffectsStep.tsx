@@ -16,7 +16,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { SettlementBuilding } from "@/features/buildings";
-import { settlementBuildingsBySettlementQueryOptions } from "@/features/buildings";
+import {
+  blueprintsByWorldQueryOptions,
+  settlementBuildingsBySettlementQueryOptions,
+} from "@/features/buildings";
 import type { DepositInstance } from "@/features/deposits";
 import { depositInstancesBySettlementQueryOptions } from "@/features/deposits";
 import { jobsByWorldQueryOptions, type JobDefinition } from "@/features/jobs";
@@ -63,6 +66,8 @@ type EffectData = {
   depositInstanceId: string | null;
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
+  buildingBlueprintMode?: "all" | "select";
+  buildingBlueprintIds?: string[];
   _id?: string;
 };
 
@@ -207,6 +212,9 @@ function EffectEditor({
   const typesQuery = useQuery(
     managedPopulationTypesByWorldQueryOptions(worldId),
   );
+
+  // Query for building blueprints for blueprint-targeted upkeep effects
+  const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
 
   // Query for managed population instances if this is a managed_population_change effect
   const instanceQueries = useQueries({
@@ -828,10 +836,86 @@ function EffectEditor({
               </p>
             )}
             {effect.effectType === "upkeep_multiplier" && (
-              <p className="text-sm text-muted-foreground">
-                Affects building upkeep costs for all buildings in the
-                settlement.
-              </p>
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Affects building upkeep costs.
+                </p>
+
+                {/* Building blueprint target mode toggle and selector */}
+                {blueprintsQuery.data !== undefined && (
+                  <div className="space-y-2 pt-2">
+                    <Label>Target Buildings</Label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={effect.buildingBlueprintMode !== "select"}
+                          onChange={() =>
+                            onUpdate({
+                              ...effect,
+                              buildingBlueprintMode: "all",
+                              buildingBlueprintIds: undefined,
+                            })
+                          }
+                        />
+                        <span className="text-sm">All Buildings</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={effect.buildingBlueprintMode === "select"}
+                          onChange={() =>
+                            onUpdate({
+                              ...effect,
+                              buildingBlueprintMode: "select",
+                              buildingBlueprintIds:
+                                effect.buildingBlueprintIds ?? [],
+                            })
+                          }
+                        />
+                        <span className="text-sm">Specific Building Types</span>
+                      </label>
+                    </div>
+
+                    {effect.buildingBlueprintMode === "all" ? (
+                      <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
+                        <p className="text-sm font-medium">
+                          ✓ All {blueprintsQuery.data.length} building types
+                          selected
+                        </p>
+                      </div>
+                    ) : (
+                      blueprintsQuery.data.length > 0 && (
+                        <SearchableResourcePicker
+                          resources={blueprintsQuery.data.map((b) => ({
+                            id: b.id,
+                            name: b.name,
+                          }))}
+                          selectedIds={effect.buildingBlueprintIds ?? []}
+                          onSelectionChange={(ids) =>
+                            onUpdate({
+                              ...effect,
+                              buildingBlueprintIds: ids,
+                            })
+                          }
+                        />
+                      )
+                    )}
+
+                    {blueprintsQuery.data.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No building types available
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {blueprintsQuery.isLoading && (
+                  <p className="text-sm text-muted-foreground">
+                    Loading building types...
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
@@ -961,6 +1045,7 @@ export function EventCreateEffectsStep({
       managedPopulationMode: undefined,
       depositInstanceId: null,
       settlementBuildingId: null,
+      buildingBlueprintMode: undefined,
     };
     onEffectsChange([...effects, newEffect]);
     setSelectedType("");

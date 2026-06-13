@@ -45,6 +45,7 @@ function applyEffect(
       productionByBuildingId: Map<string, number>;
       consumption: number;
       upkeep: number;
+      upkeepByBlueprintId: Map<string, number>;
     }
   >,
   pendingManagedPopulationDeltas: Map<string, number>,
@@ -97,6 +98,7 @@ function applyEffect(
               productionByBuildingId: new Map(),
               productionByJobId: new Map(),
               upkeep: 1,
+              upkeepByBlueprintId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
@@ -189,6 +191,7 @@ function applyEffect(
               productionByBuildingId: new Map(),
               productionByJobId: new Map(),
               upkeep: 1,
+              upkeepByBlueprintId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
@@ -283,10 +286,29 @@ function applyEffect(
               productionByBuildingId: new Map(),
               productionByJobId: new Map(),
               upkeep: 1,
+              upkeepByBlueprintId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
-          mults.upkeep = (mults.upkeep ?? 1) * multiplier;
+
+          // Check if building blueprint targeting is specified
+          const extraData = effect.extraDataJsonb ?? {};
+          const buildingBlueprintMode = extraData.building_blueprint_mode as string | undefined;
+          const buildingBlueprintIds = extraData.building_blueprint_ids as string[] | undefined;
+
+          if (buildingBlueprintMode === "select" && Array.isArray(buildingBlueprintIds)) {
+            // Apply multiplier to specific blueprints
+            for (const blueprintId of buildingBlueprintIds) {
+              mults.upkeepByBlueprintId.set(
+                blueprintId,
+                (mults.upkeepByBlueprintId.get(blueprintId) ?? 1) * multiplier,
+              );
+            }
+          } else {
+            // Apply multiplier to all buildings (default behavior)
+            mults.upkeep = (mults.upkeep ?? 1) * multiplier;
+          }
+
           logs.push({
             category: "event.upkeep_multiplier",
             payload: { eventId, multiplier, settlementId },
