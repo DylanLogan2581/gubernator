@@ -86,9 +86,7 @@ export const createEventGroupInputSchema = z.strictObject({
     .max(eventInputLimits.eventGroupDescriptionMax, "Description is too long.")
     .optional()
     .nullable(),
-  effects: z
-    .array(eventEffectSchema)
-    .min(1, "At least one effect is required."),
+  effects: z.array(eventEffectSchema),
   scopeType: z.enum(["world", "nation", "settlement"]),
   targets: z
     .array(eventTargetSchema)

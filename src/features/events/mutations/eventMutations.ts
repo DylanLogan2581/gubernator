@@ -127,14 +127,6 @@ export function createEventGroupMutationOptions({
     mutationFn: async (input: CreateEventGroupInput) => {
       const values = createEventGroupInputSchema.parse(input);
 
-      // Validate effects
-      if (values.effects.length === 0) {
-        throw new EventMutationError({
-          code: "event_input_invalid",
-          message: "At least one effect is required",
-        });
-      }
-
       // Validate that sustained events have duration_transitions
       if (
         values.durationType === "sustained" &&

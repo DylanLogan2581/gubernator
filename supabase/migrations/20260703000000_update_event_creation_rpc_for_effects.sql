@@ -82,8 +82,8 @@ begin
     using errcode = '23514';
   end if;
 
-  if p_effects is null or jsonb_array_length(p_effects) = 0 then
-    raise exception 'At least one effect is required'
+  if p_effects is null then
+    raise exception 'Effects array is required (can be empty)'
     using errcode = '23502';
   end if;
 

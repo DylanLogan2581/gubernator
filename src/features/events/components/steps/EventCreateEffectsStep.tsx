@@ -1333,8 +1333,8 @@ export function EventCreateEffectsStep({
       {effects.length === 0 && (
         <div className="rounded-lg border border-dashed border-muted-foreground p-6 text-center">
           <p className="text-sm text-muted-foreground">
-            No effects configured yet. Add at least one effect above to
-            continue.
+            No effects configured yet. Add effects to customize the event, or
+            leave empty for a narrative-only event.
           </p>
         </div>
       )}

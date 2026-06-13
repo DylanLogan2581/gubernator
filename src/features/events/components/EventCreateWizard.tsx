@@ -283,7 +283,7 @@ export function EventCreateWizard({
   };
 
   const handleSubmit = async (): Promise<void> => {
-    if (state.scopeType === null || state.effects.length === 0) return;
+    if (state.scopeType === null) return;
     try {
       // Build targets array based on scope and selected IDs
       const targets = state.selectedIds.map((id) => ({
@@ -512,8 +512,7 @@ export function EventCreateWizard({
               (state.step === 2 && state.scopeType === null) ||
               (state.step === 2 &&
                 state.scopeType !== "world" &&
-                state.selectedIds.length === 0) ||
-              (state.step === 3 && state.effects.length === 0)
+                state.selectedIds.length === 0)
             }
           >
             Next
