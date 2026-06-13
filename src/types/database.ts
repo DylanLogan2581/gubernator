@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
+ 
 
 export type Json =
   | string
@@ -689,6 +689,7 @@ export type Database = {
       event_effects: {
         Row: {
           amount_value: number | null;
+          building_blueprint_id: string | null;
           created_at: string;
           deposit_instance_id: string | null;
           effect_type: string;
@@ -698,12 +699,15 @@ export type Database = {
           is_percent: boolean;
           job_id: string | null;
           managed_population_instance_id: string | null;
+          managed_population_type_id: string | null;
           multiplier_value: number | null;
           resource_id: string | null;
+          settlement_building_id: string | null;
           updated_at: string;
         };
         Insert: {
           amount_value?: number | null;
+          building_blueprint_id?: string | null;
           created_at?: string;
           deposit_instance_id?: string | null;
           effect_type: string;
@@ -713,12 +717,15 @@ export type Database = {
           is_percent?: boolean;
           job_id?: string | null;
           managed_population_instance_id?: string | null;
+          managed_population_type_id?: string | null;
           multiplier_value?: number | null;
           resource_id?: string | null;
+          settlement_building_id?: string | null;
           updated_at?: string;
         };
         Update: {
           amount_value?: number | null;
+          building_blueprint_id?: string | null;
           created_at?: string;
           deposit_instance_id?: string | null;
           effect_type?: string;
@@ -728,11 +735,20 @@ export type Database = {
           is_percent?: boolean;
           job_id?: string | null;
           managed_population_instance_id?: string | null;
+          managed_population_type_id?: string | null;
           multiplier_value?: number | null;
           resource_id?: string | null;
+          settlement_building_id?: string | null;
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "event_effects_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "event_effects_deposit_instance_id_fkey";
             columns: ["deposit_instance_id"];
@@ -762,10 +778,24 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "event_effects_managed_population_type_id_fkey";
+            columns: ["managed_population_type_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "event_effects_resource_id_fkey";
             columns: ["resource_id"];
             isOneToOne: false;
             referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_settlement_building_id_fkey";
+            columns: ["settlement_building_id"];
+            isOneToOne: false;
+            referencedRelation: "settlement_buildings";
             referencedColumns: ["id"];
           },
         ];
@@ -2702,22 +2732,39 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      create_event_group_with_events: {
-        Args: {
-          p_activate_on_transition_after_turn_number: number;
-          p_create_citizen_memories: boolean;
-          p_duration_transitions: number;
-          p_duration_type: string;
-          p_effect_type: string;
-          p_group_description: string;
-          p_group_name: string;
-          p_memory_text: string;
-          p_scope_type: string;
-          p_targets: Json;
-          p_world_id: string;
-        };
-        Returns: Json;
-      };
+      create_event_group_with_events:
+        | {
+            Args: {
+              p_activate_on_transition_after_turn_number: number;
+              p_create_citizen_memories: boolean;
+              p_duration_transitions: number;
+              p_duration_type: string;
+              p_effect_type: string;
+              p_group_description: string;
+              p_group_name: string;
+              p_memory_text: string;
+              p_scope_type: string;
+              p_targets: Json;
+              p_world_id: string;
+            };
+            Returns: Json;
+          }
+        | {
+            Args: {
+              p_activate_on_transition_after_turn_number: number;
+              p_create_citizen_memories: boolean;
+              p_duration_transitions: number;
+              p_duration_type: string;
+              p_effects: Json;
+              p_group_description: string;
+              p_group_name: string;
+              p_memory_text: string;
+              p_scope_type: string;
+              p_targets: Json;
+              p_world_id: string;
+            };
+            Returns: Json;
+          };
       create_managed_population_instance: {
         Args: {
           p_initial_count: number;
@@ -4128,7 +4175,7 @@ export type Database = {
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
         | { Args: { why: string }; Returns: boolean[] }
-        | { Args: { how_many: number; why: string }; Returns: boolean[] };
+         ;
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }
