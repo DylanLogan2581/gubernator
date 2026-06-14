@@ -13,15 +13,16 @@ import type {
   EventEffect,
   EventListFilters,
   EventWithEffects,
+  EventWithGroup,
 } from "../types/eventTypes";
 
 type EventsListQueryKey = ReturnType<typeof eventQueryKeys.list>;
 type EventsDetailQueryKey = ReturnType<typeof eventQueryKeys.detail>;
 
 type EventsListQueryOptions = UseQueryOptions<
-  readonly Event[],
+  readonly EventWithGroup[],
   AuthUiError,
-  readonly Event[],
+  readonly EventWithGroup[],
   EventsListQueryKey
 >;
 type EventsDetailQueryOptions = UseQueryOptions<
@@ -47,10 +48,10 @@ export function eventsListQueryOptions(
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
     queryKey: eventQueryKeys.list(worldId),
-    queryFn: async (): Promise<readonly Event[]> => {
+    queryFn: async (): Promise<readonly EventWithGroup[]> => {
       let query = client
         .from("events")
-        .select<"*", Event>("*")
+        .select<"*,event_groups(*)", EventWithGroup>("*,event_groups(*)")
         .eq("world_id", worldId)
         .order("created_at", { ascending: false });
 

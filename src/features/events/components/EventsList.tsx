@@ -14,12 +14,12 @@ type PaginationState = {
 type EventDisplayItem =
   | {
       readonly type: "single";
-      readonly event: Event;
+      readonly event: EventWithGroup;
     }
   | {
       readonly type: "group";
       readonly groupId: string;
-      readonly events: readonly Event[];
+      readonly events: readonly EventWithGroup[];
     };
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -53,7 +53,11 @@ import {
 
 import { eventsListQueryOptions, isEventsError } from "../queries/eventQueries";
 
-import type { Event, EventListFilters, EventStatus } from "../types/eventTypes";
+import type {
+  EventListFilters,
+  EventStatus,
+  EventWithGroup,
+} from "../types/eventTypes";
 
 type EventsListProps = {
   readonly worldId: string;
@@ -78,8 +82,8 @@ const statusColors: Record<EventStatus, string> = {
 /**
  * Group events by event_group_id. Events without a group stay as individual display items.
  */
-function groupEvents(events: readonly Event[]): EventDisplayItem[] {
-  const grouped = new Map<string, Event[]>();
+function groupEvents(events: readonly EventWithGroup[]): EventDisplayItem[] {
+  const grouped = new Map<string, EventWithGroup[]>();
 
   for (const event of events) {
     const key = event.event_group_id ?? `__ungrouped_${event.id}`;
@@ -296,10 +300,11 @@ function EventRow({
   event,
   worldId,
 }: {
-  readonly event: Event;
+  readonly event: EventWithGroup;
   readonly worldId: string;
 }): JSX.Element {
   const navigate = useNavigate();
+  const displayName = event.group?.name ?? event.name;
 
   return (
     <TableRow
@@ -311,7 +316,7 @@ function EventRow({
         });
       }}
     >
-      <TableCell className="font-medium">{event.name}</TableCell>
+      <TableCell className="font-medium">{displayName}</TableCell>
       <TableCell>
         <Badge className={statusColors[event.status]}>{event.status}</Badge>
       </TableCell>
@@ -337,7 +342,7 @@ function GroupedEventRow({
   worldId,
 }: {
   readonly groupId?: string;
-  readonly events: readonly Event[];
+  readonly events: readonly EventWithGroup[];
   readonly worldId: string;
 }): JSX.Element | null {
   const navigate = useNavigate();
@@ -348,6 +353,7 @@ function GroupedEventRow({
     return null;
   }
 
+  const displayName = firstEvent.group?.name ?? firstEvent.name;
   const targetCount = events.length;
   const scopeLabel =
     firstEvent.scope_type === "settlement"
@@ -366,7 +372,7 @@ function GroupedEventRow({
         });
       }}
     >
-      <TableCell className="font-medium">{firstEvent.name}</TableCell>
+      <TableCell className="font-medium">{displayName}</TableCell>
       <TableCell>
         <Badge className={statusColors[firstEvent.status]}>
           {firstEvent.status}
