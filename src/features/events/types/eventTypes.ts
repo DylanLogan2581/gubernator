@@ -3,11 +3,11 @@
  * These correspond to the event_groups and events DB tables.
  */
 
-export type EventStatus = 'pending' | 'active' | 'expired' | 'cancelled';
+export type EventStatus = "pending" | "active" | "expired" | "cancelled";
 
-export type EventScopeType = 'world' | 'nation' | 'settlement';
+export type EventScopeType = "world" | "nation" | "settlement";
 
-export type EventDurationType = 'instant' | 'sustained';
+export type EventDurationType = "instant" | "sustained";
 
 /**
  * Single event row from DB, with all columns.
@@ -38,7 +38,7 @@ export type Event = {
   readonly memory_text: string | null;
   readonly created_at: string;
   readonly updated_at: string;
-}
+};
 
 /**
  * Event group row — narrative grouping for multi-target events.
@@ -52,14 +52,21 @@ export type EventGroup = {
   readonly created_by_user_id: string | null;
   readonly created_at: string;
   readonly updated_at: string;
-}
+};
 
 /**
  * Enriched event with related group info.
  */
 export type EventWithGroup = {
   readonly group?: EventGroup | null;
-} & Event
+} & Event;
+
+/**
+ * Event with its effects.
+ */
+export type EventWithEffects = Event & {
+  readonly effects: readonly EventEffect[];
+};
 
 /**
  * Summary of an event for detail view.
@@ -75,7 +82,28 @@ export type EventDetail = {
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
   readonly memoryText: string | null;
-}
+};
+
+/**
+ * Single event effect from DB.
+ */
+export type EventEffect = {
+  readonly id: string;
+  readonly event_id: string;
+  readonly effect_type: string;
+  readonly amount_value: number | null;
+  readonly multiplier_value: number | null;
+  readonly is_percent: boolean;
+  readonly resource_id: string | null;
+  readonly job_id: string | null;
+  readonly managed_population_instance_id: string | null;
+  readonly managed_population_type_id: string | null;
+  readonly deposit_instance_id: string | null;
+  readonly settlement_building_id: string | null;
+  readonly extra_data_jsonb: unknown;
+  readonly created_at: string;
+  readonly updated_at: string;
+};
 
 /**
  * Filter state for events list.
@@ -84,4 +112,4 @@ export type EventListFilters = {
   readonly statusFilter?: EventStatus[];
   readonly scopeFilter?: EventScopeType[];
   readonly effectTypeFilter?: string[];
-}
+};

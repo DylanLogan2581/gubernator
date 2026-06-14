@@ -8,7 +8,12 @@ import {
 
 import { eventQueryKeys } from "./eventQueryKeys";
 
-import type { Event, EventListFilters } from "../types/eventTypes";
+import type {
+  Event,
+  EventEffect,
+  EventListFilters,
+  EventWithEffects,
+} from "../types/eventTypes";
 
 type EventsListQueryKey = ReturnType<typeof eventQueryKeys.list>;
 type EventsDetailQueryKey = ReturnType<typeof eventQueryKeys.detail>;
@@ -20,9 +25,9 @@ type EventsListQueryOptions = UseQueryOptions<
   EventsListQueryKey
 >;
 type EventsDetailQueryOptions = UseQueryOptions<
-  Event,
+  EventWithEffects,
   AuthUiError,
-  Event,
+  EventWithEffects,
   EventsDetailQueryKey
 >;
 
@@ -82,7 +87,7 @@ export function eventsListQueryOptions(
 }
 
 /**
- * Get a single event with details.
+ * Get a single event with details and effects.
  */
 export function eventDetailQueryOptions(
   worldId: string,
@@ -92,7 +97,7 @@ export function eventDetailQueryOptions(
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
     queryKey: eventQueryKeys.detail(worldId, eventId),
-    queryFn: async (): Promise<Event> => {
+    queryFn: async (): Promise<EventWithEffects> => {
       const { data, error } = await client
         .from("events")
         .select("*")
@@ -108,7 +113,21 @@ export function eventDetailQueryOptions(
         throw new Error("Event not found");
       }
 
-      return data;
+      // Fetch related effects
+      const { data: effects, error: effectsError } = await client
+        .from("event_effects")
+        .select("*")
+        .eq("event_id", eventId)
+        .returns<EventEffect[]>();
+
+      if (effectsError !== null) {
+        throw normalizeSupabaseError(effectsError);
+      }
+
+      return {
+        ...data,
+        effects: effects ?? [],
+      };
     },
   });
 }
