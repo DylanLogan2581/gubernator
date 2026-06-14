@@ -45,7 +45,10 @@ export function eventsListQueryOptions(
     queryFn: async (): Promise<readonly EventWithGroup[]> => {
       let query = client
         .from("events")
-        .select<"*,event_groups(*)", EventWithGroup>("*,event_groups(*)")
+        .select<
+          "*,group:event_groups(*)",
+          EventWithGroup
+        >("*,group:event_groups(*)")
         .eq("world_id", worldId)
         .order("created_at", { ascending: false });
 
@@ -101,9 +104,9 @@ export function eventDetailQueryOptions(
       const { data, error } = await client
         .from("events")
         .select<
-          "*,event_groups(*)",
+          "*,group:event_groups(*)",
           EventWithGroupAndEffects
-        >("*,event_groups(*)")
+        >("*,group:event_groups(*)")
         .eq("id", eventId)
         .eq("world_id", worldId)
         .single<EventWithGroupAndEffects>();

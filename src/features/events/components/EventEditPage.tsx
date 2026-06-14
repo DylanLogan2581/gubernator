@@ -100,7 +100,7 @@ export function EventEditPage({
   // Build EditEventData from event and effects
   const editEventData: EditEventData = {
     groupId: event.event_group_id,
-    groupName: "", // Will be loaded from event_group
+    groupName: event.group?.name ?? "",
     groupDescription: null,
     scopeType: event.scope_type,
     durationType: event.duration_type,
