@@ -8,6 +8,20 @@ type PaginationState = {
   readonly pageSize: number;
 };
 
+/**
+ * Display item: either a single ungrouped event or a group of events with the same event_group_id
+ */
+type EventDisplayItem =
+  | {
+      readonly type: "single";
+      readonly event: Event;
+    }
+  | {
+      readonly type: "group";
+      readonly groupId: string;
+      readonly events: readonly Event[];
+    };
+
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -61,6 +75,41 @@ const statusColors: Record<EventStatus, string> = {
   cancelled: "bg-red-100 text-red-800",
 };
 
+/**
+ * Group events by event_group_id. Events without a group stay as individual display items.
+ */
+function groupEvents(events: readonly Event[]): EventDisplayItem[] {
+  const grouped = new Map<string, Event[]>();
+
+  for (const event of events) {
+    const key = event.event_group_id ?? `__ungrouped_${event.id}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+    const group = grouped.get(key);
+    if (group !== undefined) {
+      group.push(event);
+    }
+  }
+
+  const displayItems: EventDisplayItem[] = [];
+  for (const [key, eventsList] of grouped) {
+    const firstEvent = eventsList[0];
+
+    if (key.startsWith("__ungrouped_")) {
+      // Single ungrouped event
+      if (firstEvent !== undefined) {
+        displayItems.push({ type: "single", event: firstEvent });
+      }
+    } else {
+      // Grouped events
+      displayItems.push({ type: "group", groupId: key, events: eventsList });
+    }
+  }
+
+  return displayItems;
+}
+
 export function EventsList({
   worldId,
   canCreate,
@@ -100,11 +149,12 @@ export function EventsList({
   }
 
   const events = eventsQuery.data ?? [];
-  const paginatedEvents = events.slice(
+  const displayItems = groupEvents(events);
+  const paginatedItems = displayItems.slice(
     pagination.pageIndex * pagination.pageSize,
     (pagination.pageIndex + 1) * pagination.pageSize,
   );
-  const pageCount = Math.ceil(events.length / pagination.pageSize);
+  const pageCount = Math.ceil(displayItems.length / pagination.pageSize);
 
   return (
     <div className="space-y-4">
@@ -166,9 +216,22 @@ export function EventsList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedEvents.map((event) => (
-                <EventRow key={event.id} event={event} worldId={worldId} />
-              ))}
+              {paginatedItems.map((item) =>
+                item.type === "single" ? (
+                  <EventRow
+                    key={item.event.id}
+                    event={item.event}
+                    worldId={worldId}
+                  />
+                ) : (
+                  <GroupedEventRow
+                    key={item.groupId}
+                    groupId={item.groupId}
+                    events={item.events}
+                    worldId={worldId}
+                  />
+                ),
+              )}
             </TableBody>
           </Table>
         </div>
@@ -257,6 +320,63 @@ function EventRow({
       <TableCell>
         {event.duration_type === "sustained"
           ? `${event.remaining_transitions}/${event.duration_transitions} turns`
+          : "Instant"}
+      </TableCell>
+      <TableCell onClick={(e) => e.stopPropagation()}></TableCell>
+    </TableRow>
+  );
+}
+
+/**
+ * Render an event group as a single table row.
+ * Displays the group name, status, scope, and target count.
+ * Clicking navigates to the first event in the group.
+ */
+function GroupedEventRow({
+  events,
+  worldId,
+}: {
+  readonly groupId?: string;
+  readonly events: readonly Event[];
+  readonly worldId: string;
+}): JSX.Element | null {
+  const navigate = useNavigate();
+  // Use first event as representative for name, status, effect type, duration
+  const firstEvent = events[0];
+
+  if (firstEvent === undefined) {
+    return null;
+  }
+
+  const targetCount = events.length;
+  const scopeLabel =
+    firstEvent.scope_type === "settlement"
+      ? `${targetCount} settlement${targetCount > 1 ? "s" : ""}`
+      : firstEvent.scope_type === "nation"
+        ? `${targetCount} nation${targetCount > 1 ? "s" : ""}`
+        : `${targetCount} world${targetCount > 1 ? "s" : ""}`;
+
+  return (
+    <TableRow
+      className="cursor-pointer hover:bg-muted"
+      onClick={() => {
+        void navigate({
+          to: "/worlds/$worldId/events/$eventId",
+          params: { worldId, eventId: firstEvent.id },
+        });
+      }}
+    >
+      <TableCell className="font-medium">{firstEvent.name}</TableCell>
+      <TableCell>
+        <Badge className={statusColors[firstEvent.status]}>
+          {firstEvent.status}
+        </Badge>
+      </TableCell>
+      <TableCell className="capitalize">{scopeLabel}</TableCell>
+      <TableCell>{firstEvent.effect_type}</TableCell>
+      <TableCell>
+        {firstEvent.duration_type === "sustained"
+          ? `${firstEvent.remaining_transitions}/${firstEvent.duration_transitions} turns`
           : "Instant"}
       </TableCell>
       <TableCell onClick={(e) => e.stopPropagation()}></TableCell>
