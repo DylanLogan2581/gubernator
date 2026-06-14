@@ -12,8 +12,8 @@ import type {
   Event,
   EventEffect,
   EventListFilters,
-  EventWithEffects,
   EventWithGroup,
+  EventWithGroupAndEffects,
 } from "../types/eventTypes";
 
 type EventsListQueryKey = ReturnType<typeof eventQueryKeys.list>;
@@ -24,12 +24,6 @@ type EventsListQueryOptions = UseQueryOptions<
   AuthUiError,
   readonly EventWithGroup[],
   EventsListQueryKey
->;
-type EventsDetailQueryOptions = UseQueryOptions<
-  EventWithEffects,
-  AuthUiError,
-  EventWithEffects,
-  EventsDetailQueryKey
 >;
 
 // Legacy type exports for backward compatibility
@@ -94,17 +88,25 @@ export function eventDetailQueryOptions(
   worldId: string,
   eventId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
-): EventsDetailQueryOptions {
+): UseQueryOptions<
+  EventWithGroupAndEffects,
+  AuthUiError,
+  EventWithGroupAndEffects,
+  EventsDetailQueryKey
+> {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
     queryKey: eventQueryKeys.detail(worldId, eventId),
-    queryFn: async (): Promise<EventWithEffects> => {
+    queryFn: async (): Promise<EventWithGroupAndEffects> => {
       const { data, error } = await client
         .from("events")
-        .select("*")
+        .select<
+          "*,event_groups(*)",
+          EventWithGroupAndEffects
+        >("*,event_groups(*)")
         .eq("id", eventId)
         .eq("world_id", worldId)
-        .single<Event>();
+        .single<EventWithGroupAndEffects>();
 
       if (error !== null) {
         throw normalizeSupabaseError(error);

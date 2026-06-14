@@ -69,6 +69,13 @@ export type EventWithEffects = Event & {
 };
 
 /**
+ * Event with both group info and effects.
+ */
+export type EventWithGroupAndEffects = EventWithGroup & {
+  readonly effects: readonly EventEffect[];
+};
+
+/**
  * Summary of an event for detail view.
  */
 export type EventDetail = {

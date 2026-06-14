@@ -135,9 +135,9 @@ export function EventDetail({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold">{event.name}</h1>
-              {event.description !== null ? (
+              {event.group?.description !== null ? (
                 <p className="mt-2 text-muted-foreground">
-                  {event.description}
+                  {event.group?.description}
                 </p>
               ) : null}
             </div>
