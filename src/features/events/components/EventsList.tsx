@@ -214,7 +214,6 @@ export function EventsList({
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Scope</TableHead>
-                <TableHead>Effect type</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -321,7 +320,6 @@ function EventRow({
         <Badge className={statusColors[event.status]}>{event.status}</Badge>
       </TableCell>
       <TableCell className="capitalize">{event.scope_type}</TableCell>
-      <TableCell>{event.effect_type}</TableCell>
       <TableCell>
         {event.duration_type === "sustained"
           ? `${event.remaining_transitions}/${event.duration_transitions} turns`
@@ -379,7 +377,6 @@ function GroupedEventRow({
         </Badge>
       </TableCell>
       <TableCell className="capitalize">{scopeLabel}</TableCell>
-      <TableCell>{firstEvent.effect_type}</TableCell>
       <TableCell>
         {firstEvent.duration_type === "sustained"
           ? `${firstEvent.remaining_transitions}/${firstEvent.duration_transitions} turns`
