@@ -101,7 +101,7 @@ export function EventEditPage({
   const editEventData: EditEventData = {
     groupId: event.event_group_id,
     groupName: event.group?.name ?? "",
-    groupDescription: null,
+    groupDescription: event.group?.description ?? null,
     scopeType: event.scope_type,
     durationType: event.duration_type,
     durationTransitions: event.duration_transitions,
