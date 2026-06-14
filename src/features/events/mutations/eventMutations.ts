@@ -17,10 +17,14 @@ import {
   cancelEventGroupInputSchema,
   createEventGroupInputSchema,
   editEventGroupInputSchema,
+  deleteEventInputSchema,
+  deleteEventGroupInputSchema,
   type CancelEventInput,
   type CancelEventGroupInput,
   type CreateEventGroupInput,
   type EditEventGroupInput,
+  type DeleteEventInput,
+  type DeleteEventGroupInput,
 } from "../schemas/eventSchemas";
 
 type EventMutationErrorCode =
@@ -40,6 +44,10 @@ type CreateEventGroupResult = {
 
 type CancelEventResult = {
   readonly cancelled_count: number;
+};
+
+type DeleteEventResult = {
+  readonly deleted_count: number;
 };
 
 type MutationFactoryOpts = {
@@ -426,6 +434,94 @@ export function editEventGroupMutationOptions({
       return data as EditEventGroupResult;
     },
     mutationKey: [...eventQueryKeys.all, "edit-group"],
+    onSuccess: async (): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: eventQueryKeys.all,
+      });
+    },
+  });
+}
+
+/**
+ * Mutation for deleting a single event.
+ * Only cancelled events may be deleted.
+ */
+export function deleteEventMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: MutationFactoryOpts): UseMutationOptions<
+  DeleteEventResult,
+  Error,
+  DeleteEventInput
+> {
+  return mutationOptions<DeleteEventResult, Error, DeleteEventInput>({
+    mutationFn: async (input: DeleteEventInput) => {
+      const values = deleteEventInputSchema.parse(input);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      const { data, error } = await (client.rpc as any)(
+        "delete_event_or_group",
+        {
+          p_event_id: values.eventId,
+          p_group_id: null,
+        },
+      );
+
+      if (error !== null) {
+        const normalized = normalizeSupabaseError(error);
+        throw new EventMutationError({
+          code: "event_mutation_failed",
+          message: normalized.message,
+        });
+      }
+
+      return data as DeleteEventResult;
+    },
+    mutationKey: [...eventQueryKeys.all, "delete-event"],
+    onSuccess: async (): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: eventQueryKeys.all,
+      });
+    },
+  });
+}
+
+/**
+ * Mutation for deleting an entire event group.
+ * Only event groups with all cancelled events may be deleted.
+ */
+export function deleteEventGroupMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: MutationFactoryOpts): UseMutationOptions<
+  DeleteEventResult,
+  Error,
+  DeleteEventGroupInput
+> {
+  return mutationOptions<DeleteEventResult, Error, DeleteEventGroupInput>({
+    mutationFn: async (input: DeleteEventGroupInput) => {
+      const values = deleteEventGroupInputSchema.parse(input);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      const { data, error } = await (client.rpc as any)(
+        "delete_event_or_group",
+        {
+          p_event_id: null,
+          p_group_id: values.groupId,
+        },
+      );
+
+      if (error !== null) {
+        const normalized = normalizeSupabaseError(error);
+        throw new EventMutationError({
+          code: "event_mutation_failed",
+          message: normalized.message,
+        });
+      }
+
+      return data as DeleteEventResult;
+    },
+    mutationKey: [...eventQueryKeys.all, "delete-group"],
     onSuccess: async (): Promise<void> => {
       await queryClient.invalidateQueries({
         queryKey: eventQueryKeys.all,

@@ -169,3 +169,23 @@ export const editEventGroupInputSchema = z.strictObject({
 });
 
 export type EditEventGroupInput = z.input<typeof editEventGroupInputSchema>;
+
+/**
+ * Input for deleting a single event.
+ */
+export const deleteEventInputSchema = z.strictObject({
+  eventId: eventIdSchema,
+  worldId: worldIdSchema,
+});
+
+export type DeleteEventInput = z.input<typeof deleteEventInputSchema>;
+
+/**
+ * Input for deleting an entire event group.
+ */
+export const deleteEventGroupInputSchema = z.strictObject({
+  groupId: groupIdSchema,
+  worldId: worldIdSchema,
+});
+
+export type DeleteEventGroupInput = z.input<typeof deleteEventGroupInputSchema>;

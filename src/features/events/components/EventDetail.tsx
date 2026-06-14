@@ -26,6 +26,7 @@ import { settlementByIdQueryOptions } from "@/features/settlements";
 
 import {
   cancelEventMutationOptions,
+  deleteEventMutationOptions,
   isEventMutationError,
 } from "../mutations/eventMutations";
 import {
@@ -56,10 +57,14 @@ export function EventDetail({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const eventQuery = useQuery(eventDetailQueryOptions(worldId, eventId));
   const cancelMutation = useMutation(
     cancelEventMutationOptions({ queryClient }),
+  );
+  const deleteMutation = useMutation(
+    deleteEventMutationOptions({ queryClient }),
   );
 
   if (eventQuery.isPending) {
@@ -101,8 +106,29 @@ export function EventDetail({
     }
   };
 
+  const handleDelete = async (): Promise<void> => {
+    try {
+      await deleteMutation.mutateAsync({
+        eventId: event.id,
+        worldId,
+      });
+      toast.success("Event deleted");
+      setShowDeleteDialog(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
+      await (navigate as any)({ to: `/worlds/${worldId}/events` });
+    } catch (error) {
+      if (isEventMutationError(error)) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to delete event");
+      }
+    }
+  };
+
   const canCancelEvent =
     canCancel && event.status !== "cancelled" && event.status !== "expired";
+
+  const canDeleteEvent = canCancel && event.status === "cancelled";
 
   const progressPercent =
     event.duration_type === "sustained" && event.duration_transitions !== null
@@ -219,7 +245,7 @@ export function EventDetail({
             </div>
           )}
 
-          {(canCancel || canCancelEvent) && (
+          {(canCancel || canCancelEvent || canDeleteEvent) && (
             <div className="flex gap-2 pt-4">
               {canCancel &&
                 event.status !== "cancelled" &&
@@ -250,6 +276,17 @@ export function EventDetail({
                   Cancel event
                 </Button>
               )}
+              {canDeleteEvent && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -278,6 +315,34 @@ export function EventDetail({
               className="bg-destructive hover:bg-destructive/90"
             >
               {cancelMutation.isPending ? "Cancelling…" : "Cancel event"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete event permanently?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the event "{event.name}" and all its
+              effects. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2">
+            <AlertDialogCancel>Keep event</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDelete();
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete event"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
