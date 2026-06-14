@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Edit, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 import { toast } from "sonner";
 
@@ -219,17 +219,37 @@ export function EventDetail({
             </div>
           )}
 
-          {canCancelEvent && (
+          {(canCancel || canCancelEvent) && (
             <div className="flex gap-2 pt-4">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setShowCancelDialog(true)}
-                disabled={cancelMutation.isPending}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Cancel event
-              </Button>
+              {canCancel &&
+                event.status !== "cancelled" &&
+                event.status !== "expired" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
+                      return (navigate as any)({
+                        to: "/worlds/$worldId/events/$eventId/edit",
+                        params: { worldId, eventId },
+                      });
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                )}
+              {canCancelEvent && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={cancelMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Cancel event
+                </Button>
+              )}
             </div>
           )}
         </div>

@@ -18,6 +18,7 @@ import {
 
 import {
   createEventGroupMutationOptions,
+  editEventGroupMutationOptions,
   isEventMutationError,
 } from "../mutations/eventMutations";
 import { eventQueryKeys } from "../queries/eventQueryKeys";
@@ -54,10 +55,38 @@ type EffectData = {
   _id?: string;
 };
 
+type EditEventData = {
+  readonly groupId: string;
+  readonly groupName: string;
+  readonly groupDescription: string | null;
+  readonly scopeType: string;
+  readonly durationType: string;
+  readonly durationTransitions: number | null;
+  readonly activationTurn: number;
+  readonly createCitizenMemories: boolean;
+  readonly memoryText: string | null;
+  readonly effects: Array<{
+    readonly effectType: string;
+    readonly isPercent: boolean;
+    readonly amountValue: number | null;
+    readonly multiplierValue: number | null;
+    readonly resourceId: string | null;
+    readonly jobId: string | null;
+    readonly managedPopulationInstanceId: string | null;
+    readonly managedPopulationTypeId: string | null;
+    readonly depositInstanceId: string | null;
+    readonly settlementBuildingId: string | null;
+    readonly extraDataJsonb: unknown;
+  }>;
+};
+
 type EventCreateWizardProps = {
   readonly accessContext: AccessContext;
   readonly worldId: string;
   readonly onClose: () => void;
+  readonly isEditMode?: boolean;
+  readonly editGroupId?: string;
+  readonly editEventData?: EditEventData;
 };
 
 export type EventCreateWizardState = {
@@ -102,6 +131,9 @@ export function EventCreateWizard({
   accessContext,
   worldId,
   onClose,
+  isEditMode = false,
+  editGroupId,
+  editEventData,
 }: EventCreateWizardProps): JSX.Element {
   const queryClient = useQueryClient();
   const worldQuery = useQuery(
@@ -113,11 +145,44 @@ export function EventCreateWizard({
 
   const nextTurnNumber = worldQuery.data?.world.nextTurnNumber ?? 1;
   const currentTurnNumber = worldQuery.data?.world.currentTurnNumber ?? 1;
-  const [state, setState] = useState<EventCreateWizardState>(() =>
-    createInitialState(nextTurnNumber),
+
+  // Initialize state based on mode
+  const [state, setState] = useState<EventCreateWizardState>(() => {
+    if (isEditMode && editEventData !== undefined) {
+      // In edit mode, skip scope/targets steps and go to effects
+      return {
+        step: 3, // Start at effects step (scope is locked)
+        scopeType:
+          (editEventData.scopeType as "world" | "nation" | "settlement") ??
+          null,
+        selectedIds: [], // Locked in edit mode
+        effects: editEventData.effects.map((e) => ({
+          effectType: e.effectType,
+          isPercent: e.isPercent,
+          amountValue: e.amountValue,
+          multiplierValue: e.multiplierValue,
+          resourceId: e.resourceId,
+          jobId: e.jobId,
+          managedPopulationInstanceId: e.managedPopulationInstanceId,
+          managedPopulationTypeId: e.managedPopulationTypeId,
+          depositInstanceId: e.depositInstanceId,
+          settlementBuildingId: e.settlementBuildingId,
+        })),
+        durationType:
+          (editEventData.durationType as "instant" | "sustained") ?? "instant",
+        durationTransitions: editEventData.durationTransitions,
+        activationTurn: editEventData.activationTurn,
+        createCitizenMemories: editEventData.createCitizenMemories,
+        memoryText: editEventData.memoryText ?? "",
+      };
+    }
+    return createInitialState(nextTurnNumber);
+  });
+
+  const [groupName, setGroupName] = useState(editEventData?.groupName ?? "");
+  const [groupDescription, setGroupDescription] = useState(
+    editEventData?.groupDescription ?? "",
   );
-  const [groupName, setGroupName] = useState("");
-  const [groupDescription, setGroupDescription] = useState("");
 
   // Compute calendar date and relative time for activation turn
   let activationTurnCalendarDate: string | undefined;
@@ -156,24 +221,44 @@ export function EventCreateWizard({
     }
   }, [nextTurnNumber, state.activationTurn]);
 
-  const createMutation = useMutation(
+  const createMutationCreate = useMutation(
     createEventGroupMutationOptions({
       queryClient,
     }),
   );
 
+  const editMutation = useMutation(
+    editEventGroupMutationOptions({
+      queryClient,
+    }),
+  );
+
   const handleNext = (): void => {
-    setState((prev) => ({
-      ...prev,
-      step: Math.min(6, prev.step + 1) as 1 | 2 | 3 | 4 | 5 | 6,
-    }));
+    setState((prev) => {
+      let nextStep = Math.min(6, prev.step + 1) as 1 | 2 | 3 | 4 | 5 | 6;
+      // Skip step 2 in edit mode (scope selection is locked)
+      if (isEditMode && nextStep === 2) {
+        nextStep = 3;
+      }
+      return {
+        ...prev,
+        step: nextStep,
+      };
+    });
   };
 
   const handlePrev = (): void => {
-    setState((prev) => ({
-      ...prev,
-      step: Math.max(1, prev.step - 1) as 1 | 2 | 3 | 4 | 5 | 6,
-    }));
+    setState((prev) => {
+      let prevStep = Math.max(1, prev.step - 1) as 1 | 2 | 3 | 4 | 5 | 6;
+      // Skip step 2 in edit mode (scope selection is locked)
+      if (isEditMode && prevStep === 2) {
+        prevStep = 1;
+      }
+      return {
+        ...prev,
+        step: prevStep,
+      };
+    });
   };
 
   const expandMultiResourceEffects = (
@@ -284,36 +369,13 @@ export function EventCreateWizard({
 
   const handleSubmit = async (): Promise<void> => {
     if (state.scopeType === null) return;
-    try {
-      // Build targets array based on scope and selected IDs.
-      // World scope has no selectable IDs but the RPC still needs one
-      // target row to create the single world-wide event.
-      const targets =
-        state.scopeType === "world"
-          ? [
-              {
-                scope_id: null,
-                nation_id: null,
-                settlement_id: null,
-                scope_name: "World",
-                job_id: null,
-                building_blueprint_id: null,
-                managed_population_type_id: null,
-              },
-            ]
-          : state.selectedIds.map((id) => ({
-              scope_id: id,
-              nation_id: state.scopeType === "nation" ? id : null,
-              settlement_id: state.scopeType === "settlement" ? id : null,
-              scope_name:
-                state.scopeType === "nation"
-                  ? `Nation ${id}`
-                  : `Settlement ${id}`,
-              job_id: null,
-              building_blueprint_id: null,
-              managed_population_type_id: null,
-            }));
+    if (
+      isEditMode &&
+      (editGroupId === undefined || editEventData === undefined)
+    )
+      return;
 
+    try {
       // Fetch all resources to expand "all" mode if needed
       const resourcesQuery = await queryClient.ensureQueryData(
         activeResourcesByWorldQueryOptions(worldId),
@@ -332,58 +394,126 @@ export function EventCreateWizard({
         allJobIds,
       );
 
-      const input: CreateEventGroupInput = {
-        worldId,
-        groupName,
-        groupDescription,
-        effects: expandedEffects.map((e) => ({
-          effectType:
-            e.effectType as CreateEventGroupInput["effects"][number]["effectType"],
-          isPercent: e.isPercent,
-          amountValue: e.amountValue,
-          multiplierValue: e.multiplierValue,
-          resourceId: e.resourceId,
-          jobId: e.jobId,
-          managedPopulationInstanceId: e.managedPopulationInstanceId,
-          managedPopulationTypeId: e.managedPopulationTypeId,
-          managedPopulationMode: e.managedPopulationMode,
-          depositInstanceId: e.depositInstanceId,
-          settlementBuildingId: e.settlementBuildingId,
-        })),
-        scopeType: state.scopeType,
-        targets,
-        durationType: state.durationType,
-        durationTransitions:
-          state.durationType === "sustained" ? state.durationTransitions : null,
-        activationTurn: state.activationTurn,
-        createCitizenMemories: state.createCitizenMemories,
-        memoryText: state.createCitizenMemories ? state.memoryText : null,
-      };
+      const baseEffects = expandedEffects.map((e) => ({
+        effectType:
+          e.effectType as CreateEventGroupInput["effects"][number]["effectType"],
+        isPercent: e.isPercent,
+        amountValue: e.amountValue,
+        multiplierValue: e.multiplierValue,
+        resourceId: e.resourceId,
+        jobId: e.jobId,
+        managedPopulationInstanceId: e.managedPopulationInstanceId,
+        managedPopulationTypeId: e.managedPopulationTypeId,
+        managedPopulationMode: e.managedPopulationMode,
+        depositInstanceId: e.depositInstanceId,
+        settlementBuildingId: e.settlementBuildingId,
+      }));
 
-      await createMutation.mutateAsync(input);
+      if (isEditMode) {
+        // Edit mode: use EditEventGroupInput
+        const input = {
+          groupId: editGroupId as string,
+          worldId,
+          groupName,
+          groupDescription,
+          effects: baseEffects,
+          durationType: state.durationType,
+          durationTransitions:
+            state.durationType === "sustained"
+              ? state.durationTransitions
+              : null,
+          activationTurn: state.activationTurn,
+          createCitizenMemories: state.createCitizenMemories,
+          memoryText: state.createCitizenMemories ? state.memoryText : null,
+        };
 
-      toast.success("Event created successfully");
-      setState(createInitialState(nextTurnNumber));
-      setGroupName("");
-      setGroupDescription("");
-      await queryClient.invalidateQueries({
-        queryKey: eventQueryKeys.byWorld(worldId),
-      });
-      onClose();
+        await editMutation.mutateAsync(input);
+
+        toast.success("Event updated successfully");
+        await queryClient.invalidateQueries({
+          queryKey: eventQueryKeys.byWorld(worldId),
+        });
+        onClose();
+      } else {
+        // Create mode: use CreateEventGroupInput
+        const targets =
+          state.scopeType === "world"
+            ? [
+                {
+                  scope_id: null,
+                  nation_id: null,
+                  settlement_id: null,
+                  scope_name: "World",
+                  job_id: null,
+                  building_blueprint_id: null,
+                  managed_population_type_id: null,
+                },
+              ]
+            : state.selectedIds.map((id) => ({
+                scope_id: id,
+                nation_id: state.scopeType === "nation" ? id : null,
+                settlement_id: state.scopeType === "settlement" ? id : null,
+                scope_name:
+                  state.scopeType === "nation"
+                    ? `Nation ${id}`
+                    : `Settlement ${id}`,
+                job_id: null,
+                building_blueprint_id: null,
+                managed_population_type_id: null,
+              }));
+
+        const input: CreateEventGroupInput = {
+          worldId,
+          groupName,
+          groupDescription,
+          effects: baseEffects,
+          scopeType: state.scopeType,
+          targets,
+          durationType: state.durationType,
+          durationTransitions:
+            state.durationType === "sustained"
+              ? state.durationTransitions
+              : null,
+          activationTurn: state.activationTurn,
+          createCitizenMemories: state.createCitizenMemories,
+          memoryText: state.createCitizenMemories ? state.memoryText : null,
+        };
+
+        await createMutationCreate.mutateAsync(input);
+
+        toast.success("Event created successfully");
+        setState(createInitialState(nextTurnNumber));
+        setGroupName("");
+        setGroupDescription("");
+        await queryClient.invalidateQueries({
+          queryKey: eventQueryKeys.byWorld(worldId),
+        });
+        onClose();
+      }
     } catch (error) {
       if (isEventMutationError(error)) {
         toast.error(error.message);
       } else {
-        toast.error("Failed to create event");
+        toast.error(
+          isEditMode ? "Failed to update event" : "Failed to create event",
+        );
       }
     }
   };
 
+  // In edit mode, calculate effective step number (skip 1-2, map 3-6 to 1-4)
+  const effectiveStep = isEditMode ? state.step - 2 : state.step;
+  const totalSteps = isEditMode ? 4 : 6;
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-normal">Create Event</h1>
-        <p className="text-sm text-muted-foreground">Step {state.step} of 6</p>
+        <h1 className="text-2xl font-semibold tracking-normal">
+          {isEditMode ? "Edit Event" : "Create Event"}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Step {effectiveStep} of {totalSteps}
+        </p>
       </div>
 
       <div className="space-y-6">
@@ -396,7 +526,7 @@ export function EventCreateWizard({
           />
         )}
 
-        {state.step === 2 && (
+        {state.step === 2 && !isEditMode && (
           <div className="space-y-6">
             <EventCreateStep1
               scopeType={state.scopeType}
@@ -510,7 +640,7 @@ export function EventCreateWizard({
         <Button
           variant="outline"
           onClick={handlePrev}
-          disabled={state.step === 1}
+          disabled={state.step === 1 || (isEditMode && state.step === 3)}
         >
           <ChevronLeft className="h-4 w-4" />
           Previous
@@ -522,8 +652,9 @@ export function EventCreateWizard({
             className="ml-auto"
             disabled={
               (state.step === 1 && groupName.trim().length === 0) ||
-              (state.step === 2 && state.scopeType === null) ||
-              (state.step === 2 &&
+              (!isEditMode && state.step === 2 && state.scopeType === null) ||
+              (!isEditMode &&
+                state.step === 2 &&
                 state.scopeType !== "world" &&
                 state.selectedIds.length === 0)
             }
@@ -538,13 +669,25 @@ export function EventCreateWizard({
               void handleSubmit();
             }}
             disabled={
-              createMutation.isPending ||
-              state.scopeType === null ||
-              (state.scopeType !== "world" && state.selectedIds.length === 0)
+              (isEditMode
+                ? editMutation.isPending
+                : createMutationCreate.isPending) ||
+              (!isEditMode &&
+                (state.scopeType === null ||
+                  (state.scopeType !== "world" &&
+                    state.selectedIds.length === 0)))
             }
             className="ml-auto"
           >
-            {createMutation.isPending ? "Creating…" : "Create Event"}
+            {isEditMode
+              ? editMutation.isPending
+              : createMutationCreate.isPending
+                ? isEditMode
+                  ? "Updating…"
+                  : "Creating…"
+                : isEditMode
+                  ? "Update Event"
+                  : "Create Event"}
           </Button>
         )}
       </div>

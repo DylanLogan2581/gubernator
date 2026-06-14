@@ -16,9 +16,11 @@ import {
   cancelEventInputSchema,
   cancelEventGroupInputSchema,
   createEventGroupInputSchema,
+  editEventGroupInputSchema,
   type CancelEventInput,
   type CancelEventGroupInput,
   type CreateEventGroupInput,
+  type EditEventGroupInput,
 } from "../schemas/eventSchemas";
 
 type EventMutationErrorCode =
@@ -306,6 +308,124 @@ export function cancelEventGroupMutationOptions({
       return data as CancelEventResult;
     },
     mutationKey: [...eventQueryKeys.all, "cancel-group"],
+    onSuccess: async (): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: eventQueryKeys.all,
+      });
+    },
+  });
+}
+
+type EditEventGroupResult = {
+  readonly group_id: string;
+};
+
+/**
+ * Mutation for editing an event group (name, description, effects, duration, activation turn, memory).
+ * Scope and targets are locked (cannot be changed).
+ */
+export function editEventGroupMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: MutationFactoryOpts): UseMutationOptions<
+  EditEventGroupResult,
+  Error,
+  EditEventGroupInput
+> {
+  return mutationOptions<EditEventGroupResult, Error, EditEventGroupInput>({
+    mutationFn: async (input: EditEventGroupInput) => {
+      const values = editEventGroupInputSchema.parse(input);
+
+      // Validate that sustained events have duration_transitions
+      if (
+        values.durationType === "sustained" &&
+        (values.durationTransitions === null ||
+          values.durationTransitions === undefined ||
+          values.durationTransitions <= 0)
+      ) {
+        throw new EventMutationError({
+          code: "event_input_invalid",
+          message: "Duration transitions required for sustained events",
+        });
+      }
+
+      // Validate each effect has required fields for its type
+      for (let i = 0; i < values.effects.length; i++) {
+        const validationError = validateEffectFields(values.effects[i], i);
+        if (validationError !== null) {
+          throw new EventMutationError({
+            code: "event_input_invalid",
+            message: validationError,
+          });
+        }
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      const { data, error } = await (client.rpc as any)(
+        "update_event_group_with_events",
+        {
+          p_group_id: values.groupId,
+          p_group_name: values.groupName,
+          p_group_description: values.groupDescription ?? null,
+          p_effects: values.effects.map((e) => {
+            const extraData: Record<string, unknown> = {};
+
+            if (
+              e.effectType === "managed_population_change" &&
+              typeof e.managedPopulationMode === "string"
+            ) {
+              extraData.managed_population_mode = e.managedPopulationMode;
+            }
+
+            if (
+              e.effectType === "upkeep_multiplier" &&
+              typeof e.buildingBlueprintMode === "string"
+            ) {
+              extraData.building_blueprint_mode = e.buildingBlueprintMode;
+              if (
+                e.buildingBlueprintMode === "select" &&
+                Array.isArray(e.buildingBlueprintIds)
+              ) {
+                extraData.building_blueprint_ids = e.buildingBlueprintIds;
+              }
+            }
+
+            return {
+              effect_type: e.effectType,
+              is_percent: e.isPercent,
+              amount_value: e.amountValue,
+              multiplier_value: e.multiplierValue,
+              resource_id: e.resourceId,
+              job_id: e.jobId,
+              managed_population_instance_id: e.managedPopulationInstanceId,
+              managed_population_type_id: e.managedPopulationTypeId,
+              deposit_instance_id: e.depositInstanceId,
+              settlement_building_id: e.settlementBuildingId,
+              extra_data_jsonb: extraData,
+            };
+          }),
+          p_duration_type: values.durationType,
+          p_duration_transitions:
+            values.durationType === "sustained"
+              ? values.durationTransitions
+              : null,
+          p_activate_on_transition_after_turn_number: values.activationTurn,
+          p_create_citizen_memories: values.createCitizenMemories,
+          p_memory_text: values.memoryText ?? null,
+        },
+      );
+
+      if (error !== null) {
+        const normalized = normalizeSupabaseError(error);
+        throw new EventMutationError({
+          code: "event_mutation_failed",
+          message: normalized.message,
+        });
+      }
+
+      return data as EditEventGroupResult;
+    },
+    mutationKey: [...eventQueryKeys.all, "edit-group"],
     onSuccess: async (): Promise<void> => {
       await queryClient.invalidateQueries({
         queryKey: eventQueryKeys.all,

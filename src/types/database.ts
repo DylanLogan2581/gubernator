@@ -1,3 +1,5 @@
+ 
+
 export type Json =
   | string
   | number
@@ -4155,7 +4157,8 @@ export type Database = {
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
-        | { Args: { why: string }; Returns: boolean[] };
+        | { Args: { why: string }; Returns: boolean[] }
+         ;
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }
