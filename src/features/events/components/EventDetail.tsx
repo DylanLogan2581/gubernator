@@ -160,7 +160,7 @@ export function EventDetail({
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold">{event.name}</h1>
+              <h1 className="text-2xl font-semibold">{event.group?.name}</h1>
               {event.group?.description !== null ? (
                 <p className="mt-2 text-muted-foreground">
                   {event.group?.description}
@@ -300,8 +300,8 @@ export function EventDetail({
               Cancel event?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will cancel the event "{event.name}". This action cannot be
-              undone.
+              This will cancel the event "{event.group?.name}". This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-2">
@@ -328,8 +328,8 @@ export function EventDetail({
               Delete event permanently?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the event "{event.name}" and all its
-              effects. This action cannot be undone.
+              This will permanently delete the event "{event.group?.name}" and
+              all its effects. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-2">
