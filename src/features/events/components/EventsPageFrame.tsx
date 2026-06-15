@@ -21,13 +21,12 @@ export function EventsPageFrame({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (navigate as any)({
+          onClick={() => {
+            void navigate({
               to: "/worlds/$worldId",
               params: { worldId },
-            })
-          }
+            });
+          }}
         >
           <ArrowLeft className="h-4 w-4" />
           <span className="sr-only">Back to world</span>

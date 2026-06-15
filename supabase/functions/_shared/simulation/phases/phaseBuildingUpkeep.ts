@@ -70,7 +70,9 @@ export function phaseBuildingUpkeep(
       } else if (mults.upkeep !== null && mults.upkeep !== undefined) {
         upkeepMultiplier = mults.upkeep;
       }
-    } else if (mults !== null && mults !== undefined && mults.upkeep !== null && mults.upkeep !== undefined) {
+    } else if (
+      mults !== null && mults !== undefined && mults.upkeep !== null && mults.upkeep !== undefined
+    ) {
       upkeepMultiplier = mults.upkeep;
     }
 

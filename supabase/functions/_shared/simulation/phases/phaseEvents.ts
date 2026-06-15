@@ -341,9 +341,9 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     if (event.activateOnTransitionAfterTurnNumber > turnNumber) continue;
 
     // Apply new-style effects if available, otherwise apply old-style effectType for backward compat
-    const effectsToApply = event.effects.length > 0 ? event.effects : 
-      // Backward compat: synthesize a single old-style effect from effectType + payload
-      [{
+    const effectsToApply = event.effects.length > 0
+      ? event.effects // Backward compat: synthesize a single old-style effect from effectType + payload
+      : [{
         id: `legacy-${event.id}`,
         effectType: event.effectType,
         amountValue: null,
@@ -355,7 +355,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         depositInstanceId: null,
         settlementBuildingId: null,
       }];
-    
+
     for (const effect of effectsToApply) {
       applyEffect(
         effect,

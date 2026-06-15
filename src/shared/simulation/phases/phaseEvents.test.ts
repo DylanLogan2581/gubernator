@@ -510,6 +510,233 @@ describe("phaseEvents", () => {
     }
   });
 
+  describe("building_destroyed effect", () => {
+    it("logs when settlementBuildingId is present", () => {
+      const eventId = nextId();
+      const ctx = makeContext({
+        events: [
+          makeEvent("building_destroyed", {
+            id: eventId,
+            scopeType: "settlement",
+            scopeSettlementId: "s1",
+            effectPayloadJsonb: { settlementBuildingId: "sb1" },
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      const logs = result.logs.filter((l) => l.payload.eventId === eventId);
+      expect(logs).toHaveLength(1);
+      expect(logs[0]?.category).toBe("event.building_destroyed");
+      expect(logs[0]?.payload.settlementBuildingId).toBe("sb1");
+    });
+
+    it("does not log when settlementBuildingId is missing", () => {
+      const ctx = makeContext({
+        events: [
+          makeEvent("building_destroyed", {
+            scopeType: "settlement",
+            scopeSettlementId: "s1",
+            effectPayloadJsonb: {},
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      expect(result.logs).toHaveLength(0);
+    });
+  });
+
+  describe("deposit_destroyed effect", () => {
+    it("logs when depositInstanceId is present", () => {
+      const eventId = nextId();
+      const ctx = makeContext({
+        events: [
+          makeEvent("deposit_destroyed", {
+            id: eventId,
+            scopeType: "settlement",
+            scopeSettlementId: "s1",
+            effectPayloadJsonb: { depositInstanceId: "di1" },
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      const logs = result.logs.filter((l) => l.payload.eventId === eventId);
+      expect(logs).toHaveLength(1);
+      expect(logs[0]?.category).toBe("event.deposit_destroyed");
+      expect(logs[0]?.payload.depositInstanceId).toBe("di1");
+    });
+
+    it("does not log when depositInstanceId is missing", () => {
+      const ctx = makeContext({
+        events: [
+          makeEvent("deposit_destroyed", {
+            scopeType: "settlement",
+            scopeSettlementId: "s1",
+            effectPayloadJsonb: {},
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      expect(result.logs).toHaveLength(0);
+    });
+  });
+
+  describe("managed_population_change targeting modes", () => {
+    const populations = [
+      {
+        id: "mp1",
+        managedPopulationTypeId: "mptA",
+        settlementId: "s1",
+        name: "Flock A",
+        currentCount: 10,
+        configuredCullQuantity: 5,
+        status: "active" as const,
+      },
+      {
+        id: "mp2",
+        managedPopulationTypeId: "mptB",
+        settlementId: "s1",
+        name: "Flock B",
+        currentCount: 20,
+        configuredCullQuantity: 5,
+        status: "active" as const,
+      },
+      {
+        id: "mp3",
+        managedPopulationTypeId: "mptA",
+        settlementId: "s2",
+        name: "Flock C",
+        currentCount: 30,
+        configuredCullQuantity: 5,
+        status: "active" as const,
+      },
+    ];
+
+    it("mode 'all' targets every population in scoped settlements", () => {
+      const eventId = nextId();
+      const ctx = makeContext({
+        managedPopulations: populations,
+        events: [
+          makeEvent("managed_population_change", {
+            id: eventId,
+            scopeType: "settlement",
+            scopeSettlementId: "s1",
+            effectPayloadJsonb: {
+              delta: -3,
+              managed_population_mode: "all",
+            },
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      const ids = result.logs
+        .filter((l) => l.payload.eventId === eventId)
+        .map((l) => String(l.payload.managedPopulationId));
+      expect(new Set(ids)).toEqual(new Set(["mp1", "mp2"]));
+    });
+
+    it("mode 'type' targets only matching type in scoped settlements", () => {
+      const eventId = nextId();
+      const ctx = makeContext({
+        managedPopulations: populations,
+        events: [
+          makeEvent("managed_population_change", {
+            id: eventId,
+            scopeType: "world",
+            effectPayloadJsonb: {
+              delta: 4,
+              managed_population_mode: "type",
+              managed_population_type_id: "mptA",
+            },
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      const ids = result.logs
+        .filter((l) => l.payload.eventId === eventId)
+        .map((l) => String(l.payload.managedPopulationId));
+      expect(new Set(ids)).toEqual(new Set(["mp1", "mp3"]));
+    });
+
+    it("does not log when delta is not a number", () => {
+      const ctx = makeContext({
+        managedPopulations: populations,
+        events: [
+          makeEvent("managed_population_change", {
+            scopeType: "settlement",
+            scopeSettlementId: "s1",
+            effectPayloadJsonb: { managed_population_mode: "all" },
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      expect(result.logs).toHaveLength(0);
+    });
+  });
+
+  describe("unknown effect type", () => {
+    it("falls through default branch without logging but still patches status", () => {
+      const eventId = nextId();
+      const ctx = makeContext({
+        events: [
+          makeEvent("not_a_real_effect" as EventEffectType, {
+            id: eventId,
+            scopeType: "settlement",
+            scopeSettlementId: "s1",
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      expect(
+        result.logs.filter((l) => l.payload.eventId === eventId),
+      ).toHaveLength(0);
+      expect(result.eventStatusPatches).toContainEqual(
+        expect.objectContaining({ eventId, toStatus: "active" }),
+      );
+    });
+  });
+
+  describe("effect error handling", () => {
+    it("captures a thrown error into an event.error log", () => {
+      const eventId = nextId();
+      const ctx = makeContext({
+        events: [
+          makeEvent("resource_grant", {
+            id: eventId,
+            scopeType: "settlement",
+            scopeSettlementId: "s1",
+            // Null payload makes the effect switch throw on property access,
+            // exercising the catch branch.
+            effectPayloadJsonb:
+              null as unknown as SimEvent["effectPayloadJsonb"],
+          }),
+        ],
+      });
+
+      const result = phaseEvents(ctx);
+
+      const errorLog = result.logs.find(
+        (l) => l.category === "event.error" && l.payload.eventId === eventId,
+      );
+      expect(errorLog).toBeDefined();
+    });
+  });
+
   describe("output shape", () => {
     it("always returns empty notifications array", () => {
       const ctx = makeContext({

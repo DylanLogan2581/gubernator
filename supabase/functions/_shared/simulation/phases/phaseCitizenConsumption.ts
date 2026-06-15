@@ -49,10 +49,10 @@ export function phaseCitizenConsumption(
     if (aliveCount === 0) continue;
 
     const consumptionMultiplier = pendingEventMultipliers.get(sid)?.consumption ?? 1.0;
-    const foodRequired =
-      aliveCount * populationRules.foodConsumptionPerCitizen * consumptionMultiplier;
-    const waterRequired =
-      aliveCount * populationRules.waterConsumptionPerCitizen * consumptionMultiplier;
+    const foodRequired = aliveCount * populationRules.foodConsumptionPerCitizen *
+      consumptionMultiplier;
+    const waterRequired = aliveCount * populationRules.waterConsumptionPerCitizen *
+      consumptionMultiplier;
 
     const foodStock = stockpileQty.get(`${sid}:${foodId}`) ?? 0;
     const waterStock = stockpileQty.get(`${sid}:${freshWaterId}`) ?? 0;

@@ -506,7 +506,8 @@ export function isEventEffectRow(v: unknown): v is SupabaseEventEffectRow {
     typeof v.is_percent === "boolean" &&
     (v.resource_id === null || typeof v.resource_id === "string") &&
     (v.job_id === null || typeof v.job_id === "string") &&
-    (v.managed_population_instance_id === null || typeof v.managed_population_instance_id === "string") &&
+    (v.managed_population_instance_id === null ||
+      typeof v.managed_population_instance_id === "string") &&
     (v.deposit_instance_id === null || typeof v.deposit_instance_id === "string")
   );
 }

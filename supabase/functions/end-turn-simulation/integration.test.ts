@@ -647,10 +647,17 @@ describe("end-turn-simulation integration", () => {
       bySettlement?: Record<string, unknown>;
     };
     expect(forecast?.bySettlement).toBeDefined();
-    // At least one settlement should have forecast data.
-    expect(Object.keys(forecast?.bySettlement ?? {})).toHaveLength(
+    // World 101 (Verdant Reach) contains the five canonical settlements plus
+    // the bulk-seeded nations, so the forecast covers every settlement in the
+    // world. Assert each canonical settlement is present rather than an exact
+    // total count.
+    const forecastSettlementIds = Object.keys(forecast?.bySettlement ?? {});
+    expect(forecastSettlementIds.length).toBeGreaterThanOrEqual(
       SETTLEMENT_IDS.length,
     );
+    for (const settlementId of SETTLEMENT_IDS) {
+      expect(forecastSettlementIds).toContain(settlementId);
+    }
     // Each settlement forecast should have the required structure.
     for (const [settlementId, settlementForecast] of Object.entries(
       forecast?.bySettlement ?? {},
