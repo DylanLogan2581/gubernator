@@ -446,6 +446,74 @@ begin
       and log_category = 'managed_population.extinct'
   ) t);
 
+  -- managed_population.declining (same recipients as building.suspended)
+  insert into public.notifications (
+    recipient_user_id,
+    world_id,
+    settlement_id,
+    nation_id,
+    notification_type,
+    message_text,
+    generated_in_transition_id
+  )
+  select
+    recipients.user_id,
+    p_world_id,
+    logs.settlement_id,
+    s.nation_id,
+    'managed_population.declining'::public.notification_type,
+    'A managed population is declining due to insufficient maintenance or husbandry.',
+    p_transition_id
+  from (
+    select distinct settlement_id
+    from public.turn_log_entries
+    where turn_transition_id = p_transition_id
+      and world_id = p_world_id
+      and log_category = 'managed_population.declining'
+      and settlement_id is not null
+  ) logs (settlement_id)
+  inner join public.settlements s on s.id = logs.settlement_id
+  cross join lateral (
+    select c.user_id
+    from public.citizens c
+    inner join public.users u on u.id = c.user_id
+    where c.role_type = 'settlement_manager'
+      and c.role_settlement_id = logs.settlement_id
+      and c.status = 'alive'
+      and c.citizen_type = 'player_character'
+      and c.user_id is not null
+      and u.status = 'active'
+    union all
+    select c.user_id
+    from public.citizens c
+    inner join public.users u on u.id = c.user_id
+    where c.role_type = 'nation_manager'
+      and c.role_nation_id = s.nation_id
+      and c.status = 'alive'
+      and c.citizen_type = 'player_character'
+      and c.user_id is not null
+      and u.status = 'active'
+    union all
+    select wa.user_id
+    from public.world_admins wa
+    inner join public.users u on u.id = wa.user_id
+    where wa.world_id = p_world_id
+      and u.status = 'active'
+    union all
+    select u.id
+    from public.users u
+    where u.is_super_admin = true
+      and u.status = 'active'
+  ) as recipients (user_id)
+  on conflict do nothing;
+
+  notification_count := notification_count + (select count(*) from (
+    select 1 from public.turn_log_entries
+    where turn_transition_id = p_transition_id
+      and world_id = p_world_id
+      and log_category = 'managed_population.declining'
+  ) t);
+
   -- settlement.starvation_occurred (same recipients as building.suspended)
   insert into public.notifications (
     recipient_user_id,
