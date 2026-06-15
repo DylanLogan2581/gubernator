@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
 
 export type Json =
   | string
@@ -2984,6 +2984,10 @@ export type Database = {
         Args: { p_memory_id: string };
         Returns: undefined;
       };
+      delete_event_or_group: {
+        Args: { p_event_id: string; p_group_id: string };
+        Returns: Json;
+      };
       diag:
         | {
             Args: { msg: unknown };
@@ -4158,7 +4162,7 @@ export type Database = {
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
         | { Args: { why: string }; Returns: boolean[] }
-         ;
+        | { Args: { how_many: number; why: string }; Returns: boolean[] };
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }
@@ -4247,6 +4251,20 @@ export type Database = {
         Returns: {
           id: string;
         }[];
+      };
+      update_event_group_with_events: {
+        Args: {
+          p_activate_on_transition_after_turn_number: number;
+          p_create_citizen_memories: boolean;
+          p_duration_transitions: number;
+          p_duration_type: string;
+          p_effects: Json;
+          p_group_description: string;
+          p_group_id: string;
+          p_group_name: string;
+          p_memory_text: string;
+        };
+        Returns: Json;
       };
       update_settlement_coordinates: {
         Args: { p_coord_x: number; p_coord_z: number; p_settlement_id: string };
