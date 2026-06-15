@@ -49,8 +49,11 @@ export function eventsListQueryOptions(
           "*,group:event_groups(*)",
           EventWithGroup
         >("*,group:event_groups(*)")
-        .eq("world_id", worldId)
-        .order("created_at", { ascending: false });
+        .eq("world_id", worldId);
+
+      // Apply sorting
+      const sortBy = filters?.sortBy ?? "created_at";
+      query = query.order(sortBy, { ascending: sortBy === "status" });
 
       if (
         filters?.statusFilter !== undefined &&
@@ -71,6 +74,35 @@ export function eventsListQueryOptions(
         filters.effectTypeFilter.length > 0
       ) {
         query = query.in("effect_type", filters.effectTypeFilter);
+      }
+
+      // Handle scope entity filter (specific nation or settlement)
+      if (filters?.scopeEntityFilter !== undefined) {
+        const { type, id } = filters.scopeEntityFilter;
+        if (type === "settlement") {
+          // For settlement: need to fetch nation_id first (PostgREST or() doesn't support subqueries)
+          const { data: settlement, error: settlementError } = await client
+            .from("settlements")
+            .select("nation_id")
+            .eq("id", id)
+            .single();
+
+          if (settlementError !== null) {
+            throw normalizeSupabaseError(settlementError);
+          }
+
+          const nationId = settlement.nation_id;
+          // Include direct settlement scope + nation scope + world scope
+          const orFilter =
+            nationId !== null
+              ? `and(scope_type.eq.settlement,scope_settlement_id.eq.${id}),and(scope_type.eq.nation,scope_nation_id.eq.${nationId}),scope_type.eq.world`
+              : `and(scope_type.eq.settlement,scope_settlement_id.eq.${id}),scope_type.eq.world`;
+          query = query.or(orFilter);
+        } else if (type === "nation") {
+          // For nation: include nation + world scope
+          const orFilter = `and(scope_type.eq.nation,scope_nation_id.eq.${id}),scope_type.eq.world`;
+          query = query.or(orFilter);
+        }
       }
 
       const { data, error } = await query;

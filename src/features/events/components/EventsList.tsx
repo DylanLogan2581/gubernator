@@ -3,25 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
-type PaginationState = {
-  readonly pageIndex: number;
-  readonly pageSize: number;
-};
-
-/**
- * Display item: either a single ungrouped event or a group of events with the same event_group_id
- */
-type EventDisplayItem =
-  | {
-      readonly type: "single";
-      readonly event: EventWithGroup;
-    }
-  | {
-      readonly type: "group";
-      readonly groupId: string;
-      readonly events: readonly EventWithGroup[];
-    };
-
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -50,8 +31,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { nationsListQueryOptions } from "@/features/nations";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
 
 import { eventsListQueryOptions, isEventsError } from "../queries/eventQueries";
+
+type PaginationState = {
+  readonly pageIndex: number;
+  readonly pageSize: number;
+};
+
+/**
+ * Display item: either a single ungrouped event or a group of events with the same event_group_id
+ */
+type EventDisplayItem =
+  | {
+      readonly type: "single";
+      readonly event: EventWithGroup;
+    }
+  | {
+      readonly type: "group";
+      readonly groupId: string;
+      readonly events: readonly EventWithGroup[];
+    };
 
 import type {
   EventListFilters,
@@ -120,13 +122,23 @@ export function EventsList({
   onCreateClick,
 }: EventsListProps): JSX.Element {
   const [statusFilter, setStatusFilter] = useState<EventStatus[]>([]);
+  const [sortBy, setSortBy] = useState<"status" | "created_at">("created_at");
+  const [scopeEntityFilter, setScopeEntityFilter] = useState<
+    { readonly type: "nation" | "settlement"; readonly id: string } | undefined
+  >(undefined);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
 
+  // Fetch nations and settlements for scope filter dropdowns
+  const nationsQuery = useQuery(nationsListQueryOptions(worldId));
+  const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
+
   const filters: EventListFilters = {
     statusFilter: statusFilter.length > 0 ? statusFilter : undefined,
+    sortBy,
+    scopeEntityFilter,
   };
 
   const eventsQuery = useQuery(eventsListQueryOptions(worldId, filters));
@@ -163,7 +175,7 @@ export function EventsList({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Select
             value={statusFilter.length === 0 ? "all" : statusFilter[0]}
             onValueChange={(value) => {
@@ -185,6 +197,75 @@ export function EventsList({
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={sortBy}
+            onValueChange={(value) => {
+              setSortBy(value as "status" | "created_at");
+              setPagination({ pageIndex: 0, pageSize: 10 });
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">Sort by Created Date</SelectItem>
+              <SelectItem value="status">Sort by Status</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={
+              scopeEntityFilter !== undefined
+                ? `${scopeEntityFilter.type}:${scopeEntityFilter.id}`
+                : "all"
+            }
+            onValueChange={(value) => {
+              if (value === "all") {
+                setScopeEntityFilter(undefined);
+              } else {
+                const [type, id] = value.split(":");
+                setScopeEntityFilter({
+                  type: type as "nation" | "settlement",
+                  id,
+                });
+              }
+              setPagination({ pageIndex: 0, pageSize: 10 });
+            }}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filter by scope entity" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All entities</SelectItem>
+              {nationsQuery.data !== undefined &&
+                nationsQuery.data.length > 0 && (
+                  <>
+                    {nationsQuery.data.map((nation) => (
+                      <SelectItem
+                        key={`nation:${nation.id}`}
+                        value={`nation:${nation.id}`}
+                      >
+                        {nation.name}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+              {settlementsQuery.data !== undefined &&
+                settlementsQuery.data.length > 0 && (
+                  <>
+                    {settlementsQuery.data.map((settlement) => (
+                      <SelectItem
+                        key={`settlement:${settlement.id}`}
+                        value={`settlement:${settlement.id}`}
+                      >
+                        {settlement.name} ({settlement.nationName})
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
             </SelectContent>
           </Select>
         </div>
