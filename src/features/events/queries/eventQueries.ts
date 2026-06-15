@@ -41,7 +41,7 @@ export function eventsListQueryOptions(
 ): EventsListQueryOptions {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
-    queryKey: eventQueryKeys.list(worldId),
+    queryKey: eventQueryKeys.list(worldId, filters),
     queryFn: async (): Promise<readonly EventWithGroup[]> => {
       let query = client
         .from("events")
