@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useMemo } from "react";
 
 import {
@@ -113,11 +113,11 @@ export function ForecastPanel({
 
   if (forecast === null) {
     return (
-      <Alert>
-        <Clock className="h-4 w-4" />
-        <AlertTitle>No Forecast Available</AlertTitle>
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Forecast Unavailable</AlertTitle>
         <AlertDescription>
-          Complete a turn to generate a forecast for this settlement.
+          The forecast data could not be parsed. Try refreshing the page.
         </AlertDescription>
       </Alert>
     );

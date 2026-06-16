@@ -4,6 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useMemo, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -145,6 +146,8 @@ export function SettlementStockpilesPanel({
           <StockpilesTable
             canAdmin={canAdmin}
             forecastDeltaMap={forecastDeltaMap}
+            isForecastError={forecastQuery.isError}
+            isForecastPending={forecastQuery.isPending}
             isArchived={isArchived}
             queryClient={queryClient}
             stockpiles={sortStockpiles(stockpilesQuery.data)}
@@ -169,12 +172,16 @@ function sortStockpiles(
 function StockpilesTable({
   canAdmin,
   forecastDeltaMap,
+  isForecastError,
+  isForecastPending,
   isArchived,
   queryClient,
   stockpiles,
 }: {
   readonly canAdmin: boolean;
   readonly forecastDeltaMap: ForecastDeltaMap;
+  readonly isForecastError: boolean;
+  readonly isForecastPending: boolean;
   readonly isArchived: boolean;
   readonly queryClient: QueryClient;
   readonly stockpiles: readonly SettlementStockpile[];
@@ -208,6 +215,8 @@ function StockpilesTable({
               key={stockpile.resourceId}
               canEdit={canEdit}
               forecastDelta={forecastDeltaMap.get(stockpile.resourceId)}
+              isForecastError={isForecastError}
+              isForecastPending={isForecastPending}
               stockpile={stockpile}
               onEdit={() => {
                 setEditingStockpile(stockpile);
@@ -233,11 +242,15 @@ function StockpilesTable({
 function StockpileRow({
   canEdit,
   forecastDelta,
+  isForecastError,
+  isForecastPending,
   stockpile,
   onEdit,
 }: {
   readonly canEdit: boolean;
   readonly forecastDelta: number | undefined;
+  readonly isForecastError: boolean;
+  readonly isForecastPending: boolean;
   readonly onEdit: () => void;
   readonly stockpile: SettlementStockpile;
 }): JSX.Element {
@@ -260,7 +273,17 @@ function StockpileRow({
         {stockpile.effectiveCap.toLocaleString()}
       </TableCell>
       <TableCell className="py-2 pr-4 tabular-nums">
-        {forecastDelta === undefined ? (
+        {isForecastPending ? (
+          <Loader2
+            className="h-3.5 w-3.5 animate-spin text-muted-foreground"
+            aria-label="Loading forecast"
+          />
+        ) : isForecastError ? (
+          <AlertTriangle
+            className="h-3.5 w-3.5 text-destructive"
+            aria-label="Forecast error"
+          />
+        ) : forecastDelta === undefined ? (
           <span className="text-muted-foreground">—</span>
         ) : forecastDelta > 0 ? (
           <span className="text-green-600 dark:text-green-500">

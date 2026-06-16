@@ -403,6 +403,36 @@ describe("SettlementStockpilesPanel", () => {
     expect(screen.getByText("+5")).toBeDefined();
     expect(screen.getByText("—")).toBeDefined();
   });
+
+  it("shows a loading indicator in the forecast column while the forecast is pending", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [createStockpileRow({ resource_name: "Food" })],
+        forecastInvoke: vi.fn().mockReturnValue(new Promise(() => {})),
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByLabelText("Loading forecast")).toBeDefined();
+  });
+
+  it("shows an error indicator in the forecast column when the forecast query fails", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [createStockpileRow({ resource_name: "Food" })],
+        forecastInvoke: vi
+          .fn()
+          .mockResolvedValue({ data: null, error: new Error("server error") }),
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(await screen.findByLabelText("Forecast error")).toBeDefined();
+  });
 });
 
 function renderPanel({
@@ -463,12 +493,14 @@ type TestForecastRow = {
 function createClient({
   stockpileRows,
   forecastRow = null,
+  forecastInvoke,
   rpcMock = vi.fn().mockReturnValue({
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   }),
 }: {
   readonly stockpileRows: readonly TestStockpileRow[];
   readonly forecastRow?: TestForecastRow | null;
+  readonly forecastInvoke?: ReturnType<typeof vi.fn>;
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 }): {
   readonly from: ReturnType<typeof vi.fn>;
@@ -486,6 +518,11 @@ function createClient({
   const forecastSnapshot =
     forecastRow === null ? null : forecastRow.forecast_snapshot_jsonb;
 
+  const defaultInvoke = vi.fn().mockResolvedValue({
+    data: { data: { forecastSnapshot }, ok: true },
+    error: null,
+  });
+
   return {
     from: vi.fn((table: string) => {
       if (table === "settlement_stockpiles_view") {
@@ -494,10 +531,7 @@ function createClient({
       throw new Error(`Unexpected table: ${table}`);
     }),
     functions: {
-      invoke: vi.fn().mockResolvedValue({
-        data: { data: { forecastSnapshot }, ok: true },
-        error: null,
-      }),
+      invoke: forecastInvoke ?? defaultInvoke,
     },
     rpc: rpcMock,
   };
