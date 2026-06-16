@@ -593,7 +593,7 @@ function EffectEditor({
                   </label>
                 </div>
 
-                {effect.resourceMode === "all" ? (
+                {effect.resourceMode !== "select" ? (
                   <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
                     <p className="text-sm font-medium">
                       ✓ All {resourcesQuery.data.length} resources selected
