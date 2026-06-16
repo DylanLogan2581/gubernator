@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { Bell, ChevronRight, X } from "lucide-react";
 import { type JSX } from "react";
 
@@ -148,14 +149,14 @@ export function NotificationsPopover({
                                 className="shrink-0"
                                 asChild
                               >
-                                <a
-                                  href={deepLink.href}
+                                <Link
+                                  to={deepLink.href}
                                   onClick={() =>
                                     handleMarkRead(notification.id)
                                   }
                                 >
                                   <ChevronRight className="size-4" />
-                                </a>
+                                </Link>
                               </Button>
                             ) : null}
                           </div>
@@ -169,7 +170,7 @@ export function NotificationsPopover({
           </ScrollArea>
           <div className="border-t px-4 py-2">
             <Button variant="ghost" className="w-full" size="sm" asChild>
-              <a href="/notifications">View all notifications</a>
+              <Link to="/notifications">View all notifications</Link>
             </Button>
           </div>
         </div>

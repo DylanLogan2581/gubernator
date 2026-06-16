@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 import { type JSX } from "react";
 
@@ -61,7 +62,7 @@ export function NotificationListItem({
               asChild
               className="text-xs h-7 px-2"
             >
-              <a href={deepLink.href}>{deepLink.label}</a>
+              <Link to={deepLink.href}>{deepLink.label}</Link>
             </Button>
           ) : null}
           {!notification.isRead ? (
