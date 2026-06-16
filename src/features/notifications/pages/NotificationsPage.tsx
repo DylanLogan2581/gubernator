@@ -73,6 +73,13 @@ const READ_STATUS_OPTIONS = [
   { value: "read", label: "Read" },
 ];
 
+const SEVERITY_OPTIONS = [
+  { value: "all", label: "All severities" },
+  { value: "critical", label: "Critical" },
+  { value: "warning", label: "Warning" },
+  { value: "info", label: "Info" },
+];
+
 export function NotificationsPage(): JSX.Element {
   const queryClient = useQueryClient();
   const accessContextQuery = useQuery(
@@ -84,6 +91,7 @@ export function NotificationsPage(): JSX.Element {
   const [page, setPage] = useState(1);
   const [selectedType, setSelectedType] = useState("all");
   const [readStatus, setReadStatus] = useState("all");
+  const [selectedSeverity, setSelectedSeverity] = useState("all");
   const [selectedWorldId, setSelectedWorldId] = useState<string | null>(null);
   const [selectedNationId, setSelectedNationId] = useState<string | null>(null);
   const [selectedSettlementId, setSelectedSettlementId] = useState<
@@ -122,6 +130,7 @@ export function NotificationsPage(): JSX.Element {
   const isRead =
     readStatus === "read" ? true : readStatus === "unread" ? false : null;
   const type = selectedType !== "all" ? selectedType : null;
+  const severity = selectedSeverity !== "all" ? selectedSeverity : null;
 
   const notificationsQuery = useQuery(
     allNotificationsQueryOptions(userId, {
@@ -129,6 +138,7 @@ export function NotificationsPage(): JSX.Element {
       offset,
       isRead,
       type,
+      severity,
       worldId: selectedWorldId,
       nationId: selectedNationId,
       settlementId: selectedSettlementId,
@@ -178,6 +188,11 @@ export function NotificationsPage(): JSX.Element {
     setPage(1);
   };
 
+  const handleSeverityChange = (value: string): void => {
+    setSelectedSeverity(value);
+    setPage(1);
+  };
+
   const worlds = worldsQuery.data ?? [];
   const nations = nationsQuery.data ?? [];
   const settlements = settlementsQuery.data ?? [];
@@ -213,6 +228,19 @@ export function NotificationsPage(): JSX.Element {
             </SelectTrigger>
             <SelectContent>
               {READ_STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedSeverity} onValueChange={handleSeverityChange}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by severity" />
+            </SelectTrigger>
+            <SelectContent>
+              {SEVERITY_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>

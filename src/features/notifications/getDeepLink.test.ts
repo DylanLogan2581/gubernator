@@ -16,6 +16,7 @@ const base: AllNotification = {
   notificationType: "test",
   settlementId: null,
   settlementName: null,
+  severity: "info",
   tradeRouteId: null,
   worldId: "world-1",
   worldName: "Test World",

@@ -225,6 +225,7 @@ describe("allNotificationsQueryOptions", () => {
       notification_type: "turn.completed",
       settlement_id: "settlement-1",
       settlement: { name: "Minas Tirith" },
+      severity: "info" as const,
       trade_route_id: null,
       world_id: "world-1",
       world: { name: "Earth" },
@@ -258,6 +259,7 @@ describe("allNotificationsQueryOptions", () => {
       notification_type: "turn.completed",
       settlement_id: null,
       settlement: null,
+      severity: "info" as const,
       trade_route_id: null,
       world_id: "world-1",
       world: { name: "Earth" },
@@ -287,6 +289,35 @@ describe("allNotificationsQueryOptions", () => {
 
     expect(result).toEqual({ notifications: [], total: 0 });
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it("maps severity from the row", async () => {
+    const row = {
+      citizen_id: null,
+      event_id: null,
+      generated_at: "2026-05-03T10:00:00.000Z",
+      generated_in_transition_id: null,
+      id: "notif-crit",
+      is_read: false,
+      message_text: "Starvation occurred.",
+      nation_id: null,
+      nation: null,
+      notification_type: "settlement.starvation_occurred",
+      settlement_id: null,
+      settlement: null,
+      severity: "critical" as const,
+      trade_route_id: null,
+      world_id: "world-1",
+      world: { name: "Earth" },
+    };
+    const client = createAllNotificationsClient({ rows: [row], total: 1 });
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions("user-1", {}, client),
+    );
+
+    expect(result.notifications[0]).toMatchObject({ severity: "critical" });
   });
 });
 

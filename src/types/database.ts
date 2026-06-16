@@ -1342,6 +1342,7 @@ export type Database = {
           notification_type: Database["public"]["Enums"]["notification_type"];
           recipient_user_id: string;
           settlement_id: string | null;
+          severity: Database["public"]["Enums"]["notification_severity"];
           trade_route_id: string | null;
           world_id: string;
         };
@@ -1357,6 +1358,7 @@ export type Database = {
           notification_type: Database["public"]["Enums"]["notification_type"];
           recipient_user_id: string;
           settlement_id?: string | null;
+          severity?: Database["public"]["Enums"]["notification_severity"];
           trade_route_id?: string | null;
           world_id: string;
         };
@@ -1372,6 +1374,7 @@ export type Database = {
           notification_type?: Database["public"]["Enums"]["notification_type"];
           recipient_user_id?: string;
           settlement_id?: string | null;
+          severity?: Database["public"]["Enums"]["notification_severity"];
           trade_route_id?: string | null;
           world_id?: string;
         };
@@ -4278,6 +4281,10 @@ export type Database = {
         Args: { p_world_id: string };
         Returns: boolean;
       };
+      validate_event_effect_fields: {
+        Args: { p_effect: Json };
+        Returns: undefined;
+      };
       world_is_archived: { Args: { p_world_id: string }; Returns: boolean };
     };
     Enums: {
@@ -4287,6 +4294,7 @@ export type Database = {
         | "event"
         | "manual_admin"
         | "unknown";
+      notification_severity: "info" | "warning" | "critical";
       notification_type:
         | "turn.completed"
         | "trade_proposal_received"
@@ -4452,6 +4460,7 @@ export const Constants = {
         "manual_admin",
         "unknown",
       ],
+      notification_severity: ["info", "warning", "critical"],
       notification_type: [
         "turn.completed",
         "trade_proposal_received",
