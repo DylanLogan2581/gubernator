@@ -5,13 +5,15 @@
 --   3. World-scoped event     → all alive citizens in the world get memories
 --   4. Dead citizens excluded (citizens schema only supports alive/dead)
 --   5. create_citizen_memories = false → zero memories
---   6. Second activation of same event (active→expired) → no new memories
+--   6. Active (non-first) turn of a sustained event → memories still fire
+--   7. Re-firing the same event does not duplicate existing memories
+--   8. A citizen newly in scope on a later turn receives the memory
 --
 -- Runs inside a transaction that is rolled back; leaves no permanent data.
 begin;
 
 select
-  plan (6);
+  plan (8);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Fixtures
@@ -359,7 +361,7 @@ values
 --   event 2: pending→expired (nation, instant)
 --   event 3: pending→expired (world, instant)
 --   event 4: pending→expired (world, instant, no-memories flag)
---   event 5: active→expired  (world, sustained final — fromStatus='active', no memories)
+--   event 5: active→active   (world, sustained mid-run — fires every active turn)
 do $$
 declare
   v_patches jsonb := jsonb_build_array(
@@ -376,8 +378,8 @@ declare
                        'fromStatus', 'pending', 'toStatus', 'expired',
                        'remainingTransitions', null),
     jsonb_build_object('eventId', 'ec700000-0000-0000-0000-000000000005',
-                       'fromStatus', 'active', 'toStatus', 'expired',
-                       'remainingTransitions', 0)
+                       'fromStatus', 'active', 'toStatus', 'active',
+                       'remainingTransitions', 1)
   );
   v_payload jsonb := jsonb_build_object('eventStatusPatches', v_patches);
 begin
@@ -478,7 +480,8 @@ select
   );
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Test 6: Already-active event (fromStatus=active) → no memories on second fire
+-- Test 6: Active (non-first) turn of a sustained event still fans out memories
+-- to the 4 alive world citizens (fromStatus=active, not just first activation)
 -- ─────────────────────────────────────────────────────────────────────────────
 select
   is (
@@ -490,8 +493,89 @@ select
       where
         event_id = 'ec700000-0000-0000-0000-000000000005'
     ),
-    0,
-    'already-active event (fromStatus=active) produces no new memories on re-fire'
+    4,
+    'active sustained event fans out memories on a non-first turn'
+  );
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- A new citizen enters world scope, then the same sustained event fires again
+-- on a later turn (re-applying the event 5 patch).
+-- ─────────────────────────────────────────────────────────────────────────────
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    death_cause_category
+  )
+values
+  (
+    'ec500000-0000-0000-0000-000000000006',
+    'ec200000-0000-0000-0000-000000000001',
+    'ec400000-0000-0000-0000-000000000003',
+    'npc',
+    'Eve',
+    'alive',
+    null
+  );
+
+do $$
+declare
+  v_payload jsonb := jsonb_build_object(
+    'eventStatusPatches',
+    jsonb_build_array(
+      jsonb_build_object('eventId', 'ec700000-0000-0000-0000-000000000005',
+                         'fromStatus', 'active', 'toStatus', 'active',
+                         'remainingTransitions', 0)
+    )
+  );
+begin
+  perform public.internal_apply_turn_transition_event_patches(
+    'ec200000-0000-0000-0000-000000000001'::uuid,
+    'ec800000-0000-0000-0000-000000000001'::uuid,
+    7,
+    v_payload
+  );
+end;
+$$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Test 7: Re-firing does not duplicate — the 4 original citizens are unchanged
+-- and only the newcomer is added, so the total is 5 (not 8).
+-- ─────────────────────────────────────────────────────────────────────────────
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.citizen_memories
+      where
+        event_id = 'ec700000-0000-0000-0000-000000000005'
+    ),
+    5,
+    're-firing a sustained event adds only the new citizen, never duplicates'
+  );
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Test 8: The newly-arrived citizen received exactly one memory for the event
+-- ─────────────────────────────────────────────────────────────────────────────
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.citizen_memories
+      where
+        event_id = 'ec700000-0000-0000-0000-000000000005'
+        and citizen_id = 'ec500000-0000-0000-0000-000000000006'
+    ),
+    1,
+    'citizen new to scope on a later turn receives exactly one event memory'
   );
 
 select

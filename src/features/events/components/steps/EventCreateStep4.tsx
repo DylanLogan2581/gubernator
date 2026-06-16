@@ -40,8 +40,9 @@ export function EventCreateStep4({
 
       {isAlreadyActivated && (
         <p className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-          This event has already activated. Memory changes here won't update
-          memories citizens have already received.
+          This event has already activated, so its memory settings are locked.
+          Citizens who come into scope on later turns still receive the memory
+          below; existing memories are never changed.
         </p>
       )}
 
@@ -53,6 +54,7 @@ export function EventCreateStep4({
           id="createMemories"
           checked={createCitizenMemories}
           onCheckedChange={handleToggle}
+          disabled={isAlreadyActivated}
         />
       </div>
 
@@ -68,12 +70,13 @@ export function EventCreateStep4({
             onChange={(e) => onMemoryTextChange(e.target.value)}
             maxLength={eventInputLimits.eventMemoryTextMax}
             rows={4}
+            disabled={isAlreadyActivated}
           />
           <p className="text-xs text-muted-foreground">
             {memoryText.length} / {eventInputLimits.eventMemoryTextMax}{" "}
             characters
           </p>
-          {memoryText.trim().length === 0 && (
+          {!isAlreadyActivated && memoryText.trim().length === 0 && (
             <p className="text-xs text-destructive">
               Memory text is required when recording citizen memories.
             </p>
