@@ -679,15 +679,17 @@ export function EventCreateWizard({
             }
             className="ml-auto"
           >
-            {isEditMode
-              ? editMutation.isPending
-              : createMutationCreate.isPending
-                ? isEditMode
-                  ? "Updating…"
-                  : "Creating…"
-                : isEditMode
-                  ? "Update Event"
-                  : "Create Event"}
+            {(
+              isEditMode
+                ? editMutation.isPending
+                : createMutationCreate.isPending
+            )
+              ? isEditMode
+                ? "Updating…"
+                : "Creating…"
+              : isEditMode
+                ? "Update Event"
+                : "Create Event"}
           </Button>
         )}
       </div>
