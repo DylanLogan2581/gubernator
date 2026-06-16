@@ -7,10 +7,15 @@ import {
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
+import {
+  forecastSnapshotSchema,
+  type ForecastSnapshot,
+} from "../schemas/forecastSchemas";
+
 // -- Public domain types --
 
 export type SettlementForecast = {
-  readonly forecastSnapshot: unknown; // Raw forecast data structure
+  readonly forecastSnapshot: ForecastSnapshot;
 };
 
 // -- Query option types --
@@ -68,7 +73,14 @@ async function getLiveWorldForecast(
     return null;
   }
 
-  return { forecastSnapshot: response.data.data.forecastSnapshot };
+  const parsed = forecastSnapshotSchema.safeParse(
+    response.data.data.forecastSnapshot,
+  );
+  if (!parsed.success) {
+    return null;
+  }
+
+  return { forecastSnapshot: parsed.data };
 }
 
 type ForecastSuccessResponse = {

@@ -44,53 +44,6 @@ import type { SettlementStockpile } from "../queries/settlementStockpilesQueries
 
 type ForecastDeltaMap = ReadonlyMap<string, number>;
 
-function parseForecastDeltaMap(
-  forecastSnapshot: unknown,
-  settlementId: string,
-): ForecastDeltaMap {
-  if (
-    typeof forecastSnapshot !== "object" ||
-    forecastSnapshot === null ||
-    !("bySettlement" in forecastSnapshot)
-  ) {
-    return new Map();
-  }
-  const bySettlement = (forecastSnapshot as Record<string, unknown>)
-    .bySettlement;
-  if (typeof bySettlement !== "object" || bySettlement === null) {
-    return new Map();
-  }
-  const settlement = (bySettlement as Record<string, unknown>)[settlementId];
-  if (
-    typeof settlement !== "object" ||
-    settlement === null ||
-    !("resourceDeltas" in settlement)
-  ) {
-    return new Map();
-  }
-  const deltas = (settlement as Record<string, unknown>).resourceDeltas;
-  if (!Array.isArray(deltas)) {
-    return new Map();
-  }
-  const map = new Map<string, number>();
-  for (const delta of deltas) {
-    if (
-      typeof delta === "object" &&
-      delta !== null &&
-      "resourceId" in delta &&
-      "netDelta" in delta &&
-      typeof (delta as Record<string, unknown>).resourceId === "string" &&
-      typeof (delta as Record<string, unknown>).netDelta === "number"
-    ) {
-      map.set(
-        (delta as Record<string, unknown>).resourceId as string,
-        (delta as Record<string, unknown>).netDelta as number,
-      );
-    }
-  }
-  return map;
-}
-
 type SettlementStockpilesPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
@@ -111,11 +64,12 @@ export function SettlementStockpilesPanel({
   const forecastQuery = useQuery(settlementForecastQueryOptions(worldId));
 
   const forecastDeltaMap = useMemo<ForecastDeltaMap>(() => {
-    const snapshot = forecastQuery.data?.forecastSnapshot;
-    if (snapshot === undefined || snapshot === null) {
-      return new Map();
-    }
-    return parseForecastDeltaMap(snapshot, settlementId);
+    const settlement =
+      forecastQuery.data?.forecastSnapshot.bySettlement[settlementId];
+    if (settlement === undefined) return new Map();
+    return new Map(
+      settlement.resourceDeltas.map((d) => [d.resourceId, d.netDelta]),
+    );
   }, [forecastQuery.data, settlementId]);
 
   return (

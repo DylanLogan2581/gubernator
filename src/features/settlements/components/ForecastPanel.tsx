@@ -24,65 +24,13 @@ import { settlementStockpilesByIdQueryOptions } from "@/features/resources";
 
 import { settlementForecastQueryOptions } from "../queries/settlementForecastQueries";
 
+import type { SettlementForecastData } from "../schemas/forecastSchemas";
 import type { JSX } from "react";
 
 type ForecastPanelProps = {
   readonly settlementId: string;
   readonly worldId: string;
 };
-
-type ResourceDelta = {
-  readonly resourceId: string;
-  readonly produced: number;
-  readonly consumed: number;
-  readonly tradeIn: number;
-  readonly tradeOut: number;
-  readonly netDelta: number;
-  readonly quantityBefore: number;
-  readonly quantityAfter: number;
-};
-
-type TradeChange = {
-  readonly tradeRouteId: string;
-  readonly delivered: boolean;
-  readonly pauseReason: string | null;
-  readonly quantityTransferred: number;
-};
-
-type SettlementForecastData = {
-  readonly settlementId: string;
-  readonly resourceDeltas: ReadonlyArray<ResourceDelta>;
-  readonly deathsBy: {
-    readonly starvation: number;
-    readonly homelessness: number;
-    readonly other: number;
-  };
-  readonly completedProjects: readonly string[];
-  readonly buildingUpkeepFailures: readonly string[];
-  readonly tradeChanges: ReadonlyArray<TradeChange>;
-};
-
-function parseForecastForSettlement(
-  snapshot: unknown,
-  settlementId: string,
-): SettlementForecastData | null {
-  if (
-    typeof snapshot !== "object" ||
-    snapshot === null ||
-    !("bySettlement" in snapshot)
-  ) {
-    return null;
-  }
-  const bySettlement = (snapshot as Record<string, unknown>).bySettlement;
-  if (typeof bySettlement !== "object" || bySettlement === null) {
-    return null;
-  }
-  const settlement = (bySettlement as Record<string, unknown>)[settlementId];
-  if (typeof settlement !== "object" || settlement === null) {
-    return null;
-  }
-  return settlement as SettlementForecastData;
-}
 
 export function ForecastPanel({
   settlementId,
@@ -106,10 +54,8 @@ export function ForecastPanel({
     );
   }
 
-  const forecast = parseForecastForSettlement(
-    forecastQuery.data?.forecastSnapshot,
-    settlementId,
-  );
+  const forecast: SettlementForecastData | null =
+    forecastQuery.data?.forecastSnapshot.bySettlement[settlementId] ?? null;
 
   if (forecast === null) {
     return (

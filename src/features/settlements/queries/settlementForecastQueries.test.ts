@@ -54,6 +54,19 @@ describe("settlementForecastQueryOptions", () => {
 
     expect(result).toEqual({ forecastSnapshot: snapshot });
   });
+
+  it("returns null when snapshot fails schema validation", async () => {
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      settlementForecastQueryOptions(
+        "world-1",
+        createClient({ notBySettlement: "invalid" }),
+      ),
+    );
+
+    expect(result).toBeNull();
+  });
 });
 
 // -- Helpers --

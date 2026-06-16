@@ -331,11 +331,12 @@ describe("SettlementStockpilesPanel", () => {
           id: "transition-1",
           forecast_snapshot_jsonb: {
             bySettlement: {
-              [SETTLEMENT_ID]: {
-                resourceDeltas: [
-                  { resourceId: FOOD_RESOURCE_ID, netDelta: 10 },
-                ],
-              },
+              [SETTLEMENT_ID]: createForecastSettlement(SETTLEMENT_ID, [
+                createForecastResourceDelta({
+                  resourceId: FOOD_RESOURCE_ID,
+                  netDelta: 10,
+                }),
+              ]),
             },
           },
         },
@@ -356,11 +357,12 @@ describe("SettlementStockpilesPanel", () => {
           id: "transition-1",
           forecast_snapshot_jsonb: {
             bySettlement: {
-              [SETTLEMENT_ID]: {
-                resourceDeltas: [
-                  { resourceId: FOOD_RESOURCE_ID, netDelta: -20 },
-                ],
-              },
+              [SETTLEMENT_ID]: createForecastSettlement(SETTLEMENT_ID, [
+                createForecastResourceDelta({
+                  resourceId: FOOD_RESOURCE_ID,
+                  netDelta: -20,
+                }),
+              ]),
             },
           },
         },
@@ -387,10 +389,13 @@ describe("SettlementStockpilesPanel", () => {
           id: "transition-1",
           forecast_snapshot_jsonb: {
             bySettlement: {
-              [SETTLEMENT_ID]: {
-                // only Food in forecast, not Water
-                resourceDeltas: [{ resourceId: FOOD_RESOURCE_ID, netDelta: 5 }],
-              },
+              // only Food in forecast, not Water
+              [SETTLEMENT_ID]: createForecastSettlement(SETTLEMENT_ID, [
+                createForecastResourceDelta({
+                  resourceId: FOOD_RESOURCE_ID,
+                  netDelta: 5,
+                }),
+              ]),
             },
           },
         },
@@ -482,6 +487,46 @@ function createStockpileRow(
     resource_name: "Food",
     settlement_id: SETTLEMENT_ID,
     ...overrides,
+  };
+}
+
+type TestResourceDelta = {
+  readonly resourceId: string;
+  readonly produced: number;
+  readonly consumed: number;
+  readonly tradeIn: number;
+  readonly tradeOut: number;
+  readonly netDelta: number;
+  readonly quantityBefore: number;
+  readonly quantityAfter: number;
+};
+
+function createForecastResourceDelta(
+  overrides: Partial<TestResourceDelta> & { readonly resourceId: string },
+): TestResourceDelta {
+  return {
+    produced: 0,
+    consumed: 0,
+    tradeIn: 0,
+    tradeOut: 0,
+    netDelta: 0,
+    quantityBefore: 0,
+    quantityAfter: 0,
+    ...overrides,
+  };
+}
+
+function createForecastSettlement(
+  settlementId: string,
+  resourceDeltas: readonly TestResourceDelta[],
+): object {
+  return {
+    settlementId,
+    resourceDeltas,
+    deathsBy: { starvation: 0, homelessness: 0, other: 0 },
+    completedProjects: [],
+    buildingUpkeepFailures: [],
+    tradeChanges: [],
   };
 }
 
