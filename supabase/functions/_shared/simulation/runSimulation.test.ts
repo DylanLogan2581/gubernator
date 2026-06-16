@@ -209,3 +209,105 @@ describe("runSimulation — partnership formed then dies in homelessness same tu
     expect(result.partnershipChanges).toHaveLength(0);
   });
 });
+
+describe("runSimulation — managed_population_change event delta", () => {
+  it("applies event delta to managed population current_count", () => {
+    const input = makeInput({
+      managedPopulationTypes: [
+        {
+          cullingJobId: "cull-job",
+          cullingOutputsJson: [],
+          growthRate: 0,
+          husbandryJobId: "husb-job",
+          husbandryWorkersPerNAnimals: 0,
+          id: "mpt1",
+          maintenanceRulesJson: [],
+          name: "Chickens",
+          regularOutputsJson: [],
+        },
+      ],
+      managedPopulations: [
+        {
+          configuredCullQuantity: 0,
+          currentCount: 20,
+          id: "mp1",
+          managedPopulationTypeId: "mpt1",
+          name: "Chickens",
+          settlementId: "s1",
+          status: "active",
+        },
+      ],
+      events: [
+        {
+          activateOnTransitionAfterTurnNumber: 0,
+          durationType: "instant",
+          effectPayloadJsonb: { delta: -10, managedPopulationId: "mp1" },
+          effectType: "managed_population_change",
+          effects: [],
+          id: "evt1",
+          remainingTransitions: null,
+          status: "active",
+        },
+      ],
+    });
+
+    const result = runSimulation(input, "test-transition-id");
+
+    const update = result.managedPopulationUpdates.find(
+      (u) => u.managedPopulationInstanceId === "mp1",
+    );
+    expect(update).toBeDefined();
+    expect(update?.countDelta).toBe(-10);
+    expect(update?.toStatus).toBeNull();
+  });
+
+  it("clamps event delta so count cannot go below zero", () => {
+    const input = makeInput({
+      managedPopulationTypes: [
+        {
+          cullingJobId: "cull-job",
+          cullingOutputsJson: [],
+          growthRate: 0,
+          husbandryJobId: "husb-job",
+          husbandryWorkersPerNAnimals: 0,
+          id: "mpt1",
+          maintenanceRulesJson: [],
+          name: "Chickens",
+          regularOutputsJson: [],
+        },
+      ],
+      managedPopulations: [
+        {
+          configuredCullQuantity: 0,
+          currentCount: 5,
+          id: "mp1",
+          managedPopulationTypeId: "mpt1",
+          name: "Chickens",
+          settlementId: "s1",
+          status: "active",
+        },
+      ],
+      events: [
+        {
+          activateOnTransitionAfterTurnNumber: 0,
+          durationType: "instant",
+          effectPayloadJsonb: { delta: -100, managedPopulationId: "mp1" },
+          effectType: "managed_population_change",
+          effects: [],
+          id: "evt1",
+          remainingTransitions: null,
+          status: "active",
+        },
+      ],
+    });
+
+    const result = runSimulation(input, "test-transition-id");
+
+    const update = result.managedPopulationUpdates.find(
+      (u) => u.managedPopulationInstanceId === "mp1",
+    );
+    expect(update).toBeDefined();
+    expect(update?.countDelta).toBe(-5);
+    expect(update?.toStatus).toBe("extinct");
+  });
+});
