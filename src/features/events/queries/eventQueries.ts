@@ -9,7 +9,6 @@ import {
 import { eventQueryKeys } from "./eventQueryKeys";
 
 import type {
-  Event,
   EventEffect,
   EventListFilters,
   EventWithGroup,
@@ -179,15 +178,15 @@ export function activeSettlementEventsQueryOptions(
   settlementId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): UseQueryOptions<
-  readonly Event[],
+  readonly EventWithGroup[],
   AuthUiError,
-  readonly Event[],
+  readonly EventWithGroup[],
   ReturnType<typeof eventQueryKeys.bySettlement>
 > {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
     queryKey: eventQueryKeys.bySettlement(worldId, settlementId),
-    queryFn: async (): Promise<readonly Event[]> => {
+    queryFn: async (): Promise<readonly EventWithGroup[]> => {
       // PostgREST or() does not support subqueries, so resolve nation_id first.
       const { data: settlement, error: settlementError } = await client
         .from("settlements")
@@ -208,7 +207,10 @@ export function activeSettlementEventsQueryOptions(
 
       const { data, error } = await client
         .from("events")
-        .select<"*", Event>("*")
+        .select<
+          "*,group:event_groups(*)",
+          EventWithGroup
+        >("*,group:event_groups(*)")
         .eq("world_id", worldId)
         .eq("status", "active")
         .or(orFilter)
@@ -232,18 +234,21 @@ export function activeNationEventsQueryOptions(
   nationId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
 ): UseQueryOptions<
-  readonly Event[],
+  readonly EventWithGroup[],
   AuthUiError,
-  readonly Event[],
+  readonly EventWithGroup[],
   ReturnType<typeof eventQueryKeys.byNation>
 > {
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
     queryKey: eventQueryKeys.byNation(worldId, nationId),
-    queryFn: async (): Promise<readonly Event[]> => {
+    queryFn: async (): Promise<readonly EventWithGroup[]> => {
       const { data, error } = await client
         .from("events")
-        .select<"*", Event>("*")
+        .select<
+          "*,group:event_groups(*)",
+          EventWithGroup
+        >("*,group:event_groups(*)")
         .eq("world_id", worldId)
         .eq("status", "active")
         .or(
