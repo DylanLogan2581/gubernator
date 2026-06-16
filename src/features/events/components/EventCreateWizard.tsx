@@ -87,6 +87,7 @@ type EventCreateWizardProps = {
   readonly isEditMode?: boolean;
   readonly editGroupId?: string;
   readonly editEventData?: EditEventData;
+  readonly isAlreadyActivated?: boolean;
 };
 
 export type EventCreateWizardState = {
@@ -134,6 +135,7 @@ export function EventCreateWizard({
   isEditMode = false,
   editGroupId,
   editEventData,
+  isAlreadyActivated = false,
 }: EventCreateWizardProps): JSX.Element {
   const queryClient = useQueryClient();
   const worldQuery = useQuery(
@@ -603,6 +605,7 @@ export function EventCreateWizard({
             createCitizenMemories={state.createCitizenMemories}
             memoryText={state.memoryText}
             groupDescription={groupDescription}
+            isAlreadyActivated={isAlreadyActivated}
             onCreateCitizenMemoriesChange={(create) => {
               setState((prev) => ({
                 ...prev,
@@ -656,7 +659,10 @@ export function EventCreateWizard({
               (!isEditMode &&
                 state.step === 2 &&
                 state.scopeType !== "world" &&
-                state.selectedIds.length === 0)
+                state.selectedIds.length === 0) ||
+              (state.step === 5 &&
+                state.createCitizenMemories &&
+                state.memoryText.trim().length === 0)
             }
           >
             Next
@@ -675,7 +681,9 @@ export function EventCreateWizard({
               (!isEditMode &&
                 (state.scopeType === null ||
                   (state.scopeType !== "world" &&
-                    state.selectedIds.length === 0)))
+                    state.selectedIds.length === 0))) ||
+              (state.createCitizenMemories &&
+                state.memoryText.trim().length === 0)
             }
             className="ml-auto"
           >

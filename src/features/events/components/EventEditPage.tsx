@@ -131,6 +131,7 @@ export function EventEditPage({
       isEditMode
       editGroupId={event.event_group_id}
       editEventData={editEventData}
+      isAlreadyActivated={event.status !== "pending"}
     />
   );
 }

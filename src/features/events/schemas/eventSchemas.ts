@@ -75,40 +75,52 @@ export const eventEffectSchema = eventEffectBaseSchema;
 
 export type EventEffectSchema = z.input<typeof eventEffectSchema>;
 
-export const createEventGroupInputSchema = z.strictObject({
-  worldId: worldIdSchema,
-  groupName: z
-    .string()
-    .max(eventInputLimits.eventGroupNameMax, "Group name is too long.")
-    .refine((v): boolean => v.trim().length > 0, "Group name is required."),
-  groupDescription: z
-    .string()
-    .max(eventInputLimits.eventGroupDescriptionMax, "Description is too long.")
-    .optional()
-    .nullable(),
-  effects: z.array(eventEffectSchema),
-  scopeType: z.enum(["world", "nation", "settlement"]),
-  targets: z
-    .array(eventTargetSchema)
-    .min(1, "At least one target is required."),
-  durationType: z.enum(["instant", "sustained"]),
-  durationTransitions: z
-    .number()
-    .int()
-    .min(1, "Duration must be at least 1 transition.")
-    .optional()
-    .nullable(),
-  activationTurn: z
-    .number()
-    .int()
-    .min(0, "Activation turn must be non-negative."),
-  createCitizenMemories: z.boolean().default(false),
-  memoryText: z
-    .string()
-    .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
-    .optional()
-    .nullable(),
-});
+export const createEventGroupInputSchema = z
+  .strictObject({
+    worldId: worldIdSchema,
+    groupName: z
+      .string()
+      .max(eventInputLimits.eventGroupNameMax, "Group name is too long.")
+      .refine((v): boolean => v.trim().length > 0, "Group name is required."),
+    groupDescription: z
+      .string()
+      .max(
+        eventInputLimits.eventGroupDescriptionMax,
+        "Description is too long.",
+      )
+      .optional()
+      .nullable(),
+    effects: z.array(eventEffectSchema),
+    scopeType: z.enum(["world", "nation", "settlement"]),
+    targets: z
+      .array(eventTargetSchema)
+      .min(1, "At least one target is required."),
+    durationType: z.enum(["instant", "sustained"]),
+    durationTransitions: z
+      .number()
+      .int()
+      .min(1, "Duration must be at least 1 transition.")
+      .optional()
+      .nullable(),
+    activationTurn: z
+      .number()
+      .int()
+      .min(0, "Activation turn must be non-negative."),
+    createCitizenMemories: z.boolean().default(false),
+    memoryText: z
+      .string()
+      .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
+      .optional()
+      .nullable(),
+  })
+  .refine(
+    (data) =>
+      !data.createCitizenMemories || (data.memoryText?.trim().length ?? 0) > 0,
+    {
+      message: "Memory text is required when recording citizen memories.",
+      path: ["memoryText"],
+    },
+  );
 
 export type CreateEventGroupInput = z.input<typeof createEventGroupInputSchema>;
 
@@ -136,37 +148,49 @@ export type CancelEventGroupInput = z.input<typeof cancelEventGroupInputSchema>;
  * Input for editing an event group.
  * Note: scope and targets are locked (cannot be changed).
  */
-export const editEventGroupInputSchema = z.strictObject({
-  groupId: groupIdSchema,
-  worldId: worldIdSchema,
-  groupName: z
-    .string()
-    .max(eventInputLimits.eventGroupNameMax, "Group name is too long.")
-    .refine((v): boolean => v.trim().length > 0, "Group name is required."),
-  groupDescription: z
-    .string()
-    .max(eventInputLimits.eventGroupDescriptionMax, "Description is too long.")
-    .optional()
-    .nullable(),
-  effects: z.array(eventEffectSchema),
-  durationType: z.enum(["instant", "sustained"]),
-  durationTransitions: z
-    .number()
-    .int()
-    .min(1, "Duration must be at least 1 transition.")
-    .optional()
-    .nullable(),
-  activationTurn: z
-    .number()
-    .int()
-    .min(0, "Activation turn must be non-negative."),
-  createCitizenMemories: z.boolean().default(false),
-  memoryText: z
-    .string()
-    .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
-    .optional()
-    .nullable(),
-});
+export const editEventGroupInputSchema = z
+  .strictObject({
+    groupId: groupIdSchema,
+    worldId: worldIdSchema,
+    groupName: z
+      .string()
+      .max(eventInputLimits.eventGroupNameMax, "Group name is too long.")
+      .refine((v): boolean => v.trim().length > 0, "Group name is required."),
+    groupDescription: z
+      .string()
+      .max(
+        eventInputLimits.eventGroupDescriptionMax,
+        "Description is too long.",
+      )
+      .optional()
+      .nullable(),
+    effects: z.array(eventEffectSchema),
+    durationType: z.enum(["instant", "sustained"]),
+    durationTransitions: z
+      .number()
+      .int()
+      .min(1, "Duration must be at least 1 transition.")
+      .optional()
+      .nullable(),
+    activationTurn: z
+      .number()
+      .int()
+      .min(0, "Activation turn must be non-negative."),
+    createCitizenMemories: z.boolean().default(false),
+    memoryText: z
+      .string()
+      .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
+      .optional()
+      .nullable(),
+  })
+  .refine(
+    (data) =>
+      !data.createCitizenMemories || (data.memoryText?.trim().length ?? 0) > 0,
+    {
+      message: "Memory text is required when recording citizen memories.",
+      path: ["memoryText"],
+    },
+  );
 
 export type EditEventGroupInput = z.input<typeof editEventGroupInputSchema>;
 

@@ -11,6 +11,7 @@ type EventCreateStep4Props = {
   readonly memoryText: string;
   readonly onCreateCitizenMemoriesChange: (create: boolean) => void;
   readonly onMemoryTextChange: (text: string) => void;
+  readonly isAlreadyActivated?: boolean;
 };
 
 export function EventCreateStep4({
@@ -19,6 +20,7 @@ export function EventCreateStep4({
   memoryText,
   onCreateCitizenMemoriesChange,
   onMemoryTextChange,
+  isAlreadyActivated = false,
 }: EventCreateStep4Props): JSX.Element {
   function handleToggle(checked: boolean): void {
     onCreateCitizenMemoriesChange(checked);
@@ -35,6 +37,13 @@ export function EventCreateStep4({
           Optionally record this event as a memory for affected citizens
         </p>
       </div>
+
+      {isAlreadyActivated && (
+        <p className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
+          This event has already activated. Memory changes here won't update
+          memories citizens have already received.
+        </p>
+      )}
 
       <div className="flex items-center justify-between gap-4">
         <Label htmlFor="createMemories" className="font-medium">
@@ -64,6 +73,11 @@ export function EventCreateStep4({
             {memoryText.length} / {eventInputLimits.eventMemoryTextMax}{" "}
             characters
           </p>
+          {memoryText.trim().length === 0 && (
+            <p className="text-xs text-destructive">
+              Memory text is required when recording citizen memories.
+            </p>
+          )}
         </div>
       )}
     </div>
