@@ -180,6 +180,17 @@ export function computeForecastSnapshot(
     }
   }
 
+  // Assign deaths by cause from settlement snapshots
+  for (const snap of simulationResult.settlementSnapshots) {
+    const forecast = bySettlement[snap.settlementId];
+    if (forecast !== undefined) {
+      forecast.deathsBy.starvation = snap.starvationDeathsCount;
+      forecast.deathsBy.homelessness = snap.homelessDeathsCount;
+      forecast.deathsBy.other =
+        snap.deathCount - snap.starvationDeathsCount - snap.homelessDeathsCount;
+    }
+  }
+
   // Convert mutable structure to immutable result type
   const result: ForecastSnapshot = {
     bySettlement: Object.fromEntries(
