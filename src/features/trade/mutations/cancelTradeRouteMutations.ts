@@ -72,9 +72,6 @@ export function cancelTradeRouteMutationOptions({
         queryClient.invalidateQueries({
           queryKey: ["forecast"],
         }),
-        queryClient.invalidateQueries({
-          queryKey: ["forecast"],
-        }),
       ]);
     },
   });

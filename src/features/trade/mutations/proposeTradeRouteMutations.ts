@@ -73,9 +73,6 @@ export function proposeTradeRouteMutationOptions({
         queryClient.invalidateQueries({
           queryKey: ["forecast"],
         }),
-        queryClient.invalidateQueries({
-          queryKey: ["forecast"],
-        }),
       ]);
     },
   });
