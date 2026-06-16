@@ -491,8 +491,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000001'
     ),
-    5,
-    'settlement-scoped: 5 notifications (seeded super admin, owner+super admin, world admin, nation mgr, settlement mgr)'
+    8,
+    'settlement-scoped: 8 notifications (5 starvation + 3 turn.completed: world admin + owner super admin + seeded super admin)'
   );
 
 select
@@ -582,8 +582,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000002'
     ),
-    2,
-    'no-managers fallback: settlement-scoped notification goes only to world admins (owner + seeded super admin)'
+    4,
+    'no-managers fallback: 4 notifications (2 building.suspended + 2 turn.completed for 2 super admins, no world admins in world 2)'
   );
 
 -- ===========================================================================
@@ -625,8 +625,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000003'
     ),
-    4,
-    'nation-scoped: 4 notifications (seeded super admin, super admin/owner, world admin, nation manager)'
+    7,
+    'nation-scoped: 7 notifications (4 deposit.depleted + 3 turn.completed: world admin + super admin/owner + seeded super admin)'
   );
 
 select
@@ -655,8 +655,8 @@ select
         world_id = 'b1200000-0000-0000-0000-000000000003'
         and recipient_user_id = 'b1100000-0000-0000-0000-000000000005'
     ),
-    1,
-    'nation-scoped: explicit world admin received notification'
+    2,
+    'nation-scoped: explicit world admin received deposit.depleted + turn.completed (2 total)'
   );
 
 -- ===========================================================================
@@ -698,8 +698,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000004'
     ),
-    4,
-    'nation-scoped in world 4: 4 notifications (seeded super admin, owner, world admin g, nation manager h)'
+    7,
+    'nation-scoped in world 4: 7 notifications (4 deposit.depleted + 3 turn.completed: world admin g + owner + seeded super admin)'
   );
 
 select
@@ -802,8 +802,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000005'
     ),
-    2,
-    'retry: ON CONFLICT DO NOTHING prevents duplicate notification rows (owner + seeded super admin, no doubles)'
+    4,
+    'retry: ON CONFLICT DO NOTHING prevents duplicate rows (2 construction.completed + 2 turn.completed for 2 super admins, no doubles)'
   );
 
 reset role;
