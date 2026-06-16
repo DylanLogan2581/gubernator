@@ -10,5 +10,6 @@ export {
   type TurnCompletedNotificationsFilters,
 } from "./queries/notificationQueries";
 export { notificationQueryKeys } from "./queries/notificationQueryKeys";
+export { useNotificationsRealtime } from "./hooks/useNotificationsRealtime";
 export { getDeepLink } from "./getDeepLink";
 export { NotificationsPage } from "./pages/NotificationsPage";
