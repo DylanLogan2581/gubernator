@@ -50,6 +50,7 @@ type EffectData = {
   managedPopulationTypeId?: string | null;
   managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
+  depositInstanceIds?: string[];
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
   _id?: string;
@@ -346,6 +347,20 @@ export function EventCreateWizard({
             effectType: "building_destroyed",
             settlementBuildingId,
             settlementBuildingIds: undefined,
+          });
+        }
+      } else if (
+        effect.effectType === "deposit_destroyed" &&
+        effect.depositInstanceIds !== undefined &&
+        effect.depositInstanceIds.length > 0
+      ) {
+        // Handle deposit_destroyed: expand to individual per-deposit effects
+        for (const depositInstanceId of effect.depositInstanceIds) {
+          expanded.push({
+            ...effect,
+            effectType: "deposit_destroyed",
+            depositInstanceId,
+            depositInstanceIds: undefined,
           });
         }
       } else {
