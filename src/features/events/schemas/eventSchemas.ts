@@ -71,7 +71,89 @@ const eventEffectBaseSchema = z.strictObject({
   buildingBlueprintIds: z.array(z.guid()).optional().nullable(),
 });
 
-export const eventEffectSchema = eventEffectBaseSchema;
+export const eventEffectSchema = eventEffectBaseSchema.superRefine(
+  (effect, ctx) => {
+    const amountBasedTypes: string[] = [
+      "population_boost",
+      "population_loss",
+      "managed_population_change",
+      "resource_grant",
+      "resource_drain",
+    ];
+    const multiplierTypes: string[] = [
+      "consumption_multiplier",
+      "production_multiplier",
+      "upkeep_multiplier",
+    ];
+    const resourceTypes: string[] = ["resource_grant", "resource_drain"];
+
+    if (amountBasedTypes.includes(effect.effectType)) {
+      if (
+        effect.amountValue === null ||
+        effect.amountValue === undefined ||
+        effect.amountValue === 0
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Effect type ${effect.effectType} requires a non-zero amount.`,
+          path: ["amountValue"],
+        });
+      }
+    }
+
+    if (multiplierTypes.includes(effect.effectType)) {
+      if (
+        effect.multiplierValue === null ||
+        effect.multiplierValue === undefined ||
+        effect.multiplierValue === 0
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Effect type ${effect.effectType} requires a non-zero multiplier.`,
+          path: ["multiplierValue"],
+        });
+      }
+    }
+
+    if (resourceTypes.includes(effect.effectType)) {
+      if (effect.resourceId === null || effect.resourceId === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Effect type ${effect.effectType} requires a resource selection.`,
+          path: ["resourceId"],
+        });
+      }
+    }
+
+    if (effect.effectType === "deposit_destroyed") {
+      if (
+        effect.depositInstanceId === null ||
+        effect.depositInstanceId === undefined
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Effect type deposit_destroyed requires a deposit selection.",
+          path: ["depositInstanceId"],
+        });
+      }
+    }
+
+    if (effect.effectType === "building_destroyed") {
+      if (
+        effect.settlementBuildingId === null ||
+        effect.settlementBuildingId === undefined
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Effect type building_destroyed requires a building selection.",
+          path: ["settlementBuildingId"],
+        });
+      }
+    }
+  },
+);
 
 export type EventEffectSchema = z.input<typeof eventEffectSchema>;
 
