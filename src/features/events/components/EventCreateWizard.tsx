@@ -302,18 +302,6 @@ export function EventCreateWizard({
             });
           }
         }
-      } else if (effect.effectType === "modify_population") {
-        // Handle modify_population: convert to population_boost/loss based on sign
-        const isNegative = (effect.amountValue ?? 0) < 0;
-        const absAmount = Math.abs(effect.amountValue ?? 0);
-        const effectType = isNegative ? "population_loss" : "population_boost";
-
-        expanded.push({
-          ...effect,
-          effectType,
-          amountValue: absAmount,
-          populationType: undefined,
-        });
       } else if (effect.effectType === "production_multiplier") {
         // Handle production_multiplier: expand to individual per-job effects if in select mode
         let jobIdsToExpand: string[] = [];

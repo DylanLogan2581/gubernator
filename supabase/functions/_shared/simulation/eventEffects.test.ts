@@ -432,8 +432,102 @@ describe("phaseEvents — upkeep_multiplier", () => {
 });
 
 describe("phaseEvents — population_loss", () => {
-  it("logs population_loss event", () => {
+  it("kills citizens and logs population_loss event", () => {
     const input = makeInput({
+      citizens: [
+        {
+          bornOnTurnNumber: 1,
+          citizenType: "npc",
+          givenName: "Alice",
+          id: "c1",
+          namesetId: null,
+          parentACitizenId: null,
+          parentBCitizenId: null,
+          settlementId: "settlement1",
+          sex: "female",
+          status: "alive",
+          surname: null,
+        },
+        {
+          bornOnTurnNumber: 1,
+          citizenType: "npc",
+          givenName: "Bob",
+          id: "c2",
+          namesetId: null,
+          parentACitizenId: null,
+          parentBCitizenId: null,
+          settlementId: "settlement1",
+          sex: "male",
+          status: "alive",
+          surname: null,
+        },
+        {
+          bornOnTurnNumber: 1,
+          citizenType: "npc",
+          givenName: "Carol",
+          id: "c3",
+          namesetId: null,
+          parentACitizenId: null,
+          parentBCitizenId: null,
+          settlementId: "settlement1",
+          sex: "female",
+          status: "alive",
+          surname: null,
+        },
+      ],
+      events: [
+        makeEvent({
+          effectPayloadJsonb: {
+            amount: 2,
+            settlementId: "settlement1",
+          },
+          effectType: "population_loss",
+          id: "loss123",
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    // Should kill 2 citizens (deterministic: c1, c2 by sorted id)
+    expect(result.citizenDeaths).toHaveLength(2);
+    expect(result.citizenDeaths).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ citizenId: "c1", category: "event" }),
+        expect.objectContaining({ citizenId: "c2", category: "event" }),
+      ]),
+    );
+    expect(result.logs).toContainEqual(
+      expect.objectContaining({
+        category: "event.population_loss",
+        payload: expect.objectContaining({
+          amount: 2,
+          citizenCount: 2,
+          eventId: "loss123",
+          settlementId: "settlement1",
+        }),
+      }),
+    );
+  });
+
+  it("clamps population_loss to available living citizens", () => {
+    const input = makeInput({
+      citizens: [
+        {
+          bornOnTurnNumber: 1,
+          citizenType: "npc",
+          givenName: "Alice",
+          id: "c1",
+          namesetId: null,
+          parentACitizenId: null,
+          parentBCitizenId: null,
+          settlementId: "settlement1",
+          sex: "female",
+          status: "alive",
+          surname: null,
+        },
+      ],
       events: [
         makeEvent({
           effectPayloadJsonb: {
@@ -449,21 +543,13 @@ describe("phaseEvents — population_loss", () => {
 
     const result = phaseEvents(context);
 
-    expect(result.logs).toContainEqual(
-      expect.objectContaining({
-        category: "event.population_loss",
-        payload: expect.objectContaining({
-          amount: 10,
-          eventId: "loss123",
-          settlementId: "settlement1",
-        }),
-      }),
-    );
+    expect(result.citizenDeaths).toHaveLength(1);
+    expect(result.citizenDeaths[0]).toMatchObject({ citizenId: "c1", category: "event" });
   });
 });
 
 describe("phaseEvents — population_boost", () => {
-  it("logs population_boost event", () => {
+  it("logs population_boost event (no-op until birth system supports parentless citizens)", () => {
     const input = makeInput({
       events: [
         makeEvent({
@@ -490,6 +576,8 @@ describe("phaseEvents — population_boost", () => {
         }),
       }),
     );
+    // population_boost is log-only: no births until the birth system supports parentless citizens
+    expect(result.citizenDeaths).toHaveLength(0);
   });
 });
 

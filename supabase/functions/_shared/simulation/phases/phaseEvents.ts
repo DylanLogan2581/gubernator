@@ -15,6 +15,7 @@
 
 import type {
   BuildingStateChange,
+  CitizenDeath,
   DepositUpdate,
   EventEffectType,
   EventStatusPatch,
@@ -69,6 +70,7 @@ function resolveTargetSettlementIds(
 
 export type PhaseEventsOutput = {
   readonly buildingStateChanges: readonly BuildingStateChange[];
+  readonly citizenDeaths: readonly CitizenDeath[];
   readonly depositUpdates: readonly DepositUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logs: readonly SimulationLogEntry[];
@@ -94,6 +96,8 @@ function applyEffect(
   pendingManagedPopulationDeltas: Map<string, number>,
   pendingStockpiles: Map<string, number>,
   pendingDepositDestroys: Set<string>,
+  pendingEventCitizenDeaths: Set<string>,
+  livingCitizenIdsBySettlement: Map<string, string[]>,
   logs: SimulationLogEntry[],
 ): void {
   const effectType = effect.effectType;
@@ -198,9 +202,22 @@ function applyEffect(
         const settlementId = payload.settlementId;
         const amount = effect.amountValue ?? payload.amount;
         if (typeof settlementId === "string" && typeof amount === "number") {
+          const living = livingCitizenIdsBySettlement.get(settlementId) ?? [];
+          // Exclude citizens already slated for death this turn (from prior effects).
+          const available = living.filter((id) => !pendingEventCitizenDeaths.has(id));
+          const killCount = effect.isPercent
+            ? Math.floor(available.length * (amount / 100))
+            : Math.floor(amount);
+          const toKill = Math.min(Math.max(0, killCount), available.length);
+          for (let i = 0; i < toKill; i++) {
+            const citizenId = available[i];
+            if (citizenId !== undefined) {
+              pendingEventCitizenDeaths.add(citizenId);
+            }
+          }
           logs.push({
             category: "event.population_loss",
-            payload: { amount, eventId, settlementId },
+            payload: { amount, citizenCount: toKill, eventId, settlementId },
             phase: "events",
           });
         }
@@ -369,6 +386,7 @@ function applyEffect(
 export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
   const { events, settlements, turnNumber } = context.input;
   const {
+    pendingDeaths,
     pendingEventMultipliers,
     pendingManagedPopulationDeltas,
     pendingStockpiles,
@@ -379,6 +397,28 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
   const eventStatusPatches: EventStatusPatch[] = [];
   const logs: SimulationLogEntry[] = [];
   const notifications: SimulationNotification[] = [];
+
+  // Build living-citizen index for population_loss effects.
+  // Exclude citizens already dead (status="dead") or marked for death this turn (pendingDeaths).
+  const livingCitizenIdsBySettlement = new Map<string, string[]>();
+  for (const citizen of context.input.citizens) {
+    if (citizen.status === "dead") continue;
+    if (pendingDeaths.has(citizen.id)) continue;
+    if (citizen.settlementId === null || citizen.settlementId === undefined) continue;
+    const list = livingCitizenIdsBySettlement.get(citizen.settlementId);
+    if (list !== undefined) {
+      list.push(citizen.id);
+    } else {
+      livingCitizenIdsBySettlement.set(citizen.settlementId, [citizen.id]);
+    }
+  }
+  // Sort each list by id for determinism across runs.
+  for (const list of livingCitizenIdsBySettlement.values()) {
+    list.sort();
+  }
+
+  // Accumulates citizen ids to kill from population_loss effects this phase.
+  const pendingEventCitizenDeaths = new Set<string>();
 
   for (const event of events) {
     if (event.status !== "pending" && event.status !== "active") continue;
@@ -415,6 +455,8 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
             pendingManagedPopulationDeltas,
             pendingStockpiles,
             pendingDepositDestroys,
+            pendingEventCitizenDeaths,
+            livingCitizenIdsBySettlement,
             logs,
           );
         }
@@ -431,6 +473,8 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
           pendingManagedPopulationDeltas,
           pendingStockpiles,
           pendingDepositDestroys,
+          pendingEventCitizenDeaths,
+          livingCitizenIdsBySettlement,
           logs,
         );
       }
@@ -486,5 +530,13 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     }),
   );
 
-  return { buildingStateChanges, depositUpdates, eventStatusPatches, logs, notifications };
+  const citizenDeaths: CitizenDeath[] = Array.from(pendingEventCitizenDeaths).map(
+    (citizenId) => ({
+      category: "event" as const,
+      citizenId,
+      detail: "population_loss event",
+    }),
+  );
+
+  return { buildingStateChanges, citizenDeaths, depositUpdates, eventStatusPatches, logs, notifications };
 }

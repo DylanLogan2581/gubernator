@@ -337,7 +337,7 @@ export function runSimulation(
   // Phase 13 — Logs and Snapshots
   // -------------------------------------------------------------------------
 
-  const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths];
+  const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths, ...p11.citizenDeaths];
 
   // Phase 10 (homelessness) runs after phase 9 (partnerships), so a citizen
   // can be selected for partnership formation and then die of homelessness in
