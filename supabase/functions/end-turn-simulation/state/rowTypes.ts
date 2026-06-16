@@ -201,7 +201,7 @@ export type SupabasePartnershipRow = {
 export type SupabaseEventRow = {
   readonly id: string;
   readonly status: string;
-  readonly effect_type: string;
+  readonly effect_type: string | null;
   readonly activate_on_transition_after_turn_number: number;
   readonly duration_type: string;
   readonly remaining_transitions: number | null;
@@ -488,7 +488,7 @@ export function isEventRow(v: unknown): v is SupabaseEventRow {
     isRecord(v) &&
     typeof v.id === "string" &&
     typeof v.status === "string" &&
-    typeof v.effect_type === "string" &&
+    (v.effect_type === null || typeof v.effect_type === "string") &&
     typeof v.activate_on_transition_after_turn_number === "number" &&
     typeof v.duration_type === "string" &&
     (v.remaining_transitions === null || typeof v.remaining_transitions === "number")
