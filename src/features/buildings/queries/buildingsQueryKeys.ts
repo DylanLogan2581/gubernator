@@ -12,6 +12,12 @@ export const buildingsQueryKeys = {
       "construction-projects-by-settlement",
       settlementId,
     ] as const,
+  settlementBuildingById: (buildingId: string) =>
+    [
+      ...buildingsQueryKeys.all,
+      "settlement-building-detail",
+      buildingId,
+    ] as const,
   settlementBuildingsBySettlement: (settlementId: string) =>
     [
       ...buildingsQueryKeys.all,

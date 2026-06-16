@@ -72,6 +72,45 @@ const SETTLEMENT_BUILDING_SELECT =
 const SETTLEMENT_BUILDING_WITH_LOCATION_SELECT =
   "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number,effects_json),settlements(id,name,nations!inner(name))";
 
+type SettlementBuildingDetailQueryKey = ReturnType<
+  typeof buildingsQueryKeys.settlementBuildingById
+>;
+
+type SettlementBuildingDetailQueryOptions = UseQueryOptions<
+  SettlementBuilding | null,
+  AuthUiError,
+  SettlementBuilding | null,
+  SettlementBuildingDetailQueryKey
+>;
+
+export function settlementBuildingByIdQueryOptions(
+  buildingId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SettlementBuildingDetailQueryOptions {
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getSettlementBuildingById(c, buildingId),
+    queryKey: buildingsQueryKeys.settlementBuildingById(buildingId),
+  });
+}
+
+async function getSettlementBuildingById(
+  client: GubernatorSupabaseClient,
+  buildingId: string,
+): Promise<SettlementBuilding | null> {
+  const { data, error } = await client
+    .from("settlement_buildings")
+    .select(SETTLEMENT_BUILDING_SELECT)
+    .eq("id", buildingId)
+    .maybeSingle<SettlementBuildingRow>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data === null ? null : toSettlementBuilding(data);
+}
+
 type SettlementBuildingsBySettlementQueryKey = ReturnType<
   typeof buildingsQueryKeys.settlementBuildingsBySettlement
 >;

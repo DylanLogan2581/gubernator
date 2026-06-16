@@ -43,6 +43,7 @@ export {
   updateDepositTypeMutationOptions,
 } from "./mutations/depositsMutations";
 export {
+  depositInstanceByIdQueryOptions,
   depositInstancesBySettlementQueryOptions,
   depositInstancesByNationsQueryOptions,
   depositInstancesByWorldQueryOptions,
