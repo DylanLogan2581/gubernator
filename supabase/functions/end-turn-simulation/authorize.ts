@@ -151,6 +151,50 @@ export async function resolveSupabaseEndTurnSimulationAuthorization(
   return { ok: true };
 }
 
+// Forecast preview is read-only, so it is authorized for any world member
+// (anyone whose RLS lets them read the world), not just world/super admins.
+export async function resolveForecastPreviewAuthorization(
+  requestBody: EndTurnSimulationRequestBody,
+  authContext: EndTurnSimulationAuthContext,
+): Promise<EndTurnSimulationAuthorizationResult> {
+  const authorizationHeader = authContext.authorizationHeader;
+
+  if (authorizationHeader === undefined) {
+    return createAuthContextUnavailableResult();
+  }
+
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
+  const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
+
+  if (supabaseUrl === undefined || supabaseAnonKey === undefined) {
+    return createAuthContextUnavailableResult();
+  }
+
+  // The world-exists check runs with the caller's JWT, so RLS makes it true
+  // only when the user is allowed to read this world.
+  const worldVisibleResult = await fetchSupabaseWorldExists({
+    authorizationHeader,
+    supabaseAnonKey,
+    supabaseUrl,
+    worldId: requestBody.worldId,
+  });
+
+  if (!worldVisibleResult.ok) {
+    return resultFromSupabaseAuthorizationFetchError(worldVisibleResult.error);
+  }
+
+  if (!worldVisibleResult.value) {
+    logAuthorizationDenial(
+      authContext.userId,
+      requestBody.worldId,
+      "world_not_found",
+    );
+    return createAuthorizationErrorResult();
+  }
+
+  return { ok: true };
+}
+
 async function fetchSupabaseRpcBoolean({
   authorizationHeader,
   body,

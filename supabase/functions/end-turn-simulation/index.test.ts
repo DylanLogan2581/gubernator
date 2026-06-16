@@ -476,6 +476,45 @@ describe("handleEndTurnSimulationRequest", () => {
       );
     });
 
+    it("preview mode returns a forecast without starting or applying a transition", async () => {
+      const fetchMock = stubFullCycle();
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: JSON.stringify({
+            expectedTurnNumber: 0,
+            preview: true,
+            worldId: WORLD_ID,
+          }),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      expect(response.status).toBe(200);
+
+      const responseBody = (await response.json()) as {
+        data: { forecastSnapshot: { bySettlement: Record<string, unknown> } };
+        ok: boolean;
+      };
+      expect(responseBody.ok).toBe(true);
+      expect(typeof responseBody.data.forecastSnapshot.bySettlement).toBe(
+        "object",
+      );
+
+      // No writes: neither the start nor the apply RPC may be invoked.
+      const calledUrls = fetchMock.mock.calls.map((call) => String(call[0]));
+      expect(
+        calledUrls.some((url) => url.includes("rpc/start_turn_transition")),
+      ).toBe(false);
+      expect(
+        calledUrls.some((url) => url.includes("rpc/apply_turn_transition")),
+      ).toBe(false);
+    });
+
     it("returns 409 when the persist RPC reports an archived world", async () => {
       stubFullCycle({
         "rpc/apply_turn_transition": {

@@ -472,6 +472,7 @@ function createClient({
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 }): {
   readonly from: ReturnType<typeof vi.fn>;
+  readonly functions: { readonly invoke: ReturnType<typeof vi.fn> };
   readonly rpc: ReturnType<typeof vi.fn>;
 } {
   const stockpilesSelectBuilder: Record<string, unknown> = {
@@ -480,25 +481,24 @@ function createClient({
     returns: vi.fn().mockResolvedValue({ data: stockpileRows, error: null }),
   };
 
-  const forecastSelectBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => forecastSelectBuilder),
-    neq: vi.fn(() => forecastSelectBuilder),
-    order: vi.fn(() => forecastSelectBuilder),
-    limit: vi.fn(() => forecastSelectBuilder),
-    returns: vi.fn(() => forecastSelectBuilder),
-    maybeSingle: vi.fn().mockResolvedValue({ data: forecastRow, error: null }),
-  };
+  // The forecast now comes from the read-only preview of the end-turn-simulation
+  // Edge Function, not a turn_transitions row.
+  const forecastSnapshot =
+    forecastRow === null ? null : forecastRow.forecast_snapshot_jsonb;
 
   return {
     from: vi.fn((table: string) => {
       if (table === "settlement_stockpiles_view") {
         return { select: vi.fn(() => stockpilesSelectBuilder) };
       }
-      if (table === "turn_transitions") {
-        return { select: vi.fn(() => forecastSelectBuilder) };
-      }
       throw new Error(`Unexpected table: ${table}`);
     }),
+    functions: {
+      invoke: vi.fn().mockResolvedValue({
+        data: { data: { forecastSnapshot }, ok: true },
+        error: null,
+      }),
+    },
     rpc: rpcMock,
   };
 }

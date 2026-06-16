@@ -7,23 +7,11 @@ import {
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
-// -- Private row types --
-
-type TurnTransitionRow = {
-  readonly forecast_snapshot_jsonb: unknown;
-  readonly id: string;
-};
-
 // -- Public domain types --
 
 export type SettlementForecast = {
   readonly forecastSnapshot: unknown; // Raw forecast data structure
-  readonly transitionId: string;
 };
-
-// -- Select columns --
-
-const FORECAST_SELECT = ["id", "forecast_snapshot_jsonb"].join(",");
 
 // -- Query option types --
 
@@ -42,38 +30,57 @@ export function settlementForecastQueryOptions(
 > {
   return worldScopedQueryOptions({
     client,
-    fetcher: (c) => getLatestWorldForecast(c, worldId),
+    fetcher: (c) => getLiveWorldForecast(c, worldId),
     queryKey: ["forecast", "world", worldId] as const,
   });
 }
 
 // -- Fetchers --
 
-async function getLatestWorldForecast(
+// Runs the turn engine as a read-only dry-run and returns the forecast it
+// would produce if the turn were ended right now — so it reflects current
+// events, assignments, trade routes, and stockpiles. Nothing is persisted.
+async function getLiveWorldForecast(
   client: GubernatorSupabaseClient,
   worldId: string,
 ): Promise<SettlementForecast | null> {
-  // Get the latest turn transition that has a forecast for this world
-  const { data, error } = await client
-    .from("turn_transitions")
-    .select(FORECAST_SELECT)
-    .eq("world_id", worldId)
-    .neq("forecast_snapshot_jsonb", null)
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .returns<TurnTransitionRow[]>()
-    .maybeSingle();
+  const response = await client.functions.invoke<unknown>(
+    "end-turn-simulation",
+    {
+      // expectedTurnNumber is unused on the preview path (no stale-turn gate);
+      // preview tells the function to dry-run instead of advancing the turn.
+      body: { expectedTurnNumber: 0, preview: true, worldId },
+    },
+  );
 
-  if (error !== null) {
-    throw normalizeSupabaseError(error);
+  if (response.error !== null) {
+    throw normalizeSupabaseError(response.error);
   }
 
-  if (data === null) {
+  if (!isForecastSuccessResponse(response.data)) {
     return null;
   }
 
-  return {
-    forecastSnapshot: data.forecast_snapshot_jsonb,
-    transitionId: data.id,
-  };
+  return { forecastSnapshot: response.data.data.forecastSnapshot };
+}
+
+type ForecastSuccessResponse = {
+  readonly data: { readonly forecastSnapshot: unknown };
+  readonly ok: true;
+};
+
+function isForecastSuccessResponse(
+  value: unknown,
+): value is ForecastSuccessResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "ok" in value &&
+    (value as Record<string, unknown>).ok === true &&
+    "data" in value &&
+    typeof (value as Record<string, unknown>).data === "object" &&
+    (value as Record<string, unknown>).data !== null &&
+    "forecastSnapshot" in
+      ((value as Record<string, unknown>).data as Record<string, unknown>)
+  );
 }

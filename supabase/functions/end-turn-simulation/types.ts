@@ -1,6 +1,9 @@
 export type EndTurnSimulationRequestBody = {
   readonly expectedTurnNumber: number;
   readonly worldId: string;
+  // When true, run a read-only dry-run and return the forecast without
+  // starting or applying a transition (no DB writes).
+  readonly preview?: boolean;
 };
 
 export type EndTurnSimulationErrorCode =
@@ -40,8 +43,16 @@ export type EndTurnSimulationSuccessResponse = {
   readonly ok: true;
 };
 
+export type EndTurnSimulationForecastResponse = {
+  readonly data: {
+    readonly forecastSnapshot: unknown;
+  };
+  readonly ok: true;
+};
+
 export type EndTurnSimulationResponse =
   | EndTurnSimulationErrorResponse
+  | EndTurnSimulationForecastResponse
   | EndTurnSimulationSuccessResponse;
 
 export type EndTurnSimulationAuthContext = {
