@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, ChevronRight, X } from "lucide-react";
 import { type JSX } from "react";
 
@@ -15,6 +15,7 @@ import {
   getDeepLink,
   markAllNotificationsReadMutationOptions,
   markNotificationReadMutationOptions,
+  notificationQueryKeys,
 } from "@/features/notifications";
 
 type NotificationsPopoverProps = {
@@ -24,6 +25,7 @@ type NotificationsPopoverProps = {
 export function NotificationsPopover({
   className,
 }: NotificationsPopoverProps): JSX.Element {
+  const queryClient = useQueryClient();
   const currentSessionQuery = useQuery(currentSessionQueryOptions());
   const userId = currentSessionQuery.data?.user.id ?? null;
 
@@ -42,7 +44,9 @@ export function NotificationsPopover({
   const handleMarkRead = (notificationId: string): void => {
     markReadMutation.mutate(notificationId, {
       onSuccess: () => {
-        void notificationsQuery.refetch();
+        void queryClient.invalidateQueries({
+          queryKey: notificationQueryKeys.all,
+        });
       },
     });
   };
@@ -50,7 +54,9 @@ export function NotificationsPopover({
   const handleMarkAllRead = (): void => {
     markAllReadMutation.mutate(undefined, {
       onSuccess: () => {
-        void notificationsQuery.refetch();
+        void queryClient.invalidateQueries({
+          queryKey: notificationQueryKeys.all,
+        });
       },
     });
   };

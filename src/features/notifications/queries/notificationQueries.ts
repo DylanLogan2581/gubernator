@@ -268,7 +268,7 @@ async function getAllNotifications(
 
   let countQuery = client
     .from("notifications")
-    .select("count", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("recipient_user_id", userId);
 
   if (isRead !== null) {

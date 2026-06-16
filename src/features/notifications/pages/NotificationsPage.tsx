@@ -15,6 +15,7 @@ import { nationsListQueryOptions } from "@/features/nations";
 import {
   allNotificationsQueryOptions,
   markNotificationReadMutationOptions,
+  notificationQueryKeys,
   type AllNotification,
 } from "@/features/notifications";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
@@ -28,9 +29,42 @@ const PAGE_SIZE = 20;
 const NOTIFICATION_TYPES = [
   { value: "all", label: "All types" },
   { value: "turn.completed", label: "Turn completed" },
-  { value: "settlement.threat", label: "Settlement threat" },
-  { value: "trade.proposed", label: "Trade proposed" },
+  { value: "trade_proposal_received", label: "Trade proposal received" },
+  { value: "trade_proposal_accepted", label: "Trade proposal accepted" },
+  { value: "trade_proposal_rejected", label: "Trade proposal rejected" },
+  { value: "trade_route_cancelled", label: "Trade route cancelled" },
+  {
+    value: "building.auto_deconstructed",
+    label: "Building auto-deconstructed",
+  },
+  { value: "building.suspended", label: "Building suspended" },
+  { value: "building.recovered", label: "Building recovered" },
+  { value: "citizen.born", label: "Citizen born" },
+  { value: "citizen.died", label: "Citizen died" },
+  { value: "construction.completed", label: "Construction completed" },
+  { value: "construction.paused", label: "Construction paused" },
+  { value: "deposit.depleted", label: "Deposit depleted" },
+  {
+    value: "managed_population.declining",
+    label: "Managed population declining",
+  },
+  { value: "managed_population.extinct", label: "Managed population extinct" },
   { value: "partnership.formed", label: "Partnership formed" },
+  { value: "partnership.widowed", label: "Partnership widowed" },
+  {
+    value: "settlement.homelessness_occurred",
+    label: "Settlement homelessness occurred",
+  },
+  {
+    value: "settlement.starvation_occurred",
+    label: "Settlement starvation occurred",
+  },
+  { value: "trade_route.paused", label: "Trade route paused" },
+  { value: "trade_route.resumed", label: "Trade route resumed" },
+  { value: "event.activated", label: "Event activated" },
+  { value: "event.expired", label: "Event expired" },
+  { value: "player.died", label: "Player died" },
+  { value: "player.widowed", label: "Player widowed" },
 ];
 
 const READ_STATUS_OPTIONS = [
@@ -107,7 +141,9 @@ export function NotificationsPage(): JSX.Element {
     if (!notification.isRead) {
       markReadMutation.mutate(notification.id, {
         onSuccess: () => {
-          void notificationsQuery.refetch();
+          void queryClient.invalidateQueries({
+            queryKey: notificationQueryKeys.all,
+          });
         },
       });
     }
