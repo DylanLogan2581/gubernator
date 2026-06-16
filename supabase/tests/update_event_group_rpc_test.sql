@@ -146,7 +146,7 @@ select
       p_group_id                              := 'f5000000-0000-0000-0000-000000000001',
       p_group_name                            := 'Multi-Target Group (edited)',
       p_group_description                     := null,
-      p_effects                               := '[{"effect_type":"building_damage"}]'::jsonb,
+      p_effects                               := '[{"effect_type":"deposit_discovered"}]'::jsonb,
       p_duration_type                         := 'sustained',
       p_duration_transitions                  := 5,
       p_activate_on_transition_after_turn_number := 0,
@@ -224,8 +224,8 @@ select
       where
         event_id = 'f6000000-0000-0000-0000-000000000001'
     ),
-    'building_damage',
-    'stale effect replaced: pending event now has building_damage effect'
+    'deposit_discovered',
+    'stale effect replaced: pending event now has deposit_discovered effect'
   );
 
 -- ===========================================================================
