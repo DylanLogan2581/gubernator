@@ -14,7 +14,10 @@ import {
 } from "./http.ts";
 import { persistSimulationTransition, startTurnTransition } from "./persist.ts";
 import { resolveSupabaseSimulationAuthContext } from "./session.ts";
-import { resolveSupabaseEndTurnSimulationInput } from "./state.ts";
+import {
+  resolveServiceRoleEndTurnSimulationInput,
+  resolveSupabaseEndTurnSimulationInput,
+} from "./state.ts";
 import { planSimulationTransition } from "./transition.ts";
 import { parseEndTurnSimulationRequestBody } from "./validate.ts";
 
@@ -102,9 +105,12 @@ export async function handleEndTurnSimulationRequest(
         return respond(previewAuthResult.error, previewAuthResult.status);
       }
 
-      const previewStateResult = await resolveSupabaseEndTurnSimulationInput(
+      // Load preview state with the service-role client so that RLS does not
+      // produce a partial view for members without full visibility (e.g. pure
+      // settlement managers who lack a player character). Access was already
+      // verified above by resolveForecastPreviewAuthorization.
+      const previewStateResult = await resolveServiceRoleEndTurnSimulationInput(
         validateResult.body,
-        authContextResult.context,
       );
       if (!previewStateResult.ok) {
         return respond(previewStateResult.error, previewStateResult.status);

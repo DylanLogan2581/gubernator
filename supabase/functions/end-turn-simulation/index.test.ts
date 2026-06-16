@@ -515,6 +515,91 @@ describe("handleEndTurnSimulationRequest", () => {
       ).toBe(false);
     });
 
+    it("preview mode loads world state with service-role credentials, not caller JWT", async () => {
+      stubDenoEnv();
+
+      // Capture authorization headers used for all PostgREST state entity calls.
+      // The preview auth-check (world-exists) queries /rest/v1/worlds with the
+      // caller JWT; state loading must use the service-role key instead so that
+      // RLS does not produce a partial view for non-admin members.
+      const stateEntityPaths = [
+        "/rest/v1/worlds",
+        "/rest/v1/settlements",
+        "/rest/v1/citizens",
+        "/rest/v1/resources",
+        "/rest/v1/trade_routes",
+        "/rest/v1/citizen_assignments",
+      ];
+      const capturedAuthByPath: { path: string; auth: string }[] = [];
+
+      const stateResponses = makeStateResponses();
+      const fetchMock = vi.fn(
+        (url: string, init?: RequestInit): Promise<Response> => {
+          // Capture auth header for state entity REST calls.
+          const matchedPath = stateEntityPaths.find((p) => url.includes(p));
+          // Exclude the single-field world-exists auth check (select=id only).
+          // URLSearchParams encodes commas as %2C, so the state-load URL has
+          // select=id%2Cstatus%2C... while the auth check has select=id alone.
+          const isWorldExistsCheck =
+            url.includes("/rest/v1/worlds") && url.includes("select=id") &&
+            !url.includes("select=id%2C");
+          if (matchedPath !== undefined && !isWorldExistsCheck) {
+            const headers = init?.headers as Record<string, string> | undefined;
+            const auth = headers?.authorization ?? headers?.Authorization ?? "";
+            capturedAuthByPath.push({ path: matchedPath, auth });
+          }
+
+          // Route responses
+          if (url.includes("/auth/v1/user")) {
+            return Promise.resolve(
+              new Response(JSON.stringify({ id: USER_ID }), { status: 200 }),
+            );
+          }
+          // World-exists auth check: return world visible to the caller.
+          if (isWorldExistsCheck) {
+            return Promise.resolve(
+              new Response(JSON.stringify([{ id: WORLD_ID }]), { status: 200 }),
+            );
+          }
+          // All other state responses
+          const entry = Object.entries(stateResponses).find(([pattern]) =>
+            url.includes(pattern),
+          );
+          const { body, status } = entry?.[1] ?? {
+            body: { error: `Unexpected fetch call: ${url}` },
+            status: 500,
+          };
+          return Promise.resolve(
+            new Response(JSON.stringify(body), { status }),
+          );
+        },
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: JSON.stringify({
+            expectedTurnNumber: 0,
+            preview: true,
+            worldId: WORLD_ID,
+          }),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      expect(response.status).toBe(200);
+
+      // All captured state-load calls must use the service-role key, not the caller JWT.
+      expect(capturedAuthByPath.length).toBeGreaterThan(0);
+      for (const { auth } of capturedAuthByPath) {
+        expect(auth).toBe("Bearer test-service-role-key");
+      }
+    });
+
     it("returns 409 when the persist RPC reports an archived world", async () => {
       stubFullCycle({
         "rpc/apply_turn_transition": {
