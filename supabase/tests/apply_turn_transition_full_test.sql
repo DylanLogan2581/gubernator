@@ -806,8 +806,8 @@ select
     (
       current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'notifications'
     )::integer,
-    1,
-    'patchCounts.notifications = 1 (loop iterations, not fan-out recipients)'
+    5,
+    'patchCounts.notifications = 5 (actual rows inserted: settlement mgr + nation mgr + world admin + owner super admin + seeded super admin)'
   );
 
 select
