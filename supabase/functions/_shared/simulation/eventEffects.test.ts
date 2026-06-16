@@ -614,6 +614,115 @@ describe("phaseEvents — event status filtering", () => {
   });
 });
 
+describe("phaseEvents — scope-based resource effects", () => {
+  // Two nations, two settlements per nation — exercises world/nation/settlement scope.
+  const MULTI_SETTLEMENTS = [
+    { id: "s1", name: "North Keep", nationId: "n1" },
+    { id: "s2", name: "South Fort", nationId: "n1" },
+    { id: "s3", name: "East Hold", nationId: "n2" },
+    { id: "s4", name: "West Post", nationId: "n2" },
+  ];
+
+  const GRAIN_STOCKPILES = MULTI_SETTLEMENTS.map((s) => ({
+    cap: 1000,
+    quantity: 100,
+    resourceId: "food",
+    settlementId: s.id,
+  }));
+
+  it("settlement scope: resource_drain only affects the scoped settlement", () => {
+    const input = makeInput({
+      settlements: MULTI_SETTLEMENTS,
+      stockpiles: GRAIN_STOCKPILES,
+      events: [
+        makeEvent({
+          effectType: "resource_drain",
+          scopeType: "settlement",
+          scopeSettlementId: "s2",
+          effectPayloadJsonb: { resourceId: "food", amount: 40 },
+        }),
+      ],
+    });
+    const context = makeContext(input);
+    phaseEvents(context);
+
+    // s2 drained by 40; all others unchanged at 100
+    expect(context.shared.pendingStockpiles.get("s1:food")).toBe(100);
+    expect(context.shared.pendingStockpiles.get("s2:food")).toBe(60);
+    expect(context.shared.pendingStockpiles.get("s3:food")).toBe(100);
+    expect(context.shared.pendingStockpiles.get("s4:food")).toBe(100);
+  });
+
+  it("nation scope: resource_grant affects all settlements in the nation", () => {
+    const input = makeInput({
+      settlements: MULTI_SETTLEMENTS,
+      stockpiles: GRAIN_STOCKPILES,
+      events: [
+        makeEvent({
+          effectType: "resource_grant",
+          scopeType: "nation",
+          scopeNationId: "n2",
+          effectPayloadJsonb: { resourceId: "food", amount: 50 },
+        }),
+      ],
+    });
+    const context = makeContext(input);
+    phaseEvents(context);
+
+    // nation n2 settlements (s3, s4) each gain 50; n1 settlements (s1, s2) unchanged
+    expect(context.shared.pendingStockpiles.get("s1:food")).toBe(100);
+    expect(context.shared.pendingStockpiles.get("s2:food")).toBe(100);
+    expect(context.shared.pendingStockpiles.get("s3:food")).toBe(150);
+    expect(context.shared.pendingStockpiles.get("s4:food")).toBe(150);
+  });
+
+  it("world scope: resource_drain affects all settlements", () => {
+    const input = makeInput({
+      settlements: MULTI_SETTLEMENTS,
+      stockpiles: GRAIN_STOCKPILES,
+      events: [
+        makeEvent({
+          effectType: "resource_drain",
+          scopeType: "world",
+          effectPayloadJsonb: { resourceId: "food", amount: 25 },
+        }),
+      ],
+    });
+    const context = makeContext(input);
+    phaseEvents(context);
+
+    expect(context.shared.pendingStockpiles.get("s1:food")).toBe(75);
+    expect(context.shared.pendingStockpiles.get("s2:food")).toBe(75);
+    expect(context.shared.pendingStockpiles.get("s3:food")).toBe(75);
+    expect(context.shared.pendingStockpiles.get("s4:food")).toBe(75);
+  });
+
+  it("settlement scope: production_multiplier only registers for scoped settlement", () => {
+    const input = makeInput({
+      settlements: MULTI_SETTLEMENTS,
+      stockpiles: GRAIN_STOCKPILES,
+      events: [
+        makeEvent({
+          effectType: "production_multiplier",
+          scopeType: "settlement",
+          scopeSettlementId: "s1",
+          effectPayloadJsonb: { jobId: "farming", multiplier: 2.0 },
+        }),
+      ],
+    });
+    const context = makeContext(input);
+    phaseEvents(context);
+
+    const s1Mults = context.shared.pendingEventMultipliers.get("s1");
+    expect(s1Mults?.productionByJobId.get("farming")).toBe(2.0);
+
+    // Other settlements must have no registered multiplier
+    expect(context.shared.pendingEventMultipliers.get("s2")).toBeUndefined();
+    expect(context.shared.pendingEventMultipliers.get("s3")).toBeUndefined();
+    expect(context.shared.pendingEventMultipliers.get("s4")).toBeUndefined();
+  });
+});
+
 describe("phaseEvents — determinism", () => {
   it("produces same output given same input and seed", () => {
     const events = [

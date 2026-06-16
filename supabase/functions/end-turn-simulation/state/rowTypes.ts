@@ -29,6 +29,7 @@ export type SupabaseSettlementRow = {
   readonly is_ready_current_turn: boolean;
   readonly name: string;
   readonly nameset_id: string | null;
+  readonly nation_id: string;
   readonly nations: { readonly nameset_id: string | null } | null;
 };
 
@@ -206,6 +207,9 @@ export type SupabaseEventRow = {
   readonly duration_type: string;
   readonly remaining_transitions: number | null;
   readonly effect_payload_jsonb: unknown;
+  readonly scope_type: string | null;
+  readonly scope_nation_id: string | null;
+  readonly scope_settlement_id: string | null;
 };
 
 export type SupabaseEventEffectRow = {
@@ -253,6 +257,7 @@ export function isSettlementRow(v: unknown): v is SupabaseSettlementRow {
     typeof v.name === "string" &&
     typeof v.is_ready_current_turn === "boolean" &&
     typeof v.auto_ready_enabled === "boolean" &&
+    typeof v.nation_id === "string" &&
     (v.nameset_id === null || typeof v.nameset_id === "string") &&
     (v.nations === null ||
       (isRecord(v.nations) &&
@@ -491,7 +496,10 @@ export function isEventRow(v: unknown): v is SupabaseEventRow {
     (v.effect_type === null || typeof v.effect_type === "string") &&
     typeof v.activate_on_transition_after_turn_number === "number" &&
     typeof v.duration_type === "string" &&
-    (v.remaining_transitions === null || typeof v.remaining_transitions === "number")
+    (v.remaining_transitions === null || typeof v.remaining_transitions === "number") &&
+    (v.scope_type === null || typeof v.scope_type === "string") &&
+    (v.scope_nation_id === null || typeof v.scope_nation_id === "string") &&
+    (v.scope_settlement_id === null || typeof v.scope_settlement_id === "string")
   );
 }
 

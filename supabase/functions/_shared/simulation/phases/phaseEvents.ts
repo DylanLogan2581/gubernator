@@ -16,12 +16,56 @@
 import type {
   BuildingStateChange,
   DepositUpdate,
+  EventEffectType,
   EventStatusPatch,
   SimEffect,
+  SimEvent,
+  SimSettlement,
   SimulationContext,
   SimulationLogEntry,
   SimulationNotification,
 } from "../simulationTypes.ts";
+
+// Effect types that must be applied once per resolved settlement.
+// Non-listed types (building_destroyed, deposit_discovered, deposit_destroyed,
+// managed_population_change) carry their own specific IDs in the payload and
+// must NOT be fanned out per settlement.
+const SETTLEMENT_SCOPED_EFFECTS = new Set<EventEffectType>([
+  "consumption_multiplier",
+  "population_boost",
+  "population_loss",
+  "production_multiplier",
+  "resource_drain",
+  "resource_grant",
+  "upkeep_multiplier",
+]);
+
+function resolveTargetSettlementIds(
+  event: SimEvent,
+  settlements: readonly SimSettlement[],
+): readonly string[] {
+  // Legacy events without scope default to world-wide application.
+  const scopeType = event.scopeType ?? "world";
+
+  switch (scopeType) {
+    case "world":
+      return settlements.map((s) => s.id);
+    case "nation":
+      if (event.scopeNationId === null || event.scopeNationId === undefined) return [];
+      return settlements
+        .filter((s) => s.nationId === event.scopeNationId)
+        .map((s) => s.id);
+    case "settlement":
+      if (
+        event.scopeSettlementId === null ||
+        event.scopeSettlementId === undefined
+      )
+        return [];
+      return [event.scopeSettlementId];
+    default:
+      return [];
+  }
+}
 
 export type PhaseEventsOutput = {
   readonly buildingStateChanges: readonly BuildingStateChange[];
@@ -323,7 +367,7 @@ function applyEffect(
 }
 
 export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
-  const { events, turnNumber } = context.input;
+  const { events, settlements, turnNumber } = context.input;
   const {
     pendingEventMultipliers,
     pendingManagedPopulationDeltas,
@@ -356,18 +400,40 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
         settlementBuildingId: null,
       }];
 
+    const targetSettlementIds = resolveTargetSettlementIds(event, settlements);
+
     for (const effect of effectsToApply) {
-      applyEffect(
-        effect,
-        event.id,
-        event.effectPayloadJsonb,
-        buildingStateChanges,
-        pendingEventMultipliers,
-        pendingManagedPopulationDeltas,
-        pendingStockpiles,
-        pendingDepositDestroys,
-        logs,
-      );
+      if (SETTLEMENT_SCOPED_EFFECTS.has(effect.effectType)) {
+        // Fan out: apply once per resolved target settlement, injecting settlementId into payload.
+        for (const settlementId of targetSettlementIds) {
+          applyEffect(
+            effect,
+            event.id,
+            { ...event.effectPayloadJsonb, settlementId },
+            buildingStateChanges,
+            pendingEventMultipliers,
+            pendingManagedPopulationDeltas,
+            pendingStockpiles,
+            pendingDepositDestroys,
+            logs,
+          );
+        }
+      } else {
+        // Non-settlement-targeted effects (building_destroyed, deposit_destroyed,
+        // deposit_discovered, managed_population_change) use their own IDs in the
+        // payload and must be applied exactly once.
+        applyEffect(
+          effect,
+          event.id,
+          event.effectPayloadJsonb,
+          buildingStateChanges,
+          pendingEventMultipliers,
+          pendingManagedPopulationDeltas,
+          pendingStockpiles,
+          pendingDepositDestroys,
+          logs,
+        );
+      }
     }
 
     // Compute new status and emit patch.
