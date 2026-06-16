@@ -328,6 +328,7 @@ export function toSimEffect(row: SupabaseEventEffectRow): SimEffect & { eventId:
     managedPopulationInstanceId: row.managed_population_instance_id,
     depositInstanceId: row.deposit_instance_id,
     settlementBuildingId: row.settlement_building_id,
+    extraDataJsonb: row.extra_data_jsonb,
   };
 }
 

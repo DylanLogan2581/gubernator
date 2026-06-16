@@ -224,6 +224,8 @@ export type SupabaseEventEffectRow = {
   readonly managed_population_instance_id: string | null;
   readonly deposit_instance_id: string | null;
   readonly settlement_building_id: string | null;
+  readonly building_blueprint_id: string | null;
+  readonly extra_data_jsonb: Record<string, unknown>;
 };
 
 // ---------------------------------------------------------------------------

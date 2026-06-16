@@ -451,7 +451,7 @@ export function fetchEventEffects(
     table: "event_effects",
     params: {
       select:
-        "id,event_id,effect_type,amount_value,multiplier_value,is_percent,resource_id,job_id,managed_population_instance_id,deposit_instance_id",
+        "id,event_id,effect_type,amount_value,multiplier_value,is_percent,resource_id,job_id,managed_population_instance_id,deposit_instance_id,settlement_building_id,building_blueprint_id,extra_data_jsonb",
       order: "event_id.asc,id.asc",
     },
   });

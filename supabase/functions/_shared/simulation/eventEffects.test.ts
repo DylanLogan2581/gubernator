@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { phaseEvents } from "./phases/phaseEvents.ts";
 
 import type {
+  SimEffect,
   SimEvent,
   SimulationContext,
   SimulationInputState,
@@ -65,6 +66,22 @@ function makeInput(
     tradeRoutes: [],
     turnNumber: 5,
     worldId: "world1",
+    ...overrides,
+  };
+}
+
+function makeEffect(overrides: Partial<SimEffect>): SimEffect {
+  return {
+    amountValue: null,
+    depositInstanceId: null,
+    effectType: "resource_grant",
+    id: "eff1",
+    isPercent: false,
+    jobId: null,
+    managedPopulationInstanceId: null,
+    multiplierValue: null,
+    resourceId: null,
+    settlementBuildingId: null,
     ...overrides,
   };
 }
@@ -765,5 +782,140 @@ describe("phaseEvents — determinism", () => {
     expect(context1.shared.pendingStockpiles.get("settlement1:water")).toBe(
       context2.shared.pendingStockpiles.get("settlement1:water"),
     );
+  });
+});
+
+describe("phaseEvents — building_destroyed via effect.settlementBuildingId", () => {
+  it("queues building state change when settlementBuildingId is on the effect", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "building_destroyed",
+          effects: [
+            makeEffect({
+              effectType: "building_destroyed",
+              settlementBuildingId: "building-abc",
+            }),
+          ],
+          id: "evt-destroy",
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    expect(result.buildingStateChanges).toContainEqual(
+      expect.objectContaining({
+        settlementBuildingId: "building-abc",
+        toState: "auto_deconstructed",
+      }),
+    );
+  });
+
+  it("logs event.building_destroyed", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "building_destroyed",
+          effects: [
+            makeEffect({
+              effectType: "building_destroyed",
+              settlementBuildingId: "building-abc",
+            }),
+          ],
+          id: "evt-destroy",
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    expect(result.logs).toContainEqual(
+      expect.objectContaining({
+        category: "event.building_destroyed",
+        payload: expect.objectContaining({
+          eventId: "evt-destroy",
+          settlementBuildingId: "building-abc",
+        }),
+      }),
+    );
+  });
+
+  it("does not queue state change when settlementBuildingId is null", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectPayloadJsonb: {},
+          effectType: "building_destroyed",
+          effects: [
+            makeEffect({
+              effectType: "building_destroyed",
+              settlementBuildingId: null,
+            }),
+          ],
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    expect(result.buildingStateChanges).toHaveLength(0);
+  });
+});
+
+describe("phaseEvents — upkeep_multiplier blueprint targeting via extraDataJsonb", () => {
+  it("applies multiplier to specific blueprints when building_blueprint_mode is select", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "upkeep_multiplier",
+          effects: [
+            makeEffect({
+              effectType: "upkeep_multiplier",
+              extraDataJsonb: {
+                building_blueprint_ids: ["bp-1", "bp-2"],
+                building_blueprint_mode: "select",
+              },
+              multiplierValue: 1.5,
+            }),
+          ],
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    phaseEvents(context);
+
+    const mults = context.shared.pendingEventMultipliers.get("settlement1");
+    expect(mults?.upkeepByBlueprintId.get("bp-1")).toBe(1.5);
+    expect(mults?.upkeepByBlueprintId.get("bp-2")).toBe(1.5);
+    // Global upkeep multiplier should remain at default
+    expect(mults?.upkeep).toBe(1);
+  });
+
+  it("applies multiplier to all buildings when extraDataJsonb is absent", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "upkeep_multiplier",
+          effects: [
+            makeEffect({
+              effectType: "upkeep_multiplier",
+              multiplierValue: 2.0,
+            }),
+          ],
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    phaseEvents(context);
+
+    const mults = context.shared.pendingEventMultipliers.get("settlement1");
+    expect(mults?.upkeep).toBe(2.0);
+    expect(mults?.upkeepByBlueprintId.size).toBe(0);
   });
 });
