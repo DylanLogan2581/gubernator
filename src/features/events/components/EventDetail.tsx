@@ -184,13 +184,6 @@ export function EventDetail({
 
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase">
-                Effect Type
-              </p>
-              <p className="mt-1 font-medium">{event.effect_type}</p>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase">
                 Duration
               </p>
               <p className="mt-1 font-medium">
