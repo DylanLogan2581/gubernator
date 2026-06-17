@@ -11,6 +11,9 @@ describe("isEventRow", () => {
     duration_type: "sustained",
     remaining_transitions: 2,
     effect_payload_jsonb: {},
+    scope_type: null,
+    scope_nation_id: null,
+    scope_settlement_id: null,
   };
 
   it("accepts a legacy event row with a string effect_type", () => {

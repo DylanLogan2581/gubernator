@@ -102,6 +102,11 @@ export async function handleEndTurnSimulationRequest(
         return respond(previewAuthResult.error, previewAuthResult.status);
       }
 
+      // Load preview state with the caller's JWT (same as the real end-turn).
+      // A service-role load was tried (#875) to give non-admins a full-visibility
+      // forecast, but settlement_stockpiles_view delegates to a security-definer
+      // helper that RAISEs 'forbidden' without a user context, so service-role
+      // reads fail. Access was already verified by resolveForecastPreviewAuthorization.
       const previewStateResult = await resolveSupabaseEndTurnSimulationInput(
         validateResult.body,
         authContextResult.context,

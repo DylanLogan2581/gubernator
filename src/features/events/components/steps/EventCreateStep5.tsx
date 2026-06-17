@@ -1,10 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle } from "lucide-react";
 import { type JSX } from "react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { nationsListQueryOptions } from "@/features/nations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
+
+import {
+  computeEffectImpact,
+  type EffectImpactCategory,
+} from "../../utils/effectImpact";
 
 import type { EventDurationType, EventScopeType } from "../../types/eventTypes";
 
@@ -21,7 +28,11 @@ type EventCreateStep5Props = {
     resourceId: string | null;
     jobId: string | null;
     managedPopulationInstanceId: string | null;
+    managedPopulationMode?: "all" | "type" | "instance";
     depositInstanceId: string | null;
+    depositInstanceIds?: string[];
+    settlementBuildingId?: string | null;
+    settlementBuildingIds?: string[];
   }>;
   readonly durationType: EventDurationType;
   readonly durationTransitions: number | null;
@@ -60,6 +71,29 @@ export function EventCreateStep5({
     (resourcesQuery.data ?? []).map((r) => [r.id, r]),
   );
   const jobMap = new Map((jobsQuery.data ?? []).map((j) => [j.id, j]));
+
+  // Compute per-effect impact counts
+  const settlements = settlementsQuery.data ?? [];
+  const effectImpacts = effects.map((effect) =>
+    computeEffectImpact(effect, scopeType, selectedIds, settlements),
+  );
+  const hasZeroTargets = effectImpacts.some(
+    (impact) => impact !== null && impact.count === 0,
+  );
+
+  // Human-readable singular label per impact category
+  const categoryLabel = (category: EffectImpactCategory): string => {
+    switch (category) {
+      case "settlements":
+        return "settlement";
+      case "buildings":
+        return "building";
+      case "deposits":
+        return "deposit";
+      case "populations":
+        return "population";
+    }
+  };
 
   // Format scope with named targets
   const getScopeLabel = (): string => {
@@ -180,11 +214,28 @@ export function EventCreateStep5({
           <div className="space-y-2">
             <dt className="text-muted-foreground">Effects:</dt>
             <dd className="space-y-1">
-              {effects.map((effect) => {
-                const key = `${effect.effectType}-${effect.resourceId ?? effect.jobId ?? effect.managedPopulationInstanceId ?? effect.depositInstanceId ?? "default"}`;
+              {effects.map((effect, index) => {
+                const key = `${effect.effectType}-${effect.resourceId ?? effect.jobId ?? effect.managedPopulationInstanceId ?? effect.depositInstanceId ?? "default"}-${String(index)}`;
+                const impact = effectImpacts[index] ?? null;
                 return (
-                  <div key={key} className="text-xs text-foreground">
-                    • {formatEffect(effect)}
+                  <div
+                    key={key}
+                    className="flex items-start justify-between gap-2 text-xs text-foreground"
+                  >
+                    <span>• {formatEffect(effect)}</span>
+                    {impact !== null && (
+                      <span
+                        className={`shrink-0 tabular-nums ${
+                          impact.count === 0
+                            ? "font-medium text-destructive"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {impact.count === 0 && "⚠ "}
+                        {impact.count} {categoryLabel(impact.category)}
+                        {impact.count !== 1 ? "s" : ""}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -235,6 +286,17 @@ export function EventCreateStep5({
           )}
         </dl>
       </div>
+
+      {hasZeroTargets && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Zero-target effects</AlertTitle>
+          <AlertDescription>
+            One or more effects resolve to zero targets and will have no impact.
+            Review scope and effect configuration before creating.
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

@@ -27,6 +27,11 @@ export {
   updateSettlementDetailsMutationOptions,
 } from "./mutations/settlementsMutations";
 export { settlementForecastQueryOptions } from "./queries/settlementForecastQueries";
+export { forecastSnapshotSchema } from "./schemas/forecastSchemas";
+export type {
+  ForecastSnapshot,
+  SettlementForecastData,
+} from "./schemas/forecastSchemas";
 export {
   settlementByIdQueryOptions,
   settlementsByWorldQueryOptions,

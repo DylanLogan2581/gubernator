@@ -117,8 +117,6 @@ export type EventEffect = {
  */
 export type EventListFilters = {
   readonly statusFilter?: EventStatus[];
-  readonly scopeFilter?: EventScopeType[];
-  readonly effectTypeFilter?: string[];
   readonly sortBy?: "status" | "created_at";
   readonly scopeEntityFilter?: {
     readonly type: "nation" | "settlement";

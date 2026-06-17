@@ -56,73 +56,6 @@ type MutationFactoryOpts = {
 };
 
 /**
- * Validates an effect object has all required fields for its type.
- * Returns null if valid, or an error message if invalid.
- */
-function validateEffectFields(
-  effect: CreateEventGroupInput["effects"][number],
-  index: number,
-): string | null {
-  const baseMsg = `Effect ${index + 1} (${effect.effectType})`;
-  const amountBasedTypes = [
-    "population_boost",
-    "population_loss",
-    "managed_population_change",
-    "resource_grant",
-    "resource_drain",
-  ];
-  const multiplierTypes = [
-    "consumption_multiplier",
-    "production_multiplier",
-    "upkeep_multiplier",
-  ];
-  const resourceTypes = ["resource_grant", "resource_drain"];
-
-  // Amount-based effects: require non-null amount_value
-  if (amountBasedTypes.includes(effect.effectType)) {
-    if (effect.amountValue === null || effect.amountValue === 0) {
-      return `${baseMsg} is missing a non-zero amount`;
-    }
-  }
-
-  // Multiplier effects: require non-null multiplier_value
-  if (multiplierTypes.includes(effect.effectType)) {
-    if (effect.multiplierValue === null || effect.multiplierValue === 0) {
-      return `${baseMsg} is missing a non-zero multiplier`;
-    }
-  }
-
-  // Resource effects: require resource_id
-  if (resourceTypes.includes(effect.effectType)) {
-    if (effect.resourceId === null || effect.resourceId === undefined) {
-      return `${baseMsg} is missing a resource selection`;
-    }
-  }
-
-  // Deposit destroyed: require deposit_instance_id
-  if (effect.effectType === "deposit_destroyed") {
-    if (
-      effect.depositInstanceId === null ||
-      effect.depositInstanceId === undefined
-    ) {
-      return `${baseMsg} is missing a deposit selection`;
-    }
-  }
-
-  // Building destroyed: require settlement_building_id
-  if (effect.effectType === "building_destroyed") {
-    if (
-      effect.settlementBuildingId === null ||
-      effect.settlementBuildingId === undefined
-    ) {
-      return `${baseMsg} is missing a building selection`;
-    }
-  }
-
-  return null;
-}
-
-/**
  * Mutation for creating an event group with multiple events atomically.
  */
 export function createEventGroupMutationOptions({
@@ -148,17 +81,6 @@ export function createEventGroupMutationOptions({
           code: "event_input_invalid",
           message: "Duration transitions required for sustained events",
         });
-      }
-
-      // Validate each effect has required fields for its type
-      for (let i = 0; i < values.effects.length; i++) {
-        const validationError = validateEffectFields(values.effects[i], i);
-        if (validationError !== null) {
-          throw new EventMutationError({
-            code: "event_input_invalid",
-            message: validationError,
-          });
-        }
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
@@ -355,17 +277,6 @@ export function editEventGroupMutationOptions({
           code: "event_input_invalid",
           message: "Duration transitions required for sustained events",
         });
-      }
-
-      // Validate each effect has required fields for its type
-      for (let i = 0; i < values.effects.length; i++) {
-        const validationError = validateEffectFields(values.effects[i], i);
-        if (validationError !== null) {
-          throw new EventMutationError({
-            code: "event_input_invalid",
-            message: validationError,
-          });
-        }
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call

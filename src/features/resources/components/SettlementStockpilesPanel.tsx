@@ -4,6 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useMemo, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -43,53 +44,6 @@ import type { SettlementStockpile } from "../queries/settlementStockpilesQueries
 
 type ForecastDeltaMap = ReadonlyMap<string, number>;
 
-function parseForecastDeltaMap(
-  forecastSnapshot: unknown,
-  settlementId: string,
-): ForecastDeltaMap {
-  if (
-    typeof forecastSnapshot !== "object" ||
-    forecastSnapshot === null ||
-    !("bySettlement" in forecastSnapshot)
-  ) {
-    return new Map();
-  }
-  const bySettlement = (forecastSnapshot as Record<string, unknown>)
-    .bySettlement;
-  if (typeof bySettlement !== "object" || bySettlement === null) {
-    return new Map();
-  }
-  const settlement = (bySettlement as Record<string, unknown>)[settlementId];
-  if (
-    typeof settlement !== "object" ||
-    settlement === null ||
-    !("resourceDeltas" in settlement)
-  ) {
-    return new Map();
-  }
-  const deltas = (settlement as Record<string, unknown>).resourceDeltas;
-  if (!Array.isArray(deltas)) {
-    return new Map();
-  }
-  const map = new Map<string, number>();
-  for (const delta of deltas) {
-    if (
-      typeof delta === "object" &&
-      delta !== null &&
-      "resourceId" in delta &&
-      "netDelta" in delta &&
-      typeof (delta as Record<string, unknown>).resourceId === "string" &&
-      typeof (delta as Record<string, unknown>).netDelta === "number"
-    ) {
-      map.set(
-        (delta as Record<string, unknown>).resourceId as string,
-        (delta as Record<string, unknown>).netDelta as number,
-      );
-    }
-  }
-  return map;
-}
-
 type SettlementStockpilesPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
@@ -110,11 +64,12 @@ export function SettlementStockpilesPanel({
   const forecastQuery = useQuery(settlementForecastQueryOptions(worldId));
 
   const forecastDeltaMap = useMemo<ForecastDeltaMap>(() => {
-    const snapshot = forecastQuery.data?.forecastSnapshot;
-    if (snapshot === undefined || snapshot === null) {
-      return new Map();
-    }
-    return parseForecastDeltaMap(snapshot, settlementId);
+    const settlement =
+      forecastQuery.data?.forecastSnapshot.bySettlement[settlementId];
+    if (settlement === undefined) return new Map();
+    return new Map(
+      settlement.resourceDeltas.map((d) => [d.resourceId, d.netDelta]),
+    );
   }, [forecastQuery.data, settlementId]);
 
   return (
@@ -145,6 +100,8 @@ export function SettlementStockpilesPanel({
           <StockpilesTable
             canAdmin={canAdmin}
             forecastDeltaMap={forecastDeltaMap}
+            isForecastError={forecastQuery.isError}
+            isForecastPending={forecastQuery.isPending}
             isArchived={isArchived}
             queryClient={queryClient}
             stockpiles={sortStockpiles(stockpilesQuery.data)}
@@ -169,12 +126,16 @@ function sortStockpiles(
 function StockpilesTable({
   canAdmin,
   forecastDeltaMap,
+  isForecastError,
+  isForecastPending,
   isArchived,
   queryClient,
   stockpiles,
 }: {
   readonly canAdmin: boolean;
   readonly forecastDeltaMap: ForecastDeltaMap;
+  readonly isForecastError: boolean;
+  readonly isForecastPending: boolean;
   readonly isArchived: boolean;
   readonly queryClient: QueryClient;
   readonly stockpiles: readonly SettlementStockpile[];
@@ -208,6 +169,8 @@ function StockpilesTable({
               key={stockpile.resourceId}
               canEdit={canEdit}
               forecastDelta={forecastDeltaMap.get(stockpile.resourceId)}
+              isForecastError={isForecastError}
+              isForecastPending={isForecastPending}
               stockpile={stockpile}
               onEdit={() => {
                 setEditingStockpile(stockpile);
@@ -233,11 +196,15 @@ function StockpilesTable({
 function StockpileRow({
   canEdit,
   forecastDelta,
+  isForecastError,
+  isForecastPending,
   stockpile,
   onEdit,
 }: {
   readonly canEdit: boolean;
   readonly forecastDelta: number | undefined;
+  readonly isForecastError: boolean;
+  readonly isForecastPending: boolean;
   readonly onEdit: () => void;
   readonly stockpile: SettlementStockpile;
 }): JSX.Element {
@@ -260,7 +227,17 @@ function StockpileRow({
         {stockpile.effectiveCap.toLocaleString()}
       </TableCell>
       <TableCell className="py-2 pr-4 tabular-nums">
-        {forecastDelta === undefined ? (
+        {isForecastPending ? (
+          <Loader2
+            className="h-3.5 w-3.5 animate-spin text-muted-foreground"
+            aria-label="Loading forecast"
+          />
+        ) : isForecastError ? (
+          <AlertTriangle
+            className="h-3.5 w-3.5 text-destructive"
+            aria-label="Forecast error"
+          />
+        ) : forecastDelta === undefined ? (
           <span className="text-muted-foreground">—</span>
         ) : forecastDelta > 0 ? (
           <span className="text-green-600 dark:text-green-500">

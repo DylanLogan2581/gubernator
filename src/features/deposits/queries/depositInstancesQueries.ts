@@ -83,6 +83,45 @@ const DEPOSIT_INSTANCE_WITH_LOCATION_SELECT = [
   "settlements(id,name,nations!inner(name))",
 ].join(",");
 
+type DepositInstanceDetailQueryKey = ReturnType<
+  typeof depositsQueryKeys.instanceById
+>;
+
+type DepositInstanceDetailQueryOptions = UseQueryOptions<
+  DepositInstance | null,
+  AuthUiError,
+  DepositInstance | null,
+  DepositInstanceDetailQueryKey
+>;
+
+export function depositInstanceByIdQueryOptions(
+  instanceId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): DepositInstanceDetailQueryOptions {
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getDepositInstanceById(c, instanceId),
+    queryKey: depositsQueryKeys.instanceById(instanceId),
+  });
+}
+
+async function getDepositInstanceById(
+  client: GubernatorSupabaseClient,
+  instanceId: string,
+): Promise<DepositInstance | null> {
+  const { data, error } = await client
+    .from("deposit_instances")
+    .select(DEPOSIT_INSTANCE_SELECT)
+    .eq("id", instanceId)
+    .maybeSingle<DepositInstanceRow>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data === null ? null : toDepositInstance(data);
+}
+
 type DepositInstancesBySettlementQueryKey = ReturnType<
   typeof depositsQueryKeys.instancesBySettlement
 >;

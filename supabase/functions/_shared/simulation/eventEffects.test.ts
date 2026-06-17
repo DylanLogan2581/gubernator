@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { phaseEvents } from "./phases/phaseEvents.ts";
 
 import type {
+  SimEffect,
   SimEvent,
   SimulationContext,
   SimulationInputState,
@@ -65,6 +66,22 @@ function makeInput(
     tradeRoutes: [],
     turnNumber: 5,
     worldId: "world1",
+    ...overrides,
+  };
+}
+
+function makeEffect(overrides: Partial<SimEffect>): SimEffect {
+  return {
+    amountValue: null,
+    depositInstanceId: null,
+    effectType: "resource_grant",
+    id: "eff1",
+    isPercent: false,
+    jobId: null,
+    managedPopulationInstanceId: null,
+    multiplierValue: null,
+    resourceId: null,
+    settlementBuildingId: null,
     ...overrides,
   };
 }
@@ -415,8 +432,102 @@ describe("phaseEvents — upkeep_multiplier", () => {
 });
 
 describe("phaseEvents — population_loss", () => {
-  it("logs population_loss event", () => {
+  it("kills citizens and logs population_loss event", () => {
     const input = makeInput({
+      citizens: [
+        {
+          bornOnTurnNumber: 1,
+          citizenType: "npc",
+          givenName: "Alice",
+          id: "c1",
+          namesetId: null,
+          parentACitizenId: null,
+          parentBCitizenId: null,
+          settlementId: "settlement1",
+          sex: "female",
+          status: "alive",
+          surname: null,
+        },
+        {
+          bornOnTurnNumber: 1,
+          citizenType: "npc",
+          givenName: "Bob",
+          id: "c2",
+          namesetId: null,
+          parentACitizenId: null,
+          parentBCitizenId: null,
+          settlementId: "settlement1",
+          sex: "male",
+          status: "alive",
+          surname: null,
+        },
+        {
+          bornOnTurnNumber: 1,
+          citizenType: "npc",
+          givenName: "Carol",
+          id: "c3",
+          namesetId: null,
+          parentACitizenId: null,
+          parentBCitizenId: null,
+          settlementId: "settlement1",
+          sex: "female",
+          status: "alive",
+          surname: null,
+        },
+      ],
+      events: [
+        makeEvent({
+          effectPayloadJsonb: {
+            amount: 2,
+            settlementId: "settlement1",
+          },
+          effectType: "population_loss",
+          id: "loss123",
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    // Should kill 2 citizens (deterministic: c1, c2 by sorted id)
+    expect(result.citizenDeaths).toHaveLength(2);
+    expect(result.citizenDeaths).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ citizenId: "c1", category: "event" }),
+        expect.objectContaining({ citizenId: "c2", category: "event" }),
+      ]),
+    );
+    expect(result.logs).toContainEqual(
+      expect.objectContaining({
+        category: "event.population_loss",
+        payload: expect.objectContaining({
+          amount: 2,
+          citizenCount: 2,
+          eventId: "loss123",
+          settlementId: "settlement1",
+        }),
+      }),
+    );
+  });
+
+  it("clamps population_loss to available living citizens", () => {
+    const input = makeInput({
+      citizens: [
+        {
+          bornOnTurnNumber: 1,
+          citizenType: "npc",
+          givenName: "Alice",
+          id: "c1",
+          namesetId: null,
+          parentACitizenId: null,
+          parentBCitizenId: null,
+          settlementId: "settlement1",
+          sex: "female",
+          status: "alive",
+          surname: null,
+        },
+      ],
       events: [
         makeEvent({
           effectPayloadJsonb: {
@@ -432,21 +543,13 @@ describe("phaseEvents — population_loss", () => {
 
     const result = phaseEvents(context);
 
-    expect(result.logs).toContainEqual(
-      expect.objectContaining({
-        category: "event.population_loss",
-        payload: expect.objectContaining({
-          amount: 10,
-          eventId: "loss123",
-          settlementId: "settlement1",
-        }),
-      }),
-    );
+    expect(result.citizenDeaths).toHaveLength(1);
+    expect(result.citizenDeaths[0]).toMatchObject({ citizenId: "c1", category: "event" });
   });
 });
 
 describe("phaseEvents — population_boost", () => {
-  it("logs population_boost event", () => {
+  it("logs population_boost event (no-op until birth system supports parentless citizens)", () => {
     const input = makeInput({
       events: [
         makeEvent({
@@ -473,6 +576,8 @@ describe("phaseEvents — population_boost", () => {
         }),
       }),
     );
+    // population_boost is log-only: no births until the birth system supports parentless citizens
+    expect(result.citizenDeaths).toHaveLength(0);
   });
 });
 
@@ -614,6 +719,115 @@ describe("phaseEvents — event status filtering", () => {
   });
 });
 
+describe("phaseEvents — scope-based resource effects", () => {
+  // Two nations, two settlements per nation — exercises world/nation/settlement scope.
+  const MULTI_SETTLEMENTS = [
+    { id: "s1", name: "North Keep", nationId: "n1" },
+    { id: "s2", name: "South Fort", nationId: "n1" },
+    { id: "s3", name: "East Hold", nationId: "n2" },
+    { id: "s4", name: "West Post", nationId: "n2" },
+  ];
+
+  const GRAIN_STOCKPILES = MULTI_SETTLEMENTS.map((s) => ({
+    cap: 1000,
+    quantity: 100,
+    resourceId: "food",
+    settlementId: s.id,
+  }));
+
+  it("settlement scope: resource_drain only affects the scoped settlement", () => {
+    const input = makeInput({
+      settlements: MULTI_SETTLEMENTS,
+      stockpiles: GRAIN_STOCKPILES,
+      events: [
+        makeEvent({
+          effectType: "resource_drain",
+          scopeType: "settlement",
+          scopeSettlementId: "s2",
+          effectPayloadJsonb: { resourceId: "food", amount: 40 },
+        }),
+      ],
+    });
+    const context = makeContext(input);
+    phaseEvents(context);
+
+    // s2 drained by 40; all others unchanged at 100
+    expect(context.shared.pendingStockpiles.get("s1:food")).toBe(100);
+    expect(context.shared.pendingStockpiles.get("s2:food")).toBe(60);
+    expect(context.shared.pendingStockpiles.get("s3:food")).toBe(100);
+    expect(context.shared.pendingStockpiles.get("s4:food")).toBe(100);
+  });
+
+  it("nation scope: resource_grant affects all settlements in the nation", () => {
+    const input = makeInput({
+      settlements: MULTI_SETTLEMENTS,
+      stockpiles: GRAIN_STOCKPILES,
+      events: [
+        makeEvent({
+          effectType: "resource_grant",
+          scopeType: "nation",
+          scopeNationId: "n2",
+          effectPayloadJsonb: { resourceId: "food", amount: 50 },
+        }),
+      ],
+    });
+    const context = makeContext(input);
+    phaseEvents(context);
+
+    // nation n2 settlements (s3, s4) each gain 50; n1 settlements (s1, s2) unchanged
+    expect(context.shared.pendingStockpiles.get("s1:food")).toBe(100);
+    expect(context.shared.pendingStockpiles.get("s2:food")).toBe(100);
+    expect(context.shared.pendingStockpiles.get("s3:food")).toBe(150);
+    expect(context.shared.pendingStockpiles.get("s4:food")).toBe(150);
+  });
+
+  it("world scope: resource_drain affects all settlements", () => {
+    const input = makeInput({
+      settlements: MULTI_SETTLEMENTS,
+      stockpiles: GRAIN_STOCKPILES,
+      events: [
+        makeEvent({
+          effectType: "resource_drain",
+          scopeType: "world",
+          effectPayloadJsonb: { resourceId: "food", amount: 25 },
+        }),
+      ],
+    });
+    const context = makeContext(input);
+    phaseEvents(context);
+
+    expect(context.shared.pendingStockpiles.get("s1:food")).toBe(75);
+    expect(context.shared.pendingStockpiles.get("s2:food")).toBe(75);
+    expect(context.shared.pendingStockpiles.get("s3:food")).toBe(75);
+    expect(context.shared.pendingStockpiles.get("s4:food")).toBe(75);
+  });
+
+  it("settlement scope: production_multiplier only registers for scoped settlement", () => {
+    const input = makeInput({
+      settlements: MULTI_SETTLEMENTS,
+      stockpiles: GRAIN_STOCKPILES,
+      events: [
+        makeEvent({
+          effectType: "production_multiplier",
+          scopeType: "settlement",
+          scopeSettlementId: "s1",
+          effectPayloadJsonb: { jobId: "farming", multiplier: 2.0 },
+        }),
+      ],
+    });
+    const context = makeContext(input);
+    phaseEvents(context);
+
+    const s1Mults = context.shared.pendingEventMultipliers.get("s1");
+    expect(s1Mults?.productionByJobId.get("farming")).toBe(2.0);
+
+    // Other settlements must have no registered multiplier
+    expect(context.shared.pendingEventMultipliers.get("s2")).toBeUndefined();
+    expect(context.shared.pendingEventMultipliers.get("s3")).toBeUndefined();
+    expect(context.shared.pendingEventMultipliers.get("s4")).toBeUndefined();
+  });
+});
+
 describe("phaseEvents — determinism", () => {
   it("produces same output given same input and seed", () => {
     const events = [
@@ -656,5 +870,140 @@ describe("phaseEvents — determinism", () => {
     expect(context1.shared.pendingStockpiles.get("settlement1:water")).toBe(
       context2.shared.pendingStockpiles.get("settlement1:water"),
     );
+  });
+});
+
+describe("phaseEvents — building_destroyed via effect.settlementBuildingId", () => {
+  it("queues building state change when settlementBuildingId is on the effect", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "building_destroyed",
+          effects: [
+            makeEffect({
+              effectType: "building_destroyed",
+              settlementBuildingId: "building-abc",
+            }),
+          ],
+          id: "evt-destroy",
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    expect(result.buildingStateChanges).toContainEqual(
+      expect.objectContaining({
+        settlementBuildingId: "building-abc",
+        toState: "auto_deconstructed",
+      }),
+    );
+  });
+
+  it("logs event.building_destroyed", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "building_destroyed",
+          effects: [
+            makeEffect({
+              effectType: "building_destroyed",
+              settlementBuildingId: "building-abc",
+            }),
+          ],
+          id: "evt-destroy",
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    expect(result.logs).toContainEqual(
+      expect.objectContaining({
+        category: "event.building_destroyed",
+        payload: expect.objectContaining({
+          eventId: "evt-destroy",
+          settlementBuildingId: "building-abc",
+        }),
+      }),
+    );
+  });
+
+  it("does not queue state change when settlementBuildingId is null", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectPayloadJsonb: {},
+          effectType: "building_destroyed",
+          effects: [
+            makeEffect({
+              effectType: "building_destroyed",
+              settlementBuildingId: null,
+            }),
+          ],
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    expect(result.buildingStateChanges).toHaveLength(0);
+  });
+});
+
+describe("phaseEvents — upkeep_multiplier blueprint targeting via extraDataJsonb", () => {
+  it("applies multiplier to specific blueprints when building_blueprint_mode is select", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "upkeep_multiplier",
+          effects: [
+            makeEffect({
+              effectType: "upkeep_multiplier",
+              extraDataJsonb: {
+                building_blueprint_ids: ["bp-1", "bp-2"],
+                building_blueprint_mode: "select",
+              },
+              multiplierValue: 1.5,
+            }),
+          ],
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    phaseEvents(context);
+
+    const mults = context.shared.pendingEventMultipliers.get("settlement1");
+    expect(mults?.upkeepByBlueprintId.get("bp-1")).toBe(1.5);
+    expect(mults?.upkeepByBlueprintId.get("bp-2")).toBe(1.5);
+    // Global upkeep multiplier should remain at default
+    expect(mults?.upkeep).toBe(1);
+  });
+
+  it("applies multiplier to all buildings when extraDataJsonb is absent", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "upkeep_multiplier",
+          effects: [
+            makeEffect({
+              effectType: "upkeep_multiplier",
+              multiplierValue: 2.0,
+            }),
+          ],
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    phaseEvents(context);
+
+    const mults = context.shared.pendingEventMultipliers.get("settlement1");
+    expect(mults?.upkeep).toBe(2.0);
+    expect(mults?.upkeepByBlueprintId.size).toBe(0);
   });
 });

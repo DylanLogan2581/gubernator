@@ -51,6 +51,7 @@ export type AllNotificationsFilters = {
   readonly nationId?: string | null;
   readonly offset?: number;
   readonly settlementId?: string | null;
+  readonly severity?: string | null;
   readonly type?: string | null;
   readonly worldId?: string | null;
 };
@@ -85,6 +86,7 @@ type AllNotificationRow = {
   readonly notification_type: string;
   readonly settlement_id: string | null;
   readonly settlement: { readonly name: string } | null;
+  readonly severity: Database["public"]["Enums"]["notification_severity"];
   readonly trade_route_id: string | null;
   readonly world_id: string;
   readonly world: { readonly name: string };
@@ -103,6 +105,7 @@ export type AllNotification = {
   readonly notificationType: string;
   readonly settlementId: string | null;
   readonly settlementName: string | null;
+  readonly severity: Database["public"]["Enums"]["notification_severity"];
   readonly tradeRouteId: string | null;
   readonly worldId: string;
   readonly worldName: string;
@@ -127,7 +130,7 @@ const TURN_COMPLETED_NOTIFICATION_SELECT =
   "id,world_id,generated_in_transition_id,message_text,is_read,generated_at";
 const TURN_COMPLETED_NOTIFICATION_TYPE = "turn.completed";
 const ALL_NOTIFICATIONS_SELECT =
-  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,message_text,is_read,generated_at,generated_in_transition_id,world:worlds!notifications_world_id_fkey(name),nation:nations(name),settlement:settlements(name)";
+  "id,world_id,nation_id,settlement_id,citizen_id,event_id,trade_route_id,notification_type,severity,message_text,is_read,generated_at,generated_in_transition_id,world:worlds!notifications_world_id_fkey(name),nation:nations(name),settlement:settlements(name)";
 
 export function unreadNotificationsCountQueryOptions(
   userId: string | null,
@@ -167,6 +170,7 @@ export function allNotificationsQueryOptions(
   const offset = filters.offset ?? 0;
   const isRead = filters.isRead ?? null;
   const type = filters.type ?? null;
+  const severity = filters.severity ?? null;
   const worldId = filters.worldId ?? null;
   const nationId = filters.nationId ?? null;
   const settlementId = filters.settlementId ?? null;
@@ -183,6 +187,7 @@ export function allNotificationsQueryOptions(
         offset,
         isRead,
         type,
+        severity,
         worldId,
         nationId,
         settlementId,
@@ -193,6 +198,7 @@ export function allNotificationsQueryOptions(
       offset,
       isRead,
       type,
+      severity,
       worldId,
       nationId,
       settlementId,
@@ -258,6 +264,7 @@ async function getAllNotifications(
   offset: number,
   isRead: boolean | null,
   type: string | null,
+  severity: string | null,
   worldId: string | null,
   nationId: string | null,
   settlementId: string | null,
@@ -268,7 +275,7 @@ async function getAllNotifications(
 
   let countQuery = client
     .from("notifications")
-    .select("count", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("recipient_user_id", userId);
 
   if (isRead !== null) {
@@ -279,6 +286,13 @@ async function getAllNotifications(
     countQuery = countQuery.eq(
       "notification_type",
       type as Database["public"]["Enums"]["notification_type"],
+    );
+  }
+
+  if (severity !== null) {
+    countQuery = countQuery.eq(
+      "severity",
+      severity as Database["public"]["Enums"]["notification_severity"],
     );
   }
 
@@ -315,6 +329,13 @@ async function getAllNotifications(
     dataQuery = dataQuery.eq(
       "notification_type",
       type as Database["public"]["Enums"]["notification_type"],
+    );
+  }
+
+  if (severity !== null) {
+    dataQuery = dataQuery.eq(
+      "severity",
+      severity as Database["public"]["Enums"]["notification_severity"],
     );
   }
 
@@ -369,6 +390,7 @@ function toAllNotification(row: AllNotificationRow): AllNotification {
     notificationType: row.notification_type,
     settlementId: row.settlement_id,
     settlementName: row.settlement?.name ?? null,
+    severity: row.severity,
     tradeRouteId: row.trade_route_id,
     worldId: row.world_id,
     worldName: row.world.name,

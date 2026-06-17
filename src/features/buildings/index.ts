@@ -53,6 +53,7 @@ export {
   tiersByBlueprintQueryOptions,
 } from "./queries/buildingsQueries";
 export {
+  settlementBuildingByIdQueryOptions,
   settlementBuildingsBySettlementQueryOptions,
   settlementBuildingsByNationsQueryOptions,
   settlementBuildingsByWorldQueryOptions,

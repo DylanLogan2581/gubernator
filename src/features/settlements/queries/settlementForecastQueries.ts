@@ -7,10 +7,15 @@ import {
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
 
+import {
+  forecastSnapshotSchema,
+  type ForecastSnapshot,
+} from "../schemas/forecastSchemas";
+
 // -- Public domain types --
 
 export type SettlementForecast = {
-  readonly forecastSnapshot: unknown; // Raw forecast data structure
+  readonly forecastSnapshot: ForecastSnapshot;
 };
 
 // -- Query option types --
@@ -28,11 +33,18 @@ export function settlementForecastQueryOptions(
   SettlementForecast | null,
   SettlementForecastQueryKey
 > {
-  return worldScopedQueryOptions({
-    client,
-    fetcher: (c) => getLiveWorldForecast(c, worldId),
-    queryKey: ["forecast", "world", worldId] as const,
-  });
+  return {
+    ...worldScopedQueryOptions({
+      client,
+      fetcher: (c) => getLiveWorldForecast(c, worldId),
+      queryKey: ["forecast", "world", worldId] as const,
+    }),
+    // The forecast runs the full simulation engine — expensive. Don't re-run on
+    // window focus; let mutations invalidate explicitly instead.
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+  };
 }
 
 // -- Fetchers --
@@ -61,7 +73,14 @@ async function getLiveWorldForecast(
     return null;
   }
 
-  return { forecastSnapshot: response.data.data.forecastSnapshot };
+  const parsed = forecastSnapshotSchema.safeParse(
+    response.data.data.forecastSnapshot,
+  );
+  if (!parsed.success) {
+    return null;
+  }
+
+  return { forecastSnapshot: parsed.data };
 }
 
 type ForecastSuccessResponse = {

@@ -331,11 +331,12 @@ describe("SettlementStockpilesPanel", () => {
           id: "transition-1",
           forecast_snapshot_jsonb: {
             bySettlement: {
-              [SETTLEMENT_ID]: {
-                resourceDeltas: [
-                  { resourceId: FOOD_RESOURCE_ID, netDelta: 10 },
-                ],
-              },
+              [SETTLEMENT_ID]: createForecastSettlement(SETTLEMENT_ID, [
+                createForecastResourceDelta({
+                  resourceId: FOOD_RESOURCE_ID,
+                  netDelta: 10,
+                }),
+              ]),
             },
           },
         },
@@ -356,11 +357,12 @@ describe("SettlementStockpilesPanel", () => {
           id: "transition-1",
           forecast_snapshot_jsonb: {
             bySettlement: {
-              [SETTLEMENT_ID]: {
-                resourceDeltas: [
-                  { resourceId: FOOD_RESOURCE_ID, netDelta: -20 },
-                ],
-              },
+              [SETTLEMENT_ID]: createForecastSettlement(SETTLEMENT_ID, [
+                createForecastResourceDelta({
+                  resourceId: FOOD_RESOURCE_ID,
+                  netDelta: -20,
+                }),
+              ]),
             },
           },
         },
@@ -387,10 +389,13 @@ describe("SettlementStockpilesPanel", () => {
           id: "transition-1",
           forecast_snapshot_jsonb: {
             bySettlement: {
-              [SETTLEMENT_ID]: {
-                // only Food in forecast, not Water
-                resourceDeltas: [{ resourceId: FOOD_RESOURCE_ID, netDelta: 5 }],
-              },
+              // only Food in forecast, not Water
+              [SETTLEMENT_ID]: createForecastSettlement(SETTLEMENT_ID, [
+                createForecastResourceDelta({
+                  resourceId: FOOD_RESOURCE_ID,
+                  netDelta: 5,
+                }),
+              ]),
             },
           },
         },
@@ -402,6 +407,36 @@ describe("SettlementStockpilesPanel", () => {
     await screen.findByText("Food");
     expect(screen.getByText("+5")).toBeDefined();
     expect(screen.getByText("—")).toBeDefined();
+  });
+
+  it("shows a loading indicator in the forecast column while the forecast is pending", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [createStockpileRow({ resource_name: "Food" })],
+        forecastInvoke: vi.fn().mockReturnValue(new Promise(() => {})),
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(screen.getByLabelText("Loading forecast")).toBeDefined();
+  });
+
+  it("shows an error indicator in the forecast column when the forecast query fails", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [createStockpileRow({ resource_name: "Food" })],
+        forecastInvoke: vi
+          .fn()
+          .mockResolvedValue({ data: null, error: new Error("server error") }),
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    expect(await screen.findByLabelText("Forecast error")).toBeDefined();
   });
 });
 
@@ -455,6 +490,46 @@ function createStockpileRow(
   };
 }
 
+type TestResourceDelta = {
+  readonly resourceId: string;
+  readonly produced: number;
+  readonly consumed: number;
+  readonly tradeIn: number;
+  readonly tradeOut: number;
+  readonly netDelta: number;
+  readonly quantityBefore: number;
+  readonly quantityAfter: number;
+};
+
+function createForecastResourceDelta(
+  overrides: Partial<TestResourceDelta> & { readonly resourceId: string },
+): TestResourceDelta {
+  return {
+    produced: 0,
+    consumed: 0,
+    tradeIn: 0,
+    tradeOut: 0,
+    netDelta: 0,
+    quantityBefore: 0,
+    quantityAfter: 0,
+    ...overrides,
+  };
+}
+
+function createForecastSettlement(
+  settlementId: string,
+  resourceDeltas: readonly TestResourceDelta[],
+): object {
+  return {
+    settlementId,
+    resourceDeltas,
+    deathsBy: { starvation: 0, homelessness: 0, other: 0 },
+    completedProjects: [],
+    buildingUpkeepFailures: [],
+    tradeChanges: [],
+  };
+}
+
 type TestForecastRow = {
   readonly id: string;
   readonly forecast_snapshot_jsonb: unknown;
@@ -463,12 +538,14 @@ type TestForecastRow = {
 function createClient({
   stockpileRows,
   forecastRow = null,
+  forecastInvoke,
   rpcMock = vi.fn().mockReturnValue({
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   }),
 }: {
   readonly stockpileRows: readonly TestStockpileRow[];
   readonly forecastRow?: TestForecastRow | null;
+  readonly forecastInvoke?: ReturnType<typeof vi.fn>;
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 }): {
   readonly from: ReturnType<typeof vi.fn>;
@@ -486,6 +563,11 @@ function createClient({
   const forecastSnapshot =
     forecastRow === null ? null : forecastRow.forecast_snapshot_jsonb;
 
+  const defaultInvoke = vi.fn().mockResolvedValue({
+    data: { data: { forecastSnapshot }, ok: true },
+    error: null,
+  });
+
   return {
     from: vi.fn((table: string) => {
       if (table === "settlement_stockpiles_view") {
@@ -494,10 +576,7 @@ function createClient({
       throw new Error(`Unexpected table: ${table}`);
     }),
     functions: {
-      invoke: vi.fn().mockResolvedValue({
-        data: { data: { forecastSnapshot }, ok: true },
-        error: null,
-      }),
+      invoke: forecastInvoke ?? defaultInvoke,
     },
     rpc: rpcMock,
   };

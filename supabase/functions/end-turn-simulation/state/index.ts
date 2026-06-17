@@ -106,6 +106,17 @@ export async function resolveSupabaseEndTurnSimulationInput(
     supabaseUrl,
   };
 
+  return await resolveEndTurnInputFromCtx(requestBody, ctx);
+}
+
+// ---------------------------------------------------------------------------
+// Internal: shared state-loading logic, keyed on a pre-built FetchContext.
+// ---------------------------------------------------------------------------
+
+async function resolveEndTurnInputFromCtx(
+  requestBody: EndTurnSimulationRequestBody,
+  ctx: FetchContext,
+): Promise<EndTurnSimulationStateResult> {
   const worldId = requestBody.worldId;
 
   // -------------------------------------------------------------------------

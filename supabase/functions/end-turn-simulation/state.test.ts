@@ -12,6 +12,7 @@ afterEach(() => {
 
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000002";
+const NATION_ID = "00000000-0000-0000-0000-000000000003";
 const FOOD_ID = "00000000-0000-0000-0000-000000000010";
 const WATER_ID = "00000000-0000-0000-0000-000000000011";
 const JOB_ID = "00000000-0000-0000-0000-000000000020";
@@ -128,6 +129,7 @@ function makeAllSuccessResponses(): Record<
           is_ready_current_turn: false,
           auto_ready_enabled: false,
           nameset_id: null,
+          nation_id: NATION_ID,
           nations: { nameset_id: null },
         },
       ],
@@ -349,6 +351,9 @@ function makeAllSuccessResponses(): Record<
           effect_type: "resource_grant",
           id: EVENT_ID,
           remaining_transitions: null,
+          scope_nation_id: null,
+          scope_settlement_id: null,
+          scope_type: null,
           status: "pending",
         },
       ],
@@ -435,6 +440,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       id: SETTLEMENT_ID,
       isReadyCurrentTurn: false,
       name: "Settlement One",
+      nationId: NATION_ID,
     });
 
     // System resources
@@ -675,6 +681,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
             name: "S1",
             is_ready_current_turn: false,
             auto_ready_enabled: false,
+            nation_id: NATION_ID,
             nations: {},
           },
         ],
@@ -737,6 +744,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
             is_ready_current_turn: false,
             auto_ready_enabled: false,
             nameset_id: null,
+            nation_id: NATION_ID,
             nations: { nameset_id: null },
           },
         ],

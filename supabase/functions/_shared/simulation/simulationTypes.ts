@@ -51,6 +51,7 @@ export type SimSettlement = {
   readonly id: string;
   readonly isReadyCurrentTurn?: boolean;
   readonly name: string;
+  readonly nationId?: string;
 };
 
 export type SimStockpile = {
@@ -267,6 +268,9 @@ export type SimEvent = {
   readonly effects: readonly SimEffect[];
   readonly id: string;
   readonly remainingTransitions: number | null;
+  readonly scopeNationId?: string | null;
+  readonly scopeSettlementId?: string | null;
+  readonly scopeType?: "world" | "nation" | "settlement";
   readonly status: SimEventStatus;
 };
 

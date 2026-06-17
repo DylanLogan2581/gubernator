@@ -165,6 +165,7 @@ export function toSimSettlement(row: SupabaseSettlementRow): SimSettlement {
     id: row.id,
     isReadyCurrentTurn: row.is_ready_current_turn,
     name: row.name,
+    nationId: row.nation_id,
   };
 }
 
@@ -327,6 +328,7 @@ export function toSimEffect(row: SupabaseEventEffectRow): SimEffect & { eventId:
     managedPopulationInstanceId: row.managed_population_instance_id,
     depositInstanceId: row.deposit_instance_id,
     settlementBuildingId: row.settlement_building_id,
+    extraDataJsonb: row.extra_data_jsonb,
   };
 }
 
@@ -342,6 +344,9 @@ export function toSimEvent(
     effects,
     id: row.id,
     remainingTransitions: row.remaining_transitions,
+    scopeNationId: row.scope_nation_id,
+    scopeSettlementId: row.scope_settlement_id,
+    scopeType: (row.scope_type as SimEvent["scopeType"]) ?? "world",
     status: row.status as SimEvent["status"],
   };
 }

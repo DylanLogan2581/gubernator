@@ -50,7 +50,6 @@ type EventEffectType =
   | "consumption_multiplier"
   | "deposit_destroyed"
   | "managed_population_change"
-  | "modify_population"
   | "modify_resource"
   | "population_boost"
   | "population_loss"
@@ -109,10 +108,10 @@ const EFFECT_TYPE_OPTIONS: Array<{
       "Add or remove resources (positive for grant, negative for drain)",
   },
   {
-    value: "modify_population",
-    label: "Modify Population",
+    value: "population_loss",
+    label: "Population Loss",
     description:
-      "Increase or decrease population (positive for boost, negative for loss)",
+      "Kill a number of citizens (flat count or percent of living population)",
   },
   {
     value: "managed_population_change",
@@ -163,8 +162,8 @@ const ALL_EFFECT_TYPES: Record<string, { label: string; description: string }> =
       description: "Increase or decrease population",
     },
     population_loss: {
-      label: "Modify Population",
-      description: "Increase or decrease population",
+      label: "Population Loss",
+      description: "Kill a number of citizens",
     },
     ...Object.fromEntries(
       EFFECT_TYPE_OPTIONS.map((opt) => [
@@ -458,7 +457,6 @@ function EffectEditor({
     effect.effectType === "resource_drain";
 
   const isModifyPopulation =
-    effect.effectType === "modify_population" ||
     effect.effectType === "population_boost" ||
     effect.effectType === "population_loss";
 
@@ -469,7 +467,6 @@ function EffectEditor({
     "population_boost",
     "managed_population_change",
     "modify_resource",
-    "modify_population",
   ].includes(effect.effectType);
 
   const isMultiplierEffect = [
@@ -659,8 +656,10 @@ function EffectEditor({
 
             <div className="space-y-2">
               <Label htmlFor={`amount-${effect.effectType}`}>
-                {effect.isPercent ? "Percent" : "Amount"} (positive = boost,
-                negative = loss)
+                {effect.isPercent ? "Percent" : "Amount"}{" "}
+                {effect.effectType === "population_loss"
+                  ? "(citizens to kill)"
+                  : "(positive = boost, negative = loss)"}
               </Label>
               <Input
                 id={`amount-${effect.effectType}`}

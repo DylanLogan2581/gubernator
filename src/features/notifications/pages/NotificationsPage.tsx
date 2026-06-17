@@ -15,6 +15,7 @@ import { nationsListQueryOptions } from "@/features/nations";
 import {
   allNotificationsQueryOptions,
   markNotificationReadMutationOptions,
+  notificationQueryKeys,
   type AllNotification,
 } from "@/features/notifications";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
@@ -28,15 +29,55 @@ const PAGE_SIZE = 20;
 const NOTIFICATION_TYPES = [
   { value: "all", label: "All types" },
   { value: "turn.completed", label: "Turn completed" },
-  { value: "settlement.threat", label: "Settlement threat" },
-  { value: "trade.proposed", label: "Trade proposed" },
+  { value: "trade_proposal_received", label: "Trade proposal received" },
+  { value: "trade_proposal_accepted", label: "Trade proposal accepted" },
+  { value: "trade_proposal_rejected", label: "Trade proposal rejected" },
+  { value: "trade_route_cancelled", label: "Trade route cancelled" },
+  {
+    value: "building.auto_deconstructed",
+    label: "Building auto-deconstructed",
+  },
+  { value: "building.suspended", label: "Building suspended" },
+  { value: "building.recovered", label: "Building recovered" },
+  { value: "citizen.born", label: "Citizen born" },
+  { value: "citizen.died", label: "Citizen died" },
+  { value: "construction.completed", label: "Construction completed" },
+  { value: "construction.paused", label: "Construction paused" },
+  { value: "deposit.depleted", label: "Deposit depleted" },
+  {
+    value: "managed_population.declining",
+    label: "Managed population declining",
+  },
+  { value: "managed_population.extinct", label: "Managed population extinct" },
   { value: "partnership.formed", label: "Partnership formed" },
+  { value: "partnership.widowed", label: "Partnership widowed" },
+  {
+    value: "settlement.homelessness_occurred",
+    label: "Settlement homelessness occurred",
+  },
+  {
+    value: "settlement.starvation_occurred",
+    label: "Settlement starvation occurred",
+  },
+  { value: "trade_route.paused", label: "Trade route paused" },
+  { value: "trade_route.resumed", label: "Trade route resumed" },
+  { value: "event.activated", label: "Event activated" },
+  { value: "event.expired", label: "Event expired" },
+  { value: "player.died", label: "Player died" },
+  { value: "player.widowed", label: "Player widowed" },
 ];
 
 const READ_STATUS_OPTIONS = [
   { value: "all", label: "All" },
   { value: "unread", label: "Unread" },
   { value: "read", label: "Read" },
+];
+
+const SEVERITY_OPTIONS = [
+  { value: "all", label: "All severities" },
+  { value: "critical", label: "Critical" },
+  { value: "warning", label: "Warning" },
+  { value: "info", label: "Info" },
 ];
 
 export function NotificationsPage(): JSX.Element {
@@ -50,6 +91,7 @@ export function NotificationsPage(): JSX.Element {
   const [page, setPage] = useState(1);
   const [selectedType, setSelectedType] = useState("all");
   const [readStatus, setReadStatus] = useState("all");
+  const [selectedSeverity, setSelectedSeverity] = useState("all");
   const [selectedWorldId, setSelectedWorldId] = useState<string | null>(null);
   const [selectedNationId, setSelectedNationId] = useState<string | null>(null);
   const [selectedSettlementId, setSelectedSettlementId] = useState<
@@ -88,6 +130,7 @@ export function NotificationsPage(): JSX.Element {
   const isRead =
     readStatus === "read" ? true : readStatus === "unread" ? false : null;
   const type = selectedType !== "all" ? selectedType : null;
+  const severity = selectedSeverity !== "all" ? selectedSeverity : null;
 
   const notificationsQuery = useQuery(
     allNotificationsQueryOptions(userId, {
@@ -95,6 +138,7 @@ export function NotificationsPage(): JSX.Element {
       offset,
       isRead,
       type,
+      severity,
       worldId: selectedWorldId,
       nationId: selectedNationId,
       settlementId: selectedSettlementId,
@@ -107,7 +151,9 @@ export function NotificationsPage(): JSX.Element {
     if (!notification.isRead) {
       markReadMutation.mutate(notification.id, {
         onSuccess: () => {
-          void notificationsQuery.refetch();
+          void queryClient.invalidateQueries({
+            queryKey: notificationQueryKeys.all,
+          });
         },
       });
     }
@@ -139,6 +185,11 @@ export function NotificationsPage(): JSX.Element {
 
   const handleReadStatusChange = (value: string): void => {
     setReadStatus(value);
+    setPage(1);
+  };
+
+  const handleSeverityChange = (value: string): void => {
+    setSelectedSeverity(value);
     setPage(1);
   };
 
@@ -177,6 +228,19 @@ export function NotificationsPage(): JSX.Element {
             </SelectTrigger>
             <SelectContent>
               {READ_STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedSeverity} onValueChange={handleSeverityChange}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by severity" />
+            </SelectTrigger>
+            <SelectContent>
+              {SEVERITY_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>

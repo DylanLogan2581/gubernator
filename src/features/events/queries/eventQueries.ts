@@ -50,29 +50,18 @@ export function eventsListQueryOptions(
         >("*,group:event_groups(*)")
         .eq("world_id", worldId);
 
-      // Apply sorting
       const sortBy = filters?.sortBy ?? "created_at";
-      query = query.order(sortBy, { ascending: sortBy === "status" });
+
+      // Status sort is lifecycle-ordered client-side; DB order by created_at for everything else
+      if (sortBy === "created_at") {
+        query = query.order("created_at", { ascending: false });
+      }
 
       if (
         filters?.statusFilter !== undefined &&
         filters.statusFilter.length > 0
       ) {
         query = query.in("status", filters.statusFilter);
-      }
-
-      if (
-        filters?.scopeFilter !== undefined &&
-        filters.scopeFilter.length > 0
-      ) {
-        query = query.in("scope_type", filters.scopeFilter);
-      }
-
-      if (
-        filters?.effectTypeFilter !== undefined &&
-        filters.effectTypeFilter.length > 0
-      ) {
-        query = query.in("effect_type", filters.effectTypeFilter);
       }
 
       // Handle scope entity filter (specific nation or settlement)
@@ -110,7 +99,23 @@ export function eventsListQueryOptions(
         throw normalizeSupabaseError(error);
       }
 
-      return data ?? [];
+      let result: EventWithGroup[] = [...(data ?? [])];
+
+      // Lifecycle-ordered status sort: active > pending > expired > cancelled
+      if (sortBy === "status") {
+        const lifecycleOrder: Record<string, number> = {
+          active: 0,
+          pending: 1,
+          expired: 2,
+          cancelled: 3,
+        };
+        result = result.sort(
+          (a, b) =>
+            (lifecycleOrder[a.status] ?? 99) - (lifecycleOrder[b.status] ?? 99),
+        );
+      }
+
+      return result;
     },
   });
 }

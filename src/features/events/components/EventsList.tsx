@@ -9,6 +9,12 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -176,29 +182,37 @@ export function EventsList({
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Select
-            value={statusFilter.length === 0 ? "all" : statusFilter[0]}
-            onValueChange={(value) => {
-              if (value === "all") {
-                setStatusFilter([]);
-              } else {
-                setStatusFilter([value as EventStatus]);
-              }
-              setPagination({ pageIndex: 0, pageSize: 10 });
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-[180px] justify-between">
+                {statusFilter.length === 0
+                  ? "All statuses"
+                  : statusFilter.length === 1
+                    ? (statusFilter[0]?.charAt(0).toUpperCase() ?? "") +
+                      (statusFilter[0]?.slice(1) ?? "")
+                    : `${statusFilter.length.toString()} statuses`}
+                <span className="ml-2 opacity-50">▾</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[180px]">
               {EVENT_STATUSES.map((status) => (
-                <SelectItem key={status} value={status}>
+                <DropdownMenuCheckboxItem
+                  key={status}
+                  checked={statusFilter.includes(status)}
+                  onCheckedChange={(checked) => {
+                    setStatusFilter((prev) =>
+                      checked
+                        ? [...prev, status]
+                        : prev.filter((s) => s !== status),
+                    );
+                    setPagination({ pageIndex: 0, pageSize: 10 });
+                  }}
+                >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
-                </SelectItem>
+                </DropdownMenuCheckboxItem>
               ))}
-            </SelectContent>
-          </Select>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Select
             value={sortBy}

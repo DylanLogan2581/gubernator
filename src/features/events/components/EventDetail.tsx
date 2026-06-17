@@ -18,6 +18,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { settlementBuildingByIdQueryOptions } from "@/features/buildings";
+import { depositInstanceByIdQueryOptions } from "@/features/deposits";
 import { jobByIdQueryOptions } from "@/features/jobs";
 import { managedPopulationTypeByIdQueryOptions } from "@/features/managed-populations";
 import { nationByIdQueryOptions } from "@/features/nations";
@@ -430,6 +432,13 @@ function EffectTargets({
 }): JSX.Element {
   const targets: JSX.Element[] = [];
 
+  const extraData =
+    effect.extra_data_jsonb !== null &&
+    typeof effect.extra_data_jsonb === "object" &&
+    !Array.isArray(effect.extra_data_jsonb)
+      ? (effect.extra_data_jsonb as Record<string, unknown>)
+      : {};
+
   if (effect.amount_value !== null) {
     targets.push(
       <div key="amount">
@@ -469,22 +478,48 @@ function EffectTargets({
     );
   }
 
+  if (typeof extraData.managed_population_mode === "string") {
+    targets.push(
+      <div key="managed-pop-mode">
+        <span className="text-muted-foreground">Targeting: </span>
+        <span className="capitalize">{extraData.managed_population_mode}</span>
+      </div>,
+    );
+  }
+
   if (effect.settlement_building_id !== null) {
     targets.push(
-      <div key="building">
-        <span className="text-muted-foreground">Building: </span>
-        <span>{effect.settlement_building_id}</span>
-      </div>,
+      <BuildingTarget
+        key="building"
+        settlementBuildingId={effect.settlement_building_id}
+      />,
     );
   }
 
   if (effect.deposit_instance_id !== null) {
     targets.push(
-      <div key="deposit">
-        <span className="text-muted-foreground">Deposit: </span>
-        <span>{effect.deposit_instance_id}</span>
+      <DepositInstanceTarget
+        key="deposit"
+        depositInstanceId={effect.deposit_instance_id}
+      />,
+    );
+  }
+
+  if (typeof extraData.building_blueprint_mode === "string") {
+    targets.push(
+      <div key="blueprint-mode">
+        <span className="text-muted-foreground">Blueprint targeting: </span>
+        <span className="capitalize">{extraData.building_blueprint_mode}</span>
       </div>,
     );
+  }
+
+  if (
+    Array.isArray(extraData.building_blueprint_ids) &&
+    (extraData.building_blueprint_ids as unknown[]).length > 0
+  ) {
+    const ids = extraData.building_blueprint_ids as string[];
+    targets.push(<BlueprintIdsTarget key="blueprint-ids" blueprintIds={ids} />);
   }
 
   if (targets.length === 0) {
@@ -589,6 +624,89 @@ function ManagedPopulationTypeTarget({
     <div>
       <span className="text-muted-foreground">Population Type: </span>
       <span>{query.data.name}</span>
+    </div>
+  );
+}
+
+function BuildingTarget({
+  settlementBuildingId,
+}: {
+  readonly settlementBuildingId: string;
+}): JSX.Element {
+  const query = useQuery(
+    settlementBuildingByIdQueryOptions(settlementBuildingId),
+  );
+
+  if (query.isPending) {
+    return (
+      <div>
+        <span className="text-muted-foreground">Building: </span>
+        <span className="text-xs">Loading…</span>
+      </div>
+    );
+  }
+
+  if (query.isError || query.data === null) {
+    return (
+      <div>
+        <span className="text-muted-foreground">Building: </span>
+        <span>unknown</span>
+      </div>
+    );
+  }
+
+  const displayName = query.data.name ?? query.data.blueprintName;
+
+  return (
+    <div>
+      <span className="text-muted-foreground">Building: </span>
+      <span>{displayName}</span>
+    </div>
+  );
+}
+
+function DepositInstanceTarget({
+  depositInstanceId,
+}: {
+  readonly depositInstanceId: string;
+}): JSX.Element {
+  const query = useQuery(depositInstanceByIdQueryOptions(depositInstanceId));
+
+  if (query.isPending) {
+    return (
+      <div>
+        <span className="text-muted-foreground">Deposit: </span>
+        <span className="text-xs">Loading…</span>
+      </div>
+    );
+  }
+
+  if (query.isError || query.data === null) {
+    return (
+      <div>
+        <span className="text-muted-foreground">Deposit: </span>
+        <span>unknown</span>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <span className="text-muted-foreground">Deposit: </span>
+      <span>{query.data.name}</span>
+    </div>
+  );
+}
+
+function BlueprintIdsTarget({
+  blueprintIds,
+}: {
+  readonly blueprintIds: readonly string[];
+}): JSX.Element {
+  return (
+    <div>
+      <span className="text-muted-foreground">Blueprints: </span>
+      <span>{blueprintIds.join(", ")}</span>
     </div>
   );
 }

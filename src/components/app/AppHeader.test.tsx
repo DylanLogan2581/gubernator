@@ -152,6 +152,11 @@ function createClient({
           error: null,
         }),
       },
+      channel: vi.fn().mockReturnValue({
+        on: vi.fn().mockReturnValue({
+          subscribe: vi.fn().mockReturnValue({}),
+        }),
+      }),
       from: vi.fn((table: string) => {
         if (table !== "notifications") {
           throw new Error(`Unexpected table ${table}`);
@@ -161,6 +166,7 @@ function createClient({
           select,
         };
       }),
+      removeChannel: vi.fn().mockResolvedValue("ok"),
     },
     select,
     setUnreadCount: (count: number): void => {

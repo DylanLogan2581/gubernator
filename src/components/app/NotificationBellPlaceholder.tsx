@@ -4,7 +4,10 @@ import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
 import { currentSessionQueryOptions } from "@/features/auth";
-import { unreadNotificationsCountQueryOptions } from "@/features/notifications";
+import {
+  unreadNotificationsCountQueryOptions,
+  useNotificationsRealtime,
+} from "@/features/notifications";
 
 export function NotificationBellPlaceholder(): JSX.Element {
   const currentSessionQuery = useQuery(currentSessionQueryOptions());
@@ -12,6 +15,7 @@ export function NotificationBellPlaceholder(): JSX.Element {
   const unreadCountQuery = useQuery(
     unreadNotificationsCountQueryOptions(userId),
   );
+  useNotificationsRealtime(userId);
   const unreadCount = unreadCountQuery.data ?? 0;
   const badgeText = unreadCount > 99 ? "99+" : unreadCount.toString();
   const notificationLabel =

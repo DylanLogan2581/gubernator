@@ -3,6 +3,20 @@ import { type AllNotification } from "./queries/notificationQueries";
 export function getDeepLink(
   notification: AllNotification,
 ): { href: string; label: string } | null {
+  if (notification.citizenId !== null) {
+    return {
+      href: `/worlds/${notification.worldId}/citizens/${notification.citizenId}`,
+      label: "View citizen",
+    };
+  }
+
+  if (notification.eventId !== null) {
+    return {
+      href: `/worlds/${notification.worldId}/events/${notification.eventId}`,
+      label: "View event",
+    };
+  }
+
   if (notification.settlementId !== null && notification.nationId !== null) {
     return {
       href: `/worlds/${notification.worldId}/nations/${notification.nationId}/settlements/${notification.settlementId}`,
@@ -14,13 +28,6 @@ export function getDeepLink(
     return {
       href: `/worlds/${notification.worldId}/nations/${notification.nationId}`,
       label: "View nation",
-    };
-  }
-
-  if (notification.eventId !== null) {
-    return {
-      href: `/worlds/${notification.worldId}/events/${notification.eventId}`,
-      label: "View event",
     };
   }
 

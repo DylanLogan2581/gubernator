@@ -76,4 +76,78 @@ describe("forecast computation", () => {
     expect(forecast.bySettlement["settlement-1"]).toHaveProperty("buildingUpkeepFailures");
     expect(forecast.bySettlement["settlement-1"]).toHaveProperty("tradeChanges");
   });
+
+  it("deathsBy is populated from settlement snapshots in a starvation scenario", () => {
+    const input = {
+      isWorldArchived: false,
+      turnNumber: 1,
+      settlements: [{ id: "settlement-1", name: "Starving Town" }],
+      resources: [],
+      stockpiles: [],
+      buildingTiers: [],
+      settlementBuildings: [],
+      constructionProjects: [],
+      tradeRoutes: [],
+      partnerships: [],
+      citizens: [],
+      deposits: [],
+      events: [],
+    } as unknown as SimulationInputState;
+
+    const result: SimulationResult = {
+      assignmentClears: [],
+      buildingStateChanges: [],
+      buildingsCreated: [],
+      citizenBirths: [],
+      citizenDeaths: [],
+      citizenPatches: [],
+      constructionUpdates: [],
+      depositUpdates: [],
+      eventStatusPatches: [],
+      logEntries: [],
+      managedPopulationUpdates: [],
+      notifications: [],
+      partnershipChanges: [],
+      readinessSummary: {
+        notReadySettlementCount: 1,
+        readyPercentage: 0,
+        readySettlementCount: 0,
+        totalSettlementCount: 1,
+      },
+      resourceSnapshots: [],
+      settlementSnapshots: [
+        {
+          aliveNpc: 7,
+          alivePc: 0,
+          aliveTotal: 7,
+          birthCount: 0,
+          buildingSummary: {
+            active: 0,
+            auto_deconstructed: 0,
+            manually_deconstructed: 0,
+            suspended: 0,
+          },
+          deathCount: 5,
+          homelessDeathsCount: 1,
+          managedPopulationSummary: [],
+          partnershipsFormedCount: 0,
+          populationCap: 10,
+          settlementId: "settlement-1",
+          starvationDeathsCount: 3,
+          tradeSummary: [],
+          turnNumber: 1,
+          warnings: { depletedDepositIds: [], pausedProjectIds: [] },
+        },
+      ],
+      stockpileDeltas: [],
+      tradeRouteOutcomes: [],
+    };
+
+    const forecast = computeForecastSnapshot(result, input);
+    const deaths = forecast.bySettlement["settlement-1"]?.deathsBy;
+
+    expect(deaths?.starvation).toBe(3);
+    expect(deaths?.homelessness).toBe(1);
+    expect(deaths?.other).toBe(1); // 5 total - 3 starvation - 1 homeless
+  });
 });

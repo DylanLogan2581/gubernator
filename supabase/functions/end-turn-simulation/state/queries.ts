@@ -304,7 +304,7 @@ export function fetchSettlements(
       "nations.world_id": `eq.${worldId}`,
       order: "id.asc",
       select:
-        "id,name,nameset_id,is_ready_current_turn,auto_ready_enabled,nations!inner(nameset_id,world_id)",
+        "id,name,nameset_id,nation_id,is_ready_current_turn,auto_ready_enabled,nations!inner(nameset_id,world_id)",
     },
   });
 }
@@ -437,7 +437,7 @@ export function fetchEvents(
       status: "in.(active,pending)",
       order: "id.asc",
       select:
-        "id,status,effect_type,activate_on_transition_after_turn_number,duration_type,remaining_transitions,effect_payload_jsonb",
+        "id,status,effect_type,activate_on_transition_after_turn_number,duration_type,remaining_transitions,effect_payload_jsonb,scope_type,scope_nation_id,scope_settlement_id",
     },
   });
 }
@@ -451,7 +451,7 @@ export function fetchEventEffects(
     table: "event_effects",
     params: {
       select:
-        "id,event_id,effect_type,amount_value,multiplier_value,is_percent,resource_id,job_id,managed_population_instance_id,deposit_instance_id",
+        "id,event_id,effect_type,amount_value,multiplier_value,is_percent,resource_id,job_id,managed_population_instance_id,deposit_instance_id,settlement_building_id,building_blueprint_id,extra_data_jsonb",
       order: "event_id.asc,id.asc",
     },
   });

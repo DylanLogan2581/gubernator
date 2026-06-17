@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,13 @@ export function NotificationListItem({
     notification.settlementName,
   ].filter((name): name is string => name !== null);
 
+  const severityIcon =
+    notification.severity === "critical" ? (
+      <AlertCircle className="size-4 shrink-0 text-destructive" />
+    ) : notification.severity === "warning" ? (
+      <AlertTriangle className="size-4 shrink-0 text-amber-500" />
+    ) : null;
+
   return (
     <div
       className={`flex items-start gap-4 p-4 transition-colors hover:bg-muted ${
@@ -30,6 +39,7 @@ export function NotificationListItem({
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
+          {severityIcon}
           <p className="text-sm font-medium">{notification.messageText}</p>
           {!notification.isRead ? (
             <span className="inline-block size-2 rounded-full bg-primary shrink-0" />
@@ -52,7 +62,7 @@ export function NotificationListItem({
               asChild
               className="text-xs h-7 px-2"
             >
-              <a href={deepLink.href}>{deepLink.label}</a>
+              <Link to={deepLink.href}>{deepLink.label}</Link>
             </Button>
           ) : null}
           {!notification.isRead ? (
