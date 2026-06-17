@@ -62,10 +62,15 @@ export function hardDeleteConstructionProjectMutationOptions({
       "hard-delete-construction-project",
     ],
     onSuccess: async (): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey:
-          buildingsQueryKeys.constructionProjectsBySettlement(settlementId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey:
+            buildingsQueryKeys.constructionProjectsBySettlement(settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
+      ]);
     },
   });
 }

@@ -358,7 +358,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'authenticated super admin cannot directly call apply_turn_transition'
@@ -368,7 +368,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'authenticated world admin cannot directly call apply_turn_transition'
@@ -378,7 +378,7 @@ select
   ok (
     not has_function_privilege(
       'anon',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'anon role cannot directly call apply_turn_transition'
@@ -391,7 +391,7 @@ select
   ok (
     has_function_privilege(
       'service_role',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'service_role has EXECUTE on apply_turn_transition'
@@ -401,7 +401,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'authenticated role does not have EXECUTE on apply_turn_transition'

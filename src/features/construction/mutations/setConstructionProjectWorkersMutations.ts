@@ -91,6 +91,9 @@ export function setConstructionProjectWorkersMutationOptions({
             "current-assignment-for-citizen",
           ],
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
       ]);
     },
   });

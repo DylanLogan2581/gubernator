@@ -23,9 +23,18 @@ create table public.events (
   ),
   constraint events_effect_type_check check (
     effect_type in (
+      'building_damage',
+      'building_destroyed',
+      'consumption_multiplier',
+      'deposit_destroyed',
       'deposit_discovered',
+      'managed_population_change',
+      'population_boost',
       'population_loss',
-      'resource_grant'
+      'production_multiplier',
+      'resource_drain',
+      'resource_grant',
+      'upkeep_multiplier'
     )
   ),
   constraint events_name_length_check check (char_length(btrim(name)) >= 1),

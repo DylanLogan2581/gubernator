@@ -496,7 +496,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'nation manager (non-world-admin) cannot execute apply_turn_transition'
@@ -509,7 +509,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'settlement manager (non-world-admin) cannot execute apply_turn_transition'
@@ -522,7 +522,7 @@ select
   ok (
     not has_function_privilege(
       'authenticated',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'outsider (no world access) cannot execute apply_turn_transition'
@@ -535,7 +535,7 @@ select
   ok (
     not has_function_privilege(
       'anon',
-      'public.apply_turn_transition(uuid, integer, jsonb, uuid)',
+      'public.apply_turn_transition(uuid, integer, jsonb, uuid, jsonb)',
       'EXECUTE'
     ),
     'anon role cannot execute apply_turn_transition'
@@ -806,8 +806,8 @@ select
     (
       current_setting('attfe.last_result', true)::jsonb -> 'patchCounts' ->> 'notifications'
     )::integer,
-    1,
-    'patchCounts.notifications = 1 (loop iterations, not fan-out recipients)'
+    13,
+    'patchCounts.notifications = 13 (5 settlement-scoped starvation + 5 citizen.died + 3 turn.completed: world admin + owner super admin + seeded super admin)'
   );
 
 select

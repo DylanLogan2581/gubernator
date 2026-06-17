@@ -15,6 +15,7 @@ import {
   toSimCitizen,
   toSimCitizenAssignment,
   toSimDepositType,
+  toSimEffect,
   toSimEvent,
   toSimJob,
   toSimManagedPop,
@@ -33,6 +34,7 @@ import {
   fetchCitizens,
   fetchDeposits,
   fetchDepositTypes,
+  fetchEventEffects,
   fetchEvents,
   fetchJobs,
   fetchManagedPops,
@@ -51,6 +53,7 @@ import {
   isBuildingRow,
   isCitizenRow,
   isDepositTypeRow,
+  isEventEffectRow,
   isEventRow,
   isJobRow,
   isManagedPopRow,
@@ -103,6 +106,17 @@ export async function resolveSupabaseEndTurnSimulationInput(
     supabaseUrl,
   };
 
+  return await resolveEndTurnInputFromCtx(requestBody, ctx);
+}
+
+// ---------------------------------------------------------------------------
+// Internal: shared state-loading logic, keyed on a pre-built FetchContext.
+// ---------------------------------------------------------------------------
+
+async function resolveEndTurnInputFromCtx(
+  requestBody: EndTurnSimulationRequestBody,
+  ctx: FetchContext,
+): Promise<EndTurnSimulationStateResult> {
   const worldId = requestBody.worldId;
 
   // -------------------------------------------------------------------------
@@ -171,6 +185,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     tradeRoutesResult,
     citizensResult,
     eventsResult,
+    eventEffectsResult,
     assignmentsResult,
     partnershipsResult,
     namesetsResult,
@@ -188,6 +203,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     fetchTradeRoutes(ctx, settlementIds),
     fetchCitizens(ctx, worldId),
     fetchEvents(ctx, worldId),
+    fetchEventEffects(ctx, worldId),
     fetchAssignments(ctx, worldId),
     fetchPartnerships(ctx, worldId),
     fetchNamesets(ctx, worldId),
@@ -207,6 +223,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     tradeRoutesResult,
     citizensResult,
     eventsResult,
+    eventEffectsResult,
     assignmentsResult,
     partnershipsResult,
     namesetsResult,
@@ -249,6 +266,17 @@ export async function resolveSupabaseEndTurnSimulationInput(
     (blueprintsResult as Extract<typeof blueprintsResult, { ok: true }>).rows,
   );
 
+  // Group event effects by event_id
+  const effectsByEventId = new Map<string, ReturnType<typeof toSimEffect>[]>();
+  (eventEffectsResult as Extract<typeof eventEffectsResult, { ok: true }>).rows
+    .filter(isEventEffectRow)
+    .map(toSimEffect)
+    .forEach((effect) => {
+      const effects = effectsByEventId.get(effect.eventId) ?? [];
+      effects.push(effect);
+      effectsByEventId.set(effect.eventId, effects);
+    });
+
   const input: SimulationInputState = {
     buildingBlueprints,
     buildingTiers,
@@ -278,7 +306,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     ),
     events: (eventsResult as Extract<typeof eventsResult, { ok: true }>).rows
       .filter(isEventRow)
-      .map(toSimEvent),
+      .map((row) => toSimEvent(row, effectsByEventId.get(row.id) ?? [])),
     isWorldArchived: worldRow.status === "archived",
     jobs: (jobsResult as Extract<typeof jobsResult, { ok: true }>).rows
       .filter(isJobRow)

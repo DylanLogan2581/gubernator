@@ -10,6 +10,7 @@ import { SettlementBuildingsPanel } from "@/features/buildings";
 import { CitizensPanel, SettlementAssignmentBoard } from "@/features/citizens";
 import { SettlementConstructionPanel } from "@/features/construction";
 import { SettlementDepositsPanel } from "@/features/deposits";
+import { ActiveEventsCard } from "@/features/events";
 import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
 import { SettlementNamesetCard } from "@/features/namesets";
 import {
@@ -30,6 +31,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementByIdQueryOptions } from "../../queries/settlementsQueries";
+import { ForecastPanel } from "../ForecastPanel";
 
 import { SettlementCoordinatesSection } from "./CoordinatesSection";
 import { SettlementDeleteSection } from "./DeleteSection";
@@ -41,7 +43,12 @@ import type { SettlementWithNation } from "../../types/settlementTypes";
 import type { JSX } from "react";
 
 type SettlementDetailPageProps = {
-  readonly activeSection: "overview" | "population" | "economy" | "admin";
+  readonly activeSection:
+    | "overview"
+    | "population"
+    | "economy"
+    | "admin"
+    | "forecast";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
@@ -100,7 +107,12 @@ function SettlementDetailWorldGate({
   worldId,
 }: {
   readonly accessContext: AccessContext;
-  readonly activeSection: "overview" | "population" | "economy" | "admin";
+  readonly activeSection:
+    | "overview"
+    | "population"
+    | "economy"
+    | "forecast"
+    | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
@@ -174,7 +186,12 @@ function SettlementDetailContent({
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
-  readonly activeSection: "overview" | "population" | "economy" | "admin";
+  readonly activeSection:
+    | "overview"
+    | "population"
+    | "economy"
+    | "forecast"
+    | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
@@ -239,7 +256,12 @@ function SettlementDetailLoaded({
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
-  readonly activeSection: "overview" | "population" | "economy" | "admin";
+  readonly activeSection:
+    | "overview"
+    | "population"
+    | "economy"
+    | "forecast"
+    | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly settlement: SettlementWithNation;
   readonly worldAccess: WorldRouteAccess;
@@ -272,7 +294,7 @@ function SettlementDetailLoaded({
   const navigate = useNavigate();
 
   function handleSectionSelect(
-    section: "overview" | "population" | "economy" | "admin",
+    section: "overview" | "population" | "economy" | "forecast" | "admin",
   ): void {
     void navigate({
       to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
@@ -290,6 +312,7 @@ function SettlementDetailLoaded({
     { key: "overview", label: "Overview" },
     { key: "population", label: "Population" },
     { key: "economy", label: "Economy" },
+    { key: "forecast", label: "Forecast" },
     { key: "admin", label: "Admin" },
   ] as const;
 
@@ -364,6 +387,12 @@ function SettlementDetailLoaded({
             worldId={worldId}
           />
 
+          <ActiveEventsCard
+            scope="settlement"
+            scopeId={settlement.id}
+            worldId={worldId}
+          />
+
           <SettlementDetailsSection
             canEdit={canEditDetails}
             queryClient={queryClient}
@@ -429,6 +458,7 @@ function SettlementDetailLoaded({
             canAdmin={worldAccess.canAdmin}
             isArchived={isArchived}
             settlementId={settlement.id}
+            worldId={worldId}
           />
 
           <SettlementDepositsPanel
@@ -446,6 +476,11 @@ function SettlementDetailLoaded({
             worldId={worldId}
           />
         </>
+      ) : null}
+
+      {/* Forecast Section */}
+      {activeSection === "forecast" ? (
+        <ForecastPanel settlementId={settlement.id} worldId={worldId} />
       ) : null}
 
       {/* Admin Section */}

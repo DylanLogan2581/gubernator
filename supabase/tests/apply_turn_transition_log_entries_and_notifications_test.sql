@@ -22,7 +22,7 @@ select
 --   b1100000-0005 = explicit world admin for World 3
 --   b1100000-0006 = nation manager for World 3 / Nation 3
 --   b1100000-0007 = explicit world admin for World 4
---   b1100000-0008 = nation manager for World 4 (must NOT receive world-scoped notifs)
+--   b1100000-0008 = nation manager for World 4 / Nation 4
 insert into
   auth.users (
     id,
@@ -117,7 +117,7 @@ where
 --   World 1: settlement-scoped test (settlement + nation manager + world admin)
 --   World 2: settlement-scoped, no active managers → falls back to world admins
 --   World 3: nation-scoped test (nation manager + world admin, no settlement manager)
---   World 4: world-scoped test (only world admins, managers excluded)
+--   World 4: nation-scoped test (nation manager + world admin + super admins, 4 total)
 --   World 5: retry dedup test
 --   World 6: §C32e overshoot-stamp test
 insert into
@@ -491,8 +491,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000001'
     ),
-    5,
-    'settlement-scoped: 5 notifications (seeded super admin, owner+super admin, world admin, nation mgr, settlement mgr)'
+    8,
+    'settlement-scoped: 8 notifications (5 starvation + 3 turn.completed: world admin + owner super admin + seeded super admin)'
   );
 
 select
@@ -557,15 +557,11 @@ select
     'b1200000-0000-0000-0000-000000000002',
     5,
     jsonb_build_object(
-      'notifications',
+      'logEntries',
       jsonb_build_array(
         jsonb_build_object(
-          'notificationType',
-          'deposit.depleted',
-          'messageText',
-          'A deposit was depleted in ATLN Settlement 2.',
-          'scope',
-          'settlement',
+          'category',
+          'building.suspended',
           'settlementId',
           'b1400000-0000-0000-0000-000000000002'
         )
@@ -586,8 +582,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000002'
     ),
-    2,
-    'no-managers fallback: settlement-scoped notification goes only to world admins (owner + seeded super admin)'
+    4,
+    'no-managers fallback: 4 notifications (2 building.suspended + 2 turn.completed for 2 super admins, no world admins in world 2)'
   );
 
 -- ===========================================================================
@@ -604,15 +600,11 @@ select
     'b1200000-0000-0000-0000-000000000003',
     5,
     jsonb_build_object(
-      'notifications',
+      'logEntries',
       jsonb_build_array(
         jsonb_build_object(
-          'notificationType',
-          'building.auto_deconstructed',
-          'messageText',
-          'A building auto-deconstructed in ATLN Nation 3.',
-          'scope',
-          'nation',
+          'category',
+          'deposit.depleted',
           'nationId',
           'b1300000-0000-0000-0000-000000000003'
         )
@@ -633,8 +625,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000003'
     ),
-    4,
-    'nation-scoped: 4 notifications (seeded super admin, super admin/owner, world admin, nation manager)'
+    7,
+    'nation-scoped: 7 notifications (4 deposit.depleted + 3 turn.completed: world admin + super admin/owner + seeded super admin)'
   );
 
 select
@@ -663,15 +655,15 @@ select
         world_id = 'b1200000-0000-0000-0000-000000000003'
         and recipient_user_id = 'b1100000-0000-0000-0000-000000000005'
     ),
-    1,
-    'nation-scoped: explicit world admin received notification'
+    2,
+    'nation-scoped: explicit world admin received deposit.depleted + turn.completed (2 total)'
   );
 
 -- ===========================================================================
--- TEST SCENARIO 4: World-scoped notification goes only to world admins;
--- nation and settlement managers are excluded.
+-- TEST SCENARIO 4: Nation-scoped notification (deposit.depleted) fans out to
+-- nation manager H + world admin G + super admin owner + seeded super admin.
 -- World 4: super admin (owner), world admin G, nation manager H.
--- Expected: 2 notifications (super admin + world admin G); H is excluded.
+-- Expected: 4 notifications (H included as nation manager).
 -- ===========================================================================
 set
   local role service_role;
@@ -681,15 +673,13 @@ select
     'b1200000-0000-0000-0000-000000000004',
     5,
     jsonb_build_object(
-      'notifications',
+      'logEntries',
       jsonb_build_array(
         jsonb_build_object(
-          'notificationType',
-          'turn.completed',
-          'messageText',
-          'World 4 turn simulated.',
-          'scope',
-          'world'
+          'category',
+          'deposit.depleted',
+          'nationId',
+          'b1300000-0000-0000-0000-000000000004'
         )
       )
     ),
@@ -708,8 +698,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000004'
     ),
-    3,
-    'world-scoped: 3 notifications (seeded super admin, super admin/owner, world admin only)'
+    7,
+    'nation-scoped in world 4: 7 notifications (4 deposit.depleted + 3 turn.completed: world admin g + owner + seeded super admin)'
   );
 
 select
@@ -723,8 +713,8 @@ select
         world_id = 'b1200000-0000-0000-0000-000000000004'
         and recipient_user_id = 'b1100000-0000-0000-0000-000000000008'
     ),
-    0,
-    'world-scoped: nation manager (H) did NOT receive notification'
+    1,
+    'nation-scoped in world 4: nation manager h received notification'
   );
 
 -- ===========================================================================
@@ -742,15 +732,11 @@ select
     'b1200000-0000-0000-0000-000000000005',
     5,
     jsonb_build_object(
-      'notifications',
+      'logEntries',
       jsonb_build_array(
         jsonb_build_object(
-          'notificationType',
+          'category',
           'construction.completed',
-          'messageText',
-          'Construction completed in ATLN Settlement 5.',
-          'scope',
-          'settlement',
           'settlementId',
           'b1400000-0000-0000-0000-000000000005'
         )
@@ -791,15 +777,11 @@ select
     'b1200000-0000-0000-0000-000000000005',
     5,
     jsonb_build_object(
-      'notifications',
+      'logEntries',
       jsonb_build_array(
         jsonb_build_object(
-          'notificationType',
+          'category',
           'construction.completed',
-          'messageText',
-          'Construction completed in ATLN Settlement 5.',
-          'scope',
-          'settlement',
           'settlementId',
           'b1400000-0000-0000-0000-000000000005'
         )
@@ -820,8 +802,8 @@ select
       where
         world_id = 'b1200000-0000-0000-0000-000000000005'
     ),
-    2,
-    'retry: ON CONFLICT DO NOTHING prevents duplicate notification rows (owner + seeded super admin, no doubles)'
+    4,
+    'retry: ON CONFLICT DO NOTHING prevents duplicate rows (2 construction.completed + 2 turn.completed for 2 super admins, no doubles)'
   );
 
 reset role;

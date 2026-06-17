@@ -70,6 +70,9 @@ export function proposeTradeRouteMutationOptions({
             result.destinationSettlementId,
           ),
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
       ]);
     },
   });

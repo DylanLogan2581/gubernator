@@ -28,6 +28,7 @@ export function phaseBuildingUpkeep(
     settlementBuildings,
     settlements,
   } = context.input;
+  const { pendingEventMultipliers } = context.shared;
 
   const tierById = new Map(buildingTiers.map((t) => [t.id, t]));
   const blueprintById = new Map(buildingBlueprints.map((b) => [b.id, b]));
@@ -53,26 +54,50 @@ export function phaseBuildingUpkeep(
     const settlement = settlementById.get(building.settlementId);
     const settlementName = settlement?.name ?? building.settlementId;
 
+    const mults = pendingEventMultipliers.get(building.settlementId);
+    const blueprintId = tier.buildingBlueprintId;
+
+    // Apply blueprint-specific multiplier if available, otherwise use global upkeep multiplier
+    let upkeepMultiplier = 1.0;
+    if (
+      typeof blueprintId === "string" &&
+      mults !== null &&
+      mults !== undefined
+    ) {
+      const blueprintMult = mults.upkeepByBlueprintId.get(blueprintId);
+      if (blueprintMult !== null && blueprintMult !== undefined) {
+        upkeepMultiplier = blueprintMult;
+      } else if (mults.upkeep !== null && mults.upkeep !== undefined) {
+        upkeepMultiplier = mults.upkeep;
+      }
+    } else if (
+      mults !== null && mults !== undefined && mults.upkeep !== null && mults.upkeep !== undefined
+    ) {
+      upkeepMultiplier = mults.upkeep;
+    }
+
     // Check whether the stockpile can cover all upkeep costs.
     let canPay = true;
     for (const cost of tier.upkeepCostsJson) {
       const available = stockpileQty.get(`${building.settlementId}:${cost.resourceId}`) ?? 0;
-      if (available < cost.amount) {
+      const adjustedCost = cost.amount * upkeepMultiplier;
+      if (available < adjustedCost) {
         canPay = false;
         break;
       }
     }
 
     if (canPay) {
-      // Deduct upkeep from stockpile.
+      // Deduct upkeep from stockpile (adjusted for event multipliers).
       for (const cost of tier.upkeepCostsJson) {
+        const adjustedCost = cost.amount * upkeepMultiplier;
         const key = `${building.settlementId}:${cost.resourceId}`;
         allDeltas.push({
-          delta: -cost.amount,
+          delta: -adjustedCost,
           resourceId: cost.resourceId,
           settlementId: building.settlementId,
         });
-        stockpileQty.set(key, (stockpileQty.get(key) ?? 0) - cost.amount);
+        stockpileQty.set(key, (stockpileQty.get(key) ?? 0) - adjustedCost);
       }
       // Recover a suspended building that can now pay its upkeep.
       if (building.state === "suspended") {

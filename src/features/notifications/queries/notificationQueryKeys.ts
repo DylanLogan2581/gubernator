@@ -2,6 +2,30 @@ import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
 
 export const notificationQueryKeys = {
   all: authStateQueryCacheKeys.notificationsAll,
+  allNotifications: (
+    userId: string | null,
+    limit: number,
+    offset: number,
+    isRead: boolean | null = null,
+    type: string | null = null,
+    severity: string | null = null,
+    worldId: string | null = null,
+    nationId: string | null = null,
+    settlementId: string | null = null,
+  ) =>
+    [
+      ...notificationQueryKeys.all,
+      "all",
+      userId,
+      limit,
+      offset,
+      isRead,
+      type,
+      severity,
+      worldId,
+      nationId,
+      settlementId,
+    ] as const,
   turnCompleted: (userId: string | null, worldId: string | null = null) =>
     [...notificationQueryKeys.all, "turn-completed", userId, worldId] as const,
   unreadCount: (userId: string | null) =>

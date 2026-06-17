@@ -12,6 +12,7 @@ afterEach(() => {
 
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000002";
+const NATION_ID = "00000000-0000-0000-0000-000000000003";
 const FOOD_ID = "00000000-0000-0000-0000-000000000010";
 const WATER_ID = "00000000-0000-0000-0000-000000000011";
 const JOB_ID = "00000000-0000-0000-0000-000000000020";
@@ -128,6 +129,7 @@ function makeAllSuccessResponses(): Record<
           is_ready_current_turn: false,
           auto_ready_enabled: false,
           nameset_id: null,
+          nation_id: NATION_ID,
           nations: { nameset_id: null },
         },
       ],
@@ -344,12 +346,21 @@ function makeAllSuccessResponses(): Record<
       body: [
         {
           activate_on_transition_after_turn_number: 4,
+          duration_type: "instant",
           effect_payload_jsonb: { amount: 100, resource_id: RESOURCE_ID },
           effect_type: "resource_grant",
           id: EVENT_ID,
+          remaining_transitions: null,
+          scope_nation_id: null,
+          scope_settlement_id: null,
+          scope_type: null,
           status: "pending",
         },
       ],
+      status: 200,
+    },
+    "/rest/v1/event_effects": {
+      body: [],
       status: 200,
     },
     "/rest/v1/citizen_assignments": {
@@ -429,6 +440,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       id: SETTLEMENT_ID,
       isReadyCurrentTurn: false,
       name: "Settlement One",
+      nationId: NATION_ID,
     });
 
     // System resources
@@ -669,6 +681,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
             name: "S1",
             is_ready_current_turn: false,
             auto_ready_enabled: false,
+            nation_id: NATION_ID,
             nations: {},
           },
         ],
@@ -731,6 +744,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
             is_ready_current_turn: false,
             auto_ready_enabled: false,
             nameset_id: null,
+            nation_id: NATION_ID,
             nations: { nameset_id: null },
           },
         ],
@@ -756,6 +770,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/trade_routes": { body: [], status: 200 },
       "/rest/v1/citizens": { body: [], status: 200 },
       "/rest/v1/events": { body: [], status: 200 },
+      "/rest/v1/event_effects": { body: [], status: 200 },
       "/rest/v1/citizen_assignments": { body: [], status: 200 },
       "/rest/v1/partnerships": { body: [], status: 200 },
     });

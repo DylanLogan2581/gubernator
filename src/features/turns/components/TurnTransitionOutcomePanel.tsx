@@ -24,6 +24,7 @@ import {
 } from "../utils/transitionOutcome";
 
 import { MetricTile } from "./EndTurnMetric";
+import { ForecastComparisonSection } from "./ForecastComparisonSection";
 
 import type { TurnTransitionOutcome } from "../queries/turnTransitionOutcomeQueries";
 import type { JSX, ReactNode } from "react";
@@ -168,98 +169,105 @@ export function TurnTransitionOutcomeContent({
   );
 
   return (
-    <section
-      aria-labelledby="turn-transition-outcome-title"
-      className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
-    >
-      <div className="space-y-1">
-        <h2
-          id="turn-transition-outcome-title"
-          className="text-lg font-semibold tracking-normal"
-        >
-          Last transition
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {`Turn ${outcome.fromTurnNumber.toString()} → ${outcome.toTurnNumber.toString()}`}
-          {outcome.finishedAt !== null
-            ? ` · ${outcome.finishedAt.slice(0, 10)}`
-            : null}
-        </p>
-      </div>
-
-      <dl className="grid gap-3 sm:grid-cols-4">
-        <MetricTile label="Births" value={deltas.births} />
-        <MetricTile label="Deaths" value={deltas.deaths} />
-        <MetricTile
-          label="Buildings suspended"
-          value={deltas.buildingsSuspended}
-        />
-        <MetricTile label="Deposits depleted" value={deltas.depositsDepleted} />
-      </dl>
-
-      {notificationGroups.length > 0 ? (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium">Notifications</h3>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={resetFilter}
-              className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                selectedCategories.length === allCategories.length
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-foreground hover:border-primary"
-              }`}
-            >
-              All
-            </button>
-            <ToggleGroup
-              type="multiple"
-              value={selectedCategories}
-              onValueChange={setSelectedCategories}
-              className="justify-start"
-            >
-              {allCategories.map((category) => (
-                <ToggleGroupItem
-                  key={category}
-                  value={category}
-                  className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                  aria-label={`Filter ${notificationTypeLabel(category)}`}
-                >
-                  {notificationTypeLabel(category)}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-          <Accordion type="single" collapsible className="space-y-2">
-            {visibleGroups.map((group) => (
-              <AccordionItem
-                key={group.type}
-                value={group.type}
-                className="rounded-md border border-border"
-              >
-                <AccordionTrigger className="flex cursor-pointer items-center justify-between bg-muted/50 px-4 py-3 font-medium text-sm hover:bg-muted hover:no-underline">
-                  <span>
-                    {notificationTypeLabel(group.type)} (
-                    {group.notifications.length.toString()})
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="border-t border-border px-4 py-3 text-sm text-muted-foreground">
-                  <ul className="space-y-1">
-                    {group.notifications.map((n) => (
-                      <li key={n.id}>{n.messageText}</li>
-                    ))}
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+    <div className="grid gap-4">
+      <section
+        aria-labelledby="turn-transition-outcome-title"
+        className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
+      >
+        <div className="space-y-1">
+          <h2
+            id="turn-transition-outcome-title"
+            className="text-lg font-semibold tracking-normal"
+          >
+            Last transition
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {`Turn ${outcome.fromTurnNumber.toString()} → ${outcome.toTurnNumber.toString()}`}
+            {outcome.finishedAt !== null
+              ? ` · ${outcome.finishedAt.slice(0, 10)}`
+              : null}
+          </p>
         </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          No notifications for this transition.
-        </p>
-      )}
-    </section>
+
+        <dl className="grid gap-3 sm:grid-cols-4">
+          <MetricTile label="Births" value={deltas.births} />
+          <MetricTile label="Deaths" value={deltas.deaths} />
+          <MetricTile
+            label="Buildings suspended"
+            value={deltas.buildingsSuspended}
+          />
+          <MetricTile
+            label="Deposits depleted"
+            value={deltas.depositsDepleted}
+          />
+        </dl>
+
+        {notificationGroups.length > 0 ? (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Notifications</h3>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={resetFilter}
+                className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  selectedCategories.length === allCategories.length
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-foreground hover:border-primary"
+                }`}
+              >
+                All
+              </button>
+              <ToggleGroup
+                type="multiple"
+                value={selectedCategories}
+                onValueChange={setSelectedCategories}
+                className="justify-start"
+              >
+                {allCategories.map((category) => (
+                  <ToggleGroupItem
+                    key={category}
+                    value={category}
+                    className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    aria-label={`Filter ${notificationTypeLabel(category)}`}
+                  >
+                    {notificationTypeLabel(category)}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+            <Accordion type="single" collapsible className="space-y-2">
+              {visibleGroups.map((group) => (
+                <AccordionItem
+                  key={group.type}
+                  value={group.type}
+                  className="rounded-md border border-border"
+                >
+                  <AccordionTrigger className="flex cursor-pointer items-center justify-between bg-muted/50 px-4 py-3 font-medium text-sm hover:bg-muted hover:no-underline">
+                    <span>
+                      {notificationTypeLabel(group.type)} (
+                      {group.notifications.length.toString()})
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="border-t border-border px-4 py-3 text-sm text-muted-foreground">
+                    <ul className="space-y-1">
+                      {group.notifications.map((n) => (
+                        <li key={n.id}>{n.messageText}</li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No notifications for this transition.
+          </p>
+        )}
+      </section>
+
+      <ForecastComparisonSection outcome={outcome} />
+    </div>
   );
 }
 

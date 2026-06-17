@@ -29,6 +29,7 @@ export type SupabaseSettlementRow = {
   readonly is_ready_current_turn: boolean;
   readonly name: string;
   readonly nameset_id: string | null;
+  readonly nation_id: string;
   readonly nations: { readonly nameset_id: string | null } | null;
 };
 
@@ -201,9 +202,30 @@ export type SupabasePartnershipRow = {
 export type SupabaseEventRow = {
   readonly id: string;
   readonly status: string;
-  readonly effect_type: string;
+  readonly effect_type: string | null;
   readonly activate_on_transition_after_turn_number: number;
+  readonly duration_type: string;
+  readonly remaining_transitions: number | null;
   readonly effect_payload_jsonb: unknown;
+  readonly scope_type: string | null;
+  readonly scope_nation_id: string | null;
+  readonly scope_settlement_id: string | null;
+};
+
+export type SupabaseEventEffectRow = {
+  readonly id: string;
+  readonly event_id: string;
+  readonly effect_type: string;
+  readonly amount_value: number | null;
+  readonly multiplier_value: number | null;
+  readonly is_percent: boolean;
+  readonly resource_id: string | null;
+  readonly job_id: string | null;
+  readonly managed_population_instance_id: string | null;
+  readonly deposit_instance_id: string | null;
+  readonly settlement_building_id: string | null;
+  readonly building_blueprint_id: string | null;
+  readonly extra_data_jsonb: Record<string, unknown>;
 };
 
 // ---------------------------------------------------------------------------
@@ -237,6 +259,7 @@ export function isSettlementRow(v: unknown): v is SupabaseSettlementRow {
     typeof v.name === "string" &&
     typeof v.is_ready_current_turn === "boolean" &&
     typeof v.auto_ready_enabled === "boolean" &&
+    typeof v.nation_id === "string" &&
     (v.nameset_id === null || typeof v.nameset_id === "string") &&
     (v.nations === null ||
       (isRecord(v.nations) &&
@@ -472,7 +495,29 @@ export function isEventRow(v: unknown): v is SupabaseEventRow {
     isRecord(v) &&
     typeof v.id === "string" &&
     typeof v.status === "string" &&
+    (v.effect_type === null || typeof v.effect_type === "string") &&
+    typeof v.activate_on_transition_after_turn_number === "number" &&
+    typeof v.duration_type === "string" &&
+    (v.remaining_transitions === null || typeof v.remaining_transitions === "number") &&
+    (v.scope_type === null || typeof v.scope_type === "string") &&
+    (v.scope_nation_id === null || typeof v.scope_nation_id === "string") &&
+    (v.scope_settlement_id === null || typeof v.scope_settlement_id === "string")
+  );
+}
+
+export function isEventEffectRow(v: unknown): v is SupabaseEventEffectRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.event_id === "string" &&
     typeof v.effect_type === "string" &&
-    typeof v.activate_on_transition_after_turn_number === "number"
+    (v.amount_value === null || typeof v.amount_value === "number") &&
+    (v.multiplier_value === null || typeof v.multiplier_value === "number") &&
+    typeof v.is_percent === "boolean" &&
+    (v.resource_id === null || typeof v.resource_id === "string") &&
+    (v.job_id === null || typeof v.job_id === "string") &&
+    (v.managed_population_instance_id === null ||
+      typeof v.managed_population_instance_id === "string") &&
+    (v.deposit_instance_id === null || typeof v.deposit_instance_id === "string")
   );
 }

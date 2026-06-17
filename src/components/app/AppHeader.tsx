@@ -1,6 +1,6 @@
 import { type JSX, type ReactNode } from "react";
 
-import { NotificationBellPlaceholder } from "./NotificationBellPlaceholder";
+import { NotificationsPopover } from "./NotificationsPopover";
 
 type AppHeaderProps = {
   readonly action?: ReactNode;
@@ -27,7 +27,7 @@ export function AppHeader({ action }: AppHeaderProps): JSX.Element {
 
           <div className="flex items-center gap-2">
             {action}
-            <NotificationBellPlaceholder />
+            <NotificationsPopover />
           </div>
         </div>
       </div>

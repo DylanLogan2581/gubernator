@@ -13,6 +13,7 @@ import { turnQueryKeys } from "./turnQueryKeys";
 
 type TransitionOutcomeRow = {
   readonly finished_at: string | null;
+  readonly forecast_snapshot_jsonb: Record<string, unknown> | null;
   readonly from_turn_number: number;
   readonly id: string;
   readonly notifications: NotificationRow[];
@@ -137,6 +138,7 @@ export type TurnTransitionNotification = {
 
 export type TurnTransitionOutcome = {
   readonly finishedAt: string | null;
+  readonly forecastSnapshot: Record<string, unknown> | null;
   readonly fromTurnNumber: number;
   readonly id: string;
   readonly logEntries: TurnTransitionLogEntry[];
@@ -159,6 +161,7 @@ const TRANSITION_OUTCOME_SELECT = [
   "status",
   "started_at",
   "finished_at",
+  "forecast_snapshot_jsonb",
   "settlement_turn_snapshots(id,settlement_id,world_id,turn_number,birth_count,death_count,homeless_deaths_count,starvation_deaths_count,population_cap,population_npc,population_player_character,population_total)",
   "settlement_turn_resource_snapshots(id,settlement_id,world_id,resource_id,turn_number,consumed_amount,produced_amount,quantity_after,quantity_before,trade_in_amount,trade_out_amount)",
   "turn_log_entries(id,settlement_id,world_id,citizen_id,nation_id,resource_id,log_category,payload_jsonb)",
@@ -268,6 +271,7 @@ async function getLatestSettlementTransitionOutcome(
     "status",
     "started_at",
     "finished_at",
+    "forecast_snapshot_jsonb",
   ].join(",");
 
   const { data: transition, error: transitionError } = await client
@@ -275,13 +279,14 @@ async function getLatestSettlementTransitionOutcome(
     .select(baseSelect)
     .eq("id", transitionId)
     .returns<{
-      id: string;
-      world_id: string;
-      from_turn_number: number;
-      to_turn_number: number;
-      status: string;
-      started_at: string;
       finished_at: string | null;
+      forecast_snapshot_jsonb: Record<string, unknown> | null;
+      from_turn_number: number;
+      id: string;
+      started_at: string;
+      status: string;
+      to_turn_number: number;
+      world_id: string;
     }>()
     .maybeSingle();
 
@@ -350,13 +355,14 @@ async function getLatestSettlementTransitionOutcome(
 
   const row: TransitionOutcomeRow = {
     ...(transition as {
-      id: string;
-      world_id: string;
-      from_turn_number: number;
-      to_turn_number: number;
-      status: string;
-      started_at: string;
       finished_at: string | null;
+      forecast_snapshot_jsonb: Record<string, unknown> | null;
+      from_turn_number: number;
+      id: string;
+      started_at: string;
+      status: string;
+      to_turn_number: number;
+      world_id: string;
     }),
     notifications: notifications ?? [],
     settlement_turn_resource_snapshots: resourceSnapshots ?? [],
@@ -374,6 +380,7 @@ function toTurnTransitionOutcome(
 ): TurnTransitionOutcome {
   return {
     finishedAt: row.finished_at,
+    forecastSnapshot: row.forecast_snapshot_jsonb,
     fromTurnNumber: row.from_turn_number,
     id: row.id,
     logEntries: row.turn_log_entries.map(toLogEntry),

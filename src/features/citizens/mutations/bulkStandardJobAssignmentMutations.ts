@@ -118,6 +118,9 @@ export function setBulkStandardJobAssignmentMutationOptions({
             "current-assignment-for-citizen",
           ],
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["forecast"],
+        }),
       ]);
     },
   });

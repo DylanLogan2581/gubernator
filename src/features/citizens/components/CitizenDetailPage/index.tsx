@@ -27,6 +27,7 @@ import { CitizenManagerRedirect } from "./CitizenManagerRedirect";
 import { CitizenCoreSection } from "./CoreEditForm";
 import { CitizenDetailHeader } from "./Header";
 import { CitizenLifecycleSection } from "./LifecycleControls";
+import { CitizenMemoriesSection } from "./MemoriesSection";
 import { CitizenNpcFlavorSection } from "./NpcFlavorSection";
 import { CitizenNpcNotesSection } from "./NpcNotesSection";
 import { CitizenParentsSection } from "./ParentsSection";
@@ -199,6 +200,7 @@ function CitizenDetailContent({
     <CitizenDetailLoaded
       canAdmin={worldAccess.canAdmin}
       citizen={citizen}
+      currentTurnNumber={worldAccess.header.currentTurnNumber}
       isArchived={worldAccess.header.isArchived}
       worldId={worldId}
     />
@@ -208,11 +210,13 @@ function CitizenDetailContent({
 function CitizenDetailLoaded({
   canAdmin,
   citizen,
+  currentTurnNumber,
   isArchived,
   worldId,
 }: {
   readonly canAdmin: boolean;
   readonly citizen: Citizen;
+  readonly currentTurnNumber: number;
   readonly isArchived: boolean;
   readonly worldId: string;
 }): JSX.Element {
@@ -263,6 +267,16 @@ function CitizenDetailLoaded({
           citizen={citizen}
           isArchived={isArchived}
           queryClient={queryClient}
+        />
+      ) : null}
+
+      {canAdmin ? (
+        <CitizenMemoriesSection
+          canEdit={canEdit}
+          citizenId={citizen.id}
+          currentTurnNumber={currentTurnNumber}
+          queryClient={queryClient}
+          worldId={worldId}
         />
       ) : null}
 

@@ -80,7 +80,9 @@ describe("AppHeader", () => {
     expect(
       await screen.findByRole("button", { name: "Notifications (2 unread)" }),
     ).toBeDefined();
-    expect(clientFixture.select).toHaveBeenCalledTimes(2);
+    // NotificationsPopover makes one allNotificationsQueryOptions query that internally
+    // issues two select calls (count + data). Initial render: 2, after invalidation: 2 = 4 total.
+    expect(clientFixture.select).toHaveBeenCalledTimes(4);
   });
 
   it("keeps notification control after header actions", () => {
@@ -123,14 +125,20 @@ function createClient({
 } {
   let unreadCount = initialUnreadCount;
   const select = vi.fn(() => ({
-    eq: vi.fn(() => ({
-      eq: vi.fn().mockImplementation(() =>
-        Promise.resolve({
-          count: unreadCount,
-          error: null,
-        }),
-      ),
-    })),
+    eq: vi.fn(function (this: unknown) {
+      const queryChain = {
+        eq: vi.fn().mockImplementation(() =>
+          Promise.resolve({
+            count: unreadCount,
+            data: [],
+            error: null,
+          }),
+        ),
+        order: vi.fn().mockReturnThis(),
+        range: vi.fn().mockReturnThis(),
+      };
+      return queryChain;
+    }),
   }));
 
   return {
@@ -144,6 +152,11 @@ function createClient({
           error: null,
         }),
       },
+      channel: vi.fn().mockReturnValue({
+        on: vi.fn().mockReturnValue({
+          subscribe: vi.fn().mockReturnValue({}),
+        }),
+      }),
       from: vi.fn((table: string) => {
         if (table !== "notifications") {
           throw new Error(`Unexpected table ${table}`);
@@ -153,6 +166,7 @@ function createClient({
           select,
         };
       }),
+      removeChannel: vi.fn().mockResolvedValue("ok"),
     },
     select,
     setUnreadCount: (count: number): void => {

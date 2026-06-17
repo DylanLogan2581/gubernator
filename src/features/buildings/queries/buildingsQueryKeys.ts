@@ -12,11 +12,29 @@ export const buildingsQueryKeys = {
       "construction-projects-by-settlement",
       settlementId,
     ] as const,
+  settlementBuildingById: (buildingId: string) =>
+    [
+      ...buildingsQueryKeys.all,
+      "settlement-building-detail",
+      buildingId,
+    ] as const,
   settlementBuildingsBySettlement: (settlementId: string) =>
     [
       ...buildingsQueryKeys.all,
       "settlement-buildings-by-settlement",
       settlementId,
+    ] as const,
+  settlementBuildingsByNations: (nationIds: readonly string[]) =>
+    [
+      ...buildingsQueryKeys.all,
+      "settlement-buildings-by-nations",
+      ...nationIds,
+    ] as const,
+  settlementBuildingsByWorld: (worldId: string) =>
+    [
+      ...buildingsQueryKeys.all,
+      "settlement-buildings-by-world",
+      worldId,
     ] as const,
   settlementPopulationCap: (settlementId: string) =>
     [

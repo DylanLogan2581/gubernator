@@ -20,6 +20,7 @@ import { phaseTradeRoutes } from "./phases/phaseTradeRoutes.ts";
 import { SimulationRejectionError } from "./simulationTypes.ts";
 
 import type {
+  ManagedPopulationUpdate,
   ReadinessSummary,
   SimulationContext,
   SimulationInputState,
@@ -71,9 +72,31 @@ export function runSimulation(
 
   const pendingDeaths = new Set<string>();
 
+  const pendingEventMultipliers = new Map<
+    string,
+    {
+      productionByJobId: Map<string, number>;
+      productionByBuildingId: Map<string, number>;
+      consumption: number;
+      upkeep: number;
+      upkeepByBlueprintId: Map<string, number>;
+    }
+  >();
+
+  const pendingManagedPopulationDeltas = new Map<string, number>();
+
+  const pendingDepositDestroys = new Set<string>();
+
   const context: SimulationContext = {
     input,
-    shared: { pendingDeaths, pendingPopCapBySettlement, pendingStockpiles },
+    shared: {
+      pendingDeaths,
+      pendingEventMultipliers,
+      pendingManagedPopulationDeltas,
+      pendingPopCapBySettlement,
+      pendingStockpiles,
+      pendingDepositDestroys,
+    },
   };
 
   function applyDeltas(deltas: readonly StockpileDelta[]): void {
@@ -223,6 +246,55 @@ export function runSimulation(
   const p11 = phaseEvents(context);
 
   // -------------------------------------------------------------------------
+  // Phase 11.5 — Merge managed_population_change event deltas
+  // -------------------------------------------------------------------------
+  // phaseEvents (Phase 11) writes pendingManagedPopulationDeltas for
+  // managed_population_change effects. Phase 7 (phaseManagedPopulations) ran
+  // before Phase 11, so we merge the event deltas into the population updates
+  // here, after Phase 11, clamping each population count at zero.
+
+  const managedPopulationUpdates: ManagedPopulationUpdate[] = [
+    ...p7.managedPopulationUpdates,
+  ];
+  if (pendingManagedPopulationDeltas.size > 0) {
+    const popById = new Map(input.managedPopulations.map((p) => [p.id, p]));
+    const idxByPopId = new Map(
+      managedPopulationUpdates.map((u, i) => [u.managedPopulationInstanceId, i]),
+    );
+
+    for (const [popId, eventDelta] of pendingManagedPopulationDeltas) {
+      const pop = popById.get(popId);
+      if (pop === undefined || pop.status !== "active") continue;
+
+      const idx = idxByPopId.get(popId);
+      const priorDelta = idx !== undefined ? managedPopulationUpdates[idx].countDelta : 0;
+      const countAfterP7 = pop.currentCount + priorDelta;
+
+      // Clamp: event cannot drive the count below zero.
+      const clampedDelta = Math.max(eventDelta, -countAfterP7);
+      if (clampedDelta === 0) continue;
+
+      const newCount = countAfterP7 + clampedDelta;
+      const isExtinct = newCount <= 0;
+
+      if (idx !== undefined) {
+        const existing = managedPopulationUpdates[idx];
+        managedPopulationUpdates[idx] = {
+          ...existing,
+          countDelta: existing.countDelta + clampedDelta,
+          toStatus: isExtinct ? "extinct" : existing.toStatus,
+        };
+      } else {
+        managedPopulationUpdates.push({
+          countDelta: clampedDelta,
+          managedPopulationInstanceId: popId,
+          toStatus: isExtinct ? "extinct" : null,
+        });
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Phase 12 — Stockpile Clamp (mutates pendingStockpiles in place)
   // -------------------------------------------------------------------------
 
@@ -265,7 +337,7 @@ export function runSimulation(
   // Phase 13 — Logs and Snapshots
   // -------------------------------------------------------------------------
 
-  const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths];
+  const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths, ...p11.citizenDeaths];
 
   // Phase 10 (homelessness) runs after phase 9 (partnerships), so a citizen
   // can be selected for partnership formation and then die of homelessness in
@@ -349,11 +421,11 @@ export function runSimulation(
 
   const p13 = phaseLogsAndSnapshots(context, {
     allDeaths,
-    buildingStateChanges: p4.buildingStateChanges,
+    buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
     citizenBirths: p9.citizenBirths,
     consumptionDeltas,
     depositUpdates: p2.depositUpdates,
-    managedPopulationUpdates: p7.managedPopulationUpdates,
+    managedPopulationUpdates,
     partnershipChanges,
     pendingStockpiles,
     productionDeltas,
@@ -419,15 +491,16 @@ export function runSimulation(
         reason: "citizen_died",
       })),
     ],
-    buildingStateChanges: p4.buildingStateChanges,
+    buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
     buildingsCreated: p3.buildingsCreated,
     citizenBirths: p9.citizenBirths,
     citizenDeaths: allDeaths,
     citizenPatches: p9.citizenPatches,
     constructionUpdates: p3.constructionUpdates,
-    depositUpdates: p2.depositUpdates,
+    depositUpdates: [...p2.depositUpdates, ...p11.depositUpdates],
+    eventStatusPatches: p11.eventStatusPatches,
     logEntries,
-    managedPopulationUpdates: p7.managedPopulationUpdates,
+    managedPopulationUpdates,
     notifications,
     partnershipChanges,
     readinessSummary: computeReadinessSummary(input),

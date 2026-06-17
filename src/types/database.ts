@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
+
 export type Json =
   | string
   | number
@@ -211,6 +213,71 @@ export type Database = {
             columns: ["trade_route_id"];
             isOneToOne: false;
             referencedRelation: "trade_routes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      citizen_memories: {
+        Row: {
+          citizen_id: string;
+          created_at: string;
+          created_by_user_id: string | null;
+          event_id: string | null;
+          id: string;
+          memory_text: string;
+          occurred_on_turn_number: number;
+          source: string;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id: string;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          event_id?: string | null;
+          id?: string;
+          memory_text: string;
+          occurred_on_turn_number: number;
+          source: string;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          event_id?: string | null;
+          id?: string;
+          memory_text?: string;
+          occurred_on_turn_number?: number;
+          source?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "citizen_memories_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_memories_created_by_user_id_fkey";
+            columns: ["created_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_memories_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_memories_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
             referencedColumns: ["id"];
           },
         ];
@@ -619,44 +686,279 @@ export type Database = {
           },
         ];
       };
+      event_effects: {
+        Row: {
+          amount_value: number | null;
+          building_blueprint_id: string | null;
+          created_at: string;
+          deposit_instance_id: string | null;
+          effect_type: string;
+          event_id: string;
+          extra_data_jsonb: Json;
+          id: string;
+          is_percent: boolean;
+          job_id: string | null;
+          managed_population_instance_id: string | null;
+          managed_population_type_id: string | null;
+          multiplier_value: number | null;
+          resource_id: string | null;
+          settlement_building_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          amount_value?: number | null;
+          building_blueprint_id?: string | null;
+          created_at?: string;
+          deposit_instance_id?: string | null;
+          effect_type: string;
+          event_id: string;
+          extra_data_jsonb?: Json;
+          id?: string;
+          is_percent?: boolean;
+          job_id?: string | null;
+          managed_population_instance_id?: string | null;
+          managed_population_type_id?: string | null;
+          multiplier_value?: number | null;
+          resource_id?: string | null;
+          settlement_building_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          amount_value?: number | null;
+          building_blueprint_id?: string | null;
+          created_at?: string;
+          deposit_instance_id?: string | null;
+          effect_type?: string;
+          event_id?: string;
+          extra_data_jsonb?: Json;
+          id?: string;
+          is_percent?: boolean;
+          job_id?: string | null;
+          managed_population_instance_id?: string | null;
+          managed_population_type_id?: string | null;
+          multiplier_value?: number | null;
+          resource_id?: string | null;
+          settlement_building_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_effects_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_deposit_instance_id_fkey";
+            columns: ["deposit_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "deposit_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "job_definitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_managed_population_instance_id_fkey";
+            columns: ["managed_population_instance_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_instances";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_managed_population_type_id_fkey";
+            columns: ["managed_population_type_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_effects_settlement_building_id_fkey";
+            columns: ["settlement_building_id"];
+            isOneToOne: false;
+            referencedRelation: "settlement_buildings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      event_groups: {
+        Row: {
+          created_at: string;
+          created_by_user_id: string | null;
+          created_during_turn_number: number;
+          description: string | null;
+          id: string;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          created_during_turn_number: number;
+          description?: string | null;
+          id?: string;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          created_during_turn_number?: number;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_groups_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       events: {
         Row: {
           activate_on_transition_after_turn_number: number;
+          amount_value: number | null;
+          building_blueprint_id: string | null;
+          create_citizen_memories: boolean;
           created_at: string;
           description: string | null;
+          duration_transitions: number | null;
+          duration_type: string;
           effect_payload_jsonb: Json;
-          effect_type: string;
+          effect_type: string | null;
+          event_group_id: string | null;
+          extra_data_jsonb: Json;
           id: string;
+          job_id: number | null;
+          managed_population_type_id: string | null;
+          memory_text: string | null;
+          multiplier_value: number | null;
           name: string;
+          remaining_transitions: number | null;
+          scope_nation_id: string | null;
+          scope_settlement_id: string | null;
+          scope_type: string | null;
           status: string;
           updated_at: string;
           world_id: string;
         };
         Insert: {
           activate_on_transition_after_turn_number: number;
+          amount_value?: number | null;
+          building_blueprint_id?: string | null;
+          create_citizen_memories?: boolean;
           created_at?: string;
           description?: string | null;
+          duration_transitions?: number | null;
+          duration_type?: string;
           effect_payload_jsonb?: Json;
-          effect_type: string;
+          effect_type?: string | null;
+          event_group_id?: string | null;
+          extra_data_jsonb?: Json;
           id?: string;
+          job_id?: number | null;
+          managed_population_type_id?: string | null;
+          memory_text?: string | null;
+          multiplier_value?: number | null;
           name: string;
+          remaining_transitions?: number | null;
+          scope_nation_id?: string | null;
+          scope_settlement_id?: string | null;
+          scope_type?: string | null;
           status?: string;
           updated_at?: string;
           world_id: string;
         };
         Update: {
           activate_on_transition_after_turn_number?: number;
+          amount_value?: number | null;
+          building_blueprint_id?: string | null;
+          create_citizen_memories?: boolean;
           created_at?: string;
           description?: string | null;
+          duration_transitions?: number | null;
+          duration_type?: string;
           effect_payload_jsonb?: Json;
-          effect_type?: string;
+          effect_type?: string | null;
+          event_group_id?: string | null;
+          extra_data_jsonb?: Json;
           id?: string;
+          job_id?: number | null;
+          managed_population_type_id?: string | null;
+          memory_text?: string | null;
+          multiplier_value?: number | null;
           name?: string;
+          remaining_transitions?: number | null;
+          scope_nation_id?: string | null;
+          scope_settlement_id?: string | null;
+          scope_type?: string | null;
           status?: string;
           updated_at?: string;
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "events_building_blueprint_id_fkey";
+            columns: ["building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_event_group_id_fkey";
+            columns: ["event_group_id"];
+            isOneToOne: false;
+            referencedRelation: "event_groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_managed_population_type_id_fkey";
+            columns: ["managed_population_type_id"];
+            isOneToOne: false;
+            referencedRelation: "managed_population_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_scope_nation_id_fkey";
+            columns: ["scope_nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_scope_settlement_id_fkey";
+            columns: ["scope_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "events_world_id_fkey";
             columns: ["world_id"];
@@ -1040,6 +1342,7 @@ export type Database = {
           notification_type: Database["public"]["Enums"]["notification_type"];
           recipient_user_id: string;
           settlement_id: string | null;
+          severity: Database["public"]["Enums"]["notification_severity"];
           trade_route_id: string | null;
           world_id: string;
         };
@@ -1055,6 +1358,7 @@ export type Database = {
           notification_type: Database["public"]["Enums"]["notification_type"];
           recipient_user_id: string;
           settlement_id?: string | null;
+          severity?: Database["public"]["Enums"]["notification_severity"];
           trade_route_id?: string | null;
           world_id: string;
         };
@@ -1070,6 +1374,7 @@ export type Database = {
           notification_type?: Database["public"]["Enums"]["notification_type"];
           recipient_user_id?: string;
           settlement_id?: string | null;
+          severity?: Database["public"]["Enums"]["notification_severity"];
           trade_route_id?: string | null;
           world_id?: string;
         };
@@ -2128,6 +2433,16 @@ export type Database = {
       _table_privs: { Args: never; Returns: unknown[] };
       _temptypes: { Args: { "": string }; Returns: string };
       _todo: { Args: never; Returns: string };
+      add_citizen_memory: {
+        Args: {
+          p_citizen_id: string;
+          p_memory_text: string;
+          p_occurred_on_turn_number: number;
+        };
+        Returns: {
+          id: string;
+        }[];
+      };
       add_settlement_building_as_admin: {
         Args: {
           p_blueprint_id: string;
@@ -2161,6 +2476,7 @@ export type Database = {
       apply_turn_transition: {
         Args: {
           p_expected_turn_number: number;
+          p_forecast_snapshot_jsonb?: Json;
           p_payload: Json;
           p_transition_id: string;
           p_world_id: string;
@@ -2233,6 +2549,10 @@ export type Database = {
           project_id: string;
           unassigned_citizen_count: number;
         }[];
+      };
+      cancel_event_or_group: {
+        Args: { p_event_id: string; p_group_id: string };
+        Returns: Json;
       };
       cancel_trade_route: {
         Args: { p_route_id: string };
@@ -2414,6 +2734,22 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      create_event_group_with_events: {
+        Args: {
+          p_activate_on_transition_after_turn_number: number;
+          p_create_citizen_memories: boolean;
+          p_duration_transitions: number;
+          p_duration_type: string;
+          p_effects: Json;
+          p_group_description: string;
+          p_group_name: string;
+          p_memory_text: string;
+          p_scope_type: string;
+          p_targets: Json;
+          p_world_id: string;
+        };
+        Returns: Json;
       };
       create_managed_population_instance: {
         Args: {
@@ -2647,6 +2983,14 @@ export type Database = {
       default_calendar_config: { Args: never; Returns: Json };
       default_naming_config: { Args: never; Returns: Json };
       default_npc_flavor_config: { Args: never; Returns: Json };
+      delete_citizen_memory: {
+        Args: { p_memory_id: string };
+        Returns: undefined;
+      };
+      delete_event_or_group: {
+        Args: { p_event_id: string; p_group_id: string };
+        Returns: Json;
+      };
       diag:
         | {
             Args: { msg: unknown };
@@ -2858,6 +3202,15 @@ export type Database = {
         Args: { p_payload: Json };
         Returns: Record<string, unknown>;
       };
+      internal_apply_turn_transition_event_patches: {
+        Args: {
+          p_payload: Json;
+          p_to_turn_number: number;
+          p_transition_id: string;
+          p_world_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
       internal_apply_turn_transition_log_entries_and_notifications: {
         Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
         Returns: Record<string, unknown>;
@@ -2962,6 +3315,12 @@ export type Database = {
           settlement_building_id: string;
         }[];
       };
+      mark_all_notifications_read: {
+        Args: never;
+        Returns: {
+          updated_count: number;
+        }[];
+      };
       mark_citizen_dead: {
         Args: { p_citizen_id: string; p_reason: string };
         Returns: {
@@ -3003,6 +3362,13 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      mark_notification_read: {
+        Args: { notification_id: string };
+        Returns: {
+          id: string;
+          is_read: boolean;
+        }[];
       };
       mark_partnership_widowed: {
         Args: {
@@ -3798,7 +4164,8 @@ export type Database = {
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
-        | { Args: { why: string }; Returns: boolean[] };
+        | { Args: { why: string }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] };
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }
@@ -3878,6 +4245,30 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      update_citizen_memory: {
+        Args: {
+          p_memory_id: string;
+          p_memory_text: string;
+          p_occurred_on_turn_number: number;
+        };
+        Returns: {
+          id: string;
+        }[];
+      };
+      update_event_group_with_events: {
+        Args: {
+          p_activate_on_transition_after_turn_number: number;
+          p_create_citizen_memories: boolean;
+          p_duration_transitions: number;
+          p_duration_type: string;
+          p_effects: Json;
+          p_group_description: string;
+          p_group_id: string;
+          p_group_name: string;
+          p_memory_text: string;
+        };
+        Returns: Json;
+      };
       update_settlement_coordinates: {
         Args: { p_coord_x: number; p_coord_z: number; p_settlement_id: string };
         Returns: {
@@ -3890,6 +4281,10 @@ export type Database = {
         Args: { p_world_id: string };
         Returns: boolean;
       };
+      validate_event_effect_fields: {
+        Args: { p_effect: Json };
+        Returns: undefined;
+      };
       world_is_archived: { Args: { p_world_id: string }; Returns: boolean };
     };
     Enums: {
@@ -3899,6 +4294,7 @@ export type Database = {
         | "event"
         | "manual_admin"
         | "unknown";
+      notification_severity: "info" | "warning" | "critical";
       notification_type:
         | "turn.completed"
         | "trade_proposal_received"
@@ -3920,7 +4316,11 @@ export type Database = {
         | "settlement.starvation_occurred"
         | "trade_route.paused"
         | "trade_route.resumed"
-        | "building.recovered";
+        | "building.recovered"
+        | "event.activated"
+        | "event.expired"
+        | "player.died"
+        | "player.widowed";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -4060,6 +4460,7 @@ export const Constants = {
         "manual_admin",
         "unknown",
       ],
+      notification_severity: ["info", "warning", "critical"],
       notification_type: [
         "turn.completed",
         "trade_proposal_received",
@@ -4082,6 +4483,10 @@ export const Constants = {
         "trade_route.paused",
         "trade_route.resumed",
         "building.recovered",
+        "event.activated",
+        "event.expired",
+        "player.died",
+        "player.widowed",
       ],
     },
   },

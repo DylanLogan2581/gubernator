@@ -100,6 +100,7 @@ function makeStateResponses(): Record<
     "/rest/v1/trade_routes": { body: [], status: 200 },
     "/rest/v1/citizens": { body: [], status: 200 },
     "/rest/v1/events": { body: [], status: 200 },
+    "/rest/v1/event_effects": { body: [], status: 200 },
     "/rest/v1/turn_log_entries": { body: [], status: 200 },
     "/rest/v1/citizen_assignments": { body: [], status: 200 },
     "/rest/v1/partnerships": { body: [], status: 200 },
@@ -473,6 +474,131 @@ describe("handleEndTurnSimulationRequest", () => {
       expect(response.headers.get("content-type")).toContain(
         "application/json",
       );
+    });
+
+    it("preview mode returns a forecast without starting or applying a transition", async () => {
+      const fetchMock = stubFullCycle();
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: JSON.stringify({
+            expectedTurnNumber: 0,
+            preview: true,
+            worldId: WORLD_ID,
+          }),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      expect(response.status).toBe(200);
+
+      const responseBody = (await response.json()) as {
+        data: { forecastSnapshot: { bySettlement: Record<string, unknown> } };
+        ok: boolean;
+      };
+      expect(responseBody.ok).toBe(true);
+      expect(typeof responseBody.data.forecastSnapshot.bySettlement).toBe(
+        "object",
+      );
+
+      // No writes: neither the start nor the apply RPC may be invoked.
+      const calledUrls = fetchMock.mock.calls.map((call) => String(call[0]));
+      expect(
+        calledUrls.some((url) => url.includes("rpc/start_turn_transition")),
+      ).toBe(false);
+      expect(
+        calledUrls.some((url) => url.includes("rpc/apply_turn_transition")),
+      ).toBe(false);
+    });
+
+    it("preview mode loads world state with the caller JWT", async () => {
+      stubDenoEnv();
+
+      // Capture authorization headers used for all PostgREST state entity calls.
+      // Preview state loading must use the caller JWT (same as the real
+      // end-turn). A service-role load was tried but settlement_stockpiles_view
+      // delegates to a security-definer helper that RAISEs 'forbidden' without a
+      // user context, so service-role reads fail with 42501.
+      const stateEntityPaths = [
+        "/rest/v1/worlds",
+        "/rest/v1/settlements",
+        "/rest/v1/citizens",
+        "/rest/v1/resources",
+        "/rest/v1/trade_routes",
+        "/rest/v1/citizen_assignments",
+      ];
+      const capturedAuthByPath: { path: string; auth: string }[] = [];
+
+      const stateResponses = makeStateResponses();
+      const fetchMock = vi.fn(
+        (url: string, init?: RequestInit): Promise<Response> => {
+          // Capture auth header for state entity REST calls.
+          const matchedPath = stateEntityPaths.find((p) => url.includes(p));
+          // Exclude the single-field world-exists auth check (select=id only).
+          // URLSearchParams encodes commas as %2C, so the state-load URL has
+          // select=id%2Cstatus%2C... while the auth check has select=id alone.
+          const isWorldExistsCheck =
+            url.includes("/rest/v1/worlds") && url.includes("select=id") &&
+            !url.includes("select=id%2C");
+          if (matchedPath !== undefined && !isWorldExistsCheck) {
+            const headers = init?.headers as Record<string, string> | undefined;
+            const auth = headers?.authorization ?? headers?.Authorization ?? "";
+            capturedAuthByPath.push({ path: matchedPath, auth });
+          }
+
+          // Route responses
+          if (url.includes("/auth/v1/user")) {
+            return Promise.resolve(
+              new Response(JSON.stringify({ id: USER_ID }), { status: 200 }),
+            );
+          }
+          // World-exists auth check: return world visible to the caller.
+          if (isWorldExistsCheck) {
+            return Promise.resolve(
+              new Response(JSON.stringify([{ id: WORLD_ID }]), { status: 200 }),
+            );
+          }
+          // All other state responses
+          const entry = Object.entries(stateResponses).find(([pattern]) =>
+            url.includes(pattern),
+          );
+          const { body, status } = entry?.[1] ?? {
+            body: { error: `Unexpected fetch call: ${url}` },
+            status: 500,
+          };
+          return Promise.resolve(
+            new Response(JSON.stringify(body), { status }),
+          );
+        },
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: JSON.stringify({
+            expectedTurnNumber: 0,
+            preview: true,
+            worldId: WORLD_ID,
+          }),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      expect(response.status).toBe(200);
+
+      // All captured state-load calls must use the caller JWT, not service-role.
+      expect(capturedAuthByPath.length).toBeGreaterThan(0);
+      for (const { auth } of capturedAuthByPath) {
+        expect(auth).toBe("Bearer valid-token");
+      }
     });
 
     it("returns 409 when the persist RPC reports an archived world", async () => {

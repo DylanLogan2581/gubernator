@@ -255,50 +255,6 @@ describe("WorldShellPage", () => {
     expect(screen.queryByRole("link", { name: /my character/i })).toBeNull();
   });
 
-  it("renders the Nations card as a navigable link", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [
-          createWorldRow({
-            calendar_config_json: createCalendarConfig(),
-            current_turn_number: 1,
-            id: "00000000-0000-0000-0000-000000000801",
-            name: "Navigation World",
-          }),
-        ],
-        nationRows: [
-          createNationRow({
-            id: "nation-1",
-            name: "First Nation",
-            world_id: "00000000-0000-0000-0000-000000000801",
-          }),
-          createNationRow({
-            id: "nation-2",
-            name: "Second Nation",
-            world_id: "00000000-0000-0000-0000-000000000801",
-          }),
-        ],
-      }),
-    );
-
-    renderWorldShellPage("00000000-0000-0000-0000-000000000801");
-
-    await screen.findByRole("heading", { name: "Navigation World" });
-
-    const nationsHeading = screen.getByRole("heading", {
-      name: "Nations",
-      level: 2,
-    });
-    expect(nationsHeading).toBeDefined();
-    const nationsLink = nationsHeading.closest("a");
-    expect(nationsLink).not.toBeNull();
-    expect(nationsLink).toHaveAttribute(
-      "href",
-      "/worlds/00000000-0000-0000-0000-000000000801/nations",
-    );
-  });
-
   it("renders the Configuration card for world admins", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -503,22 +459,6 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
     status: "active",
     updated_at: "2026-01-02T00:00:00.000Z",
     visibility: "public",
-    ...overrides,
-  };
-}
-
-function createNationRow(
-  overrides: Partial<TestNationRow> = {},
-): TestNationRow {
-  return {
-    created_at: "2026-01-01T00:00:00.000Z",
-    description: null,
-    id: "nation-1",
-    is_hidden: false,
-    name: "Test Nation",
-    nameset_id: null,
-    updated_at: "2026-01-01T00:00:00.000Z",
-    world_id: "00000000-0000-0000-0000-000000000001",
     ...overrides,
   };
 }

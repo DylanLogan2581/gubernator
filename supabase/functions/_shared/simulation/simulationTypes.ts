@@ -51,6 +51,7 @@ export type SimSettlement = {
   readonly id: string;
   readonly isReadyCurrentTurn?: boolean;
   readonly name: string;
+  readonly nationId?: string;
 };
 
 export type SimStockpile = {
@@ -233,16 +234,51 @@ export type SimEventStatus = "active" | "expired" | "pending" | "resolved";
 // Exhaustive union — adding a new value here requires a matching case in the
 // phaseEvents switch, which is the Epic 7 hand-off contract.
 export type EventEffectType =
+  | "building_destroyed"
+  | "consumption_multiplier"
+  | "deposit_destroyed"
   | "deposit_discovered"
+  | "managed_population_change"
+  | "population_boost"
   | "population_loss"
-  | "resource_grant";
+  | "production_multiplier"
+  | "resource_drain"
+  | "resource_grant"
+  | "upkeep_multiplier";
+
+export type SimEffect = {
+  readonly id: string;
+  readonly effectType: EventEffectType;
+  readonly amountValue: number | null;
+  readonly multiplierValue: number | null;
+  readonly isPercent: boolean;
+  readonly resourceId: string | null;
+  readonly jobId: string | null;
+  readonly managedPopulationInstanceId: string | null;
+  readonly depositInstanceId: string | null;
+  readonly settlementBuildingId: string | null;
+  readonly extraDataJsonb?: Record<string, unknown>;
+};
 
 export type SimEvent = {
   readonly activateOnTransitionAfterTurnNumber: number;
+  readonly durationType: "instant" | "sustained";
   readonly effectPayloadJsonb: Record<string, unknown>;
   readonly effectType: EventEffectType;
+  readonly effects: readonly SimEffect[];
   readonly id: string;
+  readonly remainingTransitions: number | null;
+  readonly scopeNationId?: string | null;
+  readonly scopeSettlementId?: string | null;
+  readonly scopeType?: "world" | "nation" | "settlement";
   readonly status: SimEventStatus;
+};
+
+export type EventStatusPatch = {
+  readonly eventId: string;
+  readonly fromStatus: SimEventStatus;
+  readonly remainingTransitions: number | null;
+  readonly toStatus: "active" | "expired";
 };
 
 export type SimTradeRouteStatus =
@@ -539,6 +575,7 @@ export type SimulationResult = {
   readonly citizenPatches: readonly CitizenPatch[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
   readonly notifications: readonly SimulationNotification[];
@@ -563,6 +600,23 @@ export type SimulationSharedState = {
   // Citizen IDs that have died in earlier phases this turn (populated after
   // phase 8 so that phase 10 homelessness does not double-count starvation deaths).
   readonly pendingDeaths: Set<string>;
+  // Event-triggered multipliers per settlement: production (by job_id or building_id),
+  // consumption, upkeep. Applied by phaseStandardJobs, phaseCitizenConsumption,
+  // phaseBuildingUpkeep. Maps are always present after initialization.
+  readonly pendingEventMultipliers: Map<
+    string,
+    {
+      productionByJobId: Map<string, number>;
+      productionByBuildingId: Map<string, number>;
+      consumption: number;
+      upkeep: number;
+      upkeepByBlueprintId: Map<string, number>;
+    }
+  >;
+  // Managed population ID -> population delta from managed_population_change effects.
+  readonly pendingManagedPopulationDeltas: Map<string, number>;
+  // Deposit instance IDs to mark as removed due to deposit_destroyed effects.
+  readonly pendingDepositDestroys: Set<string>;
 };
 
 // ---------------------------------------------------------------------------

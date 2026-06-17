@@ -3,7 +3,11 @@ import { isRecord } from "./utils.ts";
 
 import type { EndTurnSimulationErrorResponse, EndTurnSimulationRequestBody } from "./types.ts";
 
-const expectedRequestFields = ["expectedTurnNumber", "worldId"] as const;
+const expectedRequestFields = [
+  "expectedTurnNumber",
+  "preview",
+  "worldId",
+] as const;
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -92,6 +96,7 @@ export async function parseEndTurnSimulationRequestBody(
     body: {
       expectedTurnNumber: bodyShapeResult.body.expectedTurnNumber,
       worldId: bodyShapeResult.body.worldId.trim(),
+      preview: bodyShapeResult.body.preview === true,
     },
     ok: true,
   };
@@ -149,6 +154,10 @@ function validateEndTurnSimulationRequestBody(
     validationErrors.push("expectedTurnNumber");
   }
 
+  if (body.preview !== undefined && typeof body.preview !== "boolean") {
+    validationErrors.push("preview");
+  }
+
   return validationErrors;
 }
 
@@ -162,7 +171,8 @@ function isEndTurnSimulationRequestBody(
     UUID_REGEX.test(body.worldId.trim()) &&
     typeof body.expectedTurnNumber === "number" &&
     Number.isSafeInteger(body.expectedTurnNumber) &&
-    body.expectedTurnNumber >= 0
+    body.expectedTurnNumber >= 0 &&
+    (body.preview === undefined || typeof body.preview === "boolean")
   );
 }
 

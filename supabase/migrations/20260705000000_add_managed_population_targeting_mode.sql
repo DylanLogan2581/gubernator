@@ -1,0 +1,10 @@
+-- Migration: add_managed_population_targeting_mode
+-- Purpose: Support targeting modes for managed_population_change effect (all/by-type/specific instances).
+--
+-- NOTE: managed_population_type_id column and its indexes are now added in
+--       20260702500000_add_event_effects_columns.sql to fix migration ordering.
+--       This migration is now a no-op (columns were added earlier in the sequence).
+-- ---------------------------------------------------------------------------
+-- This migration is kept for compatibility with existing deployments.
+-- The managed_population_type_id column is added in 20260702500000 to ensure
+-- it exists before the RPC definition in 20260703 references it.

@@ -1,7 +1,11 @@
 import { logEndTurnSuccess } from "../_shared/auditLog.ts";
 import { getEdgeRuntime } from "../_shared/http/env.ts";
 
-import { resolveSupabaseEndTurnSimulationAuthorization } from "./authorize.ts";
+import {
+  resolveForecastPreviewAuthorization,
+  resolveSupabaseEndTurnSimulationAuthorization,
+} from "./authorize.ts";
+import { computeForecastSnapshot } from "./forecast.ts";
 import {
   buildCorsHeaders,
   createErrorResponse,
@@ -27,6 +31,10 @@ export type {
   EndTurnSimulationResponse,
   EndTurnSimulationSuccessResponse,
 } from "./types.ts";
+
+// Placeholder transition id for read-only forecast previews. The simulation
+// stamps it into the (discarded) payload; nothing is persisted.
+const FORECAST_PREVIEW_TRANSITION_ID = "00000000-0000-0000-0000-00000f0ca570";
 
 export async function handleEndTurnSimulationRequest(
   request: Request,
@@ -83,6 +91,46 @@ export async function handleEndTurnSimulationRequest(
       return respond(authContextResult.error, authContextResult.status);
     }
 
+    // Read-only forecast preview: dry-run the simulation against current state
+    // and return the forecast without starting or applying a transition.
+    if (validateResult.body.preview === true) {
+      const previewAuthResult = await resolveForecastPreviewAuthorization(
+        validateResult.body,
+        authContextResult.context,
+      );
+      if (!previewAuthResult.ok) {
+        return respond(previewAuthResult.error, previewAuthResult.status);
+      }
+
+      // Load preview state with the caller's JWT (same as the real end-turn).
+      // A service-role load was tried (#875) to give non-admins a full-visibility
+      // forecast, but settlement_stockpiles_view delegates to a security-definer
+      // helper that RAISEs 'forbidden' without a user context, so service-role
+      // reads fail. Access was already verified by resolveForecastPreviewAuthorization.
+      const previewStateResult = await resolveSupabaseEndTurnSimulationInput(
+        validateResult.body,
+        authContextResult.context,
+      );
+      if (!previewStateResult.ok) {
+        return respond(previewStateResult.error, previewStateResult.status);
+      }
+
+      const previewPlanResult = planSimulationTransition(
+        previewStateResult.input,
+        FORECAST_PREVIEW_TRANSITION_ID,
+      );
+      if (!previewPlanResult.ok) {
+        return respond(previewPlanResult.error, previewPlanResult.status);
+      }
+
+      const previewForecast = computeForecastSnapshot(
+        previewPlanResult.result,
+        previewStateResult.input,
+      );
+
+      return respond({ data: { forecastSnapshot: previewForecast }, ok: true }, 200);
+    }
+
     const authorizationResult = await resolveSupabaseEndTurnSimulationAuthorization(
       validateResult.body,
       authContextResult.context,
@@ -115,11 +163,17 @@ export async function handleEndTurnSimulationRequest(
       return respond(transitionResult.error, transitionResult.status);
     }
 
+    const forecastSnapshot = computeForecastSnapshot(
+      transitionResult.result,
+      stateResult.input,
+    );
+
     const persistResult = await persistSimulationTransition(
       validateResult.body,
       transitionResult.payload,
       startResult.transitionId,
       authContextResult.context.userId,
+      forecastSnapshot,
     );
     if (!persistResult.ok) {
       return respond(persistResult.error, persistResult.status);

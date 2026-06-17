@@ -341,6 +341,7 @@ describe("TurnTransitionOutcomePanel", () => {
 function createPopulatedOutcome(): TurnTransitionOutcome {
   return {
     finishedAt: "2026-06-01T12:00:00Z",
+    forecastSnapshot: null,
     fromTurnNumber: 5,
     id: "transition-1",
     logEntries: [],
