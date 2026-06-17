@@ -515,13 +515,14 @@ describe("handleEndTurnSimulationRequest", () => {
       ).toBe(false);
     });
 
-    it("preview mode loads world state with service-role credentials, not caller JWT", async () => {
+    it("preview mode loads world state with the caller JWT", async () => {
       stubDenoEnv();
 
       // Capture authorization headers used for all PostgREST state entity calls.
-      // The preview auth-check (world-exists) queries /rest/v1/worlds with the
-      // caller JWT; state loading must use the service-role key instead so that
-      // RLS does not produce a partial view for non-admin members.
+      // Preview state loading must use the caller JWT (same as the real
+      // end-turn). A service-role load was tried but settlement_stockpiles_view
+      // delegates to a security-definer helper that RAISEs 'forbidden' without a
+      // user context, so service-role reads fail with 42501.
       const stateEntityPaths = [
         "/rest/v1/worlds",
         "/rest/v1/settlements",
@@ -593,10 +594,10 @@ describe("handleEndTurnSimulationRequest", () => {
 
       expect(response.status).toBe(200);
 
-      // All captured state-load calls must use the service-role key, not the caller JWT.
+      // All captured state-load calls must use the caller JWT, not service-role.
       expect(capturedAuthByPath.length).toBeGreaterThan(0);
       for (const { auth } of capturedAuthByPath) {
-        expect(auth).toBe("Bearer test-service-role-key");
+        expect(auth).toBe("Bearer valid-token");
       }
     });
 

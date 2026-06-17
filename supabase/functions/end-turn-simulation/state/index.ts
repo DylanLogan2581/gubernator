@@ -109,37 +109,6 @@ export async function resolveSupabaseEndTurnSimulationInput(
   return resolveEndTurnInputFromCtx(requestBody, ctx);
 }
 
-/**
- * Loads simulation input state using the service-role key, bypassing RLS.
- *
- * Use this for forecast previews so that members without full RLS visibility
- * (e.g. pure settlement managers who lack a player character) receive the same
- * complete world state as admins. The caller's access to the world must be
- * verified separately before calling this function.
- */
-export async function resolveServiceRoleEndTurnSimulationInput(
-  requestBody: EndTurnSimulationRequestBody,
-): Promise<EndTurnSimulationStateResult> {
-  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
-  const serviceRoleKey = getRequiredRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (supabaseUrl === undefined || serviceRoleKey === undefined) {
-    return createStateUnavailableResult();
-  }
-
-  // Service-role credentials bypass RLS so all world state is visible
-  // regardless of what the requesting user's JWT would normally see.
-  const ctx: FetchContext = {
-    headers: {
-      apikey: serviceRoleKey,
-      authorization: `Bearer ${serviceRoleKey}`,
-    },
-    supabaseUrl,
-  };
-
-  return resolveEndTurnInputFromCtx(requestBody, ctx);
-}
-
 // ---------------------------------------------------------------------------
 // Internal: shared state-loading logic, keyed on a pre-built FetchContext.
 // ---------------------------------------------------------------------------

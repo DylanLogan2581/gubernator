@@ -14,10 +14,7 @@ import {
 } from "./http.ts";
 import { persistSimulationTransition, startTurnTransition } from "./persist.ts";
 import { resolveSupabaseSimulationAuthContext } from "./session.ts";
-import {
-  resolveServiceRoleEndTurnSimulationInput,
-  resolveSupabaseEndTurnSimulationInput,
-} from "./state.ts";
+import { resolveSupabaseEndTurnSimulationInput } from "./state.ts";
 import { planSimulationTransition } from "./transition.ts";
 import { parseEndTurnSimulationRequestBody } from "./validate.ts";
 
@@ -105,12 +102,14 @@ export async function handleEndTurnSimulationRequest(
         return respond(previewAuthResult.error, previewAuthResult.status);
       }
 
-      // Load preview state with the service-role client so that RLS does not
-      // produce a partial view for members without full visibility (e.g. pure
-      // settlement managers who lack a player character). Access was already
-      // verified above by resolveForecastPreviewAuthorization.
-      const previewStateResult = await resolveServiceRoleEndTurnSimulationInput(
+      // Load preview state with the caller's JWT (same as the real end-turn).
+      // A service-role load was tried (#875) to give non-admins a full-visibility
+      // forecast, but settlement_stockpiles_view delegates to a security-definer
+      // helper that RAISEs 'forbidden' without a user context, so service-role
+      // reads fail. Access was already verified by resolveForecastPreviewAuthorization.
+      const previewStateResult = await resolveSupabaseEndTurnSimulationInput(
         validateResult.body,
+        authContextResult.context,
       );
       if (!previewStateResult.ok) {
         return respond(previewStateResult.error, previewStateResult.status);
