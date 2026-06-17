@@ -13,6 +13,7 @@ const SECTION_TABS = [
   "population",
   "economy",
   "forecast",
+  "reports",
   "admin",
 ] as const;
 

@@ -19,6 +19,7 @@ import {
   useSettlementManageAuthority,
   type AccessContext,
 } from "@/features/permissions";
+import { SettlementReportsPanel } from "@/features/reports";
 import { SettlementStockpilesPanel } from "@/features/resources";
 import { SettlementTradeRoutesPanel } from "@/features/trade";
 import { TurnTransitionOutcomePanel } from "@/features/turns";
@@ -48,7 +49,8 @@ type SettlementDetailPageProps = {
     | "population"
     | "economy"
     | "admin"
-    | "forecast";
+    | "forecast"
+    | "reports";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
@@ -112,6 +114,7 @@ function SettlementDetailWorldGate({
     | "population"
     | "economy"
     | "forecast"
+    | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
@@ -191,6 +194,7 @@ function SettlementDetailContent({
     | "population"
     | "economy"
     | "forecast"
+    | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
@@ -261,6 +265,7 @@ function SettlementDetailLoaded({
     | "population"
     | "economy"
     | "forecast"
+    | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly settlement: SettlementWithNation;
@@ -294,7 +299,13 @@ function SettlementDetailLoaded({
   const navigate = useNavigate();
 
   function handleSectionSelect(
-    section: "overview" | "population" | "economy" | "forecast" | "admin",
+    section:
+      | "overview"
+      | "population"
+      | "economy"
+      | "forecast"
+      | "reports"
+      | "admin",
   ): void {
     void navigate({
       to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
@@ -313,6 +324,7 @@ function SettlementDetailLoaded({
     { key: "population", label: "Population" },
     { key: "economy", label: "Economy" },
     { key: "forecast", label: "Forecast" },
+    { key: "reports", label: "Reports" },
     { key: "admin", label: "Admin" },
   ] as const;
 
@@ -345,7 +357,13 @@ function SettlementDetailLoaded({
           value={activeSection}
           onChange={(e) =>
             handleSectionSelect(
-              e.target.value as "overview" | "population" | "economy" | "admin",
+              e.target.value as
+                | "overview"
+                | "population"
+                | "economy"
+                | "forecast"
+                | "reports"
+                | "admin",
             )
           }
         >
@@ -362,7 +380,13 @@ function SettlementDetailLoaded({
         value={activeSection}
         onValueChange={(v) => {
           handleSectionSelect(
-            v as "overview" | "population" | "economy" | "admin",
+            v as
+              | "overview"
+              | "population"
+              | "economy"
+              | "forecast"
+              | "reports"
+              | "admin",
           );
         }}
       >
@@ -481,6 +505,15 @@ function SettlementDetailLoaded({
       {/* Forecast Section */}
       {activeSection === "forecast" ? (
         <ForecastPanel settlementId={settlement.id} worldId={worldId} />
+      ) : null}
+
+      {/* Reports Section */}
+      {activeSection === "reports" ? (
+        <SettlementReportsPanel
+          currentTurnNumber={worldAccess.header.currentTurnNumber}
+          settlementId={settlement.id}
+          worldId={worldId}
+        />
       ) : null}
 
       {/* Admin Section */}
