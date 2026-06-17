@@ -186,8 +186,8 @@ export function computeForecastSnapshot(
     if (forecast !== undefined) {
       forecast.deathsBy.starvation = snap.starvationDeathsCount;
       forecast.deathsBy.homelessness = snap.homelessDeathsCount;
-      forecast.deathsBy.other =
-        snap.deathCount - snap.starvationDeathsCount - snap.homelessDeathsCount;
+      forecast.deathsBy.other = snap.deathCount - snap.starvationDeathsCount -
+        snap.homelessDeathsCount;
     }
   }
 

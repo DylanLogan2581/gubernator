@@ -106,7 +106,7 @@ export async function resolveSupabaseEndTurnSimulationInput(
     supabaseUrl,
   };
 
-  return resolveEndTurnInputFromCtx(requestBody, ctx);
+  return await resolveEndTurnInputFromCtx(requestBody, ctx);
 }
 
 // ---------------------------------------------------------------------------

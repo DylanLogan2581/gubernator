@@ -60,8 +60,9 @@ function resolveTargetSettlementIds(
       if (
         event.scopeSettlementId === null ||
         event.scopeSettlementId === undefined
-      )
+      ) {
         return [];
+      }
       return [event.scopeSettlementId];
     default:
       return [];
@@ -538,5 +539,12 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
     }),
   );
 
-  return { buildingStateChanges, citizenDeaths, depositUpdates, eventStatusPatches, logs, notifications };
+  return {
+    buildingStateChanges,
+    citizenDeaths,
+    depositUpdates,
+    eventStatusPatches,
+    logs,
+    notifications,
+  };
 }
