@@ -92,6 +92,30 @@ function ForecastPanelContent({
   }, [stockpilesQuery.data]);
 
   const warnings: Array<{ readonly key: string; readonly label: string }> = [];
+  if (forecast.deathsBy.starvation > 0) {
+    warnings.push({
+      key: "deaths-starvation",
+      label: `${forecast.deathsBy.starvation} citizen${
+        forecast.deathsBy.starvation === 1 ? "" : "s"
+      } will starve this turn`,
+    });
+  }
+  if (forecast.deathsBy.homelessness > 0) {
+    warnings.push({
+      key: "deaths-homelessness",
+      label: `${forecast.deathsBy.homelessness} citizen${
+        forecast.deathsBy.homelessness === 1 ? "" : "s"
+      } will die from homelessness this turn`,
+    });
+  }
+  if (forecast.deathsBy.other > 0) {
+    warnings.push({
+      key: "deaths-other",
+      label: `${forecast.deathsBy.other} citizen death${
+        forecast.deathsBy.other === 1 ? "" : "s"
+      } expected this turn`,
+    });
+  }
   for (const buildingId of forecast.buildingUpkeepFailures) {
     warnings.push({
       key: `upkeep-${buildingId}`,
