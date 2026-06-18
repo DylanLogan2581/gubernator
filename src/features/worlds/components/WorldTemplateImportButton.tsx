@@ -112,7 +112,7 @@ export function WorldTemplateImportButton({
 // ---------------------------------------------------------------------------
 // Error dialog (parse / validation failure)
 // ---------------------------------------------------------------------------
-function ImportErrorDialog({
+export function ImportErrorDialog({
   error,
   onClose,
 }: {
@@ -156,7 +156,7 @@ function ImportErrorDialog({
 // ---------------------------------------------------------------------------
 // Confirm dialog: dry-run report + name/visibility form
 // ---------------------------------------------------------------------------
-function ImportConfirmDialog({
+export function ImportConfirmDialog({
   template,
   queryClient,
   onClose,
@@ -303,7 +303,7 @@ function ImportConfirmDialog({
 // ---------------------------------------------------------------------------
 // Dry-run summary panel
 // ---------------------------------------------------------------------------
-function DryRunSummary({
+export function DryRunSummary({
   report,
   templateName,
 }: {

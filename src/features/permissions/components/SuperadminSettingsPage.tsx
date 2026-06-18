@@ -1,5 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings, Shield, UserPlus, Globe2, UserCog } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import {
+  Library,
+  Settings,
+  Shield,
+  UserPlus,
+  Globe2,
+  UserCog,
+} from "lucide-react";
 import { useState, type ChangeEvent, type JSX, type ReactNode } from "react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
@@ -114,7 +122,16 @@ export function SuperadminSettingsPage(): JSX.Element {
         </Button>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-4 flex items-center gap-2">
+        <Button asChild type="button" variant="outline" size="sm">
+          <Link to="/superadmin/templates">
+            <Library aria-hidden="true" />
+            Template Library
+          </Link>
+        </Button>
+      </div>
+
+      <div className="mt-4">
         <Input
           type="search"
           placeholder="Search by email or username…"

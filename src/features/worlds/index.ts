@@ -1,5 +1,6 @@
 // Worlds feature — create, list, and manage simulation worlds.
 // Implemented in Epic 2.
+export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
 export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
 export { WorldListPage } from "./components/WorldListPage";
