@@ -65,6 +65,11 @@ export {
   renameWorldMutationOptions,
   setWorldCurrentTurnNumberMutationOptions,
 } from "./mutations/worldSettingsMutations";
+export {
+  WorldTemplateImportError,
+  importWorldFromTemplateMutationOptions,
+  isWorldTemplateImportError,
+} from "./mutations/worldTemplateMutations";
 export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
 export type { WorldPopulationRules } from "./schemas/worldPopulationRulesSchemas";
 export type {

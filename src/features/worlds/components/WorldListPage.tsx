@@ -50,6 +50,8 @@ import {
   trashedWorldsQueryOptions,
 } from "../queries/worldQueries";
 
+import { WorldTemplateImportButton } from "./WorldTemplateImportButton";
+
 import type { AccessibleWorld } from "../types/worldTypes";
 
 export function WorldListPage(): JSX.Element {
@@ -195,6 +197,9 @@ function WorldListContent({
                 <Plus aria-hidden="true" />
                 Create world
               </Button>
+            ) : null}
+            {accessContext.isSuperAdmin ? (
+              <WorldTemplateImportButton queryClient={queryClient} />
             ) : null}
             {accessContext.isSuperAdmin ? (
               <Button

@@ -1,6 +1,9 @@
 import { requireSupabaseClient } from "@/lib/supabase";
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
-import type { WorldTemplate } from "@/shared/worldTemplateSchema";
+import {
+  worldTemplateSchema,
+  type WorldTemplate,
+} from "@/shared/worldTemplateSchema";
 
 export class WorldTemplateExportError extends Error {
   readonly code: string;
@@ -105,6 +108,32 @@ export async function exportWorldTemplate(
 
 export function serializeWorldTemplate(template: WorldTemplate): string {
   return JSON.stringify(template, null, 2);
+}
+
+export type ParseWorldTemplateResult =
+  | { readonly ok: true; readonly data: WorldTemplate }
+  | { readonly ok: false; readonly error: string };
+
+export function parseWorldTemplate(jsonText: string): ParseWorldTemplateResult {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(jsonText);
+  } catch {
+    return { ok: false, error: "File is not valid JSON." };
+  }
+
+  const result = worldTemplateSchema.safeParse(raw);
+  if (!result.success) {
+    const firstIssue = result.error.issues[0];
+    if (firstIssue === undefined) {
+      return { ok: false, error: "Invalid template." };
+    }
+    const field =
+      firstIssue.path.length > 0 ? firstIssue.path.join(".") : "root";
+    return { ok: false, error: `Field "${field}": ${firstIssue.message}` };
+  }
+
+  return { ok: true, data: result.data };
 }
 
 export function exportWorldTemplateMutationOptions(worldId: string): {

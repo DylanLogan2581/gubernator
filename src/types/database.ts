@@ -1,5 +1,4 @@
  
-/* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
 
 export type Json =
   | string
@@ -3302,6 +3301,39 @@ export type Database = {
       };
       has_unique: { Args: { "": string }; Returns: string };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
+      import_world_from_template: {
+        Args: { p_name: string; p_template?: Json; p_visibility?: string };
+        Returns: {
+          archived_at: string | null;
+          calendar_config_json: Json;
+          created_at: string;
+          current_turn_number: number;
+          fertility_chance: number;
+          food_consumption_per_citizen: number;
+          homelessness_decline_rate: number;
+          id: string;
+          incest_prevention_depth: number;
+          is_trashed: boolean;
+          maximum_fertility_age_turns: number | null;
+          minimum_partnership_age_turns: number;
+          mourning_period_turns: number;
+          name: string;
+          naming_config_json: Json;
+          npc_flavor_config_json: Json;
+          partnership_seek_chance: number;
+          starvation_severity_multiplier: number;
+          status: string;
+          updated_at: string;
+          visibility: string;
+          water_consumption_per_citizen: number;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       in_todo: { Args: never; Returns: boolean };
       internal_apply_turn_transition_advance_world_turn: {
         Args: { p_expected_turn_number: number; p_world_id: string };
@@ -4286,7 +4318,7 @@ export type Database = {
         | { Args: { how_many: number }; Returns: boolean[] }
         | { Args: { how_many: number; why: string }; Returns: boolean[] }
         | { Args: { why: string }; Returns: boolean[] }
-        | { Args: { how_many: number; why: string }; Returns: boolean[] };
+         ;
       todo_end: { Args: never; Returns: boolean[] };
       todo_start:
         | { Args: never; Returns: boolean[] }
