@@ -10,7 +10,9 @@ import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { settlementPopulationCapQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { cn } from "@/lib/utils";
 
 import { assignmentsInSettlementQueryOptions } from "../queries/citizenAssignmentsQueries";
 import {
@@ -47,6 +49,18 @@ export function CitizensPanel({
 }: CitizensPanelProps): JSX.Element {
   const [includeDead, setIncludeDead] = useState(false);
 
+  const aggregateQuery = useQuery(
+    citizenAggregateStatsForSettlementQueryOptions(settlementId),
+  );
+  const popCapQuery = useQuery(
+    settlementPopulationCapQueryOptions(settlementId),
+  );
+
+  const livingCount = aggregateQuery.data?.statusBreakdown.alive ?? null;
+  const popCap = popCapQuery.isSuccess ? popCapQuery.data : null;
+  const atCap =
+    livingCount !== null && popCap !== null && livingCount >= popCap;
+
   return (
     <Card aria-labelledby="citizens-panel-heading" className="grid gap-3">
       <div className="flex items-start justify-between gap-2 px-4 pt-4">
@@ -54,6 +68,18 @@ export function CitizensPanel({
           <h2 id="citizens-panel-heading" className="text-base font-medium">
             Citizens
           </h2>
+          {livingCount !== null ? (
+            <p
+              className={cn(
+                "text-sm tabular-nums",
+                atCap ? "text-destructive" : "text-muted-foreground",
+              )}
+            >
+              {livingCount}
+              {popCap !== null ? ` / ${String(popCap)}` : null}
+              {atCap ? " — at capacity" : null}
+            </p>
+          ) : null}
         </div>
         {canAdmin ? (
           <div className="flex items-center gap-2">

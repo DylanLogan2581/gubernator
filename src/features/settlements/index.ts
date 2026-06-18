@@ -34,6 +34,7 @@ export type {
 } from "./schemas/forecastSchemas";
 export {
   settlementByIdQueryOptions,
+  settlementPopulationCapQueryOptions,
   settlementsByWorldQueryOptions,
 } from "./queries/settlementsQueries";
 export { settlementsQueryKeys } from "./queries/settlementsQueryKeys";
