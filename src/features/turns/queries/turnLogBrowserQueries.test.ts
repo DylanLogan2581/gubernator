@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
-import {
-  turnLogBrowserQueryOptions,
-} from "./turnLogBrowserQueries";
+import { turnLogBrowserQueryOptions } from "./turnLogBrowserQueries";
 
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
@@ -101,6 +99,46 @@ describe("turnLogBrowserQueryOptions", () => {
     expect(entry.settlementNationId).toBe("n-99");
   });
 
+  it("maps citizen name from citizens join", async () => {
+    const queryClient = createQueryClient();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        rows: [
+          createRow({
+            id: "entry-c1",
+            citizen_id: "c-1",
+            citizens: { name: "Aldric" },
+          }),
+        ],
+        count: 1,
+      }),
+    );
+
+    const page = await queryClient.fetchQuery(
+      turnLogBrowserQueryOptions({ filter: {}, page: 0, worldId: "world-1" }),
+    );
+
+    const entry = page.entries[0];
+    expect(entry.citizenId).toBe("c-1");
+    expect(entry.citizenName).toBe("Aldric");
+  });
+
+  it("returns null citizenName when citizen join returns null", async () => {
+    const queryClient = createQueryClient();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        rows: [createRow({ id: "entry-c2", citizen_id: null, citizens: null })],
+        count: 1,
+      }),
+    );
+
+    const page = await queryClient.fetchQuery(
+      turnLogBrowserQueryOptions({ filter: {}, page: 0, worldId: "world-1" }),
+    );
+
+    expect(page.entries[0].citizenName).toBeNull();
+  });
+
   it("returns total count and paginates entries", async () => {
     const queryClient = createQueryClient();
     requireSupabaseClient.mockReturnValue(
@@ -122,6 +160,7 @@ describe("turnLogBrowserQueryOptions", () => {
 
 type TestRow = {
   readonly citizen_id: string | null;
+  readonly citizens: { readonly name: string } | null;
   readonly id: string;
   readonly log_category: string;
   readonly nation_id: string | null;
@@ -144,6 +183,7 @@ type TestRow = {
 function createRow(overrides: Partial<TestRow> = {}): TestRow {
   return {
     citizen_id: null,
+    citizens: null,
     id: "entry-default",
     log_category: "test_event",
     nation_id: null,

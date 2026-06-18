@@ -28,6 +28,8 @@ import {
   parseTradeRouteResumedPayload,
 } from "@/shared/simulation/outcomes/notificationPayloads";
 
+import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
+
 import type { JSX } from "react";
 
 // ---------------------------------------------------------------------------
@@ -50,7 +52,7 @@ function RawJsonFallback({
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">
           <Badge variant="outline" className="font-mono text-xs">
-            {category}
+            {LOG_CATEGORY_LABELS[category] ?? category}
           </Badge>
         </span>
         {json !== "{}" && json !== "null" ? (

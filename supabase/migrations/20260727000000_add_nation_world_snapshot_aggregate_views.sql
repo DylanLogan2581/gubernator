@@ -37,7 +37,7 @@ group by
   s.nation_id,
   sts.turn_number;
 
-comment on view public.nation_turn_population_aggregates is 'Per-nation-per-turn population sums aggregated from settlement_turn_snapshots at query time. ' 'SECURITY INVOKER — inherits caller RLS from the underlying tables.';
+comment on view public.nation_turn_population_aggregates is 'Per-nation-per-turn population sums aggregated from settlement_turn_snapshots at query time. SECURITY INVOKER — inherits caller RLS from the underlying tables.';
 
 grant
 select
@@ -66,7 +66,7 @@ group by
   sts.world_id,
   sts.turn_number;
 
-comment on view public.world_turn_population_aggregates is 'Per-world-per-turn population sums aggregated from settlement_turn_snapshots at query time. ' 'SECURITY INVOKER — inherits caller RLS from the underlying tables.';
+comment on view public.world_turn_population_aggregates is 'Per-world-per-turn population sums aggregated from settlement_turn_snapshots at query time. SECURITY INVOKER — inherits caller RLS from the underlying tables.';
 
 grant
 select
@@ -102,7 +102,7 @@ group by
   sts.resource_id,
   r.name;
 
-comment on view public.nation_turn_resource_aggregates is 'Per-nation-per-turn-per-resource sums aggregated from settlement_turn_resource_snapshots at query time. ' 'SECURITY INVOKER — inherits caller RLS from the underlying tables.';
+comment on view public.nation_turn_resource_aggregates is 'Per-nation-per-turn-per-resource sums aggregated from settlement_turn_resource_snapshots at query time. SECURITY INVOKER — inherits caller RLS from the underlying tables.';
 
 grant
 select
@@ -135,7 +135,7 @@ group by
   sts.resource_id,
   r.name;
 
-comment on view public.world_turn_resource_aggregates is 'Per-world-per-turn-per-resource sums aggregated from settlement_turn_resource_snapshots at query time. ' 'SECURITY INVOKER — inherits caller RLS from the underlying tables.';
+comment on view public.world_turn_resource_aggregates is 'Per-world-per-turn-per-resource sums aggregated from settlement_turn_resource_snapshots at query time. SECURITY INVOKER — inherits caller RLS from the underlying tables.';
 
 grant
 select

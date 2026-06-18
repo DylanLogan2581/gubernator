@@ -100,7 +100,7 @@ function ScopeCell({
         params={{ worldId, citizenId: entry.citizenId }}
         className="text-primary underline-offset-2 hover:underline"
       >
-        Unknown citizen
+        {entry.citizenName ?? "Unknown citizen"}
       </Link>,
     );
   }

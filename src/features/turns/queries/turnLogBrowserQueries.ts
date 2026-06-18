@@ -24,6 +24,7 @@ export type TurnLogBrowserFilter = {
 
 export type TurnLogBrowserEntry = {
   readonly citizenId: string | null;
+  readonly citizenName: string | null;
   readonly fromTurnNumber: number;
   readonly id: string;
   readonly logCategory: string;
@@ -54,6 +55,8 @@ export const TURN_LOG_PAGE_SIZE = 50;
 
 type TurnLogEntryRow = {
   readonly citizen_id: string | null;
+  // Embedded via turn_log_entries_citizen_id_fkey. Null when citizen_id is null.
+  readonly citizens: { readonly name: string } | null;
   readonly id: string;
   readonly log_category: string;
   readonly nation_id: string | null;
@@ -92,6 +95,7 @@ const TURN_LOG_SELECT = [
   "log_category",
   "payload_jsonb",
   "turn_transitions!turn_log_entries_transition_world_fkey!inner(from_turn_number,to_turn_number)",
+  "citizens!turn_log_entries_citizen_id_fkey(name)",
   "settlements!turn_log_entries_settlement_id_fkey(name,nation_id)",
   "nations!turn_log_entries_nation_id_fkey(name)",
 ].join(",");
@@ -99,6 +103,7 @@ const TURN_LOG_SELECT = [
 function toEntry(row: TurnLogEntryRow): TurnLogBrowserEntry {
   return {
     citizenId: row.citizen_id,
+    citizenName: row.citizens?.name ?? null,
     fromTurnNumber: row.turn_transitions?.from_turn_number ?? 0,
     id: row.id,
     logCategory: row.log_category,

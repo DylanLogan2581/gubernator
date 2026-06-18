@@ -16,7 +16,7 @@
 alter table public.settlement_turn_resource_snapshots
 add column adjustment_amount numeric(18, 4) not null default 0;
 
-comment on column public.settlement_turn_resource_snapshots.adjustment_amount is 'Admin stockpile edit recorded between the previous turn and this turn, ' 'computed as quantity_before[N] - quantity_after[N-1]. ' 'Zero for the first snapshot or when no admin edit occurred between turns.';
+comment on column public.settlement_turn_resource_snapshots.adjustment_amount is 'Admin stockpile edit recorded between the previous turn and this turn, computed as quantity_before[N] - quantity_after[N-1]. Zero for the first snapshot or when no admin edit occurred between turns.';
 
 -- ---------------------------------------------------------------------------
 -- Step 2: Grant INSERT on the new column (table-level INSERT was re-granted
@@ -59,7 +59,7 @@ group by
   sts.resource_id,
   r.name;
 
-comment on view public.nation_turn_resource_aggregates is 'Per-nation-per-turn-per-resource sums from settlement_turn_resource_snapshots at query time. ' 'SECURITY INVOKER — inherits caller RLS from the underlying tables. ' 'net_amount includes adjustment_amount for full reconciliation.';
+comment on view public.nation_turn_resource_aggregates is 'Per-nation-per-turn-per-resource sums from settlement_turn_resource_snapshots at query time. SECURITY INVOKER — inherits caller RLS from the underlying tables. net_amount includes adjustment_amount for full reconciliation.';
 
 grant
 select
@@ -92,7 +92,7 @@ group by
   sts.resource_id,
   r.name;
 
-comment on view public.world_turn_resource_aggregates is 'Per-world-per-turn-per-resource sums from settlement_turn_resource_snapshots at query time. ' 'SECURITY INVOKER — inherits caller RLS from the underlying tables. ' 'net_amount includes adjustment_amount for full reconciliation.';
+comment on view public.world_turn_resource_aggregates is 'Per-world-per-turn-per-resource sums from settlement_turn_resource_snapshots at query time. SECURITY INVOKER — inherits caller RLS from the underlying tables. net_amount includes adjustment_amount for full reconciliation.';
 
 grant
 select
