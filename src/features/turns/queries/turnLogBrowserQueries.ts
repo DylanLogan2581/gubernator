@@ -28,9 +28,14 @@ export type TurnLogBrowserEntry = {
   readonly id: string;
   readonly logCategory: string;
   readonly nationId: string | null;
+  readonly nationName: string | null;
   readonly payloadJsonb: unknown;
   readonly resourceId: string | null;
   readonly settlementId: string | null;
+  readonly settlementName: string | null;
+  /** nation_id resolved from the joined settlement row; used when the log entry's own
+   *  nation_id is null but a settlement is present (settlement always has a nation). */
+  readonly settlementNationId: string | null;
   readonly toTurnNumber: number;
   readonly turnTransitionId: string;
   readonly worldId: string;
@@ -52,9 +57,16 @@ type TurnLogEntryRow = {
   readonly id: string;
   readonly log_category: string;
   readonly nation_id: string | null;
+  // Embedded via turn_log_entries_nation_id_fkey. Null when nation_id is null.
+  readonly nations: { readonly name: string } | null;
   readonly payload_jsonb: unknown;
   readonly resource_id: string | null;
   readonly settlement_id: string | null;
+  // Embedded via turn_log_entries_settlement_id_fkey. Null when settlement_id is null.
+  readonly settlements: {
+    readonly name: string;
+    readonly nation_id: string;
+  } | null;
   readonly turn_transition_id: string;
   // Embedded via turn_log_entries_transition_world_fkey (composite FK).
   // null only if the join fails (data integrity issue); treated as turn 0.
@@ -80,6 +92,8 @@ const TURN_LOG_SELECT = [
   "log_category",
   "payload_jsonb",
   "turn_transitions!turn_log_entries_transition_world_fkey!inner(from_turn_number,to_turn_number)",
+  "settlements!turn_log_entries_settlement_id_fkey(name,nation_id)",
+  "nations!turn_log_entries_nation_id_fkey(name)",
 ].join(",");
 
 function toEntry(row: TurnLogEntryRow): TurnLogBrowserEntry {
@@ -89,9 +103,12 @@ function toEntry(row: TurnLogEntryRow): TurnLogBrowserEntry {
     id: row.id,
     logCategory: row.log_category,
     nationId: row.nation_id,
+    nationName: row.nations?.name ?? null,
     payloadJsonb: row.payload_jsonb,
     resourceId: row.resource_id,
     settlementId: row.settlement_id,
+    settlementName: row.settlements?.name ?? null,
+    settlementNationId: row.settlements?.nation_id ?? null,
     toTurnNumber: row.turn_transitions?.to_turn_number ?? 0,
     turnTransitionId: row.turn_transition_id,
     worldId: row.world_id,

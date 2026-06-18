@@ -50,28 +50,30 @@ function ScopeCell({
   const parts: JSX.Element[] = [];
 
   if (entry.settlementId !== null) {
-    if (entry.nationId !== null) {
+    // Prefer the log entry's own nation_id; fall back to the nation_id carried
+    // by the joined settlement row (settlement always has a nation).
+    const resolvedNationId = entry.nationId ?? entry.settlementNationId;
+    const settlementLabel = entry.settlementName ?? "Unknown settlement";
+
+    if (resolvedNationId !== null) {
       parts.push(
         <Link
           key="settlement"
           to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
           params={{
             worldId,
-            nationId: entry.nationId,
+            nationId: resolvedNationId,
             settlementId: entry.settlementId,
           }}
           className="text-primary underline-offset-2 hover:underline"
         >
-          Settlement
+          {settlementLabel}
         </Link>,
       );
     } else {
       parts.push(
-        <span
-          key="settlement"
-          className="font-mono text-xs text-muted-foreground"
-        >
-          {entry.settlementId.slice(0, 8)}…
+        <span key="settlement" className="text-muted-foreground">
+          {settlementLabel}
         </span>,
       );
     }
@@ -85,7 +87,7 @@ function ScopeCell({
         params={{ worldId, nationId: entry.nationId }}
         className="text-primary underline-offset-2 hover:underline"
       >
-        Nation
+        {entry.nationName ?? "Unknown nation"}
       </Link>,
     );
   }
@@ -98,7 +100,7 @@ function ScopeCell({
         params={{ worldId, citizenId: entry.citizenId }}
         className="text-primary underline-offset-2 hover:underline"
       >
-        Citizen
+        Unknown citizen
       </Link>,
     );
   }
