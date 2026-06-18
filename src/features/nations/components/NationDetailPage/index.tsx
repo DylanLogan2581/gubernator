@@ -25,6 +25,7 @@ import { NationDeleteSection } from "./DeleteSection";
 import { NationDetailsSection } from "./DetailsSection";
 import { NationHiddenToggleSection } from "./HiddenToggleSection";
 import { NationDetailFrame } from "./NationDetailFrame";
+import { NationReportsSection } from "./NationReportsSection";
 import { NationRelationshipsSection } from "./RelationshipsSection";
 import { NationRoleAssignmentSection } from "./RoleAssignmentSection";
 import { NationSettlementsSection } from "./SettlementsSection";
@@ -277,6 +278,12 @@ function NationDetailLoaded({
         isArchived={isArchived}
         nationId={nation.id}
         userId={null}
+        worldId={worldId}
+      />
+
+      <NationReportsSection
+        currentTurnNumber={worldAccess.header.currentTurnNumber}
+        nationId={nation.id}
         worldId={worldId}
       />
 

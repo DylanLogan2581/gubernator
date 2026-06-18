@@ -28,6 +28,8 @@ import {
   worldRouteAccessQueryOptions,
 } from "../queries/worldQueries";
 
+import { WorldReportsSection } from "./WorldReportsSection";
+
 import type { JSX, ReactNode } from "react";
 
 type WorldShellPageProps = {
@@ -254,6 +256,12 @@ function WorldShellContent({
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
       />
+      {worldQuery.data.canAdmin ? (
+        <WorldReportsSection
+          currentTurnNumber={worldQuery.data.header.currentTurnNumber}
+          worldId={worldId}
+        />
+      ) : null}
     </WorldShellFrame>
   );
 }

@@ -1,3 +1,4 @@
+ 
 /* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
 
 export type Json =
@@ -2350,6 +2351,74 @@ export type Database = {
       };
     };
     Views: {
+      nation_turn_population_aggregates: {
+        Row: {
+          birth_count: number | null;
+          death_count: number | null;
+          homeless_deaths_count: number | null;
+          nation_id: string | null;
+          population_cap: number | null;
+          population_npc: number | null;
+          population_player_character: number | null;
+          population_total: number | null;
+          starvation_deaths_count: number | null;
+          turn_number: number | null;
+          world_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_turn_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      nation_turn_resource_aggregates: {
+        Row: {
+          consumed_amount: number | null;
+          nation_id: string | null;
+          net_amount: number | null;
+          produced_amount: number | null;
+          resource_id: string | null;
+          resource_name: string | null;
+          trade_in_amount: number | null;
+          trade_out_amount: number | null;
+          turn_number: number | null;
+          world_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       pg_all_foreign_keys: {
         Row: {
           fk_columns: unknown[] | null;
@@ -2414,6 +2483,58 @@ export type Database = {
           volatility: string | null;
         };
         Relationships: [];
+      };
+      world_turn_population_aggregates: {
+        Row: {
+          birth_count: number | null;
+          death_count: number | null;
+          homeless_deaths_count: number | null;
+          population_cap: number | null;
+          population_npc: number | null;
+          population_player_character: number | null;
+          population_total: number | null;
+          starvation_deaths_count: number | null;
+          turn_number: number | null;
+          world_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_turn_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      world_turn_resource_aggregates: {
+        Row: {
+          consumed_amount: number | null;
+          net_amount: number | null;
+          produced_amount: number | null;
+          resource_id: string | null;
+          resource_name: string | null;
+          trade_in_amount: number | null;
+          trade_out_amount: number | null;
+          turn_number: number | null;
+          world_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlement_turn_resource_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Functions: {
@@ -3316,7 +3437,7 @@ export type Database = {
         }[];
       };
       mark_all_notifications_read: {
-        Args: never;
+        Args: { p_world_id?: string };
         Returns: {
           updated_count: number;
         }[];
