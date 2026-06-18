@@ -25,6 +25,7 @@ type ResourceTrendChartProps = {
 };
 
 const resourceChartConfig: ChartConfig = {
+  adjustment_amount: { color: "hsl(38 92% 50%)", label: "Adjustment" },
   consumed_amount: { color: "hsl(var(--chart-1))", label: "Consumed" },
   produced_amount: { color: "hsl(var(--chart-2))", label: "Produced" },
   quantity_after: { color: "hsl(var(--chart-5))", label: "Stock (end)" },
@@ -69,6 +70,7 @@ export function ResourceTrendChart({
   );
 
   const chartData = selectedRows.map((r) => ({
+    adjustment_amount: r.adjustment_amount,
     consumed_amount: r.consumed_amount,
     produced_amount: r.produced_amount,
     quantity_after: r.quantity_after,
@@ -209,6 +211,14 @@ export function ResourceTrendChart({
                   dot={false}
                   strokeWidth={1.5}
                 />
+                <Line
+                  type="monotone"
+                  dataKey="adjustment_amount"
+                  stroke="hsl(38 92% 50%)"
+                  dot={false}
+                  strokeWidth={1.5}
+                  strokeDasharray="4 2"
+                />
               </LineChart>
             </ChartContainer>
             <div className="mt-2 flex flex-wrap gap-4 text-xs">
@@ -218,6 +228,7 @@ export function ResourceTrendChart({
                   "consumed_amount",
                   "trade_in_amount",
                   "trade_out_amount",
+                  "adjustment_amount",
                 ] as const
               ).map((key) => {
                 const conf = resourceChartConfig[key];

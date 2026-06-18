@@ -20,6 +20,7 @@ export type ResourceSnapshotRow = {
   readonly consumed_amount: number;
   readonly trade_in_amount: number;
   readonly trade_out_amount: number;
+  readonly adjustment_amount: number;
 };
 
 // ---------------------------------------------------------------------------

@@ -36,7 +36,7 @@ const POPULATION_SNAPSHOT_SELECT =
   "turn_number,population_total,population_npc,population_player_character,population_cap,birth_count,death_count,starvation_deaths_count,homeless_deaths_count";
 
 const RESOURCE_SNAPSHOT_SELECT =
-  "turn_number,resource_id,quantity_before,quantity_after,produced_amount,consumed_amount,trade_in_amount,trade_out_amount,resources!inner(name)";
+  "turn_number,resource_id,quantity_before,quantity_after,produced_amount,consumed_amount,trade_in_amount,trade_out_amount,adjustment_amount,resources!inner(name)";
 
 export function settlementPopulationSnapshotsQueryOptions(
   settlementId: string,
@@ -116,6 +116,7 @@ type ResourceSnapshotDbRow = {
   readonly consumed_amount: number;
   readonly trade_in_amount: number;
   readonly trade_out_amount: number;
+  readonly adjustment_amount: number;
   readonly resources: { readonly name: string };
 };
 
@@ -139,6 +140,7 @@ async function getResourceSnapshots(
   }
 
   return data.map((row) => ({
+    adjustment_amount: row.adjustment_amount,
     consumed_amount: row.consumed_amount,
     produced_amount: row.produced_amount,
     quantity_after: row.quantity_after,

@@ -175,10 +175,10 @@ function ResourceSection({
 }): JSX.Element {
   function exportCsv(): void {
     const header =
-      "turn,date,resource,qty_before,qty_after,produced,consumed,trade_in,trade_out";
+      "turn,date,resource,qty_before,qty_after,produced,consumed,trade_in,trade_out,adjustment";
     const lines = rows.map(
       (r) =>
-        `${String(r.turn_number)},${turnLabel(r.turn_number)},${r.resource_name},${String(r.quantity_before)},${String(r.quantity_after)},${String(r.produced_amount)},${String(r.consumed_amount)},${String(r.trade_in_amount)},${String(r.trade_out_amount)}`,
+        `${String(r.turn_number)},${turnLabel(r.turn_number)},${r.resource_name},${String(r.quantity_before)},${String(r.quantity_after)},${String(r.produced_amount)},${String(r.consumed_amount)},${String(r.trade_in_amount)},${String(r.trade_out_amount)},${String(r.adjustment_amount)}`,
     );
     downloadCsv("resources.csv", [header, ...lines].join("\n"));
   }
