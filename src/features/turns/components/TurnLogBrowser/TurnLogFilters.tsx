@@ -82,9 +82,9 @@ export function TurnLogFilters({
   const showResource = fixedFilter.resourceId === undefined;
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       {/* Category */}
-      <div className="flex min-w-40 flex-col gap-1">
+      <div className="col-span-2 flex flex-col gap-1">
         <Label htmlFor="tlb-category" className="text-xs">
           Category
         </Label>
@@ -108,7 +108,7 @@ export function TurnLogFilters({
       </div>
 
       {/* Turn from */}
-      <div className="flex w-24 flex-col gap-1">
+      <div className="flex flex-col gap-1">
         <Label htmlFor="tlb-turn-from" className="text-xs">
           Turn from
         </Label>
@@ -124,7 +124,7 @@ export function TurnLogFilters({
       </div>
 
       {/* Turn to */}
-      <div className="flex w-24 flex-col gap-1">
+      <div className="flex flex-col gap-1">
         <Label htmlFor="tlb-turn-to" className="text-xs">
           Turn to
         </Label>
@@ -141,7 +141,7 @@ export function TurnLogFilters({
 
       {/* Settlement ID — hidden when fixed */}
       {showSettlement ? (
-        <div className="flex w-48 flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <Label htmlFor="tlb-settlement" className="text-xs">
             Settlement ID
           </Label>
@@ -163,7 +163,7 @@ export function TurnLogFilters({
 
       {/* Nation ID — hidden when fixed */}
       {showNation ? (
-        <div className="flex w-48 flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <Label htmlFor="tlb-nation" className="text-xs">
             Nation ID
           </Label>
@@ -184,7 +184,7 @@ export function TurnLogFilters({
 
       {/* Citizen ID — hidden when fixed */}
       {showCitizen ? (
-        <div className="flex w-48 flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <Label htmlFor="tlb-citizen" className="text-xs">
             Citizen ID
           </Label>
@@ -205,7 +205,7 @@ export function TurnLogFilters({
 
       {/* Resource ID — hidden when fixed */}
       {showResource ? (
-        <div className="flex w-48 flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <Label htmlFor="tlb-resource" className="text-xs">
             Resource ID
           </Label>
