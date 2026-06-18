@@ -94,7 +94,7 @@ export function phaseManagedPopulations(
 
     // --- Husbandry coverage ---
     const husbandryWorkers = husbandryWorkersByPop.get(pop.id)?.length ?? 0;
-    const husbandryNeeded = type.husbandryWorkersPerNAnimals * currentCount;
+    const husbandryNeeded = Math.ceil(currentCount / type.husbandryWorkersPerNAnimals);
     const husbandryCoverage = scaleDeficit(husbandryNeeded, husbandryWorkers);
 
     // --- Regular outputs ---
