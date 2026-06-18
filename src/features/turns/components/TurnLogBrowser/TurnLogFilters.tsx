@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 
+import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
+
 import type { TurnLogBrowserFilter } from "../../queries/turnLogBrowserQueries";
 import type { JSX } from "react";
 
@@ -99,7 +101,7 @@ export function TurnLogFilters({
           <option value="">All categories</option>
           {LOG_CATEGORIES.map((cat) => (
             <option key={cat} value={cat}>
-              {cat}
+              {LOG_CATEGORY_LABELS[cat] ?? cat}
             </option>
           ))}
         </NativeSelect>

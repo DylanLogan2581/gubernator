@@ -23,6 +23,7 @@ import {
   TURN_LOG_PAGE_SIZE,
   type TurnLogBrowserEntry,
 } from "../../queries/turnLogBrowserQueries";
+import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
 
 import { TurnLogPayloadRenderer } from "./TurnLogPayloadRenderer";
 
@@ -167,7 +168,8 @@ function buildColumns(worldId: string): ColumnDef<TurnLogBrowserEntry>[] {
       header: "Category",
       cell: ({ row }) => (
         <Badge variant="outline" className="font-mono text-xs">
-          {row.original.logCategory}
+          {LOG_CATEGORY_LABELS[row.original.logCategory] ??
+            row.original.logCategory}
         </Badge>
       ),
       size: 220,
