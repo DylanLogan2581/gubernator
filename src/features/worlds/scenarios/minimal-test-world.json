@@ -1,0 +1,129 @@
+{
+  "template_version": 1,
+  "meta": {
+    "name": "Minimal Test World",
+    "slug": "minimal-test-world",
+    "exported_at": "2026-06-17T00:00:00.000Z"
+  },
+  "calendar": {
+    "dateFormatTemplate": "{day} {month} {year}",
+    "months": [
+      { "index": 0, "name": "Firstmonth", "dayCount": 30 },
+      { "index": 1, "name": "Secondmonth", "dayCount": 30 },
+      { "index": 2, "name": "Thirdmonth", "dayCount": 30 },
+      { "index": 3, "name": "Fourthmonth", "dayCount": 30 }
+    ],
+    "startingDayOfMonth": 1,
+    "startingMonthIndex": 0,
+    "startingWeekdayOffset": 0,
+    "startingYear": 1,
+    "weekdays": [
+      { "index": 0, "name": "Oneday" },
+      { "index": 1, "name": "Twoday" },
+      { "index": 2, "name": "Threeday" },
+      { "index": 3, "name": "Fourday" },
+      { "index": 4, "name": "Fiveday" },
+      { "index": 5, "name": "Sixday" },
+      { "index": 6, "name": "Restday" }
+    ]
+  },
+  "population_rules": {
+    "fertility_chance": 0.05,
+    "food_consumption_per_citizen": 1.0,
+    "homelessness_decline_rate": 0.02,
+    "incest_prevention_depth": 2,
+    "maximum_fertility_age_turns": null,
+    "minimum_partnership_age_turns": 180,
+    "mourning_period_turns": 60,
+    "partnership_seek_chance": 0.1,
+    "starvation_severity_multiplier": 1.0,
+    "water_consumption_per_citizen": 1.0
+  },
+  "npc_flavor": {
+    "contradictions": ["bold yet cautious"],
+    "flaws": ["stubborn"],
+    "goals": ["survive another season"],
+    "traits": ["hardworking"]
+  },
+  "naming_config": {
+    "convention": "pool",
+    "female_given_names": ["Ada", "Bess", "Clara"],
+    "male_given_names": ["Bram", "Cole", "Drew"],
+    "surnames": []
+  },
+  "namesets": [
+    {
+      "name": "Default",
+      "is_default": true,
+      "config": {
+        "convention": "pool",
+        "female_given_names": ["Ada", "Bess", "Clara"],
+        "male_given_names": ["Bram", "Cole", "Drew"],
+        "surnames": []
+      }
+    }
+  ],
+  "resources": [
+    {
+      "name": "Grain",
+      "slug": "grain",
+      "base_stockpile_cap": 500,
+      "decay_rate": 0.01,
+      "is_system_resource": false
+    },
+    {
+      "name": "Wood",
+      "slug": "wood",
+      "base_stockpile_cap": 300,
+      "decay_rate": 0.0,
+      "is_system_resource": false
+    }
+  ],
+  "jobs": [
+    {
+      "name": "Farming",
+      "slug": "farming",
+      "job_type": "standard",
+      "base_capacity": 10,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": [{ "resource_slug": "grain", "amount_per_worker": 2 }]
+    },
+    {
+      "name": "Woodcutting",
+      "slug": "woodcutting",
+      "job_type": "standard",
+      "base_capacity": 10,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": [{ "resource_slug": "wood", "amount_per_worker": 3 }]
+    }
+  ],
+  "blueprints": [
+    {
+      "name": "Woodpile",
+      "slug": "woodpile",
+      "description": "A simple covered woodpile that protects stored timber.",
+      "max_instances_per_settlement": 3,
+      "grace_period_turns": 5,
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 40,
+          "construction_costs": [{ "resource_slug": "wood", "amount": 20 }],
+          "upkeep_costs": [],
+          "effects": [
+            {
+              "type": "resource_storage_increase",
+              "resource_slug": "wood",
+              "amount": 200
+            },
+            { "type": "population_cap_increase", "amount": 10 }
+          ]
+        }
+      ]
+    }
+  ],
+  "deposit_types": [],
+  "managed_population_types": []
+}

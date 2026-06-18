@@ -70,6 +70,11 @@ export {
   importWorldFromTemplateMutationOptions,
   isWorldTemplateImportError,
 } from "./mutations/worldTemplateMutations";
+export type {
+  BundledScenario,
+  TopologyGenerator,
+} from "./scenarios/scenarioTypes";
+export { BUNDLED_SCENARIOS } from "./scenarios/bundledScenarios";
 export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
 export type { WorldPopulationRules } from "./schemas/worldPopulationRulesSchemas";
 export type {
