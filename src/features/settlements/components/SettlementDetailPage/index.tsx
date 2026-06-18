@@ -22,7 +22,7 @@ import {
 import { SettlementReportsPanel } from "@/features/reports";
 import { SettlementStockpilesPanel } from "@/features/resources";
 import { SettlementTradeRoutesPanel } from "@/features/trade";
-import { TurnTransitionOutcomePanel } from "@/features/turns";
+import { TurnLogBrowser, TurnTransitionOutcomePanel } from "@/features/turns";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -50,6 +50,7 @@ type SettlementDetailPageProps = {
     | "economy"
     | "admin"
     | "forecast"
+    | "history"
     | "reports";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
@@ -114,6 +115,7 @@ function SettlementDetailWorldGate({
     | "population"
     | "economy"
     | "forecast"
+    | "history"
     | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
@@ -194,6 +196,7 @@ function SettlementDetailContent({
     | "population"
     | "economy"
     | "forecast"
+    | "history"
     | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
@@ -265,6 +268,7 @@ function SettlementDetailLoaded({
     | "population"
     | "economy"
     | "forecast"
+    | "history"
     | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
@@ -304,6 +308,7 @@ function SettlementDetailLoaded({
       | "population"
       | "economy"
       | "forecast"
+      | "history"
       | "reports"
       | "admin",
   ): void {
@@ -325,6 +330,7 @@ function SettlementDetailLoaded({
     { key: "economy", label: "Economy" },
     { key: "forecast", label: "Forecast" },
     { key: "reports", label: "Reports" },
+    { key: "history", label: "History" },
     { key: "admin", label: "Admin" },
   ] as const;
 
@@ -362,6 +368,7 @@ function SettlementDetailLoaded({
                 | "population"
                 | "economy"
                 | "forecast"
+                | "history"
                 | "reports"
                 | "admin",
             )
@@ -385,6 +392,7 @@ function SettlementDetailLoaded({
               | "population"
               | "economy"
               | "forecast"
+              | "history"
               | "reports"
               | "admin",
           );
@@ -512,6 +520,15 @@ function SettlementDetailLoaded({
         <SettlementReportsPanel
           currentTurnNumber={worldAccess.header.currentTurnNumber}
           settlementId={settlement.id}
+          worldId={worldId}
+        />
+      ) : null}
+
+      {/* History Section */}
+      {activeSection === "history" ? (
+        <TurnLogBrowser
+          fixedFilter={{ settlementId: settlement.id }}
+          title="Settlement turn log"
           worldId={worldId}
         />
       ) : null}

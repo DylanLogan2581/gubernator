@@ -12,6 +12,7 @@ import {
   currentAccessContextQueryOptions,
   type AccessContext,
 } from "@/features/permissions";
+import { TurnLogBrowser } from "@/features/turns";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -284,6 +285,12 @@ function NationDetailLoaded({
       <NationReportsSection
         currentTurnNumber={worldAccess.header.currentTurnNumber}
         nationId={nation.id}
+        worldId={worldId}
+      />
+
+      <TurnLogBrowser
+        fixedFilter={{ nationId: nation.id }}
+        title="Nation turn log"
         worldId={worldId}
       />
 

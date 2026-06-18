@@ -16,4 +16,10 @@ export const turnQueryKeys = {
     ] as const,
   latestSettlementTransitionOutcomeAll: () =>
     [...turnQueryKeys.all, "latest-settlement-transition-outcome"] as const,
+  turnLogBrowser: (
+    worldId: string,
+    filter: Record<string, unknown>,
+    page: number,
+  ) =>
+    [...turnQueryKeys.all, "turn-log-browser", worldId, filter, page] as const,
 } as const;
