@@ -85,7 +85,9 @@ export function TurnLogFilters({
   }
 
   const showSettlement = fixedFilter.settlementId === undefined;
-  const showNation = fixedFilter.nationId === undefined;
+  const showNation =
+    fixedFilter.nationId === undefined &&
+    fixedFilter.settlementId === undefined;
   const showCitizen = fixedFilter.citizenId === undefined;
   const showResource = fixedFilter.resourceId === undefined;
 
