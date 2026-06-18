@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { type Resource } from "@/features/resources";
+import { type Resource, type SettlementStockpile } from "@/features/resources";
 import { type TurnTransitionOutcome } from "@/features/turns";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseManagedPopulationExtinctPayload } from "@/shared/simulation";
@@ -155,6 +155,7 @@ type ManagedPopulationInstanceRowProps = {
   readonly queryClient: QueryClient;
   readonly resourceById: ReadonlyMap<string, Resource>;
   readonly snapshotCounts: ManagedPopSnapshotCounts;
+  readonly stockpileByResourceId: ReadonlyMap<string, SettlementStockpile>;
   readonly type: ManagedPopulationType | undefined;
 };
 
@@ -167,6 +168,7 @@ export function ManagedPopulationInstanceRow({
   queryClient,
   resourceById,
   snapshotCounts,
+  stockpileByResourceId,
   type,
 }: ManagedPopulationInstanceRowProps): JSX.Element {
   const [editingCull, setEditingCull] = useState(false);
@@ -177,6 +179,9 @@ export function ManagedPopulationInstanceRow({
     type !== undefined
       ? Math.ceil(instance.currentCount / type.husbandryWorkersPerNAnimals)
       : null;
+
+  const workerSufficient =
+    requiredWorkers === null || husbandryCount >= requiredWorkers;
 
   const trendValue =
     type !== undefined && requiredWorkers !== null && requiredWorkers > 0
@@ -195,18 +200,6 @@ export function ManagedPopulationInstanceRow({
     instance.status === "extinct"
       ? extinctBadgeTooltip(instance.id, latestOutcome)
       : undefined;
-
-  const maintenanceSummary =
-    type !== undefined && type.maintenanceRulesJson.length > 0
-      ? type.maintenanceRulesJson
-          .map((entry) => {
-            const resourceName =
-              resourceById.get(entry.resourceId)?.name ?? entry.resourceId;
-            const amount = instance.currentCount * entry.amountPerNAnimals;
-            return `${resourceName}: ${amount.toFixed(1)}`;
-          })
-          .join(", ")
-      : "—";
 
   return (
     <>
@@ -287,13 +280,43 @@ export function ManagedPopulationInstanceRow({
         <TableCell className="py-2 pr-4 text-muted-foreground">
           {instance.husbandryJobName}
           {requiredWorkers !== null ? (
-            <span className="ml-1 text-xs">
+            <span
+              aria-label={
+                workerSufficient ? "Workers sufficient" : "Workers insufficient"
+              }
+              className={`ml-1 text-xs ${workerSufficient ? "text-success-foreground" : "text-destructive"}`}
+            >
               ({husbandryCount}/{requiredWorkers})
             </span>
           ) : null}
         </TableCell>
-        <TableCell className="py-2 pr-4 text-muted-foreground text-xs">
-          {maintenanceSummary}
+        <TableCell className="py-2 pr-4 text-xs">
+          {type === undefined || type.maintenanceRulesJson.length === 0 ? (
+            <span className="text-muted-foreground">—</span>
+          ) : (
+            <div className="flex flex-col gap-0.5">
+              {type.maintenanceRulesJson.map((entry) => {
+                const resourceName =
+                  resourceById.get(entry.resourceId)?.name ?? entry.resourceId;
+                const required =
+                  instance.currentCount * entry.amountPerNAnimals;
+                const inStock =
+                  stockpileByResourceId.get(entry.resourceId)?.quantity ?? 0;
+                const met = inStock >= required;
+                return (
+                  <span
+                    key={entry.resourceId}
+                    aria-label={`${resourceName}: upkeep ${met ? "met" : "short"}`}
+                    className={
+                      met ? "text-success-foreground" : "text-destructive"
+                    }
+                  >
+                    {resourceName}: {required.toFixed(1)}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </TableCell>
         {canAdmin ? (
           <TableCell className="w-32 py-2 text-right">
