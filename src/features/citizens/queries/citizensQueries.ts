@@ -49,6 +49,13 @@ type UnpairedAliveInWorldQueryOptions = UseQueryOptions<
   readonly Citizen[],
   UnpairedAliveInWorldQueryKey
 >;
+type CitizensInWorldQueryKey = ReturnType<typeof citizensQueryKeys.worldList>;
+type CitizensInWorldQueryOptions = UseQueryOptions<
+  readonly Citizen[],
+  AuthUiError,
+  readonly Citizen[],
+  CitizensInWorldQueryKey
+>;
 type CitizenAdminDetailsQueryOptions = UseQueryOptions<
   CitizenAdminDetails | null,
   AuthUiError,
@@ -164,6 +171,36 @@ export function unpairedAliveCitizensInWorldQueryOptions(
     queryFn: () => getUnpairedAliveCitizensInWorld(client, worldId),
     queryKey: citizensQueryKeys.unpairedAliveInWorld(worldId),
   });
+}
+
+export function citizensInWorldQueryOptions(
+  worldId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CitizensInWorldQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getCitizensInWorld(client, worldId),
+    queryKey: citizensQueryKeys.worldList(worldId),
+  });
+}
+
+async function getCitizensInWorld(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+): Promise<readonly Citizen[]> {
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_SELECT)
+    .eq("world_id", worldId)
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .returns<CitizenRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toCitizen);
 }
 
 export function playerCharactersInNationQueryOptions(

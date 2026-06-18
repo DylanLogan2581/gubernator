@@ -57,6 +57,7 @@ export function TurnLogBrowser({
         fixedFilter={fixedFilter}
         filter={userFilter}
         onFilterChange={handleFilterChange}
+        worldId={worldId}
       />
 
       {query.isError ? (

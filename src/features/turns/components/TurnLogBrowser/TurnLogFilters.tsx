@@ -1,9 +1,15 @@
 // Filter controls for the turn log browser.
 // Fields hidden when their value is locked via fixedFilter.
 
+import { useQuery } from "@tanstack/react-query";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { citizensInWorldQueryOptions } from "@/features/citizens";
+import { nationsListQueryOptions } from "@/features/nations";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
 
 import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
 
@@ -60,12 +66,14 @@ type TurnLogFiltersProps = {
   readonly fixedFilter: TurnLogBrowserFilter;
   readonly filter: TurnLogBrowserFilter;
   readonly onFilterChange: (next: TurnLogBrowserFilter) => void;
+  readonly worldId: string;
 };
 
 export function TurnLogFilters({
   fixedFilter,
   filter,
   onFilterChange,
+  worldId,
 }: TurnLogFiltersProps): JSX.Element {
   function set(patch: Partial<TurnLogBrowserFilter>): void {
     onFilterChange({ ...filter, ...patch });
@@ -80,6 +88,16 @@ export function TurnLogFilters({
   const showNation = fixedFilter.nationId === undefined;
   const showCitizen = fixedFilter.citizenId === undefined;
   const showResource = fixedFilter.resourceId === undefined;
+
+  const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
+  const nationsQuery = useQuery(nationsListQueryOptions(worldId));
+  const citizensQuery = useQuery(citizensInWorldQueryOptions(worldId));
+  const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+
+  const settlements = settlementsQuery.data ?? [];
+  const nations = nationsQuery.data ?? [];
+  const citizens = citizensQuery.data ?? [];
+  const resources = resourcesQuery.data ?? [];
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -139,16 +157,14 @@ export function TurnLogFilters({
         />
       </div>
 
-      {/* Settlement ID — hidden when fixed */}
+      {/* Settlement — hidden when fixed */}
       {showSettlement ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="tlb-settlement" className="text-xs">
-            Settlement ID
+            Settlement
           </Label>
-          <Input
+          <NativeSelect
             id="tlb-settlement"
-            type="text"
-            placeholder="UUID…"
             value={filter.settlementId ?? ""}
             onChange={(e) =>
               set({
@@ -156,71 +172,93 @@ export function TurnLogFilters({
                   e.target.value !== "" ? e.target.value : undefined,
               })
             }
-            className="h-8 font-mono text-xs"
-          />
+            className="h-8 text-sm"
+          >
+            <option value="">All settlements</option>
+            {settlements.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
       ) : null}
 
-      {/* Nation ID — hidden when fixed */}
+      {/* Nation — hidden when fixed */}
       {showNation ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="tlb-nation" className="text-xs">
-            Nation ID
+            Nation
           </Label>
-          <Input
+          <NativeSelect
             id="tlb-nation"
-            type="text"
-            placeholder="UUID…"
             value={filter.nationId ?? ""}
             onChange={(e) =>
               set({
                 nationId: e.target.value !== "" ? e.target.value : undefined,
               })
             }
-            className="h-8 font-mono text-xs"
-          />
+            className="h-8 text-sm"
+          >
+            <option value="">All nations</option>
+            {nations.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
       ) : null}
 
-      {/* Citizen ID — hidden when fixed */}
+      {/* Citizen — hidden when fixed */}
       {showCitizen ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="tlb-citizen" className="text-xs">
-            Citizen ID
+            Citizen
           </Label>
-          <Input
+          <NativeSelect
             id="tlb-citizen"
-            type="text"
-            placeholder="UUID…"
             value={filter.citizenId ?? ""}
             onChange={(e) =>
               set({
                 citizenId: e.target.value !== "" ? e.target.value : undefined,
               })
             }
-            className="h-8 font-mono text-xs"
-          />
+            className="h-8 text-sm"
+          >
+            <option value="">All citizens</option>
+            {citizens.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
       ) : null}
 
-      {/* Resource ID — hidden when fixed */}
+      {/* Resource — hidden when fixed */}
       {showResource ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="tlb-resource" className="text-xs">
-            Resource ID
+            Resource
           </Label>
-          <Input
+          <NativeSelect
             id="tlb-resource"
-            type="text"
-            placeholder="UUID…"
             value={filter.resourceId ?? ""}
             onChange={(e) =>
               set({
                 resourceId: e.target.value !== "" ? e.target.value : undefined,
               })
             }
-            className="h-8 font-mono text-xs"
-          />
+            className="h-8 text-sm"
+          >
+            <option value="">All resources</option>
+            {resources.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
       ) : null}
     </div>

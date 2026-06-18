@@ -73,6 +73,7 @@ export {
   citizenAggregateStatsForSettlementQueryOptions,
   citizenByIdQueryOptions,
   citizensInSettlementQueryOptions,
+  citizensInWorldQueryOptions,
   playerCharactersInNationQueryOptions,
   toCitizen,
   unpairedAliveCitizensInWorldQueryOptions,
