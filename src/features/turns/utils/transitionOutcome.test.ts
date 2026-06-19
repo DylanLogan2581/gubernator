@@ -151,7 +151,7 @@ describe("transitionOutcome utils", () => {
   describe("notificationTypeLabel", () => {
     it("returns label for known type", () => {
       const label = notificationTypeLabel("building.suspended");
-      expect(label).toBe("Buildings suspended");
+      expect(label).toBe("Buildings Suspended");
     });
 
     it("returns type string for unknown type", () => {
@@ -164,10 +164,15 @@ describe("transitionOutcome utils", () => {
     it("contains all expected keys", () => {
       const expectedKeys = [
         "building.auto_deconstructed",
+        "building.recovered",
         "building.suspended",
+        "citizen.born",
+        "citizen.died",
         "construction.completed",
         "construction.paused",
         "deposit.depleted",
+        "event.activated",
+        "event.expired",
         "managed_population.declining",
         "managed_population.extinct",
         "partnership.formed",
@@ -176,10 +181,25 @@ describe("transitionOutcome utils", () => {
         "settlement.starvation_occurred",
         "trade_route.paused",
         "trade_route.resumed",
+        "turn.completed",
       ];
 
       for (const key of expectedKeys) {
         expect(NOTIFICATION_LABELS[key]).toBeDefined();
+      }
+    });
+
+    it("uses title case for all labels", () => {
+      for (const [key, label] of Object.entries(NOTIFICATION_LABELS)) {
+        const words = label.split(/[\s:]+/).filter(Boolean);
+        for (const word of words) {
+          // Skip non-alphabetic tokens (e.g. "&")
+          if (!/[a-zA-Z]/.test(word)) continue;
+          expect(
+            word[0],
+            `Label for "${key}" has word "${word}" not starting with uppercase`,
+          ).toMatch(/[A-Z]/);
+        }
       }
     });
   });

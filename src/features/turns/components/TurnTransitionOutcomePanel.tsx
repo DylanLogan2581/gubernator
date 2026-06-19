@@ -195,11 +195,11 @@ export function TurnTransitionOutcomeContent({
           <MetricTile label="Births" value={deltas.births} />
           <MetricTile label="Deaths" value={deltas.deaths} />
           <MetricTile
-            label="Buildings suspended"
+            label="Buildings Suspended"
             value={deltas.buildingsSuspended}
           />
           <MetricTile
-            label="Deposits depleted"
+            label="Deposits Depleted"
             value={deltas.depositsDepleted}
           />
         </dl>

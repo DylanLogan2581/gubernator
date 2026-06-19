@@ -64,19 +64,25 @@ export function sortNotificationsBySettlement(
 }
 
 export const NOTIFICATION_LABELS: Readonly<Record<string, string>> = {
-  "building.auto_deconstructed": "Buildings auto-deconstructed",
-  "building.suspended": "Buildings suspended",
-  "construction.completed": "Constructions completed",
-  "construction.paused": "Constructions paused",
-  "deposit.depleted": "Deposits depleted",
-  "managed_population.declining": "Managed populations declining",
-  "managed_population.extinct": "Managed populations extinct",
-  "partnership.formed": "Partnerships formed",
+  "building.auto_deconstructed": "Buildings Auto-Deconstructed",
+  "building.recovered": "Buildings Recovered",
+  "building.suspended": "Buildings Suspended",
+  "citizen.born": "Citizen Born",
+  "citizen.died": "Citizen Died",
+  "construction.completed": "Constructions Completed",
+  "construction.paused": "Constructions Paused",
+  "deposit.depleted": "Deposits Depleted",
+  "event.activated": "Event Activated",
+  "event.expired": "Event Expired",
+  "managed_population.declining": "Managed Populations Declining",
+  "managed_population.extinct": "Managed Populations Extinct",
+  "partnership.formed": "Partnerships Formed",
   "partnership.widowed": "Widowhoods",
-  "settlement.homelessness_occurred": "Homelessness events",
-  "settlement.starvation_occurred": "Starvation events",
-  "trade_route.paused": "Trade routes paused",
-  "trade_route.resumed": "Trade routes resumed",
+  "settlement.homelessness_occurred": "Homelessness Events",
+  "settlement.starvation_occurred": "Starvation Events",
+  "trade_route.paused": "Trade Routes Paused",
+  "trade_route.resumed": "Trade Routes Resumed",
+  "turn.completed": "Turn Completed",
 };
 
 export function notificationTypeLabel(type: string): string {
