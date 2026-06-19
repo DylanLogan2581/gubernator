@@ -209,6 +209,8 @@ function StockpileRow({
   readonly stockpile: SettlementStockpile;
 }): JSX.Element {
   const atCap = stockpile.quantity >= stockpile.effectiveCap;
+  const formatInt = (n: number): string =>
+    n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
   return (
     <TableRow>
@@ -221,7 +223,7 @@ function StockpileRow({
         </div>
       </TableCell>
       <TableCell className="py-2 pr-4 tabular-nums">
-        {stockpile.quantity.toLocaleString()}
+        {formatInt(stockpile.quantity)}
       </TableCell>
       <TableCell className="py-2 pr-4 tabular-nums">
         {stockpile.effectiveCap.toLocaleString()}
@@ -241,11 +243,11 @@ function StockpileRow({
           <span className="text-muted-foreground">—</span>
         ) : forecastDelta > 0 ? (
           <span className="text-green-600 dark:text-green-500">
-            +{forecastDelta.toLocaleString()}
+            +{formatInt(forecastDelta)}
           </span>
         ) : forecastDelta < 0 ? (
           <span className="text-red-600 dark:text-red-500">
-            {forecastDelta.toLocaleString()}
+            {formatInt(forecastDelta)}
           </span>
         ) : (
           <span className="text-muted-foreground">0</span>
