@@ -2084,6 +2084,13 @@ export type Database = {
         };
         Relationships: [
           {
+            foreignKeyName: "turn_log_entries_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "turn_log_entries_nation_id_fkey";
             columns: ["nation_id"];
             isOneToOne: false;
