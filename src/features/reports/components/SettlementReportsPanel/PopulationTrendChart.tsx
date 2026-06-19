@@ -162,7 +162,7 @@ export function PopulationTrendChart({
               tick={{ fontSize: 11 }}
               interval="preserveStartEnd"
             />
-            <YAxis tick={{ fontSize: 11 }} width={40} />
+            <YAxis tick={{ fontSize: 11 }} width={40} allowDecimals={false} />
             <ChartTooltip
               content={
                 <ChartTooltipContent
