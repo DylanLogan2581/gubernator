@@ -67,7 +67,7 @@ function CitizenAssignmentSummary({
         label="Assigned on turn"
         value={String(assignment.assignedOnTurnNumber)}
       />
-      <Readout label="Target" value={assignmentTargetLabel(assignment)} mono />
+      <Readout label="Target" value={assignmentTargetLabel(assignment)} />
     </dl>
   );
 }

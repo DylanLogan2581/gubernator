@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
 
 import { CitizenDetailPage } from "./CitizenDetailPage";
@@ -695,6 +696,44 @@ describe("CitizenDetailPage", () => {
     expect((backLink as HTMLAnchorElement).href).not.toContain("/nations/");
   });
 
+  it("shows a pre-simulation tooltip button for citizens born before turn 1", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({ born_on_turn_number: -23 }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Citizen" });
+    expect(
+      screen.getByRole("button", {
+        name: "This citizen existed before the simulation began",
+      }),
+    ).toBeDefined();
+    expect(screen.getByText("-23")).toBeDefined();
+  });
+
+  it("does not show a pre-simulation tooltip for citizens born on positive turns", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({ born_on_turn_number: 5 }),
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByRole("heading", { level: 1, name: "Citizen" });
+    expect(
+      screen.queryByRole("button", {
+        name: "This citizen existed before the simulation began",
+      }),
+    ).toBeNull();
+    expect(screen.getByText("5")).toBeDefined();
+  });
+
   it("renders a standard-job assignment with the job name", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -726,9 +765,11 @@ describe("CitizenDetailPage", () => {
 
 function renderPage(): void {
   render(
-    <QueryClientProvider client={createQueryClient()}>
-      <CitizenDetailPage citizenId={CITIZEN_ID} worldId={WORLD_ID} />
-    </QueryClientProvider>,
+    <TooltipProvider>
+      <QueryClientProvider client={createQueryClient()}>
+        <CitizenDetailPage citizenId={CITIZEN_ID} worldId={WORLD_ID} />
+      </QueryClientProvider>
+    </TooltipProvider>,
   );
 }
 

@@ -105,6 +105,11 @@ export function CitizenCoreSection({
           <Readout label="Sex" value={citizen.sex} />
           <Readout
             label="Born on turn"
+            tooltip={
+              citizen.bornOnTurnNumber !== null && citizen.bornOnTurnNumber < 0
+                ? "This citizen existed before the simulation began"
+                : undefined
+            }
             value={
               citizen.bornOnTurnNumber === null
                 ? null
