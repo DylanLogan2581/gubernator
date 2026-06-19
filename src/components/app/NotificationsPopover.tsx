@@ -115,6 +115,11 @@ export function NotificationsPopover({
               ) : (
                 notifications.map((notification) => {
                   const deepLink = getDeepLink(notification);
+                  const contextParts = [
+                    notification.worldName,
+                    notification.nationName,
+                    notification.settlementName,
+                  ].filter((name): name is string => name !== null);
                   return (
                     <div
                       key={notification.id}
@@ -125,6 +130,11 @@ export function NotificationsPopover({
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <p className="text-sm">{notification.messageText}</p>
+                          {contextParts.length > 0 ? (
+                            <p className="text-xs text-muted-foreground">
+                              {contextParts.join(" · ")}
+                            </p>
+                          ) : null}
                           <p className="text-xs text-muted-foreground">
                             {/* eslint-disable-next-line no-restricted-syntax */}
                             {new Date(
