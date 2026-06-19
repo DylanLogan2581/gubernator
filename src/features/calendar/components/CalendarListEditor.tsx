@@ -18,6 +18,7 @@ export function CalendarListEditor<
   addButtonLabel,
   error,
   fields,
+  itemLabel,
   items,
   legend,
   onAdd,
@@ -31,6 +32,7 @@ export function CalendarListEditor<
     readonly label: string;
     readonly type: "number" | "text";
   }[];
+  readonly itemLabel?: string;
   readonly items: readonly TItem[];
   readonly legend: string;
   readonly onAdd: () => void;
@@ -42,6 +44,7 @@ export function CalendarListEditor<
   ) => void;
 }): JSX.Element {
   const errorId = `calendar-${legend.toLowerCase()}-error`;
+  const rowLabel = itemLabel ?? legend;
 
   return (
     <fieldset
@@ -63,11 +66,15 @@ export function CalendarListEditor<
             key={item.index}
             className="grid gap-2 sm:grid-cols-[1fr_8rem_2rem]"
           >
-            {fields.map((field) =>
-              field.type === "number" ? (
+            {fields.map((field) => {
+              const fieldLabel =
+                fields.length > 1
+                  ? `${rowLabel} ${index + 1} ${field.label}`
+                  : `${rowLabel} ${index + 1}`;
+              return field.type === "number" ? (
                 <NumberField
                   key={field.key}
-                  label={`${legend} ${index + 1} ${field.label}`}
+                  label={fieldLabel}
                   min={1}
                   value={Number(item[field.key])}
                   onChange={(value) => onUpdate(index, field.key, value)}
@@ -78,9 +85,7 @@ export function CalendarListEditor<
                   htmlFor={`${legend}-${index}-${field.key}`}
                   className="grid gap-1 text-sm"
                 >
-                  <span className="text-muted-foreground">
-                    {legend} {index + 1} {field.label}
-                  </span>
+                  <span className="text-muted-foreground">{fieldLabel}</span>
                   <Input
                     id={`${legend}-${index}-${field.key}`}
                     value={String(item[field.key])}
@@ -89,8 +94,8 @@ export function CalendarListEditor<
                     }
                   />
                 </Label>
-              ),
-            )}
+              );
+            })}
             <Button
               type="button"
               variant="ghost"
