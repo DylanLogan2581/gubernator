@@ -60,7 +60,7 @@ describe("TurnTransitionOutcomeContent", () => {
   it("renders notifications grouped by type in collapsed state", () => {
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    expect(screen.getByText("Notifications")).toBeDefined();
+    expect(screen.getByText("Notifications this turn")).toBeDefined();
     expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
     expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
 

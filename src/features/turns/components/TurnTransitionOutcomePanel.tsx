@@ -206,7 +206,7 @@ export function TurnTransitionOutcomeContent({
 
         {notificationGroups.length > 0 ? (
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Notifications</h3>
+            <h3 className="text-sm font-medium">Notifications this turn</h3>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"

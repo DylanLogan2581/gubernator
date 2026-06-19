@@ -90,7 +90,10 @@ export function NotificationsPopover({
         <div className="flex flex-col">
           <div className="border-b px-4 py-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Notifications</h2>
+              <div>
+                <h2 className="font-semibold">Notifications</h2>
+                <p className="text-xs text-muted-foreground">All unread</p>
+              </div>
               {unreadCount > 0 ? (
                 <Button
                   variant="ghost"
