@@ -134,34 +134,34 @@ describe("TurnTransitionOutcomeContent", () => {
     const user = userEvent.setup();
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    // Initially both group triggers should be present
+    // Initially both group triggers should be present (no filter active)
     expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
     expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
 
-    // Click the "Buildings suspended" toggle to deselect it
+    // Click the "Buildings suspended" toggle to include only that category
     const buildingsChip = screen.getByRole("button", {
-      name: "Filter Buildings suspended",
+      name: "Filter by Buildings suspended",
     });
     await user.click(buildingsChip);
 
-    // Only "Deposits depleted" should remain
-    expect(screen.queryByText("Buildings suspended (1)")).toBeNull();
-    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+    // Only "Buildings suspended" should remain (it is the selected/included category)
+    expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
+    expect(screen.queryByText("Deposits depleted (1)")).toBeNull();
   });
 
   it("resets filter when All chip is clicked", async () => {
     const user = userEvent.setup();
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    // Deselect one category via toggle
+    // Select one category via toggle (include it)
     const buildingsChip = screen.getByRole("button", {
-      name: "Filter Buildings suspended",
+      name: "Filter by Buildings suspended",
     });
     await user.click(buildingsChip);
 
-    // Only one group should be visible
-    expect(screen.queryByText("Buildings suspended (1)")).toBeNull();
-    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+    // Only the selected category should be visible
+    expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
+    expect(screen.queryByText("Deposits depleted (1)")).toBeNull();
 
     // Click "All" to reset
     const allChip = screen.getByRole("button", { name: "All" });

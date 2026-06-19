@@ -144,18 +144,20 @@ export function TurnTransitionOutcomeContent({
     [notificationGroups],
   );
 
-  const [selectedCategories, setSelectedCategories] =
-    useState<string[]>(allCategories);
+  // Empty = no filter = show all. Selecting tags narrows to those categories.
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const resetFilter = (): void => {
-    setSelectedCategories(allCategories);
+    setSelectedCategories([]);
   };
 
   const filteredGroups = useMemo(
     () =>
-      notificationGroups.filter((group) =>
-        selectedCategories.includes(group.type),
-      ),
+      selectedCategories.length === 0
+        ? notificationGroups
+        : notificationGroups.filter((group) =>
+            selectedCategories.includes(group.type),
+          ),
     [notificationGroups, selectedCategories],
   );
 
@@ -210,7 +212,7 @@ export function TurnTransitionOutcomeContent({
                 type="button"
                 onClick={resetFilter}
                 className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  selectedCategories.length === allCategories.length
+                  selectedCategories.length === 0
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background text-foreground hover:border-primary"
                 }`}
@@ -228,7 +230,7 @@ export function TurnTransitionOutcomeContent({
                     key={category}
                     value={category}
                     className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                    aria-label={`Filter ${notificationTypeLabel(category)}`}
+                    aria-label={`Filter by ${notificationTypeLabel(category)}`}
                   >
                     {notificationTypeLabel(category)}
                   </ToggleGroupItem>
