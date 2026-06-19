@@ -24,24 +24,24 @@ type PopulationTrendChartProps = {
 };
 
 const populationLineConfig: ChartConfig = {
-  population_cap: { color: "hsl(var(--chart-4))", label: "Cap" },
-  population_npc: { color: "hsl(var(--chart-2))", label: "NPC" },
+  population_cap: { color: "var(--chart-4)", label: "Cap" },
+  population_npc: { color: "var(--chart-2)", label: "NPC" },
   population_player_character: {
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
     label: "Player characters",
   },
-  population_total: { color: "hsl(var(--chart-1))", label: "Total" },
+  population_total: { color: "var(--chart-1)", label: "Total" },
 };
 
 const eventsBarConfig: ChartConfig = {
-  birth_count: { color: "hsl(var(--chart-2))", label: "Births" },
-  death_count: { color: "hsl(var(--chart-1))", label: "Deaths" },
+  birth_count: { color: "var(--chart-2)", label: "Births" },
+  death_count: { color: "var(--chart-1)", label: "Deaths" },
   homeless_deaths_count: {
-    color: "hsl(var(--chart-4))",
+    color: "var(--chart-4)",
     label: "Homeless deaths",
   },
   starvation_deaths_count: {
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
     label: "Starvation deaths",
   },
 };
@@ -105,29 +105,33 @@ export function PopulationTrendChart({
             <Line
               type="monotone"
               dataKey="population_total"
-              stroke="hsl(var(--chart-1))"
+              stroke="var(--chart-1)"
               dot={false}
+              connectNulls
               strokeWidth={2}
             />
             <Line
               type="monotone"
               dataKey="population_npc"
-              stroke="hsl(var(--chart-2))"
+              stroke="var(--chart-2)"
               dot={false}
+              connectNulls
               strokeWidth={1.5}
             />
             <Line
               type="monotone"
               dataKey="population_player_character"
-              stroke="hsl(var(--chart-3))"
+              stroke="var(--chart-3)"
               dot={false}
+              connectNulls
               strokeWidth={1.5}
             />
             <Line
               type="monotone"
               dataKey="population_cap"
-              stroke="hsl(var(--chart-4))"
+              stroke="var(--chart-4)"
               dot={false}
+              connectNulls
               strokeWidth={1.5}
               strokeDasharray="4 2"
             />
@@ -170,25 +174,17 @@ export function PopulationTrendChart({
                 />
               }
             />
-            <Bar
-              dataKey="birth_count"
-              stackId="events"
-              fill="hsl(var(--chart-2))"
-            />
-            <Bar
-              dataKey="death_count"
-              stackId="events"
-              fill="hsl(var(--chart-1))"
-            />
+            <Bar dataKey="birth_count" stackId="events" fill="var(--chart-2)" />
+            <Bar dataKey="death_count" stackId="events" fill="var(--chart-1)" />
             <Bar
               dataKey="starvation_deaths_count"
               stackId="events"
-              fill="hsl(var(--chart-3))"
+              fill="var(--chart-3)"
             />
             <Bar
               dataKey="homeless_deaths_count"
               stackId="events"
-              fill="hsl(var(--chart-4))"
+              fill="var(--chart-4)"
             />
           </BarChart>
         </ChartContainer>

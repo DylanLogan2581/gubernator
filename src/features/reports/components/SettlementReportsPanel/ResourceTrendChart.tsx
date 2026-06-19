@@ -25,12 +25,12 @@ type ResourceTrendChartProps = {
 };
 
 const resourceChartConfig: ChartConfig = {
-  adjustment_amount: { color: "hsl(38 92% 50%)", label: "Adjustment" },
-  consumed_amount: { color: "hsl(var(--chart-1))", label: "Consumed" },
-  produced_amount: { color: "hsl(var(--chart-2))", label: "Produced" },
-  quantity_after: { color: "hsl(var(--chart-5))", label: "Stock (end)" },
-  trade_in_amount: { color: "hsl(var(--chart-3))", label: "Trade in" },
-  trade_out_amount: { color: "hsl(var(--chart-4))", label: "Trade out" },
+  adjustment_amount: { color: "var(--chart-5)", label: "Adjustment" },
+  consumed_amount: { color: "var(--chart-1)", label: "Consumed" },
+  produced_amount: { color: "var(--chart-2)", label: "Produced" },
+  quantity_after: { color: "var(--chart-5)", label: "Stock (end)" },
+  trade_in_amount: { color: "var(--chart-3)", label: "Trade in" },
+  trade_out_amount: { color: "var(--chart-4)", label: "Trade out" },
 };
 
 export function ResourceTrendChart({
@@ -143,11 +143,12 @@ export function ResourceTrendChart({
                 <Area
                   type="monotone"
                   dataKey="quantity_after"
-                  stroke="hsl(var(--chart-5))"
-                  fill="hsl(var(--chart-5))"
+                  stroke="var(--chart-5)"
+                  fill="var(--chart-5)"
                   fillOpacity={0.18}
                   strokeWidth={2}
                   dot={false}
+                  connectNulls
                 />
               </AreaChart>
             </ChartContainer>
@@ -186,36 +187,41 @@ export function ResourceTrendChart({
                 <Line
                   type="monotone"
                   dataKey="produced_amount"
-                  stroke="hsl(var(--chart-2))"
+                  stroke="var(--chart-2)"
                   dot={false}
+                  connectNulls
                   strokeWidth={1.5}
                 />
                 <Line
                   type="monotone"
                   dataKey="consumed_amount"
-                  stroke="hsl(var(--chart-1))"
+                  stroke="var(--chart-1)"
                   dot={false}
+                  connectNulls
                   strokeWidth={1.5}
                 />
                 <Line
                   type="monotone"
                   dataKey="trade_in_amount"
-                  stroke="hsl(var(--chart-3))"
+                  stroke="var(--chart-3)"
                   dot={false}
+                  connectNulls
                   strokeWidth={1.5}
                 />
                 <Line
                   type="monotone"
                   dataKey="trade_out_amount"
-                  stroke="hsl(var(--chart-4))"
+                  stroke="var(--chart-4)"
                   dot={false}
+                  connectNulls
                   strokeWidth={1.5}
                 />
                 <Line
                   type="monotone"
                   dataKey="adjustment_amount"
-                  stroke="hsl(38 92% 50%)"
+                  stroke="var(--chart-5)"
                   dot={false}
+                  connectNulls
                   strokeWidth={1.5}
                   strokeDasharray="4 2"
                 />
