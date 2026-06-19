@@ -211,7 +211,9 @@ describe("TurnTransitionOutcomePanel", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByText("Loading transition outcome…")).toBeDefined();
+    expect(
+      document.querySelectorAll('[data-slot="skeleton"]').length,
+    ).toBeGreaterThan(0);
   });
 
   it("shows empty state when no transition exists for the world", async () => {

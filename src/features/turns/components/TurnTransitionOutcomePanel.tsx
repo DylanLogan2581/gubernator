@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -64,6 +64,28 @@ function SettlementTransitionOutcomePanel({
   return <OutcomePanelQueryResult query={query} />;
 }
 
+function TurnTransitionOutcomeSkeleton(): JSX.Element {
+  return (
+    <OutcomePanelFrame>
+      <div className="space-y-1">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <dl className="grid gap-3 sm:grid-cols-4">
+        {([0, 1, 2, 3] as const).map((i) => (
+          <div
+            key={i}
+            className="rounded-md border border-border bg-background px-3 py-2"
+          >
+            <Skeleton className="mb-1 h-4 w-20" />
+            <Skeleton className="h-8 w-12" />
+          </div>
+        ))}
+      </dl>
+    </OutcomePanelFrame>
+  );
+}
+
 function OutcomePanelQueryResult({
   query,
 }: {
@@ -76,11 +98,7 @@ function OutcomePanelQueryResult({
   };
 }): JSX.Element {
   if (query.isPending) {
-    return (
-      <OutcomePanelFrame>
-        <LoadingState label="Loading transition outcome…" />
-      </OutcomePanelFrame>
-    );
+    return <TurnTransitionOutcomeSkeleton />;
   }
 
   if (query.isError) {
