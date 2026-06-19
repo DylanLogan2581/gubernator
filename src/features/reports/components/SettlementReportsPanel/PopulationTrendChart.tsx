@@ -52,9 +52,24 @@ export function PopulationTrendChart({
 }: PopulationTrendChartProps): JSX.Element {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-4 text-center">
-        No population snapshots in this turn range.
-      </p>
+      <div className="space-y-6">
+        <div>
+          <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+            Population over time
+          </h3>
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            No population snapshots in this turn range.
+          </p>
+        </div>
+        <div>
+          <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+            Births and deaths per turn
+          </h3>
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            No population snapshots in this turn range.
+          </p>
+        </div>
+      </div>
     );
   }
 
