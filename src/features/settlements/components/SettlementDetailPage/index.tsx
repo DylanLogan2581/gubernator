@@ -356,7 +356,7 @@ function SettlementDetailLoaded({
       <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
 
       {/* Mobile select — visible below md breakpoint */}
-      <div className="md:hidden">
+      <div className="sticky top-24 z-10 bg-background py-1 md:hidden">
         <NativeSelect
           aria-label="Settlement section"
           className="w-full"
@@ -384,6 +384,7 @@ function SettlementDetailLoaded({
 
       {/* Desktop tab strip — visible from md up */}
       <Tabs
+        className="sticky top-24 z-10 bg-background py-1"
         value={activeSection}
         onValueChange={(v) => {
           handleSectionSelect(
