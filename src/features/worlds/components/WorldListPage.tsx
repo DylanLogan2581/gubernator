@@ -40,6 +40,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
@@ -149,19 +154,23 @@ function WorldListContent({
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold tracking-normal">Trash</h1>
             </div>
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon-sm"
-              aria-label="Hide trash"
-              aria-pressed
-              title="Hide trash"
-              onClick={() => {
-                setShowTrash(false);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon-sm"
+                  aria-label="Hide trash"
+                  aria-pressed
+                  onClick={() => {
+                    setShowTrash(false);
+                  }}
+                >
+                  <Trash2 aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Hide trash</TooltipContent>
+            </Tooltip>
           </div>
           {trashedWorldsQuery.isPending ? (
             <LoadingState label="Loading trashed worlds…" />
@@ -218,19 +227,23 @@ function WorldListContent({
               <WorldTemplateImportButton queryClient={queryClient} />
             ) : null}
             {accessContext.isSuperAdmin ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Show trash"
-                aria-pressed={false}
-                title="Show trash"
-                onClick={() => {
-                  setShowTrash(true);
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Show trash"
+                    aria-pressed={false}
+                    onClick={() => {
+                      setShowTrash(true);
+                    }}
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Show trash</TooltipContent>
+              </Tooltip>
             ) : null}
           </div>
         </div>
