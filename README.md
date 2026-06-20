@@ -180,6 +180,10 @@ The app runs at `http://localhost:5173`.
 - `CONTRIBUTING.md`: human contribution workflow and expectations
 - `AGENTS.md`: agent-only working agreement and code organization rules
 - `SECURITY.md`: vulnerability reporting and security expectations
+- `docs/deployment-runbook.md`: step-by-step guide to stand up a fresh environment
+- `docs/architecture-overview.md`: turn engine flow, simulation phases, determinism contract
+- `docs/template-format.md`: world template JSON schema and compatibility policy
+- `docs/admin-operations.md`: stuck-transition recovery, world deletion, pruning, user admin
 
 If you are contributing as a person, start here and then read `CONTRIBUTING.md`.
 
