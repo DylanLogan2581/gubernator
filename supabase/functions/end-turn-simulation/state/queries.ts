@@ -444,14 +444,20 @@ export function fetchEvents(
 
 export function fetchEventEffects(
   ctx: FetchContext,
-  _worldId: string,
+  worldId: string,
 ): Promise<FetchRowsResult> {
+  // Scope effects to the current world via an inner join on events.
+  // Without this filter the query would fetch effects for every world the
+  // caller has access to, risking over-fetch and unnecessary pagination at
+  // large scale.  The embedded `events!inner(world_id)` forces an INNER JOIN;
+  // the `events.world_id` param restricts it to the target world.
   return fetchRowsPaginated({
     ctx,
     table: "event_effects",
     params: {
+      "events.world_id": `eq.${worldId}`,
       select:
-        "id,event_id,effect_type,amount_value,multiplier_value,is_percent,resource_id,job_id,managed_population_instance_id,deposit_instance_id,settlement_building_id,building_blueprint_id,extra_data_jsonb",
+        "id,event_id,effect_type,amount_value,multiplier_value,is_percent,resource_id,job_id,managed_population_instance_id,deposit_instance_id,settlement_building_id,building_blueprint_id,extra_data_jsonb,events!inner(world_id)",
       order: "event_id.asc,id.asc",
     },
   });
@@ -515,7 +521,7 @@ export function fetchBuildings(
   ctx: FetchContext,
   settlementIds: readonly string[],
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "settlement_buildings",
     params: {
@@ -532,7 +538,7 @@ export function fetchProjects(
   ctx: FetchContext,
   settlementIds: readonly string[],
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "construction_projects",
     params: {
@@ -549,7 +555,7 @@ export function fetchDeposits(
   ctx: FetchContext,
   settlementIds: readonly string[],
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "deposit_instances",
     params: {
@@ -566,7 +572,7 @@ export function fetchManagedPops(
   ctx: FetchContext,
   settlementIds: readonly string[],
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "managed_population_instances",
     params: {
@@ -586,7 +592,7 @@ export function fetchTradeRoutes(
   // Scope to routes whose origin AND destination are in-world. `origin_settlement_id`
   // is a UUID FK (not JSON), so it cannot be filtered with PostgREST's `->` operator.
   // Filtering by the world's settlement IDs is both correct and simpler.
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "trade_routes",
     params: {
