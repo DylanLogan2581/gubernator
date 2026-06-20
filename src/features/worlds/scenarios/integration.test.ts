@@ -219,15 +219,30 @@ describe("bundled scenario turn-1 integration", () => {
   // Runs even if tests failed so ephemeral worlds don't accumulate.
   // ---------------------------------------------------------------------------
   afterAll(async () => {
+    // trash_world / hard_delete_world authorize via auth.uid() (super admin or
+    // world admin). The service-role client bypasses RLS but carries no uid, so
+    // it fails the privilege check. Use the authenticated super admin instead.
+    const cleanup = createClient(LOCAL_URL, LOCAL_ANON_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+        storageKey: "scenario-integration-cleanup",
+      },
+      global: {
+        headers: { authorization: `Bearer ${accessToken}` },
+      },
+    });
+
     const teardownErrors: string[] = [];
     for (const worldId of createdWorldIds) {
-      const { error: trashErr } = await svc.rpc("trash_world", {
+      const { error: trashErr } = await cleanup.rpc("trash_world", {
         p_world_id: worldId,
       });
       if (trashErr !== null)
         teardownErrors.push(`trash world ${worldId}: ${trashErr.message}`);
 
-      const { error: deleteErr } = await svc.rpc("hard_delete_world", {
+      const { error: deleteErr } = await cleanup.rpc("hard_delete_world", {
         p_world_id: worldId,
       });
       if (deleteErr !== null)

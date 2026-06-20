@@ -3,24 +3,24 @@
 
 export type RawTierEffectRow =
   | {
-      readonly type: "job_capacity_increase";
-      readonly job_id: string;
-      readonly amount: number;
-    }
+    readonly type: "job_capacity_increase";
+    readonly job_id: string;
+    readonly amount: number;
+  }
   | {
-      readonly type: "passive_resource_production";
-      readonly resource_id: string;
-      readonly amount: number;
-    }
+    readonly type: "passive_resource_production";
+    readonly resource_id: string;
+    readonly amount: number;
+  }
   | {
-      readonly type: "resource_storage_increase";
-      readonly resource_id: string;
-      readonly amount: number;
-    }
+    readonly type: "resource_storage_increase";
+    readonly resource_id: string;
+    readonly amount: number;
+  }
   | {
-      readonly type: "population_cap_increase";
-      readonly amount: number;
-    };
+    readonly type: "population_cap_increase";
+    readonly amount: number;
+  };
 
 export type RawTierCostRow = {
   readonly resource_id: string;
@@ -151,15 +151,15 @@ export type WorldConfigData = {
 export type TierEffectOutput =
   | { readonly type: "job_capacity_increase"; readonly job_slug: string; readonly amount: number }
   | {
-      readonly type: "passive_resource_production";
-      readonly resource_slug: string;
-      readonly amount: number;
-    }
+    readonly type: "passive_resource_production";
+    readonly resource_slug: string;
+    readonly amount: number;
+  }
   | {
-      readonly type: "resource_storage_increase";
-      readonly resource_slug: string;
-      readonly amount: number;
-    }
+    readonly type: "resource_storage_increase";
+    readonly resource_slug: string;
+    readonly amount: number;
+  }
   | { readonly type: "population_cap_increase"; readonly amount: number };
 
 export type TierCostOutput = {
@@ -237,7 +237,10 @@ export type WorldTemplateOutput = {
     readonly slug: string;
     readonly job_slug: string;
     readonly output_units_per_worker: number;
-    readonly worker_inputs: readonly { readonly resource_slug: string; readonly amount_per_worker: number }[];
+    readonly worker_inputs: readonly {
+      readonly resource_slug: string;
+      readonly amount_per_worker: number;
+    }[];
   }[];
   readonly managed_population_types: readonly {
     readonly name: string;
@@ -246,8 +249,17 @@ export type WorldTemplateOutput = {
     readonly culling_job_slug: string;
     readonly husbandry_workers_per_n_animals: number;
     readonly growth_rate: number;
-    readonly maintenance_rules: readonly { readonly resource_slug: string; readonly amount_per_n_animals: number }[];
-    readonly culling_outputs: readonly { readonly resource_slug: string; readonly amount_per_n_animals: number }[];
-    readonly regular_outputs: readonly { readonly resource_slug: string; readonly amount_per_n_animals: number }[];
+    readonly maintenance_rules: readonly {
+      readonly resource_slug: string;
+      readonly amount_per_n_animals: number;
+    }[];
+    readonly culling_outputs: readonly {
+      readonly resource_slug: string;
+      readonly amount_per_n_animals: number;
+    }[];
+    readonly regular_outputs: readonly {
+      readonly resource_slug: string;
+      readonly amount_per_n_animals: number;
+    }[];
   }[];
 };

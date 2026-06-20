@@ -142,7 +142,10 @@ export async function handleExportWorldTemplateRequest(
 
   if (supabaseUrl === undefined || supabaseAnonKey === undefined) {
     return respond(
-      createErrorResponse({ code: "configuration_error", message: "Supabase configuration unavailable." }),
+      createErrorResponse({
+        code: "configuration_error",
+        message: "Supabase configuration unavailable.",
+      }),
       500,
     );
   }
@@ -157,7 +160,10 @@ export async function handleExportWorldTemplateRequest(
 
   if (authorized === null) {
     return respond(
-      createErrorResponse({ code: "authorization_check_failed", message: "Could not verify authorization." }),
+      createErrorResponse({
+        code: "authorization_check_failed",
+        message: "Could not verify authorization.",
+      }),
       502,
     );
   }
