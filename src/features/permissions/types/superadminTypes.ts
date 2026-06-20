@@ -19,6 +19,24 @@ export type SuperadminWorldAdmin = {
   readonly world_id: string;
 };
 
+export type PruneWorldDataInput = {
+  readonly worldId: string;
+  readonly retentionTurns: number;
+  readonly dryRun: boolean;
+};
+
+export type PruneWorldDataResult = {
+  readonly snapshots_deleted: number;
+  readonly resource_snapshots_deleted: number;
+  readonly log_entries_deleted: number;
+  readonly notifications_deleted: number;
+  readonly current_turn: number;
+  readonly cutoff_turn: number;
+  readonly retention_turns: number;
+  readonly dry_run: boolean;
+  readonly message: string;
+};
+
 export type CreateUserInput = {
   readonly email: string;
   readonly password?: string;

@@ -33,6 +33,7 @@ export { superadminQueryKeys } from "./queries/superadminQueryKeys";
 export {
   createUserMutationOptions,
   grantWorldAdminMutationOptions,
+  pruneWorldDataMutationOptions,
   revokeWorldAdminMutationOptions,
   setUserSuperAdminMutationOptions,
   SuperadminMutationError,
@@ -61,4 +62,6 @@ export type {
   SuperadminWorld,
   SuperadminWorldAdmin,
   CreateUserInput,
+  PruneWorldDataInput,
+  PruneWorldDataResult,
 } from "./types/superadminTypes";

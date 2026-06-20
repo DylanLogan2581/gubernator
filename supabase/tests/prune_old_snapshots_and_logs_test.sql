@@ -1,5 +1,5 @@
--- pgTAP tests for snapshot/log retention pruning RPC.
--- Tests: prune_old_snapshots_and_logs with various scenarios.
+-- pgTAP tests for snapshot/log retention pruning RPC and retention config.
+-- Tests: prune_old_snapshots_and_logs (dry-run, destructive, auth), world_retention_config.
 --
 -- UUID prefix map (c4-prefixed ranges, unique to this file):
 --   c4100000 = users        c4200000 = worlds
@@ -8,7 +8,7 @@
 begin;
 
 select
-  plan (10);
+  plan (20);
 
 -- ---------------------------------------------------------------------------
 -- Setup: super_admin user
@@ -352,6 +352,206 @@ select
     ),
     'No pruning: world has < 100 turns',
     'Prune with retention > current_turn: returns early with message'
+  );
+
+-- ---------------------------------------------------------------------------
+-- Test 5: Non-superadmin cannot call prune_old_snapshots_and_logs
+-- ---------------------------------------------------------------------------
+-- Insert a non-superadmin user and switch JWT identity to them.
+insert into
+  auth.users (
+    id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+  )
+values
+  (
+    'c4100000-0000-0000-0000-000000000002',
+    'prune-regular@example.com',
+    'x',
+    now(),
+    '{"username":"prune_regular"}'::jsonb,
+    now(),
+    now()
+  );
+
+set
+  local "request.jwt.claims" = '{"sub":"c4100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $$select prune_old_snapshots_and_logs('c4200000-0000-0000-0000-000000000001'::uuid, 50)$$,
+    '42501',
+    'Pruning failed: Insufficient privilege',
+    'Non-superadmin calling prune_old_snapshots_and_logs raises 42501'
+  );
+
+-- Restore superadmin identity for remaining tests
+set
+  local "request.jwt.claims" = '{"sub":"c4100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+-- ---------------------------------------------------------------------------
+-- Test 6: Dry-run returns correct counts without deleting
+-- (Setup: world at turn 110 still has 5 snapshots from earlier tests)
+-- After first prune (retention=50, cutoff=60) only turns 70,90,100,110 + 120 remain.
+-- Now dry-run with retention=30 (cutoff=80): turns 70 eligible; 90,100,110,120 kept.
+-- ---------------------------------------------------------------------------
+create temp table dry_run_result as
+select
+  prune_old_snapshots_and_logs (
+    'c4200000-0000-0000-0000-000000000001'::uuid,
+    30, -- retention_turns
+    false, -- prune_notifications
+    true -- dry_run
+  ) as result;
+
+select
+  is (
+    (
+      select
+        (result -> 'dry_run')::boolean
+      from
+        dry_run_result
+    ),
+    true,
+    'Dry-run result includes dry_run=true flag'
+  );
+
+select
+  is (
+    (
+      select
+        (result -> 'snapshots_deleted')::int
+      from
+        dry_run_result
+    ),
+    1::int,
+    'Dry-run: 1 settlement snapshot eligible for deletion (turn 70)'
+  );
+
+select
+  is (
+    (
+      select
+        (result -> 'resource_snapshots_deleted')::int
+      from
+        dry_run_result
+    ),
+    2::int,
+    'Dry-run: 2 resource snapshots eligible (2 resources × 1 turn)'
+  );
+
+-- Verify dry-run did not mutate anything
+select
+  is (
+    (
+      select
+        count(*)
+      from
+        public.settlement_turn_snapshots
+      where
+        world_id = 'c4200000-0000-0000-0000-000000000001'
+    ),
+    5::bigint,
+    'Dry-run did not delete any rows: 5 snapshots still present'
+  );
+
+-- ---------------------------------------------------------------------------
+-- Test 7: Destructive run after dry-run deletes exactly dry-run count
+-- ---------------------------------------------------------------------------
+create temp table live_run_result as
+select
+  prune_old_snapshots_and_logs (
+    'c4200000-0000-0000-0000-000000000001'::uuid,
+    30,
+    false,
+    false
+  ) as result;
+
+select
+  is (
+    (
+      select
+        (result -> 'snapshots_deleted')::int
+      from
+        live_run_result
+    ),
+    (
+      select
+        (result -> 'snapshots_deleted')::int
+      from
+        dry_run_result
+    ),
+    'Live-run snapshot count matches prior dry-run count'
+  );
+
+select
+  is (
+    (
+      select
+        (result -> 'resource_snapshots_deleted')::int
+      from
+        live_run_result
+    ),
+    (
+      select
+        (result -> 'resource_snapshots_deleted')::int
+      from
+        dry_run_result
+    ),
+    'Live-run resource snapshot count matches prior dry-run count'
+  );
+
+-- ---------------------------------------------------------------------------
+-- Test 8: Latest turn always survives (retained range intact)
+-- World has current_turn=110; after all pruning, turn 110 snapshot must exist.
+-- ---------------------------------------------------------------------------
+select
+  is (
+    (
+      select
+        count(*)
+      from
+        public.settlement_turn_snapshots
+      where
+        world_id = 'c4200000-0000-0000-0000-000000000001'
+        and turn_number = 110
+    ),
+    1::bigint,
+    'Latest turn snapshot (turn 110 = current_turn) always survives pruning'
+  );
+
+-- ---------------------------------------------------------------------------
+-- Test 9: world_retention_config upsert and RLS (superadmin read/write)
+-- ---------------------------------------------------------------------------
+select
+  lives_ok (
+    $$
+      select upsert_world_retention_config(
+        'c4200000-0000-0000-0000-000000000001'::uuid,
+        50,  -- log_retention_turns
+        100  -- snapshot_retention_turns
+      )
+    $$,
+    'Superadmin can upsert world_retention_config'
+  );
+
+select
+  is (
+    (
+      select
+        log_retention_turns
+      from
+        public.world_retention_config
+      where
+        world_id = 'c4200000-0000-0000-0000-000000000001'
+    ),
+    50::integer,
+    'world_retention_config row has correct log_retention_turns after upsert'
   );
 
 select

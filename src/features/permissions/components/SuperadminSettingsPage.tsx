@@ -27,10 +27,14 @@ import {
 import { currentAppUserQueryOptions } from "@/features/auth";
 import { getErrorDescription } from "@/lib/errorUtils";
 
-import { allUsersForSuperadminQueryOptions } from "../queries/superadminQueries";
+import {
+  allUsersForSuperadminQueryOptions,
+  allWorldsForSuperadminQueryOptions,
+} from "../queries/superadminQueries";
 
 import { ActivePlayerCharacterAdminDialog } from "./ActivePlayerCharacterAdminDialog";
 import { CreateUserDialog } from "./CreateUserDialog";
+import { PruneWorldDataPanel } from "./PruneWorldDataPanel";
 import { ToggleSuperadminDialog } from "./ToggleSuperadminDialog";
 import { WorldAdminGrantDialog } from "./WorldAdminGrantDialog";
 
@@ -47,6 +51,7 @@ export function SuperadminSettingsPage(): JSX.Element {
   const queryClient = useQueryClient();
   const currentUserQuery = useQuery(currentAppUserQueryOptions());
   const usersQuery = useQuery(allUsersForSuperadminQueryOptions());
+  const worldsQuery = useQuery(allWorldsForSuperadminQueryOptions());
 
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
@@ -81,6 +86,7 @@ export function SuperadminSettingsPage(): JSX.Element {
   }
 
   const users = usersQuery.data ?? [];
+  const worlds = worldsQuery.data ?? [];
   const searchTrimmed = search.trim().toLowerCase();
   const filteredUsers =
     searchTrimmed.length === 0
@@ -130,6 +136,8 @@ export function SuperadminSettingsPage(): JSX.Element {
           </Link>
         </Button>
       </div>
+
+      <PruneWorldDataPanel worlds={worlds} />
 
       <div className="mt-4">
         <Input

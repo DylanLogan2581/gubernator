@@ -13,7 +13,11 @@ import {
 
 import { superadminQueryKeys } from "../queries/superadminQueryKeys";
 
-import type { CreateUserInput } from "../types/superadminTypes";
+import type {
+  CreateUserInput,
+  PruneWorldDataInput,
+  PruneWorldDataResult,
+} from "../types/superadminTypes";
 
 type SuperadminErrorCode =
   | "superadmin_not_authorized"
@@ -303,6 +307,47 @@ async function createUser(
     code: "superadmin_operation_failed",
     message: "Unexpected response from user creation service.",
   });
+}
+
+export function pruneWorldDataMutationOptions({
+  client = requireSupabaseClient(),
+}: {
+  readonly client?: GubernatorSupabaseClient;
+}): UseMutationOptions<
+  PruneWorldDataResult,
+  SuperadminMutationError,
+  PruneWorldDataInput
+> {
+  return mutationOptions({
+    mutationFn: (input: PruneWorldDataInput) => pruneWorldData(client, input),
+    mutationKey: [...superadminQueryKeys.all, "prune-world-data"],
+  });
+}
+
+async function pruneWorldData(
+  client: GubernatorSupabaseClient,
+  input: PruneWorldDataInput,
+): Promise<PruneWorldDataResult> {
+  const { data, error } = await client.rpc("prune_old_snapshots_and_logs", {
+    p_world_id: input.worldId,
+    p_retention_turns: input.retentionTurns,
+    p_dry_run: input.dryRun,
+  });
+
+  if (error !== null) {
+    if (error.code === "42501") {
+      throw new SuperadminMutationError({
+        code: "superadmin_not_authorized",
+        message: "Superadmin privileges are required.",
+      });
+    }
+    throw new SuperadminMutationError({
+      code: "superadmin_operation_failed",
+      message: error.message,
+    });
+  }
+
+  return data as PruneWorldDataResult;
 }
 
 async function readFunctionErrorPayload(

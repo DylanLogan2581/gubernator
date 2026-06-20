@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-
 export type Json =
   | string
   | number
@@ -2283,6 +2281,38 @@ export type Database = {
           },
         ];
       };
+      world_retention_config: {
+        Row: {
+          created_at: string;
+          log_retention_turns: number | null;
+          snapshot_retention_turns: number | null;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          log_retention_turns?: number | null;
+          snapshot_retention_turns?: number | null;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          log_retention_turns?: number | null;
+          snapshot_retention_turns?: number | null;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "world_retention_config_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: true;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       worlds: {
         Row: {
           archived_at: string | null;
@@ -2429,6 +2459,27 @@ export type Database = {
           },
         ];
       };
+      pg_all_foreign_keys: {
+        Row: {
+          fk_columns: unknown[] | null;
+          fk_constraint_name: unknown;
+          fk_schema_name: unknown;
+          fk_table_name: unknown;
+          fk_table_oid: unknown;
+          is_deferrable: boolean | null;
+          is_deferred: boolean | null;
+          match_type: string | null;
+          on_delete: string | null;
+          on_update: string | null;
+          pk_columns: unknown[] | null;
+          pk_constraint_name: unknown;
+          pk_index_name: unknown;
+          pk_schema_name: unknown;
+          pk_table_name: unknown;
+          pk_table_oid: unknown;
+        };
+        Relationships: [];
+      };
       settlement_stockpiles_view: {
         Row: {
           effective_cap: number | null;
@@ -2454,6 +2505,24 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      tap_funky: {
+        Row: {
+          args: string | null;
+          is_definer: boolean | null;
+          is_strict: boolean | null;
+          is_visible: boolean | null;
+          kind: unknown;
+          langoid: unknown;
+          name: unknown;
+          oid: unknown;
+          owner: unknown;
+          returns: string | null;
+          returns_set: boolean | null;
+          schema: unknown;
+          volatility: string | null;
+        };
+        Relationships: [];
       };
       world_turn_population_aggregates: {
         Row: {
@@ -2510,6 +2579,22 @@ export type Database = {
       };
     };
     Functions: {
+      _cleanup: { Args: never; Returns: boolean };
+      _contract_on: { Args: { "": string }; Returns: unknown };
+      _currtest: { Args: never; Returns: number };
+      _db_privs: { Args: never; Returns: unknown[] };
+      _extensions: { Args: never; Returns: unknown[] };
+      _get: { Args: { "": string }; Returns: number };
+      _get_latest: { Args: { "": string }; Returns: number[] };
+      _get_note: { Args: { "": string }; Returns: string };
+      _is_verbose: { Args: never; Returns: boolean };
+      _prokind: { Args: { p_oid: unknown }; Returns: unknown };
+      _query: { Args: { "": string }; Returns: string };
+      _refine_vol: { Args: { "": string }; Returns: string };
+      _retval: { Args: { "": string }; Returns: string };
+      _table_privs: { Args: never; Returns: unknown[] };
+      _temptypes: { Args: { "": string }; Returns: string };
+      _todo: { Args: never; Returns: string };
       add_citizen_memory: {
         Args: {
           p_citizen_id: string;
@@ -2661,6 +2746,42 @@ export type Database = {
         };
         Returns: boolean;
       };
+      col_is_null:
+        | {
+            Args: {
+              column_name: unknown;
+              description?: string;
+              schema_name: unknown;
+              table_name: unknown;
+            };
+            Returns: string;
+          }
+        | {
+            Args: {
+              column_name: unknown;
+              description?: string;
+              table_name: unknown;
+            };
+            Returns: string;
+          };
+      col_not_null:
+        | {
+            Args: {
+              column_name: unknown;
+              description?: string;
+              schema_name: unknown;
+              table_name: unknown;
+            };
+            Returns: string;
+          }
+        | {
+            Args: {
+              column_name: unknown;
+              description?: string;
+              table_name: unknown;
+            };
+            Returns: string;
+          };
       create_citizen_internal: {
         Args: {
           p_born_on_turn_number?: number;
@@ -3032,6 +3153,20 @@ export type Database = {
         Args: { p_event_id: string; p_group_id: string };
         Returns: Json;
       };
+      diag:
+        | {
+            Args: { msg: unknown };
+            Returns: {
+              error: true;
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved";
+          }
+        | {
+            Args: { msg: string };
+            Returns: {
+              error: true;
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved";
+          };
+      diag_test_name: { Args: { "": string }; Returns: string };
       dissolve_partnership: {
         Args: {
           p_change_reason: string;
@@ -3058,6 +3193,9 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      do_tap:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] };
       end_partnership_internal: {
         Args: {
           p_change_reason: string;
@@ -3086,10 +3224,16 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      fail:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string };
       fail_stuck_turn_transition: {
         Args: { p_transition_id: string; p_world_id: string };
         Returns: Json;
       };
+      findfuncs: { Args: { "": string }; Returns: string[] };
+      finish: { Args: { exception_on_failure?: boolean }; Returns: string[] };
+      format_type_string: { Args: { "": string }; Returns: string };
       get_citizen_admin_details: {
         Args: { p_citizen_id: string };
         Returns: {
@@ -3197,6 +3341,7 @@ export type Database = {
           id: string;
         }[];
       };
+      has_unique: { Args: { "": string }; Returns: string };
       has_world_access: { Args: { p_world_id: string }; Returns: boolean };
       import_world_from_template: {
         Args: { p_name: string; p_template?: Json; p_visibility?: string };
@@ -3231,6 +3376,7 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      in_todo: { Args: never; Returns: boolean };
       internal_apply_turn_transition_advance_world_turn: {
         Args: { p_expected_turn_number: number; p_world_id: string };
         Returns: number;
@@ -3283,6 +3429,7 @@ export type Database = {
       };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
+      is_empty: { Args: { "": string }; Returns: string };
       is_nation_manager_of: { Args: { p_nation_id: string }; Returns: boolean };
       is_settlement_manager_of: {
         Args: { p_settlement_id: string };
@@ -3313,6 +3460,7 @@ export type Database = {
         Returns: boolean;
       };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
+      isnt_empty: { Args: { "": string }; Returns: string };
       link_user_to_citizen: {
         Args: { p_citizen_id: string; p_user_id: string };
         Returns: {
@@ -3355,6 +3503,7 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      lives_ok: { Args: { "": string }; Returns: string };
       manual_deconstruct_settlement_building: {
         Args: { p_settlement_building_id: string };
         Returns: {
@@ -3446,6 +3595,15 @@ export type Database = {
         Args: { p_nation_id: string };
         Returns: boolean;
       };
+      no_plan: { Args: never; Returns: boolean[] };
+      num_failed: { Args: never; Returns: number };
+      os_name: { Args: never; Returns: string };
+      pass:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string };
+      pg_version: { Args: never; Returns: string };
+      pg_version_num: { Args: never; Returns: number };
+      pgtap_version: { Args: never; Returns: number };
       propose_trade_route: {
         Args: {
           p_destination: string;
@@ -3461,6 +3619,7 @@ export type Database = {
       };
       prune_old_snapshots_and_logs: {
         Args: {
+          p_dry_run?: boolean;
           p_prune_notifications?: boolean;
           p_retention_turns?: number;
           p_world_id: string;
@@ -3837,6 +3996,9 @@ export type Database = {
         Args: { p_user_id: string; p_world_id: string };
         Returns: undefined;
       };
+      runtests:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] };
       search_users_for_admin_picker: {
         Args: { p_limit?: number; p_query?: string };
         Returns: {
@@ -4062,6 +4224,9 @@ export type Database = {
         Args: { p_settlement_id: string };
         Returns: number;
       };
+      skip:
+        | { Args: { "": string }; Returns: string }
+        | { Args: { how_many: number; why: string }; Returns: string };
       soft_delete_building_blueprint: {
         Args: { p_blueprint_id: string; p_world_id: string };
         Returns: {
@@ -4191,6 +4356,16 @@ export type Database = {
         };
         Returns: string;
       };
+      throws_ok: { Args: { "": string }; Returns: string };
+      todo:
+        | { Args: { how_many: number }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] }
+        | { Args: { why: string }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] };
+      todo_end: { Args: never; Returns: boolean[] };
+      todo_start:
+        | { Args: never; Returns: boolean[] }
+        | { Args: { "": string }; Returns: boolean[] };
       trash_world: {
         Args: { p_world_id: string };
         Returns: {
@@ -4298,6 +4473,14 @@ export type Database = {
           id: string;
         }[];
       };
+      upsert_world_retention_config: {
+        Args: {
+          p_log_retention_turns?: number;
+          p_snapshot_retention_turns?: number;
+          p_world_id: string;
+        };
+        Returns: undefined;
+      };
       user_has_player_character_in_world: {
         Args: { p_world_id: string };
         Returns: boolean;
@@ -4344,7 +4527,9 @@ export type Database = {
         | "player.widowed";
     };
     CompositeTypes: {
-      [_ in never]: never;
+      _time_trial_type: {
+        a_time: number | null;
+      };
     };
   };
 };
