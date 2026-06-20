@@ -86,6 +86,14 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Check production bundle for server secrets
+        run: |
+          if grep -rE --include='*.js' 'SUPABASE_SERVICE_ROLE_KEY' dist/assets/; then
+            echo "ERROR: server-only secret name found in production bundle" >&2
+            exit 1
+          fi
+          echo "Bundle secret check passed: no server secrets in client bundle."
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -159,3 +167,22 @@ jobs:
 
       - name: Run integration tests against seeded database
         run: npm run test:integration
+
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets with Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
