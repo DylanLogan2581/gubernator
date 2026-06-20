@@ -2658,6 +2658,10 @@ export type Database = {
           status: string;
         }[];
       };
+      assert_world_not_archived: {
+        Args: { p_world_id: string };
+        Returns: undefined;
+      };
       assign_citizen_role: {
         Args: {
           p_citizen_id: string;
@@ -3228,7 +3232,11 @@ export type Database = {
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string };
       fail_stuck_turn_transition: {
-        Args: { p_transition_id: string; p_world_id: string };
+        Args: {
+          p_reason?: string;
+          p_transition_id: string;
+          p_world_id: string;
+        };
         Returns: Json;
       };
       findfuncs: { Args: { "": string }; Returns: string[] };
@@ -3604,6 +3612,7 @@ export type Database = {
       pg_version: { Args: never; Returns: string };
       pg_version_num: { Args: never; Returns: number };
       pgtap_version: { Args: never; Returns: number };
+      preview_world_delete: { Args: { p_world_id: string }; Returns: Json };
       propose_trade_route: {
         Args: {
           p_destination: string;

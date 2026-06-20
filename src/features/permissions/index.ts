@@ -27,12 +27,16 @@ export { useSettlementManageAuthority } from "./hooks/useSettlementManageAuthori
 export {
   allUsersForSuperadminQueryOptions,
   allWorldsForSuperadminQueryOptions,
+  runningTransitionsQueryOptions,
+  trashedWorldsForSuperadminQueryOptions,
   worldAdminsForUserQueryOptions,
 } from "./queries/superadminQueries";
 export { superadminQueryKeys } from "./queries/superadminQueryKeys";
 export {
   createUserMutationOptions,
+  failStuckTransitionMutationOptions,
   grantWorldAdminMutationOptions,
+  previewWorldDeleteMutationOptions,
   pruneWorldDataMutationOptions,
   revokeWorldAdminMutationOptions,
   setUserSuperAdminMutationOptions,
@@ -61,7 +65,11 @@ export type {
   SuperadminUser,
   SuperadminWorld,
   SuperadminWorldAdmin,
+  SuperadminRunningTransition,
   CreateUserInput,
+  FailStuckTransitionInput,
+  FailStuckTransitionResult,
+  PreviewWorldDeleteResult,
   PruneWorldDataInput,
   PruneWorldDataResult,
 } from "./types/superadminTypes";

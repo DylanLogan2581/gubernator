@@ -37,6 +37,52 @@ export type PruneWorldDataResult = {
   readonly message: string;
 };
 
+export type SuperadminRunningTransition = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly from_turn_number: number;
+  readonly to_turn_number: number;
+  readonly started_at: string;
+  readonly status: string;
+};
+
+export type FailStuckTransitionInput = {
+  readonly worldId: string;
+  readonly transitionId: string;
+  readonly reason?: string;
+};
+
+export type FailStuckTransitionResult = {
+  readonly transitionId: string;
+  readonly fromTurnNumber: number;
+  readonly toTurnNumber: number;
+  readonly status: string;
+  readonly markedFailedAt: string;
+  readonly worldId: string;
+};
+
+export type PreviewWorldDeleteResult = {
+  readonly worldId: string;
+  readonly worldName: string;
+  readonly isTrashed: boolean;
+  readonly nations: number;
+  readonly resources: number;
+  readonly jobDefinitions: number;
+  readonly buildingBlueprints: number;
+  readonly depositTypes: number;
+  readonly managedPopulationTypes: number;
+  readonly namesets: number;
+  readonly tradeRoutes: number;
+  readonly eventGroups: number;
+  readonly turnTransitions: number;
+  readonly notifications: number;
+  readonly worldAdmins: number;
+  readonly settlements: number;
+  readonly citizens: number;
+  readonly settlementTurnSnapshots: number;
+  readonly turnLogEntries: number;
+};
+
 export type CreateUserInput = {
   readonly email: string;
   readonly password?: string;

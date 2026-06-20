@@ -11,6 +11,7 @@ import { superadminQueryKeys } from "./superadminQueryKeys";
 
 import type { ActivePlayerCharacterRow } from "./activePlayerCharacterQueries";
 import type {
+  SuperadminRunningTransition,
   SuperadminUser,
   SuperadminWorld,
   SuperadminWorldAdmin,
@@ -32,6 +33,24 @@ type AllWorldsQueryOptions = UseQueryOptions<
   AuthUiError,
   readonly SuperadminWorld[],
   AllWorldsQueryKey
+>;
+type RunningTransitionsQueryKey = ReturnType<
+  typeof superadminQueryKeys.runningTransitions
+>;
+type RunningTransitionsQueryOptions = UseQueryOptions<
+  readonly SuperadminRunningTransition[],
+  AuthUiError,
+  readonly SuperadminRunningTransition[],
+  RunningTransitionsQueryKey
+>;
+type TrashedWorldsQueryKey = ReturnType<
+  typeof superadminQueryKeys.trashedWorlds
+>;
+type TrashedWorldsQueryOptions = UseQueryOptions<
+  readonly SuperadminWorld[],
+  AuthUiError,
+  readonly SuperadminWorld[],
+  TrashedWorldsQueryKey
 >;
 type WorldAdminsForUserQueryOptions = UseQueryOptions<
   readonly SuperadminWorldAdmin[],
@@ -62,6 +81,27 @@ export function allWorldsForSuperadminQueryOptions(
   });
 }
 
+export function runningTransitionsQueryOptions(
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): RunningTransitionsQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getRunningTransitions(client),
+    queryKey: superadminQueryKeys.runningTransitions(),
+    refetchInterval: 30_000,
+  });
+}
+
+export function trashedWorldsForSuperadminQueryOptions(
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): TrashedWorldsQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getTrashedWorlds(client),
+    queryKey: superadminQueryKeys.trashedWorlds(),
+  });
+}
+
 export function worldAdminsForUserQueryOptions(
   userId: string,
   client: GubernatorSupabaseClient = requireSupabaseClient(),
@@ -82,6 +122,38 @@ async function getAllWorlds(
     .select("id,name")
     .eq("is_trashed", false)
     .order("name", { ascending: true });
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data;
+}
+
+async function getTrashedWorlds(
+  client: GubernatorSupabaseClient,
+): Promise<readonly SuperadminWorld[]> {
+  const { data, error } = await client
+    .from("worlds")
+    .select("id,name")
+    .eq("is_trashed", true)
+    .order("name", { ascending: true });
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data;
+}
+
+async function getRunningTransitions(
+  client: GubernatorSupabaseClient,
+): Promise<readonly SuperadminRunningTransition[]> {
+  const { data, error } = await client
+    .from("turn_transitions")
+    .select("id,world_id,from_turn_number,to_turn_number,started_at,status")
+    .eq("status", "running")
+    .order("started_at", { ascending: true });
 
   if (error !== null) {
     throw normalizeSupabaseError(error);

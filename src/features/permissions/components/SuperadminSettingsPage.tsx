@@ -35,8 +35,10 @@ import {
 import { ActivePlayerCharacterAdminDialog } from "./ActivePlayerCharacterAdminDialog";
 import { CreateUserDialog } from "./CreateUserDialog";
 import { PruneWorldDataPanel } from "./PruneWorldDataPanel";
+import { StuckTransitionPanel } from "./StuckTransitionPanel";
 import { ToggleSuperadminDialog } from "./ToggleSuperadminDialog";
 import { WorldAdminGrantDialog } from "./WorldAdminGrantDialog";
+import { WorldCascadeDeletePanel } from "./WorldCascadeDeletePanel";
 
 import type { SuperadminUser } from "../types/superadminTypes";
 
@@ -137,7 +139,11 @@ export function SuperadminSettingsPage(): JSX.Element {
         </Button>
       </div>
 
+      <StuckTransitionPanel />
+
       <PruneWorldDataPanel worlds={worlds} />
+
+      <WorldCascadeDeletePanel />
 
       <div className="mt-4">
         <Input
