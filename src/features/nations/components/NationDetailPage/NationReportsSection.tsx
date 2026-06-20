@@ -152,9 +152,15 @@ function SortIcon({
     );
   }
   return sortDir === "asc" ? (
-    <ChevronUp className="ml-1 inline-block h-3 w-3" aria-hidden="true" />
+    <ChevronUp
+      className="ml-1 inline-block h-3 w-3 text-foreground"
+      aria-hidden="true"
+    />
   ) : (
-    <ChevronDown className="ml-1 inline-block h-3 w-3" aria-hidden="true" />
+    <ChevronDown
+      className="ml-1 inline-block h-3 w-3 text-foreground"
+      aria-hidden="true"
+    />
   );
 }
 
@@ -175,12 +181,20 @@ function ColumnSortButton({
   readonly sortDir: SortDir;
   readonly onSort: (key: SortKey) => void;
 }): JSX.Element {
+  const isActive = column === sortKey;
   return (
     <Button
       variant="ghost"
       size="sm"
-      className="-ml-3 h-auto p-1 text-xs font-medium"
+      className={`-ml-3 h-auto p-1 text-xs ${
+        isActive
+          ? "font-semibold text-foreground"
+          : "font-medium text-muted-foreground"
+      }`}
       onClick={() => onSort(column)}
+      aria-sort={
+        isActive ? (sortDir === "asc" ? "ascending" : "descending") : undefined
+      }
     >
       {label}
       <SortIcon column={column} sortKey={sortKey} sortDir={sortDir} />
