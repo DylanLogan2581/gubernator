@@ -20,7 +20,8 @@ export default mergeConfig(
         : [...configDefaults.exclude, "**/integration.test.ts"],
       coverage: {
         provider: "v8",
-        reporter: ["text", "text-summary"],
+        reporter: ["text", "text-summary", "json-summary"],
+        reportsDirectory: "coverage",
         include: ["src/**/*.{ts,tsx}"],
         exclude: [
           "src/routeTree.gen.ts",
@@ -28,6 +29,15 @@ export default mergeConfig(
           "src/**/*.test.{ts,tsx}",
         ],
         thresholds: {
+          // Repo-wide floor — set just below measured baseline (2026-06-20):
+          //   statements 61.35, branches 54.61, functions 60.02, lines 61.8
+          // Ratchet plan: raise each threshold by 5 pts per quarter until
+          //   statements/functions/lines reach 80 and branches reach 70.
+          statements: 60,
+          branches: 53,
+          functions: 58,
+          lines: 60,
+          // Stricter gate for the simulation engine (existing).
           "src/shared/simulation/**": {
             statements: 90,
             branches: 85,
