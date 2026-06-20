@@ -1,5 +1,6 @@
+import { EDGE_COMMON_ENV_VAR_NAMES } from "../_shared/envContract.ts";
 import { buildCorsHeaders, parseAllowedOrigins } from "../_shared/http/cors.ts";
-import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../_shared/http/env.ts";
+import { assertEdgeEnvVars, getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../_shared/http/env.ts";
 import { createErrorResponse, createJsonResponse } from "../_shared/http/response.ts";
 import { getAuthorizationHeader } from "../_shared/http/session.ts";
 import { supabaseFetch } from "../_shared/supabaseFetch.ts";
@@ -202,4 +203,5 @@ export async function handleExportWorldTemplateRequest(
   return respond({ ok: true, data: template }, 200);
 }
 
+assertEdgeEnvVars(EDGE_COMMON_ENV_VAR_NAMES);
 Deno.serve((req: Request) => handleExportWorldTemplateRequest(req));

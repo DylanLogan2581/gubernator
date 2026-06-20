@@ -1,15 +1,12 @@
-const supabaseEnvironmentVariableNames = [
-  "VITE_SUPABASE_URL",
-  "VITE_SUPABASE_ANON_KEY",
-] as const;
+import {
+  CLIENT_ENV_VAR_NAMES,
+  type ClientEnvVarName,
+} from "@/shared/envContract";
 
-export type SupabaseEnvironmentVariable =
-  (typeof supabaseEnvironmentVariableNames)[number];
+export type SupabaseEnvironmentVariable = ClientEnvVarName;
 
-export type SupabaseEnvironment = {
-  readonly PROD: boolean;
-  readonly VITE_SUPABASE_ANON_KEY?: string;
-  readonly VITE_SUPABASE_URL?: string;
+export type SupabaseEnvironment = { readonly PROD: boolean } & {
+  readonly [K in ClientEnvVarName]?: string;
 };
 
 export type SupabaseConfigState =
@@ -45,7 +42,7 @@ export function getSupabaseConfigState(
   const anonKey = normalizeEnvironmentValue(env.VITE_SUPABASE_ANON_KEY);
 
   if (url === undefined || anonKey === undefined) {
-    const missingVariables = supabaseEnvironmentVariableNames.filter((name) => {
+    const missingVariables = CLIENT_ENV_VAR_NAMES.filter((name) => {
       switch (name) {
         case "VITE_SUPABASE_URL":
           return url === undefined;

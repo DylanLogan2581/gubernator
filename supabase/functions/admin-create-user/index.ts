@@ -1,5 +1,7 @@
 import { logAdminCreateUserSuccess, logAuthorizationDenial } from "../_shared/auditLog.ts";
+import { EDGE_COMMON_ENV_VAR_NAMES, EDGE_SERVICE_ROLE_ENV_VAR_NAMES } from "../_shared/envContract.ts";
 import {
+  assertEdgeEnvVars,
   getEdgeRuntime,
   getRequiredRuntimeEnv,
   getRequiredRuntimeUrl,
@@ -512,6 +514,8 @@ async function storeIdempotencyKeyResult(
     );
   }
 }
+
+assertEdgeEnvVars([...EDGE_COMMON_ENV_VAR_NAMES, ...EDGE_SERVICE_ROLE_ENV_VAR_NAMES]);
 
 const edgeRuntime = getEdgeRuntime();
 

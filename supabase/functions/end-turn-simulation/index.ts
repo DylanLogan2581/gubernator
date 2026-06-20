@@ -1,5 +1,6 @@
 import { logEndTurnSuccess } from "../_shared/auditLog.ts";
-import { getEdgeRuntime } from "../_shared/http/env.ts";
+import { EDGE_COMMON_ENV_VAR_NAMES, EDGE_SERVICE_ROLE_ENV_VAR_NAMES } from "../_shared/envContract.ts";
+import { assertEdgeEnvVars, getEdgeRuntime } from "../_shared/http/env.ts";
 
 import {
   resolveForecastPreviewAuthorization,
@@ -216,6 +217,8 @@ export async function handleEndTurnSimulationRequest(
     );
   }
 }
+
+assertEdgeEnvVars([...EDGE_COMMON_ENV_VAR_NAMES, ...EDGE_SERVICE_ROLE_ENV_VAR_NAMES]);
 
 const edgeRuntime = getEdgeRuntime();
 
