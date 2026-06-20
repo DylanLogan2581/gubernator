@@ -21,7 +21,7 @@
     "test": "vitest run --passWithNoTests",
     "functions:cache-clear": "docker stop supabase_edge_runtime_gubernator && docker run --rm -v supabase_edge_runtime_gubernator:/cache alpine sh -c \"rm -rf /cache/*\" && docker start supabase_edge_runtime_gubernator",
     "test:db": "supabase test db",
-    "test:integration": "VITEST_INTEGRATION=true vitest run supabase/functions/end-turn-simulation/integration.test.ts",
+    "test:integration": "VITEST_INTEGRATION=true vitest run supabase/functions/end-turn-simulation/integration.test.ts src/features/worlds/scenarios/integration.test.ts",
     "test:coverage": "vitest run --coverage"
   },
   "lint-staged": {
@@ -40,6 +40,7 @@
     "@tanstack/react-query": "^5.94.5",
     "@tanstack/react-query-devtools": "^5.94.5",
     "@tanstack/react-router": "^1.168.1",
+    "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.26",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -48,6 +49,7 @@
     "radix-ui": "^1.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "recharts": "^3.8.0",
     "sonner": "2.0.7",
     "tailwind-merge": "^3.5.0",
     "tw-animate-css": "^1.4.0",

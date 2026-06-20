@@ -758,6 +758,50 @@ describe("SettlementBuildingsPanel", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
+  it("closes confirm dialog without deconstructing when cancel is clicked", async () => {
+    const user = userEvent.setup();
+    const rpcMock = vi.fn((fn: string) => {
+      if (fn === "settlement_population_cap") {
+        return Promise.resolve({ data: 5, error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Barracks" },
+            state: "active",
+          }),
+        ],
+        rpcMock,
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Barracks");
+    await user.click(
+      screen.getByRole("button", { name: "Deconstruct Barracks" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Deconstruct Barracks?",
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("alertdialog", { name: "Deconstruct Barracks?" }),
+      ).toBeNull();
+    });
+    expect(rpcMock).not.toHaveBeenCalledWith(
+      "manual_deconstruct_settlement_building",
+      expect.anything(),
+    );
+  });
+
   it("collapses a group when the toggle is clicked", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(

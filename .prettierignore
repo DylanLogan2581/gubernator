@@ -10,3 +10,9 @@ src/components/ui/
 # (100-col), which conflicts with Prettier's 80-col wrapping. Let Deno own
 # their formatting so the Deno CI fmt check stays green.
 supabase/functions/
+
+# seed.sql is a generated pg_dump of the demo world; not hand-maintained.
+supabase/seed.sql
+
+# seed regeneration tooling is hand-formatted dev scripting.
+supabase/seed_tools/

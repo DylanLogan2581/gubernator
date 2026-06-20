@@ -242,6 +242,29 @@ type TestSnapshotRow = {
   readonly managed_populations_summary_json: unknown;
 };
 
+type TestStockpileRow = {
+  readonly settlement_id: string;
+  readonly resource_id: string;
+  readonly resource_name: string;
+  readonly is_system_resource: boolean;
+  readonly quantity: number;
+  readonly effective_cap: number;
+};
+
+function createStockpileRow(
+  overrides: Partial<TestStockpileRow> = {},
+): TestStockpileRow {
+  return {
+    settlement_id: SETTLEMENT_ID,
+    resource_id: RESOURCE_ID_1,
+    resource_name: "Grain",
+    is_system_resource: false,
+    quantity: 100,
+    effective_cap: 500,
+    ...overrides,
+  };
+}
+
 function createClient({
   instanceRows = [],
   instancesMock,
@@ -250,6 +273,7 @@ function createClient({
   assignmentRows = [],
   transitionRow = null,
   snapshotRows = [],
+  stockpileRows = [],
   rpcMock,
 }: {
   readonly instanceRows?: readonly TestInstanceRow[];
@@ -259,6 +283,7 @@ function createClient({
   readonly assignmentRows?: readonly TestAssignmentRow[];
   readonly transitionRow?: TestTransitionRow | null;
   readonly snapshotRows?: readonly TestSnapshotRow[];
+  readonly stockpileRows?: readonly TestStockpileRow[];
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
   const instancesSelectBuilder: Record<string, unknown> = {
@@ -286,6 +311,12 @@ function createClient({
     in: vi.fn(() => assignmentsSelectBuilder),
     order: vi.fn(() => assignmentsSelectBuilder),
     returns: vi.fn().mockResolvedValue({ data: assignmentRows, error: null }),
+  };
+
+  const stockpilesSelectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => stockpilesSelectBuilder),
+    order: vi.fn(() => stockpilesSelectBuilder),
+    returns: vi.fn().mockResolvedValue({ data: stockpileRows, error: null }),
   };
 
   // settlement_turn_snapshots: handles both the latestOutcome lookup (maybeSingle)
@@ -352,6 +383,9 @@ function createClient({
       }
       if (table === "citizen_assignments") {
         return { select: vi.fn(() => assignmentsSelectBuilder) };
+      }
+      if (table === "settlement_stockpiles_view") {
+        return { select: vi.fn(() => stockpilesSelectBuilder) };
       }
       if (table === "settlement_turn_snapshots") {
         return { select: vi.fn(() => snapshotBuilder) };
@@ -1020,6 +1054,123 @@ describe("SettlementManagedPopulationsPanel", () => {
     expect(screen.getByText("Cattle Herder")).toBeDefined();
     // required = ceil(50/10) = 5, assigned = 1
     expect(screen.getByText("(1/5)")).toBeDefined();
+  });
+
+  it("shows sufficient indicator when husbandry workers meet requirement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            current_count: 50,
+            managed_population_type_id: TYPE_ID_1,
+          }),
+        ],
+        typeRows: [createTypeRow({ husbandry_workers_per_n_animals: 10 })],
+        // 1 assignment for 50 animals / 10 = 5 required — insufficient
+        assignmentRows: [
+          createAssignmentRow(),
+          createAssignmentRow({
+            citizen_id: "00000000-0000-0000-0000-000000000041",
+          }),
+          createAssignmentRow({
+            citizen_id: "00000000-0000-0000-0000-000000000042",
+          }),
+          createAssignmentRow({
+            citizen_id: "00000000-0000-0000-0000-000000000043",
+          }),
+          createAssignmentRow({
+            citizen_id: "00000000-0000-0000-0000-000000000044",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Herd");
+    // 5 assigned / 5 required — sufficient
+    expect(screen.getByLabelText("Workers sufficient")).toBeDefined();
+  });
+
+  it("shows insufficient indicator when husbandry workers fall short", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            current_count: 50,
+            managed_population_type_id: TYPE_ID_1,
+          }),
+        ],
+        typeRows: [createTypeRow({ husbandry_workers_per_n_animals: 10 })],
+        assignmentRows: [createAssignmentRow()],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Herd");
+    // 1 assigned / 5 required — insufficient
+    expect(screen.getByLabelText("Workers insufficient")).toBeDefined();
+  });
+
+  it("shows upkeep met indicator when stockpile covers maintenance requirement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            current_count: 100,
+            managed_population_type_id: TYPE_ID_1,
+          }),
+        ],
+        typeRows: [
+          createTypeRow({
+            maintenance_rules_json: [
+              { resource_id: RESOURCE_ID_1, amount_per_n_animals: 0.5 },
+            ],
+          }),
+        ],
+        resourceRows: [createResourceRow({ id: RESOURCE_ID_1, name: "Grain" })],
+        // 100 * 0.5 = 50 required; stockpile has 60 — met
+        stockpileRows: [
+          createStockpileRow({ resource_id: RESOURCE_ID_1, quantity: 60 }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Herd");
+    expect(screen.getByLabelText("Grain: upkeep met")).toBeDefined();
+  });
+
+  it("shows upkeep short indicator when stockpile does not cover maintenance requirement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        instanceRows: [
+          createInstanceRow({
+            current_count: 100,
+            managed_population_type_id: TYPE_ID_1,
+          }),
+        ],
+        typeRows: [
+          createTypeRow({
+            maintenance_rules_json: [
+              { resource_id: RESOURCE_ID_1, amount_per_n_animals: 0.5 },
+            ],
+          }),
+        ],
+        resourceRows: [createResourceRow({ id: RESOURCE_ID_1, name: "Grain" })],
+        // 100 * 0.5 = 50 required; stockpile has 20 — short
+        stockpileRows: [
+          createStockpileRow({ resource_id: RESOURCE_ID_1, quantity: 20 }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, canManage: false });
+
+    await screen.findByText("North Herd");
+    expect(screen.getByLabelText("Grain: upkeep short")).toBeDefined();
   });
 
   it("mark extinct button is not shown for non-admin users", async () => {

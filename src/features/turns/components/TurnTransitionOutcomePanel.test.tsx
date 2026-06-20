@@ -53,16 +53,16 @@ describe("TurnTransitionOutcomeContent", () => {
 
     expectMetric("Births", "3");
     expectMetric("Deaths", "1");
-    expectMetric("Buildings suspended", "1");
-    expectMetric("Deposits depleted", "1");
+    expectMetric("Buildings Suspended", "1");
+    expectMetric("Deposits Depleted", "1");
   });
 
   it("renders notifications grouped by type in collapsed state", () => {
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    expect(screen.getByText("Notifications")).toBeDefined();
-    expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
-    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+    expect(screen.getByText("Notifications this turn")).toBeDefined();
+    expect(screen.getByText("Buildings Suspended (1)")).toBeDefined();
+    expect(screen.getByText("Deposits Depleted (1)")).toBeDefined();
 
     // Accordion items should exist (shadcn accordion uses data-state="closed" for collapsed)
     const accordionTriggers = document.querySelectorAll(
@@ -76,7 +76,7 @@ describe("TurnTransitionOutcomeContent", () => {
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
     const buildingsSuspendedTrigger = screen.getByText(
-      "Buildings suspended (1)",
+      "Buildings Suspended (1)",
     );
     await user.click(buildingsSuspendedTrigger);
 
@@ -134,42 +134,42 @@ describe("TurnTransitionOutcomeContent", () => {
     const user = userEvent.setup();
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    // Initially both group triggers should be present
-    expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
-    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+    // Initially both group triggers should be present (no filter active)
+    expect(screen.getByText("Buildings Suspended (1)")).toBeDefined();
+    expect(screen.getByText("Deposits Depleted (1)")).toBeDefined();
 
-    // Click the "Buildings suspended" toggle to deselect it
+    // Click the "Buildings Suspended" toggle to include only that category
     const buildingsChip = screen.getByRole("button", {
-      name: "Filter Buildings suspended",
+      name: "Filter by Buildings Suspended",
     });
     await user.click(buildingsChip);
 
-    // Only "Deposits depleted" should remain
-    expect(screen.queryByText("Buildings suspended (1)")).toBeNull();
-    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+    // Only "Buildings Suspended" should remain (it is the selected/included category)
+    expect(screen.getByText("Buildings Suspended (1)")).toBeDefined();
+    expect(screen.queryByText("Deposits Depleted (1)")).toBeNull();
   });
 
   it("resets filter when All chip is clicked", async () => {
     const user = userEvent.setup();
     render(<TurnTransitionOutcomeContent outcome={createPopulatedOutcome()} />);
 
-    // Deselect one category via toggle
+    // Select one category via toggle (include it)
     const buildingsChip = screen.getByRole("button", {
-      name: "Filter Buildings suspended",
+      name: "Filter by Buildings Suspended",
     });
     await user.click(buildingsChip);
 
-    // Only one group should be visible
-    expect(screen.queryByText("Buildings suspended (1)")).toBeNull();
-    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+    // Only the selected category should be visible
+    expect(screen.getByText("Buildings Suspended (1)")).toBeDefined();
+    expect(screen.queryByText("Deposits Depleted (1)")).toBeNull();
 
     // Click "All" to reset
     const allChip = screen.getByRole("button", { name: "All" });
     await user.click(allChip);
 
     // Both groups should be visible again
-    expect(screen.getByText("Buildings suspended (1)")).toBeDefined();
-    expect(screen.getByText("Deposits depleted (1)")).toBeDefined();
+    expect(screen.getByText("Buildings Suspended (1)")).toBeDefined();
+    expect(screen.getByText("Deposits Depleted (1)")).toBeDefined();
   });
 
   it("shows finish date as date-only prefix from ISO string", () => {
@@ -211,7 +211,9 @@ describe("TurnTransitionOutcomePanel", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByText("Loading transition outcome…")).toBeDefined();
+    expect(
+      document.querySelectorAll('[data-slot="skeleton"]').length,
+    ).toBeGreaterThan(0);
   });
 
   it("shows empty state when no transition exists for the world", async () => {
@@ -300,7 +302,7 @@ describe("TurnTransitionOutcomePanel", () => {
     await screen.findByRole("heading", { name: "Last transition" });
     expect(screen.queryByText("World-scope event.")).toBeNull();
     // Open the accordion to see the hidden content
-    const depositAccordionTrigger = screen.getByText(/Deposits depleted \(1\)/);
+    const depositAccordionTrigger = screen.getByText(/Deposits Depleted \(1\)/);
     const user = userEvent.setup();
     await user.click(depositAccordionTrigger);
     expect(screen.getByText("Settlement-scope event.")).toBeDefined();
@@ -328,7 +330,7 @@ describe("TurnTransitionOutcomePanel", () => {
 
     // Open the accordion to see the hidden content
     const partnershipAccordionTrigger = await screen.findByText(
-      /Partnerships formed \(1\)/,
+      /Partnerships Formed \(1\)/,
     );
     const user = userEvent.setup();
     await user.click(partnershipAccordionTrigger);

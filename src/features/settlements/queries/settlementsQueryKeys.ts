@@ -6,4 +6,6 @@ export const settlementsQueryKeys = {
     [...settlementsQueryKeys.all, "by-world", worldId] as const,
   detail: (settlementId: string) =>
     [...settlementsQueryKeys.all, "detail", settlementId] as const,
+  populationCap: (settlementId: string) =>
+    [...settlementsQueryKeys.all, "population-cap", settlementId] as const,
 } as const;

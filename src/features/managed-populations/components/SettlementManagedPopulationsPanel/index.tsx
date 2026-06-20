@@ -21,7 +21,9 @@ import {
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import {
   activeResourcesByWorldQueryOptions,
+  settlementStockpilesByIdQueryOptions,
   type Resource,
+  type SettlementStockpile,
 } from "@/features/resources";
 import {
   useSettlementTransitionOutcome,
@@ -70,6 +72,9 @@ export function SettlementManagedPopulationsPanel({
   const assignmentsQuery = useQuery(
     settlementTargetAssignmentsQueryOptions(settlementId),
   );
+  const stockpilesQuery = useQuery(
+    settlementStockpilesByIdQueryOptions(settlementId),
+  );
   const latestOutcome = useSettlementTransitionOutcome(settlementId);
   const snapshotCountsQuery = useQuery(
     managedPopulationSnapshotsBySettlementQueryOptions(settlementId),
@@ -86,6 +91,13 @@ export function SettlementManagedPopulationsPanel({
   if (resourcesQuery.data !== undefined) {
     for (const r of resourcesQuery.data) {
       resourceById.set(r.id, r);
+    }
+  }
+
+  const stockpileByResourceId = new Map<string, SettlementStockpile>();
+  if (stockpilesQuery.data !== undefined) {
+    for (const s of stockpilesQuery.data) {
+      stockpileByResourceId.set(s.resourceId, s);
     }
   }
 
@@ -164,6 +176,7 @@ export function SettlementManagedPopulationsPanel({
                 prevCounts: null,
               }
             }
+            stockpileByResourceId={stockpileByResourceId}
             typeById={typeById}
           />
         )}
@@ -252,6 +265,7 @@ function ManagedPopulationsTable({
   queryClient,
   resourceById,
   snapshotCounts,
+  stockpileByResourceId,
   typeById,
 }: {
   readonly canAdmin: boolean;
@@ -262,6 +276,7 @@ function ManagedPopulationsTable({
   readonly queryClient: QueryClient;
   readonly resourceById: ReadonlyMap<string, Resource>;
   readonly snapshotCounts: ManagedPopSnapshotCounts;
+  readonly stockpileByResourceId: ReadonlyMap<string, SettlementStockpile>;
   readonly typeById: ReadonlyMap<string, ManagedPopulationType>;
 }): JSX.Element {
   return (
@@ -291,6 +306,7 @@ function ManagedPopulationsTable({
             queryClient={queryClient}
             resourceById={resourceById}
             snapshotCounts={snapshotCounts}
+            stockpileByResourceId={stockpileByResourceId}
             type={typeById.get(instance.managedPopulationTypeId)}
           />
         ))}

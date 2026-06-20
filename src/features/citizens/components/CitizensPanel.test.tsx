@@ -255,6 +255,60 @@ describe("CitizensPanel", () => {
     ).toBeNull();
   });
 
+  it("shows living count and population cap in the panel header", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({ id: "c-1", status: "alive" }),
+          createAggregateRow({ id: "c-2", status: "alive" }),
+          createAggregateRow({ id: "c-3", status: "dead" }),
+        ],
+        populationCap: 10,
+      }),
+    );
+
+    renderPanel({ canAdmin: false });
+
+    expect(await screen.findByText("2 / 10")).toBeDefined();
+  });
+
+  it("shows living count without cap when the population cap rpc fails", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({ id: "c-1", status: "alive" }),
+          createAggregateRow({ id: "c-2", status: "alive" }),
+        ],
+        populationCap: null,
+      }),
+    );
+
+    renderPanel({ canAdmin: false });
+
+    // Wait for data to load, then verify header count paragraph shows count without cap
+    await screen.findByText("Living citizens");
+    const heading = screen.getByRole("heading", { name: "Citizens" });
+    const headerDiv = heading.parentElement;
+    const countEl = headerDiv?.querySelector("p");
+    expect(countEl?.textContent).toBe("2");
+  });
+
+  it("shows at-capacity indicator when living count meets or exceeds the cap", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({ id: "c-1", status: "alive" }),
+          createAggregateRow({ id: "c-2", status: "alive" }),
+        ],
+        populationCap: 2,
+      }),
+    );
+
+    renderPanel({ canAdmin: false });
+
+    expect(await screen.findByText("2 / 2 — at capacity")).toBeDefined();
+  });
+
   it("shows an empty aggregate state when the settlement has no citizens", async () => {
     requireSupabaseClient.mockReturnValue(createClient({ aggregates: [] }));
 
@@ -378,11 +432,13 @@ function createClient({
   assignments = [],
   citizens = [],
   citizensError = null,
+  populationCap = null,
 }: {
   readonly aggregates?: readonly AggregateRowFixture[];
   readonly assignments?: readonly AssignmentRowFixture[];
   readonly citizens?: readonly CitizenRowFixture[];
   readonly citizensError?: Error | null;
+  readonly populationCap?: number | null;
 }): unknown {
   return {
     from: vi.fn((table: string) => {
@@ -397,6 +453,19 @@ function createClient({
         return createAssignmentsQueryBuilder(assignments);
       }
       throw new Error(`Unexpected table ${table}`);
+    }),
+    rpc: vi.fn((fn: string) => {
+      if (fn === "settlement_population_cap") {
+        return Promise.resolve(
+          populationCap !== null
+            ? { data: populationCap, error: null }
+            : { data: null, error: new Error("Cap unavailable") },
+        );
+      }
+      return Promise.resolve({
+        data: null,
+        error: new Error(`Unexpected rpc ${fn}`),
+      });
     }),
   };
 }

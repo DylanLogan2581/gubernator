@@ -1,0 +1,347 @@
+{
+  "template_version": 1,
+  "meta": {
+    "name": "Basic Fantasy",
+    "slug": "basic-fantasy",
+    "exported_at": "2026-06-17T00:00:00.000Z"
+  },
+  "calendar": {
+    "dateFormatTemplate": "{weekday}, {day} {month} {year}",
+    "months": [
+      { "index": 0, "name": "Frostfall", "dayCount": 30 },
+      { "index": 1, "name": "Snowmelt", "dayCount": 28 },
+      { "index": 2, "name": "Seedtime", "dayCount": 31 },
+      { "index": 3, "name": "Greenleaf", "dayCount": 30 },
+      { "index": 4, "name": "Highsun", "dayCount": 31 },
+      { "index": 5, "name": "Harvest", "dayCount": 30 },
+      { "index": 6, "name": "Goldfall", "dayCount": 31 },
+      { "index": 7, "name": "Dimming", "dayCount": 30 },
+      { "index": 8, "name": "Deepwinter", "dayCount": 31 },
+      { "index": 9, "name": "Icebind", "dayCount": 28 },
+      { "index": 10, "name": "Thawing", "dayCount": 30 },
+      { "index": 11, "name": "Firstbloom", "dayCount": 30 }
+    ],
+    "startingDayOfMonth": 1,
+    "startingMonthIndex": 2,
+    "startingWeekdayOffset": 1,
+    "startingYear": 872,
+    "weekdays": [
+      { "index": 0, "name": "Moonday" },
+      { "index": 1, "name": "Ironday" },
+      { "index": 2, "name": "Windsday" },
+      { "index": 3, "name": "Earthday" },
+      { "index": 4, "name": "Stormday" },
+      { "index": 5, "name": "Faithday" },
+      { "index": 6, "name": "Restday" }
+    ]
+  },
+  "population_rules": {
+    "fertility_chance": 0.1,
+    "food_consumption_per_citizen": 1.0,
+    "homelessness_decline_rate": 0.05,
+    "incest_prevention_depth": 2,
+    "maximum_fertility_age_turns": 1800,
+    "minimum_partnership_age_turns": 360,
+    "mourning_period_turns": 90,
+    "partnership_seek_chance": 0.2,
+    "starvation_severity_multiplier": 1.0,
+    "water_consumption_per_citizen": 1.0
+  },
+  "npc_flavor": {
+    "contradictions": [
+      "brave but reckless",
+      "kind yet distant",
+      "loyal but mistrustful",
+      "ambitious though humble"
+    ],
+    "flaws": [
+      "quick to anger",
+      "overly cautious",
+      "holds grudges",
+      "speaks before thinking"
+    ],
+    "goals": [
+      "protect the settlement at all costs",
+      "become a respected artisan",
+      "find a life partner",
+      "uncover the truth about the old ruins"
+    ],
+    "traits": ["diligent", "curious", "stoic", "warm-hearted", "shrewd"]
+  },
+  "naming_config": {
+    "convention": "family-name",
+    "female_given_names": [
+      "Alara",
+      "Brynn",
+      "Calla",
+      "Dara",
+      "Erin",
+      "Fara",
+      "Gwen",
+      "Hessa",
+      "Idris",
+      "Jora"
+    ],
+    "male_given_names": [
+      "Aldric",
+      "Brand",
+      "Calder",
+      "Dorin",
+      "Ervan",
+      "Fenric",
+      "Gareth",
+      "Hadwin",
+      "Ivar",
+      "Jorath"
+    ],
+    "surnames": [
+      "Ashborne",
+      "Blackwood",
+      "Coldfen",
+      "Dawnridge",
+      "Embervale",
+      "Frostholm",
+      "Greymoor",
+      "Hammerfell",
+      "Ironhill",
+      "Jarvik"
+    ]
+  },
+  "namesets": [
+    {
+      "name": "Common Folk",
+      "is_default": true,
+      "config": {
+        "convention": "family-name",
+        "female_given_names": [
+          "Alara",
+          "Brynn",
+          "Calla",
+          "Dara",
+          "Erin",
+          "Fara",
+          "Gwen",
+          "Hessa",
+          "Idris",
+          "Jora"
+        ],
+        "male_given_names": [
+          "Aldric",
+          "Brand",
+          "Calder",
+          "Dorin",
+          "Ervan",
+          "Fenric",
+          "Gareth",
+          "Hadwin",
+          "Ivar",
+          "Jorath"
+        ],
+        "surnames": [
+          "Ashborne",
+          "Blackwood",
+          "Coldfen",
+          "Dawnridge",
+          "Embervale",
+          "Frostholm",
+          "Greymoor",
+          "Hammerfell",
+          "Ironhill",
+          "Jarvik"
+        ]
+      }
+    }
+  ],
+  "resources": [
+    {
+      "name": "Grain",
+      "slug": "grain",
+      "base_stockpile_cap": 1000,
+      "decay_rate": 0.02,
+      "is_system_resource": false
+    },
+    {
+      "name": "Hardwood Logs",
+      "slug": "hardwood-logs",
+      "base_stockpile_cap": 600,
+      "decay_rate": 0.0,
+      "is_system_resource": false
+    },
+    {
+      "name": "Iron Ore",
+      "slug": "iron-ore",
+      "base_stockpile_cap": 400,
+      "decay_rate": 0.0,
+      "is_system_resource": false
+    },
+    {
+      "name": "Stone Block",
+      "slug": "stone-block",
+      "base_stockpile_cap": 800,
+      "decay_rate": 0.0,
+      "is_system_resource": false
+    },
+    {
+      "name": "Wool",
+      "slug": "wool",
+      "base_stockpile_cap": 300,
+      "decay_rate": 0.0,
+      "is_system_resource": false
+    }
+  ],
+  "jobs": [
+    {
+      "name": "Farming",
+      "slug": "farming",
+      "job_type": "standard",
+      "base_capacity": 20,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": [{ "resource_slug": "grain", "amount_per_worker": 2 }]
+    },
+    {
+      "name": "Lumbering",
+      "slug": "lumbering",
+      "job_type": "standard",
+      "base_capacity": 10,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": [{ "resource_slug": "hardwood-logs", "amount_per_worker": 3 }]
+    },
+    {
+      "name": "Mining",
+      "slug": "mining",
+      "job_type": "standard",
+      "base_capacity": 10,
+      "trader_capacity_per_worker": null,
+      "inputs": [{ "resource_slug": "grain", "amount_per_worker": 0.5 }],
+      "outputs": [{ "resource_slug": "iron-ore", "amount_per_worker": 2 }]
+    },
+    {
+      "name": "Quarrying",
+      "slug": "quarrying",
+      "job_type": "standard",
+      "base_capacity": 10,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": [{ "resource_slug": "stone-block", "amount_per_worker": 4 }]
+    },
+    {
+      "name": "Shepherding",
+      "slug": "shepherding",
+      "job_type": "standard",
+      "base_capacity": 5,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "name": "Culling",
+      "slug": "culling",
+      "job_type": "standard",
+      "base_capacity": 5,
+      "trader_capacity_per_worker": null,
+      "inputs": [],
+      "outputs": []
+    }
+  ],
+  "blueprints": [
+    {
+      "name": "Granary",
+      "slug": "granary",
+      "description": "A sturdy storage house for grain and dry goods.",
+      "max_instances_per_settlement": 3,
+      "grace_period_turns": 10,
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 120,
+          "construction_costs": [
+            { "resource_slug": "hardwood-logs", "amount": 60 },
+            { "resource_slug": "stone-block", "amount": 20 }
+          ],
+          "upkeep_costs": [],
+          "effects": [
+            {
+              "type": "resource_storage_increase",
+              "resource_slug": "grain",
+              "amount": 800
+            },
+            { "type": "population_cap_increase", "amount": 20 }
+          ]
+        },
+        {
+          "tier_number": 2,
+          "worker_turns_required": 240,
+          "construction_costs": [
+            { "resource_slug": "hardwood-logs", "amount": 120 },
+            { "resource_slug": "stone-block", "amount": 60 },
+            { "resource_slug": "iron-ore", "amount": 20 }
+          ],
+          "upkeep_costs": [],
+          "effects": [
+            {
+              "type": "resource_storage_increase",
+              "resource_slug": "grain",
+              "amount": 2000
+            },
+            { "type": "population_cap_increase", "amount": 50 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sawmill",
+      "slug": "sawmill",
+      "description": "A water-powered mill for processing raw timber into planks.",
+      "max_instances_per_settlement": 1,
+      "grace_period_turns": 8,
+      "tiers": [
+        {
+          "tier_number": 1,
+          "worker_turns_required": 80,
+          "construction_costs": [
+            { "resource_slug": "stone-block", "amount": 40 },
+            { "resource_slug": "iron-ore", "amount": 15 }
+          ],
+          "upkeep_costs": [{ "resource_slug": "iron-ore", "amount": 2 }],
+          "effects": [
+            {
+              "type": "job_capacity_increase",
+              "job_slug": "lumbering",
+              "amount": 10
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "deposit_types": [
+    {
+      "name": "Iron Vein",
+      "slug": "iron-vein",
+      "job_slug": "mining",
+      "output_units_per_worker": 3,
+      "worker_inputs": [{ "resource_slug": "grain", "amount_per_worker": 0.5 }]
+    }
+  ],
+  "managed_population_types": [
+    {
+      "name": "Sheep",
+      "slug": "sheep",
+      "husbandry_job_slug": "shepherding",
+      "culling_job_slug": "culling",
+      "husbandry_workers_per_n_animals": 10,
+      "growth_rate": 0.05,
+      "maintenance_rules": [
+        { "resource_slug": "grain", "amount_per_n_animals": 0.2 }
+      ],
+      "culling_outputs": [
+        { "resource_slug": "wool", "amount_per_n_animals": 0.5 }
+      ],
+      "regular_outputs": [
+        { "resource_slug": "wool", "amount_per_n_animals": 0.1 }
+      ]
+    }
+  ]
+}

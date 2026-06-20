@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -64,6 +64,28 @@ function SettlementTransitionOutcomePanel({
   return <OutcomePanelQueryResult query={query} />;
 }
 
+function TurnTransitionOutcomeSkeleton(): JSX.Element {
+  return (
+    <OutcomePanelFrame>
+      <div className="space-y-1">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <dl className="grid gap-3 sm:grid-cols-4">
+        {([0, 1, 2, 3] as const).map((i) => (
+          <div
+            key={i}
+            className="rounded-md border border-border bg-background px-3 py-2"
+          >
+            <Skeleton className="mb-1 h-4 w-20" />
+            <Skeleton className="h-8 w-12" />
+          </div>
+        ))}
+      </dl>
+    </OutcomePanelFrame>
+  );
+}
+
 function OutcomePanelQueryResult({
   query,
 }: {
@@ -76,11 +98,7 @@ function OutcomePanelQueryResult({
   };
 }): JSX.Element {
   if (query.isPending) {
-    return (
-      <OutcomePanelFrame>
-        <LoadingState label="Loading transition outcome…" />
-      </OutcomePanelFrame>
-    );
+    return <TurnTransitionOutcomeSkeleton />;
   }
 
   if (query.isError) {
@@ -144,18 +162,20 @@ export function TurnTransitionOutcomeContent({
     [notificationGroups],
   );
 
-  const [selectedCategories, setSelectedCategories] =
-    useState<string[]>(allCategories);
+  // Empty = no filter = show all. Selecting tags narrows to those categories.
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const resetFilter = (): void => {
-    setSelectedCategories(allCategories);
+    setSelectedCategories([]);
   };
 
   const filteredGroups = useMemo(
     () =>
-      notificationGroups.filter((group) =>
-        selectedCategories.includes(group.type),
-      ),
+      selectedCategories.length === 0
+        ? notificationGroups
+        : notificationGroups.filter((group) =>
+            selectedCategories.includes(group.type),
+          ),
     [notificationGroups, selectedCategories],
   );
 
@@ -193,24 +213,24 @@ export function TurnTransitionOutcomeContent({
           <MetricTile label="Births" value={deltas.births} />
           <MetricTile label="Deaths" value={deltas.deaths} />
           <MetricTile
-            label="Buildings suspended"
+            label="Buildings Suspended"
             value={deltas.buildingsSuspended}
           />
           <MetricTile
-            label="Deposits depleted"
+            label="Deposits Depleted"
             value={deltas.depositsDepleted}
           />
         </dl>
 
         {notificationGroups.length > 0 ? (
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Notifications</h3>
+            <h3 className="text-sm font-medium">Notifications this turn</h3>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={resetFilter}
                 className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  selectedCategories.length === allCategories.length
+                  selectedCategories.length === 0
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background text-foreground hover:border-primary"
                 }`}
@@ -228,7 +248,7 @@ export function TurnTransitionOutcomeContent({
                     key={category}
                     value={category}
                     className="rounded-full border px-3 py-1 text-xs font-medium data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                    aria-label={`Filter ${notificationTypeLabel(category)}`}
+                    aria-label={`Filter by ${notificationTypeLabel(category)}`}
                   >
                     {notificationTypeLabel(category)}
                   </ToggleGroupItem>

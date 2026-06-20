@@ -63,9 +63,9 @@ describe("WorldCalendarConfigPanel", () => {
     expect(
       await screen.findByRole("heading", { name: "Calendar" }),
     ).toBeDefined();
-    expect(
-      screen.getByRole("textbox", { name: "Weekdays 1 Name" }),
-    ).toHaveValue("Firstday");
+    expect(screen.getByRole("textbox", { name: "Day 1" })).toHaveValue(
+      "Firstday",
+    );
     expect(screen.getByRole("textbox", { name: "Months 1 Name" })).toHaveValue(
       "Dawn",
     );
@@ -80,15 +80,12 @@ describe("WorldCalendarConfigPanel", () => {
       screen.getByRole("textbox", { name: "Date format template" }),
     ).toHaveValue("{weekday}, {month} {day}, {year} AG");
 
-    await user.clear(screen.getByRole("textbox", { name: "Weekdays 1 Name" }));
-    await user.type(
-      screen.getByRole("textbox", { name: "Weekdays 1 Name" }),
+    await user.clear(screen.getByRole("textbox", { name: "Day 1" }));
+    await user.type(screen.getByRole("textbox", { name: "Day 1" }), "Moonday");
+
+    expect(screen.getByRole("textbox", { name: "Day 1" })).toHaveValue(
       "Moonday",
     );
-
-    expect(
-      screen.getByRole("textbox", { name: "Weekdays 1 Name" }),
-    ).toHaveValue("Moonday");
     expect(screen.getByRole("button", { name: "Add weekday" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Add month" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Save calendar" })).toBeDefined();
@@ -284,7 +281,7 @@ describe("WorldCalendarConfigPanel", () => {
     await screen.findByRole("heading", { name: "Calendar" });
 
     const weekdayField = screen.getByRole("textbox", {
-      name: "Weekdays 1 Name",
+      name: "Day 1",
     });
     await user.clear(weekdayField);
     await user.type(weekdayField, "Edited");
@@ -301,9 +298,9 @@ describe("WorldCalendarConfigPanel", () => {
       </QueryClientProvider>,
     );
 
-    expect(
-      await screen.findByRole("textbox", { name: "Weekdays 1 Name" }),
-    ).toHaveValue("OtherDay");
+    expect(await screen.findByRole("textbox", { name: "Day 1" })).toHaveValue(
+      "OtherDay",
+    );
   });
 
   it("preserves draft when initialConfig refreshes for the same world", async () => {
@@ -332,7 +329,7 @@ describe("WorldCalendarConfigPanel", () => {
     await screen.findByRole("heading", { name: "Calendar" });
 
     const weekdayField = screen.getByRole("textbox", {
-      name: "Weekdays 1 Name",
+      name: "Day 1",
     });
     await user.clear(weekdayField);
     await user.type(weekdayField, "Edited");
@@ -348,9 +345,9 @@ describe("WorldCalendarConfigPanel", () => {
       },
     );
 
-    expect(
-      screen.getByRole("textbox", { name: "Weekdays 1 Name" }),
-    ).toHaveValue("Edited");
+    expect(screen.getByRole("textbox", { name: "Day 1" })).toHaveValue(
+      "Edited",
+    );
   });
 
   it("emits a success toast after saving the calendar config", async () => {
@@ -443,9 +440,7 @@ describe("WorldCalendarConfigPanel", () => {
     ).toBeDefined();
     expect(screen.queryByRole("button", { name: "Save calendar" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Add weekday" })).toBeNull();
-    expect(
-      screen.queryByRole("textbox", { name: "Weekdays 1 Name" }),
-    ).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Day 1" })).toBeNull();
   });
 });
 

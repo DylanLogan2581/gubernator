@@ -19,9 +19,10 @@ import {
   useSettlementManageAuthority,
   type AccessContext,
 } from "@/features/permissions";
+import { SettlementReportsPanel } from "@/features/reports";
 import { SettlementStockpilesPanel } from "@/features/resources";
 import { SettlementTradeRoutesPanel } from "@/features/trade";
-import { TurnTransitionOutcomePanel } from "@/features/turns";
+import { TurnLogBrowser, TurnTransitionOutcomePanel } from "@/features/turns";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -48,7 +49,9 @@ type SettlementDetailPageProps = {
     | "population"
     | "economy"
     | "admin"
-    | "forecast";
+    | "forecast"
+    | "history"
+    | "reports";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
   readonly settlementId: string;
@@ -112,6 +115,8 @@ function SettlementDetailWorldGate({
     | "population"
     | "economy"
     | "forecast"
+    | "history"
+    | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
@@ -191,6 +196,8 @@ function SettlementDetailContent({
     | "population"
     | "economy"
     | "forecast"
+    | "history"
+    | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly nationId: string;
@@ -261,6 +268,8 @@ function SettlementDetailLoaded({
     | "population"
     | "economy"
     | "forecast"
+    | "history"
+    | "reports"
     | "admin";
   readonly assignmentTab: "bulk" | "per-target";
   readonly settlement: SettlementWithNation;
@@ -294,7 +303,14 @@ function SettlementDetailLoaded({
   const navigate = useNavigate();
 
   function handleSectionSelect(
-    section: "overview" | "population" | "economy" | "forecast" | "admin",
+    section:
+      | "overview"
+      | "population"
+      | "economy"
+      | "forecast"
+      | "history"
+      | "reports"
+      | "admin",
   ): void {
     void navigate({
       to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
@@ -313,6 +329,8 @@ function SettlementDetailLoaded({
     { key: "population", label: "Population" },
     { key: "economy", label: "Economy" },
     { key: "forecast", label: "Forecast" },
+    { key: "reports", label: "Reports" },
+    { key: "history", label: "History" },
     { key: "admin", label: "Admin" },
   ] as const;
 
@@ -338,14 +356,21 @@ function SettlementDetailLoaded({
       <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
 
       {/* Mobile select — visible below md breakpoint */}
-      <div className="md:hidden">
+      <div className="sticky top-24 z-10 bg-background py-1 md:hidden">
         <NativeSelect
           aria-label="Settlement section"
           className="w-full"
           value={activeSection}
           onChange={(e) =>
             handleSectionSelect(
-              e.target.value as "overview" | "population" | "economy" | "admin",
+              e.target.value as
+                | "overview"
+                | "population"
+                | "economy"
+                | "forecast"
+                | "history"
+                | "reports"
+                | "admin",
             )
           }
         >
@@ -359,10 +384,18 @@ function SettlementDetailLoaded({
 
       {/* Desktop tab strip — visible from md up */}
       <Tabs
+        className="sticky top-24 z-10 bg-background py-1"
         value={activeSection}
         onValueChange={(v) => {
           handleSectionSelect(
-            v as "overview" | "population" | "economy" | "admin",
+            v as
+              | "overview"
+              | "population"
+              | "economy"
+              | "forecast"
+              | "history"
+              | "reports"
+              | "admin",
           );
         }}
       >
@@ -481,6 +514,24 @@ function SettlementDetailLoaded({
       {/* Forecast Section */}
       {activeSection === "forecast" ? (
         <ForecastPanel settlementId={settlement.id} worldId={worldId} />
+      ) : null}
+
+      {/* Reports Section */}
+      {activeSection === "reports" ? (
+        <SettlementReportsPanel
+          currentTurnNumber={worldAccess.header.currentTurnNumber}
+          settlementId={settlement.id}
+          worldId={worldId}
+        />
+      ) : null}
+
+      {/* History Section */}
+      {activeSection === "history" ? (
+        <TurnLogBrowser
+          fixedFilter={{ settlementId: settlement.id }}
+          title="Settlement turn log"
+          worldId={worldId}
+        />
       ) : null}
 
       {/* Admin Section */}

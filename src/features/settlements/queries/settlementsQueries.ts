@@ -150,3 +150,39 @@ function toSettlementWithNation(
     updatedAt: row.updated_at,
   };
 }
+
+type SettlementPopulationCapQueryKey = ReturnType<
+  typeof settlementsQueryKeys.populationCap
+>;
+type SettlementPopulationCapQueryOptions = UseQueryOptions<
+  number,
+  AuthUiError,
+  number,
+  SettlementPopulationCapQueryKey
+>;
+
+export function settlementPopulationCapQueryOptions(
+  settlementId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SettlementPopulationCapQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getSettlementPopulationCap(client, settlementId),
+    queryKey: settlementsQueryKeys.populationCap(settlementId),
+  });
+}
+
+async function getSettlementPopulationCap(
+  client: GubernatorSupabaseClient,
+  settlementId: string,
+): Promise<number> {
+  const { data, error } = await client.rpc("settlement_population_cap", {
+    p_settlement_id: settlementId,
+  });
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data;
+}

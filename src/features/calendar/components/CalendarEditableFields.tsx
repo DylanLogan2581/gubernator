@@ -26,6 +26,7 @@ export function CalendarEditableFields({
         addButtonLabel="Add weekday"
         error={errors.weekdays}
         fields={[{ key: "name", label: "Name", type: "text" }]}
+        itemLabel="Day"
         items={config.weekdays}
         legend="Weekdays"
         onAdd={() =>

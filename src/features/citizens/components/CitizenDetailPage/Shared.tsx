@@ -1,3 +1,11 @@
+import { Info } from "lucide-react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 import type { Citizen, DeathCauseCategory } from "../../types/citizenTypes";
 import type { JSX } from "react";
 
@@ -5,11 +13,13 @@ export function Readout({
   block,
   label,
   mono,
+  tooltip,
   value,
 }: {
   readonly block?: boolean;
   readonly label: string;
   readonly mono?: boolean;
+  readonly tooltip?: string;
   readonly value: string | null;
 }): JSX.Element {
   return (
@@ -18,7 +28,23 @@ export function Readout({
         block === true ? "sm:col-span-2" : ""
       }`}
     >
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className="flex items-center gap-1 text-xs text-muted-foreground">
+        {label}
+        {tooltip !== undefined ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={tooltip}
+                className="inline-flex items-center"
+              >
+                <Info aria-hidden="true" className="size-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{tooltip}</TooltipContent>
+          </Tooltip>
+        ) : null}
+      </dt>
       <dd
         className={`text-sm ${mono === true ? "font-mono text-xs" : ""} ${
           block === true ? "whitespace-pre-wrap" : ""

@@ -60,4 +60,6 @@ export const citizensQueryKeys = {
     [...citizensQueryKeys.all, "memories", citizenId] as const,
   unpairedAliveInWorld: (worldId: string) =>
     [...citizensQueryKeys.all, "unpaired-alive-in-world", worldId] as const,
+  worldList: (worldId: string) =>
+    [...citizensQueryKeys.all, "world-list", worldId] as const,
 } as const;

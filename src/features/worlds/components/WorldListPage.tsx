@@ -14,7 +14,14 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { useState, type FormEvent, type JSX, type ReactNode } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type JSX,
+  type ReactNode,
+} from "react";
 import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
@@ -33,11 +40,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
+import type { WorldTemplate } from "@/shared/worldTemplateSchema";
 
 import {
   createWorldMutationOptions,
@@ -45,10 +58,20 @@ import {
   restoreWorldMutationOptions,
   trashWorldMutationOptions,
 } from "../mutations/worldAdminMutations";
+import { importWorldFromTemplateMutationOptions } from "../mutations/worldTemplateMutations";
 import {
   accessibleWorldsQueryOptions,
   trashedWorldsQueryOptions,
 } from "../queries/worldQueries";
+import { parseWorldTemplate } from "../queries/worldTemplateExportQueries";
+import { BUNDLED_SCENARIOS } from "../scenarios/bundledScenarios";
+import { computeDryRunReport } from "../utils/worldTemplateDryRun";
+
+import {
+  DryRunSummary,
+  ImportErrorDialog,
+  WorldTemplateImportButton,
+} from "./WorldTemplateImportButton";
 
 import type { AccessibleWorld } from "../types/worldTypes";
 
@@ -131,19 +154,23 @@ function WorldListContent({
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold tracking-normal">Trash</h1>
             </div>
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon-sm"
-              aria-label="Hide trash"
-              aria-pressed
-              title="Hide trash"
-              onClick={() => {
-                setShowTrash(false);
-              }}
-            >
-              <Trash2 aria-hidden="true" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon-sm"
+                  aria-label="Hide trash"
+                  aria-pressed
+                  onClick={() => {
+                    setShowTrash(false);
+                  }}
+                >
+                  <Trash2 aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Hide trash</TooltipContent>
+            </Tooltip>
           </div>
           {trashedWorldsQuery.isPending ? (
             <LoadingState label="Loading trashed worlds…" />
@@ -197,19 +224,26 @@ function WorldListContent({
               </Button>
             ) : null}
             {accessContext.isSuperAdmin ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Show trash"
-                aria-pressed={false}
-                title="Show trash"
-                onClick={() => {
-                  setShowTrash(true);
-                }}
-              >
-                <Trash2 aria-hidden="true" />
-              </Button>
+              <WorldTemplateImportButton queryClient={queryClient} />
+            ) : null}
+            {accessContext.isSuperAdmin ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Show trash"
+                    aria-pressed={false}
+                    onClick={() => {
+                      setShowTrash(true);
+                    }}
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Show trash</TooltipContent>
+              </Tooltip>
             ) : null}
           </div>
         </div>
@@ -296,7 +330,7 @@ function WorldListItem({
             <h2 className="truncate text-base font-medium">{world.name}</h2>
             <WorldBadge world={world} />
           </div>
-          <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+          <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
             <div>
               <dt className="font-medium text-foreground">Planning turn</dt>
               <dd>{world.planningTurnNumber}</dd>
@@ -308,10 +342,6 @@ function WorldListItem({
             <div>
               <dt className="font-medium text-foreground">Status</dt>
               <dd className="capitalize">{world.status}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-foreground">Visibility</dt>
-              <dd className="capitalize">{world.visibility}</dd>
             </div>
           </dl>
         </div>
@@ -475,9 +505,74 @@ function CreateWorldDialog({
   const createMutation = useMutation(
     createWorldMutationOptions({ queryClient }),
   );
+  const importMutation = useMutation(
+    importWorldFromTemplateMutationOptions({ queryClient }),
+  );
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [fieldErrors, setFieldErrors] = useState<CreateWorldFieldErrors>({});
+  const [templateChoice, setTemplateChoice] = useState<string>("none");
+  const [uploadedTemplate, setUploadedTemplate] =
+    useState<WorldTemplate | null>(null);
+  const [uploadParseError, setUploadParseError] = useState<string | null>(null);
+
+  const isPending = createMutation.isPending || importMutation.isPending;
+
+  const effectiveTemplate = useMemo<WorldTemplate | null>(() => {
+    if (templateChoice === "none") return null;
+    if (templateChoice === "uploaded") return uploadedTemplate;
+    const scenarioId = templateChoice.replace("bundled:", "");
+    return BUNDLED_SCENARIOS.find((s) => s.id === scenarioId)?.template ?? null;
+  }, [templateChoice, uploadedTemplate]);
+
+  const dryRunReport = useMemo(
+    () =>
+      effectiveTemplate !== null
+        ? computeDryRunReport(effectiveTemplate)
+        : null,
+    [effectiveTemplate],
+  );
+
+  const effectiveTemplateName = useMemo<string | null>(() => {
+    if (templateChoice === "uploaded")
+      return uploadedTemplate?.meta.name ?? null;
+    if (templateChoice !== "none") {
+      const scenarioId = templateChoice.replace("bundled:", "");
+      return BUNDLED_SCENARIOS.find((s) => s.id === scenarioId)?.name ?? null;
+    }
+    return null;
+  }, [templateChoice, uploadedTemplate]);
+
+  function handleTemplateChoiceChange(
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ): void {
+    const value = e.currentTarget.value;
+    setTemplateChoice(value);
+    setUploadedTemplate(null);
+    setUploadParseError(null);
+  }
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>): void {
+    const file = event.target.files?.[0];
+    if (file === undefined) return;
+    setUploadParseError(null);
+    setUploadedTemplate(null);
+    const reader = new FileReader();
+    reader.onload = (e): void => {
+      const raw = typeof e.target?.result === "string" ? e.target.result : "";
+      const result = parseWorldTemplate(raw);
+      if (!result.ok) {
+        setUploadParseError(result.error);
+      } else {
+        setUploadedTemplate(result.data);
+        setName(result.data.meta.name);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -488,85 +583,201 @@ function CreateWorldDialog({
       return;
     }
 
-    createMutation.mutate(
-      { name, visibility },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error ? error.message : "Failed to create world.",
-          );
+    if (effectiveTemplate === null) {
+      createMutation.mutate(
+        { name, visibility },
+        {
+          onError: (error) => {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to create world.",
+            );
+          },
+          onSuccess: () => {
+            notifyMutationSuccess("World created.");
+            onClose();
+          },
         },
-        onSuccess: () => {
-          notifyMutationSuccess("World created.");
-          onClose();
+      );
+    } else {
+      if (dryRunReport !== null && dryRunReport.danglingRefs.length > 0) {
+        toast.error("Template has cross-reference errors", {
+          description: "Resolve the errors in the template before importing.",
+        });
+        return;
+      }
+      importMutation.mutate(
+        { name, visibility, template: effectiveTemplate },
+        {
+          onError: (error) => {
+            toast.error("Import failed", {
+              description:
+                error instanceof Error
+                  ? error.message
+                  : "Could not import template.",
+            });
+          },
+          onSuccess: () => {
+            notifyMutationSuccess("World created from template.");
+            onClose();
+          },
         },
-      },
-    );
+      );
+    }
   }
 
+  const submitDisabled =
+    isPending || (templateChoice === "uploaded" && uploadedTemplate === null);
+
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <DialogContent className="max-w-sm">
-        <form className="contents" noValidate onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create world</DialogTitle>
-            <DialogDescription>
-              Create a world and choose its initial mode.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3">
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Name</span>
-              <Input
-                aria-invalid={fieldErrors.name !== undefined}
-                aria-label="World name"
-                autoFocus
-                disabled={createMutation.isPending}
-                maxLength={textInputLimits.worldNameMax}
-                value={name}
-                onChange={(e) => {
-                  setName(e.currentTarget.value);
-                }}
-              />
-              {fieldErrors.name !== undefined ? (
-                <p className="text-xs text-destructive">{fieldErrors.name}</p>
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        aria-hidden="true"
+        className="sr-only"
+        onChange={handleFileChange}
+      />
+
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <form className="contents" noValidate onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>Create world</DialogTitle>
+              <DialogDescription>
+                Create a world and choose its initial mode.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3">
+              {/* Template select */}
+              <Label className="grid gap-1 text-sm">
+                <span className="text-muted-foreground">Starting template</span>
+                <NativeSelect
+                  className="w-full"
+                  disabled={isPending}
+                  value={templateChoice}
+                  onChange={handleTemplateChoiceChange}
+                >
+                  <option value="none">None (blank world)</option>
+                  <optgroup label="Bundled scenarios">
+                    {BUNDLED_SCENARIOS.map((s) => (
+                      <option key={s.id} value={`bundled:${s.id}`}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <option value="uploaded">Upload template…</option>
+                </NativeSelect>
+              </Label>
+
+              {/* Upload button (visible when "uploaded" chosen) */}
+              {templateChoice === "uploaded" ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                    }}
+                  >
+                    {uploadedTemplate !== null
+                      ? "Replace file…"
+                      : "Choose file…"}
+                  </Button>
+                  {uploadedTemplate !== null ? (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {uploadedTemplate.meta.name}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      No file chosen
+                    </span>
+                  )}
+                </div>
               ) : null}
-            </Label>
-            <Label className="grid gap-1 text-sm">
-              <span className="text-muted-foreground">Visibility</span>
-              <NativeSelect
-                className="w-full"
-                disabled={createMutation.isPending}
-                value={visibility}
-                onChange={(e) => {
-                  setVisibility(e.currentTarget.value as "public" | "private");
-                }}
+
+              {/* Dry-run summary (when a template is selected) */}
+              {effectiveTemplate !== null &&
+              dryRunReport !== null &&
+              effectiveTemplateName !== null ? (
+                <DryRunSummary
+                  report={dryRunReport}
+                  templateName={effectiveTemplateName}
+                />
+              ) : null}
+
+              {/* Name */}
+              <Label className="grid gap-1 text-sm">
+                <span className="text-muted-foreground">Name</span>
+                <Input
+                  aria-invalid={fieldErrors.name !== undefined}
+                  aria-label="World name"
+                  autoFocus
+                  disabled={isPending}
+                  maxLength={textInputLimits.worldNameMax}
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.currentTarget.value);
+                  }}
+                />
+                {fieldErrors.name !== undefined ? (
+                  <p className="text-xs text-destructive">{fieldErrors.name}</p>
+                ) : null}
+              </Label>
+
+              {/* Visibility */}
+              <Label className="grid gap-1 text-sm">
+                <span className="text-muted-foreground">Visibility</span>
+                <NativeSelect
+                  className="w-full"
+                  disabled={isPending}
+                  value={visibility}
+                  onChange={(e) => {
+                    setVisibility(
+                      e.currentTarget.value as "public" | "private",
+                    );
+                  }}
+                >
+                  <option value="private">Private</option>
+                  <option value="public">Public</option>
+                </NativeSelect>
+              </Label>
+            </div>
+            <DialogFooter>
+              <Button
+                disabled={isPending}
+                type="button"
+                variant="outline"
+                onClick={onClose}
               >
-                <option value="private">Private</option>
-                <option value="public">Public</option>
-              </NativeSelect>
-            </Label>
-          </div>
-          <DialogFooter>
-            <Button
-              disabled={createMutation.isPending}
-              type="button"
-              variant="outline"
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button disabled={createMutation.isPending} type="submit">
-              Create
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+                Cancel
+              </Button>
+              <Button disabled={submitDisabled} type="submit">
+                {isPending ? "Creating…" : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {uploadParseError !== null ? (
+        <ImportErrorDialog
+          error={uploadParseError}
+          onClose={() => {
+            setUploadParseError(null);
+            setTemplateChoice("none");
+          }}
+        />
+      ) : null}
+    </>
   );
 }

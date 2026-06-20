@@ -13,7 +13,9 @@ const SECTION_TABS = [
   "population",
   "economy",
   "forecast",
+  "reports",
   "admin",
+  "history",
 ] as const;
 
 type AssignmentTab = (typeof ASSIGNMENT_TABS)[number];

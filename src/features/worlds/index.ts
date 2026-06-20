@@ -1,5 +1,6 @@
 // Worlds feature — create, list, and manage simulation worlds.
 // Implemented in Epic 2.
+export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
 export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
 export { WorldListPage } from "./components/WorldListPage";
@@ -65,6 +66,16 @@ export {
   renameWorldMutationOptions,
   setWorldCurrentTurnNumberMutationOptions,
 } from "./mutations/worldSettingsMutations";
+export {
+  WorldTemplateImportError,
+  importWorldFromTemplateMutationOptions,
+  isWorldTemplateImportError,
+} from "./mutations/worldTemplateMutations";
+export type {
+  BundledScenario,
+  TopologyGenerator,
+} from "./scenarios/scenarioTypes";
+export { BUNDLED_SCENARIOS } from "./scenarios/bundledScenarios";
 export type { WorldNpcFlavorConfig } from "./schemas/worldNpcFlavorConfigSchemas";
 export type { WorldPopulationRules } from "./schemas/worldPopulationRulesSchemas";
 export type {

@@ -17,10 +17,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorldsIndexRouteImport } from './routes/worlds.index'
 import { Route as SuperadminIndexRouteImport } from './routes/superadmin.index'
 import { Route as WorldsWorldIdRouteImport } from './routes/worlds.$worldId'
+import { Route as SuperadminTemplatesRouteImport } from './routes/superadmin.templates'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as WorldsWorldIdIndexRouteImport } from './routes/worlds.$worldId.index'
 import { Route as WorldsWorldIdNationsRouteImport } from './routes/worlds.$worldId.nations'
+import { Route as WorldsWorldIdHistoryRouteImport } from './routes/worlds.$worldId.history'
 import { Route as WorldsWorldIdEventsRouteImport } from './routes/worlds.$worldId.events'
 import { Route as WorldsWorldIdConfigurationRouteImport } from './routes/worlds.$worldId.configuration'
 import { Route as WorldsWorldIdNationsIndexRouteImport } from './routes/worlds.$worldId.nations.index'
@@ -74,6 +76,11 @@ const WorldsWorldIdRoute = WorldsWorldIdRouteImport.update({
   path: '/$worldId',
   getParentRoute: () => WorldsRoute,
 } as any)
+const SuperadminTemplatesRoute = SuperadminTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => SuperadminRoute,
+} as any)
 const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
   id: '/auth/set-password',
   path: '/auth/set-password',
@@ -92,6 +99,11 @@ const WorldsWorldIdIndexRoute = WorldsWorldIdIndexRouteImport.update({
 const WorldsWorldIdNationsRoute = WorldsWorldIdNationsRouteImport.update({
   id: '/nations',
   path: '/nations',
+  getParentRoute: () => WorldsWorldIdRoute,
+} as any)
+const WorldsWorldIdHistoryRoute = WorldsWorldIdHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => WorldsWorldIdRoute,
 } as any)
 const WorldsWorldIdEventsRoute = WorldsWorldIdEventsRouteImport.update({
@@ -173,11 +185,13 @@ export interface FileRoutesByFullPath {
   '/worlds': typeof WorldsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/templates': typeof SuperadminTemplatesRoute
   '/worlds/$worldId': typeof WorldsWorldIdRouteWithChildren
   '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
   '/worlds/$worldId/events': typeof WorldsWorldIdEventsRouteWithChildren
+  '/worlds/$worldId/history': typeof WorldsWorldIdHistoryRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
   '/worlds/$worldId/': typeof WorldsWorldIdIndexRoute
   '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
@@ -197,9 +211,11 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/templates': typeof SuperadminTemplatesRoute
   '/superadmin': typeof SuperadminIndexRoute
   '/worlds': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
+  '/worlds/$worldId/history': typeof WorldsWorldIdHistoryRoute
   '/worlds/$worldId': typeof WorldsWorldIdIndexRoute
   '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
   '/worlds/$worldId/events/new': typeof WorldsWorldIdEventsNewRoute
@@ -219,11 +235,13 @@ export interface FileRoutesById {
   '/worlds': typeof WorldsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/templates': typeof SuperadminTemplatesRoute
   '/worlds/$worldId': typeof WorldsWorldIdRouteWithChildren
   '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
   '/worlds/$worldId/events': typeof WorldsWorldIdEventsRouteWithChildren
+  '/worlds/$worldId/history': typeof WorldsWorldIdHistoryRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsRouteWithChildren
   '/worlds/$worldId/': typeof WorldsWorldIdIndexRoute
   '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
@@ -247,11 +265,13 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/templates'
     | '/worlds/$worldId'
     | '/superadmin/'
     | '/worlds/'
     | '/worlds/$worldId/configuration'
     | '/worlds/$worldId/events'
+    | '/worlds/$worldId/history'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/'
     | '/worlds/$worldId/citizens/$citizenId'
@@ -271,9 +291,11 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/templates'
     | '/superadmin'
     | '/worlds'
     | '/worlds/$worldId/configuration'
+    | '/worlds/$worldId/history'
     | '/worlds/$worldId'
     | '/worlds/$worldId/citizens/$citizenId'
     | '/worlds/$worldId/events/new'
@@ -292,11 +314,13 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/templates'
     | '/worlds/$worldId'
     | '/superadmin/'
     | '/worlds/'
     | '/worlds/$worldId/configuration'
     | '/worlds/$worldId/events'
+    | '/worlds/$worldId/history'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/'
     | '/worlds/$worldId/citizens/$citizenId'
@@ -379,6 +403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdRouteImport
       parentRoute: typeof WorldsRoute
     }
+    '/superadmin/templates': {
+      id: '/superadmin/templates'
+      path: '/templates'
+      fullPath: '/superadmin/templates'
+      preLoaderRoute: typeof SuperadminTemplatesRouteImport
+      parentRoute: typeof SuperadminRoute
+    }
     '/auth/set-password': {
       id: '/auth/set-password'
       path: '/auth/set-password'
@@ -405,6 +436,13 @@ declare module '@tanstack/react-router' {
       path: '/nations'
       fullPath: '/worlds/$worldId/nations'
       preLoaderRoute: typeof WorldsWorldIdNationsRouteImport
+      parentRoute: typeof WorldsWorldIdRoute
+    }
+    '/worlds/$worldId/history': {
+      id: '/worlds/$worldId/history'
+      path: '/history'
+      fullPath: '/worlds/$worldId/history'
+      preLoaderRoute: typeof WorldsWorldIdHistoryRouteImport
       parentRoute: typeof WorldsWorldIdRoute
     }
     '/worlds/$worldId/events': {
@@ -495,10 +533,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface SuperadminRouteChildren {
+  SuperadminTemplatesRoute: typeof SuperadminTemplatesRoute
   SuperadminIndexRoute: typeof SuperadminIndexRoute
 }
 
 const SuperadminRouteChildren: SuperadminRouteChildren = {
+  SuperadminTemplatesRoute: SuperadminTemplatesRoute,
   SuperadminIndexRoute: SuperadminIndexRoute,
 }
 
@@ -572,6 +612,7 @@ const WorldsWorldIdNationsRouteWithChildren =
 interface WorldsWorldIdRouteChildren {
   WorldsWorldIdConfigurationRoute: typeof WorldsWorldIdConfigurationRoute
   WorldsWorldIdEventsRoute: typeof WorldsWorldIdEventsRouteWithChildren
+  WorldsWorldIdHistoryRoute: typeof WorldsWorldIdHistoryRoute
   WorldsWorldIdNationsRoute: typeof WorldsWorldIdNationsRouteWithChildren
   WorldsWorldIdIndexRoute: typeof WorldsWorldIdIndexRoute
   WorldsWorldIdCitizensCitizenIdRoute: typeof WorldsWorldIdCitizensCitizenIdRoute
@@ -580,6 +621,7 @@ interface WorldsWorldIdRouteChildren {
 const WorldsWorldIdRouteChildren: WorldsWorldIdRouteChildren = {
   WorldsWorldIdConfigurationRoute: WorldsWorldIdConfigurationRoute,
   WorldsWorldIdEventsRoute: WorldsWorldIdEventsRouteWithChildren,
+  WorldsWorldIdHistoryRoute: WorldsWorldIdHistoryRoute,
   WorldsWorldIdNationsRoute: WorldsWorldIdNationsRouteWithChildren,
   WorldsWorldIdIndexRoute: WorldsWorldIdIndexRoute,
   WorldsWorldIdCitizensCitizenIdRoute: WorldsWorldIdCitizensCitizenIdRoute,
