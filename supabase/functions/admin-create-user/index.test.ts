@@ -62,7 +62,7 @@ function makeRequest(
 function setupMockFetch(
   responses: Record<
     string,
-    { status: number; body: Record<string, unknown> | boolean } | Error
+    { status: number; body: Record<string, unknown> | boolean | number } | Error
   >,
 ): void {
   mockFetch.mockImplementation((url: string) => {
@@ -874,6 +874,97 @@ describe("handleAdminCreateUserRequest", () => {
       expect(response.status).toBe(200);
       expect(body.ok).toBe(true);
       expect(body.data?.userId).toBe("no-key-user-id");
+    });
+  });
+
+  describe("rate limiting: per-user 429 enforcement", () => {
+    it("returns 429 with rate_limit_exceeded code when limit is exceeded", async () => {
+      // rate limit bucket returns count > 10 (limit for admin-create-user)
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "rpc/increment_rate_limit_bucket": { status: 200, body: 11 },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(429);
+      expect(body.error?.code).toBe("rate_limit_exceeded");
+      expect(body.ok).toBe(false);
+      expect(response.headers.get("retry-after")).not.toBeNull();
+    });
+
+    it("returns 429 with stable error message (no upstream detail)", async () => {
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "rpc/increment_rate_limit_bucket": { status: 200, body: 100 },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(body.error?.message).toBe("Too many requests. Please wait before retrying.");
+    });
+
+    it("succeeds normally when rate limit bucket DB call fails (fail-open)", async () => {
+      // Rate limit DB unreachable (404 fallthrough) → fail open → request proceeds
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        // no entry for increment_rate_limit_bucket → falls to 404 default → fail open
+        "auth/v1/admin/users": {
+          status: 201,
+          body: { id: "new-user-id", email: "test@example.com" },
+        },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(200);
+      expect(body.ok).toBe(true);
+    });
+
+    it("does not call auth/admin/users when rate limit is exceeded", async () => {
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "rpc/increment_rate_limit_bucket": { status: 200, body: 11 },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      await handleAdminCreateUserRequest(request);
+
+      const calls = mockFetch.mock.calls;
+      const adminUsersCallMade = calls.some((call) =>
+        String(call[0]).includes("auth/v1/admin/users"),
+      );
+      expect(adminUsersCallMade).toBe(false);
     });
   });
 });

@@ -738,6 +738,177 @@ describe("handleEndTurnSimulationRequest", () => {
       expect(stateResolverCalls).toHaveLength(0);
     });
 
+    // -------------------------------------------------------------------------
+    // Rate limiting
+    // -------------------------------------------------------------------------
+
+    it("returns 429 with rate_limit_exceeded when rate limit is exceeded", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "/auth/v1/user": { body: { id: USER_ID }, status: 200 },
+        "rpc/is_super_admin": { body: false, status: 200 },
+        "rpc/is_world_admin": { body: true, status: 200 },
+        "rpc/increment_rate_limit_bucket": { body: 11, status: 200 }, // exceeds 10/min limit
+      });
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: makeValidBody(),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      const responseBody: unknown = await response.json();
+      expect(response.status).toBe(429);
+      expect(responseBody).toMatchObject({
+        error: { code: "rate_limit_exceeded" },
+        ok: false,
+      });
+      expect(response.headers.get("retry-after")).not.toBeNull();
+    });
+
+    it("returns 429 with stable error message (no upstream detail)", async () => {
+      stubDenoEnv();
+      stubFetch({
+        "/auth/v1/user": { body: { id: USER_ID }, status: 200 },
+        "rpc/is_super_admin": { body: false, status: 200 },
+        "rpc/is_world_admin": { body: true, status: 200 },
+        "rpc/increment_rate_limit_bucket": { body: 100, status: 200 },
+      });
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: makeValidBody(),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      const responseBody = (await response.json()) as {
+        error: { code: string; message: string };
+        ok: boolean;
+      };
+      expect(response.status).toBe(429);
+      expect(responseBody.error.message).toBe(
+        "Too many requests. Please wait before retrying.",
+      );
+    });
+
+    it("succeeds normally when rate limit DB call fails (fail-open)", async () => {
+      // Rate limit RPC returns 500 → fail open → request proceeds
+      stubFullCycle({
+        "rpc/increment_rate_limit_bucket": {
+          body: { error: "rate limit DB unavailable" },
+          status: 500,
+        },
+      });
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: makeValidBody(),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      const responseBody = (await response.json()) as { ok: boolean };
+      expect(responseBody.ok).toBe(true);
+    });
+
+    // -------------------------------------------------------------------------
+    // Error sanitization (#733 lineage): upstream error detail must not leak
+    // -------------------------------------------------------------------------
+
+    it("returns stable unauthenticated code when auth service returns error detail", async () => {
+      // GoTrue may include internal details in its error response body.
+      // The client must only see the stable code, never the upstream message.
+      stubDenoEnv();
+      stubFetch({
+        "/auth/v1/user": {
+          body: {
+            message:
+              "JWT expired. Internal detail: token hash mismatch at claim row 42",
+            status: 401,
+          },
+          status: 401,
+        },
+      });
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: makeValidBody(),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      const responseBody = (await response.json()) as {
+        error: { code: string; message: string };
+        ok: boolean;
+      };
+
+      expect(response.status).toBe(401);
+      expect(responseBody.ok).toBe(false);
+      expect(responseBody.error.code).toBe("unauthenticated");
+      // Raw GoTrue message must never reach the client.
+      expect(responseBody.error.message).not.toContain("JWT expired");
+      expect(responseBody.error.message).not.toContain("token hash mismatch");
+      expect(responseBody.error.message).not.toContain("claim row 42");
+    });
+
+    it("never reflects RPC error body to client when transition start fails", async () => {
+      // #733 lineage: internal DB error messages must not be forwarded to clients.
+      // The RPC may return arbitrary messages; only stable codes reach the client.
+      const internalDbMessage =
+        "Database deadlock detected at table turn_transitions row 42, transaction id 9876543";
+
+      stubFullCycle({
+        "rpc/start_turn_transition": {
+          body: { code: "40P01", message: internalDbMessage },
+          status: 500,
+        },
+      });
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: makeValidBody(),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      const responseBody = (await response.json()) as {
+        error: { code: string; message: string };
+        ok: boolean;
+      };
+
+      expect(response.status).toBe(500);
+      expect(responseBody.ok).toBe(false);
+      // Stable error code — never the raw RPC code
+      expect(responseBody.error.code).not.toBe("40P01");
+      // Internal DB message must never appear in client response
+      expect(responseBody.error.message).not.toContain(internalDbMessage);
+      expect(responseBody.error.message).not.toContain("deadlock");
+      expect(responseBody.error.message).not.toContain("row 42");
+    });
+
     it("gates stale turn before calling state resolvers", async () => {
       stubDenoEnv();
       const fetchMock = vi.fn((url: string): Promise<Response> => {

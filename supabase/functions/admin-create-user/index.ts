@@ -7,6 +7,7 @@ import {
   getRequiredRuntimeUrl,
 } from "../_shared/http/env.ts";
 import { isRecord } from "../_shared/http/guards.ts";
+import { RATE_LIMITS, checkRateLimit } from "../_shared/http/rateLimit.ts";
 import { classifyHttpError, supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import {
@@ -119,6 +120,23 @@ export async function handleAdminCreateUserRequest(
         }),
         403,
       );
+    }
+
+    // Rate limit: 10 requests per minute per user for this privileged endpoint.
+    const rateLimitResult = await checkRateLimit(
+      authContextResult.context.userId,
+      "admin-create-user",
+      RATE_LIMITS["admin-create-user"],
+    );
+    if (!rateLimitResult.ok) {
+      const body = createErrorResponse({
+        code: "rate_limit_exceeded",
+        message: "Too many requests. Please wait before retrying.",
+      });
+      const res = respond(body, 429);
+      const headers = new Headers(res.headers);
+      headers.set("retry-after", String(rateLimitResult.retryAfterSeconds));
+      return new Response(res.body, { headers, status: 429 });
     }
 
     // Idempotency key support: check if request with same key was already processed

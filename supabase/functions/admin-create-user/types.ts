@@ -5,6 +5,7 @@ export type AdminCreateUserErrorCode =
   | "invalid_request"
   | "method_not_allowed"
   | "origin_not_allowed"
+  | "rate_limit_exceeded"
   | "superadmin_required"
   | "unauthenticated";
 

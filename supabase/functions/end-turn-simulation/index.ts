@@ -1,6 +1,13 @@
 import { logEndTurnSuccess } from "../_shared/auditLog.ts";
+import {
+  generateRequestId,
+  logRequestEntry,
+  logRequestFailure,
+  logRequestSuccess,
+} from "../_shared/edgeRequestLogger.ts";
 import { EDGE_COMMON_ENV_VAR_NAMES, EDGE_SERVICE_ROLE_ENV_VAR_NAMES } from "../_shared/envContract.ts";
 import { assertEdgeEnvVars, getEdgeRuntime } from "../_shared/http/env.ts";
+import { RATE_LIMITS, checkRateLimit } from "../_shared/http/rateLimit.ts";
 
 import {
   resolveForecastPreviewAuthorization,
@@ -41,6 +48,9 @@ export async function handleEndTurnSimulationRequest(
   request: Request,
   options: EndTurnSimulationHandlerOptions = {},
 ): Promise<Response> {
+  const requestId = generateRequestId();
+  const startMs = Date.now();
+
   try {
     const allowedOrigins = options.allowedOrigins ?? getAllowedOrigins();
     const origin = request.headers.get("origin");
@@ -90,6 +100,32 @@ export async function handleEndTurnSimulationRequest(
     const authContextResult = await resolveSupabaseSimulationAuthContext(request);
     if (!authContextResult.ok) {
       return respond(authContextResult.error, authContextResult.status);
+    }
+
+    // Log structured request entry: function, user, world, start.
+    logRequestEntry(
+      requestId,
+      authContextResult.context.userId,
+      "end_turn_simulation",
+      validateResult.body.worldId,
+    );
+
+    // Rate limit: 10 requests per minute per user for this privileged endpoint.
+    const rateLimitResult = await checkRateLimit(
+      authContextResult.context.userId,
+      "end-turn-simulation",
+      RATE_LIMITS["end-turn-simulation"],
+    );
+    if (!rateLimitResult.ok) {
+      logRequestFailure(requestId, "rate_limit_exceeded", "per-user rate limit exceeded", Date.now() - startMs);
+      const body = createErrorResponse({
+        code: "rate_limit_exceeded",
+        message: "Too many requests. Please wait before retrying.",
+      });
+      const res = respond(body, 429);
+      const headers = new Headers(res.headers);
+      headers.set("retry-after", String(rateLimitResult.retryAfterSeconds));
+      return new Response(res.body, { headers, status: 429 });
     }
 
     // Read-only forecast preview: dry-run the simulation against current state
@@ -187,6 +223,8 @@ export async function handleEndTurnSimulationRequest(
       persistResult.summary.toTurnNumber,
       startResult.transitionId,
     );
+
+    logRequestSuccess(requestId, "end_turn_simulation_completed", Date.now() - startMs);
 
     return respond(
       {
