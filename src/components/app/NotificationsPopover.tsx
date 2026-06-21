@@ -17,6 +17,7 @@ import {
   markAllNotificationsReadMutationOptions,
   markNotificationReadMutationOptions,
   notificationQueryKeys,
+  useNotificationsRealtime,
 } from "@/features/notifications";
 
 type NotificationsPopoverProps = {
@@ -30,6 +31,8 @@ export function NotificationsPopover({
   const queryClient = useQueryClient();
   const currentSessionQuery = useQuery(currentSessionQueryOptions());
   const userId = currentSessionQuery.data?.user.id ?? null;
+
+  useNotificationsRealtime(userId);
 
   const notificationsQuery = useQuery(
     allNotificationsQueryOptions(userId, { isRead: false }),

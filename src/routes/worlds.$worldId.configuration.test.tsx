@@ -166,14 +166,36 @@ function createClient({
         return { select: vi.fn(() => b) };
       }
 
+      if (table === "notifications") {
+        return createNotificationsQueryBuilder();
+      }
+
       throw new Error(`Unexpected table ${table}`);
     }),
+    channel: vi.fn().mockReturnValue({
+      on: vi.fn().mockReturnValue({
+        subscribe: vi.fn().mockReturnValue({}),
+      }),
+    }),
+    removeChannel: vi.fn().mockResolvedValue("ok"),
     rpc: vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
         return Promise.resolve({ data: [], error: null });
       }
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
+  };
+}
+
+function createNotificationsQueryBuilder(): unknown {
+  const chain: Record<string, unknown> = {};
+  chain.eq = vi.fn().mockResolvedValue({ count: 0, data: [], error: null });
+  chain.order = vi.fn(() => chain);
+  chain.range = vi.fn(() => chain);
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => chain),
+    })),
   };
 }
 

@@ -35,7 +35,7 @@ describe("AppHeader", () => {
     expect(screen.getByAltText("Gubernator logo")).toBeDefined();
   });
 
-  it("renders the notification bell placeholder", () => {
+  it("renders the notification bell", () => {
     renderAppHeader();
     expect(
       screen.getByRole("button", { name: /notifications/i }),

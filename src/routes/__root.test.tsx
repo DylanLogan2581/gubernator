@@ -368,6 +368,12 @@ function createClient(
 
       throw new Error(`Unexpected table ${table}`);
     }),
+    channel: vi.fn().mockReturnValue({
+      on: vi.fn().mockReturnValue({
+        subscribe: vi.fn().mockReturnValue({}),
+      }),
+    }),
+    removeChannel: vi.fn().mockResolvedValue("ok"),
   };
 }
 
