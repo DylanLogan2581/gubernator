@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { WorldCalendarConfig } from "@/features/calendar";
 
 import { WorldListPage } from "./WorldListPage";
@@ -14,6 +16,19 @@ const { requireSupabaseClient } = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+const { toastError, toastSuccess } = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess:
+    vi.fn<(message: string, options?: { description?: string }) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    error: toastError,
+    success: toastSuccess,
+  },
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -29,6 +44,8 @@ vi.mock("@tanstack/react-router", () => ({
 describe("WorldListPage", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+    toastError.mockReset();
+    toastSuccess.mockReset();
   });
 
   it("renders the world list loading state", async () => {
@@ -147,13 +164,135 @@ describe("WorldListPage", () => {
     expect(screen.getByText("Invalid Calendar World")).toBeDefined();
     expect(screen.getAllByText("Calendar unavailable")).toHaveLength(2);
   });
+
+  it("shows confirm dialog when move to trash button is clicked", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Test World");
+    await user.click(
+      screen.getByRole("button", { name: "Move Test World to trash" }),
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Move Test World to trash?",
+      }),
+    ).toBeDefined();
+  });
+
+  it("does not call trash mutation when cancel is clicked", async () => {
+    const user = userEvent.setup();
+    const rpcSpy = vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        rpcOverride: rpcSpy,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Test World");
+    await user.click(
+      screen.getByRole("button", { name: "Move Test World to trash" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Move Test World to trash?",
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("alertdialog", {
+          name: "Move Test World to trash?",
+        }),
+      ).toBeNull();
+    });
+
+    expect(rpcSpy).not.toHaveBeenCalledWith("trash_world", expect.anything());
+  });
+
+  it("calls trash rpc and shows success toast when dialog is confirmed", async () => {
+    const user = userEvent.setup();
+    const worldId = "00000000-0000-0000-0000-000000000001";
+    const rpcSpy = vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      if (fn === "trash_world") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: worldId },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        rpcOverride: rpcSpy,
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ id: worldId, name: "Test World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Test World");
+    await user.click(
+      screen.getByRole("button", { name: "Move Test World to trash" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Move Test World to trash?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Move to trash" }),
+    );
+
+    await waitFor(() => {
+      expect(rpcSpy).toHaveBeenCalledWith("trash_world", {
+        p_world_id: worldId,
+      });
+    });
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "World moved to trash.",
+        undefined,
+      );
+    });
+  });
 });
 
 function renderWorldListPage(): void {
   render(
-    <QueryClientProvider client={createQueryClient()}>
-      <WorldListPage />
-    </QueryClientProvider>,
+    <TooltipProvider>
+      <QueryClientProvider client={createQueryClient()}>
+        <WorldListPage />
+      </QueryClientProvider>
+    </TooltipProvider>,
   );
 }
 
@@ -167,10 +306,14 @@ function createQueryClient(): QueryClient {
 
 function createClient({
   adminRows = [],
+  isSuperAdmin = false,
+  rpcOverride,
   session,
   worldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly isSuperAdmin?: boolean;
+  readonly rpcOverride?: (fn: string, args: unknown) => unknown;
   readonly session: {
     readonly user: {
       readonly id: string;
@@ -187,7 +330,9 @@ function createClient({
     },
     from: vi.fn((table: string) => {
       if (table === "users") {
-        return createUsersQueryBuilder(createUser(session.user.id));
+        return createUsersQueryBuilder(
+          createUser(session.user.id, isSuperAdmin),
+        );
       }
 
       if (table === "world_admins") {
@@ -200,7 +345,10 @@ function createClient({
 
       throw new Error(`Unexpected table ${table}`);
     }),
-    rpc: vi.fn((fn: string) => {
+    rpc: vi.fn((fn: string, args: unknown) => {
+      if (rpcOverride !== undefined) {
+        return rpcOverride(fn, args);
+      }
       if (fn === "current_user_player_character_world_ids") {
         return Promise.resolve({ data: [], error: null });
       }
@@ -237,12 +385,12 @@ type TestCalendarConfigJson =
   | { readonly months: [] }
   | null;
 
-function createUser(id: string): TestUser {
+function createUser(id: string, isSuperAdmin = false): TestUser {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
     email: `${id}@example.com`,
     id,
-    is_super_admin: false,
+    is_super_admin: isSuperAdmin,
     status: "active",
     updated_at: "2026-01-01T00:00:00.000Z",
     username: id,

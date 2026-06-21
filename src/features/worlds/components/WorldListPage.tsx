@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
@@ -298,24 +299,21 @@ function WorldListItem({
   readonly queryClient: QueryClient;
   readonly world: AccessibleWorld;
 }): JSX.Element {
+  const [trashConfirmOpen, setTrashConfirmOpen] = useState(false);
   const trashMutation = useMutation(trashWorldMutationOptions({ queryClient }));
 
-  function handleTrash(): void {
-    trashMutation.mutate(
-      { worldId: world.id },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to move world to trash.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("World moved to trash.");
-        },
-      },
-    );
+  async function handleTrash(): Promise<void> {
+    try {
+      await trashMutation.mutateAsync({ worldId: world.id });
+      notifyMutationSuccess("World moved to trash.");
+      setTrashConfirmOpen(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to move world to trash.",
+      );
+    }
   }
 
   return (
@@ -351,17 +349,42 @@ function WorldListItem({
         />
       </Link>
       {isSuperAdmin ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Move ${world.name} to trash`}
-          title="Move to trash"
-          disabled={trashMutation.isPending}
-          onClick={handleTrash}
-        >
-          <Trash2 aria-hidden="true" />
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Move ${world.name} to trash`}
+            title="Move to trash"
+            disabled={trashMutation.isPending}
+            onClick={() => {
+              setTrashConfirmOpen(true);
+            }}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
+          {trashConfirmOpen ? (
+            <ConfirmDialog
+              open
+              onOpenChange={(open) => {
+                if (!open) setTrashConfirmOpen(false);
+              }}
+              title={`Move ${world.name} to trash?`}
+              description={
+                <>
+                  This will move{" "}
+                  <span className="font-medium text-foreground">
+                    {world.name}
+                  </span>{" "}
+                  to the trash and remove it from the world list.
+                </>
+              }
+              confirmLabel="Move to trash"
+              isPending={trashMutation.isPending}
+              onConfirm={handleTrash}
+            />
+          ) : null}
+        </>
       ) : null}
     </li>
   );
