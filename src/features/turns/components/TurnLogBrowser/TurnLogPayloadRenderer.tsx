@@ -38,9 +38,11 @@ import type { JSX } from "react";
 
 function RawJsonFallback({
   category,
+  isAdmin,
   payload,
 }: {
   readonly category: string;
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const [open, setOpen] = useState(false);
@@ -55,10 +57,11 @@ function RawJsonFallback({
             {LOG_CATEGORY_LABELS[category] ?? category}
           </Badge>
         </span>
-        {json !== "{}" && json !== "null" ? (
+        {isAdmin && json !== "{}" && json !== "null" ? (
           <CollapsibleTrigger
             className="text-xs text-primary underline-offset-2 hover:underline"
             aria-expanded={open}
+            onClick={(e) => e.stopPropagation()}
           >
             {open ? "hide payload" : "show payload"}
           </CollapsibleTrigger>
@@ -78,8 +81,10 @@ function RawJsonFallback({
 // ---------------------------------------------------------------------------
 
 function BuildingAutoDeconstructedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseBuildingAutoDeconstructedPayload(payload);
@@ -87,6 +92,7 @@ function BuildingAutoDeconstructedRenderer({
     return (
       <RawJsonFallback
         category="building.auto_deconstructed"
+        isAdmin={isAdmin}
         payload={payload}
       />
     );
@@ -99,13 +105,21 @@ function BuildingAutoDeconstructedRenderer({
 }
 
 function BuildingSuspendedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseBuildingSuspendedPayload(payload);
   if (p === null)
-    return <RawJsonFallback category="building.suspended" payload={payload} />;
+    return (
+      <RawJsonFallback
+        category="building.suspended"
+        isAdmin={isAdmin}
+        payload={payload}
+      />
+    );
   return (
     <span className="text-sm">
       Building suspended after <strong>{p.missedUpkeepCount}</strong> missed
@@ -115,14 +129,20 @@ function BuildingSuspendedRenderer({
 }
 
 function ConstructionCompletedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseConstructionCompletedPayload(payload);
   if (p === null)
     return (
-      <RawJsonFallback category="construction.completed" payload={payload} />
+      <RawJsonFallback
+        category="construction.completed"
+        isAdmin={isAdmin}
+        payload={payload}
+      />
     );
   return (
     <span className="text-sm">
@@ -132,13 +152,21 @@ function ConstructionCompletedRenderer({
 }
 
 function ConstructionPausedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseConstructionPausedPayload(payload);
   if (p === null)
-    return <RawJsonFallback category="construction.paused" payload={payload} />;
+    return (
+      <RawJsonFallback
+        category="construction.paused"
+        isAdmin={isAdmin}
+        payload={payload}
+      />
+    );
   return (
     <span className="text-sm">
       Construction paused (<strong>{p.workers}</strong> workers assigned)
@@ -147,13 +175,21 @@ function ConstructionPausedRenderer({
 }
 
 function DepositDepletedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseDepositDepletedPayload(payload);
   if (p === null)
-    return <RawJsonFallback category="deposit.depleted" payload={payload} />;
+    return (
+      <RawJsonFallback
+        category="deposit.depleted"
+        isAdmin={isAdmin}
+        payload={payload}
+      />
+    );
   return (
     <span className="text-sm">
       Deposit <strong>{p.depositName}</strong> depleted
@@ -162,8 +198,10 @@ function DepositDepletedRenderer({
 }
 
 function ManagedPopulationDecliningRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseManagedPopulationDecliningPayload(payload);
@@ -171,6 +209,7 @@ function ManagedPopulationDecliningRenderer({
     return (
       <RawJsonFallback
         category="managed_population.declining"
+        isAdmin={isAdmin}
         payload={payload}
       />
     );
@@ -185,8 +224,10 @@ function ManagedPopulationDecliningRenderer({
 }
 
 function ManagedPopulationExtinctRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseManagedPopulationExtinctPayload(payload);
@@ -194,6 +235,7 @@ function ManagedPopulationExtinctRenderer({
     return (
       <RawJsonFallback
         category="managed_population.extinct"
+        isAdmin={isAdmin}
         payload={payload}
       />
     );
@@ -205,13 +247,21 @@ function ManagedPopulationExtinctRenderer({
 }
 
 function PartnershipFormedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parsePartnershipFormedPayload(payload);
   if (p === null)
-    return <RawJsonFallback category="partnership.formed" payload={payload} />;
+    return (
+      <RawJsonFallback
+        category="partnership.formed"
+        isAdmin={isAdmin}
+        payload={payload}
+      />
+    );
   return (
     <span className="text-sm font-mono text-xs">
       Partnership formed: {p.citizenAId.slice(0, 8)}… &amp;{" "}
@@ -221,13 +271,21 @@ function PartnershipFormedRenderer({
 }
 
 function PartnershipWidowedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parsePartnershipWidowedPayload(payload);
   if (p === null)
-    return <RawJsonFallback category="partnership.widowed" payload={payload} />;
+    return (
+      <RawJsonFallback
+        category="partnership.widowed"
+        isAdmin={isAdmin}
+        payload={payload}
+      />
+    );
   return (
     <span className="text-sm">
       Citizen{" "}
@@ -240,8 +298,10 @@ function PartnershipWidowedRenderer({
 }
 
 function SettlementStarvationOccurredRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseSettlementStarvationOccurredPayload(payload);
@@ -249,6 +309,7 @@ function SettlementStarvationOccurredRenderer({
     return (
       <RawJsonFallback
         category="settlement.starvation_occurred"
+        isAdmin={isAdmin}
         payload={payload}
       />
     );
@@ -256,8 +317,10 @@ function SettlementStarvationOccurredRenderer({
 }
 
 function SettlementHomelessnessOccurredRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseSettlementHomelessnessOccurredPayload(payload);
@@ -265,6 +328,7 @@ function SettlementHomelessnessOccurredRenderer({
     return (
       <RawJsonFallback
         category="settlement.homelessness_occurred"
+        isAdmin={isAdmin}
         payload={payload}
       />
     );
@@ -274,13 +338,21 @@ function SettlementHomelessnessOccurredRenderer({
 }
 
 function TradeRoutePausedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseTradeRoutePausedPayload(payload);
   if (p === null)
-    return <RawJsonFallback category="trade_route.paused" payload={payload} />;
+    return (
+      <RawJsonFallback
+        category="trade_route.paused"
+        isAdmin={isAdmin}
+        payload={payload}
+      />
+    );
   return (
     <span className="text-sm">
       Trade route paused — <em>{p.pauseReason}</em> ({p.quantityPerTransition}{" "}
@@ -290,13 +362,21 @@ function TradeRoutePausedRenderer({
 }
 
 function TradeRouteResumedRenderer({
+  isAdmin,
   payload,
 }: {
+  readonly isAdmin: boolean;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseTradeRouteResumedPayload(payload);
   if (p === null)
-    return <RawJsonFallback category="trade_route.resumed" payload={payload} />;
+    return (
+      <RawJsonFallback
+        category="trade_route.resumed"
+        isAdmin={isAdmin}
+        payload={payload}
+      />
+    );
   return (
     <span className="text-sm">
       Trade route resumed — <strong>{p.quantityTransferred}</strong> units
@@ -310,42 +390,74 @@ function TradeRouteResumedRenderer({
 // ---------------------------------------------------------------------------
 
 type TurnLogPayloadRendererProps = {
+  readonly isAdmin?: boolean;
   readonly logCategory: string;
   readonly payload: unknown;
 };
 
 export function TurnLogPayloadRenderer({
+  isAdmin = false,
   logCategory,
   payload,
 }: TurnLogPayloadRendererProps): JSX.Element {
   switch (logCategory) {
     case "building.auto_deconstructed":
-      return <BuildingAutoDeconstructedRenderer payload={payload} />;
+      return (
+        <BuildingAutoDeconstructedRenderer
+          isAdmin={isAdmin}
+          payload={payload}
+        />
+      );
     case "building.suspended":
-      return <BuildingSuspendedRenderer payload={payload} />;
+      return <BuildingSuspendedRenderer isAdmin={isAdmin} payload={payload} />;
     case "construction.completed":
-      return <ConstructionCompletedRenderer payload={payload} />;
+      return (
+        <ConstructionCompletedRenderer isAdmin={isAdmin} payload={payload} />
+      );
     case "construction.paused":
-      return <ConstructionPausedRenderer payload={payload} />;
+      return <ConstructionPausedRenderer isAdmin={isAdmin} payload={payload} />;
     case "deposit.depleted":
-      return <DepositDepletedRenderer payload={payload} />;
+      return <DepositDepletedRenderer isAdmin={isAdmin} payload={payload} />;
     case "managed_population.declining":
-      return <ManagedPopulationDecliningRenderer payload={payload} />;
+      return (
+        <ManagedPopulationDecliningRenderer
+          isAdmin={isAdmin}
+          payload={payload}
+        />
+      );
     case "managed_population.extinct":
-      return <ManagedPopulationExtinctRenderer payload={payload} />;
+      return (
+        <ManagedPopulationExtinctRenderer isAdmin={isAdmin} payload={payload} />
+      );
     case "partnership.formed":
-      return <PartnershipFormedRenderer payload={payload} />;
+      return <PartnershipFormedRenderer isAdmin={isAdmin} payload={payload} />;
     case "partnership.widowed":
-      return <PartnershipWidowedRenderer payload={payload} />;
+      return <PartnershipWidowedRenderer isAdmin={isAdmin} payload={payload} />;
     case "settlement.starvation_occurred":
-      return <SettlementStarvationOccurredRenderer payload={payload} />;
+      return (
+        <SettlementStarvationOccurredRenderer
+          isAdmin={isAdmin}
+          payload={payload}
+        />
+      );
     case "settlement.homelessness_occurred":
-      return <SettlementHomelessnessOccurredRenderer payload={payload} />;
+      return (
+        <SettlementHomelessnessOccurredRenderer
+          isAdmin={isAdmin}
+          payload={payload}
+        />
+      );
     case "trade_route.paused":
-      return <TradeRoutePausedRenderer payload={payload} />;
+      return <TradeRoutePausedRenderer isAdmin={isAdmin} payload={payload} />;
     case "trade_route.resumed":
-      return <TradeRouteResumedRenderer payload={payload} />;
+      return <TradeRouteResumedRenderer isAdmin={isAdmin} payload={payload} />;
     default:
-      return <RawJsonFallback category={logCategory} payload={payload} />;
+      return (
+        <RawJsonFallback
+          category={logCategory}
+          isAdmin={isAdmin}
+          payload={payload}
+        />
+      );
   }
 }
