@@ -2,7 +2,10 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { requireAuthenticatedRoute } from "@/features/auth";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  activePlayerCharacterRowQueryOptions,
+  currentAccessContextQueryOptions,
+} from "@/features/permissions";
 import {
   WorldConfigurationPage,
   isWorldNotFoundError,
@@ -80,6 +83,22 @@ export const Route = createFileRoute("/worlds/$worldId/configuration")({
           params: { worldId: params.worldId },
           to: "/worlds/$worldId",
         });
+      }
+
+      // Suppress admin access while acting as a player character.
+      if (accessContext.userId !== null) {
+        const activeRow = await context.queryClient.ensureQueryData(
+          activePlayerCharacterRowQueryOptions(
+            accessContext.userId,
+            params.worldId,
+          ),
+        );
+        if (activeRow !== null) {
+          return redirect({
+            params: { worldId: params.worldId },
+            to: "/worlds/$worldId",
+          });
+        }
       }
     } catch (error) {
       if (!isWorldNotFoundError(error)) {

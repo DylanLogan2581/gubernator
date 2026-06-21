@@ -4,7 +4,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  currentAccessContextQueryOptions,
+  useEffectiveCanAdmin,
+} from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import {
   isWorldNotFoundError,
@@ -123,6 +126,7 @@ function EventsPageContent({
   readonly worldId: string;
 }): JSX.Element {
   const navigate = useNavigate();
+  const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
 
   return (
     <EventsPageFrame worldId={worldId}>
@@ -139,7 +143,7 @@ function EventsPageContent({
 
         <EventsList
           worldId={worldId}
-          canCreate={worldAccess.canAdmin && !worldAccess.header.isArchived}
+          canCreate={effectiveCanAdmin && !worldAccess.header.isArchived}
           onCreateClick={() => {
             void navigate({
               to: "/worlds/$worldId/events/new",

@@ -23,6 +23,7 @@ export {
   checkCanManageSettlement,
 } from "./utils/manageAuthority";
 export { toWorldAccessTarget } from "./utils/worldAccessTarget";
+export { useEffectiveCanAdmin } from "./hooks/useEffectiveCanAdmin";
 export { useSettlementManageAuthority } from "./hooks/useSettlementManageAuthority";
 export {
   allUsersForSuperadminQueryOptions,

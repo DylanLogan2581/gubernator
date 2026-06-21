@@ -16,6 +16,7 @@ import { SettlementNamesetCard } from "@/features/namesets";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
+  useEffectiveCanAdmin,
   useSettlementManageAuthority,
   type AccessContext,
 } from "@/features/permissions";
@@ -279,8 +280,9 @@ function SettlementDetailLoaded({
   const queryClient = useQueryClient();
   const { activeCharacter } = useActivePlayerCharacter();
   const isArchived = worldAccess.header.isArchived;
+  const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
   const { canManageSettlement } = useSettlementManageAuthority({
-    canAdmin: worldAccess.canAdmin,
+    canAdmin: effectiveCanAdmin,
     nationId: settlement.nationId,
     settlementId: settlement.id,
   });
@@ -295,10 +297,10 @@ function SettlementDetailLoaded({
     activeCharacter.roleSettlementId === settlement.id &&
     activeCharacter.status === "alive";
   const canEditDetails =
-    (worldAccess.canAdmin || isNationManager || isSettlementManager) &&
+    (effectiveCanAdmin || isNationManager || isSettlementManager) &&
     !isArchived;
-  const canEditCoordinates = worldAccess.canAdmin && !isArchived;
-  const canDelete = worldAccess.canAdmin && !isArchived;
+  const canEditCoordinates = effectiveCanAdmin && !isArchived;
+  const canDelete = effectiveCanAdmin && !isArchived;
 
   const navigate = useNavigate();
 
@@ -413,7 +415,7 @@ function SettlementDetailLoaded({
         <>
           <SettlementReadinessSection
             accessContext={accessContext}
-            canAdmin={worldAccess.canAdmin}
+            canAdmin={effectiveCanAdmin}
             canManage={canManageSettlement}
             isArchived={isArchived}
             settlementId={settlement.id}
@@ -444,7 +446,7 @@ function SettlementDetailLoaded({
       {activeSection === "population" ? (
         <>
           <CitizensPanel
-            canAdmin={worldAccess.canAdmin}
+            canAdmin={effectiveCanAdmin}
             incestPreventionDepth={worldAccess.world.incestPreventionDepth}
             isArchived={isArchived}
             settlementId={settlement.id}
@@ -461,7 +463,7 @@ function SettlementDetailLoaded({
           />
 
           <SettlementManagedPopulationsPanel
-            canAdmin={worldAccess.canAdmin}
+            canAdmin={effectiveCanAdmin}
             canManage={canManageSettlement}
             isArchived={isArchived}
             settlementId={settlement.id}
@@ -474,7 +476,7 @@ function SettlementDetailLoaded({
       {activeSection === "economy" ? (
         <>
           <SettlementBuildingsPanel
-            canAdmin={worldAccess.canAdmin}
+            canAdmin={effectiveCanAdmin}
             isArchived={isArchived}
             settlementId={settlement.id}
             worldId={worldId}
@@ -488,14 +490,14 @@ function SettlementDetailLoaded({
           />
 
           <SettlementStockpilesPanel
-            canAdmin={worldAccess.canAdmin}
+            canAdmin={effectiveCanAdmin}
             isArchived={isArchived}
             settlementId={settlement.id}
             worldId={worldId}
           />
 
           <SettlementDepositsPanel
-            canAdmin={worldAccess.canAdmin}
+            canAdmin={effectiveCanAdmin}
             canManage={canManageSettlement}
             isArchived={isArchived}
             settlementId={settlement.id}
@@ -537,9 +539,9 @@ function SettlementDetailLoaded({
       {/* Admin Section */}
       {activeSection === "admin" ? (
         <>
-          {worldAccess.canAdmin ? (
+          {effectiveCanAdmin ? (
             <SettlementNamesetCard
-              canAdmin={worldAccess.canAdmin}
+              canAdmin={effectiveCanAdmin}
               currentNamesetId={settlement.namesetId}
               isArchived={isArchived}
               settlementId={settlement.id}

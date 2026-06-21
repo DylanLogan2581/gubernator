@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorldCalendarConfig } from "@/features/calendar";
+import type { Citizen } from "@/features/citizens";
+import {
+  ActivePlayerCharacterContext,
+  type ActivePlayerCharacterContextValue,
+} from "@/features/permissions";
 
 import { NationListPage } from "./NationListPage";
 
@@ -309,6 +314,24 @@ describe("NationListPage", () => {
 
     expect(await screen.findByText("World unavailable")).toBeDefined();
   });
+
+  it("hides the Create nation control for a world admin acting as a player character", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        nationRows: [],
+        session: { user: { id: "user-1" } },
+        adminRows: [{ world_id: worldId }],
+        worldRows: [createWorldRow({ id: worldId })],
+      }),
+    );
+
+    renderPageAsPlayer(makePlayerCharacter());
+
+    expect(await screen.findByText("No nations yet")).toBeDefined();
+    expect(
+      screen.queryByRole("button", { name: /Create nation/i }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 function renderPage(): void {
@@ -317,6 +340,50 @@ function renderPage(): void {
       <NationListPage worldId={worldId} />
     </QueryClientProvider>,
   );
+}
+
+function renderPageAsPlayer(activeCharacter: Citizen): void {
+  const contextValue: ActivePlayerCharacterContextValue = {
+    activeCharacter,
+    clear: () => undefined,
+    isPending: false,
+    selectableCharacters: [activeCharacter],
+    switchTo: () => undefined,
+  };
+  render(
+    <QueryClientProvider client={createQueryClient()}>
+      <ActivePlayerCharacterContext value={contextValue}>
+        <NationListPage worldId={worldId} />
+      </ActivePlayerCharacterContext>
+    </QueryClientProvider>,
+  );
+}
+
+function makePlayerCharacter(): Citizen {
+  return {
+    bornOnTurnNumber: null,
+    citizenType: "player_character",
+    createdAt: "2026-01-01T00:00:00Z",
+    deathCause: null,
+    deathCauseCategory: null,
+    givenName: "Alice",
+    id: "citizen-pc-1",
+    name: "Alice Smith",
+    namesetId: null,
+    parentACitizenId: null,
+    parentBCitizenId: null,
+    profilePhotoUrl: null,
+    roleNationId: "nation-1",
+    roleSettlementId: null,
+    roleType: "nation_manager",
+    settlementId: "settlement-1",
+    sex: null,
+    status: "alive",
+    surname: "Smith",
+    updatedAt: "2026-01-01T00:00:00Z",
+    userId: "user-1",
+    worldId,
+  };
 }
 
 function createQueryClient(): QueryClient {

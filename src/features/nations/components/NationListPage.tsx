@@ -16,7 +16,10 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  currentAccessContextQueryOptions,
+  useEffectiveCanAdmin,
+} from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import {
   isWorldNotFoundError,
@@ -136,7 +139,8 @@ function NationListContent({
 }): JSX.Element {
   const queryClient = useQueryClient();
   const nationsQuery = useQuery(nationsListQueryOptions(worldId));
-  const canCreate = worldAccess.canAdmin && !worldAccess.header.isArchived;
+  const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
+  const canCreate = effectiveCanAdmin && !worldAccess.header.isArchived;
 
   return (
     <NationListFrame worldId={worldId}>

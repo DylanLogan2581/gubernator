@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { PartnershipHistoryPanel } from "@/features/partnerships";
 import {
   currentAccessContextQueryOptions,
+  useEffectiveCanAdmin,
   type AccessContext,
 } from "@/features/permissions";
 import { settlementByIdQueryOptions } from "@/features/settlements";
@@ -155,6 +156,8 @@ function CitizenDetailContent({
   readonly worldId: string;
 }): JSX.Element {
   const citizenQuery = useQuery(citizenByIdQueryOptions(citizenId));
+  // Must be called unconditionally before any early returns to satisfy rules-of-hooks.
+  const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
 
   if (citizenQuery.isPending) {
     return (
@@ -192,13 +195,13 @@ function CitizenDetailContent({
     citizen.userId !== null &&
     citizen.userId === accessContext.userId;
 
-  if (!worldAccess.canAdmin && !isOwnLivingCharacter) {
+  if (!effectiveCanAdmin && !isOwnLivingCharacter) {
     return <CitizenManagerRedirect citizen={citizen} worldId={worldId} />;
   }
 
   return (
     <CitizenDetailLoaded
-      canAdmin={worldAccess.canAdmin}
+      canAdmin={effectiveCanAdmin}
       citizen={citizen}
       currentTurnNumber={worldAccess.header.currentTurnNumber}
       isArchived={worldAccess.header.isArchived}
