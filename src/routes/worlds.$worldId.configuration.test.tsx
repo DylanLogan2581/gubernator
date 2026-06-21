@@ -58,6 +58,29 @@ describe("world configuration route", () => {
     });
   });
 
+  it("redirects non-superadmin world admin away from ?tab=world-settings to resources", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000303" }],
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: "00000000-0000-0000-0000-000000000303",
+            name: "Admin World",
+            visibility: "private",
+          }),
+        ],
+      }),
+    );
+
+    renderAt(
+      "/worlds/00000000-0000-0000-0000-000000000303/configuration?tab=world-settings",
+    );
+
+    const resourcesTab = await screen.findByRole("tab", { name: "Resources" });
+    expect(resourcesTab).toHaveAttribute("aria-selected", "true");
+  });
+
   it("marks the jobs tab as selected when ?tab=jobs is in the URL", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

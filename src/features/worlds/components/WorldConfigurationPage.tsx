@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useMemo } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -64,10 +65,33 @@ export function WorldConfigurationPage({
   );
 
   const isSuperAdmin = accessContextQuery.data?.isSuperAdmin ?? false;
-  const visibleTabs: ReadonlyArray<{
-    readonly key: string;
-    readonly label: string;
-  }> = isSuperAdmin ? [...BASE_TABS, ...SUPER_ADMIN_TABS] : [...BASE_TABS];
+  const visibleTabs = useMemo(
+    () => (isSuperAdmin ? [...BASE_TABS, ...SUPER_ADMIN_TABS] : [...BASE_TABS]),
+    [isSuperAdmin],
+  );
+
+  const isTabVisible = visibleTabs.some((t) => t.key === activeTab);
+
+  useEffect(() => {
+    if (
+      !accessContextQuery.isPending &&
+      !isTabVisible &&
+      visibleTabs.length > 0
+    ) {
+      void navigate({
+        to: "/worlds/$worldId/configuration",
+        params: { worldId },
+        search: { tab: visibleTabs[0].key },
+        replace: true,
+      });
+    }
+  }, [
+    accessContextQuery.isPending,
+    isTabVisible,
+    navigate,
+    visibleTabs,
+    worldId,
+  ]);
 
   function handleTabSelect(key: TabKey): void {
     void navigate({
