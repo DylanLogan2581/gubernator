@@ -11,6 +11,8 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import { worldAccessQueryKeys } from "../../worlds/queries/worldAccessQueryKeys";
+import { permissionQueryKeys } from "../queries/permissionQueryKeys";
 import { superadminQueryKeys } from "../queries/superadminQueryKeys";
 
 import type {
@@ -74,9 +76,17 @@ export function grantWorldAdminMutationOptions({
     mutationFn: (input: GrantWorldAdminInput) => grantWorldAdmin(client, input),
     mutationKey: [...superadminQueryKeys.all, "grant-world-admin"],
     onSuccess: async (_result, input): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: superadminQueryKeys.worldAdminsForUser(input.userId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: superadminQueryKeys.worldAdminsForUser(input.userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: worldAccessQueryKeys.currentUserAdminWorldIds(input.userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: permissionQueryKeys.currentAccessContext(),
+        }),
+      ]);
     },
   });
 }
@@ -94,9 +104,17 @@ export function revokeWorldAdminMutationOptions({
       revokeWorldAdmin(client, input),
     mutationKey: [...superadminQueryKeys.all, "revoke-world-admin"],
     onSuccess: async (_result, input): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: superadminQueryKeys.worldAdminsForUser(input.userId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: superadminQueryKeys.worldAdminsForUser(input.userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: worldAccessQueryKeys.currentUserAdminWorldIds(input.userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: permissionQueryKeys.currentAccessContext(),
+        }),
+      ]);
     },
   });
 }

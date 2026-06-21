@@ -32,8 +32,10 @@ export function currentAccessContextQueryOptions(
   // The QueryClient is the app singleton in app code; tests inject an isolated client.
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
+    gcTime: 10 * 60 * 1000,
     queryFn: () => getCurrentAccessContext(queryClient),
     queryKey: permissionQueryKeys.currentAccessContext(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
