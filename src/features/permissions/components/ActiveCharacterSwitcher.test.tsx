@@ -132,6 +132,18 @@ describe("ActiveCharacterSwitcher", () => {
     });
   });
 
+  it("shows 'None' as the role label for a player character with roleType 'none'", () => {
+    const pc = createCitizen({ id: "pc-1", name: "Solo", roleType: "none" });
+    renderSwitcher({
+      activeCharacter: pc,
+      canAdmin: false,
+      selectableCharacters: [pc],
+    });
+
+    expect(screen.getByText("None")).toBeDefined();
+    expect(screen.queryByText("Citizen")).toBeNull();
+  });
+
   it("does not call switchTo when selecting the already-active character", async () => {
     const pcA = createCitizen({ id: "pc-a", name: "Alpha" });
     const pcB = createCitizen({ id: "pc-b", name: "Bravo" });

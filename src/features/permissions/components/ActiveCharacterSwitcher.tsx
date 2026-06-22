@@ -208,7 +208,7 @@ function CharacterRoleLabel({
 
   switch (citizen.roleType) {
     case "none":
-      return <>Citizen</>;
+      return <>None</>;
     case "nation_manager":
       return <>Nation manager</>;
     case "settlement_manager": {
