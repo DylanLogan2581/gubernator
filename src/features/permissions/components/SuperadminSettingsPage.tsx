@@ -305,7 +305,7 @@ function UserRow({
             title="Manage world admin access"
           >
             <Globe2 className="size-3.5" aria-hidden="true" />
-            Worlds
+            World Admin
           </Button>
           <Button
             type="button"
