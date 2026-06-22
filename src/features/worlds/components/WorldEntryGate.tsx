@@ -22,6 +22,8 @@ import {
   worldRouteAccessQueryOptions,
 } from "../queries/worldQueries";
 
+import { WorldNav } from "./WorldNav";
+
 import type { WorldRouteAccess } from "../types/worldTypes";
 
 type WorldEntryGateProps = {
@@ -245,6 +247,7 @@ function WorldEntryContent({
       <WorldContextBar worldId={worldId} worldName={worldName}>
         <ActiveCharacterSwitcher canAdmin={canAdmin} worldId={worldId} />
       </WorldContextBar>
+      <WorldNav canAdmin={canAdmin} worldId={worldId} />
       {children}
     </>
   );
