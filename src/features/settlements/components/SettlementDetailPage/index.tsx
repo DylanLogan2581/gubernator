@@ -355,8 +355,6 @@ function SettlementDetailLoaded({
         </div>
       </header>
 
-      <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
-
       {/* Mobile select — visible below md breakpoint */}
       <div className="sticky top-24 z-10 bg-background py-1 md:hidden">
         <NativeSelect
@@ -413,6 +411,8 @@ function SettlementDetailLoaded({
       {/* Overview Section */}
       {activeSection === "overview" ? (
         <>
+          <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
+
           <SettlementReadinessSection
             accessContext={accessContext}
             canAdmin={effectiveCanAdmin}
