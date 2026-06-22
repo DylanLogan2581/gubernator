@@ -168,7 +168,7 @@ function NationSettlementListItem({
   return (
     <li className="rounded-md border border-border bg-background p-0">
       <Collapsible className="group">
-        <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors">
+        <div className="flex w-full items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 shrink-0 flex items-center justify-center">
               {isReady ? (
@@ -192,16 +192,20 @@ function NationSettlementListItem({
               }}
               search={{}}
               className="text-sm font-medium underline-offset-4 hover:underline text-left"
-              onClick={(e) => e.stopPropagation()}
             >
               {settlement.name}
             </Link>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>Population: {settlement.population.toLocaleString()}</span>
-            <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
+            <CollapsibleTrigger
+              className="rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+              aria-label={`Toggle details for ${settlement.name}`}
+            >
+              <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
           </div>
-        </CollapsibleTrigger>
+        </div>
         <CollapsibleContent className="border-t border-border px-4 pb-4 pt-2">
           <div className="space-y-3">
             <ManualReadinessControl
