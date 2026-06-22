@@ -113,7 +113,9 @@ export function CitizenCoreSection({
             value={
               citizen.bornOnTurnNumber === null
                 ? null
-                : String(citizen.bornOnTurnNumber)
+                : citizen.bornOnTurnNumber < 0
+                  ? "Before simulation"
+                  : String(citizen.bornOnTurnNumber)
             }
           />
           <Readout

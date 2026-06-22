@@ -748,7 +748,8 @@ describe("CitizenDetailPage", () => {
         name: "This citizen existed before the simulation began",
       }),
     ).toBeDefined();
-    expect(screen.getByText("-23")).toBeDefined();
+    expect(screen.getByText("Before simulation")).toBeDefined();
+    expect(screen.queryByText("-23")).toBeNull();
   });
 
   it("does not show a pre-simulation tooltip for citizens born on positive turns", async () => {
