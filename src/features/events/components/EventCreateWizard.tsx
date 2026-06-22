@@ -643,14 +643,16 @@ export function EventCreateWizard({
       </div>
 
       <div className="flex gap-2">
-        <Button
-          variant="outline"
-          onClick={handlePrev}
-          disabled={state.step === 1 || (isEditMode && state.step === 3)}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Button>
+        {state.step !== 1 && (
+          <Button
+            variant="outline"
+            onClick={handlePrev}
+            disabled={isEditMode && state.step === 3}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+        )}
 
         {state.step < 6 && (
           <Button
