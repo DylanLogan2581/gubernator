@@ -4527,6 +4527,10 @@ export type Database = {
         Args: { p_effect: Json };
         Returns: undefined;
       };
+      validate_event_effect_world_membership: {
+        Args: { p_effect: Json; p_world_id: string };
+        Returns: undefined;
+      };
       world_is_archived: { Args: { p_world_id: string }; Returns: boolean };
     };
     Enums: {
