@@ -1,3 +1,4 @@
+import { LoaderCircle } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -47,6 +48,9 @@ export function ConfirmDialog({
               void onConfirm();
             }}
           >
+            {isPending ? (
+              <LoaderCircle className="animate-spin" aria-hidden="true" />
+            ) : null}
             {confirmLabel}
           </Button>
         </div>

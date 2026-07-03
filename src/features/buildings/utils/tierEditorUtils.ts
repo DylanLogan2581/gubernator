@@ -124,6 +124,12 @@ export function tierEffectsToState(
           jobId: "",
           resourceId: "",
         };
+      default: {
+        const _exhaustive: never = e;
+        throw new Error(
+          `Unknown effect type: ${String((_exhaustive as TierEffect).type)}`,
+        );
+      }
     }
   });
 }

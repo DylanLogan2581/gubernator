@@ -275,6 +275,53 @@ describe("root error boundary", () => {
       restoreConsole();
     }
   });
+
+  it("hides the raw error message from end users but logs it for diagnostics", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const queryClient = createTestQueryClient();
+
+    vi.spyOn(queryClient, "ensureQueryData").mockRejectedValue(
+      new Error("Secret internal stack trace detail"),
+    );
+
+    try {
+      renderAt("/worlds", queryClient);
+
+      expect(await screen.findByText("Something went wrong")).toBeDefined();
+      expect(
+        screen.queryByText("Secret internal stack trace detail"),
+      ).toBeNull();
+      expect(errorSpy).toHaveBeenCalledWith(
+        "Unhandled route error",
+        expect.objectContaining({
+          message: "Secret internal stack trace detail",
+        }),
+      );
+    } finally {
+      errorSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("offers a retry action and a way back home", async () => {
+    const restoreConsole = suppressExpectedRouteErrorLogs();
+    const queryClient = createTestQueryClient();
+
+    vi.spyOn(queryClient, "ensureQueryData").mockRejectedValue(
+      new Error("Unexpected auth failure"),
+    );
+
+    try {
+      renderAt("/worlds", queryClient);
+
+      await screen.findByText("Something went wrong");
+      expect(screen.getByRole("button", { name: "Try again" })).toBeDefined();
+      expect(screen.getByRole("link", { name: "Go to home" })).toBeDefined();
+    } finally {
+      restoreConsole();
+    }
+  });
 });
 
 function suppressExpectedRouteErrorLogs(): () => void {
