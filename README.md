@@ -263,7 +263,7 @@ If you changed schema, also confirm:
 
 ## Production Security Headers
 
-Gubernator is a Vite/React SPA that talks to Supabase from the browser. A successful script injection would have access to the user's authenticated Supabase session, so production deployments **must** send a defense-in-depth header set. This repository does not ship a deployment-platform config (no `vercel.json`, `netlify.toml`, `_headers`, or Cloudflare/NGINX rules), so the operator must configure these headers on whichever host serves the built `dist/` assets.
+Gubernator is a Vite/React SPA that talks to Supabase from the browser. A successful script injection would have access to the user's authenticated Supabase session, so production deployments **must** send a defense-in-depth header set. The Docker deploy (`docker/`, see `docs/deployment-runbook.md`) ships these headers in `docker/app/nginx.conf`, with the CSP `connect-src` origin baked in at image build time from `SUPABASE_PUBLIC_URL`. For any other hosting platform (Vercel, Netlify, Cloudflare, custom NGINX), the operator must configure these headers on whichever host serves the built `dist/` assets.
 
 Headers should be applied to **every** response — `index.html`, hashed JS/CSS bundles, and static assets in `public/`. They are not needed on the Vite dev server (`npm run dev`) and should not be baked into `index.html` via `<meta http-equiv>` (several directives, including `frame-ancestors`, are ignored when delivered that way).
 

@@ -403,6 +403,7 @@ export default defineConfig([
   // forwardRef warnings are upstream's concern, not ours).
   globalIgnores([
     "dist",
+    "docker",
     "src/routeTree.gen.ts",
     "src/components/ui/**",
     "src/types/database.ts",
