@@ -8,6 +8,14 @@ Do not read `README.md` or `CONTRIBUTING.md` unless task asks.
 - Keep code, command output, commits, PR text, destructive warnings, and security warnings normal.
 - Disable caveman only when user says `normal mode` or `stop caveman`, or when clarity needs it.
 
+## Golden Rules
+
+1. Ask, don't assume. If something is unclear, ask before writing a single line. Never make silent assumptions about intent, architecture, or requirements. When running unattended, pick the most reasonable interpretation, proceed, and record the assumption rather than blocking.
+2. Implement the simplest solution for simple problems, better solutions for harder problems. Do not over-engineer or add flexibility that isn't needed yet.
+3. Don't touch unrelated code but do surface bad code or design smells you discover so they can be addressed as a separate issue.
+4. Flag uncertainty explicitly. If unsure about something, see rule 1. If it makes sense, conduct a small, localised, low-risk experiment and bring the hypothesis and results to discuss. Confidence without certainty causes more damage than admitting a gap.
+5. Suggestions for better ways of doing things are welcome, especially ones with long-lasting impact over a tactical change.
+
 ## Rules
 
 - Keep route files thin. Compose page modules instead of growing route files.
