@@ -23,4 +23,8 @@ export const eventQueryKeys = {
     [...eventQueryKeys.byWorld(worldId), "settlement", settlementId] as const,
   byNation: (worldId: string, nationId: string) =>
     [...eventQueryKeys.byWorld(worldId), "nation", nationId] as const,
+  expiredBySettlement: (worldId: string, settlementId: string) =>
+    [...eventQueryKeys.bySettlement(worldId, settlementId), "expired"] as const,
+  expiredByNation: (worldId: string, nationId: string) =>
+    [...eventQueryKeys.byNation(worldId, nationId), "expired"] as const,
 } as const;

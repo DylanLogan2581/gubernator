@@ -269,3 +269,97 @@ export function activeNationEventsQueryOptions(
     },
   });
 }
+
+/**
+ * Get expired events affecting a settlement (direct + nation + world scope).
+ */
+export function expiredSettlementEventsQueryOptions(
+  worldId: string,
+  settlementId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): UseQueryOptions<
+  readonly EventWithGroup[],
+  AuthUiError,
+  readonly EventWithGroup[],
+  ReturnType<typeof eventQueryKeys.expiredBySettlement>
+> {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryKey: eventQueryKeys.expiredBySettlement(worldId, settlementId),
+    queryFn: async (): Promise<readonly EventWithGroup[]> => {
+      // PostgREST or() does not support subqueries, so resolve nation_id first.
+      const { data: settlement, error: settlementError } = await client
+        .from("settlements")
+        .select("nation_id")
+        .eq("id", settlementId)
+        .single();
+
+      if (settlementError !== null) {
+        throw normalizeSupabaseError(settlementError);
+      }
+
+      const nationId = settlement.nation_id;
+
+      const orFilter =
+        nationId !== null
+          ? `and(scope_type.eq.settlement,scope_settlement_id.eq.${settlementId}),and(scope_type.eq.nation,scope_nation_id.eq.${nationId}),scope_type.eq.world`
+          : `and(scope_type.eq.settlement,scope_settlement_id.eq.${settlementId}),scope_type.eq.world`;
+
+      const { data, error } = await client
+        .from("events")
+        .select<
+          "*,group:event_groups(*)",
+          EventWithGroup
+        >("*,group:event_groups(*)")
+        .eq("world_id", worldId)
+        .eq("status", "expired")
+        .or(orFilter)
+        .order("updated_at", { ascending: false });
+
+      if (error !== null) {
+        throw normalizeSupabaseError(error);
+      }
+
+      return data ?? [];
+    },
+  });
+}
+
+/**
+ * Get expired events affecting a nation (nation + world scope).
+ */
+export function expiredNationEventsQueryOptions(
+  worldId: string,
+  nationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): UseQueryOptions<
+  readonly EventWithGroup[],
+  AuthUiError,
+  readonly EventWithGroup[],
+  ReturnType<typeof eventQueryKeys.expiredByNation>
+> {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryKey: eventQueryKeys.expiredByNation(worldId, nationId),
+    queryFn: async (): Promise<readonly EventWithGroup[]> => {
+      const { data, error } = await client
+        .from("events")
+        .select<
+          "*,group:event_groups(*)",
+          EventWithGroup
+        >("*,group:event_groups(*)")
+        .eq("world_id", worldId)
+        .eq("status", "expired")
+        .or(
+          `and(scope_type.eq.nation,scope_nation_id.eq.${nationId}),scope_type.eq.world`,
+        )
+        .order("updated_at", { ascending: false });
+
+      if (error !== null) {
+        throw normalizeSupabaseError(error);
+      }
+
+      return data ?? [];
+    },
+  });
+}
