@@ -53,6 +53,16 @@ export function WorldBreadcrumb({
     enabled: onCitizenPage && citizenSettlementId !== null,
   });
 
+  // Once the citizen itself resolves, still treat the breadcrumb as pending
+  // while we know the citizen has a settlement but that settlement's own
+  // fetch hasn't resolved yet (e.g. cold direct-URL load with an empty
+  // cache) — otherwise the chain collapses to just the citizen name for a
+  // frame instead of showing the transient "…" placeholder.
+  const isCitizenSettlementPending =
+    onCitizenPage &&
+    citizenSettlementId !== null &&
+    citizenSettlementQuery.isPending;
+
   const segments = buildSegments({
     worldId,
     worldName,
@@ -65,7 +75,8 @@ export function WorldBreadcrumb({
     citizenSettlementData: onCitizenPage
       ? (citizenSettlementQuery.data ?? null)
       : null,
-    isCitizenPending: onCitizenPage && citizenQuery.isPending,
+    isCitizenPending:
+      onCitizenPage && (citizenQuery.isPending || isCitizenSettlementPending),
   });
 
   return (
