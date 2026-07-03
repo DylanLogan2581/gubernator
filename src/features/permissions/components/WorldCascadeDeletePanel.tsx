@@ -31,6 +31,7 @@ export function WorldCascadeDeletePanel(): JSX.Element {
   );
 
   const worlds = worldsQuery.data ?? [];
+  const hasNoTrashedWorlds = worldsQuery.isSuccess && worlds.length === 0;
   const selectedWorld = worlds.find((w) => w.id === selectedWorldId) ?? null;
   const isPending = previewMutation.isPending || deleteMutation.isPending;
 
@@ -118,13 +119,20 @@ export function WorldCascadeDeletePanel(): JSX.Element {
       <div className="mt-4 flex flex-wrap items-end gap-4">
         <Select
           value={selectedWorldId}
+          disabled={hasNoTrashedWorlds}
           onValueChange={(value) => {
             setSelectedWorldId(value);
             setPreview(null);
           }}
         >
           <SelectTrigger className="w-56">
-            <SelectValue placeholder="Select a trashed world…" />
+            <SelectValue
+              placeholder={
+                hasNoTrashedWorlds
+                  ? "No trashed worlds"
+                  : "Select a trashed world…"
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             {worlds.map((world) => (
