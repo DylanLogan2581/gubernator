@@ -142,7 +142,10 @@ export async function handleAdminCreateUserRequest(
     // Idempotency key support: check if request with same key was already processed
     const idempotencyKey = request.headers.get("idempotency-key");
     if (idempotencyKey !== null) {
-      const cachedResult = await getIdempotencyKeyResult(idempotencyKey);
+      const cachedResult = await getIdempotencyKeyResult(
+        idempotencyKey,
+        authContextResult.context.userId,
+      );
       if (cachedResult !== null) {
         return respond({ data: cachedResult, ok: true }, 200);
       }
@@ -430,6 +433,7 @@ function isEmailConflict(message: string | undefined): boolean {
 
 async function getIdempotencyKeyResult(
   idempotencyKey: string,
+  callerUserId: string,
 ): Promise<AdminCreateUserSuccessData | null> {
   const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
   const serviceRoleKey = getRequiredRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
@@ -443,7 +447,7 @@ async function getIdempotencyKeyResult(
     const response = await supabaseFetch(
       `${supabaseUrl}/rest/v1/admin_create_user_idempotency_keys?idempotency_key=eq.${
         encodeURIComponent(idempotencyKey)
-      }&expires_at=gt.now()`,
+      }&caller_user_id=eq.${encodeURIComponent(callerUserId)}&expires_at=gt.now()`,
       {
         headers: {
           apikey: serviceRoleKey,

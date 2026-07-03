@@ -912,6 +912,110 @@ describe("handleAdminCreateUserRequest", () => {
       expect(body.ok).toBe(true);
       expect(body.data?.userId).toBe("no-key-user-id");
     });
+
+    it("same idempotency-key from different callers produces independent results", async () => {
+      const capturedUrls: string[] = [];
+
+      // Caller A's request: no cached result yet, so a new user is created.
+      mockFetch.mockImplementation((url: string) => {
+        capturedUrls.push(url);
+        if (url.includes("auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: "caller-a" }), { status: 200 }),
+          );
+        }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
+        }
+        if (url.includes("rest/v1/rpc/is_super_admin")) {
+          return Promise.resolve(new Response(JSON.stringify(true), { status: 200 }));
+        }
+        if (url.includes("admin_create_user_idempotency_keys")) {
+          return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }));
+        }
+        if (url.includes("auth/v1/admin/users")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ id: "user-from-a", email: "a@example.com" }),
+              { status: 201 },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Not found" }), { status: 404 }),
+        );
+      });
+
+      const requestA = makeRequest(
+        { email: "a@example.com", username: "usera", password: "password123" },
+        { "idempotency-key": "shared-key" },
+      );
+      const responseA = await handleAdminCreateUserRequest(requestA);
+      const bodyA = await parseResponse(responseA);
+
+      expect(bodyA.data?.userId).toBe("user-from-a");
+
+      const lookupUrlA = capturedUrls.find(
+        (url) =>
+          url.includes("admin_create_user_idempotency_keys") &&
+          url.includes("expires_at=gt.now()"),
+      );
+      expect(lookupUrlA).toContain("caller_user_id=eq.caller-a");
+      expect(lookupUrlA).toContain("idempotency_key=eq.shared-key");
+
+      // Caller B reuses the same idempotency-key value. Even though caller A
+      // cached a result under that key, caller B's lookup is scoped to their
+      // own caller_user_id and must miss, producing an independent result.
+      capturedUrls.length = 0;
+      mockFetch.mockImplementation((url: string) => {
+        capturedUrls.push(url);
+        if (url.includes("auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: "caller-b" }), { status: 200 }),
+          );
+        }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
+        }
+        if (url.includes("rest/v1/rpc/is_super_admin")) {
+          return Promise.resolve(new Response(JSON.stringify(true), { status: 200 }));
+        }
+        if (url.includes("admin_create_user_idempotency_keys")) {
+          // Caller B has never used this key before, so the caller-scoped
+          // lookup misses even though caller A cached a result under the
+          // same idempotency_key value.
+          return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }));
+        }
+        if (url.includes("auth/v1/admin/users")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ id: "user-from-b", email: "b@example.com" }),
+              { status: 201 },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Not found" }), { status: 404 }),
+        );
+      });
+
+      const requestB = makeRequest(
+        { email: "b@example.com", username: "userb", password: "password123" },
+        { "idempotency-key": "shared-key" },
+      );
+      const responseB = await handleAdminCreateUserRequest(requestB);
+      const bodyB = await parseResponse(responseB);
+
+      expect(bodyB.data?.userId).toBe("user-from-b");
+      expect(bodyB.data?.userId).not.toBe(bodyA.data?.userId);
+
+      const lookupUrlB = capturedUrls.find(
+        (url) =>
+          url.includes("admin_create_user_idempotency_keys") &&
+          url.includes("expires_at=gt.now()"),
+      );
+      expect(lookupUrlB).toContain("caller_user_id=eq.caller-b");
+    });
   });
 
   describe("rate limiting: per-user 429 enforcement", () => {
