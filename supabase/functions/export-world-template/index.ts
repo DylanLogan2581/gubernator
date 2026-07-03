@@ -1,15 +1,18 @@
 import { EDGE_COMMON_ENV_VAR_NAMES } from "../_shared/envContract.ts";
 import { buildCorsHeaders, parseAllowedOrigins } from "../_shared/http/cors.ts";
-import { assertEdgeEnvVars, getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../_shared/http/env.ts";
+import {
+  assertEdgeEnvVars,
+  getEdgeRuntime,
+  getRequiredRuntimeEnv,
+  getRequiredRuntimeUrl,
+} from "../_shared/http/env.ts";
 import { createErrorResponse, createJsonResponse } from "../_shared/http/response.ts";
 import { getAuthorizationHeader } from "../_shared/http/session.ts";
 import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import { assembleWorldTemplate } from "./assemble.ts";
 import { fetchWorldConfigData } from "./query.ts";
-
-// Deno runtime declaration (provided by Supabase Edge Runtime)
-declare const Deno: { serve: (handler: (req: Request) => Promise<Response>) => void };
+import { parseExportWorldTemplateRequestBody } from "./validate.ts";
 
 function getAllowedOrigins(): readonly string[] {
   return parseAllowedOrigins("EXPORT_WORLD_TEMPLATE_ALLOWED_ORIGINS");
@@ -75,8 +78,6 @@ async function isAuthorized(
   return worldAdminResult.value;
 }
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function handleExportWorldTemplateRequest(
   request: Request,
   options: { readonly allowedOrigins?: readonly string[] } = {},
@@ -103,33 +104,9 @@ export async function handleExportWorldTemplateRequest(
     );
   }
 
-  // Parse body
-  let parsedBody: unknown;
-  try {
-    parsedBody = await request.json();
-  } catch {
-    return respond(
-      createErrorResponse({ code: "invalid_request", message: "Request body must be JSON." }),
-      400,
-    );
-  }
-
-  if (
-    parsedBody === null ||
-    typeof parsedBody !== "object" ||
-    !("worldId" in parsedBody) ||
-    typeof (parsedBody as Record<string, unknown>).worldId !== "string" ||
-    !UUID_REGEX.test((parsedBody as Record<string, unknown>).worldId as string)
-  ) {
-    return respond(
-      createErrorResponse({ code: "invalid_request", message: "worldId must be a UUID." }),
-      400,
-    );
-  }
-
-  const worldId = (parsedBody as Record<string, unknown>).worldId as string;
-
-  // Auth: extract JWT
+  // Auth: extract JWT. Checked before the body is read (cheap, no network
+  // round-trip) so an unauthenticated caller is rejected before anything is
+  // buffered.
   const authorizationHeader = getAuthorizationHeader(request);
   if (authorizationHeader === null) {
     return respond(
@@ -137,6 +114,13 @@ export async function handleExportWorldTemplateRequest(
       401,
     );
   }
+
+  const validateResult = await parseExportWorldTemplateRequestBody(request);
+  if (!validateResult.ok) {
+    return respond(validateResult.error, validateResult.status);
+  }
+
+  const worldId = validateResult.body.worldId;
 
   const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
   const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
@@ -204,4 +188,9 @@ export async function handleExportWorldTemplateRequest(
 }
 
 assertEdgeEnvVars(EDGE_COMMON_ENV_VAR_NAMES);
-Deno.serve((req: Request) => handleExportWorldTemplateRequest(req));
+
+const edgeRuntime = getEdgeRuntime();
+
+if (edgeRuntime !== undefined) {
+  edgeRuntime.serve((req: Request) => handleExportWorldTemplateRequest(req));
+}

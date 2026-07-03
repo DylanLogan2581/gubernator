@@ -1,10 +1,14 @@
+import { readCappedJsonBody } from "../_shared/http/body.ts";
+
+
 import { createErrorResponse } from "./http.ts";
 
 import type { AdminCreateUserErrorResponse, AdminCreateUserRequestBody } from "./types.ts";
+import type { ReadCappedJsonBodyFailureReason } from "../_shared/http/body.ts";
 
 type ValidateResult =
   | { readonly body: AdminCreateUserRequestBody; readonly ok: true }
-  | { readonly error: AdminCreateUserErrorResponse; readonly ok: false };
+  | { readonly error: AdminCreateUserErrorResponse; readonly ok: false; readonly status: number };
 
 // Input bounds
 const MAX_EMAIL_LENGTH = 254;
@@ -20,57 +24,34 @@ const EXPECTED_FIELDS = new Set([
   "sendMagicLink",
 ]);
 
-export function validateContentType(request: Request): ValidateResult | null {
-  const contentType = request.headers.get("content-type");
-  if (contentType === null || !contentType.includes("application/json")) {
-    return {
-      error: createErrorResponse({
-        code: "invalid_request",
-        message: "Content-Type must be application/json.",
-      }),
-      ok: false,
-    };
+function bodyReadErrorMessage(reason: ReadCappedJsonBodyFailureReason): string {
+  switch (reason) {
+    case "invalid_content_type":
+      return "Content-Type must be application/json.";
+    case "body_too_large":
+      return "Request body exceeds maximum size.";
+    case "invalid_json":
+      return "Request body must be valid JSON.";
   }
-  return null;
 }
 
 export async function parseAdminCreateUserRequestBody(
   request: Request,
 ): Promise<ValidateResult> {
-  // Check Content-Type
-  const contentTypeError = validateContentType(request);
-  if (contentTypeError !== null) {
-    return contentTypeError;
-  }
+  const readResult = await readCappedJsonBody(request, { maxBytes: MAX_BODY_SIZE });
 
-  // Check body size
-  const contentLength = request.headers.get("content-length");
-  if (contentLength !== null) {
-    const size = parseInt(contentLength, 10);
-    if (size > MAX_BODY_SIZE) {
-      return {
-        error: createErrorResponse({
-          code: "invalid_request",
-          message: "Request body exceeds maximum size.",
-        }),
-        ok: false,
-      };
-    }
-  }
-
-  let raw: unknown;
-
-  try {
-    raw = await request.json();
-  } catch {
+  if (!readResult.ok) {
     return {
       error: createErrorResponse({
         code: "invalid_request",
-        message: "Request body must be valid JSON.",
+        message: bodyReadErrorMessage(readResult.reason),
       }),
       ok: false,
+      status: readResult.status,
     };
   }
+
+  const raw = readResult.value;
 
   if (typeof raw !== "object" || raw === null) {
     return {
@@ -79,6 +60,7 @@ export async function parseAdminCreateUserRequestBody(
         message: "Request body must be a JSON object.",
       }),
       ok: false,
+      status: 400,
     };
   }
 
@@ -93,6 +75,7 @@ export async function parseAdminCreateUserRequestBody(
           message: "Request contains unknown fields.",
         }),
         ok: false,
+        status: 400,
       };
     }
   }
@@ -111,6 +94,7 @@ export async function parseAdminCreateUserRequestBody(
         message: "A valid email address is required.",
       }),
       ok: false,
+      status: 400,
     };
   }
 
@@ -121,6 +105,7 @@ export async function parseAdminCreateUserRequestBody(
         message: "Email address exceeds maximum length.",
       }),
       ok: false,
+      status: 400,
     };
   }
 
@@ -131,6 +116,7 @@ export async function parseAdminCreateUserRequestBody(
         message: "A username is required.",
       }),
       ok: false,
+      status: 400,
     };
   }
 
@@ -141,6 +127,7 @@ export async function parseAdminCreateUserRequestBody(
         message: "Username exceeds maximum length.",
       }),
       ok: false,
+      status: 400,
     };
   }
 
@@ -154,6 +141,7 @@ export async function parseAdminCreateUserRequestBody(
         message: "A password of at least 8 characters is required when not using magic link.",
       }),
       ok: false,
+      status: 400,
     };
   }
 
@@ -164,6 +152,7 @@ export async function parseAdminCreateUserRequestBody(
         message: "Password exceeds maximum length.",
       }),
       ok: false,
+      status: 400,
     };
   }
 

@@ -97,7 +97,7 @@ export async function handleAdminCreateUserRequest(
 
     const validateResult = await parseAdminCreateUserRequestBody(request);
     if (!validateResult.ok) {
-      return respond(validateResult.error, 400);
+      return respond(validateResult.error, validateResult.status);
     }
 
     const authContextResult = await resolveAdminCreateUserAuthContext(request);

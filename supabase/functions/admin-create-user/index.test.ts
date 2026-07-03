@@ -397,22 +397,43 @@ describe("handleAdminCreateUserRequest", () => {
       expect(body.error?.code).toBe("invalid_request");
     });
 
-    it("returns 400 when request body exceeds max size", async () => {
+    it("returns 413 for a chunked body exceeding max size with no content-length header", async () => {
       setupMockFetch({});
 
-      const request = makeRequest(
-        {
-          email: "test@example.com",
-          username: "testuser",
-          password: "password123",
+      // Simulates Transfer-Encoding: chunked (no content-length): the actual
+      // streamed bytes exceed the 10 KB cap, not just a spoofable header.
+      const oversizedPayload = JSON.stringify({
+        email: "test@example.com",
+        password: "password123",
+        padding: "x".repeat(1024 * 11),
+        username: "testuser",
+      });
+      const encoded = new TextEncoder().encode(oversizedPayload);
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          const chunkSize = 256;
+          for (let offset = 0; offset < encoded.byteLength; offset += chunkSize) {
+            controller.enqueue(encoded.slice(offset, offset + chunkSize));
+          }
+          controller.close();
         },
-        { "content-length": String(1024 * 11) }, // 11 KB, exceeds 10 KB limit
-      );
+      });
+      const request = new Request("https://example.com/functions/v1/admin-create-user", {
+        body: stream,
+        duplex: "half",
+        headers: {
+          authorization: "Bearer valid-token",
+          "content-type": "application/json",
+        },
+        method: "POST",
+      } as RequestInit);
+
+      expect(request.headers.get("content-length")).toBeNull();
 
       const response = await handleAdminCreateUserRequest(request);
       const body = await parseResponse(response);
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(413);
       expect(body.error?.code).toBe("invalid_request");
       expect(body.ok).toBe(false);
     });
