@@ -11,7 +11,7 @@
 begin;
 
 select
-  plan (10);
+  plan (11);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -332,6 +332,41 @@ values
     'e7400000-0000-0000-0000-000000000005'
   );
 
+-- Partnership couple in World 2, Settlement 2 (formed in TEST SCENARIO 2).
+-- issue #938: names must round-trip into the partnership.formed message text.
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    surname,
+    sex,
+    status
+  )
+values
+  (
+    'e7600000-0000-0000-0000-000000000011',
+    'e7200000-0000-0000-0000-000000000002',
+    'e7400000-0000-0000-0000-000000000002',
+    'npc',
+    'Kestrel',
+    'Crane',
+    'female',
+    'alive'
+  ),
+  (
+    'e7600000-0000-0000-0000-000000000012',
+    'e7200000-0000-0000-0000-000000000002',
+    'e7400000-0000-0000-0000-000000000002',
+    'npc',
+    'Merek',
+    'Weaverson',
+    'male',
+    'alive'
+  );
+
 -- Turn transitions: one per world
 insert into
   public.turn_transitions (
@@ -459,12 +494,18 @@ select
     5,
     jsonb_build_object(
       'logEntries',
+      '[]'::jsonb,
+      'partnershipChanges',
       jsonb_build_array(
         jsonb_build_object(
-          'category',
-          'partnership.formed',
-          'settlementId',
-          'e7400000-0000-0000-0000-000000000002'
+          'citizenAId',
+          'e7600000-0000-0000-0000-000000000011',
+          'citizenBId',
+          'e7600000-0000-0000-0000-000000000012',
+          'toStatus',
+          'active',
+          'formedOnTurnNumber',
+          6
         )
       )
     ),
@@ -502,6 +543,21 @@ select
     ),
     1,
     'partnership.formed: settlement manager received notification'
+  );
+
+select
+  is (
+    (
+      select distinct
+        message_text
+      from
+        public.notifications
+      where
+        world_id = 'e7200000-0000-0000-0000-000000000002'
+        and notification_type = 'partnership.formed'
+    ),
+    'Kestrel Crane and Merek Weaverson formed a partnership.',
+    'partnership.formed: message text interpolates both citizens'' names'
   );
 
 -- ===========================================================================

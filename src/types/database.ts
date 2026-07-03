@@ -684,6 +684,27 @@ export type Database = {
           },
         ];
       };
+      edge_rate_limit_buckets: {
+        Row: {
+          function_name: string;
+          request_count: number;
+          user_id: string;
+          window_minute: string;
+        };
+        Insert: {
+          function_name: string;
+          request_count?: number;
+          user_id: string;
+          window_minute: string;
+        };
+        Update: {
+          function_name?: string;
+          request_count?: number;
+          user_id?: string;
+          window_minute?: string;
+        };
+        Relationships: [];
+      };
       event_effects: {
         Row: {
           amount_value: number | null;
@@ -3385,6 +3406,14 @@ export type Database = {
         };
       };
       in_todo: { Args: never; Returns: boolean };
+      increment_rate_limit_bucket: {
+        Args: {
+          p_function_name: string;
+          p_user_id: string;
+          p_window_minute: string;
+        };
+        Returns: number;
+      };
       internal_apply_turn_transition_advance_world_turn: {
         Args: { p_expected_turn_number: number; p_world_id: string };
         Returns: number;
