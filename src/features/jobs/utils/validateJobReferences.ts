@@ -23,11 +23,15 @@ export type JobReferenceIssue = ReferenceIssue;
 export function validateJobReferencesAgainstWorld(
   payload: JobReferencePayload,
   activeResources: readonly MinimalEntity[],
-  linkedTypes: readonly MinimalEntity[] = [],
+  depositTypes: readonly MinimalEntity[] = [],
+  managedPopulationTypes: readonly MinimalEntity[] = [],
 ): readonly JobReferenceIssue[] {
   const issues: JobReferenceIssue[] = [];
   const activeResourceIds = new Set(activeResources.map((r) => r.id));
-  const linkedTypeIds = new Set(linkedTypes.map((t) => t.id));
+  const depositTypeIds = new Set(depositTypes.map((t) => t.id));
+  const managedPopulationTypeIds = new Set(
+    managedPopulationTypes.map((t) => t.id),
+  );
 
   checkResourceIdsInWorld(
     "inputsJson",
@@ -45,7 +49,7 @@ export function validateJobReferencesAgainstWorld(
   if (
     payload.linkedDepositTypeId !== null &&
     payload.linkedDepositTypeId !== undefined &&
-    !linkedTypeIds.has(payload.linkedDepositTypeId)
+    !depositTypeIds.has(payload.linkedDepositTypeId)
   ) {
     issues.push({
       field: "linkedDepositTypeId",
@@ -56,7 +60,7 @@ export function validateJobReferencesAgainstWorld(
   if (
     payload.linkedManagedPopulationTypeId !== null &&
     payload.linkedManagedPopulationTypeId !== undefined &&
-    !linkedTypeIds.has(payload.linkedManagedPopulationTypeId)
+    !managedPopulationTypeIds.has(payload.linkedManagedPopulationTypeId)
   ) {
     issues.push({
       field: "linkedManagedPopulationTypeId",
