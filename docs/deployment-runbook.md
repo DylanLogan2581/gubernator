@@ -55,13 +55,13 @@ block in `.env.example` for all variables.
 
 ### Edge function CORS secrets
 
-Two edge functions require a per-function CORS origin allowlist:
+Three edge functions require a per-function CORS origin allowlist:
 
-| Variable                                | Function                | Default (local)                                      |
-| --------------------------------------- | ----------------------- | ---------------------------------------------------- |
-| `END_TURN_SIMULATION_ALLOWED_ORIGINS`   | `end-turn-simulation`   | `http://localhost:5173,http://127.0.0.1:5173`        |
-| `ADMIN_CREATE_USER_ALLOWED_ORIGINS`     | `admin-create-user`     | `http://localhost:5173,http://127.0.0.1:5173`        |
-| `EXPORT_WORLD_TEMPLATE_ALLOWED_ORIGINS` | `export-world-template` | _(optional — unset allows non-browser clients only)_ |
+| Variable                                | Function                | Default (local)                               |
+| --------------------------------------- | ----------------------- | --------------------------------------------- |
+| `END_TURN_SIMULATION_ALLOWED_ORIGINS`   | `end-turn-simulation`   | `http://localhost:5173,http://127.0.0.1:5173` |
+| `ADMIN_CREATE_USER_ALLOWED_ORIGINS`     | `admin-create-user`     | `http://localhost:5173,http://127.0.0.1:5173` |
+| `EXPORT_WORLD_TEMPLATE_ALLOWED_ORIGINS` | `export-world-template` | `http://localhost:5173,http://127.0.0.1:5173` |
 
 Format: comma-separated origins, scheme + host, no path, no trailing slash.
 
@@ -77,11 +77,11 @@ Each edge function validates these at cold start via `assertEdgeEnvVars` in
 `supabase/functions/_shared/http/env.ts`. Supabase injects them automatically —
 you do not set them manually.
 
-| Variable                    | Used by                                    |
-| --------------------------- | ------------------------------------------ |
-| `SUPABASE_URL`              | all functions                              |
-| `SUPABASE_ANON_KEY`         | all functions                              |
-| `SUPABASE_SERVICE_ROLE_KEY` | `end-turn-simulation`, `admin-create-user` |
+| Variable                    | Used by                                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`              | all functions                                                                                |
+| `SUPABASE_ANON_KEY`         | all functions                                                                                |
+| `SUPABASE_SERVICE_ROLE_KEY` | `end-turn-simulation`, `admin-create-user`, `export-world-template` (rate-limit bucket only) |
 
 If a required variable is missing at cold start, the function throws immediately
 with `"Edge function cold-start failed — missing required env vars: ..."`.
@@ -152,7 +152,8 @@ Set the CORS origin secrets for production:
 ```bash
 supabase secrets set --project-ref <project-ref> \
   END_TURN_SIMULATION_ALLOWED_ORIGINS="https://app.example.com" \
-  ADMIN_CREATE_USER_ALLOWED_ORIGINS="https://app.example.com"
+  ADMIN_CREATE_USER_ALLOWED_ORIGINS="https://app.example.com" \
+  EXPORT_WORLD_TEMPLATE_ALLOWED_ORIGINS="https://app.example.com"
 ```
 
 Replace `https://app.example.com` with your deployed frontend origin. Multiple

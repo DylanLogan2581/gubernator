@@ -5,8 +5,11 @@
  * Fails open: if the DB is unreachable, requests are allowed through.
  *
  * Documented limits (requests per minute per user):
- *   admin-create-user:   10
- *   end-turn-simulation: 10
+ *   admin-create-user:      10
+ *   end-turn-simulation:    10
+ *   export-world-template:   5 (heavier 7-table parallel read, infrequent
+ *                               legitimate use — tighter cap curbs DB-load
+ *                               amplification)
  */
 
 import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
@@ -14,6 +17,7 @@ import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
 export const RATE_LIMITS: Record<string, number> = {
   "admin-create-user": 10,
   "end-turn-simulation": 10,
+  "export-world-template": 5,
 };
 
 export type RateLimitResult =

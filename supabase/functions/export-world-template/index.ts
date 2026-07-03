@@ -1,4 +1,4 @@
-import { EDGE_COMMON_ENV_VAR_NAMES } from "../_shared/envContract.ts";
+import { EDGE_COMMON_ENV_VAR_NAMES, EDGE_SERVICE_ROLE_ENV_VAR_NAMES } from "../_shared/envContract.ts";
 import { buildCorsHeaders, parseAllowedOrigins } from "../_shared/http/cors.ts";
 import {
   assertEdgeEnvVars,
@@ -6,8 +6,9 @@ import {
   getRequiredRuntimeEnv,
   getRequiredRuntimeUrl,
 } from "../_shared/http/env.ts";
+import { RATE_LIMITS, checkRateLimit } from "../_shared/http/rateLimit.ts";
 import { createErrorResponse, createJsonResponse } from "../_shared/http/response.ts";
-import { getAuthorizationHeader } from "../_shared/http/session.ts";
+import { getAuthorizationHeader, resolveAuthContext } from "../_shared/http/session.ts";
 import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import { assembleWorldTemplate } from "./assemble.ts";
@@ -84,7 +85,23 @@ export async function handleExportWorldTemplateRequest(
 ): Promise<Response> {
   const allowedOrigins = options.allowedOrigins ?? getAllowedOrigins();
   const origin = request.headers.get("origin");
-  const allowedOrigin = origin !== null && allowedOrigins.includes(origin) ? origin : null;
+
+  // CORS allowlist is enforced for browser requests (those with an Origin header).
+  // Requests without the Origin header (non-browser clients, scripts, servers)
+  // bypass this check and proceed to the JWT + world-admin/super-admin checks,
+  // which are the actual access boundary.
+  if (origin !== null && !allowedOrigins.includes(origin)) {
+    return createJsonResponse(
+      createErrorResponse({
+        code: "origin_not_allowed",
+        message: "Origin not allowed.",
+      }),
+      403,
+      null,
+    );
+  }
+
+  const allowedOrigin = origin;
 
   // CORS preflight
   if (request.method === "OPTIONS") {
@@ -133,6 +150,49 @@ export async function handleExportWorldTemplateRequest(
       }),
       500,
     );
+  }
+
+  // Resolve the caller's user id for rate limiting, the same /auth/v1/user
+  // lookup end-turn-simulation and admin-create-user use for their buckets.
+  const authContextResult = await resolveAuthContext<{ readonly userId: string }>(
+    request,
+    {
+      fetchFn: fetch,
+      supabaseUrl,
+      supabaseAnonKey,
+      onAuthError: () => ({
+        ok: false,
+        error: createErrorResponse({
+          code: "unauthenticated",
+          message: "Authentication required.",
+        }),
+        status: 401,
+      }),
+      onSuccess: (context) => ({ ok: true, context }),
+    },
+  );
+
+  if (!authContextResult.ok) {
+    return respond(authContextResult.error, authContextResult.status);
+  }
+
+  // Rate limit: this endpoint fans out into a 7-table parallel export
+  // (fetchWorldConfigData), so cap per-user calls before doing any of that
+  // work or the authorization RPC round-trips below.
+  const rateLimitResult = await checkRateLimit(
+    authContextResult.context.userId,
+    "export-world-template",
+    RATE_LIMITS["export-world-template"],
+  );
+  if (!rateLimitResult.ok) {
+    const body = createErrorResponse({
+      code: "rate_limit_exceeded",
+      message: "Too many requests. Please wait before retrying.",
+    });
+    const res = respond(body, 429);
+    const headers = new Headers(res.headers);
+    headers.set("retry-after", String(rateLimitResult.retryAfterSeconds));
+    return new Response(res.body, { headers, status: 429 });
   }
 
   // Authz: must be world admin or super admin
@@ -187,7 +247,7 @@ export async function handleExportWorldTemplateRequest(
   return respond({ ok: true, data: template }, 200);
 }
 
-assertEdgeEnvVars(EDGE_COMMON_ENV_VAR_NAMES);
+assertEdgeEnvVars([...EDGE_COMMON_ENV_VAR_NAMES, ...EDGE_SERVICE_ROLE_ENV_VAR_NAMES]);
 
 const edgeRuntime = getEdgeRuntime();
 
