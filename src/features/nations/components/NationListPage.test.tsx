@@ -153,7 +153,7 @@ describe("NationListPage", () => {
 
     renderPage();
 
-    const link = await screen.findByRole("link", { name: "Highmark" });
+    const link = await screen.findByRole("link", { name: /Highmark/ });
     expect(link).toHaveAttribute(
       "href",
       `/worlds/${worldId}/nations/${nationId}`,
@@ -179,7 +179,7 @@ describe("NationListPage", () => {
 
     renderPage();
 
-    const link = await screen.findByRole("link", { name: "Veilreach" });
+    const link = await screen.findByRole("link", { name: /Veilreach/ });
     expect(link).toHaveAttribute(
       "href",
       `/worlds/${worldId}/nations/${nationId}`,

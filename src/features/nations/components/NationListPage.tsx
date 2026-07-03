@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, LockKeyhole, Plus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, LockKeyhole, Plus, X } from "lucide-react";
 import { useState, type FormEvent, type JSX, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -195,29 +195,37 @@ function NationListItem({
   const descriptionPreview = getDescriptionPreview(nation.description);
 
   return (
-    <li className="grid gap-2 p-4">
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <h2 className="truncate text-base font-medium">
-          <Link
-            to="/worlds/$worldId/nations/$nationId"
-            params={{ nationId: nation.id, worldId }}
-            className="underline-offset-4 hover:underline"
-          >
-            {nation.name}
-          </Link>
-        </h2>
-        {nation.isHidden ? (
-          <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-            <LockKeyhole className="size-3" aria-hidden="true" />
-            Hidden
-          </span>
-        ) : null}
-      </div>
-      {descriptionPreview === null ? (
-        <p className="text-sm italic text-muted-foreground">No description.</p>
-      ) : (
-        <p className="text-sm text-muted-foreground">{descriptionPreview}</p>
-      )}
+    <li className="group rounded-md border border-border bg-card text-card-foreground">
+      <Link
+        to="/worlds/$worldId/nations/$nationId"
+        params={{ nationId: nation.id, worldId }}
+        className="grid grid-cols-[1fr_auto] items-center gap-4 p-4 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <div className="grid min-w-0 gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h2 className="truncate text-base font-medium">{nation.name}</h2>
+            {nation.isHidden ? (
+              <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                <LockKeyhole className="size-3" aria-hidden="true" />
+                Hidden
+              </span>
+            ) : null}
+          </div>
+          {descriptionPreview === null ? (
+            <p className="text-sm italic text-muted-foreground">
+              No description.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {descriptionPreview}
+            </p>
+          )}
+        </div>
+        <ArrowRight
+          className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+      </Link>
     </li>
   );
 }
