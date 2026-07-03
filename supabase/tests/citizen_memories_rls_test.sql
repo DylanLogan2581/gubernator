@@ -3,13 +3,14 @@
 begin;
 
 select
-  plan (13);
+  plan (16);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
 -- UUID ranges (all cd-prefixed, unique to this file):
 --   cd1xxxxx = users            cd2xxxxx = worlds
 --   cd3xxxxx = citizens         cd4xxxxx = events
+--   cd5xxxxx = citizen_memories (direct-write-denial fixture row)
 -- ---------------------------------------------------------------------------
 insert into
   auth.users (
@@ -126,6 +127,27 @@ values
     'Test Event',
     'resource_grant',
     0
+  );
+
+-- Seeded directly as table owner (bypasses grants/RLS) so a row exists for the
+-- direct-write-denial tests below without depending on RPC ordering.
+insert into
+  public.citizen_memories (
+    id,
+    world_id,
+    citizen_id,
+    memory_text,
+    occurred_on_turn_number,
+    source
+  )
+values
+  (
+    'cd500000-0000-0000-0000-000000000001',
+    'cd200000-0000-0000-0000-000000000001',
+    'cd300000-0000-0000-0000-000000000001',
+    'Fixture memory for direct-write denial tests',
+    0,
+    'manual'
   );
 
 -- ---------------------------------------------------------------------------
@@ -358,17 +380,76 @@ select
   );
 
 -- ---------------------------------------------------------------------------
--- Test: SOURCE_MANUAL_VS_EVENT
--- Manual memories have source=manual; event-sourced would have source=event
--- Insert an event-sourced memory directly via INSERT (bypassing RPC) to verify
--- source column distinguishes memory types
+-- Test: DIRECT_WRITE_INSERT_DENIED
+-- Direct INSERT via the table API is denied for authenticated (including
+-- world admins): 20260810000000_revoke_citizen_memories_direct_writes.sql
+-- revokes insert/update/delete from authenticated, leaving only select.
+-- Writes must go through add_citizen_memory / update_citizen_memory /
+-- delete_citizen_memory.
 -- ---------------------------------------------------------------------------
 set
   local role authenticated;
 
 set
-  local "request.jwt.claims" = '{"sub":"cd100000-0000-0000-0000-000000000001"}';
+  local "request.jwt.claims" = '{"sub":"cd100000-0000-0000-0000-000000000002"}';
 
+select
+  throws_ok (
+    $test$
+    insert into public.citizen_memories (
+      world_id, citizen_id, memory_text, occurred_on_turn_number, source
+    ) values (
+      'cd200000-0000-0000-0000-000000000001',
+      'cd300000-0000-0000-0000-000000000001',
+      'direct insert attempt',
+      0,
+      'manual'
+    )
+    $test$,
+    '42501',
+    null,
+    'world admin cannot directly insert a citizen memory (must use RPC)'
+  );
+
+-- ---------------------------------------------------------------------------
+-- Test: DIRECT_WRITE_UPDATE_DENIED
+-- ---------------------------------------------------------------------------
+select
+  throws_ok (
+    $test$
+    update public.citizen_memories
+    set memory_text = 'direct update attempt'
+    where id = 'cd500000-0000-0000-0000-000000000001'
+    $test$,
+    '42501',
+    null,
+    'world admin cannot directly update a citizen memory (must use RPC)'
+  );
+
+-- ---------------------------------------------------------------------------
+-- Test: DIRECT_WRITE_DELETE_DENIED
+-- ---------------------------------------------------------------------------
+select
+  throws_ok (
+    $test$
+    delete from public.citizen_memories
+    where id = 'cd500000-0000-0000-0000-000000000001'
+    $test$,
+    '42501',
+    null,
+    'world admin cannot directly delete a citizen memory (must use RPC)'
+  );
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- Test: SOURCE_MANUAL_VS_EVENT
+-- Manual memories have source=manual; event-sourced memories are written by
+-- the SECURITY DEFINER event-patch inserter (apply_turn_transition), not by
+-- an authenticated caller. Insert directly as the migration owner (bypasses
+-- grants/RLS, mirroring the inserter's SECURITY DEFINER privileges) to verify
+-- the source column distinguishes memory types.
+-- ---------------------------------------------------------------------------
 insert into
   public.citizen_memories (
     world_id,
