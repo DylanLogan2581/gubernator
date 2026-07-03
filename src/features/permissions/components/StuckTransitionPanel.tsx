@@ -84,10 +84,9 @@ export function StuckTransitionPanel(): JSX.Element {
         )}
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        Turn transitions wedged in{" "}
-        <span className="font-mono text-xs">running</span> status. Recovering
-        marks the transition failed and unlocks the world for a fresh end-turn.
-        Superadmin only.
+        Turn transitions wedged in running status. Recovering marks the
+        transition failed and unlocks the world for a fresh end-turn. Superadmin
+        only.
       </p>
 
       <div className="mt-4">

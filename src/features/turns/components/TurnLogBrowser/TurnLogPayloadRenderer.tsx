@@ -12,6 +12,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,
@@ -59,8 +60,12 @@ function RawJsonFallback({
         </span>
         {isAdmin && json !== "{}" && json !== "null" ? (
           <CollapsibleTrigger
-            className="text-xs text-primary underline-offset-2 hover:underline"
+            className={cn(
+              "rounded px-1.5 py-0.5 text-xs underline-offset-2 hover:underline",
+              open ? "bg-secondary text-secondary-foreground" : "text-primary",
+            )}
             aria-expanded={open}
+            aria-pressed={open}
             onClick={(e) => e.stopPropagation()}
           >
             {open ? "hide payload" : "show payload"}
