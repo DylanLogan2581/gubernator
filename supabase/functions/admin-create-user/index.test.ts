@@ -65,8 +65,15 @@ function setupMockFetch(
     { status: number; body: Record<string, unknown> | boolean | number } | Error
   >,
 ): void {
+  // Default: under the bucket limit, so tests unrelated to rate limiting
+  // don't need to mock it explicitly. Callers that care about rate-limit
+  // behavior (429, fail-closed) override this key in `responses`.
+  const withDefaults = {
+    "rpc/increment_rate_limit_bucket": { status: 200, body: 1 },
+    ...responses,
+  };
   mockFetch.mockImplementation((url: string) => {
-    for (const [pattern, response] of Object.entries(responses)) {
+    for (const [pattern, response] of Object.entries(withDefaults)) {
       if (url.includes(pattern)) {
         if (response instanceof Error) {
           return Promise.reject(response);
@@ -720,6 +727,9 @@ describe("handleAdminCreateUserRequest", () => {
             new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
           );
         }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
+        }
         if (url.includes("rest/v1/rpc/is_super_admin")) {
           return Promise.resolve(
             new Response(JSON.stringify(true), { status: 200 }),
@@ -771,6 +781,9 @@ describe("handleAdminCreateUserRequest", () => {
             new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
           );
         }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
+        }
         if (url.includes("rest/v1/rpc/is_super_admin")) {
           return Promise.resolve(
             new Response(JSON.stringify(true), { status: 200 }),
@@ -819,6 +832,9 @@ describe("handleAdminCreateUserRequest", () => {
           return Promise.resolve(
             new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
           );
+        }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
         }
         if (url.includes("rest/v1/rpc/is_super_admin")) {
           return Promise.resolve(
@@ -941,12 +957,15 @@ describe("handleAdminCreateUserRequest", () => {
       expect(body.error?.message).toBe("Too many requests. Please wait before retrying.");
     });
 
-    it("succeeds normally when rate limit bucket DB call fails (fail-open)", async () => {
-      // Rate limit DB unreachable (404 fallthrough) → fail open → request proceeds
+    it("returns 429 when rate limit bucket DB call fails (fail-closed)", async () => {
+      // Rate limit DB unreachable (non-2xx) → fail closed → request rejected
       setupMockFetch({
         "auth/v1/user": { status: 200, body: { id: "user-123" } },
         "rest/v1/rpc/is_super_admin": { status: 200, body: true },
-        // no entry for increment_rate_limit_bucket → falls to 404 default → fail open
+        "rpc/increment_rate_limit_bucket": {
+          status: 500,
+          body: { error: "rate limit DB unavailable" },
+        },
         "auth/v1/admin/users": {
           status: 201,
           body: { id: "new-user-id", email: "test@example.com" },
@@ -962,8 +981,10 @@ describe("handleAdminCreateUserRequest", () => {
       const response = await handleAdminCreateUserRequest(request);
       const body = await parseResponse(response);
 
-      expect(response.status).toBe(200);
-      expect(body.ok).toBe(true);
+      expect(response.status).toBe(429);
+      expect(body.error?.code).toBe("rate_limit_exceeded");
+      expect(body.ok).toBe(false);
+      expect(response.headers.get("retry-after")).not.toBeNull();
     });
 
     it("does not call auth/admin/users when rate limit is exceeded", async () => {

@@ -157,10 +157,13 @@ describe("handleExportWorldTemplateRequest", () => {
 
   it("accepts an under-cap body and proceeds past validation to authorization", async () => {
     // /auth/v1/user resolves the caller (needed for the rate-limit bucket),
-    // then the super-admin RPC call fails (non-2xx), so isAuthorized()
-    // short-circuits to null -> 502. This proves the request passed
-    // content-type, size, and worldId validation before reaching authz.
+    // the rate-limit bucket comes back under the cap, then the super-admin
+    // RPC call fails (non-2xx), so isAuthorized() short-circuits to null ->
+    // 502. This proves the request passed content-type, size, and worldId
+    // validation before reaching authz.
+    stubDenoEnv({ SUPABASE_SERVICE_ROLE_KEY });
     mockFetch.mockResolvedValueOnce(authUserResponse());
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(1), { status: 200 }));
     mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
 
     const request = makeRequest({ worldId: VALID_UUID });
@@ -201,8 +204,9 @@ describe("handleExportWorldTemplateRequest origin allowlist", () => {
   });
 
   it("echoes an allowed Origin in access-control-allow-origin", async () => {
-    stubDenoEnv({ EXPORT_WORLD_TEMPLATE_ALLOWED_ORIGINS });
+    stubDenoEnv({ EXPORT_WORLD_TEMPLATE_ALLOWED_ORIGINS, SUPABASE_SERVICE_ROLE_KEY });
     mockFetch.mockResolvedValueOnce(authUserResponse());
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(1), { status: 200 }));
     mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
 
     const request = makeRequest(

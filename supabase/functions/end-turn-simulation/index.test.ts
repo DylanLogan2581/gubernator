@@ -150,6 +150,7 @@ function stubFullCycle(
   stubDenoEnv();
   return stubFetch({
     "/auth/v1/user": { body: { id: USER_ID }, status: 200 },
+    "rpc/increment_rate_limit_bucket": { body: 1, status: 200 },
     "rpc/is_super_admin": { body: false, status: 200 },
     "rpc/is_world_admin": { body: true, status: 200 },
     "rpc/start_turn_transition": { body: TRANSITION_ID, status: 200 },
@@ -381,6 +382,7 @@ describe("handleEndTurnSimulationRequest", () => {
       stubDenoEnv();
       stubFetch({
         "/auth/v1/user": { body: { id: USER_ID }, status: 200 },
+        "rpc/increment_rate_limit_bucket": { body: 1, status: 200 },
         "rpc/is_super_admin": { body: false, status: 200 },
         "rpc/is_world_admin": { body: false, status: 200 },
       });
@@ -556,6 +558,11 @@ describe("handleEndTurnSimulationRequest", () => {
               new Response(JSON.stringify({ id: USER_ID }), { status: 200 }),
             );
           }
+          if (url.includes("rpc/increment_rate_limit_bucket")) {
+            return Promise.resolve(
+              new Response(JSON.stringify(1), { status: 200 }),
+            );
+          }
           // World-exists auth check: return world visible to the caller.
           if (isWorldExistsCheck) {
             return Promise.resolve(
@@ -670,6 +677,9 @@ describe("handleEndTurnSimulationRequest", () => {
           return Promise.resolve(
             new Response(JSON.stringify({ id: USER_ID }), { status: 200 }),
           );
+        }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
         }
         if (url.includes("rpc/is_super_admin")) {
           return Promise.resolve(
@@ -801,8 +811,8 @@ describe("handleEndTurnSimulationRequest", () => {
       );
     });
 
-    it("succeeds normally when rate limit DB call fails (fail-open)", async () => {
-      // Rate limit RPC returns 500 → fail open → request proceeds
+    it("returns 429 when rate limit DB call fails (fail-closed)", async () => {
+      // Rate limit RPC returns 500 → fail closed → request rejected
       stubFullCycle({
         "rpc/increment_rate_limit_bucket": {
           body: { error: "rate limit DB unavailable" },
@@ -821,9 +831,14 @@ describe("handleEndTurnSimulationRequest", () => {
         }),
       );
 
-      expect(response.status).toBe(200);
-      const responseBody = (await response.json()) as { ok: boolean };
-      expect(responseBody.ok).toBe(true);
+      expect(response.status).toBe(429);
+      const responseBody = (await response.json()) as {
+        error: { code: string };
+        ok: boolean;
+      };
+      expect(responseBody.ok).toBe(false);
+      expect(responseBody.error.code).toBe("rate_limit_exceeded");
+      expect(response.headers.get("retry-after")).not.toBeNull();
     });
 
     // -------------------------------------------------------------------------
@@ -916,6 +931,9 @@ describe("handleEndTurnSimulationRequest", () => {
           return Promise.resolve(
             new Response(JSON.stringify({ id: USER_ID }), { status: 200 }),
           );
+        }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
         }
         if (url.includes("rpc/is_super_admin")) {
           return Promise.resolve(

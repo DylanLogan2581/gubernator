@@ -93,8 +93,9 @@ describe("checkRateLimit", () => {
     });
   });
 
-  describe("fail-open behavior", () => {
-    it("returns ok:true when RPC responds with non-200", async () => {
+  describe("fail-closed behavior", () => {
+    it("returns ok:false with retryAfterSeconds when RPC responds with non-200", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       mockFetch.mockResolvedValueOnce(
         new Response(JSON.stringify({ error: "permission denied" }), {
           status: 403,
@@ -103,28 +104,46 @@ describe("checkRateLimit", () => {
 
       const result = await checkRateLimit("user-123", "admin-create-user", 10);
 
-      expect(result.ok).toBe(true);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.retryAfterSeconds).toBeGreaterThan(0);
+      }
+      expect(errorSpy).toHaveBeenCalled();
+      errorSpy.mockRestore();
     });
 
-    it("returns ok:true when RPC returns non-number", async () => {
+    it("returns ok:false with retryAfterSeconds when RPC returns non-number", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       mockFetch.mockResolvedValueOnce(
         new Response(JSON.stringify({ count: 5 }), { status: 200 }),
       );
 
       const result = await checkRateLimit("user-123", "admin-create-user", 10);
 
-      expect(result.ok).toBe(true);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.retryAfterSeconds).toBeGreaterThan(0);
+      }
+      expect(errorSpy).toHaveBeenCalled();
+      errorSpy.mockRestore();
     });
 
-    it("returns ok:true when fetch throws (network error)", async () => {
+    it("returns ok:false with retryAfterSeconds when fetch throws (network error)", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
       const result = await checkRateLimit("user-123", "admin-create-user", 10);
 
-      expect(result.ok).toBe(true);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.retryAfterSeconds).toBeGreaterThan(0);
+      }
+      expect(errorSpy).toHaveBeenCalled();
+      errorSpy.mockRestore();
     });
 
-    it("returns ok:true when SUPABASE_SERVICE_ROLE_KEY is missing", async () => {
+    it("returns ok:false with retryAfterSeconds when SUPABASE_SERVICE_ROLE_KEY is missing", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       vi.stubGlobal("Deno", {
         env: {
           get: (key: string) => {
@@ -136,11 +155,17 @@ describe("checkRateLimit", () => {
 
       const result = await checkRateLimit("user-123", "admin-create-user", 10);
 
-      expect(result.ok).toBe(true);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.retryAfterSeconds).toBeGreaterThan(0);
+      }
       expect(mockFetch).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
+      errorSpy.mockRestore();
     });
 
-    it("returns ok:true when SUPABASE_URL is missing", async () => {
+    it("returns ok:false with retryAfterSeconds when SUPABASE_URL is missing", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       vi.stubGlobal("Deno", {
         env: {
           get: (key: string) => {
@@ -152,8 +177,13 @@ describe("checkRateLimit", () => {
 
       const result = await checkRateLimit("user-123", "admin-create-user", 10);
 
-      expect(result.ok).toBe(true);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.retryAfterSeconds).toBeGreaterThan(0);
+      }
       expect(mockFetch).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
+      errorSpy.mockRestore();
     });
   });
 });
