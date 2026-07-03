@@ -12,6 +12,8 @@ import {
   type ForecastSnapshot,
 } from "../schemas/forecastSchemas";
 
+import { settlementForecastQueryKeys } from "./settlementForecastQueryKeys";
+
 // -- Public domain types --
 
 export type SettlementForecast = {
@@ -20,7 +22,9 @@ export type SettlementForecast = {
 
 // -- Query option types --
 
-type SettlementForecastQueryKey = readonly ["forecast", "world", string];
+type SettlementForecastQueryKey = ReturnType<
+  typeof settlementForecastQueryKeys.byWorld
+>;
 
 // -- Query options --
 
@@ -37,7 +41,7 @@ export function settlementForecastQueryOptions(
     ...worldScopedQueryOptions({
       client,
       fetcher: (c) => getLiveWorldForecast(c, worldId),
-      queryKey: ["forecast", "world", worldId] as const,
+      queryKey: settlementForecastQueryKeys.byWorld(worldId),
     }),
     // The forecast runs the full simulation engine — expensive. Don't re-run on
     // window focus; let mutations invalidate explicitly instead.

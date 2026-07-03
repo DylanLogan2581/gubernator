@@ -6,6 +6,7 @@ import {
 
 import { normalizeSupabaseError } from "@/features/auth";
 import { buildingsQueryKeys } from "@/features/buildings";
+import { settlementForecastQueryKeys } from "@/features/settlements";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -49,10 +50,12 @@ export function resumeConstructionProjectMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
   settlementId,
+  worldId,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly worldId: string;
 }): ResumeConstructionProjectMutationOptions {
   return mutationOptions({
     mutationFn: (input: ResumeConstructionProjectInput) =>
@@ -65,7 +68,7 @@ export function resumeConstructionProjectMutationOptions({
             buildingsQueryKeys.constructionProjectsBySettlement(settlementId),
         }),
         queryClient.invalidateQueries({
-          queryKey: ["forecast"],
+          queryKey: settlementForecastQueryKeys.byWorld(worldId),
         }),
       ]);
     },

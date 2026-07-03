@@ -13,6 +13,7 @@ import {
 const ORIGIN_ID = "11111111-1111-1111-1111-111111111111";
 const DESTINATION_ID = "22222222-2222-2222-2222-222222222222";
 const TRADE_ROUTE_ID = "55555555-5555-5555-5555-555555555555";
+const WORLD_ID = "66666666-6666-6666-6666-666666666666";
 
 const VALID_INPUT = { tradeRouteId: TRADE_ROUTE_ID };
 
@@ -62,7 +63,11 @@ describe("cancelTradeRouteMutationOptions", () => {
     const rpc = vi.fn();
     const client = { rpc } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
-    const options = cancelTradeRouteMutationOptions({ client, queryClient });
+    const options = cancelTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, { tradeRouteId: "not-a-uuid" }),
@@ -80,7 +85,11 @@ describe("cancelTradeRouteMutationOptions", () => {
     const { client, calls } = createRpcClient({ data: row, error: null });
     const queryClient = createQueryClient();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-    const options = cancelTradeRouteMutationOptions({ client, queryClient });
+    const options = cancelTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     const result = await executeMutation(queryClient, options, VALID_INPUT);
 
@@ -104,12 +113,21 @@ describe("cancelTradeRouteMutationOptions", () => {
         queryKey: tradeRoutesQueryKeys.forSettlement(DESTINATION_ID),
       }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["forecast", "world", WORLD_ID],
+      }),
+    );
   });
 
   it("raises cancel_trade_route_not_found when RPC returns no row", async () => {
     const { client } = createRpcClient({ data: null, error: null });
     const queryClient = createQueryClient();
-    const options = cancelTradeRouteMutationOptions({ client, queryClient });
+    const options = cancelTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -122,7 +140,11 @@ describe("cancelTradeRouteMutationOptions", () => {
       error: { code: "42501", message: "permission denied" },
     });
     const queryClient = createQueryClient();
-    const options = cancelTradeRouteMutationOptions({ client, queryClient });
+    const options = cancelTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -135,7 +157,11 @@ describe("cancelTradeRouteMutationOptions", () => {
       error: { code: "P0002", message: "no rows" },
     });
     const queryClient = createQueryClient();
-    const options = cancelTradeRouteMutationOptions({ client, queryClient });
+    const options = cancelTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -148,7 +174,11 @@ describe("cancelTradeRouteMutationOptions", () => {
       error: { code: "P0001", message: "cannot cancel in current status" },
     });
     const queryClient = createQueryClient();
-    const options = cancelTradeRouteMutationOptions({ client, queryClient });
+    const options = cancelTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -161,7 +191,11 @@ describe("cancelTradeRouteMutationOptions", () => {
       error: { code: "P0001", message: "some other error" },
     });
     const queryClient = createQueryClient();
-    const options = cancelTradeRouteMutationOptions({ client, queryClient });
+    const options = cancelTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),

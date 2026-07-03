@@ -66,6 +66,9 @@ describe("setSettlementReadinessMutationOptions", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["settlements", "readiness", "summary", "world-1"],
     });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["forecast", "world", "world-1"],
+    });
   });
 
   it("clears one settlement readiness without clearing last readiness history", async () => {
@@ -238,6 +241,9 @@ describe("setSettlementAutoReadyMutationOptions", () => {
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["settlements", "readiness", "summary", "world-1"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["forecast", "world", "world-1"],
     });
   });
 

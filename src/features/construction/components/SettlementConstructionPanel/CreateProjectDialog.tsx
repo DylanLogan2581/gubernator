@@ -63,7 +63,7 @@ export function CreateProjectDialog({
   );
 
   const createMutation = useMutation(
-    createConstructionProjectMutationOptions({ queryClient }),
+    createConstructionProjectMutationOptions({ queryClient, worldId }),
   );
 
   const availableBlueprints: readonly BuildingBlueprint[] =

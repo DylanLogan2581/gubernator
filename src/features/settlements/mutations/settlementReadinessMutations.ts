@@ -16,6 +16,7 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import { settlementForecastQueryKeys } from "../queries/settlementForecastQueryKeys";
 import { settlementReadinessQueryKeys } from "../queries/settlementReadinessQueryKeys";
 import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
 
@@ -160,7 +161,7 @@ export function setSettlementReadinessMutationOptions({
           queryKey: settlementReadinessQueryKeys.summary(input.worldId),
         }),
         queryClient.invalidateQueries({
-          queryKey: ["forecast"],
+          queryKey: settlementForecastQueryKeys.byWorld(input.worldId),
         }),
       ]);
     },
@@ -189,7 +190,7 @@ export function setSettlementAutoReadyMutationOptions({
           queryKey: settlementReadinessQueryKeys.summary(input.worldId),
         }),
         queryClient.invalidateQueries({
-          queryKey: ["forecast"],
+          queryKey: settlementForecastQueryKeys.byWorld(input.worldId),
         }),
       ]);
     },

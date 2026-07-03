@@ -16,6 +16,7 @@ type ApproveConfirmDialogProps = {
   readonly route: TradeRoute;
   readonly settlementId: string;
   readonly side: "destination" | "origin";
+  readonly worldId: string;
 };
 
 export function ApproveConfirmDialog({
@@ -26,9 +27,10 @@ export function ApproveConfirmDialog({
   route,
   settlementId,
   side,
+  worldId,
 }: ApproveConfirmDialogProps): JSX.Element {
   const mutation = useMutation(
-    approveTradeRouteSideMutationOptions({ queryClient }),
+    approveTradeRouteSideMutationOptions({ queryClient, worldId }),
   );
 
   async function handleConfirm(): Promise<void> {

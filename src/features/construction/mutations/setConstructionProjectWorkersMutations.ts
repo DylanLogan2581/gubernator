@@ -7,6 +7,7 @@ import {
 import { normalizeSupabaseError } from "@/features/auth";
 import { buildingsQueryKeys } from "@/features/buildings";
 import { citizensQueryKeys } from "@/features/citizens";
+import { settlementForecastQueryKeys } from "@/features/settlements";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -58,9 +59,11 @@ type RpcResultRow = {
 export function setConstructionProjectWorkersMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
+  worldId,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): SetConstructionProjectWorkersMutationOptions {
   return mutationOptions({
     mutationFn: (input: SetConstructionProjectWorkersInput) =>
@@ -92,7 +95,7 @@ export function setConstructionProjectWorkersMutationOptions({
           ],
         }),
         queryClient.invalidateQueries({
-          queryKey: ["forecast"],
+          queryKey: settlementForecastQueryKeys.byWorld(worldId),
         }),
       ]);
     },

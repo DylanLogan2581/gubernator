@@ -15,6 +15,7 @@ export function SettlementAssignmentBoard({
   canManageSettlement,
   isArchived,
   settlementId,
+  worldId,
 }: SettlementAssignmentBoardProps): JSX.Element {
   const canEdit = canManageSettlement && !isArchived;
 
@@ -30,7 +31,11 @@ export function SettlementAssignmentBoard({
         Job Assignments
       </h2>
 
-      <JobAssignmentsTable canEdit={canEdit} settlementId={settlementId} />
+      <JobAssignmentsTable
+        canEdit={canEdit}
+        settlementId={settlementId}
+        worldId={worldId}
+      />
     </section>
   );
 }

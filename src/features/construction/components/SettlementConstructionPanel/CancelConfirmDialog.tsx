@@ -21,14 +21,20 @@ export function CancelConfirmDialog({
   project,
   queryClient,
   settlementId,
+  worldId,
 }: {
   readonly onClose: () => void;
   readonly project: ConstructionProject;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const cancelMutation = useMutation(
-    cancelConstructionProjectMutationOptions({ queryClient, settlementId }),
+    cancelConstructionProjectMutationOptions({
+      queryClient,
+      settlementId,
+      worldId,
+    }),
   );
 
   async function handleConfirm(): Promise<void> {

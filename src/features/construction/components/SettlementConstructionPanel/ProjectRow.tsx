@@ -33,6 +33,7 @@ export function ProjectRow({
   queryClient,
   settlementId,
   unassignedNpcCount,
+  worldId,
 }: {
   readonly assignedWorkerCount: number;
   readonly canAct: boolean;
@@ -44,14 +45,15 @@ export function ProjectRow({
   readonly queryClient: QueryClient;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
+  readonly worldId: string;
 }): JSX.Element {
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [localCount, setLocalCount] = useState(String(assignedWorkerCount));
   const reorderMutation = useMutation(
-    reorderConstructionProjectsMutationOptions({ queryClient }),
+    reorderConstructionProjectsMutationOptions({ queryClient, worldId }),
   );
   const workersMutation = useMutation(
-    setConstructionProjectWorkersMutationOptions({ queryClient }),
+    setConstructionProjectWorkersMutationOptions({ queryClient, worldId }),
   );
 
   const logData = getProjectLogData(project.id, logEntries);
@@ -208,6 +210,7 @@ export function ProjectRow({
           project={project}
           queryClient={queryClient}
           settlementId={settlementId}
+          worldId={worldId}
           onClose={() => {
             setConfirmCancelOpen(false);
           }}

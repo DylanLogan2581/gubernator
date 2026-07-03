@@ -14,6 +14,7 @@ const ORIGIN_ID = "11111111-1111-1111-1111-111111111111";
 const DESTINATION_ID = "22222222-2222-2222-2222-222222222222";
 const CITIZEN_ID = "33333333-3333-3333-3333-333333333333";
 const TRADE_ROUTE_ID = "55555555-5555-5555-5555-555555555555";
+const WORLD_ID = "66666666-6666-6666-6666-666666666666";
 
 const VALID_INPUT = {
   approverCitizenId: CITIZEN_ID,
@@ -70,6 +71,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -94,6 +96,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     const result = await executeMutation(queryClient, options, VALID_INPUT);
@@ -120,6 +123,11 @@ describe("approveTradeRouteSideMutationOptions", () => {
         queryKey: tradeRoutesQueryKeys.forSettlement(DESTINATION_ID),
       }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["forecast", "world", WORLD_ID],
+      }),
+    );
   });
 
   it("raises approve_trade_route_side_not_found when RPC returns no row", async () => {
@@ -128,6 +136,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -144,6 +153,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -162,6 +172,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -178,6 +189,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -196,6 +208,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -214,6 +227,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -232,6 +246,7 @@ describe("approveTradeRouteSideMutationOptions", () => {
     const options = approveTradeRouteSideMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(

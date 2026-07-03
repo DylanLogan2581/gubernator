@@ -480,6 +480,7 @@ function TradeRouteRow({
           route={route}
           side={side}
           settlementId={settlementId}
+          worldId={worldId}
           onClose={() => {
             setShowApproveDialog(false);
           }}
@@ -492,6 +493,7 @@ function TradeRouteRow({
           queryClient={queryClient}
           route={route}
           side={side}
+          worldId={worldId}
           onClose={() => {
             setShowRejectDialog(false);
           }}
@@ -503,6 +505,7 @@ function TradeRouteRow({
           queryClient={queryClient}
           route={route}
           traderCount={traderCount}
+          worldId={worldId}
           onClose={() => {
             setShowCancelDialog(false);
           }}

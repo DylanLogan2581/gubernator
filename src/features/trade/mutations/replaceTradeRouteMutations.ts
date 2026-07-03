@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError } from "@/features/auth";
+import { settlementForecastQueryKeys } from "@/features/settlements";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -51,9 +52,11 @@ type ReplaceTradeRouteMutationOptions = UseMutationOptions<
 export function replaceTradeRouteMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
+  worldId,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): ReplaceTradeRouteMutationOptions {
   return mutationOptions({
     mutationFn: (input: ReplaceTradeRouteInput) =>
@@ -72,7 +75,7 @@ export function replaceTradeRouteMutationOptions({
           ),
         }),
         queryClient.invalidateQueries({
-          queryKey: ["forecast"],
+          queryKey: settlementForecastQueryKeys.byWorld(worldId),
         }),
       ]);
     },

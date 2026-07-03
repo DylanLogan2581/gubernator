@@ -14,6 +14,7 @@ type CancelConfirmDialogProps = {
   readonly queryClient: QueryClient;
   readonly route: TradeRoute;
   readonly traderCount: number;
+  readonly worldId: string;
 };
 
 export function CancelConfirmDialog({
@@ -22,9 +23,10 @@ export function CancelConfirmDialog({
   queryClient,
   route,
   traderCount,
+  worldId,
 }: CancelConfirmDialogProps): JSX.Element {
   const mutation = useMutation(
-    cancelTradeRouteMutationOptions({ queryClient }),
+    cancelTradeRouteMutationOptions({ queryClient, worldId }),
   );
 
   async function handleConfirm(): Promise<void> {

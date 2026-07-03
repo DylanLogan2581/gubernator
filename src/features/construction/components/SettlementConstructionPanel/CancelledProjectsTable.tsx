@@ -19,11 +19,13 @@ export function CancelledProjectsTable({
   canAct,
   queryClient,
   settlementId,
+  worldId,
 }: {
   readonly allProjects: readonly ConstructionProject[];
   readonly canAct: boolean;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const cancelledProjects = allProjects.filter((p) => p.status === "cancelled");
 
@@ -58,6 +60,7 @@ export function CancelledProjectsTable({
               project={project}
               queryClient={queryClient}
               settlementId={settlementId}
+              worldId={worldId}
             />
           ))}
       </TableBody>

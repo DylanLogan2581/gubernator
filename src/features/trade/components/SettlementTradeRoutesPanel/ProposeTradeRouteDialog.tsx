@@ -70,7 +70,7 @@ export function ProposeTradeRouteDialog({
   const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const mutation = useMutation(
-    proposeTradeRouteMutationOptions({ queryClient }),
+    proposeTradeRouteMutationOptions({ queryClient, worldId }),
   );
 
   const [destinationSettlementId, setDestinationSettlementId] = useState("");

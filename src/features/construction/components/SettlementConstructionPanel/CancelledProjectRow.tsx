@@ -16,15 +16,21 @@ export function CancelledProjectRow({
   project,
   queryClient,
   settlementId,
+  worldId,
 }: {
   readonly canAct: boolean;
   readonly project: ConstructionProject;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const [showDestroyDialog, setShowDestroyDialog] = useState(false);
   const resumeMutation = useMutation(
-    resumeConstructionProjectMutationOptions({ queryClient, settlementId }),
+    resumeConstructionProjectMutationOptions({
+      queryClient,
+      settlementId,
+      worldId,
+    }),
   );
 
   async function handleResume(): Promise<void> {
@@ -81,6 +87,7 @@ export function CancelledProjectRow({
           project={project}
           queryClient={queryClient}
           settlementId={settlementId}
+          worldId={worldId}
         />
       ) : null}
     </>
