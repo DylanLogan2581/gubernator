@@ -666,6 +666,35 @@ describe("SettlementDetailPage", () => {
     });
   });
 
+  it("shows a read-only readiness status instead of an empty section when the viewer can set neither manual nor auto readiness", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ adminRows: [{ world_id: WORLD_ID }] }),
+    );
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: {
+        id: "char-1",
+        name: "Aria",
+        roleType: "none",
+        status: "alive",
+      } as never,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+    useSettlementManageAuthorityMock.mockReturnValue({
+      canManageSettlement: false,
+      canManageNation: false,
+    });
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+
+    expect(screen.getByText("Readiness")).toBeDefined();
+    expect(await screen.findByLabelText("Not ready")).toBeDefined();
+    expect(screen.queryByRole("switch", { name: "Ready" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Auto-ready" })).toBeNull();
+  });
+
   it("hides coordinate edit button from nation manager viewers", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ worldVisibility: "public" }),

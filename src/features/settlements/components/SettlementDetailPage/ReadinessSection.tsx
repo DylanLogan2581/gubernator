@@ -14,6 +14,7 @@ import {
 import { settlementReadinessListQueryOptions } from "../../queries/settlementReadinessQueries";
 import { AutoReadyControl } from "../AutoReadyControl";
 import { ManualReadinessControl } from "../ManualReadinessControl";
+import { ReadOnlyReadinessIndicator } from "../ReadinessStateBadge";
 
 import type { SettlementReadinessListItem } from "../../types/settlementReadinessTypes";
 import type { JSX } from "react";
@@ -134,6 +135,10 @@ function SettlementReadinessSectionContent({
         description="Readiness data for this settlement could not be found."
       />
     );
+  }
+
+  if (!canSetManualReady && !canSetAutoReady) {
+    return <ReadOnlyReadinessIndicator item={item} />;
   }
 
   return (
