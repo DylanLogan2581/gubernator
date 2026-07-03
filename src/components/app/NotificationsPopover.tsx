@@ -14,9 +14,9 @@ import { currentSessionQueryOptions } from "@/features/auth";
 import {
   allNotificationsQueryOptions,
   getDeepLink,
-  markAllNotificationsReadMutationOptions,
   markNotificationReadMutationOptions,
   notificationQueryKeys,
+  useMarkAllNotificationsRead,
   useNotificationsRealtime,
 } from "@/features/notifications";
 
@@ -42,22 +42,11 @@ export function NotificationsPopover({
 
   const markReadMutation = useMutation(markNotificationReadMutationOptions());
 
-  const markAllReadMutation = useMutation(
-    markAllNotificationsReadMutationOptions(),
-  );
+  const { handleMarkAllRead, isPending: isMarkingAllRead } =
+    useMarkAllNotificationsRead();
 
   const handleMarkRead = (notificationId: string): void => {
     markReadMutation.mutate(notificationId, {
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: notificationQueryKeys.all,
-        });
-      },
-    });
-  };
-
-  const handleMarkAllRead = (): void => {
-    markAllReadMutation.mutate(undefined, {
       onSuccess: () => {
         void queryClient.invalidateQueries({
           queryKey: notificationQueryKeys.all,
@@ -102,7 +91,7 @@ export function NotificationsPopover({
                   variant="ghost"
                   size="sm"
                   onClick={handleMarkAllRead}
-                  disabled={markAllReadMutation.isPending}
+                  disabled={isMarkingAllRead}
                 >
                   Mark all as read
                 </Button>

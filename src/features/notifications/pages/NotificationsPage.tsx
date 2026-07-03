@@ -16,6 +16,8 @@ import {
   allNotificationsQueryOptions,
   markNotificationReadMutationOptions,
   notificationQueryKeys,
+  unreadNotificationsCountQueryOptions,
+  useMarkAllNotificationsRead,
   type AllNotification,
 } from "@/features/notifications";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
@@ -145,7 +147,14 @@ export function NotificationsPage(): JSX.Element {
     }),
   );
 
+  const unreadCountQuery = useQuery(
+    unreadNotificationsCountQueryOptions(userId),
+  );
+  const unreadCount = unreadCountQuery.data ?? 0;
+
   const markReadMutation = useMutation(markNotificationReadMutationOptions());
+  const { handleMarkAllRead, isPending: isMarkingAllRead } =
+    useMarkAllNotificationsRead();
 
   const handleMarkRead = (notification: AllNotification): void => {
     if (!notification.isRead) {
@@ -208,98 +217,115 @@ export function NotificationsPage(): JSX.Element {
     <NotificationsPageFrame>
       <div className="flex flex-col gap-4">
         {/* Filters */}
-        <div className="flex flex-wrap gap-3">
-          <Select value={selectedType} onValueChange={handleTypeChange}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              {NOTIFICATION_TYPES.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Select value={selectedType} onValueChange={handleTypeChange}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                {NOTIFICATION_TYPES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={readStatus} onValueChange={handleReadStatusChange}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              {READ_STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={readStatus} onValueChange={handleReadStatusChange}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                {READ_STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={selectedSeverity} onValueChange={handleSeverityChange}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by severity" />
-            </SelectTrigger>
-            <SelectContent>
-              {SEVERITY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select
+              value={selectedSeverity}
+              onValueChange={handleSeverityChange}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Filter by severity" />
+              </SelectTrigger>
+              <SelectContent>
+                {SEVERITY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select
-            value={selectedWorldId ?? "all"}
-            onValueChange={handleWorldChange}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="All worlds" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All worlds</SelectItem>
-              {worlds.map((world) => (
-                <SelectItem key={world.id} value={world.id}>
-                  {world.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select
+              value={selectedWorldId ?? "all"}
+              onValueChange={handleWorldChange}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="All worlds" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All worlds</SelectItem>
+                {worlds.map((world) => (
+                  <SelectItem key={world.id} value={world.id}>
+                    {world.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select
-            value={selectedNationId ?? "all"}
-            onValueChange={handleNationChange}
-            disabled={selectedWorldId === null}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="All nations" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All nations</SelectItem>
-              {nations.map((nation) => (
-                <SelectItem key={nation.id} value={nation.id}>
-                  {nation.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select
+              value={selectedNationId ?? "all"}
+              onValueChange={handleNationChange}
+              disabled={selectedWorldId === null}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="All nations" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All nations</SelectItem>
+                {nations.map((nation) => (
+                  <SelectItem key={nation.id} value={nation.id}>
+                    {nation.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select
-            value={selectedSettlementId ?? "all"}
-            onValueChange={handleSettlementChange}
-            disabled={selectedWorldId === null}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="All settlements" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All settlements</SelectItem>
-              {filteredSettlements.map((settlement) => (
-                <SelectItem key={settlement.id} value={settlement.id}>
-                  {settlement.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select
+              value={selectedSettlementId ?? "all"}
+              onValueChange={handleSettlementChange}
+              disabled={selectedWorldId === null}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="All settlements" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All settlements</SelectItem>
+                {filteredSettlements.map((settlement) => (
+                  <SelectItem key={settlement.id} value={settlement.id}>
+                    {settlement.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {unreadCount > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleMarkAllRead}
+              disabled={isMarkingAllRead}
+              className="shrink-0"
+            >
+              Mark all as read
+            </Button>
+          ) : null}
         </div>
 
         {/* Notifications List */}
