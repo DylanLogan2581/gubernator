@@ -413,6 +413,29 @@ async function restoreWorldToCapturedState(): Promise<string[]> {
   return errors;
 }
 
+// ---------------------------------------------------------------------------
+// State captured once by the single end-turn call in beforeAll, then asserted
+// on by focused, independent `it`s below. Splitting into one call + many
+// small assertions (rather than one call + one mega-assertion) keeps this
+// test's DB round trips to a minimum (advancing the seeded world's turn
+// counter twice per run would require a second capture/restore cycle) while
+// still giving each concern its own pass/fail signal.
+// ---------------------------------------------------------------------------
+let responseStatus = 0;
+let responseBody: unknown;
+let transitionId = "";
+let worldTurnAfter: number | null | undefined;
+let transitionRow:
+  | { id: string; status: string; forecast_snapshot_jsonb: unknown }
+  | null
+  | undefined;
+let forecastBySettlement: Record<string, unknown> = {};
+const settlementSnapshotCounts = new Map<string, number>();
+let totalDepositRemainingAfter = 0;
+let populationRowsAfter: { id: string; current_count: number }[] = [];
+let totalConstructionProgressAfter = 0;
+let notifCountAfter: number | null | undefined;
+
 describe("end-turn-simulation integration", () => {
   beforeAll(async () => {
     // Probe local Supabase via the REST root (returns the OpenAPI spec on 200).
@@ -484,12 +507,14 @@ describe("end-turn-simulation integration", () => {
         `Integration test setup failed:\n${setupErrors.map((e) => `  - ${e}`).join("\n")}`,
       );
     }
-  }, 30_000);
 
-  it("advances one turn against the seeded Aldermoor world and satisfies all assertions", async () => {
     // -----------------------------------------------------------------------
-    // 1. Call the edge function as the seeded super admin, advancing the live
-    //    turn (expectedTurnNumber MUST equal current_turn_number or it 409s).
+    // Call the edge function ONCE as the seeded super admin, advancing the
+    // live turn (expectedTurnNumber MUST equal current_turn_number or it
+    // 409s). The response and every follow-up read used by the `it`s below
+    // are captured here rather than in each `it`, since a second call would
+    // advance the world a second turn and require a second capture/restore
+    // cycle — the `it`s below only assert on data captured in this one pass.
     // -----------------------------------------------------------------------
     const response = await fetch(
       `${LOCAL_URL}/functions/v1/end-turn-simulation`,
@@ -505,6 +530,7 @@ describe("end-turn-simulation integration", () => {
         }),
       },
     );
+    responseStatus = response.status;
 
     if (response.status !== 200) {
       const responseText = await response.text();
@@ -512,10 +538,91 @@ describe("end-turn-simulation integration", () => {
         `end-turn-simulation request failed: ${response.status} ${response.statusText} ${responseText}`,
       );
     }
-    expect(response.status).toBe(200);
 
-    const body: unknown = await response.json();
-    expect(body).toMatchObject({
+    responseBody = (await response.json()) as unknown;
+    transitionId = (
+      responseBody as {
+        data: { summary: { transitionId: string } };
+      }
+    ).data.summary.transitionId;
+
+    // World turn after the call.
+    const { data: world } = await svc
+      .from("worlds")
+      .select("current_turn_number")
+      .eq("id", WORLD_ID)
+      .single();
+    worldTurnAfter = world?.current_turn_number as number | null | undefined;
+
+    // The completed turn_transitions row for this call.
+    const { data: fetchedTransitionRow } = await svc
+      .from("turn_transitions")
+      .select("id,status,forecast_snapshot_jsonb")
+      .eq("id", transitionId)
+      .single();
+    transitionRow = fetchedTransitionRow;
+    const forecast = transitionRow?.forecast_snapshot_jsonb as {
+      bySettlement?: Record<string, unknown>;
+    };
+    forecastBySettlement = forecast?.bySettlement ?? {};
+
+    // Settlement-turn-snapshot counts per canonical settlement for this transition.
+    for (const settlementId of SETTLEMENT_IDS) {
+      const { count } = await svc
+        .from("settlement_turn_snapshots")
+        .select("id", { count: "exact", head: true })
+        .eq("turn_transition_id", transitionId)
+        .eq("settlement_id", settlementId);
+      settlementSnapshotCounts.set(settlementId, count ?? 0);
+    }
+
+    // Total deposit remaining_quantity across the six settlements after the call.
+    const depositIds = (tableSnapshots["deposit_instances"] ?? []).map(
+      (d) => (d as { id: string }).id,
+    );
+    const { data: depRows } = await svc
+      .from("deposit_instance_resources")
+      .select("remaining_quantity")
+      .in("deposit_instance_id", depositIds);
+    const depositRemainingRows = (depRows ?? []) as unknown as {
+      remaining_quantity: number;
+    }[];
+    totalDepositRemainingAfter = depositRemainingRows.reduce(
+      (sum, r) => sum + Number(r.remaining_quantity),
+      0,
+    );
+
+    // Managed-population counts after the call.
+    const { data: popRows } = await svc
+      .from("managed_population_instances")
+      .select("id,current_count")
+      .in("settlement_id", SETTLEMENT_IDS);
+    populationRowsAfter = popRows ?? [];
+
+    // Total construction progress after the call.
+    const { data: projRows } = await svc
+      .from("construction_projects")
+      .select("progress_worker_turns,status")
+      .in("settlement_id", SETTLEMENT_IDS);
+    totalConstructionProgressAfter = (projRows ?? []).reduce(
+      (sum, r) =>
+        sum +
+        Number((r as { progress_worker_turns: number }).progress_worker_turns),
+      0,
+    );
+
+    // Notifications emitted for world 101, visible to the super admin (all
+    // super admins are always recipients).
+    const { count: fetchedNotifCount } = await anon
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("world_id", WORLD_ID);
+    notifCountAfter = fetchedNotifCount;
+  }, 60_000);
+
+  it("returns 200 with the expected turn summary", () => {
+    expect(responseStatus).toBe(200);
+    expect(responseBody).toMatchObject({
       ok: true,
       data: {
         worldId: WORLD_ID,
@@ -525,52 +632,33 @@ describe("end-turn-simulation integration", () => {
         },
       },
     });
+  });
 
-    const transitionId = (
-      body as {
-        data: { summary: { transitionId: string } };
-      }
-    ).data.summary.transitionId;
+  it("increments the world's current_turn_number", () => {
+    expect(worldTurnAfter).toBe(startTurn + 1);
+  });
 
-    // -----------------------------------------------------------------------
-    // 2. Verify DB state using the service-role client (bypasses RLS).
-    // -----------------------------------------------------------------------
-    // World turn must have incremented.
-    const { data: world } = await svc
-      .from("worlds")
-      .select("current_turn_number")
-      .eq("id", WORLD_ID)
-      .single();
-    expect(world?.current_turn_number).toBe(startTurn + 1);
-
-    // The transitionId from the response must correspond to the completed
-    // turn_transitions row — engine seed and stored id are the same UUID.
-    const { data: transitionRow } = await svc
-      .from("turn_transitions")
-      .select("id,status,forecast_snapshot_jsonb")
-      .eq("id", transitionId)
-      .single();
+  it("marks the turn_transitions row completed with the response's transitionId", () => {
     expect(transitionRow?.id).toBe(transitionId);
     expect(transitionRow?.status).toBe("completed");
+  });
 
-    // Forecast snapshot must be populated for every completed transition and
-    // must contain all six canonical settlements.
+  it("populates a forecast snapshot for every canonical settlement", () => {
     expect(transitionRow?.forecast_snapshot_jsonb).toBeDefined();
     expect(transitionRow?.forecast_snapshot_jsonb).not.toBeNull();
-    const forecast = transitionRow?.forecast_snapshot_jsonb as unknown as {
-      bySettlement?: Record<string, unknown>;
-    };
-    expect(forecast?.bySettlement).toBeDefined();
-    const forecastSettlementIds = Object.keys(forecast?.bySettlement ?? {});
+    expect(forecastBySettlement).toBeDefined();
+    const forecastSettlementIds = Object.keys(forecastBySettlement);
     expect(forecastSettlementIds.length).toBeGreaterThanOrEqual(
       SETTLEMENT_IDS.length,
     );
     for (const settlementId of SETTLEMENT_IDS) {
       expect(forecastSettlementIds).toContain(settlementId);
     }
-    // Each settlement forecast should have the required structure.
+  });
+
+  it("shapes each settlement's forecast with the required fields", () => {
     for (const [settlementId, settlementForecast] of Object.entries(
-      forecast?.bySettlement ?? {},
+      forecastBySettlement,
     )) {
       const sf = settlementForecast as {
         settlementId?: string;
@@ -587,80 +675,41 @@ describe("end-turn-simulation integration", () => {
       expect(Array.isArray(sf?.buildingUpkeepFailures)).toBe(true);
       expect(Array.isArray(sf?.tradeChanges)).toBe(true);
     }
+  });
 
-    // At least one settlement snapshot per canonical settlement for this transition.
+  it("writes at least one settlement_turn_snapshot per canonical settlement", () => {
     for (const settlementId of SETTLEMENT_IDS) {
-      const { count } = await svc
-        .from("settlement_turn_snapshots")
-        .select("id", { count: "exact", head: true })
-        .eq("turn_transition_id", transitionId)
-        .eq("settlement_id", settlementId);
       expect(
-        count,
+        settlementSnapshotCounts.get(settlementId),
         `snapshot missing for settlement ${settlementId}`,
       ).toBeGreaterThanOrEqual(1);
     }
+  });
 
-    // Total deposit remaining_quantity across the six settlements must have
-    // DECREASED (every settlement has staffed deposits that extract each turn).
-    const depositIds = (tableSnapshots["deposit_instances"] ?? []).map(
-      (d) => (d as { id: string }).id,
-    );
-    const { data: depRows } = await svc
-      .from("deposit_instance_resources")
-      .select("remaining_quantity")
-      .in("deposit_instance_id", depositIds);
-    const depositRemainingRows = (depRows ?? []) as unknown as {
-      remaining_quantity: number;
-    }[];
-    const totalDepositRemaining = depositRemainingRows.reduce(
-      (sum, r) => sum + Number(r.remaining_quantity),
-      0,
-    );
-    expect(totalDepositRemaining).toBeLessThan(baselineDepositRemaining);
+  it("decreases total deposit remaining_quantity (staffed deposits extract each turn)", () => {
+    expect(totalDepositRemainingAfter).toBeLessThan(baselineDepositRemaining);
+  });
 
-    // At least one managed-population count must have CHANGED.
-    const { data: popRows } = await svc
-      .from("managed_population_instances")
-      .select("id,current_count")
-      .in("settlement_id", SETTLEMENT_IDS);
-    const populationRows = (popRows ?? []) as unknown as {
-      id: string;
-      current_count: number;
-    }[];
-    const someCountChanged = populationRows.some((row) => {
+  it("changes at least one managed-population count", () => {
+    const someCountChanged = populationRowsAfter.some((row) => {
       const baseline = baselinePopulationCounts.get(row.id);
       return baseline !== undefined && Number(row.current_count) !== baseline;
     });
     expect(someCountChanged).toBe(true);
+  });
 
-    // Total construction progress must have INCREASED (or a project completed —
-    // be tolerant and assert >=). Worker-turns may reset to 0 on completion, so
-    // also accept the case where a previously in-progress project completed.
-    const { data: projRows } = await svc
-      .from("construction_projects")
-      .select("progress_worker_turns,status")
-      .in("settlement_id", SETTLEMENT_IDS);
-    const totalConstructionProgress = (projRows ?? []).reduce(
-      (sum, r) =>
-        sum +
-        Number((r as { progress_worker_turns: number }).progress_worker_turns),
-      0,
-    );
-    expect(totalConstructionProgress).toBeGreaterThanOrEqual(
+  it("does not decrease total construction progress", () => {
+    // Worker-turns may reset to 0 on completion, so be tolerant and assert
+    // >=: this also accepts the case where a previously in-progress project
+    // completed during the test turn.
+    expect(totalConstructionProgressAfter).toBeGreaterThanOrEqual(
       baselineConstructionProgress,
     );
+  });
 
-    // -----------------------------------------------------------------------
-    // 3. Verify that notifications were emitted for world 101 and are visible
-    //    to the super admin (all super admins are always recipients).
-    // -----------------------------------------------------------------------
-    const { count: notifCount } = await anon
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("world_id", WORLD_ID);
-    expect(notifCount).toBeGreaterThanOrEqual(1);
-  }, 60_000);
+  it("emits at least one notification for the world", () => {
+    expect(notifCountAfter).toBeGreaterThanOrEqual(1);
+  });
 
   // Leave the shared local database close to its canonical turn-32 seed state so
   // the pgTAP seed-topology tests (and any later run) see an unmutated world 101.
