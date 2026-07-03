@@ -155,23 +155,14 @@ function WorldListContent({
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold tracking-normal">Trash</h1>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon-sm"
-                  aria-label="Hide trash"
-                  aria-pressed
-                  onClick={() => {
-                    setShowTrash(false);
-                  }}
-                >
-                  <Trash2 aria-hidden="true" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Hide trash</TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-2">
+              <TrashToggleButton
+                showTrash
+                onToggle={() => {
+                  setShowTrash(false);
+                }}
+              />
+            </div>
           </div>
           {trashedWorldsQuery.isPending ? (
             <LoadingState label="Loading trashed worlds…" />
@@ -181,7 +172,10 @@ function WorldListContent({
               description={getErrorDescription(trashedWorldsQuery.error)}
             />
           ) : trashed.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No worlds in trash.</p>
+            <AccessDeniedState
+              title="No worlds in trash"
+              description="Worlds you move to trash will appear here."
+            />
           ) : (
             <ul className="grid gap-2" aria-label="Trashed worlds">
               {trashed.map((world) => (
@@ -206,9 +200,6 @@ function WorldListContent({
         <div className="flex items-center justify-between gap-2">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-normal">Worlds</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Choose an accessible simulation world to continue.
-            </p>
           </div>
           <div className="flex items-center gap-2">
             {accessContext.isSuperAdmin ? (
@@ -228,23 +219,12 @@ function WorldListContent({
               <WorldTemplateImportButton queryClient={queryClient} />
             ) : null}
             {accessContext.isSuperAdmin ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Show trash"
-                    aria-pressed={false}
-                    onClick={() => {
-                      setShowTrash(true);
-                    }}
-                  >
-                    <Trash2 aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Show trash</TooltipContent>
-              </Tooltip>
+              <TrashToggleButton
+                showTrash={false}
+                onToggle={() => {
+                  setShowTrash(true);
+                }}
+              />
             ) : null}
           </div>
         </div>
@@ -287,6 +267,33 @@ function WorldListFrame({
 }): JSX.Element {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5 py-6">{children}</div>
+  );
+}
+
+function TrashToggleButton({
+  showTrash,
+  onToggle,
+}: {
+  readonly showTrash: boolean;
+  readonly onToggle: () => void;
+}): JSX.Element {
+  const label = showTrash ? "Hide trash" : "Show trash";
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          aria-pressed={showTrash}
+          onClick={onToggle}
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
