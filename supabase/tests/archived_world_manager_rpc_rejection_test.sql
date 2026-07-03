@@ -6,6 +6,12 @@
 -- The archive guard fires after the auth check but before state/entity checks,
 -- so entity state does not need to match the RPC's expected pre-condition.
 --
+-- Re-verified for issue #973: `grep -c 'perform public.assert_world_not_archived'`
+-- against 20260806000000_archive_guard_consolidation.sql still returns 31, one
+-- per guarded RPC below (update_event_group_with_events was re-created by
+-- 20260814000000_validate_event_effects_same_world.sql, which preserves its
+-- assert_world_not_archived call) -- this file's inventory is complete.
+--
 -- Run with: npx supabase test db
 --
 -- UUID prefix map (all be-prefixed ranges, unique to this file):
