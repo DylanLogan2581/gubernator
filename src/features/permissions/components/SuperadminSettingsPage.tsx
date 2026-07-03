@@ -123,16 +123,6 @@ export function SuperadminSettingsPage(): JSX.Element {
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => {
-            setDialog({ kind: "create-user" });
-          }}
-        >
-          <UserPlus aria-hidden="true" />
-          Create user
-        </Button>
       </div>
 
       <div className="mt-4 flex items-center gap-2">
@@ -150,7 +140,7 @@ export function SuperadminSettingsPage(): JSX.Element {
 
       <WorldCascadeDeletePanel />
 
-      <div className="mt-4">
+      <div className="mt-4 flex items-center justify-between gap-2">
         <Input
           type="search"
           placeholder="Search by email or username…"
@@ -158,6 +148,16 @@ export function SuperadminSettingsPage(): JSX.Element {
           onChange={handleSearchChange}
           className="max-w-sm"
         />
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => {
+            setDialog({ kind: "create-user" });
+          }}
+        >
+          <UserPlus aria-hidden="true" />
+          Create user
+        </Button>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-border">
