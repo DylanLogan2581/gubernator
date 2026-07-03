@@ -93,7 +93,7 @@ describe("ActiveCharacterSwitcher", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  it("shows an admin-paused badge and a clear button when an admin has an active character", async () => {
+  it("shows an admin-paused badge and an Admin menu entry when an admin has an active character", async () => {
     const pc = createCitizen({ id: "pc-1", name: "Solo" });
     const clear = vi.fn();
     renderSwitcher({
@@ -107,10 +107,50 @@ describe("ActiveCharacterSwitcher", () => {
     expect(screen.getByText("Admin paused")).toBeDefined();
 
     const user = userEvent.setup();
-    await user.click(
-      screen.getByRole("button", { name: "Clear active character" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
+    await user.click(screen.getByRole("menuitem", { name: "Admin" }));
     expect(clear).toHaveBeenCalled();
+  });
+
+  it("offers an Admin menu entry alongside the only character (issue #978 repro)", async () => {
+    const pc = createCitizen({ id: "pc-1", name: "Solo" });
+    const clear = vi.fn();
+    const switchTo = vi.fn();
+    renderSwitcher({
+      activeCharacter: null,
+      canAdmin: true,
+      clear,
+      selectableCharacters: [pc],
+      switchTo,
+    });
+
+    // With admin mode active (no active character) but a character available
+    // to switch to, the switcher must still expose a menu rather than the
+    // static World Admin badge — otherwise there's no way back to the PC.
+    expect(screen.getByText("World Admin")).toBeDefined();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
+
+    const adminItem = screen.getByRole("menuitem", { name: /Admin/ });
+    expect(adminItem.getAttribute("aria-disabled")).toBe("true");
+
+    await user.click(screen.getByRole("menuitem", { name: /Solo/ }));
+    expect(switchTo).toHaveBeenCalledWith("pc-1");
+  });
+
+  it("does not show an Admin menu entry for non-admin viewers", async () => {
+    const pcA = createCitizen({ id: "pc-a", name: "Alpha" });
+    const pcB = createCitizen({ id: "pc-b", name: "Bravo" });
+    renderSwitcher({
+      activeCharacter: pcA,
+      canAdmin: false,
+      selectableCharacters: [pcA, pcB],
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
+
+    expect(screen.queryByRole("menuitem", { name: "Admin" })).toBeNull();
   });
 
   it("renders a link to citizen detail alongside the switcher for multiple characters", () => {
@@ -206,6 +246,7 @@ function renderSwitcher({
   const value: ActivePlayerCharacterContextValue = {
     activeCharacter,
     clear,
+    isExplicitAdminChoice: false,
     isPending: false,
     selectableCharacters,
     switchTo,

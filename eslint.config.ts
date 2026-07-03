@@ -622,6 +622,7 @@ export default defineConfig([
       "src/lib/supabase.ts",
       "src/lib/queryClient.ts",
       "src/lib/uid.ts",
+      "src/lib/localStorage.ts",
       "src/routes/__root.tsx",
     ],
     rules: {
