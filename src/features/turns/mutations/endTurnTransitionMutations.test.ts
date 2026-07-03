@@ -119,6 +119,13 @@ describe("endTurnTransitionMutationOptions", () => {
     });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["trade"] });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["citizens"] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["events"] });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["settlement-snapshots"],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["snapshot-aggregates"],
+    });
   });
 
   it("normalizes stale turn responses", async () => {
