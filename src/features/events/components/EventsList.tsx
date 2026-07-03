@@ -15,14 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -41,6 +33,8 @@ import { nationsListQueryOptions } from "@/features/nations";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 
 import { eventsListQueryOptions, isEventsError } from "../queries/eventQueries";
+
+import { EventsPagination } from "./EventsPagination";
 
 type PaginationState = {
   readonly pageIndex: number;
@@ -336,55 +330,13 @@ export function EventsList({
       )}
 
       {pageCount > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() =>
-                  pagination.pageIndex > 0 &&
-                  setPagination((p) => ({
-                    ...p,
-                    pageIndex: Math.max(0, p.pageIndex - 1),
-                  }))
-                }
-                className={
-                  pagination.pageIndex === 0
-                    ? "pointer-events-none opacity-50"
-                    : ""
-                }
-              />
-            </PaginationItem>
-
-            {Array.from({ length: pageCount }).map((_, i) => (
-              // eslint-disable-next-line @eslint-react/no-array-index-key
-              <PaginationItem key={i}>
-                <PaginationLink
-                  isActive={pagination.pageIndex === i}
-                  onClick={() => setPagination((p) => ({ ...p, pageIndex: i }))}
-                >
-                  {i + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-
-            <PaginationItem>
-              <PaginationNext
-                onClick={() =>
-                  pagination.pageIndex < pageCount - 1 &&
-                  setPagination((p) => ({
-                    ...p,
-                    pageIndex: Math.min(pageCount - 1, p.pageIndex + 1),
-                  }))
-                }
-                className={
-                  pagination.pageIndex >= pageCount - 1
-                    ? "pointer-events-none opacity-50"
-                    : ""
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <EventsPagination
+          pageIndex={pagination.pageIndex}
+          pageCount={pageCount}
+          onPageChange={(pageIndex) =>
+            setPagination((p) => ({ ...p, pageIndex }))
+          }
+        />
       )}
     </div>
   );
