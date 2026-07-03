@@ -22,11 +22,16 @@ export default mergeConfig(
         provider: "v8",
         reporter: ["text", "text-summary", "json-summary"],
         reportsDirectory: "coverage",
-        include: ["src/**/*.{ts,tsx}"],
+        include: [
+          "src/**/*.{ts,tsx}",
+          "supabase/functions/_shared/simulation/**/*.ts",
+        ],
         exclude: [
           "src/routeTree.gen.ts",
           "src/test/**",
           "src/**/*.test.{ts,tsx}",
+          "supabase/functions/_shared/simulation/**/*.test.ts",
+          "supabase/functions/_shared/simulation/phases/testFixtures.ts",
         ],
         thresholds: {
           // Repo-wide floor — set just below measured baseline (2026-06-20):
@@ -37,12 +42,22 @@ export default mergeConfig(
           branches: 53,
           functions: 58,
           lines: 60,
-          // Stricter gate for the simulation engine (existing).
+          // Stricter gate for the simulation engine (existing, browser-side re-exports).
           "src/shared/simulation/**": {
             statements: 90,
             branches: 85,
             functions: 90,
             lines: 90,
+          },
+          // Stricter gate for the actual simulation engine (#972) — set just below
+          // measured baseline (2026-07-03):
+          //   statements 78.42, branches 63.6, functions 74.07, lines 83.24
+          // Ratchet up as #971 (test coverage backfill) lands.
+          "supabase/functions/_shared/simulation/**": {
+            statements: 77,
+            branches: 62,
+            functions: 73,
+            lines: 82,
           },
         },
       },
