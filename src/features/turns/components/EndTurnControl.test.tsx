@@ -45,7 +45,10 @@ describe("EndTurnControl", () => {
   it("shows the current turn and readiness summary for admins", async () => {
     const clientFixture = createClientFixture({
       settlementRows: [
-        createSettlementRow({ auto_ready_enabled: true }),
+        createSettlementRow({
+          auto_ready_enabled: true,
+          is_ready_current_turn: true,
+        }),
         createSettlementRow({ id: "settlement-2" }),
       ],
     });
@@ -66,7 +69,10 @@ describe("EndTurnControl", () => {
   it("floors uneven readiness percentages in summary labels", async () => {
     const clientFixture = createClientFixture({
       settlementRows: [
-        createSettlementRow({ auto_ready_enabled: true }),
+        createSettlementRow({
+          auto_ready_enabled: true,
+          is_ready_current_turn: true,
+        }),
         createSettlementRow({
           id: "settlement-2",
           is_ready_current_turn: true,
@@ -87,7 +93,10 @@ describe("EndTurnControl", () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       settlementRows: [
-        createSettlementRow({ auto_ready_enabled: true }),
+        createSettlementRow({
+          auto_ready_enabled: true,
+          is_ready_current_turn: true,
+        }),
         createSettlementRow({
           id: "settlement-2",
           is_ready_current_turn: true,
@@ -114,7 +123,10 @@ describe("EndTurnControl", () => {
     const user = userEvent.setup();
     const clientFixture = createClientFixture({
       settlementRows: [
-        createSettlementRow({ auto_ready_enabled: true }),
+        createSettlementRow({
+          auto_ready_enabled: true,
+          is_ready_current_turn: true,
+        }),
         createSettlementRow({
           id: "settlement-2",
           is_ready_current_turn: true,

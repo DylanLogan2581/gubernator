@@ -163,7 +163,7 @@ function NationSettlementListItem({
     );
   };
 
-  const isReady = settlement.autoReadyEnabled || settlement.isReadyCurrentTurn;
+  const isReady = settlement.isReadyForCurrentTurn;
 
   return (
     <li className="rounded-md border border-border bg-background p-0">

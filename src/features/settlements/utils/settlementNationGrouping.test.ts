@@ -125,7 +125,7 @@ describe("groupSettlementsByNation", () => {
       createItem({
         autoReadyEnabled: true,
         id: "s1",
-        isReadyCurrentTurn: false,
+        isReadyCurrentTurn: true,
         nationId: "n1",
         nationName: "Alpha",
       }),

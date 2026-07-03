@@ -291,6 +291,7 @@ describe("SettlementReadinessListPanel", () => {
         createSettlementRow({
           auto_ready_enabled: true,
           id: "settlement-1",
+          is_ready_current_turn: true,
           name: "Amberhold",
         }),
       ],
@@ -306,6 +307,36 @@ describe("SettlementReadinessListPanel", () => {
 
     expect(switchControl).toBeDisabled();
     expect(switchControl).toBeChecked();
+    expect(screen.getAllByText("Auto-ready").length).toBeGreaterThan(0);
+
+    await user.click(switchControl);
+
+    expect(clientFixture.update).not.toHaveBeenCalled();
+  });
+
+  it("disables manual readiness for auto-ready settlements enabled mid-turn without showing them as ready yet", async () => {
+    const user = userEvent.setup();
+    const clientFixture = createClientFixture({
+      settlementRows: [
+        createSettlementRow({
+          auto_ready_enabled: true,
+          id: "settlement-1",
+          is_ready_current_turn: false,
+          name: "Amberhold",
+        }),
+      ],
+    });
+    requireSupabaseClient.mockReturnValue(clientFixture.client);
+
+    renderSettlementReadinessListPanel();
+
+    await user.click(await screen.findByRole("button", { name: /Nation A/ }));
+    const switchControl = await screen.findByRole("switch", {
+      name: "Ready",
+    });
+
+    expect(switchControl).toBeDisabled();
+    expect(switchControl).not.toBeChecked();
     expect(screen.getAllByText("Auto-ready").length).toBeGreaterThan(0);
 
     await user.click(switchControl);
@@ -719,6 +750,7 @@ describe("SettlementReadinessListPanel", () => {
             createSettlementRow({
               auto_ready_enabled: true,
               id: "s1",
+              is_ready_current_turn: true,
               name: "Amberhold",
               nation_id: "nation-1",
               nations: { id: "nation-1", name: "Ironhaven" },

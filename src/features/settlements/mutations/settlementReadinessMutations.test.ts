@@ -225,7 +225,7 @@ describe("setSettlementAutoReadyMutationOptions", () => {
       autoReadyEnabled: true,
       id: "settlement-1",
       isReadyCurrentTurn: false,
-      isReadyForCurrentTurn: true,
+      isReadyForCurrentTurn: false,
       readySetAt: null,
     });
     expect(options.mutationKey).toEqual(["settlements", "set-auto-ready"]);
