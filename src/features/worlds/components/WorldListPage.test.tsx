@@ -310,6 +310,148 @@ describe("WorldListPage", () => {
       );
     });
   });
+
+  it("shows confirm dialog when delete permanently is clicked on a trashed world", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        trashedWorldRows: [
+          createWorldRow({ name: "Trashed World", is_trashed: true }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("No accessible worlds");
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await screen.findByText("Trashed World");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Permanently delete Trashed World?",
+      }),
+    ).toBeDefined();
+  });
+
+  it("does not call hard delete rpc when cancel is clicked on the permanent delete dialog", async () => {
+    const user = userEvent.setup();
+    const rpcSpy = vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        rpcOverride: rpcSpy,
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        trashedWorldRows: [
+          createWorldRow({ name: "Trashed World", is_trashed: true }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("No accessible worlds");
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await screen.findByText("Trashed World");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Permanently delete Trashed World?",
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("alertdialog", {
+          name: "Permanently delete Trashed World?",
+        }),
+      ).toBeNull();
+    });
+
+    expect(rpcSpy).not.toHaveBeenCalledWith(
+      "hard_delete_world",
+      expect.anything(),
+    );
+  });
+
+  it("calls hard delete rpc and shows success toast when the permanent delete dialog is confirmed", async () => {
+    const user = userEvent.setup();
+    const worldId = "00000000-0000-0000-0000-000000000009";
+    const rpcSpy = vi.fn((fn: string) => {
+      if (fn === "current_user_player_character_world_ids") {
+        return Promise.resolve({ data: [], error: null });
+      }
+      if (fn === "hard_delete_world") {
+        return {
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: worldId },
+            error: null,
+          }),
+        };
+      }
+      throw new Error(`Unexpected RPC: ${fn}`);
+    });
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        isSuperAdmin: true,
+        rpcOverride: rpcSpy,
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        trashedWorldRows: [
+          createWorldRow({
+            id: worldId,
+            name: "Trashed World",
+            is_trashed: true,
+          }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("No accessible worlds");
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await screen.findByText("Trashed World");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Permanently delete Trashed World?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete permanently" }),
+    );
+
+    await waitFor(() => {
+      expect(rpcSpy).toHaveBeenCalledWith("hard_delete_world", {
+        p_world_id: worldId,
+      });
+    });
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith(
+        "World permanently deleted.",
+        undefined,
+      );
+    });
+  });
 });
 
 function renderWorldListPage(): void {
@@ -336,6 +478,7 @@ function createClient({
   rpcOverride,
   session,
   worldRows = [],
+  trashedWorldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
   readonly isSuperAdmin?: boolean;
@@ -346,6 +489,7 @@ function createClient({
     };
   };
   readonly worldRows?: Promise<unknown> | readonly TestWorldRow[];
+  readonly trashedWorldRows?: readonly TestWorldRow[];
 }): unknown {
   return {
     auth: {
@@ -366,7 +510,7 @@ function createClient({
       }
 
       if (table === "worlds") {
-        return createWorldsQueryBuilder(worldRows);
+        return createWorldsQueryBuilder(worldRows, trashedWorldRows);
       }
 
       throw new Error(`Unexpected table ${table}`);
@@ -482,14 +626,19 @@ function createWorldAdminsQueryBuilder(
 
 function createWorldsQueryBuilder(
   rows: Promise<unknown> | readonly TestWorldRow[],
+  trashedRows: readonly TestWorldRow[] = [],
 ): unknown {
-  const result =
+  const activeResult =
     rows instanceof Promise
       ? rows
       : Promise.resolve({ data: rows, error: null });
+  const trashedResult = Promise.resolve({ data: trashedRows, error: null });
 
-  const order = vi.fn().mockReturnValue(result);
-  const eq = vi.fn(() => ({ order }));
+  const eq = vi.fn((column: string, value: boolean) => {
+    const result =
+      column === "is_trashed" && value === true ? trashedResult : activeResult;
+    return { order: vi.fn().mockReturnValue(result) };
+  });
   return {
     select: vi.fn(() => ({ eq })),
   };

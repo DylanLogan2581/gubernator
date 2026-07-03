@@ -397,6 +397,7 @@ function TrashedWorldRow({
   readonly queryClient: QueryClient;
   readonly world: AccessibleWorld;
 }): JSX.Element {
+  const [hardDeleteConfirmOpen, setHardDeleteConfirmOpen] = useState(false);
   const restoreMutation = useMutation(
     restoreWorldMutationOptions({ queryClient }),
   );
@@ -434,6 +435,7 @@ function TrashedWorldRow({
         },
         onSuccess: () => {
           notifyMutationSuccess("World permanently deleted.");
+          setHardDeleteConfirmOpen(false);
         },
       },
     );
@@ -465,11 +467,32 @@ function TrashedWorldRow({
           variant="destructive"
           size="sm"
           disabled={isPending}
-          onClick={handleHardDelete}
+          onClick={() => {
+            setHardDeleteConfirmOpen(true);
+          }}
         >
           Delete permanently
         </Button>
       </div>
+      {hardDeleteConfirmOpen ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setHardDeleteConfirmOpen(false);
+          }}
+          title={`Permanently delete ${world.name}?`}
+          description={
+            <>
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">{world.name}</span>{" "}
+              and all its data. This action cannot be undone.
+            </>
+          }
+          confirmLabel="Delete permanently"
+          isPending={hardDeleteMutation.isPending}
+          onConfirm={handleHardDelete}
+        />
+      ) : null}
     </li>
   );
 }

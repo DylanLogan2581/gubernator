@@ -1,5 +1,6 @@
-import { type JSX } from "react";
+import { useState, type JSX } from "react";
 
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,8 @@ export function TrashedEntityRow({
   onRestore,
   onHardDelete,
 }: TrashedEntityRowProps): JSX.Element {
+  const [hardDeleteConfirmOpen, setHardDeleteConfirmOpen] = useState(false);
+
   return (
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
@@ -39,11 +42,34 @@ export function TrashedEntityRow({
           variant="destructive"
           size="sm"
           disabled={isPending}
-          onClick={onHardDelete}
+          onClick={() => {
+            setHardDeleteConfirmOpen(true);
+          }}
         >
           Delete permanently
         </Button>
       </div>
+      {hardDeleteConfirmOpen ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setHardDeleteConfirmOpen(false);
+          }}
+          title={`Permanently delete ${name}?`}
+          description={
+            <>
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">{name}</span> and
+              all its data. This action cannot be undone.
+            </>
+          }
+          confirmLabel="Delete permanently"
+          isPending={isPending}
+          onConfirm={() => {
+            onHardDelete();
+          }}
+        />
+      ) : null}
     </li>
   );
 }
