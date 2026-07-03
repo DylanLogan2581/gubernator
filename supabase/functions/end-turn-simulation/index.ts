@@ -20,13 +20,21 @@ import {
   createJsonResponse,
   getAllowedOrigins,
 } from "./http.ts";
-import { persistSimulationTransition, startTurnTransition } from "./persist.ts";
+import {
+  failStuckTurnTransition,
+  persistSimulationTransition,
+  startTurnTransition,
+} from "./persist.ts";
 import { resolveSupabaseSimulationAuthContext } from "./session.ts";
 import { resolveSupabaseEndTurnSimulationInput } from "./state.ts";
 import { planSimulationTransition } from "./transition.ts";
 import { parseEndTurnSimulationRequestBody } from "./validate.ts";
 
-import type { EndTurnSimulationHandlerOptions, EndTurnSimulationResponse } from "./types.ts";
+import type {
+  EndTurnSimulationHandlerOptions,
+  EndTurnSimulationPersistResult,
+  EndTurnSimulationResponse,
+} from "./types.ts";
 
 export type {
   EndTurnSimulationAuthContext,
@@ -192,28 +200,52 @@ export async function handleEndTurnSimulationRequest(
       return respond(startResult.error, startResult.status);
     }
 
-    const transitionResult = planSimulationTransition(
-      stateResult.input,
-      startResult.transitionId,
-    );
-    if (!transitionResult.ok) {
-      return respond(transitionResult.error, transitionResult.status);
-    }
+    let persistResult: EndTurnSimulationPersistResult;
 
-    const forecastSnapshot = computeForecastSnapshot(
-      transitionResult.result,
-      stateResult.input,
-    );
+    try {
+      const transitionResult = planSimulationTransition(
+        stateResult.input,
+        startResult.transitionId,
+      );
+      if (!transitionResult.ok) {
+        await failStuckTurnTransition(
+          validateResult.body.worldId,
+          startResult.transitionId,
+          authContextResult.context.userId,
+          transitionResult.error.error.message,
+        );
+        return respond(transitionResult.error, transitionResult.status);
+      }
 
-    const persistResult = await persistSimulationTransition(
-      validateResult.body,
-      transitionResult.payload,
-      startResult.transitionId,
-      authContextResult.context.userId,
-      forecastSnapshot,
-    );
-    if (!persistResult.ok) {
-      return respond(persistResult.error, persistResult.status);
+      const forecastSnapshot = computeForecastSnapshot(
+        transitionResult.result,
+        stateResult.input,
+      );
+
+      persistResult = await persistSimulationTransition(
+        validateResult.body,
+        transitionResult.payload,
+        startResult.transitionId,
+        authContextResult.context.userId,
+        forecastSnapshot,
+      );
+      if (!persistResult.ok) {
+        await failStuckTurnTransition(
+          validateResult.body.worldId,
+          startResult.transitionId,
+          authContextResult.context.userId,
+          persistResult.error.error.message,
+        );
+        return respond(persistResult.error, persistResult.status);
+      }
+    } catch (error) {
+      await failStuckTurnTransition(
+        validateResult.body.worldId,
+        startResult.transitionId,
+        authContextResult.context.userId,
+        error instanceof Error ? error.message : "unexpected error during plan/persist",
+      );
+      throw error;
     }
 
     logEndTurnSuccess(

@@ -670,6 +670,67 @@ describe("handleEndTurnSimulationRequest", () => {
       });
     });
 
+    // -------------------------------------------------------------------
+    // #958 — a persist failure after start_turn_transition must fail the
+    // wedged 'running' row in the same request, not leave it stuck.
+    // -------------------------------------------------------------------
+    it("marks the running transition failed via fail_stuck_turn_transition when persist fails", async () => {
+      const fetchMock = stubFullCycle({
+        "rpc/apply_turn_transition": {
+          body: {
+            code: "P0001",
+            message: "simulation engine may not kill a player character",
+          },
+          status: 500,
+        },
+        "rpc/fail_stuck_turn_transition": {
+          body: {
+            fromTurnNumber: 5,
+            markedFailedAt: "2026-01-01T00:00:00Z",
+            status: "failed",
+            toTurnNumber: 6,
+            transitionId: TRANSITION_ID,
+            worldId: WORLD_ID,
+          },
+          status: 200,
+        },
+      });
+
+      const response = await handleEndTurnSimulationRequest(
+        new Request("http://localhost/end-turn-simulation", {
+          body: makeValidBody(),
+          headers: {
+            authorization: "Bearer valid-token",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }),
+      );
+
+      const responseBody: unknown = await response.json();
+      expect(response.status).toBe(500);
+      expect(responseBody).toMatchObject({
+        error: { code: "end_turn_transition_failed" },
+        ok: false,
+      });
+
+      const failCall = fetchMock.mock.calls.find(([url]) =>
+        String(url).includes("rpc/fail_stuck_turn_transition"),
+      );
+      expect(failCall).toBeDefined();
+      const [, init] = failCall as [string, RequestInit];
+      const sentBody = JSON.parse(init.body as string) as Record<
+        string,
+        unknown
+      >;
+      expect(sentBody.p_world_id).toBe(WORLD_ID);
+      expect(sentBody.p_transition_id).toBe(TRANSITION_ID);
+      expect(typeof sentBody.p_reason).toBe("string");
+
+      const headers = init.headers as Record<string, string>;
+      expect(headers["apikey"]).toBe("test-service-role-key");
+    });
+
     it("gates archived world before calling state resolvers", async () => {
       stubDenoEnv();
       const fetchMock = vi.fn((url: string): Promise<Response> => {
