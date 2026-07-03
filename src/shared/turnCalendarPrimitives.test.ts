@@ -59,7 +59,46 @@ const variableConfig: TurnCalendarConfig = {
   ],
 };
 
+// Calendar with months array out of index order, for mutation-safety testing
+const unsortedConfig: TurnCalendarConfig = {
+  dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
+  months: [
+    { index: 2, name: "March", dayCount: 31 },
+    { index: 0, name: "January", dayCount: 31 },
+    { index: 1, name: "February", dayCount: 28 },
+  ],
+  startingDayOfMonth: 1,
+  startingMonthIndex: 0,
+  startingWeekdayOffset: 0,
+  startingYear: 0,
+  weekdays: [
+    { index: 0, name: "Sunday" },
+    { index: 1, name: "Monday" },
+    { index: 2, name: "Tuesday" },
+  ],
+};
+
+describe("calendarDateToTurnNumber", () => {
+  it("throws a RangeError when monthIndex matches no configured month", () => {
+    expect(() =>
+      calendarDateToTurnNumber(standardConfig, {
+        year: 0,
+        monthIndex: 99,
+        dayOfMonth: 1,
+      }),
+    ).toThrow(RangeError);
+  });
+});
+
 describe("getRelativeTurnDifference", () => {
+  it("does not mutate the caller's config.months array", () => {
+    const configSnapshot: TurnCalendarConfig = JSON.parse(
+      JSON.stringify(unsortedConfig),
+    ) as TurnCalendarConfig;
+    getRelativeTurnDifference(unsortedConfig, 1, 100);
+    expect(unsortedConfig).toEqual(configSnapshot);
+  });
+
   it("returns isToday=true when turns are equal", () => {
     const diff = getRelativeTurnDifference(standardConfig, 100, 100);
     expect(diff.isToday).toBe(true);
