@@ -2,10 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { requireAuthenticatedRoute } from "@/features/auth";
-import {
-  activePlayerCharacterRowQueryOptions,
-  currentAccessContextQueryOptions,
-} from "@/features/permissions";
+import { currentAccessContextQueryOptions } from "@/features/permissions";
 import {
   WorldConfigurationPage,
   isWorldNotFoundError,
@@ -85,21 +82,10 @@ export const Route = createFileRoute("/worlds/$worldId/configuration")({
         });
       }
 
-      // Suppress admin access while acting as a player character.
-      if (accessContext.userId !== null) {
-        const activeRow = await context.queryClient.ensureQueryData(
-          activePlayerCharacterRowQueryOptions(
-            accessContext.userId,
-            params.worldId,
-          ),
-        );
-        if (activeRow !== null) {
-          return redirect({
-            params: { worldId: params.worldId },
-            to: "/worlds/$worldId",
-          });
-        }
-      }
+      // Admin capability may still be suppressed by an active player
+      // character (see useEffectiveCanAdmin) — that case is handled by
+      // WorldConfigurationPage itself, which explains the suppression
+      // instead of silently bouncing the viewer back.
     } catch (error) {
       if (!isWorldNotFoundError(error)) {
         throw error;

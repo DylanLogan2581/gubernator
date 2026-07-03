@@ -17,9 +17,11 @@ import type { Citizen } from "../../types/citizenTypes";
 // explanation. The redirect needs the nationId for the URL, which only the
 // settlement row carries, so we wait on that lookup before navigating.
 export function CitizenManagerRedirect({
+  canAdmin,
   citizen,
   worldId,
 }: {
+  readonly canAdmin: boolean;
   readonly citizen: Citizen;
   readonly worldId: string;
 }): JSX.Element {
@@ -35,6 +37,10 @@ export function CitizenManagerRedirect({
 
   const isManager =
     activeCharacter !== null && isManagerRole(activeCharacter.roleType);
+  // canAdmin is the account-level flag here (not the effective one) — if it's
+  // true and an active character is still selected, admin access is merely
+  // paused, not absent.
+  const isSuppressedAdmin = canAdmin && activeCharacter !== null;
 
   useEffect(() => {
     if (settlementId === null || nationId === null) {
@@ -51,6 +57,9 @@ export function CitizenManagerRedirect({
   function redirectDescription(): string {
     if (settlementId === null) {
       return "This citizen has not been assigned to a settlement yet.";
+    }
+    if (isSuppressedAdmin) {
+      return `Admin access is paused while you're acting as ${activeCharacter?.name}. Clear your active character to edit this citizen.`;
     }
     if (isManager) {
       return "Nation and settlement managers manage citizens from the settlement detail screen. Redirecting now…";

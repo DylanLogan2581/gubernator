@@ -14,7 +14,11 @@ import { DepositsConfigPanel } from "@/features/deposits";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
 import { NamesetsConfigPanel } from "@/features/namesets";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  AdminSuppressedNotice,
+  currentAccessContextQueryOptions,
+  useEffectiveCanAdmin,
+} from "@/features/permissions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -183,6 +187,11 @@ function WorldConfigurationContent({
   const worldQuery = useQuery(
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
+  // Must be called unconditionally before any early returns to satisfy
+  // rules-of-hooks.
+  const effectiveCanAdmin = useEffectiveCanAdmin(
+    worldQuery.data?.canAdmin ?? false,
+  );
 
   if (worldQuery.isPending) {
     return <LoadingState label="Loading configuration…" />;
@@ -198,6 +207,14 @@ function WorldConfigurationContent({
   }
 
   const { canAdmin, header } = worldQuery.data;
+
+  // The route guard only rejects viewers who lack `canAdmin` outright; admin
+  // capability suppressed by an active player character (see
+  // useEffectiveCanAdmin) is explained here instead of being silently
+  // redirected away.
+  if (canAdmin && !effectiveCanAdmin) {
+    return <AdminSuppressedNotice />;
+  }
 
   function renderPanel(): JSX.Element | null {
     if (activeTab === "resources") {

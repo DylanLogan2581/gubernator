@@ -1,4 +1,5 @@
 export { ActiveCharacterSwitcher } from "./components/ActiveCharacterSwitcher";
+export { AdminSuppressedNotice } from "./components/AdminSuppressedNotice";
 export { SuperadminSettingsPage } from "./components/SuperadminSettingsPage";
 export { PlayerCharacterChooser } from "./components/PlayerCharacterChooser";
 export { RoleAssignmentControls } from "./components/RoleAssignmentControls";
@@ -50,6 +51,7 @@ export type {
   SettlementManageInput,
 } from "./utils/manageAuthority";
 export type { ActiveCharacterSwitcherProps } from "./components/ActiveCharacterSwitcher";
+export type { AdminSuppressedNoticeProps } from "./components/AdminSuppressedNotice";
 export type { PlayerCharacterChooserProps } from "./components/PlayerCharacterChooser";
 export type { RoleAssignmentControlsProps } from "./components/RoleAssignmentControls/index";
 export type { ActivePlayerCharacterContextValue } from "./context/activePlayerCharacterContext";

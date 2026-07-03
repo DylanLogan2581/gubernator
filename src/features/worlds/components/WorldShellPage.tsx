@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
+  useEffectiveCanAdmin,
 } from "@/features/permissions";
 import {
   SettlementReadinessListPanel,
@@ -80,8 +81,9 @@ function WorldShellContent({
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
   const { activeCharacter } = useActivePlayerCharacter();
-  const effectiveCanAdmin =
-    (worldQuery.data?.canAdmin ?? false) && activeCharacter === null;
+  const effectiveCanAdmin = useEffectiveCanAdmin(
+    worldQuery.data?.canAdmin ?? false,
+  );
   // Prefetch settlement readiness summary for SettlementReadinessListPanel
   void useQuery(settlementReadinessSummaryQueryOptions(worldId));
 

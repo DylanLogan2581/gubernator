@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, ChevronDown, ShieldCheck, UserCircle2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ShieldAlert,
+  ShieldCheck,
+  UserCircle2,
+  X,
+} from "lucide-react";
 import { useId, type JSX } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,12 +36,15 @@ export type ActiveCharacterSwitcherProps = {
 // - If the user has only one selectable PC, the indicator is static (no menu).
 // - If the user has no active PC but is a world admin, renders a "World Admin"
 //   badge so admins can see they are acting without a character.
+// - If an admin account has an active PC, admin capability is suppressed
+//   (see useEffectiveCanAdmin); shows an "Admin paused" badge plus a one-click
+//   Clear button to drop the active PC and restore admin access.
 // - Otherwise renders nothing.
 export function ActiveCharacterSwitcher({
   canAdmin,
   worldId,
 }: ActiveCharacterSwitcherProps): JSX.Element | null {
-  const { activeCharacter, isPending, selectableCharacters, switchTo } =
+  const { activeCharacter, clear, isPending, selectableCharacters, switchTo } =
     useActivePlayerCharacter();
   const labelId = useId();
 
@@ -47,90 +57,107 @@ export function ActiveCharacterSwitcher({
 
   const hasSwitcher = selectableCharacters.length > 1;
 
-  if (!hasSwitcher) {
-    return (
-      <Link
-        to="/worlds/$worldId/citizens/$citizenId"
-        params={{ citizenId: activeCharacter.id, worldId }}
-        aria-label="Active player character"
-        className="inline-flex items-center gap-2"
-      >
-        <CharacterAvatarWithRole citizen={activeCharacter} />
-      </Link>
-    );
-  }
-
   return (
-    <div className="inline-flex">
-      <Button
-        asChild
-        variant="outline"
-        size="sm"
-        aria-labelledby={labelId}
-        className="h-auto gap-2 rounded-r-none border-r-0 py-1.5 pl-1.5 pr-2"
-      >
+    <div className="inline-flex items-center gap-2">
+      {canAdmin ? <AdminPausedBadge /> : null}
+
+      {hasSwitcher ? (
+        <div className="inline-flex">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            aria-labelledby={labelId}
+            className="h-auto gap-2 rounded-r-none border-r-0 py-1.5 pl-1.5 pr-2"
+          >
+            <Link
+              to="/worlds/$worldId/citizens/$citizenId"
+              params={{ citizenId: activeCharacter.id, worldId }}
+            >
+              <CharacterAvatarWithRole
+                citizen={activeCharacter}
+                labelId={labelId}
+              />
+            </Link>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label="Switch character"
+                className="h-auto rounded-l-none py-1.5 px-2"
+              >
+                <ChevronDown
+                  className="size-3.5 text-muted-foreground"
+                  aria-hidden
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-56">
+              <DropdownMenuLabel>Switch character</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {selectableCharacters.map((candidate) => {
+                const isActive = candidate.id === activeCharacter.id;
+                return (
+                  <DropdownMenuItem
+                    key={candidate.id}
+                    disabled={isPending || isActive}
+                    onSelect={() => {
+                      if (isActive) {
+                        return;
+                      }
+                      switchTo(candidate.id);
+                    }}
+                    className="gap-2"
+                  >
+                    <CharacterAvatar citizen={candidate} size="sm" />
+                    <span className="grid min-w-0 flex-1 gap-0.5">
+                      <span className="truncate text-sm font-medium">
+                        {candidate.name}
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        <CharacterRoleLabel citizen={candidate} />
+                      </span>
+                    </span>
+                    {isActive ? (
+                      <Check
+                        className="size-3.5 text-muted-foreground"
+                        aria-label="Current"
+                      />
+                    ) : null}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : (
         <Link
           to="/worlds/$worldId/citizens/$citizenId"
           params={{ citizenId: activeCharacter.id, worldId }}
+          aria-label="Active player character"
+          className="inline-flex items-center gap-2"
         >
-          <CharacterAvatarWithRole
-            citizen={activeCharacter}
-            labelId={labelId}
-          />
+          <CharacterAvatarWithRole citizen={activeCharacter} />
         </Link>
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-label="Switch character"
-            className="h-auto rounded-l-none py-1.5 px-2"
-          >
-            <ChevronDown
-              className="size-3.5 text-muted-foreground"
-              aria-hidden
-            />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-56">
-          <DropdownMenuLabel>Switch character</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {selectableCharacters.map((candidate) => {
-            const isActive = candidate.id === activeCharacter.id;
-            return (
-              <DropdownMenuItem
-                key={candidate.id}
-                disabled={isPending || isActive}
-                onSelect={() => {
-                  if (isActive) {
-                    return;
-                  }
-                  switchTo(candidate.id);
-                }}
-                className="gap-2"
-              >
-                <CharacterAvatar citizen={candidate} size="sm" />
-                <span className="grid min-w-0 flex-1 gap-0.5">
-                  <span className="truncate text-sm font-medium">
-                    {candidate.name}
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    <CharacterRoleLabel citizen={candidate} />
-                  </span>
-                </span>
-                {isActive ? (
-                  <Check
-                    className="size-3.5 text-muted-foreground"
-                    aria-label="Current"
-                  />
-                ) : null}
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      )}
+
+      {canAdmin ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={isPending}
+          onClick={clear}
+          aria-label="Clear active character"
+          className="h-auto gap-1 px-2 py-1 text-xs text-muted-foreground"
+        >
+          <X className="size-3" aria-hidden />
+          Clear
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -144,6 +171,15 @@ function WorldAdminBadge(): JSX.Element {
     >
       <ShieldCheck className="size-3" aria-hidden />
       World Admin
+    </Badge>
+  );
+}
+
+function AdminPausedBadge(): JSX.Element {
+  return (
+    <Badge variant="warning" aria-label="Admin access paused" className="gap-1">
+      <ShieldAlert className="size-3" aria-hidden />
+      Admin paused
     </Badge>
   );
 }

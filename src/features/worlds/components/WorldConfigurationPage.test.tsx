@@ -3,6 +3,9 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorldCalendarConfig } from "@/features/calendar";
+import type { Citizen } from "@/features/citizens";
+import { ActivePlayerCharacterContext } from "@/features/permissions";
+import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
 
 import { WorldConfigurationPage } from "./WorldConfigurationPage";
 
@@ -169,7 +172,71 @@ describe("WorldConfigurationPage", () => {
       await screen.findByRole("heading", { name: "Configuration" }),
     ).toBeDefined();
   });
+
+  it("shows an admin-suppressed notice instead of panels when an active character is selected", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow()],
+      }),
+    );
+    const activeCharacter = createCitizen({ id: "citizen-1", name: "Aria" });
+
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <ActivePlayerCharacterContext
+          value={createActivePlayerCharacterValue(activeCharacter)}
+        >
+          <WorldConfigurationPage activeTab="resources" worldId={WORLD_ID} />
+        </ActivePlayerCharacterContext>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Admin access paused")).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Resources" })).toBeNull();
+  });
 });
+
+function createActivePlayerCharacterValue(
+  activeCharacter: Citizen,
+): ActivePlayerCharacterContextValue {
+  return {
+    activeCharacter,
+    clear: vi.fn(),
+    isPending: false,
+    selectableCharacters: [activeCharacter],
+    switchTo: vi.fn(),
+  };
+}
+
+function createCitizen(overrides: Partial<Citizen>): Citizen {
+  return {
+    bornOnTurnNumber: null,
+    citizenType: "player_character",
+    createdAt: "2026-05-01T00:00:00.000Z",
+    deathCause: null,
+    deathCauseCategory: null,
+    givenName: "Player",
+    id: "pc-1",
+    name: "Player",
+    namesetId: null,
+    parentACitizenId: null,
+    parentBCitizenId: null,
+    profilePhotoUrl: null,
+    roleNationId: null,
+    roleSettlementId: null,
+    roleType: "none",
+    settlementId: null,
+    sex: null,
+    status: "alive",
+    surname: null,
+    updatedAt: "2026-05-01T00:00:00.000Z",
+    userId: "user-1",
+    worldId: WORLD_ID,
+    ...overrides,
+  } satisfies Citizen;
+}
 
 function renderPage({
   activeTab,

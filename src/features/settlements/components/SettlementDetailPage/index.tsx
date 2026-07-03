@@ -14,6 +14,7 @@ import { ActiveEventsCard } from "@/features/events";
 import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
 import { SettlementNamesetCard } from "@/features/namesets";
 import {
+  AdminSuppressedNotice,
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
   useEffectiveCanAdmin,
@@ -326,15 +327,20 @@ function SettlementDetailLoaded({
     });
   }
 
-  const SECTIONS = [
+  const BASE_SECTIONS = [
     { key: "overview", label: "Overview" },
     { key: "population", label: "Population" },
     { key: "economy", label: "Economy" },
     { key: "forecast", label: "Forecast" },
     { key: "reports", label: "Reports" },
     { key: "history", label: "History" },
-    { key: "admin", label: "Admin" },
   ] as const;
+
+  // Only offer the Admin tab to accounts that could ever have admin
+  // authority here — never shown-but-empty for viewers who lack it outright.
+  const SECTIONS = worldAccess.canAdmin
+    ? [...BASE_SECTIONS, { key: "admin", label: "Admin" } as const]
+    : BASE_SECTIONS;
 
   return (
     <SettlementDetailFrame
@@ -537,9 +543,9 @@ function SettlementDetailLoaded({
       ) : null}
 
       {/* Admin Section */}
-      {activeSection === "admin" ? (
-        <>
-          {effectiveCanAdmin ? (
+      {activeSection === "admin" && worldAccess.canAdmin ? (
+        effectiveCanAdmin ? (
+          <>
             <SettlementNamesetCard
               canAdmin={effectiveCanAdmin}
               currentNamesetId={settlement.namesetId}
@@ -547,16 +553,18 @@ function SettlementDetailLoaded({
               settlementId={settlement.id}
               worldId={worldId}
             />
-          ) : null}
 
-          {canDelete ? (
-            <SettlementDeleteSection
-              queryClient={queryClient}
-              settlement={settlement}
-              worldId={worldId}
-            />
-          ) : null}
-        </>
+            {canDelete ? (
+              <SettlementDeleteSection
+                queryClient={queryClient}
+                settlement={settlement}
+                worldId={worldId}
+              />
+            ) : null}
+          </>
+        ) : (
+          <AdminSuppressedNotice />
+        )
       ) : null}
     </SettlementDetailFrame>
   );

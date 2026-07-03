@@ -135,6 +135,10 @@ vi.mock("@/features/permissions", async () => {
   return {
     ...actual,
     useActivePlayerCharacter: useActivePlayerCharacterMock,
+    useEffectiveCanAdmin: (canAdmin: boolean) => {
+      const { activeCharacter } = useActivePlayerCharacterMock();
+      return canAdmin && activeCharacter === null;
+    },
     useSettlementManageAuthority: useSettlementManageAuthorityMock,
   };
 });
@@ -492,6 +496,41 @@ describe("SettlementDetailPage", () => {
     renderPage();
     await screen.findByRole("heading", { level: 1, name: "Hometown" });
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Delete settlement" }),
+    ).toBeNull();
+  });
+
+  it("hides the Admin tab entirely for viewers who lack admin access outright", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldVisibility: "public" }),
+    );
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+    expect(screen.queryByRole("tab", { name: "Admin" })).toBeNull();
+  });
+
+  it("keeps the Admin tab visible but shows a suppression notice when an admin has an active character", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ adminRows: [{ world_id: WORLD_ID }] }),
+    );
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: {
+        id: "char-1",
+        name: "Aria",
+        roleType: "none",
+        status: "alive",
+      } as never,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+    renderPage("admin");
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+
+    expect(screen.getByRole("tab", { name: "Admin" })).toBeDefined();
+    expect(screen.getByText("Admin access paused")).toBeDefined();
     expect(
       screen.queryByRole("button", { name: "Delete settlement" }),
     ).toBeNull();

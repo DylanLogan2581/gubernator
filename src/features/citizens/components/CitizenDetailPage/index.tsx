@@ -196,7 +196,13 @@ function CitizenDetailContent({
     citizen.userId === accessContext.userId;
 
   if (!effectiveCanAdmin && !isOwnLivingCharacter) {
-    return <CitizenManagerRedirect citizen={citizen} worldId={worldId} />;
+    return (
+      <CitizenManagerRedirect
+        canAdmin={worldAccess.canAdmin}
+        citizen={citizen}
+        worldId={worldId}
+      />
+    );
   }
 
   return (

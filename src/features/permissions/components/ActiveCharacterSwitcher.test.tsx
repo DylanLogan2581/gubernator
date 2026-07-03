@@ -88,8 +88,29 @@ describe("ActiveCharacterSwitcher", () => {
     expect(link).toBeDefined();
     expect(link).toHaveAttribute("href", "/worlds/world-42/citizens/pc-1");
     expect(screen.getByText("Solo")).toBeDefined();
-    // No dropdown trigger when there is nothing to switch to.
+    // No dropdown trigger or clear button for a non-admin with nothing to
+    // switch to and no admin access to restore.
     expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("shows an admin-paused badge and a clear button when an admin has an active character", async () => {
+    const pc = createCitizen({ id: "pc-1", name: "Solo" });
+    const clear = vi.fn();
+    renderSwitcher({
+      activeCharacter: pc,
+      canAdmin: true,
+      clear,
+      selectableCharacters: [pc],
+    });
+
+    expect(screen.getByLabelText("Admin access paused")).toBeDefined();
+    expect(screen.getByText("Admin paused")).toBeDefined();
+
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: "Clear active character" }),
+    );
+    expect(clear).toHaveBeenCalled();
   });
 
   it("renders a link to citizen detail alongside the switcher for multiple characters", () => {
@@ -168,6 +189,7 @@ describe("ActiveCharacterSwitcher", () => {
 type RenderOptions = {
   readonly activeCharacter: Citizen | null;
   readonly canAdmin: boolean;
+  readonly clear?: () => void;
   readonly selectableCharacters: readonly Citizen[];
   readonly switchTo?: (id: string) => void;
   readonly worldId?: string;
@@ -176,13 +198,14 @@ type RenderOptions = {
 function renderSwitcher({
   activeCharacter,
   canAdmin,
+  clear = (): void => {},
   selectableCharacters,
   switchTo = (): void => {},
   worldId = "world-42",
 }: RenderOptions): ReturnType<typeof render> {
   const value: ActivePlayerCharacterContextValue = {
     activeCharacter,
-    clear: (): void => {},
+    clear,
     isPending: false,
     selectableCharacters,
     switchTo,
