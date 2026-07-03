@@ -490,10 +490,18 @@ function WorldBadge({
 
   if (world.isHidden) {
     return (
-      <Badge variant="outline">
-        <LockKeyhole className="size-3" aria-hidden="true" />
-        Hidden
-      </Badge>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="outline">
+            <LockKeyhole className="size-3" aria-hidden="true" />
+            Hidden
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          Hidden from players; only visible to admins and users with explicit
+          access.
+        </TooltipContent>
+      </Tooltip>
     );
   }
 

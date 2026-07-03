@@ -27,3 +27,17 @@ Object.defineProperty(window, "scrollTo", {
   writable: true,
   value: vi.fn(),
 });
+
+// jsdom has no ResizeObserver; Radix Tooltip's floating-ui positioning
+// requires one on mount, or React unmounts the tree with an uncaught error.
+class ResizeObserverStub {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
+Object.defineProperty(window, "ResizeObserver", {
+  configurable: true,
+  writable: true,
+  value: ResizeObserverStub,
+});

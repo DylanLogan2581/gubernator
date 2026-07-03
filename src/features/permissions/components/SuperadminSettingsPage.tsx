@@ -24,6 +24,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { currentAppUserQueryOptions } from "@/features/auth";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -307,16 +312,24 @@ function UserRow({
             <Globe2 className="size-3.5" aria-hidden="true" />
             World Admin
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onManageActivePlayerCharacter}
-            title="Manage active player character (recovery)"
-          >
-            <UserCog className="size-3.5" aria-hidden="true" />
-            Active PC
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onManageActivePlayerCharacter}
+                title="Manage active player character (recovery)"
+              >
+                <UserCog className="size-3.5" aria-hidden="true" />
+                Active PC
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Active PC (Player Character) — manage this user&apos;s active
+              character for account recovery.
+            </TooltipContent>
+          </Tooltip>
           <Button
             type="button"
             variant="ghost"

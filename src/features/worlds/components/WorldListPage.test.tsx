@@ -117,6 +117,32 @@ describe("WorldListPage", () => {
     );
   });
 
+  it("shows a tooltip explaining the Hidden badge on hover", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000000202" }],
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: "00000000-0000-0000-0000-000000000202",
+            name: "Private World",
+            visibility: "private",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    const badge = await screen.findByText("Hidden");
+    await user.hover(badge);
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      /Hidden from players/i,
+    );
+  });
+
   it("renders planning turn and computed in-world date", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
