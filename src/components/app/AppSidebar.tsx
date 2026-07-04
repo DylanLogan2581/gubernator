@@ -11,6 +11,7 @@ import {
   Gem,
   Globe2,
   HardHat,
+  Handshake,
   Landmark,
   LayoutDashboard,
   MapPin,
@@ -39,6 +40,7 @@ import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
 import { WorldHeaderCard } from "./sidebar/WorldHeaderCard";
 import { useWorldScope } from "./sidebar/WorldScopeContext";
 
+import type { NationSection } from "./sidebar/NationScopeSwitcher";
 import type { SettlementSection } from "./sidebar/SettlementScopeSwitcher";
 import type { JSX } from "react";
 
@@ -159,6 +161,24 @@ export function AppSidebar(): JSX.Element | null {
     isOnSettlementPage && settlementBasePath !== null
       ? sectionFromPathname(location.pathname, settlementBasePath)
       : null;
+
+  // Mirrors the SETTLEMENT guard above, one level up: only read a NATION
+  // section from the pathname while actually on that nation's route tree.
+  const nationBasePath =
+    nationId !== null ? `/worlds/${worldId}/nations/${nationId}` : null;
+  const isOnNationPage =
+    nationBasePath !== null &&
+    (location.pathname === nationBasePath ||
+      location.pathname.startsWith(`${nationBasePath}/`));
+  const currentNationSection =
+    isOnNationPage && nationBasePath !== null
+      ? nationSectionFromPathname(location.pathname, nationBasePath)
+      : null;
+  const isAliveNationManagerHere =
+    activeCharacter !== null &&
+    activeCharacter.roleType === "nation_manager" &&
+    activeCharacter.roleNationId === nationId &&
+    activeCharacter.status === "alive";
 
   const playItems: NavGroupItem[] = [
     {
@@ -344,21 +364,50 @@ export function AppSidebar(): JSX.Element | null {
           },
         ]
       : [
-          {
-            key: "nation-overview",
+          nationSectionItem("overview", {
+            isActive: currentNationSection === "overview",
             label: "Overview",
-            isActive:
-              location.pathname === `/worlds/${worldId}/nations/${nationId}`,
-            link: (
-              <Link
-                to="/worlds/$worldId/nations/$nationId"
-                params={{ nationId, worldId }}
-              >
-                <Landmark aria-hidden="true" />
-                <span>Overview</span>
-              </Link>
-            ),
-          },
+            nationId,
+            worldId,
+          }),
+          nationSectionItem("settlements", {
+            isActive: currentNationSection === "settlements",
+            label: "Settlements",
+            nationId,
+            worldId,
+          }),
+          nationSectionItem("relationships", {
+            isActive: currentNationSection === "relationships",
+            label: "Relationships",
+            nationId,
+            worldId,
+          }),
+          ...(effectiveCanAdmin || isAliveNationManagerHere
+            ? [
+                nationSectionItem("government", {
+                  isActive: currentNationSection === "government",
+                  label: "Government",
+                  nationId,
+                  worldId,
+                }),
+              ]
+            : []),
+          nationSectionItem("reports", {
+            isActive: currentNationSection === "reports",
+            label: "Reports",
+            nationId,
+            worldId,
+          }),
+          ...(effectiveCanAdmin
+            ? [
+                nationSectionItem("settings", {
+                  isActive: currentNationSection === "settings",
+                  label: "Settings",
+                  nationId,
+                  worldId,
+                }),
+              ]
+            : []),
         ];
 
   const worldItems: NavGroupItem[] = [
@@ -411,7 +460,11 @@ export function AppSidebar(): JSX.Element | null {
           label="NATION"
           items={nationItems}
           labelSlot={
-            <NationScopeSwitcher nationId={nationId} worldId={worldId} />
+            <NationScopeSwitcher
+              nationId={nationId}
+              section={currentNationSection}
+              worldId={worldId}
+            />
           }
         />
         <NavGroup label="WORLD" items={worldItems} />
@@ -672,6 +725,154 @@ function settlementSectionItem(
           <Link
             to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings"
             params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+  }
+}
+
+const NATION_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
+  Exclude<NationSection, "overview">
+>(["government", "relationships", "reports", "settings", "settlements"]);
+
+function isNationSectionSegment(
+  value: string,
+): value is Exclude<NationSection, "overview"> {
+  return NATION_SECTION_SEGMENTS.has(value);
+}
+
+// Derives the active NATION sidebar item from the pathname suffix past the
+// nation's base route — mirrors sectionFromPathname (SETTLEMENT), one level
+// up. Unlike SETTLEMENT (the deepest scope), NATION has a real subtree below
+// it that isn't one of its own sections — the settlement-detail routes
+// (`/settlements/$settlementId/...`) — so a `settlements/<id>` suffix must
+// return null (no NATION item active) rather than falling back to
+// "overview"; only a genuinely unrecognized suffix falls back that way.
+function nationSectionFromPathname(
+  pathname: string,
+  nationBasePath: string,
+): NationSection | null {
+  const suffix = pathname.slice(nationBasePath.length);
+  const segment = suffix.startsWith("/") ? suffix.slice(1) : suffix;
+  if (segment.startsWith("settlements/")) {
+    return null;
+  }
+  return segment !== "" && isNationSectionSegment(segment)
+    ? segment
+    : "overview";
+}
+
+function nationSectionItem(
+  section: NationSection,
+  {
+    isActive,
+    label,
+    nationId,
+    worldId,
+  }: {
+    readonly isActive: boolean;
+    readonly label: string;
+    readonly nationId: string;
+    readonly worldId: string;
+  },
+): NavGroupItem {
+  const icons: Record<NationSection, JSX.Element> = {
+    government: <ShieldCheck aria-hidden="true" />,
+    overview: <LayoutDashboard aria-hidden="true" />,
+    relationships: <Handshake aria-hidden="true" />,
+    reports: <FileText aria-hidden="true" />,
+    settings: <Settings aria-hidden="true" />,
+    settlements: <Building2 aria-hidden="true" />,
+  };
+
+  switch (section) {
+    case "overview":
+      return {
+        key: "nation-overview",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "settlements":
+      return {
+        key: "nation-settlements",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "relationships":
+      return {
+        key: "nation-relationships",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/relationships"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "government":
+      return {
+        key: "nation-government",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/government"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "reports":
+      return {
+        key: "nation-reports",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/reports"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "settings":
+      return {
+        key: "nation-settings",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settings"
+            params={{ nationId, worldId }}
           >
             {icons[section]}
             <span>{label}</span>

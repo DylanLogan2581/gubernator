@@ -1,6 +1,15 @@
 // Nations feature — query and mutation API for world-scoped nations.
 // Implemented in Epic 3.
 export { NationDetailPage } from "./components/NationDetailPage";
+export { useNationDetailContext } from "./components/NationDetailPage/NationDetailContext";
+export { NationSectionRedirect } from "./components/NationDetailPage/NationSectionRedirect";
+export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
+export { NationDetailsSection } from "./components/NationDetailPage/DetailsSection";
+export { NationHiddenToggleSection } from "./components/NationDetailPage/HiddenToggleSection";
+export { NationReportsSection } from "./components/NationDetailPage/NationReportsSection";
+export { NationRelationshipsSection } from "./components/NationDetailPage/RelationshipsSection";
+export { NationRoleAssignmentSection } from "./components/NationDetailPage/RoleAssignmentSection";
+export { NationSettlementsSection } from "./components/NationDetailPage/SettlementsSection";
 export { NationListPage } from "./components/NationListPage";
 export {
   NationMutationError,
