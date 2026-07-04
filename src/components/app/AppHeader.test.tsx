@@ -48,6 +48,7 @@ vi.mock("@tanstack/react-router", () => ({
           );
     return <a href={href}>{children}</a>;
   },
+  useLocation: () => ({ pathname: "/" }),
   useNavigate: () => vi.fn(),
   useParams,
   useRouter: () => ({

@@ -1,4 +1,7 @@
+import { Bell } from "lucide-react";
 import { type JSX, type ReactNode } from "react";
+
+import { PageHeader } from "@/components/shared/PageHeader";
 
 type NotificationsPageFrameProps = {
   readonly children: ReactNode;
@@ -9,12 +12,11 @@ export function NotificationsPageFrame({
 }: NotificationsPageFrameProps): JSX.Element {
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold">Notifications</h1>
-        <p className="text-muted-foreground">
-          View and manage all your notifications in one place
-        </p>
-      </div>
+      <PageHeader
+        icon={Bell}
+        title="Notifications"
+        description="View and manage all your notifications in one place"
+      />
       {children}
     </div>
   );

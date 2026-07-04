@@ -1,4 +1,4 @@
-import { useParams } from "@tanstack/react-router";
+import { useLocation, useParams } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { type JSX, type ReactNode } from "react";
 
@@ -15,6 +15,7 @@ import { EndTurnControl } from "@/features/turns";
 import { HeaderReadinessChip } from "./HeaderReadinessChip";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
+import { SuperadminBreadcrumb } from "./SuperadminBreadcrumb";
 import { WorldBreadcrumb } from "./WorldBreadcrumb";
 
 type AppHeaderProps = {
@@ -35,6 +36,7 @@ export function AppHeader({
   onOpenCommandPalette,
 }: AppHeaderProps): JSX.Element {
   const routeParams = useParams({ strict: false });
+  const location = useLocation();
   const nationId = routeParams.nationId ?? null;
   const settlementId = routeParams.settlementId ?? null;
   const { canAdmin, turnLabel, worldAccess, worldId, worldName } =
@@ -46,6 +48,8 @@ export function AppHeader({
       <SidebarTrigger />
       {worldId !== null && worldName !== null ? (
         <WorldBreadcrumb worldId={worldId} worldName={worldName} />
+      ) : location.pathname.startsWith("/superadmin") ? (
+        <SuperadminBreadcrumb />
       ) : null}
       <div className="flex-1" />
       <div className="flex items-center gap-2">

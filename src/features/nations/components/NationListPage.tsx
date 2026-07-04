@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, LockKeyhole, Plus, X } from "lucide-react";
+import { ArrowRight, Landmark, LockKeyhole, Plus, X } from "lucide-react";
 import { useState, type FormEvent, type JSX, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,7 +51,7 @@ export function NationListPage({ worldId }: NationListPageProps): JSX.Element {
 
   if (accessContextQuery.isPending) {
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <LoadingState label="Loading world access…" />
       </NationListFrame>
     );
@@ -58,7 +59,7 @@ export function NationListPage({ worldId }: NationListPageProps): JSX.Element {
 
   if (accessContextQuery.isError) {
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <ErrorState
           title="World access could not be loaded"
           description={getErrorDescription(accessContextQuery.error)}
@@ -88,7 +89,7 @@ function NationListWorldGate({
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <AccessDeniedState
           title="Account access unavailable"
           description="Your Gubernator account is not active. Contact an administrator to restore access."
@@ -99,7 +100,7 @@ function NationListWorldGate({
 
   if (worldQuery.isPending) {
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <LoadingState label="Loading world…" />
       </NationListFrame>
     );
@@ -108,7 +109,7 @@ function NationListWorldGate({
   if (worldQuery.isError) {
     if (isWorldNotFoundError(worldQuery.error)) {
       return (
-        <NationListFrame worldId={worldId}>
+        <NationListFrame>
           <AccessDeniedState
             title="World unavailable"
             description="This world does not exist or your Gubernator account does not have access."
@@ -118,7 +119,7 @@ function NationListWorldGate({
     }
 
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <ErrorState
           title="World could not be loaded"
           description={getErrorDescription(worldQuery.error)}
@@ -143,16 +144,17 @@ function NationListContent({
   const canCreate = effectiveCanAdmin && !worldAccess.header.isArchived;
 
   return (
-    <NationListFrame worldId={worldId}>
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-normal">Nations</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
+    <NationListFrame>
+      <PageHeader
+        icon={Landmark}
+        title="Nations"
+        description={
+          <>
             Nations within{" "}
             <span className="font-medium">{worldAccess.header.name}</span>.
-          </p>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {canCreate ? (
         <CreateNationSection queryClient={queryClient} worldId={worldId} />
@@ -376,22 +378,10 @@ function CreateNationSection({
 
 function NationListFrame({
   children,
-  worldId,
 }: {
   readonly children: ReactNode;
-  readonly worldId: string;
 }): JSX.Element {
-  return (
-    <div className="flex flex-col gap-4">
-      <Button asChild variant="outline" size="sm" className="w-fit">
-        <Link to="/worlds/$worldId" params={{ worldId }}>
-          <ArrowLeft aria-hidden="true" />
-          Back to world
-        </Link>
-      </Button>
-      {children}
-    </div>
-  );
+  return <div className="flex flex-col gap-4">{children}</div>;
 }
 
 function getDescriptionPreview(description: string | null): string | null {

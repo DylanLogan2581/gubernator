@@ -28,6 +28,7 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -156,19 +157,18 @@ function WorldListContent({
     return (
       <WorldListFrame>
         <div className="grid gap-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="space-y-1">
-              <h1 className="text-2xl font-semibold tracking-normal">Trash</h1>
-            </div>
-            <div className="flex items-center gap-2">
+          <PageHeader
+            icon={Trash2}
+            title="Trash"
+            actions={
               <TrashToggleButton
                 showTrash
                 onToggle={() => {
                   setShowTrash(false);
                 }}
               />
-            </div>
-          </div>
+            }
+          />
           {trashedWorldsQuery.isPending ? (
             <LoadingState label="Loading trashed worlds…" />
           ) : trashedWorldsQuery.isError ? (
@@ -202,37 +202,38 @@ function WorldListContent({
   return (
     <WorldListFrame>
       <div className="grid gap-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-normal">Worlds</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {accessContext.isSuperAdmin ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowCreateDialog(true);
-                }}
-              >
-                <Plus aria-hidden="true" />
-                Create world
-              </Button>
-            ) : null}
-            {accessContext.isSuperAdmin ? (
-              <WorldTemplateImportButton queryClient={queryClient} />
-            ) : null}
-            {accessContext.isSuperAdmin ? (
-              <TrashToggleButton
-                showTrash={false}
-                onToggle={() => {
-                  setShowTrash(true);
-                }}
-              />
-            ) : null}
-          </div>
-        </div>
+        <PageHeader
+          icon={Globe2}
+          title="Worlds"
+          actions={
+            <>
+              {accessContext.isSuperAdmin ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowCreateDialog(true);
+                  }}
+                >
+                  <Plus aria-hidden="true" />
+                  Create world
+                </Button>
+              ) : null}
+              {accessContext.isSuperAdmin ? (
+                <WorldTemplateImportButton queryClient={queryClient} />
+              ) : null}
+              {accessContext.isSuperAdmin ? (
+                <TrashToggleButton
+                  showTrash={false}
+                  onToggle={() => {
+                    setShowTrash(true);
+                  }}
+                />
+              ) : null}
+            </>
+          }
+        />
 
         {activeWorlds.length === 0 ? (
           <AccessDeniedState

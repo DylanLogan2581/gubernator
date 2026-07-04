@@ -1,12 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { Users } from "lucide-react";
 import { type JSX, type ReactNode } from "react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
 import {
@@ -32,7 +31,7 @@ export function CitizensDirectoryPage({
 
   if (accessContextQuery.isPending) {
     return (
-      <CitizensDirectoryFrame worldId={worldId}>
+      <CitizensDirectoryFrame>
         <LoadingState label="Loading world access…" />
       </CitizensDirectoryFrame>
     );
@@ -40,7 +39,7 @@ export function CitizensDirectoryPage({
 
   if (accessContextQuery.isError) {
     return (
-      <CitizensDirectoryFrame worldId={worldId}>
+      <CitizensDirectoryFrame>
         <ErrorState
           title="World access could not be loaded"
           description={getErrorDescription(accessContextQuery.error)}
@@ -70,7 +69,7 @@ function CitizensDirectoryWorldGate({
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
-      <CitizensDirectoryFrame worldId={worldId}>
+      <CitizensDirectoryFrame>
         <AccessDeniedState
           title="Account access unavailable"
           description="Your Gubernator account is not active. Contact an administrator to restore access."
@@ -81,7 +80,7 @@ function CitizensDirectoryWorldGate({
 
   if (worldQuery.isPending) {
     return (
-      <CitizensDirectoryFrame worldId={worldId}>
+      <CitizensDirectoryFrame>
         <LoadingState label="Loading world…" />
       </CitizensDirectoryFrame>
     );
@@ -90,7 +89,7 @@ function CitizensDirectoryWorldGate({
   if (worldQuery.isError) {
     if (isWorldNotFoundError(worldQuery.error)) {
       return (
-        <CitizensDirectoryFrame worldId={worldId}>
+        <CitizensDirectoryFrame>
           <AccessDeniedState
             title="World unavailable"
             description="This world does not exist or your Gubernator account does not have access."
@@ -100,7 +99,7 @@ function CitizensDirectoryWorldGate({
     }
 
     return (
-      <CitizensDirectoryFrame worldId={worldId}>
+      <CitizensDirectoryFrame>
         <ErrorState
           title="World could not be loaded"
           description={getErrorDescription(worldQuery.error)}
@@ -122,14 +121,17 @@ function CitizensDirectoryContent({
   readonly worldId: string;
 }): JSX.Element {
   return (
-    <CitizensDirectoryFrame worldId={worldId}>
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-normal">Citizens</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Every citizen across{" "}
-          <span className="font-medium">{worldAccess.header.name}</span>.
-        </p>
-      </header>
+    <CitizensDirectoryFrame>
+      <PageHeader
+        icon={Users}
+        title="Citizens"
+        description={
+          <>
+            Every citizen across{" "}
+            <span className="font-medium">{worldAccess.header.name}</span>.
+          </>
+        }
+      />
 
       <CitizensDirectoryTable worldId={worldId} />
     </CitizensDirectoryFrame>
@@ -138,20 +140,8 @@ function CitizensDirectoryContent({
 
 function CitizensDirectoryFrame({
   children,
-  worldId,
 }: {
   readonly children: ReactNode;
-  readonly worldId: string;
 }): JSX.Element {
-  return (
-    <div className="flex flex-col gap-4">
-      <Button asChild variant="outline" size="sm" className="w-fit">
-        <Link to="/worlds/$worldId" params={{ worldId }}>
-          <ArrowLeft aria-hidden="true" />
-          Back to world
-        </Link>
-      </Button>
-      {children}
-    </div>
-  );
+  return <div className="flex flex-col gap-4">{children}</div>;
 }

@@ -68,7 +68,7 @@ describe("NationListPage", () => {
     toastSuccess.mockReset();
   });
 
-  it("shows a back link to the world shell", async () => {
+  it("renders the page header without a back link (breadcrumb is the back mechanism)", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         nationRows: [],
@@ -81,8 +81,11 @@ describe("NationListPage", () => {
     renderPage();
 
     expect(
-      await screen.findByRole("link", { name: "Back to world" }),
-    ).toHaveAttribute("href", `/worlds/${worldId}`);
+      await screen.findByRole("heading", { name: "Nations" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Back to world" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders the empty state when there are no nations", async () => {

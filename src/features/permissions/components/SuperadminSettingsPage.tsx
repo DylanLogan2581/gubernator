@@ -2,8 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   Library,
-  Settings,
   Shield,
+  ShieldCheck,
   UserPlus,
   Globe2,
   UserCog,
@@ -13,6 +13,7 @@ import { useState, type ChangeEvent, type JSX, type ReactNode } from "react";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,20 +111,11 @@ export function SuperadminSettingsPage(): JSX.Element {
 
   return (
     <SuperadminFrame>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings
-            className="size-5 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <div>
-            <h1 className="text-xl font-semibold">Superadmin Settings</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage users and system privileges.
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={ShieldCheck}
+        title="Superadmin Settings"
+        description="Manage users and system privileges."
+      />
 
       <div className="mt-4 flex items-center gap-2">
         <Button asChild type="button" variant="outline" size="sm">
