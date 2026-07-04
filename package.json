@@ -1,7 +1,7 @@
 {
   "name": "gubernator",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "scripts": {
     "bootstrap:repo": "node --experimental-strip-types ./scripts/bootstrap-repo.ts",

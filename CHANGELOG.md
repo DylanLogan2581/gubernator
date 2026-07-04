@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.9.0](https://github.com/DylanLogan2581/gubernator/compare/v0.8.0...v0.9.0) (2026-06-20)
+
+### Bug Fixes
+
+- **calendar:** use ordinal labels for weekday name fields ([70c2416](https://github.com/DylanLogan2581/gubernator/commit/70c24165aa776045887a1cf3e60e04be32ed19d8)), closes [#913](https://github.com/DylanLogan2581/gubernator/issues/913)
+- **citizens:** clarify pre-simulation birth turn and target font ([8c9fdab](https://github.com/DylanLogan2581/gubernator/commit/8c9fdabab4128d7f2b4b81e9cb445c738c33cb65)), closes [#907](https://github.com/DylanLogan2581/gubernator/issues/907)
+- **events:** show visible back button label on events page ([7be9def](https://github.com/DylanLogan2581/gubernator/commit/7be9def391eaf3f6bcd42eb6fbe8e030c763ea7d)), closes [#914](https://github.com/DylanLogan2581/gubernator/issues/914)
+- **managed-populations:** use division for husbandry worker coverage ([9b6ed69](https://github.com/DylanLogan2581/gubernator/commit/9b6ed696ef3a9cb22f396ce65b5ae9e1d61fc0e3)), closes [#895](https://github.com/DylanLogan2581/gubernator/issues/895)
+- **nations:** show active sort column and direction in settlement table ([681c31f](https://github.com/DylanLogan2581/gubernator/commit/681c31f6d0252a445abef16e6a2b0fd9ffe36a35)), closes [#915](https://github.com/DylanLogan2581/gubernator/issues/915)
+- **notifications:** close popover on navigate to all notifications ([0ebc984](https://github.com/DylanLogan2581/gubernator/commit/0ebc984fe8b26840e15fa0eaf390a7f1975f6ee6)), closes [#902](https://github.com/DylanLogan2581/gubernator/issues/902)
+- **notifications:** label badge as "all unread" and panel as "this turn" ([90c5ffe](https://github.com/DylanLogan2581/gubernator/commit/90c5ffec18e92a376010d67f15c434e76abe1ebd)), closes [#903](https://github.com/DylanLogan2581/gubernator/issues/903)
+- **notifications:** switch notification filter to click-to-include ([f599c99](https://github.com/DylanLogan2581/gubernator/commit/f599c99054e83abaa8da2ae1855ea27c49ffe1a6)), closes [#901](https://github.com/DylanLogan2581/gubernator/issues/901)
+- **reports:** integer-only ticks on births and deaths y-axis ([ac169a2](https://github.com/DylanLogan2581/gubernator/commit/ac169a2a9f6aae74d38197ed80a7219adc1e3450)), closes [#899](https://github.com/DylanLogan2581/gubernator/issues/899)
+- **reports:** satisfy deno fmt and use authed cleanup in scenario test ([c6a071d](https://github.com/DylanLogan2581/gubernator/commit/c6a071ded9c889f4a51de08bcb1ccfb4b456bf28))
+- **reports:** use var(--chart-n) directly instead of hsl(var(--chart-n)) ([36a0dd3](https://github.com/DylanLogan2581/gubernator/commit/36a0dd3161c748990f2ad931dd59f386ca460f7c)), closes [#898](https://github.com/DylanLogan2581/gubernator/issues/898)
+- **reports:** validate turn range and fix empty section headings ([ae3e0e6](https://github.com/DylanLogan2581/gubernator/commit/ae3e0e6687a93633946456060ecbe3526f5f7d00)), closes [#900](https://github.com/DylanLogan2581/gubernator/issues/900)
+- **resources:** round stockpile quantity and forecast delta to integers ([d6dd436](https://github.com/DylanLogan2581/gubernator/commit/d6dd4366fea89139964546126d95391814ed8f88)), closes [#908](https://github.com/DylanLogan2581/gubernator/issues/908)
+- **settlements:** remove raw json payload toggle from history log ([b7159cb](https://github.com/DylanLogan2581/gubernator/commit/b7159cbbf5cade0039a29d215afca06e5c85d046)), closes [#910](https://github.com/DylanLogan2581/gubernator/issues/910)
+- **turns:** friendly label in fallback and real citizen name in scope ([571a459](https://github.com/DylanLogan2581/gubernator/commit/571a459c81cdbaa65bd978a0c478b952c609804a)), closes [#893](https://github.com/DylanLogan2581/gubernator/issues/893)
+- **turns:** humanize and title-case notification and log category labels ([8187151](https://github.com/DylanLogan2581/gubernator/commit/8187151802445188b5c29f156dff7c717cbc5466)), closes [#904](https://github.com/DylanLogan2581/gubernator/issues/904)
+- **turns:** resolve entity names in turn log scope column ([c2cb65a](https://github.com/DylanLogan2581/gubernator/commit/c2cb65a4b3898870c8e24a7802d9990c59d0f30d)), closes [#889](https://github.com/DylanLogan2581/gubernator/issues/889)
+- **turns:** show friendly labels in turn log category badge and filter ([adbfb8c](https://github.com/DylanLogan2581/gubernator/commit/adbfb8c09afd055d68986164be5ee4c37d6ff247)), closes [#888](https://github.com/DylanLogan2581/gubernator/issues/888)
+- **turns:** wire turn_log_entries.citizen_id foreign key to citizens ([1d20c1f](https://github.com/DylanLogan2581/gubernator/commit/1d20c1fd1d53a956a6cacbe14146b14a82c76479))
+- **worlds:** add tooltip to trash toggle on worlds list page ([89aa917](https://github.com/DylanLogan2581/gubernator/commit/89aa91781452d5b773c0ed8856948e7249bae15b)), closes [#911](https://github.com/DylanLogan2581/gubernator/issues/911)
+- **worlds:** allow hard delete of worlds with referenced resources ([f67d668](https://github.com/DylanLogan2581/gubernator/commit/f67d668890c70e6366293ed4e90f00751fb2cad2))
+- **worlds:** remove duplicate visibility field from world list item ([07175f2](https://github.com/DylanLogan2581/gubernator/commit/07175f23314fad71cf535f0c3f51cc54f812bde8)), closes [#912](https://github.com/DylanLogan2581/gubernator/issues/912)
+
+### Features
+
+- **citizens:** show living count and population cap in panel header ([bdca6d6](https://github.com/DylanLogan2581/gubernator/commit/bdca6d69ae86f1e1807a43a49809e0dbcbcaca8f)), closes [#896](https://github.com/DylanLogan2581/gubernator/issues/896)
+- **managed-populations:** show upkeep coverage and worker sufficiency ([0db265c](https://github.com/DylanLogan2581/gubernator/commit/0db265c329a5727ada82425e1dfead58c0f56fd3)), closes [#897](https://github.com/DylanLogan2581/gubernator/issues/897)
+- **notifications:** show location breadcrumb in popover items ([2c5d44b](https://github.com/DylanLogan2581/gubernator/commit/2c5d44b7f122ed481511181bb4439aad30a16ae3)), closes [#905](https://github.com/DylanLogan2581/gubernator/issues/905)
+- **reports:** aggregate nation and world snapshots at query time ([166d4c1](https://github.com/DylanLogan2581/gubernator/commit/166d4c1992a540f007442099c60aa7e6c6669356)), closes [#788](https://github.com/DylanLogan2581/gubernator/issues/788)
+- **reports:** settlement reports tab with trend charts ([7e6e323](https://github.com/DylanLogan2581/gubernator/commit/7e6e3237296119419d490ac9bf36aff7f84e9153)), closes [#787](https://github.com/DylanLogan2581/gubernator/issues/787)
+- **resources:** add adjustment_amount to per-turn resource snapshots ([154267b](https://github.com/DylanLogan2581/gubernator/commit/154267b40fae6656a9d94b986cef422912865ab3)), closes [#891](https://github.com/DylanLogan2581/gubernator/issues/891)
+- **settlements:** make tab bar sticky to top of viewport ([a55b385](https://github.com/DylanLogan2581/gubernator/commit/a55b3853c3abbb1ebb71c7cd89f497cfe008a32c)), closes [#909](https://github.com/DylanLogan2581/gubernator/issues/909)
+- **templates:** import world from template ([0f63116](https://github.com/DylanLogan2581/gubernator/commit/0f63116834fa15a9c2bd87fbf64c49f06e7766ae)), closes [#791](https://github.com/DylanLogan2581/gubernator/issues/791)
+- **templates:** superadmin template library ui with create-from ([e1d9c89](https://github.com/DylanLogan2581/gubernator/commit/e1d9c89d87a5ab899acbc02d04cae3402a40339d)), closes [#793](https://github.com/DylanLogan2581/gubernator/issues/793)
+- **testing:** regenerate demo world seed with rebuildable tooling ([2ff21f0](https://github.com/DylanLogan2581/gubernator/commit/2ff21f0836367f09959374c7283083f5025234d6))
+- **turns:** replace spinner with skeleton in last transition panel ([635e030](https://github.com/DylanLogan2581/gubernator/commit/635e03063fe5ca46889d38c68f5b89296e1e0e20)), closes [#906](https://github.com/DylanLogan2581/gubernator/issues/906)
+- **turns:** replace uuid inputs with name selectors in turn log filters ([23b5835](https://github.com/DylanLogan2581/gubernator/commit/23b58359086bca7a52768dc3024e67c38dbadac5)), closes [#892](https://github.com/DylanLogan2581/gubernator/issues/892)
+- **turns:** turn log browser with filters and payload renderers ([7854814](https://github.com/DylanLogan2581/gubernator/commit/78548147635839a1cba9a6303230d4adfda07e49)), closes [#789](https://github.com/DylanLogan2581/gubernator/issues/789)
+- **worlds:** bundled seed scenarios for instant playable worlds ([0249957](https://github.com/DylanLogan2581/gubernator/commit/02499579459e192e09bb3ccae2d2aa386292297e)), closes [#792](https://github.com/DylanLogan2581/gubernator/issues/792)
+- **worlds:** world config template export ([b298162](https://github.com/DylanLogan2581/gubernator/commit/b298162507e46910aa4d87afa6a1ada60da157e2)), closes [#790](https://github.com/DylanLogan2581/gubernator/issues/790)
+
 ## [0.8.0](https://github.com/DylanLogan2581/gubernator/compare/v0.7.0...v0.8.0) (2026-06-17)
 
 ### Bug Fixes
