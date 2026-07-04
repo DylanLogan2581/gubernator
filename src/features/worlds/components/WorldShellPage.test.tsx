@@ -518,6 +518,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 1, name: "Secondday" },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }
 

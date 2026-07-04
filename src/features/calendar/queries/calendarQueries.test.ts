@@ -188,6 +188,7 @@ function createCalendarConfig(): {
     },
   ];
   readonly dateFormatTemplate: "{weekday}, {month} {day}, Year {year}";
+  readonly shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}";
 } {
   return {
     months: [
@@ -208,6 +209,7 @@ function createCalendarConfig(): {
       },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }
 

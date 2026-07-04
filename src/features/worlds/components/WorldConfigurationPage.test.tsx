@@ -377,6 +377,7 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
 function createCalendarConfig(): WorldCalendarConfig {
   return {
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
     months: [
       { dayCount: 30, index: 0, name: "Dawn" },
       { dayCount: 30, index: 1, name: "Ember" },

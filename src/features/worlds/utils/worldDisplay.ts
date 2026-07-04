@@ -1,5 +1,6 @@
 import {
   formatCalendarDate,
+  formatCalendarDateShort,
   resolveTurnCalendarDate,
   worldCalendarConfigSchema,
 } from "@/features/calendar";
@@ -56,6 +57,10 @@ export function toAccessibleWorld(
     id: world.id,
     incestPreventionDepth: world.incest_prevention_depth,
     inWorldDateLabel: resolveInWorldDateLabel(
+      world.calendar_config_json,
+      planningTurnNumber,
+    ),
+    inWorldDateLabelShort: resolveInWorldDateLabelShort(
       world.calendar_config_json,
       planningTurnNumber,
     ),
@@ -124,6 +129,30 @@ function resolveInWorldDateLabel(
       resolveTurnCalendarDate(calendarConfig, planningTurnNumber),
       {
         dateFormatTemplate: calendarConfig.dateFormatTemplate,
+      },
+    );
+  } catch {
+    return FALLBACK_IN_WORLD_DATE_LABEL;
+  }
+}
+
+function resolveInWorldDateLabelShort(
+  calendarConfigJson: WorldRow["calendar_config_json"] | undefined,
+  planningTurnNumber: number,
+): string {
+  const parseResult = worldCalendarConfigSchema.safeParse(calendarConfigJson);
+
+  if (!parseResult.success) {
+    return FALLBACK_IN_WORLD_DATE_LABEL;
+  }
+
+  const calendarConfig = parseResult.data;
+
+  try {
+    return formatCalendarDateShort(
+      resolveTurnCalendarDate(calendarConfig, planningTurnNumber),
+      {
+        shortDateFormatTemplate: calendarConfig.shortDateFormatTemplate,
       },
     );
   } catch {

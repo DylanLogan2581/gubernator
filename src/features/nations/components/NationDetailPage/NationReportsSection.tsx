@@ -28,7 +28,7 @@ import {
 } from "@/features/reports";
 import type { NationSettlementSnapshotRow } from "@/features/reports";
 import {
-  formatCalendarDate,
+  formatCalendarDateShort,
   resolveTurnCalendarDate,
 } from "@/shared/turnCalendarPrimitives";
 
@@ -348,12 +348,16 @@ export function NationReportsSection({
     nationSettlementSnapshotsQueryOptions(nationId, fromTurn, toTurn),
   );
 
+  // Chart axis ticks use the short template so labels don't overflow.
   function turnLabel(turn: number): string {
     if (calendarConfig === null) return `T${String(turn)}`;
     try {
-      return formatCalendarDate(resolveTurnCalendarDate(calendarConfig, turn), {
-        dateFormatTemplate: calendarConfig.dateFormatTemplate,
-      });
+      return formatCalendarDateShort(
+        resolveTurnCalendarDate(calendarConfig, turn),
+        {
+          shortDateFormatTemplate: calendarConfig.shortDateFormatTemplate,
+        },
+      );
     } catch {
       return `T${String(turn)}`;
     }

@@ -177,6 +177,7 @@ async function getWorldRouteAccess(
       archivedAt: world.archivedAt,
       currentTurnNumber: world.currentTurnNumber,
       inWorldDateLabel: world.inWorldDateLabel,
+      inWorldDateLabelShort: world.inWorldDateLabelShort,
       isArchived: world.isArchived,
       name: world.name,
       nextInWorldDateLabel: world.nextInWorldDateLabel,

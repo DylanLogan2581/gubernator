@@ -2,12 +2,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 
+import {
+  formatCalendarDate,
+  formatCalendarDateShort,
+} from "../utils/calendarDateFormatting";
+import { resolveTurnCalendarDate } from "../utils/turnCalendarDates";
+
 import { FieldError, NumberField } from "./CalendarFieldPrimitives";
 import { CalendarListEditor } from "./CalendarListEditor";
 
 import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
 import type { CalendarValidationErrors } from "../utils/calendarConfigValidation";
 import type { JSX } from "react";
+
+function previewLongDate(config: WorldCalendarConfig): string {
+  try {
+    return formatCalendarDate(resolveTurnCalendarDate(config, 1), {
+      dateFormatTemplate: config.dateFormatTemplate,
+    });
+  } catch {
+    return "Preview unavailable.";
+  }
+}
+
+function previewShortDate(config: WorldCalendarConfig): string {
+  try {
+    return formatCalendarDateShort(resolveTurnCalendarDate(config, 1), {
+      shortDateFormatTemplate: config.shortDateFormatTemplate,
+    });
+  } catch {
+    return "Preview unavailable.";
+  }
+}
 
 export function CalendarEditableFields({
   config,
@@ -252,6 +278,47 @@ export function CalendarEditableFields({
           />
         )}
       </Label>
+
+      <Label
+        htmlFor="calendar-date-format-short"
+        className="grid gap-1 text-sm"
+      >
+        <span className="font-medium">Short date format template</span>
+        <Input
+          id="calendar-date-format-short"
+          aria-describedby={
+            errors.shortDateFormatTemplate === undefined
+              ? undefined
+              : "calendar-date-format-template-short-error"
+          }
+          aria-invalid={
+            errors.shortDateFormatTemplate === undefined ? undefined : true
+          }
+          value={config.shortDateFormatTemplate}
+          onChange={(event) =>
+            onChange({
+              ...config,
+              shortDateFormatTemplate: event.currentTarget.value,
+            })
+          }
+        />
+        {errors.shortDateFormatTemplate === undefined ? null : (
+          <FieldError
+            id="calendar-date-format-template-short-error"
+            message={errors.shortDateFormatTemplate}
+          />
+        )}
+      </Label>
+
+      <dl className="grid gap-1 text-sm">
+        <dt className="font-medium">Preview</dt>
+        <dd className="text-muted-foreground">
+          Long: {previewLongDate(config)}
+        </dd>
+        <dd className="text-muted-foreground">
+          Short: {previewShortDate(config)}
+        </dd>
+      </dl>
     </>
   );
 }

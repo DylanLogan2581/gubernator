@@ -2,9 +2,11 @@
  * Shared input size limits enforced at the database boundary.
  *
  * Values must be kept in sync with the matching CHECK constraints in
- * `supabase/migrations/20260519000004_add_input_size_limits.sql`. The DB is
- * the source of truth for safety; this module mirrors the same numbers for
- * client validation so users get a friendly error before a 23514.
+ * `supabase/migrations/20260519000004_add_input_size_limits.sql` and
+ * `supabase/migrations/20260819000000_add_calendar_short_date_format_template.sql`.
+ * The DB is the source of truth for safety; this module mirrors the same
+ * numbers for client validation so users get a friendly error before a
+ * 23514.
  */
 
 export const textInputLimits = {
@@ -25,6 +27,7 @@ export const calendarInputLimits = {
   monthNameMax: 64,
   monthDayCountMax: 1000,
   dateFormatTemplateMax: 200,
+  shortDateFormatTemplateMax: 200,
   startingYearMin: -1_000_000,
   startingYearMax: 1_000_000,
 } as const;

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (10);
+  plan (17);
 
 insert into
   auth.users (
@@ -167,6 +167,87 @@ select
     '23514',
     null,
     'rejects unsupported date format template tokens'
+  );
+
+select
+  is (
+    public.default_calendar_config () ->> 'shortDateFormatTemplate',
+    '{monthNumber}/{dayNumber}/{yearNumber}',
+    'default calendar config carries the default short date format template'
+  );
+
+select
+  ok (
+    public.is_valid_calendar_config (
+      public.default_calendar_config () - 'shortDateFormatTemplate'
+    ),
+    'config without shortDateFormatTemplate remains valid (backward compatible)'
+  );
+
+select
+  ok (
+    public.is_valid_calendar_config (
+      jsonb_set(
+        public.default_calendar_config (),
+        '{dateFormatTemplate}',
+        '"{monthNumber}/{dayNumber}/{yearNumber}"'::jsonb
+      )
+    ),
+    'dateFormatTemplate accepts numeric tokens'
+  );
+
+select
+  ok (
+    public.is_valid_calendar_config (
+      jsonb_set(
+        public.default_calendar_config (),
+        '{shortDateFormatTemplate}',
+        '"{weekday}, {month} {day}, Year {year}"'::jsonb
+      )
+    ),
+    'shortDateFormatTemplate accepts word tokens'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.worlds (name, calendar_config_json)
+    values (
+      'Invalid Short Template World',
+      jsonb_set(public.default_calendar_config(), '{shortDateFormatTemplate}', '"no tokens here"'::jsonb)
+    )
+  $test$,
+    '23514',
+    null,
+    'rejects short date format templates missing a date token'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.worlds (name, calendar_config_json)
+    values (
+      'Invalid Short Template Token World',
+      jsonb_set(public.default_calendar_config(), '{shortDateFormatTemplate}', '"{monthNumber} {era}"'::jsonb)
+    )
+  $test$,
+    '23514',
+    null,
+    'rejects unsupported short date format template tokens'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.worlds (name, calendar_config_json)
+    values (
+      'Unknown Key World',
+      public.default_calendar_config() || jsonb_build_object('unknownField', 'nope')
+    )
+  $test$,
+    '23514',
+    null,
+    'rejects calendar configs with unknown top-level keys'
   );
 
 rollback;

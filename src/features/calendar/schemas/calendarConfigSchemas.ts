@@ -9,9 +9,30 @@ const namedCalendarItemNameSchema = (maxLength: number): z.ZodString =>
     .string()
     .max(maxLength, "Name is too long.")
     .refine((value): boolean => value.trim().length > 0, "Name is required.");
-const dateFormatTokenPattern = /\{(?:weekday|month|day|year)\}/;
+const dateFormatTokenPattern =
+  /\{(?:weekday|month|monthNumber|day|dayNumber|year|yearNumber)\}/;
 const unsupportedDateFormatTokenPattern =
-  /\{(?!weekday\}|month\}|day\}|year\})[^{}]+\}/;
+  /\{(?!weekday\}|month\}|monthNumber\}|day\}|dayNumber\}|year\}|yearNumber\})[^{}]+\}/;
+
+const dateFormatTemplateSchema = (
+  maxLength: number,
+  label: string,
+): z.ZodString =>
+  z
+    .string()
+    .max(maxLength, `${label} is too long.`)
+    .refine(
+      (value): boolean => value.trim().length > 0,
+      `${label} is required.`,
+    )
+    .refine(
+      (value): boolean => dateFormatTokenPattern.test(value),
+      `${label} must include at least one date token.`,
+    )
+    .refine(
+      (value): boolean => !unsupportedDateFormatTokenPattern.test(value),
+      `${label} contains an unsupported token.`,
+    );
 
 const calendarWeekdaySchema = z.strictObject({
   index: nonnegativeIntegerSchema,
@@ -31,24 +52,14 @@ export const worldCalendarConfigSchema = z.preprocess(
   normalizeCalendarConfigInput,
   z
     .strictObject({
-      dateFormatTemplate: z
-        .string()
-        .max(
-          calendarInputLimits.dateFormatTemplateMax,
-          "Date format template is too long.",
-        )
-        .refine(
-          (value): boolean => value.trim().length > 0,
-          "Date format template is required.",
-        )
-        .refine(
-          (value): boolean => dateFormatTokenPattern.test(value),
-          "Date format template must include at least one date token.",
-        )
-        .refine(
-          (value): boolean => !unsupportedDateFormatTokenPattern.test(value),
-          "Date format template contains an unsupported token.",
-        ),
+      dateFormatTemplate: dateFormatTemplateSchema(
+        calendarInputLimits.dateFormatTemplateMax,
+        "Date format template",
+      ),
+      shortDateFormatTemplate: dateFormatTemplateSchema(
+        calendarInputLimits.shortDateFormatTemplateMax,
+        "Short date format template",
+      ),
       weekdays: z
         .array(calendarWeekdaySchema)
         .nonempty("Weekdays are required.")
@@ -116,6 +127,10 @@ export const worldCalendarConfigSchema = z.preprocess(
 export type WorldCalendarConfig = z.infer<typeof worldCalendarConfigSchema>;
 
 function normalizeCalendarConfigInput(value: unknown): unknown {
+  return withDefaultShortDateFormatTemplate(migrateYearFormatTemplate(value));
+}
+
+function migrateYearFormatTemplate(value: unknown): unknown {
   if (
     value === null ||
     typeof value !== "object" ||
@@ -140,5 +155,24 @@ function normalizeCalendarConfigInput(value: unknown): unknown {
       "{n}",
       "{year}",
     )}`,
+  };
+}
+
+const DEFAULT_SHORT_DATE_FORMAT_TEMPLATE =
+  "{monthNumber}/{dayNumber}/{yearNumber}";
+
+function withDefaultShortDateFormatTemplate(value: unknown): unknown {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    "shortDateFormatTemplate" in value
+  ) {
+    return value;
+  }
+
+  return {
+    ...value,
+    shortDateFormatTemplate: DEFAULT_SHORT_DATE_FORMAT_TEMPLATE,
   };
 }

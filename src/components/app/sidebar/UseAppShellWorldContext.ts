@@ -65,7 +65,7 @@ export function useAppShellWorldContext(): AppShellWorldContext {
     turnLabel:
       worldAccess === null
         ? null
-        : `Turn ${worldAccess.header.currentTurnNumber} · ${worldAccess.header.inWorldDateLabel}`,
+        : `Turn ${worldAccess.header.currentTurnNumber} · ${worldAccess.header.inWorldDateLabelShort}`,
     userId: accessContext.userId,
     worldAccess,
     worldId,

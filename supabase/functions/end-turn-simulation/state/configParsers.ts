@@ -9,6 +9,7 @@ import type { TurnCalendarConfig } from "../../_shared/turnCalendarPrimitives.ts
 
 const expectedCalendarConfigFields = [
   "dateFormatTemplate",
+  "shortDateFormatTemplate",
   "months",
   "startingDayOfMonth",
   "startingMonthIndex",
@@ -53,8 +54,12 @@ export function parseWorldCalendarConfig(
     startingWeekdayOffset >= weekdays.length ||
     typeof dateFormatTemplate !== "string" ||
     dateFormatTemplate.trim().length === 0 ||
-    !/\{(?:weekday|month|day|year)\}/.test(dateFormatTemplate) ||
-    /\{(?!weekday\}|month\}|day\}|year\})[^{}]+\}/.test(dateFormatTemplate)
+    !/\{(?:weekday|month|monthNumber|day|dayNumber|year|yearNumber)\}/.test(
+      dateFormatTemplate,
+    ) ||
+    /\{(?!weekday\}|month\}|monthNumber\}|day\}|dayNumber\}|year\}|yearNumber\})[^{}]+\}/.test(
+      dateFormatTemplate,
+    )
   ) {
     return null;
   }

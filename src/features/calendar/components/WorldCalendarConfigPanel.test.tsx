@@ -79,6 +79,11 @@ describe("WorldCalendarConfigPanel", () => {
     expect(
       screen.getByRole("textbox", { name: "Date format template" }),
     ).toHaveValue("{weekday}, {month} {day}, {year} AG");
+    expect(
+      screen.getByRole("textbox", { name: "Short date format template" }),
+    ).toHaveValue("{monthNumber}/{dayNumber}/{yearNumber}");
+    expect(screen.getByText(/Long: Firstday, Dawn 1, 100 AG/)).toBeDefined();
+    expect(screen.getByText(/Short: 1\/1\/100/)).toBeDefined();
 
     await user.clear(screen.getByRole("textbox", { name: "Day 1" }));
     await user.type(screen.getByRole("textbox", { name: "Day 1" }), "Moonday");
@@ -533,6 +538,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 1, name: "Secondday" },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }
 

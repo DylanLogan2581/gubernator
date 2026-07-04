@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import {
   formatCalendarDate,
+  formatCalendarDateShort,
   resolveTurnCalendarDate,
 } from "@/shared/turnCalendarPrimitives";
 
@@ -71,6 +72,22 @@ export function SettlementReportsPanel({
     }
   }
 
+  // Chart axis ticks use the short template so labels don't overflow; CSV
+  // exports keep the long, unambiguous date via turnLabel above.
+  function axisLabel(turn: number): string {
+    if (calendarConfig === null) return `T${String(turn)}`;
+    try {
+      return formatCalendarDateShort(
+        resolveTurnCalendarDate(calendarConfig, turn),
+        {
+          shortDateFormatTemplate: calendarConfig.shortDateFormatTemplate,
+        },
+      );
+    } catch {
+      return `T${String(turn)}`;
+    }
+  }
+
   function handleApply(from: number, to: number): void {
     setFromTurn(from);
     setToTurn(to);
@@ -92,6 +109,7 @@ export function SettlementReportsPanel({
       </Card>
 
       <PopulationSection
+        axisLabel={axisLabel}
         isLoading={populationQuery.isPending}
         isError={populationQuery.isError}
         rows={populationQuery.data ?? []}
@@ -99,6 +117,7 @@ export function SettlementReportsPanel({
       />
 
       <ResourceSection
+        axisLabel={axisLabel}
         isLoading={resourceQuery.isPending}
         isError={resourceQuery.isError}
         rows={resourceQuery.data ?? []}
@@ -109,11 +128,13 @@ export function SettlementReportsPanel({
 }
 
 function PopulationSection({
+  axisLabel,
   isLoading,
   isError,
   rows,
   turnLabel,
 }: {
+  readonly axisLabel: (turn: number) => string;
   readonly isLoading: boolean;
   readonly isError: boolean;
   readonly rows: readonly PopulationSnapshotRow[];
@@ -155,7 +176,7 @@ function PopulationSection({
             </AlertDescription>
           </Alert>
         ) : (
-          <PopulationTrendChart rows={rows} turnLabel={turnLabel} />
+          <PopulationTrendChart rows={rows} turnLabel={axisLabel} />
         )}
       </CardContent>
     </Card>
@@ -163,11 +184,13 @@ function PopulationSection({
 }
 
 function ResourceSection({
+  axisLabel,
   isLoading,
   isError,
   rows,
   turnLabel,
 }: {
+  readonly axisLabel: (turn: number) => string;
   readonly isLoading: boolean;
   readonly isError: boolean;
   readonly rows: readonly ResourceSnapshotRow[];
@@ -209,7 +232,7 @@ function ResourceSection({
             </AlertDescription>
           </Alert>
         ) : (
-          <ResourceTrendChart rows={rows} turnLabel={turnLabel} />
+          <ResourceTrendChart rows={rows} turnLabel={axisLabel} />
         )}
       </CardContent>
     </Card>

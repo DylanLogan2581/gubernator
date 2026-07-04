@@ -274,6 +274,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }
 

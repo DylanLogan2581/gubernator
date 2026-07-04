@@ -222,6 +222,7 @@ describe("worldRouteAccessQueryOptions", () => {
       archivedAt: null,
       currentTurnNumber: 8,
       inWorldDateLabel: "Secondday, Ember 1, 101 AG",
+      inWorldDateLabelShort: "2/1/101",
       isArchived: false,
       name: "Verdant Reach",
       nextInWorldDateLabel: "Firstday, Ember 2, 101 AG",
@@ -508,6 +509,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 1, name: "Secondday" },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }
 
