@@ -66,6 +66,10 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("@/features/partnerships", () => ({
+  activePartnershipForCitizenQueryOptions: (citizenId: string) => ({
+    queryFn: () => Promise.resolve(null),
+    queryKey: ["test", "active-partnership", citizenId],
+  }),
   PartnershipHistoryPanel: () => (
     <div data-testid="partnership-history-panel" />
   ),
@@ -134,11 +138,17 @@ describe("CitizenDetailPage", () => {
       await screen.findByRole("heading", { level: 1, name: "Aldra" }),
     ).toBeDefined();
     expect(screen.getByText("Player character.")).toBeDefined();
+    expect(screen.getByTestId("role-assignment-controls")).toBeDefined();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Core edit" }));
     expect(
       screen.getAllByRole("button", { name: /Edit/ }).length,
     ).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByRole("tab", { name: "Lifecycle" }));
     expect(screen.getByRole("button", { name: "Mark dead" })).toBeDefined();
-    expect(screen.getByTestId("role-assignment-controls")).toBeDefined();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
   });
 
@@ -160,9 +170,11 @@ describe("CitizenDetailPage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Cael" }),
     ).toBeDefined();
-    expect(screen.getAllByText("Deceased").length).toBeGreaterThan(0);
+    expect(screen.getByText("Deceased")).toBeDefined();
     expect(screen.getByText("Admin")).toBeDefined();
     expect(screen.getByText("fever")).toBeDefined();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Lifecycle" }));
     expect(
       screen.getByRole("button", { name: "Revive citizen" }),
     ).toBeDefined();
@@ -265,6 +277,8 @@ describe("CitizenDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Mark dead" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Revive citizen" })).toBeNull();
     expect(screen.queryByTestId("role-assignment-controls")).toBeNull();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
   });
 
@@ -296,6 +310,8 @@ describe("CitizenDetailPage", () => {
     expect(navigateMock).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: /Edit/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Mark dead" })).toBeNull();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
   });
 
@@ -321,6 +337,8 @@ describe("CitizenDetailPage", () => {
     expect(screen.queryByRole("button", { name: /Edit/ })).toBeNull();
     expect(screen.queryByTestId("role-assignment-controls")).toBeNull();
     expect(screen.queryByText("Role and linked user")).toBeNull();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
   });
 
@@ -666,6 +684,7 @@ describe("CitizenDetailPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { level: 1, name: "Child" });
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     const link = await screen.findByRole("link", { name: "Elder A" });
     expect((link as HTMLAnchorElement).href).toContain(PARENT_A_ID);
     expect(screen.getByText("—")).toBeDefined();
@@ -1013,6 +1032,12 @@ function createCitizensBuilder(
             ? citizenRowsById[lastQueriedId]
             : mainCitizen;
         return Promise.resolve({ data: row, error: null });
+      });
+      // Sibling navigation (citizensInSettlementQueryOptions) always sees just
+      // the main citizen here — multi-sibling cycling has its own focused test.
+      detailBuilder.returns = vi.fn().mockResolvedValue({
+        data: [mainCitizen],
+        error: null,
       });
       return detailBuilder;
     }),

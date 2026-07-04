@@ -12,6 +12,7 @@ import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { updateCitizenCoreMutationOptions } from "../../mutations/citizensMutations";
 
+import { bornOnTurnReadout } from "./BornOnTurnReadout";
 import { Readout } from "./Shared";
 
 import type { Citizen } from "../../types/citizenTypes";
@@ -32,6 +33,7 @@ export function CitizenCoreSection({
   const [givenNameError, setGivenNameError] = useState<string | undefined>(
     undefined,
   );
+  const bornOnTurn = bornOnTurnReadout(citizen);
 
   const updateMutation = useMutation(
     updateCitizenCoreMutationOptions({ queryClient }),
@@ -105,18 +107,8 @@ export function CitizenCoreSection({
           <Readout label="Sex" value={citizen.sex} />
           <Readout
             label="Born on turn"
-            tooltip={
-              citizen.bornOnTurnNumber !== null && citizen.bornOnTurnNumber < 0
-                ? "This citizen existed before the simulation began"
-                : undefined
-            }
-            value={
-              citizen.bornOnTurnNumber === null
-                ? null
-                : citizen.bornOnTurnNumber < 0
-                  ? "Before simulation"
-                  : String(citizen.bornOnTurnNumber)
-            }
+            tooltip={bornOnTurn.tooltip}
+            value={bornOnTurn.value}
           />
           <Readout
             label="Status"
