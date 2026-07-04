@@ -16,6 +16,7 @@ function buildClient(resolvedValue: ResolvedValue): {
   select: ReturnType<typeof vi.fn>;
   eq: ReturnType<typeof vi.fn>;
   ilike: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
   range: ReturnType<typeof vi.fn>;
 } {
   const builder: Record<string, ReturnType<typeof vi.fn>> = {};
@@ -31,6 +32,7 @@ function buildClient(resolvedValue: ResolvedValue): {
     select,
     eq: builder.eq,
     ilike: builder.ilike,
+    order: builder.order,
     range: builder.range,
   };
 }
@@ -113,6 +115,31 @@ describe("citizensDirectoryQueryOptions", () => {
     await fetch(client, "world-1", {}, { pageIndex: 2, pageSize: 25 });
 
     expect(range).toHaveBeenCalledWith(50, 74);
+  });
+
+  it("defaults to ordering by name ascending when no order is given", async () => {
+    const { client, order } = buildClient({ data: [], error: null, count: 0 });
+
+    await fetch(client, "world-1", {}, { pageIndex: 0, pageSize: 25 });
+
+    expect(order).toHaveBeenCalledWith("name", { ascending: true });
+    expect(order).toHaveBeenCalledWith("id", { ascending: true });
+  });
+
+  it("orders by the given column and direction, with id as a tiebreaker", async () => {
+    const { client, order } = buildClient({ data: [], error: null, count: 0 });
+
+    await fetch(
+      client,
+      "world-1",
+      { order: { ascending: false, column: "settlement_name" } },
+      { pageIndex: 0, pageSize: 25 },
+    );
+
+    expect(order).toHaveBeenCalledWith("settlement_name", {
+      ascending: false,
+    });
+    expect(order).toHaveBeenCalledWith("id", { ascending: true });
   });
 
   it("maps snake_case rows to a camelCase CitizenDirectoryRow and returns totalCount", async () => {

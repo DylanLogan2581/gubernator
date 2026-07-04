@@ -14,9 +14,22 @@ import type { CitizenStatus, CitizenType } from "../types/citizenTypes";
 // over citizen_directory_view so the client never fetches every citizen in
 // the world — only the current page plus a total count for the pager.
 
+export type CitizenDirectorySortColumn =
+  | "name"
+  | "age_turns"
+  | "settlement_name"
+  | "nation_name"
+  | "status";
+
+export type CitizenDirectoryOrder = {
+  readonly ascending: boolean;
+  readonly column: CitizenDirectorySortColumn;
+};
+
 export type CitizenDirectoryFilters = {
   readonly citizenType?: CitizenType;
   readonly nationId?: string;
+  readonly order?: CitizenDirectoryOrder;
   readonly search?: string;
   readonly settlementId?: string;
   readonly status?: CitizenStatus;
@@ -93,6 +106,7 @@ async function getCitizensDirectory(
   const pageStart = pagination.pageIndex * pagination.pageSize;
   const pageEnd = pageStart + pagination.pageSize - 1;
   const search = filters.search?.trim() ?? "";
+  const order = filters.order ?? { ascending: true, column: "name" };
 
   let query = client
     .from("citizen_directory_view")
@@ -116,7 +130,7 @@ async function getCitizensDirectory(
   }
 
   const { data, error, count } = await query
-    .order("name", { ascending: true })
+    .order(order.column, { ascending: order.ascending })
     .order("id", { ascending: true })
     .range(pageStart, pageEnd)
     .returns<CitizenDirectoryRowData[]>();

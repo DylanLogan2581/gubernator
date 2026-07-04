@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useState, type JSX } from "react";
 
+import { DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
-import { TablePagination } from "@/components/shared/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,14 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { nationsListQueryOptions } from "@/features/nations";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -35,8 +27,10 @@ import { CitizenAvatar } from "./CitizenAvatar";
 import type {
   CitizenDirectoryFilters,
   CitizenDirectoryRow,
+  CitizenDirectorySortColumn,
 } from "../queries/citizenDirectoryQueries";
 import type { CitizenStatus, CitizenType } from "../types/citizenTypes";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 const PAGE_SIZE = 25;
 
@@ -50,13 +44,114 @@ const STATUS_LABELS: Record<CitizenStatus, string> = {
   dead: "Deceased",
 };
 
+const DEFAULT_SORTING: SortingState = [{ id: "name", desc: false }];
+
+// Maps a DataTable column id to the citizen_directory_view column the
+// server-side `.order()` call should use (see citizenDirectoryQueries.ts).
+const SORT_COLUMN_BY_ID: Record<string, CitizenDirectorySortColumn> = {
+  age: "age_turns",
+  name: "name",
+  nation: "nation_name",
+  settlement: "settlement_name",
+  status: "status",
+};
+
+const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
+  {
+    id: "name",
+    accessorFn: (row) => row.name ?? "—",
+    header: "Name",
+    cell: ({ row }) => (
+      <>
+        <CitizenAvatar
+          id={row.original.id}
+          name={row.original.name ?? "—"}
+          size="sm"
+        />
+        <span className="font-medium">{row.original.name ?? "—"}</span>
+      </>
+    ),
+  },
+  {
+    id: "age",
+    accessorFn: (row) => row.ageTurns,
+    header: "Age",
+    cell: ({ row }) => (
+      <span className="tabular-nums text-muted-foreground">
+        {row.original.ageTurns ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "sex",
+    enableSorting: false,
+    header: "Sex",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.original.sex ?? "—"}</span>
+    ),
+  },
+  {
+    id: "settlement",
+    accessorFn: (row) => row.settlementName ?? "—",
+    header: "Settlement",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.settlementName ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "nation",
+    accessorFn: (row) => row.nationName ?? "—",
+    header: "Nation",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.nationName ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "assignment",
+    enableSorting: false,
+    header: "Job / assignment",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.assignmentLabel ?? "Unassigned"}
+      </span>
+    ),
+  },
+  {
+    id: "type",
+    enableSorting: false,
+    header: "Type",
+    cell: ({ row }) => (
+      <Badge variant="secondary">
+        {CITIZEN_TYPE_LABELS[row.original.citizenType]}
+      </Badge>
+    ),
+  },
+  {
+    id: "status",
+    accessorFn: (row) => row.status,
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge
+        variant={row.original.status === "alive" ? "secondary" : "destructive"}
+      >
+        {STATUS_LABELS[row.original.status]}
+      </Badge>
+    ),
+  },
+];
+
 type CitizensDirectoryTableProps = {
   readonly worldId: string;
 };
 
-// World-level citizen directory (#989). Filtering, search, and pagination
-// are all pushed server-side via citizensDirectoryQueryOptions — the client
-// only ever holds the current page of rows, not the whole world's roster.
+// World-level citizen directory (#989, sortable via #1002). Filtering,
+// sorting, and pagination are all pushed server-side via
+// citizensDirectoryQueryOptions — the client only ever holds the current
+// page of rows, not the whole world's roster.
 export function CitizensDirectoryTable({
   worldId,
 }: CitizensDirectoryTableProps): JSX.Element {
@@ -70,15 +165,26 @@ export function CitizensDirectoryTable({
   );
   const [status, setStatus] = useState<CitizenStatus | undefined>(undefined);
   const [pageIndex, setPageIndex] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const nationsQuery = useQuery(nationsListQueryOptions(worldId));
   const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
 
+  const activeSort = sorting[0];
+  const order =
+    activeSort !== undefined
+      ? {
+          ascending: !activeSort.desc,
+          column: SORT_COLUMN_BY_ID[activeSort.id],
+        }
+      : undefined;
+
   const filters: CitizenDirectoryFilters = {
     citizenType,
     nationId,
+    order,
     search: debouncedSearch,
     settlementId,
     status,
@@ -210,99 +316,38 @@ export function CitizensDirectoryTable({
         />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Sex</TableHead>
-                  <TableHead>Settlement</TableHead>
-                  <TableHead>Nation</TableHead>
-                  <TableHead>Job / assignment</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <CitizenDirectoryRowItem
-                    key={row.id}
-                    row={row}
-                    worldId={worldId}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <p className="text-xs text-muted-foreground" role="status">
+            {`Showing ${(pageIndex * PAGE_SIZE + 1).toString()}–${(
+              pageIndex * PAGE_SIZE +
+              rows.length
+            ).toString()} of ${totalCount.toString()}`}
+          </p>
 
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground" role="status">
-              {`Showing ${(pageIndex * PAGE_SIZE + 1).toString()}–${(
-                pageIndex * PAGE_SIZE +
-                rows.length
-              ).toString()} of ${totalCount.toString()}`}
-            </p>
-            <TablePagination
-              page={pageIndex}
-              pageCount={pageCount}
-              onPageChange={setPageIndex}
-            />
-          </div>
+          <DataTable
+            columns={COLUMNS}
+            data={rows}
+            getRowId={(row) => row.id}
+            sorting={sorting}
+            onSortingChange={(nextSorting) => {
+              setSorting(nextSorting);
+              resetToFirstPage();
+            }}
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            onPageChange={setPageIndex}
+            isPaginationDisabled={directoryQuery.isFetching}
+            renderRowLink={(row, children) => (
+              <Link
+                to="/worlds/$worldId/citizens/$citizenId"
+                params={{ citizenId: row.id, worldId }}
+                className="flex items-center gap-2 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                {children}
+              </Link>
+            )}
+          />
         </>
       )}
     </div>
-  );
-}
-
-function CitizenDirectoryRowItem({
-  row,
-  worldId,
-}: {
-  readonly row: CitizenDirectoryRow;
-  readonly worldId: string;
-}): JSX.Element {
-  const navigate = useNavigate();
-
-  return (
-    <TableRow
-      className="cursor-pointer hover:bg-muted"
-      onClick={() => {
-        void navigate({
-          to: "/worlds/$worldId/citizens/$citizenId",
-          params: { citizenId: row.id, worldId },
-        });
-      }}
-    >
-      <TableCell className="font-medium">
-        <span className="flex items-center gap-2">
-          <CitizenAvatar id={row.id} name={row.name ?? "—"} size="sm" />
-          {row.name ?? "—"}
-        </span>
-      </TableCell>
-      <TableCell className="tabular-nums text-muted-foreground">
-        {row.ageTurns ?? "—"}
-      </TableCell>
-      <TableCell className="text-muted-foreground">{row.sex ?? "—"}</TableCell>
-      <TableCell className="text-muted-foreground">
-        {row.settlementName ?? "—"}
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {row.nationName ?? "—"}
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {row.assignmentLabel ?? "Unassigned"}
-      </TableCell>
-      <TableCell>
-        <Badge variant="secondary">
-          {CITIZEN_TYPE_LABELS[row.citizenType]}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        <Badge variant={row.status === "alive" ? "secondary" : "destructive"}>
-          {STATUS_LABELS[row.status]}
-        </Badge>
-      </TableCell>
-    </TableRow>
   );
 }

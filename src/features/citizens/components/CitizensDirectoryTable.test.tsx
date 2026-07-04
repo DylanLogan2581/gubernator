@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CitizensDirectoryTable } from "./CitizensDirectoryTable";
 
-const { navigateMock, requireSupabaseClient } = vi.hoisted(() => ({
-  navigateMock: vi.fn(),
+import type { ReactNode } from "react";
+
+const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
 
@@ -15,7 +16,17 @@ vi.mock("@/lib/supabase", () => ({
 }));
 
 vi.mock("@tanstack/react-router", () => ({
-  useNavigate: () => navigateMock,
+  Link: ({
+    children,
+    params,
+  }: {
+    readonly children?: ReactNode;
+    readonly params: { readonly citizenId: string; readonly worldId: string };
+  }) => (
+    <a href={`/worlds/${params.worldId}/citizens/${params.citizenId}`}>
+      {children}
+    </a>
+  ),
 }));
 
 type TableRow = Record<string, unknown>;
@@ -23,15 +34,22 @@ type TableRow = Record<string, unknown>;
 // Generic chainable stub: every filter/order/range method returns itself so
 // callers can chain in any order, and `.returns()` resolves with whatever
 // payload was registered for that table's `.from(...)` call.
-function chainable(resolved: {
-  readonly data: readonly TableRow[];
-  readonly error: unknown;
-  readonly count?: number | null;
-}): Record<string, ReturnType<typeof vi.fn>> {
+function chainable(
+  resolved: {
+    readonly data: readonly TableRow[];
+    readonly error: unknown;
+    readonly count?: number | null;
+  },
+  orderSpy?: (...args: unknown[]) => void,
+): Record<string, ReturnType<typeof vi.fn>> {
   const builder: Record<string, ReturnType<typeof vi.fn>> = {};
-  for (const method of ["eq", "ilike", "order", "range"]) {
+  for (const method of ["eq", "ilike", "range"]) {
     builder[method] = vi.fn(() => builder);
   }
+  builder.order = vi.fn((...args: unknown[]) => {
+    orderSpy?.(...args);
+    return builder;
+  });
   builder.returns = vi.fn(() => Promise.resolve(resolved));
   return builder;
 }
@@ -41,17 +59,22 @@ function buildClient({
   nations = [],
   settlements = [],
   totalCount,
+  orderSpy,
 }: {
   readonly citizens: readonly TableRow[];
   readonly nations?: readonly TableRow[];
   readonly settlements?: readonly TableRow[];
   readonly totalCount: number;
+  readonly orderSpy?: (...args: unknown[]) => void;
 }): unknown {
   const from = vi.fn((table: string) => {
     if (table === "citizen_directory_view") {
       return {
         select: vi.fn(() =>
-          chainable({ count: totalCount, data: citizens, error: null }),
+          chainable(
+            { count: totalCount, data: citizens, error: null },
+            orderSpy,
+          ),
         ),
       };
     }
@@ -80,7 +103,6 @@ function renderTable(worldId = "world-1"): ReturnType<typeof render> {
 
 describe("CitizensDirectoryTable", () => {
   beforeEach(() => {
-    navigateMock.mockReset();
     requireSupabaseClient.mockReset();
   });
 
@@ -127,7 +149,7 @@ describe("CitizensDirectoryTable", () => {
     expect(await screen.findByText("No citizens found")).toBeDefined();
   });
 
-  it("navigates to the citizen detail page when a row is clicked", async () => {
+  it("renders each row's name cell as a link to the citizen detail page", async () => {
     requireSupabaseClient.mockReturnValue(
       buildClient({
         citizens: [
@@ -151,13 +173,45 @@ describe("CitizensDirectoryTable", () => {
 
     renderTable();
 
-    const nameCell = await screen.findByText("Bram");
-    const user = userEvent.setup();
-    await user.click(nameCell);
+    const rowLink = await screen.findByRole("link", { name: /Bram/ });
+    expect(rowLink.getAttribute("href")).toBe(
+      "/worlds/world-1/citizens/citizen-2",
+    );
+  });
 
-    expect(navigateMock).toHaveBeenCalledWith({
-      params: { citizenId: "citizen-2", worldId: "world-1" },
-      to: "/worlds/$worldId/citizens/$citizenId",
+  it("re-fetches with server-side order when a sortable column header is clicked", async () => {
+    const orderSpy = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      buildClient({
+        citizens: [
+          {
+            age_turns: 30,
+            assignment_label: null,
+            citizen_type: "npc",
+            id: "citizen-1",
+            name: "Ada",
+            nation_id: null,
+            nation_name: null,
+            settlement_id: null,
+            settlement_name: null,
+            sex: null,
+            status: "alive",
+          },
+        ],
+        totalCount: 1,
+        orderSpy,
+      }),
+    );
+
+    renderTable();
+    await screen.findByText("Ada");
+    orderSpy.mockClear();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Age/ }));
+
+    await waitFor(() => {
+      expect(orderSpy).toHaveBeenCalledWith("age_turns", { ascending: true });
     });
   });
 });
