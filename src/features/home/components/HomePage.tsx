@@ -1,3 +1,4 @@
+import { HomeDioramaSection } from "./HomeDioramaSection";
 import { HomeFeatureSection } from "./HomeFeatureSection";
 import { HomeFooterSection } from "./HomeFooterSection";
 import { HomeHeroSection } from "./HomeHeroSection";
@@ -10,6 +11,7 @@ export function HomePage(): JSX.Element {
     <div className="flex flex-col gap-10">
       <HomeHeroSection />
       <HomeTurnCycleSection />
+      <HomeDioramaSection />
       <HomeFeatureSection />
       <HomeFooterSection />
     </div>
