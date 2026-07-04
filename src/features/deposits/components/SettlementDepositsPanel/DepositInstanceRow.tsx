@@ -42,9 +42,11 @@ type DepositInstanceRowProps = {
   readonly canAdmin: boolean;
   readonly canManage: boolean;
   readonly instance: DepositInstance;
+  readonly isSelected: boolean;
   readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly onSelect: () => void;
 };
 
 export function DepositInstanceRow({
@@ -52,9 +54,11 @@ export function DepositInstanceRow({
   canAdmin,
   canManage,
   instance,
+  isSelected,
   latestOutcome,
   queryClient,
   settlementId,
+  onSelect,
 }: DepositInstanceRowProps): JSX.Element {
   const [showEditQuantities, setShowEditQuantities] = useState(false);
   const [showMaxWorkersEdit, setShowMaxWorkersEdit] = useState(false);
@@ -77,7 +81,19 @@ export function DepositInstanceRow({
 
   return (
     <>
-      <TableRow>
+      <TableRow
+        aria-selected={isSelected}
+        className="cursor-pointer"
+        data-state={isSelected ? "selected" : undefined}
+        tabIndex={0}
+        onClick={onSelect}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect();
+          }
+        }}
+      >
         <TableCell className="py-2 pr-4 font-medium">
           <span className="flex items-center gap-2">
             {instance.name}
@@ -124,7 +140,12 @@ export function DepositInstanceRow({
           <span className="text-sm">{workersDisplay}</span>
         </TableCell>
         {canAdmin || canManage ? (
-          <TableCell className="w-[18rem] py-2 text-right">
+          <TableCell
+            className="w-[18rem] py-2 text-right"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
             <div className="flex items-center justify-end gap-2">
               {instance.status === "removed" ? (
                 canAdmin ? (

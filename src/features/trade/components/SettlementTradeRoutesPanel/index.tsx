@@ -16,6 +16,7 @@ import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ export function SettlementTradeRoutesPanel({
   const { activeCharacter } = useActivePlayerCharacter();
   const [showProposeDialog, setShowProposeDialog] = useState(false);
   const [showCancelled, setShowCancelled] = useState(false);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
 
   const routesQuery = useQuery(
     tradeRoutesForSettlementQueryOptions(settlementId),
@@ -127,6 +129,14 @@ export function SettlementTradeRoutesPanel({
   const incoming = visibleRoutes.filter(
     (r) => r.destinationSettlementId === settlementId,
   );
+
+  const selectedRoute = allRoutes.find((r) => r.id === selectedRouteId) ?? null;
+  const selectedRouteSide: "destination" | "origin" | null =
+    selectedRoute === null
+      ? null
+      : selectedRoute.originSettlementId === settlementId
+        ? "origin"
+        : "destination";
 
   return (
     <Card
@@ -205,32 +215,59 @@ export function SettlementTradeRoutesPanel({
             }
           />
         ) : (
-          <div className="grid gap-4">
-            <TradeRoutesDirection
-              activeCharacterId={activeCharacter?.id ?? null}
-              canManageRoutes={showCancelled ? false : canManageRoutes}
-              label="Outgoing"
-              queryClient={queryClient}
-              resumedRouteIds={resumedRouteIds}
-              routes={outgoing}
-              settlementId={settlementId}
-              side="origin"
-              traderCountByRoute={traderCountByRoute}
-              worldId={worldId}
-            />
-            <TradeRoutesDirection
-              activeCharacterId={activeCharacter?.id ?? null}
-              canManageRoutes={showCancelled ? false : canManageRoutes}
-              label="Incoming"
-              queryClient={queryClient}
-              resumedRouteIds={resumedRouteIds}
-              routes={incoming}
-              settlementId={settlementId}
-              side="destination"
-              traderCountByRoute={traderCountByRoute}
-              worldId={worldId}
-            />
-          </div>
+          <MasterDetailLayout
+            list={
+              <div className="grid gap-4">
+                <TradeRoutesDirection
+                  activeCharacterId={activeCharacter?.id ?? null}
+                  canManageRoutes={showCancelled ? false : canManageRoutes}
+                  label="Outgoing"
+                  queryClient={queryClient}
+                  resumedRouteIds={resumedRouteIds}
+                  routes={outgoing}
+                  selectedRouteId={selectedRouteId}
+                  settlementId={settlementId}
+                  side="origin"
+                  traderCountByRoute={traderCountByRoute}
+                  worldId={worldId}
+                  onSelectRoute={setSelectedRouteId}
+                />
+                <TradeRoutesDirection
+                  activeCharacterId={activeCharacter?.id ?? null}
+                  canManageRoutes={showCancelled ? false : canManageRoutes}
+                  label="Incoming"
+                  queryClient={queryClient}
+                  resumedRouteIds={resumedRouteIds}
+                  routes={incoming}
+                  selectedRouteId={selectedRouteId}
+                  settlementId={settlementId}
+                  side="destination"
+                  traderCountByRoute={traderCountByRoute}
+                  worldId={worldId}
+                  onSelectRoute={setSelectedRouteId}
+                />
+              </div>
+            }
+            detail={
+              selectedRoute === null || selectedRouteSide === null ? null : (
+                <TradeRouteDetailPanel
+                  route={selectedRoute}
+                  side={selectedRouteSide}
+                  traderCount={traderCountByRoute.get(selectedRoute.id) ?? 0}
+                />
+              )
+            }
+            detailTitle={
+              selectedRoute === null || selectedRouteSide === null
+                ? ""
+                : selectedRouteSide === "origin"
+                  ? selectedRoute.destinationSettlementName
+                  : selectedRoute.originSettlementName
+            }
+            onCloseDetail={() => {
+              setSelectedRouteId(null);
+            }}
+          />
         )}
       </CardContent>
     </Card>
@@ -244,10 +281,12 @@ function TradeRoutesDirection({
   queryClient,
   resumedRouteIds,
   routes,
+  selectedRouteId,
   settlementId,
   side,
   traderCountByRoute,
   worldId,
+  onSelectRoute,
 }: {
   readonly activeCharacterId: string | null;
   readonly canManageRoutes: boolean;
@@ -255,10 +294,12 @@ function TradeRoutesDirection({
   readonly queryClient: QueryClient;
   readonly resumedRouteIds: ReadonlySet<string>;
   readonly routes: readonly TradeRoute[];
+  readonly selectedRouteId: string | null;
   readonly settlementId: string;
   readonly side: "destination" | "origin";
   readonly traderCountByRoute: ReadonlyMap<string, number>;
   readonly worldId: string;
+  readonly onSelectRoute: (routeId: string) => void;
 }): JSX.Element | null {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -311,12 +352,16 @@ function TradeRoutesDirection({
                   activeCharacterId={activeCharacterId}
                   canManageRoutes={canManageRoutes}
                   isResumedThisTransition={resumedRouteIds.has(route.id)}
+                  isSelected={route.id === selectedRouteId}
                   queryClient={queryClient}
                   route={route}
                   settlementId={settlementId}
                   side={side}
                   traderCount={traderCountByRoute.get(route.id) ?? 0}
                   worldId={worldId}
+                  onSelect={() => {
+                    onSelectRoute(route.id);
+                  }}
                 />
               ))}
             </TableBody>
@@ -331,22 +376,26 @@ function TradeRouteRow({
   activeCharacterId,
   canManageRoutes,
   isResumedThisTransition,
+  isSelected,
   queryClient,
   route,
   settlementId,
   side,
   traderCount,
   worldId,
+  onSelect,
 }: {
   readonly activeCharacterId: string | null;
   readonly canManageRoutes: boolean;
   readonly isResumedThisTransition: boolean;
+  readonly isSelected: boolean;
   readonly queryClient: QueryClient;
   readonly route: TradeRoute;
   readonly settlementId: string;
   readonly side: "destination" | "origin";
   readonly traderCount: number;
   readonly worldId: string;
+  readonly onSelect: () => void;
 }): JSX.Element {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -382,7 +431,17 @@ function TradeRouteRow({
       <TableRow
         id={`trade-route-${route.id}`}
         aria-live={isResumedThisTransition ? "polite" : undefined}
-        className={`${isResumedThisTransition ? "animate-pulse bg-success [animation-iteration-count:4]" : ""}`}
+        aria-selected={isSelected}
+        className={`cursor-pointer ${isResumedThisTransition ? "animate-pulse bg-success [animation-iteration-count:4]" : ""}`}
+        data-state={isSelected ? "selected" : undefined}
+        tabIndex={0}
+        onClick={onSelect}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect();
+          }
+        }}
       >
         <TableCell className="py-2 pr-4 font-medium">{counterpart}</TableCell>
         <TableCell className="py-2 pr-4">
@@ -414,7 +473,12 @@ function TradeRouteRow({
           <ApprovalBadge status={combinedApprovalStatus(route)} />
         </TableCell>
         {canManageRoutes ? (
-          <TableCell className="w-48 py-2 text-right">
+          <TableCell
+            className="w-48 py-2 text-right"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
             <div className="flex flex-wrap items-center justify-end gap-1">
               {canApproveOrReject && thisSideApproval === "pending" ? (
                 <>
@@ -524,6 +588,44 @@ function TradeRouteRow({
         />
       ) : null}
     </>
+  );
+}
+
+function TradeRouteDetailPanel({
+  route,
+  side,
+  traderCount,
+}: {
+  readonly route: TradeRoute;
+  readonly side: "destination" | "origin";
+  readonly traderCount: number;
+}): JSX.Element {
+  return (
+    <div className="grid gap-3 text-sm">
+      <div className="grid grid-cols-2 gap-y-2">
+        <span className="text-muted-foreground">Status</span>
+        <span>
+          <StatusBadge
+            pauseReason={route.pauseReasonLastTransition}
+            status={route.status}
+          />
+        </span>
+        <span className="text-muted-foreground">Approval</span>
+        <span>
+          <ApprovalBadge status={combinedApprovalStatus(route)} />
+        </span>
+        <span className="text-muted-foreground">Traders assigned</span>
+        <span className="tabular-nums">{traderCount}</span>
+      </div>
+      <div className="grid gap-1">
+        <span className="text-muted-foreground">Legs</span>
+        <LegsSummary legs={route.legs} viewerSide={side} />
+      </div>
+      <div className="grid gap-1">
+        <span className="text-muted-foreground">Shipments</span>
+        <span className="text-muted-foreground">Not tracked yet</span>
+      </div>
+    </div>
   );
 }
 
