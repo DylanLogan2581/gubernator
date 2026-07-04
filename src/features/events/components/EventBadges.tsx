@@ -26,11 +26,7 @@ const STATUS_META: Record<
     readonly className?: string;
   }
 > = {
-  active: {
-    label: "Active",
-    icon: CheckCircle2,
-    className: "bg-success text-success-foreground",
-  },
+  active: { label: "Active", icon: CheckCircle2, variant: "success" },
   pending: { label: "Pending", icon: Clock, variant: "warning" },
   expired: { label: "Expired", icon: History, variant: "secondary" },
   cancelled: { label: "Cancelled", icon: XCircle, variant: "destructive" },

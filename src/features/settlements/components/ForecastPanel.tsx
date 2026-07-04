@@ -171,11 +171,11 @@ function ForecastPanelContent({
                       <TableCell className="py-2">{name}</TableCell>
                       <TableCell className="py-2 tabular-nums text-right">
                         {delta.netDelta > 0 ? (
-                          <span className="text-green-600 dark:text-green-500">
+                          <span className="text-success-foreground">
                             +{delta.netDelta.toLocaleString()}
                           </span>
                         ) : delta.netDelta < 0 ? (
-                          <span className="text-red-600 dark:text-red-500">
+                          <span className="text-destructive">
                             {delta.netDelta.toLocaleString()}
                           </span>
                         ) : (
@@ -185,11 +185,11 @@ function ForecastPanelContent({
                       <TableCell className="py-2 tabular-nums text-right">
                         {turnsUntilEmpty !== null ? (
                           turnsUntilEmpty <= 3 ? (
-                            <span className="text-red-600 dark:text-red-500">
+                            <span className="text-destructive">
                               {turnsUntilEmpty}
                             </span>
                           ) : turnsUntilEmpty <= 10 ? (
-                            <span className="text-yellow-600 dark:text-yellow-500">
+                            <span className="text-warning-foreground">
                               {turnsUntilEmpty}
                             </span>
                           ) : (

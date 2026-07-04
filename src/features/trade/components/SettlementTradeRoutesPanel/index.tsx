@@ -684,9 +684,9 @@ function StatusBadge({
 }): JSX.Element {
   const variantMap: Record<
     TradeRouteStatus,
-    "default" | "destructive" | "warning" | "outline"
+    "success" | "destructive" | "warning" | "outline"
   > = {
-    active: "default",
+    active: "success",
     cancelled: "destructive",
     paused: "warning",
     proposed: "warning",
@@ -704,12 +704,8 @@ function StatusBadge({
       ? (PAUSE_REASON_LABELS[pauseReason] ?? pauseReason)
       : undefined;
 
-  const variant = variantMap[status];
-  const className =
-    status === "active" ? "bg-success text-success-foreground" : undefined;
-
   return (
-    <Badge className={className} title={title} variant={variant}>
+    <Badge title={title} variant={variantMap[status]}>
       {labels[status]}
     </Badge>
   );
@@ -753,17 +749,15 @@ function ApprovalBadge({
   };
   const variantMap: Record<
     TradeRouteApprovalStatus,
-    "default" | "outline" | "destructive"
+    "success" | "outline" | "destructive"
   > = {
-    approved: "default",
+    approved: "success",
     pending: "outline",
     rejected: "destructive",
   };
-  const className =
-    status === "approved" ? "bg-success text-success-foreground" : undefined;
 
   return (
-    <Badge className={className} variant={variantMap[status]}>
+    <Badge variant={variantMap[status]}>
       <span>
         {label === undefined
           ? statusLabels[status]
