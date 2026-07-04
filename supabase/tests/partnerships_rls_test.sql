@@ -23,7 +23,7 @@
 begin;
 
 select
-  plan (28);
+  plan (29);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -388,8 +388,9 @@ values
     1
   );
 
--- World A partnership involving two player characters. PC holders can see this
--- without exposing NPC-only partnerships.
+-- World A partnership involving two player characters. PC holders can see
+-- this, same as the NPC-only partnership above (both arms visible under the
+-- widened citizen_visible_to_current_user predicate).
 insert into
   public.partnerships (
     id,
@@ -619,14 +620,29 @@ select
 reset role;
 
 -- ===========================================================================
--- PC HOLDER: holds a PC in World A. NPC-only partnerships stay hidden, but
--- partnerships with a visible player-character participant are readable.
+-- PC HOLDER: holds a PC in World A. Citizen visibility now widened to
+-- include NPCs (see 20260817000000_widen_citizen_visibility_for_players.sql),
+-- so NPC-only partnerships in their world are readable too, alongside
+-- partnerships with a visible player-character participant.
 -- ===========================================================================
 set
   local role authenticated;
 
 set
   local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.partnerships
+      where
+        id = 'e6000000-0000-0000-0000-000000000001'
+    ),
+    'PC holder reads an NPC-only partnership in their world'
+  );
 
 select
   ok (

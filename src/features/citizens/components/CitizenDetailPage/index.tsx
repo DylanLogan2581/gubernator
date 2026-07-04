@@ -24,7 +24,6 @@ import {
 
 import { CitizenAssignmentSection } from "./AssignmentSection";
 import { CitizenDetailFrame } from "./CitizenDetailFrame";
-import { CitizenManagerRedirect } from "./CitizenManagerRedirect";
 import { CitizenCoreSection } from "./CoreEditForm";
 import { CitizenDetailHeader } from "./Header";
 import { CitizenLifecycleSection } from "./LifecycleControls";
@@ -195,22 +194,15 @@ function CitizenDetailContent({
     citizen.userId !== null &&
     citizen.userId === accessContext.userId;
 
-  if (!effectiveCanAdmin && !isOwnLivingCharacter) {
-    return (
-      <CitizenManagerRedirect
-        canAdmin={worldAccess.canAdmin}
-        citizen={citizen}
-        worldId={worldId}
-      />
-    );
-  }
-
+  // Everyone who can see this world can view any citizen's public info here;
+  // only edit affordances and admin-only sections are gated on canAdmin below.
   return (
     <CitizenDetailLoaded
       canAdmin={effectiveCanAdmin}
       citizen={citizen}
       currentTurnNumber={worldAccess.header.currentTurnNumber}
       isArchived={worldAccess.header.isArchived}
+      isOwnLivingCharacter={isOwnLivingCharacter}
       worldId={worldId}
     />
   );
@@ -221,12 +213,14 @@ function CitizenDetailLoaded({
   citizen,
   currentTurnNumber,
   isArchived,
+  isOwnLivingCharacter,
   worldId,
 }: {
   readonly canAdmin: boolean;
   readonly citizen: Citizen;
   readonly currentTurnNumber: number;
   readonly isArchived: boolean;
+  readonly isOwnLivingCharacter: boolean;
   readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
@@ -260,7 +254,7 @@ function CitizenDetailLoaded({
 
       <CitizenAssignmentSection citizenId={citizen.id} />
 
-      {citizen.citizenType === "npc" ? (
+      {citizen.citizenType === "npc" && canAdmin ? (
         <CitizenNpcAdminSections
           canEdit={canEdit}
           citizenId={citizen.id}
@@ -269,7 +263,8 @@ function CitizenDetailLoaded({
         />
       ) : null}
 
-      {citizen.citizenType === "player_character" ? (
+      {citizen.citizenType === "player_character" &&
+      (canAdmin || isOwnLivingCharacter) ? (
         <CitizenPlayerCharacterSection
           canAdmin={canAdmin}
           canEdit={canEdit}
