@@ -28,6 +28,7 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -322,31 +323,34 @@ function WorldListItem({
   }
 
   return (
-    <li className="group grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center rounded-md border border-border bg-card text-card-foreground">
+    <li className="group grid gap-3 p-3 sm:grid-cols-[1fr_auto] sm:items-center rounded-md border border-border bg-card text-card-foreground">
       <Link
         to="/worlds/$worldId"
         params={{ worldId: world.id }}
-        className="grid gap-4 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:grid-cols-[1fr_auto] sm:items-center"
+        className="grid gap-3 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:grid-cols-[1fr_auto] sm:items-center"
       >
-        <div className="min-w-0 space-y-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h2 className="truncate text-base font-medium">{world.name}</h2>
-            <WorldBadge world={world} />
+        <div className="flex min-w-0 items-center gap-3">
+          <WorldIcon world={world} />
+          <div className="min-w-0 space-y-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h2 className="truncate text-base font-medium">{world.name}</h2>
+              <WorldBadge world={world} />
+            </div>
+            <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+              <div>
+                <dt className="font-medium text-foreground">Planning turn</dt>
+                <dd>{world.planningTurnNumber}</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-foreground">In-world date</dt>
+                <dd>{world.inWorldDateLabel}</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-foreground">Status</dt>
+                <dd className="capitalize">{world.status}</dd>
+              </div>
+            </dl>
           </div>
-          <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
-            <div>
-              <dt className="font-medium text-foreground">Planning turn</dt>
-              <dd>{world.planningTurnNumber}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-foreground">In-world date</dt>
-              <dd>{world.inWorldDateLabel}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-foreground">Status</dt>
-              <dd className="capitalize">{world.status}</dd>
-            </div>
-          </dl>
         </div>
         <ArrowRight
           className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
@@ -547,6 +551,43 @@ function WorldBadge({
       <Globe2 className="size-3" aria-hidden="true" />
       Public
     </Badge>
+  );
+}
+
+const WORLD_ICON_PALETTE = [
+  "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+  "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+  "bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400",
+] as const;
+
+function worldIconPalette(worldId: string): string {
+  let hash = 0;
+  for (const char of worldId) {
+    hash = (hash * 31 + char.charCodeAt(0)) % WORLD_ICON_PALETTE.length;
+  }
+  return WORLD_ICON_PALETTE[hash];
+}
+
+function WorldIcon({
+  world,
+}: {
+  readonly world: AccessibleWorld;
+}): JSX.Element {
+  const initial = world.name.trim().charAt(0).toUpperCase();
+
+  return (
+    <Avatar aria-hidden="true" className="shrink-0">
+      <AvatarFallback className={worldIconPalette(world.id)}>
+        {initial === "" ? (
+          <Globe2 className="size-4" aria-hidden="true" />
+        ) : (
+          initial
+        )}
+      </AvatarFallback>
+    </Avatar>
   );
 }
 

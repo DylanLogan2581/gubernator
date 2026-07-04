@@ -13,8 +13,7 @@ export function HomePage(): JSX.Element {
           across a structured calendar of turns.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
-          Feature areas are listed below and will become functional in upcoming
-          epics.
+          Sign in to create or join a world and start managing turns.
         </p>
       </section>
 

@@ -210,8 +210,8 @@ describe("app shell auth controls", () => {
       authState.handler = handler;
     });
 
-    renderAt("/", queryClient);
-    await screen.findByRole("heading", { name: "Gubernator" });
+    renderAt("/worlds", queryClient);
+    await screen.findByRole("heading", { name: "Worlds" });
 
     if (authState.handler === null) {
       throw new Error("Expected root layout to subscribe to auth state.");

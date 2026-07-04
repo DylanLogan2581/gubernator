@@ -117,6 +117,25 @@ describe("WorldListPage", () => {
     );
   });
 
+  it("shows a world icon with the first letter of the world name", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: "00000000-0000-0000-0000-000000000101",
+            name: "Calendar World",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    expect(await screen.findByText("Calendar World")).toBeDefined();
+    expect(screen.getByText("C")).toBeDefined();
+  });
+
   it("shows a tooltip explaining the Hidden badge on hover", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
