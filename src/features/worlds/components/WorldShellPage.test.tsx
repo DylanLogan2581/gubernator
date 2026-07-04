@@ -1,13 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorldCalendarConfig } from "@/features/calendar";
-import type { Citizen } from "@/features/citizens";
-import {
-  ActivePlayerCharacterContext,
-  type ActivePlayerCharacterContextValue,
-} from "@/features/permissions";
 
 import { WorldShellPage } from "./WorldShellPage";
 
@@ -91,7 +86,6 @@ describe("WorldShellPage", () => {
     expect(
       screen.getByText("Planning turn").nextElementSibling?.textContent,
     ).toBe("7");
-    expect(screen.getByText("In-world date")).toBeDefined();
     expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
     expect(screen.getByText("private")).toBeDefined();
     expect(await screen.findByText("Readiness Summary")).toBeDefined();
@@ -177,37 +171,6 @@ describe("WorldShellPage", () => {
     ).toHaveAttribute("href", "/worlds");
   });
 
-  it("shows a My character nav link when the user has an active player character", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [
-          createWorldRow({
-            calendar_config_json: createCalendarConfig(),
-            current_turn_number: 1,
-            id: "00000000-0000-0000-0000-000000000505",
-            name: "Test World",
-          }),
-        ],
-      }),
-    );
-
-    const pc = createCitizen({
-      id: "citizen-99",
-      worldId: "00000000-0000-0000-0000-000000000505",
-    });
-    renderWorldShellPage("00000000-0000-0000-0000-000000000505", pc);
-
-    expect(
-      await screen.findByRole("heading", { name: "Test World" }),
-    ).toBeDefined();
-    const myCharLink = screen.getByRole("link", { name: /my character/i });
-    expect(myCharLink).toHaveAttribute(
-      "href",
-      "/worlds/00000000-0000-0000-0000-000000000505/citizens/citizen-99",
-    );
-  });
-
   it("does not render the calendar or NPC flavor config panels", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -232,30 +195,7 @@ describe("WorldShellPage", () => {
     ).toBeNull();
   });
 
-  it("does not show a My character nav link when there is no active player character", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        session: { user: { id: "user-1" } },
-        worldRows: [
-          createWorldRow({
-            calendar_config_json: createCalendarConfig(),
-            current_turn_number: 1,
-            id: "00000000-0000-0000-0000-000000000606",
-            name: "Admin World",
-          }),
-        ],
-      }),
-    );
-
-    renderWorldShellPage("00000000-0000-0000-0000-000000000606");
-
-    expect(
-      await screen.findByRole("heading", { name: "Admin World" }),
-    ).toBeDefined();
-    expect(screen.queryByRole("link", { name: /my character/i })).toBeNull();
-  });
-
-  it("renders the Configuration card for world admins", async () => {
+  it("renders World Reports for world admins", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         adminRows: [{ world_id: "00000000-0000-0000-0000-000000000901" }],
@@ -275,11 +215,11 @@ describe("WorldShellPage", () => {
 
     await screen.findByRole("heading", { name: "Admin World" });
     expect(
-      screen.getByRole("heading", { name: "Configuration", level: 2 }),
+      screen.getByRole("heading", { name: "World Reports" }),
     ).toBeDefined();
   });
 
-  it("does not render the Configuration card for non-admins", async () => {
+  it("does not render World Reports for non-admins", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         session: { user: { id: "user-1" } },
@@ -298,28 +238,81 @@ describe("WorldShellPage", () => {
     renderWorldShellPage("00000000-0000-0000-0000-000000000902");
 
     await screen.findByRole("heading", { name: "Non-Admin World" });
-    expect(screen.queryByRole("heading", { name: "Configuration" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "World Reports" })).toBeNull();
+  });
+
+  it("renders dashboard stat tiles with real queried values, active events, and turn log excerpt", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        eventRows: [
+          createEventRow({ id: "event-1", name: "Harvest Festival" }),
+        ],
+        nationRows: [
+          createNationRow({ id: "nation-1", name: "Nation A" }),
+          createNationRow({ id: "nation-2", name: "Nation B" }),
+        ],
+        session: { user: { id: "user-1" } },
+        settlementRows: [
+          createSettlementRow({
+            id: "settlement-1",
+            is_ready_current_turn: true,
+            name: "Amberhold",
+          }),
+          createSettlementRow({
+            id: "settlement-2",
+            is_ready_current_turn: false,
+            name: "Briarwatch",
+          }),
+          createSettlementRow({
+            id: "settlement-3",
+            is_ready_current_turn: false,
+            name: "Cliffwatch",
+          }),
+        ],
+        totalCitizenCount: 42,
+        turnLogRows: [
+          createTurnLogRow({
+            id: "log-1",
+            log_category: "construction.completed",
+          }),
+        ],
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 5,
+            id: "00000000-0000-0000-0000-000000001001",
+            name: "Dashboard World",
+          }),
+        ],
+      }),
+    );
+
+    const { container } = renderWorldShellPage(
+      "00000000-0000-0000-0000-000000001001",
+    );
+
+    await screen.findByRole("heading", { name: "Dashboard World" });
+
+    const statTileGrid = container.querySelector(".xl\\:grid-cols-5");
+    expect(statTileGrid).not.toBeNull();
+    expect(statTileGrid).toHaveClass("grid-cols-2", "md:grid-cols-3");
+
+    const statTiles = within(statTileGrid as HTMLElement);
+    expect(await statTiles.findByText("2")).toBeDefined(); // Nations
+    expect(await statTiles.findByText("3")).toBeDefined(); // Settlements
+    expect(await statTiles.findByText("42")).toBeDefined(); // Population
+    expect(await statTiles.findByText("1/3")).toBeDefined(); // Settlements ready
+    expect(await statTiles.findByText("1")).toBeDefined(); // Active events
+
+    expect(await screen.findByText("Harvest Festival")).toBeDefined();
+    expect(screen.getByText("Construction Completed")).toBeDefined();
   });
 });
 
-function renderWorldShellPage(
-  worldId: string,
-  activeCharacter?: Citizen,
-): void {
-  const contextValue: ActivePlayerCharacterContextValue = {
-    activeCharacter: activeCharacter ?? null,
-    clear: (): void => {},
-    isPending: false,
-    selectableCharacters:
-      activeCharacter !== undefined ? [activeCharacter] : [],
-    switchTo: (): void => {},
-  };
-
-  render(
+function renderWorldShellPage(worldId: string): ReturnType<typeof render> {
+  return render(
     <QueryClientProvider client={createQueryClient()}>
-      <ActivePlayerCharacterContext value={contextValue}>
-        <WorldShellPage worldId={worldId} />
-      </ActivePlayerCharacterContext>
+      <WorldShellPage worldId={worldId} />
     </QueryClientProvider>,
   );
 }
@@ -334,12 +327,16 @@ function createQueryClient(): QueryClient {
 
 function createClient({
   adminRows = [],
+  eventRows = [],
   nationRows = [],
   session,
   settlementRows = [],
+  totalCitizenCount = 0,
+  turnLogRows = [],
   worldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly eventRows?: readonly TestEventRow[];
   readonly nationRows?: readonly TestNationRow[];
   readonly session: {
     readonly user: {
@@ -347,6 +344,8 @@ function createClient({
     };
   };
   readonly settlementRows?: readonly TestSettlementReadinessRow[];
+  readonly totalCitizenCount?: number;
+  readonly turnLogRows?: readonly TestTurnLogRow[];
   readonly worldRows?: readonly TestWorldRow[];
 }): unknown {
   return {
@@ -375,6 +374,18 @@ function createClient({
 
       if (table === "nations") {
         return createNationsQueryBuilder(nationRows);
+      }
+
+      if (table === "citizen_directory_view") {
+        return createCitizenDirectoryQueryBuilder(totalCitizenCount);
+      }
+
+      if (table === "events") {
+        return createEventsQueryBuilder(eventRows);
+      }
+
+      if (table === "turn_log_entries") {
+        return createTurnLogEntriesQueryBuilder(turnLogRows);
       }
 
       throw new Error(`Unexpected table ${table}`);
@@ -434,6 +445,35 @@ type TestNationRow = {
   readonly updated_at: string;
   readonly world_id: string;
 };
+type TestEventRow = {
+  readonly id: string;
+  readonly name: string;
+  readonly status: string;
+  readonly scope_type: string;
+  readonly duration_type: string;
+  readonly remaining_transitions: number | null;
+};
+type TestTurnLogRow = {
+  readonly id: string;
+  readonly log_category: string;
+  readonly citizen_id: string | null;
+  readonly citizens: { readonly name: string } | null;
+  readonly nation_id: string | null;
+  readonly nations: { readonly name: string } | null;
+  readonly payload_jsonb: unknown;
+  readonly resource_id: string | null;
+  readonly settlement_id: string | null;
+  readonly settlements: {
+    readonly name: string;
+    readonly nation_id: string;
+  } | null;
+  readonly turn_transition_id: string;
+  readonly turn_transitions: {
+    readonly from_turn_number: number;
+    readonly to_turn_number: number;
+  } | null;
+  readonly world_id: string;
+};
 
 function createUser(id: string): TestUser {
   return {
@@ -481,34 +521,6 @@ function createCalendarConfig(): WorldCalendarConfig {
   };
 }
 
-function createCitizen(overrides: Partial<Citizen> = {}): Citizen {
-  return {
-    bornOnTurnNumber: null,
-    citizenType: "player_character",
-    createdAt: "2026-05-01T00:00:00.000Z",
-    deathCause: null,
-    deathCauseCategory: null,
-    givenName: "Player",
-    id: "citizen-1",
-    namesetId: null,
-    name: "Player",
-    parentACitizenId: null,
-    parentBCitizenId: null,
-    profilePhotoUrl: null,
-    roleNationId: null,
-    roleSettlementId: null,
-    roleType: "none",
-    settlementId: null,
-    sex: null,
-    status: "alive",
-    surname: null,
-    updatedAt: "2026-05-01T00:00:00.000Z",
-    userId: "user-1",
-    worldId: "world-1",
-    ...overrides,
-  } satisfies Citizen;
-}
-
 function createSettlementRow(
   overrides: Partial<TestSettlementReadinessRow> = {},
 ): TestSettlementReadinessRow {
@@ -521,6 +533,55 @@ function createSettlementRow(
     nation_id: "nation-1",
     nations: { id: "nation-1", name: "Nation A" },
     ready_set_at: null,
+    ...overrides,
+  };
+}
+
+function createNationRow(
+  overrides: Partial<TestNationRow> = {},
+): TestNationRow {
+  return {
+    created_at: "2026-01-01T00:00:00.000Z",
+    description: null,
+    id: "nation-1",
+    is_hidden: false,
+    name: "Nation A",
+    nameset_id: null,
+    updated_at: "2026-01-01T00:00:00.000Z",
+    world_id: "world-1",
+    ...overrides,
+  };
+}
+
+function createEventRow(overrides: Partial<TestEventRow> = {}): TestEventRow {
+  return {
+    duration_type: "sustained",
+    id: "event-1",
+    name: "Event",
+    remaining_transitions: 3,
+    scope_type: "world",
+    status: "active",
+    ...overrides,
+  };
+}
+
+function createTurnLogRow(
+  overrides: Partial<TestTurnLogRow> = {},
+): TestTurnLogRow {
+  return {
+    citizen_id: null,
+    citizens: null,
+    id: "log-1",
+    log_category: "basic_turn_advancement",
+    nation_id: null,
+    nations: null,
+    payload_jsonb: {},
+    resource_id: null,
+    settlement_id: null,
+    settlements: null,
+    turn_transition_id: "transition-1",
+    turn_transitions: { from_turn_number: 4, to_turn_number: 5 },
+    world_id: "world-1",
     ...overrides,
   };
 }
@@ -583,6 +644,51 @@ function createNationsQueryBuilder(rows: readonly TestNationRow[]): unknown {
     eq: vi.fn(() => builder),
     order: vi.fn(() => builder),
     returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
+}
+
+function createCitizenDirectoryQueryBuilder(totalCount: number): unknown {
+  const result = { count: totalCount, data: [], error: null };
+  const builder = {
+    eq: vi.fn(() => builder),
+    ilike: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    range: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue(result),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
+}
+
+function createEventsQueryBuilder(rows: readonly TestEventRow[]): unknown {
+  const result = { data: rows, error: null };
+  const builder = {
+    eq: vi.fn(() => builder),
+    in: vi.fn(() => builder),
+    or: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    select: vi.fn(() => builder),
+    then: (onFulfilled: (value: typeof result) => unknown): Promise<unknown> =>
+      Promise.resolve(result).then(onFulfilled),
+  };
+
+  return builder;
+}
+
+function createTurnLogEntriesQueryBuilder(
+  rows: readonly TestTurnLogRow[],
+): unknown {
+  const result = { count: rows.length, data: rows, error: null };
+  const builder = {
+    eq: vi.fn(() => builder),
+    filter: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    range: vi.fn(() => builder),
+    returns: vi.fn().mockResolvedValue(result),
     select: vi.fn(() => builder),
   };
 

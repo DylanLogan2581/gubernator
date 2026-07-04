@@ -55,6 +55,7 @@ export {
   type TurnTransitionSettlementSnapshot,
 } from "./queries/turnTransitionOutcomeQueries";
 export { turnQueryKeys } from "./queries/turnQueryKeys";
+export { LOG_CATEGORY_LABELS } from "./utils/logCategoryLabels";
 export type {
   CurrentTurnDateDisplay,
   CurrentTurnDateDisplayLabels,
