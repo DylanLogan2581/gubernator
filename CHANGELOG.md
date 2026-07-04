@@ -1,5 +1,71 @@
 # Changelog
 
+## [0.10.0](https://github.com/DylanLogan2581/gubernator/compare/v0.9.0...v0.10.0) (2026-07-04)
+
+### Bug Fixes
+
+- **app:** gate hard-delete actions behind a confirm dialog ([d9ce754](https://github.com/DylanLogan2581/gubernator/commit/d9ce754a35926a3ae6f01c31d34c03056ea1ad9b)), closes [#945](https://github.com/DylanLogan2581/gubernator/issues/945)
+- **calendar:** stop shared config mutation and silent bad month index ([af3baa2](https://github.com/DylanLogan2581/gubernator/commit/af3baa2e1e3ebba83e8f2209cee6050b8e75a4d2)), closes [#953](https://github.com/DylanLogan2581/gubernator/issues/953)
+- **citizens:** resolve full breadcrumb chain on direct citizen url load ([0c59898](https://github.com/DylanLogan2581/gubernator/commit/0c59898d2959eab9990a9a235c2255d92af1516a)), closes [#943](https://github.com/DylanLogan2581/gubernator/issues/943)
+- **citizens:** revoke direct table writes on citizen_memories ([56cbfd7](https://github.com/DylanLogan2581/gubernator/commit/56cbfd73681e7fee6a9d653753291e22594aa1d3)), closes [#950](https://github.com/DylanLogan2581/gubernator/issues/950)
+- **citizens:** show "before simulation" label for negative born-on-turn ([f9ae4c1](https://github.com/DylanLogan2581/gubernator/commit/f9ae4c1c04eb38f9a214708b2571259d72d03d8d)), closes [#933](https://github.com/DylanLogan2581/gubernator/issues/933)
+- **citizens:** skeleton placeholder while linked-user resolves ([e994cc0](https://github.com/DylanLogan2581/gubernator/commit/e994cc09a7ec98436e0b66604c81d7bc4f91c6cf)), closes [#923](https://github.com/DylanLogan2581/gubernator/issues/923)
+- **events:** hide previous on step 1 and show none for empty effects ([b04753f](https://github.com/DylanLogan2581/gubernator/commit/b04753f9c0c6b1061715fa17c9dd6304ef24035d)), closes [#925](https://github.com/DylanLogan2581/gubernator/issues/925)
+- **events:** make pagination controls keyboard accessible ([7bfb671](https://github.com/DylanLogan2581/gubernator/commit/7bfb6710795518456425c276dba95cd424613a66)), closes [#959](https://github.com/DylanLogan2581/gubernator/issues/959)
+- **events:** reject cross-world references in event_effects rpcs ([72d9ccd](https://github.com/DylanLogan2581/gubernator/commit/72d9ccd8be7dce9dd1e3a3f1e6b811a68fd1365b)), closes [#963](https://github.com/DylanLogan2581/gubernator/issues/963)
+- **events:** wire up expired events query for show-expired toggle ([89423d3](https://github.com/DylanLogan2581/gubernator/commit/89423d355499cf1c4810e88e0a121941919efbd3)), closes [#961](https://github.com/DylanLogan2581/gubernator/issues/961)
+- **jobs:** check deposit and managed population type ids separately ([8bc18ca](https://github.com/DylanLogan2581/gubernator/commit/8bc18ca9737f27fa75059393dd696dc75fa504fe)), closes [#956](https://github.com/DylanLogan2581/gubernator/issues/956)
+- **jobs:** populate scope fields on standard-job processed log entries ([267cb24](https://github.com/DylanLogan2581/gubernator/commit/267cb240d1c344d17e597be5dc3f07f246643885)), closes [#934](https://github.com/DylanLogan2581/gubernator/issues/934)
+- **nations:** close bilateral propose toctou and attribute proposer ([0931d3b](https://github.com/DylanLogan2581/gubernator/commit/0931d3b0a51c8d7efd16db49709258343c53382d)), closes [#954](https://github.com/DylanLogan2581/gubernator/issues/954)
+- **nations:** mirror hostile/at_war to reciprocal relationship ([6ae35c5](https://github.com/DylanLogan2581/gubernator/commit/6ae35c58d9bc2a4e96134dead4c2f3ee2c37f889)), closes [#955](https://github.com/DylanLogan2581/gubernator/issues/955)
+- **nations:** separate settlement accordion toggle from nav link ([a5fe78d](https://github.com/DylanLogan2581/gubernator/commit/a5fe78df4f149f5c16fdb5958f073e619ddbacfd)), closes [#928](https://github.com/DylanLogan2581/gubernator/issues/928)
+- **notifications:** enable notification bell and wire realtime updates ([240f2b6](https://github.com/DylanLogan2581/gubernator/commit/240f2b630fb5ac4202e455a905b5dcc5a4dac336)), closes [#919](https://github.com/DylanLogan2581/gubernator/issues/919)
+- **permissions:** add explicit admin mode, stop auto-select revert ([9326c58](https://github.com/DylanLogan2581/gubernator/commit/9326c5801ef622b4ea15f60cd46677d81439b7eb)), closes [#978](https://github.com/DylanLogan2581/gubernator/issues/978)
+- **permissions:** disable trashed-worlds select when empty ([849cdc5](https://github.com/DylanLogan2581/gubernator/commit/849cdc5920f9b2ddaf88fcb60592eabb531294d3)), closes [#976](https://github.com/DylanLogan2581/gubernator/issues/976)
+- **permissions:** explain admin suppression, don't hide or bounce ([173d1f8](https://github.com/DylanLogan2581/gubernator/commit/173d1f81d2013ae9daf33f2e3e27d1fa55a35308)), closes [#937](https://github.com/DylanLogan2581/gubernator/issues/937)
+- **permissions:** move create user button next to users table ([d45ca82](https://github.com/DylanLogan2581/gubernator/commit/d45ca82baf0a992d4de94288bc4aed6ea2535466)), closes [#975](https://github.com/DylanLogan2581/gubernator/issues/975)
+- **permissions:** relabel superadmin "worlds" button to "world admin" ([4242d2a](https://github.com/DylanLogan2581/gubernator/commit/4242d2ae8135d6d07984a83d7e91df33aa5f9fb6)), closes [#930](https://github.com/DylanLogan2581/gubernator/issues/930)
+- **permissions:** suppress admin ui when acting as player character ([386d016](https://github.com/DylanLogan2581/gubernator/commit/386d01618395cc762ad6a632cd269e7a035ffccc)), closes [#917](https://github.com/DylanLogan2581/gubernator/issues/917)
+- **permissions:** use "None" label for "none" role in character switcher ([ced8fe4](https://github.com/DylanLogan2581/gubernator/commit/ced8fe439a7bc459c7fb8ab6b660a20430764d4c)), closes [#932](https://github.com/DylanLogan2581/gubernator/issues/932)
+- **settlements:** auto-ready no longer counts as ready mid-turn ([0fb0929](https://github.com/DylanLogan2581/gubernator/commit/0fb0929a249cf575c873365fb0066f0b56da84f1)), closes [#962](https://github.com/DylanLogan2581/gubernator/issues/962)
+- **settlements:** move turn outcome panel below tab bar ([e0b1395](https://github.com/DylanLogan2581/gubernator/commit/e0b1395dda1e463c2d04e3e27ecbf66af8fd03de)), closes [#929](https://github.com/DylanLogan2581/gubernator/issues/929)
+- **settlements:** scope forecast invalidation to acting world ([0de73d6](https://github.com/DylanLogan2581/gubernator/commit/0de73d68061e7758c4d530de56ff95a46f5ba06a)), closes [#952](https://github.com/DylanLogan2581/gubernator/issues/952)
+- **settlements:** show readiness status when no toggle access ([4f17c7a](https://github.com/DylanLogan2581/gubernator/commit/4f17c7a67b6f71eb884d318a81eaf9101318d2cd)), closes [#942](https://github.com/DylanLogan2581/gubernator/issues/942)
+- **settlements:** use alert-circle for not-ready readiness status ([4911a4b](https://github.com/DylanLogan2581/gubernator/commit/4911a4b8f47d438ecd1fd1eacede2a98729c96c8)), closes [#931](https://github.com/DylanLogan2581/gubernator/issues/931)
+- **supabase:** add rls policy, fix search_path on rate limit fn ([e77787a](https://github.com/DylanLogan2581/gubernator/commit/e77787a0a8aafbb7ee09824d99452d166b60ccea))
+- **supabase:** cap edge fn body reads via streaming, not content-length ([4ca43b6](https://github.com/DylanLogan2581/gubernator/commit/4ca43b6278d602d077d81d9ca219ac81a11155a2)), closes [#947](https://github.com/DylanLogan2581/gubernator/issues/947)
+- **supabase:** fail closed on edge rate limiter errors ([844f075](https://github.com/DylanLogan2581/gubernator/commit/844f075f92657f78e00908773cb28ea7d7742ac9)), closes [#949](https://github.com/DylanLogan2581/gubernator/issues/949)
+- **supabase:** scope admin-create-user idempotency lookup by caller ([0d4a73f](https://github.com/DylanLogan2581/gubernator/commit/0d4a73fc4decd7dfccc7407e20fe02392d4ce4bd)), closes [#960](https://github.com/DylanLogan2581/gubernator/issues/960)
+- **templates:** rate-limit and cors-gate export-world-template ([cd17923](https://github.com/DylanLogan2581/gubernator/commit/cd179238ceeb4dc1f922b128a23a25f8cc96e354)), closes [#948](https://github.com/DylanLogan2581/gubernator/issues/948)
+- **turns:** add pressed state to payload toggle, drop stray code style ([ceeab3c](https://github.com/DylanLogan2581/gubernator/commit/ceeab3ceba9fe13d431b5010ad4cc5b7a5343fa9)), closes [#944](https://github.com/DylanLogan2581/gubernator/issues/944)
+- **turns:** fail wedged turn transition on plan/persist error ([1915bd1](https://github.com/DylanLogan2581/gubernator/commit/1915bd1e320db917d2c01bcbf4c65625d02b4b61)), closes [#958](https://github.com/DylanLogan2581/gubernator/issues/958)
+- **turns:** invalidate event and snapshot queries on turn advance ([64d8214](https://github.com/DylanLogan2581/gubernator/commit/64d8214e7875d7bcef13216b8aa4f16e37021a6f)), closes [#951](https://github.com/DylanLogan2581/gubernator/issues/951)
+- **turns:** map fail-stuck-transition rpc errors to specific codes ([8f5bc92](https://github.com/DylanLogan2581/gubernator/commit/8f5bc921d0c72982f54b46c4211eba0d80f0c105)), closes [#957](https://github.com/DylanLogan2581/gubernator/issues/957)
+- **turns:** restrict show-payload to admins, fix event bubbling ([1e493ca](https://github.com/DylanLogan2581/gubernator/commit/1e493ca87c0a9c9a66460949edcea306b5cb311f)), closes [#920](https://github.com/DylanLogan2581/gubernator/issues/920)
+- **turns:** scope event_effects to world; paginate settlement reads ([2d97913](https://github.com/DylanLogan2581/gubernator/commit/2d97913ba3f792abd3e99e49cbfce0e297815fb9)), closes [#797](https://github.com/DylanLogan2581/gubernator/issues/797)
+- **worlds:** redirect non-superadmins away from world-settings tab ([c041436](https://github.com/DylanLogan2581/gubernator/commit/c041436d83621c1ed39d5e32c86e8d05fbf1685e)), closes [#924](https://github.com/DylanLogan2581/gubernator/issues/924)
+- **worlds:** remove duplicate world context bar on history page ([92da54c](https://github.com/DylanLogan2581/gubernator/commit/92da54c3f8c685cb0310eea4e8ef21120de92f1f)), closes [#921](https://github.com/DylanLogan2581/gubernator/issues/921)
+- **worlds:** require confirmation before moving world to trash ([843ea41](https://github.com/DylanLogan2581/gubernator/commit/843ea41f271e51aed584918e20dc9cd9d0e2759b)), closes [#918](https://github.com/DylanLogan2581/gubernator/issues/918)
+- **worlds:** stabilize trash toggle and empty-state polish ([979397c](https://github.com/DylanLogan2581/gubernator/commit/979397cbf2b96b8ce9fddfb4b8f282ca2b48b46a)), closes [#977](https://github.com/DylanLogan2581/gubernator/issues/977)
+
+### Features
+
+- **config:** add self-hosted supabase + app deploy stack ([0528542](https://github.com/DylanLogan2581/gubernator/commit/0528542c24f4985c0d33c773046dddcc05f98d14))
+- **config:** unified env validation for client and edge runtimes ([518980e](https://github.com/DylanLogan2581/gubernator/commit/518980e32f49e500dc75410944147531fdb378ad)), closes [#795](https://github.com/DylanLogan2581/gubernator/issues/795)
+- **events:** add cancel button and unsaved-changes guard to wizard ([c1978ef](https://github.com/DylanLogan2581/gubernator/commit/c1978efe3252d4696211d6352913ba5339ac6cec)), closes [#926](https://github.com/DylanLogan2581/gubernator/issues/926)
+- **nations:** add card affordance to nation list rows ([bfdd768](https://github.com/DylanLogan2581/gubernator/commit/bfdd76878aa90c5be60e7cbb0cb8b4ec469eea56)), closes [#940](https://github.com/DylanLogan2581/gubernator/issues/940)
+- **notifications:** add mark all as read to notifications page ([4c2fead](https://github.com/DylanLogan2581/gubernator/commit/4c2fead1089a9b90e651b51f5c8485ef2f0f1173)), closes [#939](https://github.com/DylanLogan2581/gubernator/issues/939)
+- **notifications:** interpolate names into partnership/birth text ([dc63746](https://github.com/DylanLogan2581/gubernator/commit/dc637462d59503448875026e9acd80f052db2414)), closes [#938](https://github.com/DylanLogan2581/gubernator/issues/938)
+- **supabase:** snapshot and turn-log retention with pruning tool ([52bbfb9](https://github.com/DylanLogan2581/gubernator/commit/52bbfb9ff21df2a3fc1d17c8892deba9d7d8131c)), closes [#798](https://github.com/DylanLogan2581/gubernator/issues/798)
+- **supabase:** stuck-transition recovery and world cascade preview ([b43ef69](https://github.com/DylanLogan2581/gubernator/commit/b43ef69b8f2472c0d4a010f364bf6bb7abe51bf1)), closes [#799](https://github.com/DylanLogan2581/gubernator/issues/799)
+- **worlds:** add persistent world-level nav with history link ([ee24049](https://github.com/DylanLogan2581/gubernator/commit/ee24049c552ca90a33d8caf43b8dd7420b690686))
+- **worlds:** clarify hidden badge and active pc tooltips ([9b3c5e9](https://github.com/DylanLogan2581/gubernator/commit/9b3c5e9773bce0718a214862b058f69e25c067a5)), closes [#941](https://github.com/DylanLogan2581/gubernator/issues/941)
+
+### Performance Improvements
+
+- **permissions:** cache access-context and admin-world-ids queries ([6149a8b](https://github.com/DylanLogan2581/gubernator/commit/6149a8ba4bb042423ef77149e82347440ae5b4d2)), closes [#922](https://github.com/DylanLogan2581/gubernator/issues/922)
+- **supabase:** add missing fk indexes on trade legs and event effects ([cc7a801](https://github.com/DylanLogan2581/gubernator/commit/cc7a80131b9f35408dbf7e3a08a79ae77f62aff6)), closes [#966](https://github.com/DylanLogan2581/gubernator/issues/966)
+
 ## [0.9.0](https://github.com/DylanLogan2581/gubernator/compare/v0.8.0...v0.9.0) (2026-06-20)
 
 ### Bug Fixes
