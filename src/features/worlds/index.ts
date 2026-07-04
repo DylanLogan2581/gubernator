@@ -9,6 +9,8 @@ export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPane
 export { WorldPopulationRulesConfigPanel } from "./components/WorldPopulationRulesConfigPanel";
 export { WorldSettingsPanel } from "./components/WorldSettingsPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
+export { WorldSwitcher } from "./components/WorldSwitcher";
+export type { WorldSwitcherProps } from "./components/WorldSwitcher";
 export {
   currentUserAdminWorldIdsQueryOptions,
   currentUserPlayerCharacterWorldIdsQueryOptions,
