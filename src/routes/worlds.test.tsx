@@ -449,6 +449,10 @@ function createClient({
         return createNotificationsQueryBuilder();
       }
 
+      if (table === "turn_transitions") {
+        return createTurnTransitionsQueryBuilder();
+      }
+
       if (table === "citizens") {
         const builder: Record<string, unknown> = {};
         builder.eq = vi.fn(() => builder);
@@ -486,6 +490,18 @@ function createClient({
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
   };
+}
+
+function createTurnTransitionsQueryBuilder(): unknown {
+  const builder = {
+    eq: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    order: vi.fn(() => builder),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
 }
 
 function createNotificationsQueryBuilder(): unknown {

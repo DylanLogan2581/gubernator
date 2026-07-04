@@ -10,8 +10,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useEffectiveCanAdmin } from "@/features/permissions";
-import { EndTurnControl } from "@/features/turns";
 
+import { HeaderEndTurnControl } from "./HeaderEndTurnControl";
 import { HeaderReadinessChip } from "./HeaderReadinessChip";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
@@ -60,7 +60,7 @@ export function AppHeader({
           </span>
         ) : null}
         {worldId !== null && worldAccess !== null ? (
-          <EndTurnControl
+          <HeaderEndTurnControl
             canAdmin={effectiveCanAdmin}
             currentDateLabel={worldAccess.header.inWorldDateLabel}
             currentTurnNumber={worldAccess.header.currentTurnNumber}

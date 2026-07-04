@@ -241,6 +241,53 @@ describe("WorldShellPage", () => {
     expect(screen.queryByRole("heading", { name: "World Reports" })).toBeNull();
   });
 
+  it("renders the full End Turn card for world admins", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: "00000000-0000-0000-0000-000000001101" }],
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 1,
+            id: "00000000-0000-0000-0000-000000001101",
+            name: "End Turn World",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000001101");
+
+    await screen.findByRole("heading", { name: "End Turn World" });
+    expect(
+      await screen.findByRole("heading", { name: "Run turn transition" }),
+    ).toBeDefined();
+  });
+
+  it("does not render the End Turn card for non-admins", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            calendar_config_json: createCalendarConfig(),
+            current_turn_number: 1,
+            id: "00000000-0000-0000-0000-000000001102",
+            name: "Non-Admin Dashboard World",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldShellPage("00000000-0000-0000-0000-000000001102");
+
+    await screen.findByRole("heading", { name: "Non-Admin Dashboard World" });
+    expect(
+      screen.queryByRole("heading", { name: "Run turn transition" }),
+    ).toBeNull();
+  });
+
   it("renders dashboard stat tiles with real queried values, active events, and turn log excerpt", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -386,6 +433,10 @@ function createClient({
 
       if (table === "turn_log_entries") {
         return createTurnLogEntriesQueryBuilder(turnLogRows);
+      }
+
+      if (table === "turn_transitions") {
+        return createTurnTransitionsQueryBuilder();
       }
 
       throw new Error(`Unexpected table ${table}`);
@@ -659,6 +710,18 @@ function createCitizenDirectoryQueryBuilder(totalCount: number): unknown {
     order: vi.fn(() => builder),
     range: vi.fn(() => builder),
     returns: vi.fn().mockResolvedValue(result),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
+}
+
+function createTurnTransitionsQueryBuilder(): unknown {
+  const builder = {
+    eq: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    order: vi.fn(() => builder),
     select: vi.fn(() => builder),
   };
 

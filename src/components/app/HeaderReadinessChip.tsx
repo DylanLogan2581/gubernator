@@ -1,3 +1,5 @@
+import { Check } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 import { useSettlementReadinessAction } from "./UseSettlementReadinessAction";
@@ -44,7 +46,14 @@ export function HeaderReadinessChip({
       disabled={isToggleDisabled}
       onClick={toggle}
     >
-      {isReady ? "Ready ✓" : "Mark ready"}
+      {isReady ? (
+        <>
+          Ready
+          <Check aria-hidden="true" className="size-4" />
+        </>
+      ) : (
+        "Mark ready"
+      )}
     </Button>
   );
 }

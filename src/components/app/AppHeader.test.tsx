@@ -200,7 +200,7 @@ describe("AppHeader", () => {
     ).toBeNull();
   });
 
-  it("shows the run-turn-transition control for effective world admins", async () => {
+  it("shows the compact End Turn control for effective world admins", async () => {
     useParams.mockReturnValue({ worldId: WORLD_ID });
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -213,11 +213,11 @@ describe("AppHeader", () => {
     renderAppHeader();
 
     expect(
-      await screen.findByRole("heading", { name: "Run turn transition" }),
+      await screen.findByRole("button", { name: /^End Turn/ }),
     ).toBeDefined();
   });
 
-  it("hides the run-turn-transition control for non-admins", async () => {
+  it("hides the End Turn control for non-admins", async () => {
     useParams.mockReturnValue({ worldId: WORLD_ID });
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -229,9 +229,7 @@ describe("AppHeader", () => {
     renderAppHeader();
 
     await screen.findByText((content) => content.startsWith("Turn "));
-    expect(
-      screen.queryByRole("heading", { name: "Run turn transition" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /^End Turn/ })).toBeNull();
   });
 
   it("shows the readiness chip for a settlement manager on a settlement route", async () => {
@@ -304,9 +302,7 @@ describe("AppHeader", () => {
       activeCharacter: createSettlementManagerCitizen(),
     });
 
-    expect(
-      await screen.findByRole("button", { name: "Ready ✓" }),
-    ).toBeDefined();
+    expect(await screen.findByRole("button", { name: "Ready" })).toBeDefined();
   });
 
   it("does not show the readiness chip for effective admins (they get End Turn instead)", async () => {
@@ -326,9 +322,9 @@ describe("AppHeader", () => {
 
     renderAppHeader();
 
-    await screen.findByRole("heading", { name: "Run turn transition" });
+    await screen.findByRole("button", { name: /^End Turn/ });
     expect(screen.queryByRole("button", { name: "Mark ready" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Ready ✓" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ready" })).toBeNull();
   });
 });
 

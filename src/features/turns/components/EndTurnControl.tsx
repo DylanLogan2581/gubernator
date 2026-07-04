@@ -1,29 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useRouter } from "@tanstack/react-router";
 import { AlertTriangle, StepForward } from "lucide-react";
-import { useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { normalizeSignInReturnPath } from "@/features/auth";
-import {
-  formatSettlementReadinessPercentage,
-  settlementReadinessSummaryQueryOptions,
-} from "@/features/settlements";
+import { formatSettlementReadinessPercentage } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import {
-  endTurnTransitionMutationOptions,
-  isEndTurnTransitionError,
-} from "../mutations/endTurnTransitionMutations";
-import {
-  failStuckTurnTransitionMutationOptions,
-  isFailStuckTurnTransitionError,
-} from "../mutations/failStuckTurnTransitionMutations";
-import { latestTurnTransitionStatusQueryOptions } from "../queries/latestTurnTransitionStatusQueries";
+import { useEndTurnControl } from "../hooks/useEndTurnControl";
 import {
   getControlDescription,
   getErrorDescription as getEndTurnMutationErrorDescription,
@@ -84,121 +68,19 @@ function EndTurnControlContent({
   readonly nextTurnNumber: number;
   readonly worldId: string;
 }): JSX.Element {
-  const [isConfirming, setIsConfirming] = useState(false);
-  const navigate = useNavigate();
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const readinessSummaryQuery = useQuery(
-    settlementReadinessSummaryQueryOptions(worldId),
-  );
-  const latestTransitionQuery = useQuery(
-    latestTurnTransitionStatusQueryOptions(worldId),
-  );
-  const endTurnMutation = useMutation(
-    endTurnTransitionMutationOptions({ queryClient }),
-  );
-  const failStuckMutation = useMutation(
-    failStuckTurnTransitionMutationOptions({ queryClient }),
-  );
-  const isReadinessUnavailable = !readinessSummaryQuery.isSuccess;
-  const isDisabled =
-    isArchived || isReadinessUnavailable || endTurnMutation.isPending;
-
-  // Time-based check to detect stuck transitions — safe since the result depends only on the transition data.
-  const isStuckRunning = (() => {
-    const data = latestTransitionQuery.data;
-    if (data?.isRunning !== true || data?.startedAt === undefined) {
-      return false;
-    }
-
-    // eslint-disable-next-line no-restricted-syntax
-    const startedTime = new Date(data.startedAt).getTime();
-    // eslint-disable-next-line react-hooks/purity, no-restricted-syntax
-    const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
-    return startedTime < thirtyMinutesAgo;
-  })();
-
-  function openConfirmation(): void {
-    if (isDisabled) {
-      return;
-    }
-
-    endTurnMutation.reset();
-    setIsConfirming(true);
-  }
-
-  function submitEndTurn(): void {
-    if (isDisabled) {
-      return;
-    }
-
-    endTurnMutation.mutate(
-      {
-        expectedTurnNumber: currentTurnNumber,
-        worldId,
-      },
-      {
-        onError: (error) => {
-          if (
-            isEndTurnTransitionError(error) &&
-            error.code === "end_turn_session_expired"
-          ) {
-            const returnTo = normalizeSignInReturnPath(
-              router.state.location.href,
-            );
-            void navigate({ to: "/sign-in", search: { returnTo } });
-            return;
-          }
-          // Error shown in dialog banner instead of toast for high-stakes flow.
-        },
-        onSuccess: (result) => {
-          setIsConfirming(false);
-          const { patchCounts, toTurnNumber } = result.summary;
-          const deaths = patchCounts.citizenDeaths;
-          const births = patchCounts.citizenBirths;
-          const buildingChanges = patchCounts.buildingStateChanges;
-          const depositUpdates = patchCounts.depositUpdates;
-          notifyMutationSuccess(`Advanced to turn ${toTurnNumber.toString()}`, {
-            description: `${deaths.toString()} deaths, ${births.toString()} births, ${buildingChanges.toString()} building changes, ${depositUpdates.toString()} deposit updates.`,
-          });
-        },
-      },
-    );
-  }
-
-  function resetStuckTransition(): void {
-    if (
-      latestTransitionQuery.data?.id === undefined ||
-      failStuckMutation.isPending
-    ) {
-      return;
-    }
-
-    failStuckMutation.mutate(
-      {
-        transitionId: latestTransitionQuery.data.id,
-        worldId,
-      },
-      {
-        onError: (error) => {
-          if (isFailStuckTurnTransitionError(error)) {
-            notifyMutationError(
-              error,
-              "Could not reset stuck transition. Check permissions and try again.",
-            );
-            return;
-          }
-          notifyMutationError(error, "Reset failed.");
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Stuck transition marked as failed", {
-            description:
-              "You can now try running the turn transition again with fresh state.",
-          });
-        },
-      },
-    );
-  }
+  const {
+    closeConfirmation,
+    endTurnMutation,
+    failStuckMutation,
+    isConfirming,
+    isDisabled,
+    isReadinessUnavailable,
+    isStuckRunning,
+    openConfirmation,
+    readinessSummaryQuery,
+    resetStuckTransition,
+    submitEndTurn,
+  } = useEndTurnControl({ currentTurnNumber, isArchived, worldId });
 
   return (
     <section
@@ -219,9 +101,6 @@ function EndTurnControlContent({
           onClick={openConfirmation}
           type="button"
           className="w-fit"
-          // Bridged from the command palette's "End turn" action (only
-          // opens the confirmation dialog below — never bypasses it).
-          data-command-palette-action="end-turn"
         >
           <StepForward aria-hidden="true" />
           {endTurnMutation.isPending ? "Running..." : "Run turn transition"}
@@ -306,9 +185,7 @@ function EndTurnControlContent({
           isPending={endTurnMutation.isPending}
           nextDateLabel={nextDateLabel}
           nextTurnNumber={nextTurnNumber}
-          onClose={() => {
-            setIsConfirming(false);
-          }}
+          onClose={closeConfirmation}
           onConfirm={submitEndTurn}
           readinessSummary={readinessSummaryQuery.data}
         />

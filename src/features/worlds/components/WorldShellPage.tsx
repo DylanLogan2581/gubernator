@@ -11,7 +11,7 @@ import {
   useEffectiveCanAdmin,
 } from "@/features/permissions";
 import { SettlementReadinessListPanel } from "@/features/settlements";
-import { TurnTransitionOutcomePanel } from "@/features/turns";
+import { EndTurnControl, TurnTransitionOutcomePanel } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
@@ -163,6 +163,16 @@ function WorldShellContent({
       <WorldDashboardStatTiles
         inWorldDateLabel={worldQuery.data.header.inWorldDateLabel}
         planningTurnNumber={worldQuery.data.header.planningTurnNumber}
+        worldId={worldId}
+      />
+
+      <EndTurnControl
+        canAdmin={effectiveCanAdmin}
+        currentDateLabel={worldQuery.data.header.inWorldDateLabel}
+        currentTurnNumber={worldQuery.data.header.currentTurnNumber}
+        isArchived={worldQuery.data.header.isArchived}
+        nextDateLabel={worldQuery.data.header.nextInWorldDateLabel}
+        nextTurnNumber={worldQuery.data.header.nextTurnNumber}
         worldId={worldId}
       />
 

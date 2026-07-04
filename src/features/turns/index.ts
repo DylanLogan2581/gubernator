@@ -29,6 +29,15 @@ export {
   type FailStuckTurnTransitionMutationResult,
 } from "./mutations/failStuckTurnTransitionMutations";
 export { EndTurnControl } from "./components/EndTurnControl";
+export { EndTurnConfirmationDialog } from "./components/EndTurnConfirmationDialog";
+export {
+  useEndTurnControl,
+  type UseEndTurnControlResult,
+} from "./hooks/useEndTurnControl";
+export {
+  getControlDescription,
+  getErrorDescription as getEndTurnErrorDescription,
+} from "./utils/endTurnDescriptions";
 export {
   TurnTransitionOutcomeContent,
   TurnTransitionOutcomeEmptyState,

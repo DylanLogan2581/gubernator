@@ -207,9 +207,9 @@ export function CommandPalette({
       label: "End turn",
       onSelect: () => {
         closeAndReset();
-        // Bridges to EndTurnControl's own button (see its
+        // Bridges to the header's compact End Turn button (see its
         // data-command-palette-action attribute) so the confirmation
-        // dialog / readiness / stuck-transition logic isn't duplicated.
+        // dialog / readiness logic isn't duplicated.
         document
           .querySelector<HTMLButtonElement>(
             '[data-command-palette-action="end-turn"]',
