@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { IconChip } from "@/components/shared/IconChip";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
+import { TablePagination } from "@/components/shared/TablePagination";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,7 +39,6 @@ import { eventsListQueryOptions, isEventsError } from "../queries/eventQueries";
 
 import { EventScopeBadge, EventStatusBadge } from "./EventBadges";
 import { EventDetail } from "./EventDetail";
-import { EventsPagination } from "./EventsPagination";
 
 type PaginationState = {
   readonly pageIndex: number;
@@ -379,8 +379,8 @@ export function EventsList({
             )}
 
             {pageCount > 1 && (
-              <EventsPagination
-                pageIndex={pagination.pageIndex}
+              <TablePagination
+                page={pagination.pageIndex}
                 pageCount={pageCount}
                 onPageChange={(pageIndex) =>
                   setPagination((p) => ({ ...p, pageIndex }))

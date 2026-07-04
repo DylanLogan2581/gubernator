@@ -8,8 +8,8 @@ import {
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Fragment, useState } from "react";
 
+import { TablePagination } from "@/components/shared/TablePagination";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -348,47 +348,12 @@ export function TurnLogTable({
         <span>
           {totalCount === 0 ? "No entries" : `${from}–${to} of ${totalCount}`}
         </span>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(0)}
-            disabled={page === 0 || isFetching}
-            aria-label="First page"
-          >
-            «
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(page - 1)}
-            disabled={page === 0 || isFetching}
-            aria-label="Previous page"
-          >
-            ‹
-          </Button>
-          <span className="px-2 tabular-nums">
-            {page + 1} / {Math.max(pageCount, 1)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(page + 1)}
-            disabled={page >= pageCount - 1 || isFetching}
-            aria-label="Next page"
-          >
-            ›
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(pageCount - 1)}
-            disabled={page >= pageCount - 1 || isFetching}
-            aria-label="Last page"
-          >
-            »
-          </Button>
-        </div>
+        <TablePagination
+          page={page}
+          pageCount={pageCount}
+          onPageChange={onPageChange}
+          isDisabled={isFetching}
+        />
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
+import { TablePagination } from "@/components/shared/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -279,31 +280,11 @@ function CitizensAdminList({
             ))}
           </ul>
           {pageCount > 1 ? (
-            <div className="flex items-center justify-between gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={safePage === 0}
-                onClick={() => setPage((current) => Math.max(0, current - 1))}
-              >
-                Previous
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Page {safePage + 1} of {pageCount}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={safePage >= pageCount - 1}
-                onClick={() =>
-                  setPage((current) => Math.min(pageCount - 1, current + 1))
-                }
-              >
-                Next
-              </Button>
-            </div>
+            <TablePagination
+              page={safePage}
+              pageCount={pageCount}
+              onPageChange={setPage}
+            />
           ) : null}
         </>
       )}

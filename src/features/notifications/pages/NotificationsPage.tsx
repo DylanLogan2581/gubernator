@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { type JSX, useState } from "react";
 
+import { TablePagination } from "@/components/shared/TablePagination";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -357,42 +357,12 @@ export function NotificationsPage(): JSX.Element {
               Showing {offset + 1} to {Math.min(offset + PAGE_SIZE, total)} of{" "}
               {total} notifications
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1 || notificationsQuery.isLoading}
-              >
-                <ChevronLeft className="size-4" />
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: pageCount }, (_, i) => i + 1)
-                  .slice(Math.max(0, page - 3), page + 2)
-                  .map((p) => (
-                    <Button
-                      key={p}
-                      variant={p === page ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPage(p)}
-                      disabled={notificationsQuery.isLoading}
-                      className="min-w-9"
-                    >
-                      {p}
-                    </Button>
-                  ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(Math.min(pageCount, page + 1))}
-                disabled={page === pageCount || notificationsQuery.isLoading}
-              >
-                Next
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
+            <TablePagination
+              page={page - 1}
+              pageCount={pageCount}
+              onPageChange={(nextPage) => setPage(nextPage + 1)}
+              isDisabled={notificationsQuery.isLoading}
+            />
           </div>
         ) : null}
       </div>

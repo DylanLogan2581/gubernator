@@ -5,8 +5,8 @@ import { useState, type JSX } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
+import { TablePagination } from "@/components/shared/TablePagination";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -243,35 +243,11 @@ export function CitizensDirectoryTable({
                 rows.length
               ).toString()} of ${totalCount.toString()}`}
             </p>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pageIndex === 0}
-                onClick={() => {
-                  setPageIndex((current) => Math.max(0, current - 1));
-                }}
-              >
-                Previous
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Page {pageIndex + 1} of {pageCount}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pageIndex >= pageCount - 1}
-                onClick={() => {
-                  setPageIndex((current) =>
-                    Math.min(pageCount - 1, current + 1),
-                  );
-                }}
-              >
-                Next
-              </Button>
-            </div>
+            <TablePagination
+              page={pageIndex}
+              pageCount={pageCount}
+              onPageChange={setPageIndex}
+            />
           </div>
         </>
       )}
