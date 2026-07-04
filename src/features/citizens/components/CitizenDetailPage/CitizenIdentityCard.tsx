@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { UserCircle2 } from "lucide-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { activePartnershipForCitizenQueryOptions } from "@/features/partnerships";
 import type { Settlement } from "@/features/settlements";
 
 import { citizenByIdQueryOptions } from "../../queries/citizensQueries";
 import { managerScopeLabel } from "../../utils/citizenRoles";
+import { CitizenAvatar } from "../CitizenAvatar";
 
 import { bornOnTurnReadout } from "./BornOnTurnReadout";
 import { CitizenDetailHeader } from "./Header";
@@ -38,7 +37,6 @@ export function CitizenIdentityCard({
     enabled: partnerId !== null,
   });
 
-  const initial = citizen.name.charAt(0).toUpperCase();
   const bornOnTurn = bornOnTurnReadout(citizen);
   const roleScope = managerScopeLabel(citizen.roleType);
 
@@ -51,19 +49,12 @@ export function CitizenIdentityCard({
   return (
     <Card className="grid gap-4 p-4">
       <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
-        <Avatar size="lg">
-          {citizen.profilePhotoUrl !== null &&
-          citizen.profilePhotoUrl !== "" ? (
-            <AvatarImage alt="" src={citizen.profilePhotoUrl} />
-          ) : null}
-          <AvatarFallback>
-            {initial === "" ? (
-              <UserCircle2 aria-hidden="true" className="size-5" />
-            ) : (
-              initial
-            )}
-          </AvatarFallback>
-        </Avatar>
+        <CitizenAvatar
+          id={citizen.id}
+          name={citizen.name}
+          profilePhotoUrl={citizen.profilePhotoUrl}
+          size="lg"
+        />
         <CitizenDetailHeader citizen={citizen} />
       </div>
 

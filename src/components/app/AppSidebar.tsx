@@ -5,7 +5,6 @@ import {
   Bell,
   BookOpen,
   Building2,
-  CalendarDays,
   Clock,
   FileText,
   Gem,
@@ -22,6 +21,7 @@ import {
   TrendingUp,
   UserCircle2,
   Users,
+  Zap,
 } from "lucide-react";
 
 import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
@@ -218,7 +218,7 @@ export function AppSidebar(): JSX.Element | null {
       isActive: location.pathname.startsWith(`/worlds/${worldId}/events`),
       link: (
         <Link to="/worlds/$worldId/events" params={{ worldId }}>
-          <CalendarDays aria-hidden="true" />
+          <Zap aria-hidden="true" />
           <span>Events</span>
         </Link>
       ),

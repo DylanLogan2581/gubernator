@@ -2,6 +2,7 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Minus, Pencil } from "lucide-react";
 import { useState, type JSX } from "react";
 
+import { IconChip } from "@/components/shared/IconChip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -11,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { type TurnTransitionOutcome } from "@/features/turns";
+import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseDepositDepletedPayload } from "@/shared/simulation";
 
@@ -96,6 +98,11 @@ export function DepositInstanceRow({
       >
         <TableCell className="py-2 pr-4 font-medium">
           <span className="flex items-center gap-2">
+            <IconChip
+              icon={DOMAIN_ICON_CHIPS.deposits.icon}
+              tone={DOMAIN_ICON_CHIPS.deposits.tone}
+              size="sm"
+            />
             {instance.name}
             {isDepletion ? (
               depletedTooltip !== undefined ? (

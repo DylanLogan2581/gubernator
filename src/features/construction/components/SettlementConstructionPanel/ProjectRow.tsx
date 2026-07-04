@@ -2,11 +2,13 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState, type JSX } from "react";
 
+import { IconChip } from "@/components/shared/IconChip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { TurnTransitionLogEntry } from "@/features/turns";
+import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { reorderConstructionProjectsMutationOptions } from "../../mutations/reorderConstructionProjectsMutations";
@@ -119,7 +121,16 @@ export function ProjectRow({
   return (
     <>
       <TableRow className="border-b border-border last:border-0">
-        <TableCell className="py-2 pr-4">{project.blueprintName}</TableCell>
+        <TableCell className="py-2 pr-4">
+          <span className="flex items-center gap-2">
+            <IconChip
+              icon={DOMAIN_ICON_CHIPS.construction.icon}
+              tone={DOMAIN_ICON_CHIPS.construction.tone}
+              size="sm"
+            />
+            {project.blueprintName}
+          </span>
+        </TableCell>
         <TableCell className="py-2 pr-4">Tier {project.tierNumber}</TableCell>
         <TableCell className="py-2 pr-4">
           {pauseReason !== null ? (

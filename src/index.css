@@ -51,6 +51,62 @@
   --warning-foreground: oklch(0.414 0.112 45.904);
   --success: oklch(0.982 0.018 155.826);
   --success-foreground: oklch(0.527 0.154 150.069);
+
+  /* Categorical entity palette — one fixed hue per domain (citizens,
+     buildings, stockpiles, populations, deposits, construction, trade,
+     events), shared by icon chips, badges, and future charts. Values are the
+     dataviz skill's validated default 8-hue set (CVD-checked), not yet
+     custom brand-tuned — swap freely, one place. The tinted background is
+     derived from the foreground hue so only the foreground needs a
+     per-theme override below. */
+  --category-1-foreground: #2a78d6;
+  --category-1: color-mix(
+    in oklch,
+    var(--category-1-foreground) 16%,
+    var(--background)
+  );
+  --category-2-foreground: #1baf7a;
+  --category-2: color-mix(
+    in oklch,
+    var(--category-2-foreground) 16%,
+    var(--background)
+  );
+  --category-3-foreground: #eda100;
+  --category-3: color-mix(
+    in oklch,
+    var(--category-3-foreground) 16%,
+    var(--background)
+  );
+  --category-4-foreground: #008300;
+  --category-4: color-mix(
+    in oklch,
+    var(--category-4-foreground) 16%,
+    var(--background)
+  );
+  --category-5-foreground: #4a3aa7;
+  --category-5: color-mix(
+    in oklch,
+    var(--category-5-foreground) 16%,
+    var(--background)
+  );
+  --category-6-foreground: #e34948;
+  --category-6: color-mix(
+    in oklch,
+    var(--category-6-foreground) 16%,
+    var(--background)
+  );
+  --category-7-foreground: #e87ba4;
+  --category-7: color-mix(
+    in oklch,
+    var(--category-7-foreground) 16%,
+    var(--background)
+  );
+  --category-8-foreground: #eb6834;
+  --category-8: color-mix(
+    in oklch,
+    var(--category-8-foreground) 16%,
+    var(--background)
+  );
 }
 
 .dark {
@@ -89,6 +145,15 @@
   --warning-foreground: oklch(0.924 0.12 95.746);
   --success: oklch(0.203 0.079 166.113);
   --success-foreground: oklch(0.696 0.17 162.48);
+
+  --category-1-foreground: #3987e5;
+  --category-2-foreground: #199e70;
+  --category-3-foreground: #c98500;
+  --category-4-foreground: #008300;
+  --category-5-foreground: #9085e9;
+  --category-6-foreground: #e66767;
+  --category-7-foreground: #d55181;
+  --category-8-foreground: #d95926;
 }
 
 @theme inline {
@@ -128,6 +193,22 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-category-1: var(--category-1);
+  --color-category-1-foreground: var(--category-1-foreground);
+  --color-category-2: var(--category-2);
+  --color-category-2-foreground: var(--category-2-foreground);
+  --color-category-3: var(--category-3);
+  --color-category-3-foreground: var(--category-3-foreground);
+  --color-category-4: var(--category-4);
+  --color-category-4-foreground: var(--category-4-foreground);
+  --color-category-5: var(--category-5);
+  --color-category-5-foreground: var(--category-5-foreground);
+  --color-category-6: var(--category-6);
+  --color-category-6-foreground: var(--category-6-foreground);
+  --color-category-7: var(--category-7);
+  --color-category-7-foreground: var(--category-7-foreground);
+  --color-category-8: var(--category-8);
+  --color-category-8-foreground: var(--category-8-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -187,5 +268,14 @@
     --warning-foreground: oklch(0.924 0.12 95.746);
     --success: oklch(0.203 0.079 166.113);
     --success-foreground: oklch(0.696 0.17 162.48);
+
+    --category-1-foreground: #3987e5;
+    --category-2-foreground: #199e70;
+    --category-3-foreground: #c98500;
+    --category-4-foreground: #008300;
+    --category-5-foreground: #9085e9;
+    --category-6-foreground: #e66767;
+    --category-7-foreground: #d55181;
+    --category-8-foreground: #d95926;
   }
 }

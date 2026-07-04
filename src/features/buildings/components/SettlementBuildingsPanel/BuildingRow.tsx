@@ -1,10 +1,12 @@
 import { type QueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
 
+import { IconChip } from "@/components/shared/IconChip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { type TurnTransitionOutcome } from "@/features/turns";
+import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 import {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,
@@ -180,7 +182,14 @@ export function BuildingRow({
     <>
       <TableRow className="border-b border-border last:border-0">
         <TableCell className="py-2 pr-4">
-          {building.name ?? building.blueprintName}
+          <span className="flex items-center gap-2">
+            <IconChip
+              icon={DOMAIN_ICON_CHIPS.buildings.icon}
+              tone={DOMAIN_ICON_CHIPS.buildings.tone}
+              size="sm"
+            />
+            {building.name ?? building.blueprintName}
+          </span>
         </TableCell>
         <TableCell className="py-2 pr-4">Tier {building.tierNumber}</TableCell>
         <TableCell className="py-2 pr-4 text-muted-foreground">

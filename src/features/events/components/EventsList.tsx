@@ -5,6 +5,7 @@ import { useEffect, useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { IconChip } from "@/components/shared/IconChip";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 
 import { eventsListQueryOptions, isEventsError } from "../queries/eventQueries";
 
@@ -434,7 +436,16 @@ function EventRow({
         }
       }}
     >
-      <TableCell className="font-medium">{displayName}</TableCell>
+      <TableCell className="font-medium">
+        <span className="flex items-center gap-2">
+          <IconChip
+            icon={DOMAIN_ICON_CHIPS.events.icon}
+            tone={DOMAIN_ICON_CHIPS.events.tone}
+            size="sm"
+          />
+          {displayName}
+        </span>
+      </TableCell>
       <TableCell>
         <EventStatusBadge status={event.status} />
       </TableCell>
@@ -494,7 +505,16 @@ function GroupedEventRow({
         }
       }}
     >
-      <TableCell className="font-medium">{displayName}</TableCell>
+      <TableCell className="font-medium">
+        <span className="flex items-center gap-2">
+          <IconChip
+            icon={DOMAIN_ICON_CHIPS.events.icon}
+            tone={DOMAIN_ICON_CHIPS.events.tone}
+            size="sm"
+          />
+          {displayName}
+        </span>
+      </TableCell>
       <TableCell>
         <EventStatusBadge status={firstEvent.status} />
       </TableCell>

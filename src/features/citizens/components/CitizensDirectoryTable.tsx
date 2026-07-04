@@ -30,6 +30,8 @@ import { getErrorDescription } from "@/lib/errorUtils";
 
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
 
+import { CitizenAvatar } from "./CitizenAvatar";
+
 import type {
   CitizenDirectoryFilters,
   CitizenDirectoryRow,
@@ -296,7 +298,12 @@ function CitizenDirectoryRowItem({
         });
       }}
     >
-      <TableCell className="font-medium">{row.name ?? "—"}</TableCell>
+      <TableCell className="font-medium">
+        <span className="flex items-center gap-2">
+          <CitizenAvatar id={row.id} name={row.name ?? "—"} size="sm" />
+          {row.name ?? "—"}
+        </span>
+      </TableCell>
       <TableCell className="tabular-nums text-muted-foreground">
         {row.ageTurns ?? "—"}
       </TableCell>

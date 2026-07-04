@@ -1,8 +1,10 @@
 import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
 
+import { IconChip } from "@/components/shared/IconChip";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { resumeConstructionProjectMutationOptions } from "../../mutations/resumeConstructionProjectMutations";
@@ -47,7 +49,16 @@ export function CancelledProjectRow({
   return (
     <>
       <TableRow className="border-b border-border">
-        <TableCell className="py-2">{project.blueprintName}</TableCell>
+        <TableCell className="py-2">
+          <span className="flex items-center gap-2">
+            <IconChip
+              icon={DOMAIN_ICON_CHIPS.construction.icon}
+              tone={DOMAIN_ICON_CHIPS.construction.tone}
+              size="sm"
+            />
+            {project.blueprintName}
+          </span>
+        </TableCell>
         <TableCell className="py-2">{project.tierNumber}</TableCell>
         <TableCell className="py-2">
           {project.progressWorkerTurns} / {project.workerTurnsRequired}

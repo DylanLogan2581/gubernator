@@ -16,6 +16,7 @@ import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { IconChip } from "@/components/shared/IconChip";
 import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ import {
 import { settlementTargetAssignmentsQueryOptions } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { useWorldTransitionOutcome } from "@/features/turns";
+import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { parseTradeRouteResumedPayload } from "@/shared/simulation";
 
@@ -443,7 +445,16 @@ function TradeRouteRow({
           }
         }}
       >
-        <TableCell className="py-2 pr-4 font-medium">{counterpart}</TableCell>
+        <TableCell className="py-2 pr-4 font-medium">
+          <span className="flex items-center gap-2">
+            <IconChip
+              icon={DOMAIN_ICON_CHIPS.trade.icon}
+              tone={DOMAIN_ICON_CHIPS.trade.tone}
+              size="sm"
+            />
+            {counterpart}
+          </span>
+        </TableCell>
         <TableCell className="py-2 pr-4">
           <LegsSummary legs={route.legs} viewerSide={side} />
         </TableCell>
