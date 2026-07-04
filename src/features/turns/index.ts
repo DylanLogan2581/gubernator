@@ -1,6 +1,7 @@
 // Turns feature — advance and track turns within a world.
 // Implemented in Epic 2.
 export { TurnLogBrowser } from "./components/TurnLogBrowser";
+export { TurnLogPage } from "./components/TurnLogPage";
 export {
   turnLogBrowserQueryOptions,
   type TurnLogBrowserEntry,
