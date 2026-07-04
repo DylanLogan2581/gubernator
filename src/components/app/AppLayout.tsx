@@ -1,9 +1,10 @@
-import { type JSX, type ReactNode } from "react";
+import { useState, type JSX, type ReactNode } from "react";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
+import { CommandPalette } from "./CommandPalette";
 import { AppShellProviders } from "./sidebar/AppShellProviders";
 
 type AppLayoutProps = {
@@ -15,6 +16,8 @@ export function AppLayout({
   children,
   headerAction,
 }: AppLayoutProps): JSX.Element {
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
   return (
     <SidebarProvider>
       <AppShellProviders>
@@ -26,10 +29,19 @@ export function AppLayout({
           >
             Skip to main content
           </a>
-          <AppHeader action={headerAction} />
+          <AppHeader
+            action={headerAction}
+            onOpenCommandPalette={() => {
+              setIsCommandPaletteOpen(true);
+            }}
+          />
           <main id="main-content" className="flex-1 p-4 lg:p-6">
             {children}
           </main>
+          <CommandPalette
+            onOpenChange={setIsCommandPaletteOpen}
+            open={isCommandPaletteOpen}
+          />
         </SidebarInset>
       </AppShellProviders>
     </SidebarProvider>

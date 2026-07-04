@@ -82,6 +82,19 @@ describe("AppHeader", () => {
     ).toBeDefined();
   });
 
+  it("opens the command palette when the search button is clicked", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ session: null }).client,
+    );
+    const onOpenCommandPalette = vi.fn();
+    renderAppHeader(<AppHeader onOpenCommandPalette={onOpenCommandPalette} />);
+
+    await user.click(screen.getByRole("button", { name: "Command palette" }));
+
+    expect(onOpenCommandPalette).toHaveBeenCalledOnce();
+  });
+
   it("does not render a brand label — logo/product name lives in the sidebar only", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ session: null }).client,

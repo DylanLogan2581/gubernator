@@ -1,7 +1,6 @@
 import { useParams } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { type JSX, type ReactNode } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -20,13 +19,21 @@ import { WorldBreadcrumb } from "./WorldBreadcrumb";
 
 type AppHeaderProps = {
   readonly action?: ReactNode;
+  readonly onOpenCommandPalette?: () => void;
+};
+
+type CommandPaletteTriggerProps = {
+  readonly onOpen?: () => void;
 };
 
 // Slim header inside SidebarInset: trigger + breadcrumb on the left; turn
 // chip, End Turn (effective admins only) / readiness chip (settlement
 // managers), notifications, and the command-palette trigger on the right
 // (docs/ui-redesign.md §3.3). Brand/logo lives in the sidebar only.
-export function AppHeader({ action }: AppHeaderProps): JSX.Element {
+export function AppHeader({
+  action,
+  onOpenCommandPalette,
+}: AppHeaderProps): JSX.Element {
   const routeParams = useParams({ strict: false });
   const nationId = routeParams.nationId ?? null;
   const settlementId = routeParams.settlementId ?? null;
@@ -68,15 +75,17 @@ export function AppHeader({ action }: AppHeaderProps): JSX.Element {
           />
         ) : null}
         <NotificationsPopover />
-        <CommandPaletteTrigger />
+        <CommandPaletteTrigger onOpen={onOpenCommandPalette} />
       </div>
     </header>
   );
 }
 
-// Placeholder trigger: full ⌘K command palette (entity search + actions) is
-// docs/ui-redesign.md Phase 3, not yet built.
-function CommandPaletteTrigger(): JSX.Element {
+// Opens the CommandPalette mounted by AppLayout (single shared instance —
+// the global ⌘K shortcut and this button both target it).
+function CommandPaletteTrigger({
+  onOpen,
+}: CommandPaletteTriggerProps): JSX.Element {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -85,14 +94,12 @@ function CommandPaletteTrigger(): JSX.Element {
           variant="ghost"
           size="icon"
           aria-label="Command palette"
-          onClick={() => {
-            toast.message("Command palette coming soon");
-          }}
+          onClick={onOpen}
         >
           <Search className="size-4" aria-hidden="true" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Command palette (coming soon)</TooltipContent>
+      <TooltipContent>Search (⌘K)</TooltipContent>
     </Tooltip>
   );
 }

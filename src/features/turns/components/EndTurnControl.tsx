@@ -219,6 +219,9 @@ function EndTurnControlContent({
           onClick={openConfirmation}
           type="button"
           className="w-fit"
+          // Bridged from the command palette's "End turn" action (only
+          // opens the confirmation dialog below — never bypasses it).
+          data-command-palette-action="end-turn"
         >
           <StepForward aria-hidden="true" />
           {endTurnMutation.isPending ? "Running..." : "Run turn transition"}
