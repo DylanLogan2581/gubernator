@@ -175,6 +175,13 @@ export type Database = {
             foreignKeyName: "citizen_assignments_citizen_id_fkey";
             columns: ["citizen_id"];
             isOneToOne: true;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: true;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -250,6 +257,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "citizen_memories_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "citizen_memories_citizen_id_fkey";
             columns: ["citizen_id"];
@@ -392,8 +406,22 @@ export type Database = {
             foreignKeyName: "citizens_parent_a_citizen_id_fkey";
             columns: ["parent_a_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_a_citizen_id_fkey";
+            columns: ["parent_a_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_a_world_fkey";
+            columns: ["parent_a_citizen_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id", "world_id"];
           },
           {
             foreignKeyName: "citizens_parent_a_world_fkey";
@@ -406,8 +434,22 @@ export type Database = {
             foreignKeyName: "citizens_parent_b_citizen_id_fkey";
             columns: ["parent_b_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_b_citizen_id_fkey";
+            columns: ["parent_b_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_b_world_fkey";
+            columns: ["parent_b_citizen_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id", "world_id"];
           },
           {
             foreignKeyName: "citizens_parent_b_world_fkey";
@@ -1281,6 +1323,13 @@ export type Database = {
             foreignKeyName: "nation_relationships_pending_changed_by_citizen_id_fkey";
             columns: ["pending_changed_by_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_relationships_pending_changed_by_citizen_id_fkey";
+            columns: ["pending_changed_by_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -1402,6 +1451,13 @@ export type Database = {
             foreignKeyName: "notifications_citizen_id_fkey";
             columns: ["citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -1505,7 +1561,21 @@ export type Database = {
             foreignKeyName: "partnerships_citizen_a_id_fkey";
             columns: ["citizen_a_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partnerships_citizen_a_id_fkey";
+            columns: ["citizen_a_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partnerships_citizen_b_id_fkey";
+            columns: ["citizen_b_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
             referencedColumns: ["id"];
           },
           {
@@ -1926,6 +1996,13 @@ export type Database = {
             foreignKeyName: "settlements_ready_set_by_citizen_id_fkey";
             columns: ["ready_set_by_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_ready_set_by_citizen_id_fkey";
+            columns: ["ready_set_by_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -2027,6 +2104,13 @@ export type Database = {
             foreignKeyName: "trade_routes_destination_approved_by_citizen_id_fkey";
             columns: ["destination_approved_by_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_destination_approved_by_citizen_id_fkey";
+            columns: ["destination_approved_by_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -2041,6 +2125,13 @@ export type Database = {
             foreignKeyName: "trade_routes_origin_approved_by_citizen_id_fkey";
             columns: ["origin_approved_by_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_origin_approved_by_citizen_id_fkey";
+            columns: ["origin_approved_by_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -2049,6 +2140,13 @@ export type Database = {
             columns: ["origin_settlement_id"];
             isOneToOne: false;
             referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_proposed_by_citizen_id_fkey";
+            columns: ["proposed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
             referencedColumns: ["id"];
           },
           {
@@ -2102,6 +2200,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "turn_log_entries_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "turn_log_entries_citizen_id_fkey";
             columns: ["citizen_id"];
@@ -2213,6 +2318,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "user_active_player_characters_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "user_active_player_characters_citizen_id_fkey";
             columns: ["citizen_id"];
@@ -2411,6 +2523,47 @@ export type Database = {
       };
     };
     Views: {
+      citizen_directory_view: {
+        Row: {
+          age_turns: number | null;
+          assignment_label: string | null;
+          assignment_type: string | null;
+          born_on_turn_number: number | null;
+          citizen_type: string | null;
+          id: string | null;
+          name: string | null;
+          nation_id: string | null;
+          nation_name: string | null;
+          settlement_id: string | null;
+          settlement_name: string | null;
+          sex: string | null;
+          status: string | null;
+          world_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "citizens_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_turn_population_aggregates: {
         Row: {
           birth_count: number | null;

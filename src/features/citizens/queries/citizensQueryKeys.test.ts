@@ -60,6 +60,29 @@ describe("citizensQueryKeys", () => {
     ]);
   });
 
+  it("creates stable directory keys scoped by world, filters, and pagination", () => {
+    const pagination = { pageIndex: 0, pageSize: 25 };
+    expect(
+      citizensQueryKeys.directory("world-1", { status: "alive" }, pagination),
+    ).toEqual([
+      "citizens",
+      "directory",
+      "world-1",
+      JSON.stringify({ status: "alive" }),
+      JSON.stringify(pagination),
+    ]);
+    expect(
+      citizensQueryKeys.directory("world-1", { status: "alive" }, pagination),
+    ).toEqual(
+      citizensQueryKeys.directory("world-1", { status: "alive" }, pagination),
+    );
+    expect(
+      citizensQueryKeys.directory("world-1", { status: "alive" }, pagination),
+    ).not.toEqual(
+      citizensQueryKeys.directory("world-1", { status: "dead" }, pagination),
+    );
+  });
+
   it("creates stable assignment and roster keys", () => {
     expect(citizensQueryKeys.currentAssignmentForCitizen("c-1")).toEqual([
       "citizens",

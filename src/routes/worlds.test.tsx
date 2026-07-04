@@ -290,7 +290,6 @@ describe("world shell route", () => {
     expect(screen.getByText("12")).toBeDefined();
     expect(await screen.findByText("Readiness Summary")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
-    expect(screen.queryByText(/citizen/i)).toBeNull();
   });
 
   it("renders a safe not-found state for missing or inaccessible worlds", async () => {

@@ -24,6 +24,18 @@ export const citizensQueryKeys = {
       "current-assignment-for-citizen",
       citizenId,
     ] as const,
+  directory: (
+    worldId: string,
+    filters: Record<string, unknown>,
+    pagination: Record<string, unknown>,
+  ) =>
+    [
+      ...citizensQueryKeys.all,
+      "directory",
+      worldId,
+      JSON.stringify(filters),
+      JSON.stringify(pagination),
+    ] as const,
   nationAggregateStats: (nationId: string) =>
     [...citizensQueryKeys.all, "nation-aggregate-stats", nationId] as const,
   partnershipsForCitizen: (citizenId: string) =>

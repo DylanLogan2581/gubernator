@@ -423,6 +423,17 @@ export function AppSidebar(): JSX.Element | null {
       ),
     },
     {
+      key: "citizens",
+      label: "Citizens",
+      isActive: location.pathname === `/worlds/${worldId}/citizens`,
+      link: (
+        <Link to="/worlds/$worldId/citizens" params={{ worldId }}>
+          <Users aria-hidden="true" />
+          <span>Citizens</span>
+        </Link>
+      ),
+    },
+    {
       key: "turn-log",
       label: "Turn Log",
       isActive: location.pathname === `/worlds/${worldId}/history`,
