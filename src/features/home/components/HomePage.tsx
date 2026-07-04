@@ -1,23 +1,17 @@
-import { HomeCapabilitySection } from "./HomeCapabilitySection";
+import { HomeFeatureSection } from "./HomeFeatureSection";
+import { HomeFooterSection } from "./HomeFooterSection";
+import { HomeHeroSection } from "./HomeHeroSection";
+import { HomeTurnCycleSection } from "./HomeTurnCycleSection";
 
 import type { JSX } from "react";
 
 export function HomePage(): JSX.Element {
   return (
-    <div className="flex flex-col gap-6">
-      <section className="animate-in fade-in slide-in-from-bottom-2 rounded-2xl border bg-card p-4 shadow-sm">
-        <h1 className="text-3xl font-semibold">Gubernator</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          A turn-based world simulation and management application. Build
-          nations, manage settlements, oversee citizens, and track resources
-          across a structured calendar of turns.
-        </p>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Sign in to create or join a world and start managing turns.
-        </p>
-      </section>
-
-      <HomeCapabilitySection />
+    <div className="flex flex-col gap-10">
+      <HomeHeroSection />
+      <HomeTurnCycleSection />
+      <HomeFeatureSection />
+      <HomeFooterSection />
     </div>
   );
 }
