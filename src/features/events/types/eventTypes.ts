@@ -123,3 +123,12 @@ export type EventListFilters = {
     readonly id: string;
   };
 };
+
+/**
+ * URL-backed filter state for the events list page (see EventsList).
+ */
+export type EventsSearchParams = {
+  readonly status: readonly EventStatus[];
+  readonly scope?: EventScopeType;
+  readonly q: string;
+};

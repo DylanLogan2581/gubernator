@@ -19,13 +19,15 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { EventsList } from "./EventsList";
 import { EventsPageFrame } from "./EventsPageFrame";
 
+import type { EventsSearchParams } from "../types/eventTypes";
 import type { JSX } from "react";
 
 type EventsPageProps = {
   readonly worldId: string;
+  readonly search: EventsSearchParams;
 };
 
-export function EventsPage({ worldId }: EventsPageProps): JSX.Element {
+export function EventsPage({ worldId, search }: EventsPageProps): JSX.Element {
   const queryClient = useQueryClient();
   const accessContextQuery = useQuery(
     currentAccessContextQueryOptions(queryClient),
@@ -51,16 +53,22 @@ export function EventsPage({ worldId }: EventsPageProps): JSX.Element {
   }
 
   return (
-    <EventsPageGate accessContext={accessContextQuery.data} worldId={worldId} />
+    <EventsPageGate
+      accessContext={accessContextQuery.data}
+      worldId={worldId}
+      search={search}
+    />
   );
 }
 
 function EventsPageGate({
   accessContext,
   worldId,
+  search,
 }: {
   readonly accessContext: AccessContext;
   readonly worldId: string;
+  readonly search: EventsSearchParams;
 }): JSX.Element {
   const worldQuery = useQuery(
     worldRouteAccessQueryOptions(worldId, accessContext),
@@ -112,6 +120,7 @@ function EventsPageGate({
       accessContext={accessContext}
       worldAccess={worldQuery.data}
       worldId={worldId}
+      search={search}
     />
   );
 }
@@ -120,13 +129,16 @@ function EventsPageContent({
   accessContext: _accessContext,
   worldAccess,
   worldId,
+  search,
 }: {
   readonly accessContext: AccessContext;
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
+  readonly search: EventsSearchParams;
 }): JSX.Element {
   const navigate = useNavigate();
   const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
+  const canManage = effectiveCanAdmin && !worldAccess.header.isArchived;
 
   return (
     <EventsPageFrame worldId={worldId}>
@@ -143,7 +155,9 @@ function EventsPageContent({
 
         <EventsList
           worldId={worldId}
-          canCreate={effectiveCanAdmin && !worldAccess.header.isArchived}
+          canCreate={canManage}
+          canManage={canManage}
+          search={search}
           onCreateClick={() => {
             void navigate({
               to: "/worlds/$worldId/events/new",
