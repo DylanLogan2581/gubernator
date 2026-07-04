@@ -3,7 +3,6 @@ import { JobAssignmentsTable } from "./JobAssignmentsTable";
 import type { JSX } from "react";
 
 type SettlementAssignmentBoardProps = {
-  readonly activeTab: "bulk" | "per-target";
   readonly canManageSettlement: boolean;
   readonly isArchived: boolean;
   readonly nationId: string;

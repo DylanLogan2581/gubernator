@@ -449,7 +449,6 @@ function createClient(config: {
 
 function renderBoard(
   props: Partial<{
-    activeTab: "bulk" | "per-target";
     canManageSettlement: boolean;
     isArchived: boolean;
     nationId: string;
@@ -463,7 +462,6 @@ function renderBoard(
   render(
     <QueryClientProvider client={queryClient}>
       <SettlementAssignmentBoard
-        activeTab={props.activeTab ?? "bulk"}
         canManageSettlement={props.canManageSettlement ?? true}
         isArchived={props.isArchived ?? false}
         nationId={props.nationId ?? "nation-1"}
@@ -1216,7 +1214,6 @@ describe("SettlementAssignmentBoard", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <SettlementAssignmentBoard
-          activeTab="bulk"
           canManageSettlement={true}
           isArchived={false}
           nationId="nation-1"

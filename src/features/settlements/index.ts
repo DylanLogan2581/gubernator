@@ -11,8 +11,14 @@ export {
   settlementReadinessSummaryQueryOptions,
 } from "./queries/settlementReadinessQueries";
 export { CreateSettlementDialog } from "./components/CreateSettlementDialog";
+export { ForecastPanel } from "./components/ForecastPanel";
 export { ManualReadinessControl } from "./components/ManualReadinessControl";
+export { SettlementCoordinatesSection } from "./components/SettlementDetailPage/CoordinatesSection";
+export { SettlementDeleteSection } from "./components/SettlementDetailPage/DeleteSection";
+export { SettlementDetailsSection } from "./components/SettlementDetailPage/DetailsSection";
 export { SettlementDetailPage } from "./components/SettlementDetailPage";
+export { SettlementReadinessSection } from "./components/SettlementDetailPage/ReadinessSection";
+export { useSettlementDetailContext } from "./components/SettlementDetailPage/SettlementDetailContext";
 export {
   SettlementReadinessListPanel,
   SettlementReadinessListPanelContent,

@@ -1,16 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+  ArrowLeftRight,
   Bell,
   BookOpen,
+  Building2,
   CalendarDays,
   Clock,
   FileText,
+  Gem,
   Globe2,
+  HardHat,
   Landmark,
   LayoutDashboard,
   MapPin,
   Package,
+  PawPrint,
+  Settings,
   ShieldCheck,
   TrendingUp,
   UserCircle2,
@@ -138,17 +144,21 @@ export function AppSidebar(): JSX.Element | null {
   // The SETTLEMENT group's sub-items only make sense while the viewer is
   // actually on the pinned settlement's route — pinned scope can persist
   // (localStorage) across pages like Dashboard/Events where there's no
-  // `?section=` search param to read, and without this guard those pages
-  // would otherwise render "Overview" as active by accident (no section ===
-  // null section fallback).
+  // settlement child route to read a section from, and without this guard
+  // those pages would otherwise render "Overview" as active by accident (no
+  // section === null section fallback).
+  const settlementBasePath =
+    nationId !== null && settlementId !== null
+      ? `/worlds/${worldId}/nations/${nationId}/settlements/${settlementId}`
+      : null;
   const isOnSettlementPage =
-    nationId !== null &&
-    settlementId !== null &&
-    location.pathname ===
-      `/worlds/${worldId}/nations/${nationId}/settlements/${settlementId}`;
-  const currentSection = isOnSettlementPage
-    ? sectionSearchValue(location.search)
-    : null;
+    settlementBasePath !== null &&
+    (location.pathname === settlementBasePath ||
+      location.pathname.startsWith(`${settlementBasePath}/`));
+  const currentSection =
+    isOnSettlementPage && settlementBasePath !== null
+      ? sectionFromPathname(location.pathname, settlementBasePath)
+      : null;
 
   const playItems: NavGroupItem[] = [
     {
@@ -226,63 +236,89 @@ export function AppSidebar(): JSX.Element | null {
           },
         ]
       : [
-          settlementSectionItem({
-            isActive:
-              isOnSettlementPage &&
-              (currentSection === "overview" || currentSection === null),
+          settlementSectionItem("overview", {
+            isActive: currentSection === "overview",
             label: "Overview",
             nationId,
-            section: "overview",
             settlementId,
             worldId,
           }),
-          settlementSectionItem({
-            isActive: currentSection === "population",
-            label: "Population",
+          settlementSectionItem("citizens", {
+            isActive: currentSection === "citizens",
+            label: "Citizens",
             nationId,
-            section: "population",
             settlementId,
             worldId,
           }),
-          settlementSectionItem({
-            isActive: currentSection === "economy",
-            label: "Economy",
+          settlementSectionItem("populations", {
+            isActive: currentSection === "populations",
+            label: "Populations",
             nationId,
-            section: "economy",
             settlementId,
             worldId,
           }),
-          settlementSectionItem({
+          settlementSectionItem("buildings", {
+            isActive: currentSection === "buildings",
+            label: "Buildings",
+            nationId,
+            settlementId,
+            worldId,
+          }),
+          settlementSectionItem("construction", {
+            isActive: currentSection === "construction",
+            label: "Construction",
+            nationId,
+            settlementId,
+            worldId,
+          }),
+          settlementSectionItem("stockpiles", {
+            isActive: currentSection === "stockpiles",
+            label: "Stockpiles",
+            nationId,
+            settlementId,
+            worldId,
+          }),
+          settlementSectionItem("deposits", {
+            isActive: currentSection === "deposits",
+            label: "Deposits",
+            nationId,
+            settlementId,
+            worldId,
+          }),
+          settlementSectionItem("trade", {
+            isActive: currentSection === "trade",
+            label: "Trade",
+            nationId,
+            settlementId,
+            worldId,
+          }),
+          settlementSectionItem("forecast", {
             isActive: currentSection === "forecast",
             label: "Forecast",
             nationId,
-            section: "forecast",
             settlementId,
             worldId,
           }),
-          settlementSectionItem({
+          settlementSectionItem("reports", {
             isActive: currentSection === "reports",
             label: "Reports",
             nationId,
-            section: "reports",
             settlementId,
             worldId,
           }),
-          settlementSectionItem({
+          settlementSectionItem("history", {
             isActive: currentSection === "history",
             label: "History",
             nationId,
-            section: "history",
             settlementId,
             worldId,
           }),
           ...(effectiveCanAdmin
             ? [
-                settlementSectionItem({
-                  isActive: currentSection === "admin",
-                  label: "Admin",
+                settlementSectionItem("settings", {
+                  isActive: currentSection === "settings",
+                  label: "Settings",
                   nationId,
-                  section: "admin",
                   settlementId,
                   worldId,
                 }),
@@ -392,66 +428,255 @@ export function AppSidebar(): JSX.Element | null {
   );
 }
 
-const SETTLEMENT_SECTIONS: ReadonlySet<string> = new Set<SettlementSection>([
-  "admin",
-  "economy",
+const SETTLEMENT_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
+  Exclude<SettlementSection, "overview">
+>([
+  "buildings",
+  "citizens",
+  "construction",
+  "deposits",
   "forecast",
   "history",
-  "overview",
-  "population",
+  "populations",
   "reports",
+  "settings",
+  "stockpiles",
+  "trade",
 ]);
 
-function isSettlementSection(value: string): value is SettlementSection {
-  return SETTLEMENT_SECTIONS.has(value);
+function isSettlementSectionSegment(
+  value: string,
+): value is Exclude<SettlementSection, "overview"> {
+  return SETTLEMENT_SECTION_SEGMENTS.has(value);
 }
 
-function sectionSearchValue(search: unknown): SettlementSection | null {
-  if (typeof search !== "object" || search === null) {
-    return null;
-  }
-  const value = (search as Record<string, unknown>).section;
-  return typeof value === "string" && isSettlementSection(value) ? value : null;
+// Derives the active SETTLEMENT sidebar item from the pathname suffix past
+// the settlement's base route — mirrors the settlement detail child routes
+// 1:1. An unrecognized suffix (e.g. mid-navigation to a not-yet-generated
+// route) falls back to "overview" rather than leaving the group with no
+// active item.
+function sectionFromPathname(
+  pathname: string,
+  settlementBasePath: string,
+): SettlementSection {
+  const suffix = pathname.slice(settlementBasePath.length);
+  const segment = suffix.startsWith("/") ? suffix.slice(1) : suffix;
+  return segment !== "" && isSettlementSectionSegment(segment)
+    ? segment
+    : "overview";
 }
 
-function settlementSectionItem({
-  isActive,
-  label,
-  nationId,
-  section,
-  settlementId,
-  worldId,
-}: {
-  readonly isActive: boolean;
-  readonly label: string;
-  readonly nationId: string;
-  readonly section: SettlementSection;
-  readonly settlementId: string;
-  readonly worldId: string;
-}): NavGroupItem {
+function settlementSectionItem(
+  section: SettlementSection,
+  {
+    isActive,
+    label,
+    nationId,
+    settlementId,
+    worldId,
+  }: {
+    readonly isActive: boolean;
+    readonly label: string;
+    readonly nationId: string;
+    readonly settlementId: string;
+    readonly worldId: string;
+  },
+): NavGroupItem {
   const icons: Record<SettlementSection, JSX.Element> = {
-    admin: <ShieldCheck aria-hidden="true" />,
-    economy: <Package aria-hidden="true" />,
+    buildings: <Building2 aria-hidden="true" />,
+    citizens: <Users aria-hidden="true" />,
+    construction: <HardHat aria-hidden="true" />,
+    deposits: <Gem aria-hidden="true" />,
     forecast: <TrendingUp aria-hidden="true" />,
     history: <Clock aria-hidden="true" />,
     overview: <LayoutDashboard aria-hidden="true" />,
-    population: <Users aria-hidden="true" />,
+    populations: <PawPrint aria-hidden="true" />,
     reports: <FileText aria-hidden="true" />,
+    settings: <Settings aria-hidden="true" />,
+    stockpiles: <Package aria-hidden="true" />,
+    trade: <ArrowLeftRight aria-hidden="true" />,
   };
 
-  return {
-    key: `settlement-${section}`,
-    label,
-    isActive,
-    link: (
-      <Link
-        to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-        params={{ nationId, settlementId, worldId }}
-        search={{ section }}
-      >
-        {icons[section]}
-        <span>{label}</span>
-      </Link>
-    ),
-  };
+  switch (section) {
+    case "overview":
+      return {
+        key: "settlement-overview",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "citizens":
+      return {
+        key: "settlement-citizens",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "populations":
+      return {
+        key: "settlement-populations",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "buildings":
+      return {
+        key: "settlement-buildings",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "construction":
+      return {
+        key: "settlement-construction",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "stockpiles":
+      return {
+        key: "settlement-stockpiles",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "deposits":
+      return {
+        key: "settlement-deposits",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "trade":
+      return {
+        key: "settlement-trade",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "forecast":
+      return {
+        key: "settlement-forecast",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "reports":
+      return {
+        key: "settlement-reports",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "history":
+      return {
+        key: "settlement-history",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/history"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "settings":
+      return {
+        key: "settlement-settings",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+  }
 }
