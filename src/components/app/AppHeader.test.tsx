@@ -95,9 +95,20 @@ describe("AppHeader", () => {
     const onOpenCommandPalette = vi.fn();
     renderAppHeader(<AppHeader onOpenCommandPalette={onOpenCommandPalette} />);
 
-    await user.click(screen.getByRole("button", { name: "Command palette" }));
+    await user.click(screen.getByRole("button", { name: /search/i }));
 
     expect(onOpenCommandPalette).toHaveBeenCalledOnce();
+  });
+
+  it("shows search button text and the ⌘K hint", () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ session: null }).client,
+    );
+    renderAppHeader();
+
+    const searchButton = screen.getByRole("button", { name: /search/i });
+    expect(searchButton.textContent).toContain("Search");
+    expect(searchButton.textContent).toContain("K");
   });
 
   it("does not render a brand label — logo/product name lives in the sidebar only", () => {
@@ -151,7 +162,7 @@ describe("AppHeader", () => {
     ).toBeDefined();
   });
 
-  it("keeps notification control after header actions", () => {
+  it("renders the header action (user menu) at the far right, after notifications", () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ session: null }).client,
     );
@@ -163,7 +174,7 @@ describe("AppHeader", () => {
     });
 
     expect(
-      worldsLink.compareDocumentPosition(notificationsButton) &
+      notificationsButton.compareDocumentPosition(worldsLink) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });

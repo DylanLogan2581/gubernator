@@ -15,7 +15,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthNavigationControl } from "@/features/auth";
+import { UserMenu } from "@/features/auth";
 import { scheduleAuthStateQueryCacheSync } from "@/lib/authStateQueryCache";
 import { type AppRouterContext } from "@/lib/queryClient";
 import { subscribeToSupabaseAuthStateChanges } from "@/lib/supabaseAuthState";
@@ -59,7 +59,7 @@ function RootLayout(): JSX.Element {
   return (
     <TooltipProvider>
       <QueryClientProvider client={queryClient}>
-        <AppLayout headerAction={<AuthNavigationControl />}>
+        <AppLayout headerAction={<UserMenu />}>
           {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
         </AppLayout>
         <Toaster

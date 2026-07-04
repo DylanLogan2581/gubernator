@@ -120,7 +120,7 @@ describe("app shell auth controls", () => {
     await expect.poll(() => router.state.location.pathname).toBe("/sign-in");
   });
 
-  it("shows authenticated users worlds and sign-out actions without sign-in", async () => {
+  it("shows authenticated users sign-out via the user menu, without sign-in", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -130,15 +130,12 @@ describe("app shell auth controls", () => {
         }),
       }),
     );
-    const { router } = renderAt("/");
+    renderAt("/");
 
-    expect(await screen.findByRole("link", { name: "Worlds" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Sign out" })).toBeDefined();
+    await user.click(await screen.findByRole("button", { name: "User menu" }));
+
+    expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeDefined();
     expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
-
-    await user.click(screen.getByRole("link", { name: "Worlds" }));
-
-    await expect.poll(() => router.state.location.pathname).toBe("/worlds");
   });
 
   it("signs out authenticated users, clears cached data, and redirects", async () => {
@@ -161,7 +158,8 @@ describe("app shell auth controls", () => {
     );
     const { router } = renderAt("/worlds", queryClient);
 
-    await user.click(await screen.findByRole("button", { name: "Sign out" }));
+    await user.click(await screen.findByRole("button", { name: "User menu" }));
+    await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await expect.poll(() => signOut).toHaveBeenCalledOnce();
     expect(queryClient.getQueryData(["worlds"])).toBeUndefined();
@@ -183,7 +181,8 @@ describe("app shell auth controls", () => {
     );
 
     renderAt("/worlds");
-    await user.click(await screen.findByRole("button", { name: "Sign out" }));
+    await user.click(await screen.findByRole("button", { name: "User menu" }));
+    await user.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => {
       expect(toastError).toHaveBeenCalledWith("Sign-out failed. Try again.");
@@ -253,7 +252,7 @@ describe("root error boundary", () => {
     try {
       renderAt("/worlds", queryClient);
 
-      await screen.findByRole("link", { name: "Worlds" });
+      await screen.findByRole("button", { name: /toggle sidebar/i });
       expect(screen.queryByText("Something went wrong")).toBeNull();
     } finally {
       restoreConsole();

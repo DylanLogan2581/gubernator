@@ -5,10 +5,9 @@ export {
   updatePasswordMutationOptions,
 } from "./mutations/authMutations";
 export { AuthCallbackPage } from "./components/AuthCallbackPage";
-export { AuthNavigationControl } from "./components/AuthNavigationControl";
 export { SetPasswordPage } from "./components/SetPasswordPage";
 export { SignInPage } from "./components/SignInPage";
-export { SignOutControl } from "./components/SignOutControl";
+export { UserMenu } from "./components/UserMenu";
 export { authQueryKeys } from "./queries/authQueryKeys";
 export {
   currentAppUserQueryOptions,

@@ -4,11 +4,6 @@ import { type JSX, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useEffectiveCanAdmin } from "@/features/permissions";
 
 import { HeaderEndTurnControl } from "./HeaderEndTurnControl";
@@ -29,8 +24,9 @@ type CommandPaletteTriggerProps = {
 
 // Slim header inside SidebarInset: trigger + breadcrumb on the left; turn
 // chip, End Turn (effective admins only) / readiness chip (settlement
-// managers), notifications, and the command-palette trigger on the right
-// (docs/ui-redesign.md §3.3). Brand/logo lives in the sidebar only.
+// managers), the command-palette trigger, notifications, and the user menu
+// (rightmost, via `action`) on the right (docs/ui-redesign.md §3.3). Brand/
+// logo lives in the sidebar only.
 export function AppHeader({
   action,
   onOpenCommandPalette,
@@ -53,7 +49,6 @@ export function AppHeader({
       ) : null}
       <div className="flex-1" />
       <div className="flex items-center gap-2">
-        {action}
         {turnLabel !== null ? (
           <span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">
             {turnLabel}
@@ -78,8 +73,9 @@ export function AppHeader({
             worldId={worldId}
           />
         ) : null}
-        <NotificationsPopover />
         <CommandPaletteTrigger onOpen={onOpenCommandPalette} />
+        <NotificationsPopover />
+        {action}
       </div>
     </header>
   );
@@ -91,19 +87,18 @@ function CommandPaletteTrigger({
   onOpen,
 }: CommandPaletteTriggerProps): JSX.Element {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Command palette"
-          onClick={onOpen}
-        >
-          <Search className="size-4" aria-hidden="true" />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>Search (⌘K)</TooltipContent>
-    </Tooltip>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="gap-2 text-muted-foreground"
+      onClick={onOpen}
+    >
+      <Search className="size-4" aria-hidden="true" />
+      <span>Search…</span>
+      <kbd className="pointer-events-none ml-2 hidden h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
+        <span aria-hidden="true">⌘</span>K
+      </kbd>
+    </Button>
   );
 }
