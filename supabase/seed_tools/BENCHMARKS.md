@@ -9,7 +9,7 @@
 ## Performance Budgets
 
 | Hot path | Budget | Notes |
-|---|---|---|
+| --- | --- | --- |
 | End-turn transition (full turn advance) | < 30 s | At 50 settlements / 10 000 citizens |
 | Settlement report page load | < 2 s | Supabase JS client, cold cache |
 | Turn log browser (first page, no filter) | < 2 s | 50-page limit, world-scoped |
@@ -32,7 +32,7 @@ psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
 
 Expected output (summary row):
 
-```
+```text
 settlements | citizens | assignments | trade_routes | events | event_effects
 ------------+----------+-------------+--------------+--------+---------------
          50 |    10000 |       10000 |           20 |     20 |            20
@@ -101,7 +101,7 @@ All whole-world PostgREST reads in `end-turn-simulation/state/queries.ts` have
 been audited and either paginate or are proven to be below the 1 000-row cap:
 
 | Table | Fetch function | Paginated? | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `citizens` | `fetchCitizens` | ✅ `fetchRowsPaginated` | World-scoped; 10k rows in large world |
 | `events` | `fetchEvents` | ✅ `fetchRowsPaginated` | World-scoped |
 | `event_effects` | `fetchEventEffects` | ✅ `fetchRowsPaginated` + world join | Fixed in #797: scoped via `events!inner(world_id)` |
@@ -127,7 +127,7 @@ been audited and either paginate or are proven to be below the 1 000-row cap:
 ## Index Coverage (Issue #797)
 
 | Query | Index | Status |
-|---|---|---|
+| --- | --- | --- |
 | Turn log browser — `(world_id, log_category)` | `turn_log_entries_world_category_idx` | ✅ Added in #728 migration |
 | Turn log browser — `(world_id, settlement_id)` | `turn_log_entries_world_settlement_idx` | ✅ Added in #728 migration |
 | Turn log browser — `(world_id, nation_id)` | `turn_log_entries_world_nation_idx` | ✅ Added in #728 migration |

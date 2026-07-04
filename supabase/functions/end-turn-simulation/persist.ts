@@ -287,7 +287,6 @@ export async function persistSimulationTransition(
   return { ok: true, summary: responseBody };
 }
 
-
 // Best-effort recovery path for #958: if plan/persist fails after
 // startTurnTransition already wrote a 'running' row, mark that row failed
 // via the same service-role RPC the superadmin recovery UI uses

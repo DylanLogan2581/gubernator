@@ -1,6 +1,5 @@
 import { readCappedJsonBody } from "../_shared/http/body.ts";
 
-
 import { createErrorResponse } from "./http.ts";
 import { isRecord } from "./utils.ts";
 

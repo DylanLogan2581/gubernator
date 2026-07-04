@@ -5,9 +5,12 @@ import {
   logRequestFailure,
   logRequestSuccess,
 } from "../_shared/edgeRequestLogger.ts";
-import { EDGE_COMMON_ENV_VAR_NAMES, EDGE_SERVICE_ROLE_ENV_VAR_NAMES } from "../_shared/envContract.ts";
+import {
+  EDGE_COMMON_ENV_VAR_NAMES,
+  EDGE_SERVICE_ROLE_ENV_VAR_NAMES,
+} from "../_shared/envContract.ts";
 import { assertEdgeEnvVars, getEdgeRuntime } from "../_shared/http/env.ts";
-import { RATE_LIMITS, checkRateLimit } from "../_shared/http/rateLimit.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/http/rateLimit.ts";
 
 import {
   resolveForecastPreviewAuthorization,
@@ -125,7 +128,12 @@ export async function handleEndTurnSimulationRequest(
       RATE_LIMITS["end-turn-simulation"],
     );
     if (!rateLimitResult.ok) {
-      logRequestFailure(requestId, "rate_limit_exceeded", "per-user rate limit exceeded", Date.now() - startMs);
+      logRequestFailure(
+        requestId,
+        "rate_limit_exceeded",
+        "per-user rate limit exceeded",
+        Date.now() - startMs,
+      );
       const body = createErrorResponse({
         code: "rate_limit_exceeded",
         message: "Too many requests. Please wait before retrying.",

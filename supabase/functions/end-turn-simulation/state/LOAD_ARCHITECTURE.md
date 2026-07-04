@@ -48,11 +48,11 @@ challenge: assembling ~16 different entity types from as many PostgREST tables.
 
 3. **No api.max_rows truncation:** World-scoped high-cardinality fetches (citizens, events,
    event_effects, assignments, partnerships, stockpiles) use `fetchRowsPaginated`, which detects
-   truncation via `Content-Range` and pages through all results.  Settlement-scoped fetches
+   truncation via `Content-Range` and pages through all results. Settlement-scoped fetches
    (buildings, construction projects, deposits, managed populations, trade routes) also use
-   `fetchRowsPaginated` as of #797 — at 50+ settlements these can exceed 1 000 rows.
-   `event_effects` is scoped to the current world via an `events!inner(world_id)` join so
-   effects from other worlds are never fetched.
+   `fetchRowsPaginated` as of #797 — at 50+ settlements these can exceed 1 000 rows. `event_effects`
+   is scoped to the current world via an `events!inner(world_id)` join so effects from other worlds
+   are never fetched.
 
 4. **HTTP pipelining:** Modern TCP and HTTP/2 implementations pipeline multiple requests over one
    connection, achieving near-RPC latency with RPC simplicity trade-offs.

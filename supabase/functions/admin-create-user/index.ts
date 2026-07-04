@@ -1,5 +1,8 @@
 import { logAdminCreateUserSuccess, logAuthorizationDenial } from "../_shared/auditLog.ts";
-import { EDGE_COMMON_ENV_VAR_NAMES, EDGE_SERVICE_ROLE_ENV_VAR_NAMES } from "../_shared/envContract.ts";
+import {
+  EDGE_COMMON_ENV_VAR_NAMES,
+  EDGE_SERVICE_ROLE_ENV_VAR_NAMES,
+} from "../_shared/envContract.ts";
 import {
   assertEdgeEnvVars,
   getEdgeRuntime,
@@ -7,7 +10,7 @@ import {
   getRequiredRuntimeUrl,
 } from "../_shared/http/env.ts";
 import { isRecord } from "../_shared/http/guards.ts";
-import { RATE_LIMITS, checkRateLimit } from "../_shared/http/rateLimit.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/http/rateLimit.ts";
 import { classifyHttpError, supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import {

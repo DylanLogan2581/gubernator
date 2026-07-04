@@ -1,4 +1,7 @@
-import { EDGE_COMMON_ENV_VAR_NAMES, EDGE_SERVICE_ROLE_ENV_VAR_NAMES } from "../_shared/envContract.ts";
+import {
+  EDGE_COMMON_ENV_VAR_NAMES,
+  EDGE_SERVICE_ROLE_ENV_VAR_NAMES,
+} from "../_shared/envContract.ts";
 import { buildCorsHeaders, parseAllowedOrigins } from "../_shared/http/cors.ts";
 import {
   assertEdgeEnvVars,
@@ -6,7 +9,7 @@ import {
   getRequiredRuntimeEnv,
   getRequiredRuntimeUrl,
 } from "../_shared/http/env.ts";
-import { RATE_LIMITS, checkRateLimit } from "../_shared/http/rateLimit.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/http/rateLimit.ts";
 import { createErrorResponse, createJsonResponse } from "../_shared/http/response.ts";
 import { getAuthorizationHeader, resolveAuthContext } from "../_shared/http/session.ts";
 import { supabaseFetch } from "../_shared/supabaseFetch.ts";
