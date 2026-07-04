@@ -72,6 +72,9 @@ vi.mock("@/features/worlds", () => ({
     queryFn: () => Promise.resolve(WORLDS_FIXTURE),
     queryKey: ["test", "worlds"],
   }),
+  // Real WorldAvatar resolves a signed URL via the Supabase client, which
+  // isn't configured in this test's module graph — stub it to a no-op.
+  WorldAvatar: () => null,
 }));
 
 vi.mock("@/features/nations", () => ({

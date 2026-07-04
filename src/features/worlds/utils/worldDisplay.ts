@@ -27,6 +27,7 @@ type WorldRow = Pick<
   | "visibility"
 > & {
   readonly calendar_config_json?: Tables<"worlds">["calendar_config_json"];
+  readonly thumbnail_path?: Tables<"worlds">["thumbnail_path"];
 };
 
 export function toAccessibleWorld(
@@ -76,6 +77,7 @@ export function toAccessibleWorld(
     planningTurnNumber,
     slug: createWorldSlug(world.name, world.id),
     status: world.status,
+    thumbnailPath: world.thumbnail_path ?? null,
     updatedAt: world.updated_at,
     visibility: world.visibility,
   };

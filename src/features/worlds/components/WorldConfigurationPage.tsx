@@ -24,6 +24,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
+import { WorldImagesPanel } from "./WorldImagesPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
 import { WorldSettingsPanel } from "./WorldSettingsPanel";
@@ -41,6 +42,7 @@ const BASE_TABS = [
   { key: "namesets", label: "Namesets" },
   { key: "npc-flavor", label: "NPC Flavor" },
   { key: "population-rules", label: "Population Rules" },
+  { key: "images", label: "Images" },
 ] as const;
 
 const SUPER_ADMIN_TABS = [
@@ -321,6 +323,20 @@ function WorldConfigurationContent({
             canAdmin={canAdmin}
             isArchived={header.isArchived}
             worldId={worldId}
+          />
+        </ConfigPanelShell>
+      );
+    }
+
+    if (activeTab === "images") {
+      return (
+        <ConfigPanelShell>
+          <WorldImagesPanel
+            accessContext={accessContext}
+            canAdmin={canAdmin}
+            isArchived={header.isArchived}
+            worldId={worldId}
+            worldName={header.name}
           />
         </ConfigPanelShell>
       );

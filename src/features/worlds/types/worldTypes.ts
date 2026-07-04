@@ -35,6 +35,7 @@ export type AccessibleWorld = {
   readonly planningTurnNumber: number;
   readonly slug: string;
   readonly status: string;
+  readonly thumbnailPath: string | null;
   readonly updatedAt: string;
   readonly visibility: string;
 };

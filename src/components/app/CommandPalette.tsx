@@ -7,6 +7,7 @@ import {
   useState,
   type ComponentType,
   type JSX,
+  type ReactNode,
 } from "react";
 
 import {
@@ -33,7 +34,7 @@ import {
   useEffectiveCanAdmin,
 } from "@/features/permissions";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
-import { accessibleWorldsQueryOptions } from "@/features/worlds";
+import { accessibleWorldsQueryOptions, WorldAvatar } from "@/features/worlds";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
@@ -47,6 +48,7 @@ type PaletteEntry = {
   readonly disabled?: boolean;
   readonly key: string;
   readonly label: string;
+  readonly leading?: ReactNode;
   readonly onSelect: () => void;
   readonly subtitle?: string;
 };
@@ -247,6 +249,15 @@ export function CommandPalette({
     (world) => ({
       key: `world-${world.id}`,
       label: world.name,
+      leading: (
+        <WorldAvatar
+          className="absolute left-2 size-5 translate-y-1/2"
+          size="sm"
+          thumbnailPath={world.thumbnailPath}
+          worldId={world.id}
+          worldName={world.name}
+        />
+      ),
       onSelect: () => {
         closeAndReset();
         void navigate({
@@ -443,7 +454,7 @@ function PaletteGroup({
           onSelect={entry.onSelect}
           value={entry.key}
         >
-          <Icon aria-hidden />
+          {entry.leading ?? <Icon aria-hidden />}
           <span className="flex-1 truncate">{entry.label}</span>
           {entry.subtitle !== undefined ? (
             <span className="ml-2 shrink-0 truncate text-xs text-muted-foreground">

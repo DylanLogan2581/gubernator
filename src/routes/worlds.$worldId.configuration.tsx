@@ -21,6 +21,7 @@ const CONFIGURATION_TABS = [
   "namesets",
   "npc-flavor",
   "population-rules",
+  "images",
   "world-settings",
 ] as const;
 

@@ -24,6 +24,8 @@ import {
 
 import { accessibleWorldsQueryOptions } from "../queries/worldQueries";
 
+import { WorldAvatar } from "./WorldAvatar";
+
 export type WorldSwitcherProps = {
   readonly turnLabel: string | null;
   readonly worldId: string | null;
@@ -71,6 +73,7 @@ export function WorldSwitcher({
   });
   const worlds = worldsQuery.data ?? [];
   const isSuperAdmin = accessContext?.isSuperAdmin ?? false;
+  const currentWorld = worlds.find((world) => world.id === worldId) ?? null;
 
   return (
     <SidebarMenu>
@@ -94,7 +97,13 @@ export function WorldSwitcher({
               </SidebarMenuButton>
             ) : (
               <SidebarMenuButton size="lg" tooltip={worldName ?? "World"}>
-                <Globe2 className="size-4 shrink-0" aria-hidden="true" />
+                <WorldAvatar
+                  className="shrink-0"
+                  size="sm"
+                  thumbnailPath={currentWorld?.thumbnailPath ?? null}
+                  worldId={worldId}
+                  worldName={worldName ?? ""}
+                />
                 <span className="grid flex-1 text-left leading-tight">
                   <span className="truncate font-medium">
                     {worldName ?? "Loading…"}
@@ -133,9 +142,12 @@ export function WorldSwitcher({
               worlds.map((world) => (
                 <DropdownMenuItem key={world.id} asChild className="gap-2">
                   <Link to="/worlds/$worldId" params={{ worldId: world.id }}>
-                    <Globe2
-                      className="size-3.5 shrink-0 text-muted-foreground"
-                      aria-hidden="true"
+                    <WorldAvatar
+                      className="shrink-0"
+                      size="sm"
+                      thumbnailPath={world.thumbnailPath}
+                      worldId={world.id}
+                      worldName={world.name}
                     />
                     <span className="grid min-w-0 flex-1 gap-0.5">
                       <span className="truncate text-sm font-medium">

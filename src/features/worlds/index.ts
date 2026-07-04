@@ -1,8 +1,11 @@
 // Worlds feature — create, list, and manage simulation worlds.
 // Implemented in Epic 2.
 export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
+export { WorldAvatar } from "./components/WorldAvatar";
 export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
+export { WorldHeroImage } from "./components/WorldHeroImage";
+export { WorldImagesPanel } from "./components/WorldImagesPanel";
 export { WorldListPage } from "./components/WorldListPage";
 export { WorldNamingConfigPanel } from "./components/WorldNamingConfigPanel";
 export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
@@ -40,10 +43,27 @@ export {
   worldPopulationRulesQueryOptions,
 } from "./queries/worldPopulationRulesQueries";
 export {
+  useWorldImageSignedUrl,
+  worldImagesQueryOptions,
+} from "./queries/worldImageQueries";
+export type { WorldImagePaths } from "./queries/worldImageQueries";
+export {
   SaveWorldNamingConfigError,
   isSaveWorldNamingConfigError,
   saveWorldNamingConfigMutationOptions,
 } from "./mutations/worldNamingConfigMutations";
+export {
+  WorldImageError,
+  isWorldImageError,
+  removeWorldImageMutationOptions,
+  uploadWorldImageMutationOptions,
+  worldImagePath,
+} from "./mutations/worldImageMutations";
+export type {
+  RemoveWorldImageInput,
+  UploadWorldImageInput,
+  WorldImageKind,
+} from "./mutations/worldImageMutations";
 export {
   SaveWorldNpcFlavorConfigError,
   isSaveWorldNpcFlavorConfigError,

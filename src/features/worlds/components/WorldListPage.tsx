@@ -29,7 +29,6 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,10 +49,6 @@ import {
 } from "@/components/ui/tooltip";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import type { AccessContext } from "@/features/permissions";
-import {
-  categoricalChipClassName,
-  hashToCategoricalSlot,
-} from "@/lib/categoricalPalette";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { textInputLimits } from "@/lib/inputLimits";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -74,6 +69,7 @@ import { parseWorldTemplate } from "../queries/worldTemplateExportQueries";
 import { BUNDLED_SCENARIOS } from "../scenarios/bundledScenarios";
 import { computeDryRunReport } from "../utils/worldTemplateDryRun";
 
+import { WorldAvatar } from "./WorldAvatar";
 import {
   DryRunSummary,
   ImportErrorDialog,
@@ -564,20 +560,13 @@ function WorldIcon({
 }: {
   readonly world: AccessibleWorld;
 }): JSX.Element {
-  const initial = world.name.trim().charAt(0).toUpperCase();
-
   return (
-    <Avatar aria-hidden="true" className="shrink-0">
-      <AvatarFallback
-        className={categoricalChipClassName(hashToCategoricalSlot(world.id))}
-      >
-        {initial === "" ? (
-          <Globe2 className="size-4" aria-hidden="true" />
-        ) : (
-          initial
-        )}
-      </AvatarFallback>
-    </Avatar>
+    <WorldAvatar
+      className="shrink-0"
+      thumbnailPath={world.thumbnailPath}
+      worldId={world.id}
+      worldName={world.name}
+    />
   );
 }
 

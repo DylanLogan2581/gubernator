@@ -2469,6 +2469,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -2482,6 +2483,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -2493,6 +2495,7 @@ export type Database = {
           current_turn_number?: number;
           fertility_chance?: number;
           food_consumption_per_citizen?: number;
+          hero_path?: string | null;
           homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
@@ -2506,6 +2509,7 @@ export type Database = {
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
+          thumbnail_path?: string | null;
           updated_at?: string;
           visibility?: string;
           water_consumption_per_citizen?: number;
@@ -2517,6 +2521,7 @@ export type Database = {
           current_turn_number?: number;
           fertility_chance?: number;
           food_consumption_per_citizen?: number;
+          hero_path?: string | null;
           homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
@@ -2530,6 +2535,7 @@ export type Database = {
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
+          thumbnail_path?: string | null;
           updated_at?: string;
           visibility?: string;
           water_consumption_per_citizen?: number;
@@ -3287,6 +3293,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -3300,6 +3307,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -3550,6 +3558,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -3563,6 +3572,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -3898,6 +3908,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -3911,6 +3922,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -4131,6 +4143,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -4144,6 +4157,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -4381,6 +4395,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -4394,6 +4409,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -4592,6 +4608,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -4605,6 +4622,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -4710,6 +4728,7 @@ export type Database = {
         Args: { p_effect: Json; p_world_id: string };
         Returns: undefined;
       };
+      world_images_path_world_id: { Args: { name: string }; Returns: string };
       world_is_archived: { Args: { p_world_id: string }; Returns: boolean };
     };
     Enums: {
