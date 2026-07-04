@@ -85,3 +85,9 @@ export type {
   WorldPermissionContext,
   WorldRouteAccess,
 } from "./types/worldTypes";
+export { resolveWorldScope } from "./utils/resolveWorldScope";
+export type {
+  ResolveWorldScopeInput,
+  WorldScopePin,
+} from "./utils/resolveWorldScope";
+export { readWorldScopePin, writeWorldScopePin } from "./utils/worldScopePin";

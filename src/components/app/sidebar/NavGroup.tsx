@@ -21,20 +21,28 @@ export type NavGroupItem = {
 type NavGroupProps = {
   readonly items: readonly NavGroupItem[];
   readonly label: string;
+  // Overrides the plain-text label with a custom element (e.g. a
+  // DropdownMenu-trigger switcher) while keeping the rest of the group's
+  // rendering — used by the SETTLEMENT/NATION scope switchers.
+  readonly labelSlot?: ReactNode;
 };
 
 // Renders one labelled sidebar section (PLAY / SETTLEMENT / NATION / WORLD /
 // ADMIN). `link` is a fully-built <Link> element from the caller so route
 // `to`/`params`/`search` stay literal and type-checked at the call site
 // instead of being widened to `string` by a generic prop here.
-export function NavGroup({ items, label }: NavGroupProps): JSX.Element | null {
+export function NavGroup({
+  items,
+  label,
+  labelSlot,
+}: NavGroupProps): JSX.Element | null {
   if (items.length === 0) {
     return null;
   }
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      {labelSlot ?? <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (

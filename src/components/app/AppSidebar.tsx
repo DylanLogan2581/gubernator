@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useLocation, useParams } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import {
   Bell,
   BookOpen,
@@ -9,6 +9,7 @@ import {
   Globe2,
   Landmark,
   LayoutDashboard,
+  MapPin,
   Package,
   ShieldCheck,
   TrendingUp,
@@ -25,10 +26,14 @@ import {
 
 import { CharacterCard } from "./sidebar/CharacterCard";
 import { ConfigurationNavItem } from "./sidebar/ConfigurationNavItem";
+import { NationScopeSwitcher } from "./sidebar/NationScopeSwitcher";
 import { NavGroup, type NavGroupItem } from "./sidebar/NavGroup";
+import { SettlementScopeSwitcher } from "./sidebar/SettlementScopeSwitcher";
 import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
 import { WorldHeaderCard } from "./sidebar/WorldHeaderCard";
+import { useWorldScope } from "./sidebar/WorldScopeContext";
 
+import type { SettlementSection } from "./sidebar/SettlementScopeSwitcher";
 import type { JSX } from "react";
 
 // Renders nothing for signed-out visitors (marketing/sign-in pages) — the
@@ -38,7 +43,6 @@ import type { JSX } from "react";
 // remount of routed page content); this component itself opts out instead.
 export function AppSidebar(): JSX.Element | null {
   const location = useLocation();
-  const routeParams = useParams({ strict: false });
   const {
     canAdmin,
     isAuthenticated,
@@ -49,6 +53,7 @@ export function AppSidebar(): JSX.Element | null {
     worldName,
   } = useAppShellWorldContext();
   const { activeCharacter } = useActivePlayerCharacter();
+  const { nationId, settlementId } = useWorldScope();
   const effectiveCanAdmin = useEffectiveCanAdmin(canAdmin);
   // Account-level superadmin nav is suppressed the same way world-admin nav
   // is: an active PC means the viewer is playing, not administering.
@@ -130,8 +135,20 @@ export function AppSidebar(): JSX.Element | null {
     );
   }
 
-  const nationId = routeParams.nationId ?? null;
-  const settlementId = routeParams.settlementId ?? null;
+  // The SETTLEMENT group's sub-items only make sense while the viewer is
+  // actually on the pinned settlement's route — pinned scope can persist
+  // (localStorage) across pages like Dashboard/Events where there's no
+  // `?section=` search param to read, and without this guard those pages
+  // would otherwise render "Overview" as active by accident (no section ===
+  // null section fallback).
+  const isOnSettlementPage =
+    nationId !== null &&
+    settlementId !== null &&
+    location.pathname ===
+      `/worlds/${worldId}/nations/${nationId}/settlements/${settlementId}`;
+  const currentSection = isOnSettlementPage
+    ? sectionSearchValue(location.search)
+    : null;
 
   const playItems: NavGroupItem[] = [
     {
@@ -190,14 +207,29 @@ export function AppSidebar(): JSX.Element | null {
     },
   ];
 
+  // No resolvable scope (fresh admin, no pin, no PC home settlement) ->
+  // collapse to a single entry pointing at the nations list, where a
+  // settlement can be picked (docs/ui-redesign.md §3.2).
   const settlementItems: NavGroupItem[] =
     settlementId === null || nationId === null
-      ? []
+      ? [
+          {
+            key: "settlement-choose",
+            label: "Choose a settlement…",
+            isActive: false,
+            link: (
+              <Link to="/worlds/$worldId/nations" params={{ worldId }}>
+                <MapPin aria-hidden="true" />
+                <span>Choose a settlement…</span>
+              </Link>
+            ),
+          },
+        ]
       : [
           settlementSectionItem({
             isActive:
-              sectionSearchValue(location.search) === "overview" ||
-              sectionSearchValue(location.search) === null,
+              isOnSettlementPage &&
+              (currentSection === "overview" || currentSection === null),
             label: "Overview",
             nationId,
             section: "overview",
@@ -205,7 +237,7 @@ export function AppSidebar(): JSX.Element | null {
             worldId,
           }),
           settlementSectionItem({
-            isActive: sectionSearchValue(location.search) === "population",
+            isActive: currentSection === "population",
             label: "Population",
             nationId,
             section: "population",
@@ -213,7 +245,7 @@ export function AppSidebar(): JSX.Element | null {
             worldId,
           }),
           settlementSectionItem({
-            isActive: sectionSearchValue(location.search) === "economy",
+            isActive: currentSection === "economy",
             label: "Economy",
             nationId,
             section: "economy",
@@ -221,7 +253,7 @@ export function AppSidebar(): JSX.Element | null {
             worldId,
           }),
           settlementSectionItem({
-            isActive: sectionSearchValue(location.search) === "forecast",
+            isActive: currentSection === "forecast",
             label: "Forecast",
             nationId,
             section: "forecast",
@@ -229,7 +261,7 @@ export function AppSidebar(): JSX.Element | null {
             worldId,
           }),
           settlementSectionItem({
-            isActive: sectionSearchValue(location.search) === "reports",
+            isActive: currentSection === "reports",
             label: "Reports",
             nationId,
             section: "reports",
@@ -237,7 +269,7 @@ export function AppSidebar(): JSX.Element | null {
             worldId,
           }),
           settlementSectionItem({
-            isActive: sectionSearchValue(location.search) === "history",
+            isActive: currentSection === "history",
             label: "History",
             nationId,
             section: "history",
@@ -247,7 +279,7 @@ export function AppSidebar(): JSX.Element | null {
           ...(effectiveCanAdmin
             ? [
                 settlementSectionItem({
-                  isActive: sectionSearchValue(location.search) === "admin",
+                  isActive: currentSection === "admin",
                   label: "Admin",
                   nationId,
                   section: "admin",
@@ -258,9 +290,23 @@ export function AppSidebar(): JSX.Element | null {
             : []),
         ];
 
+  // No resolvable nation -> collapse to a single entry pointing at the
+  // nations list (mirrors settlementItems above).
   const nationItems: NavGroupItem[] =
     nationId === null
-      ? []
+      ? [
+          {
+            key: "nation-choose",
+            label: "Choose a nation…",
+            isActive: false,
+            link: (
+              <Link to="/worlds/$worldId/nations" params={{ worldId }}>
+                <Landmark aria-hidden="true" />
+                <span>Choose a nation…</span>
+              </Link>
+            ),
+          },
+        ]
       : [
           {
             key: "nation-overview",
@@ -314,8 +360,24 @@ export function AppSidebar(): JSX.Element | null {
       <CharacterCard canAdmin={canAdmin} worldId={worldId} />
       <SidebarContent>
         <NavGroup label="PLAY" items={playItems} />
-        <NavGroup label="SETTLEMENT" items={settlementItems} />
-        <NavGroup label="NATION" items={nationItems} />
+        <NavGroup
+          label="SETTLEMENT"
+          items={settlementItems}
+          labelSlot={
+            <SettlementScopeSwitcher
+              section={currentSection}
+              settlementId={settlementId}
+              worldId={worldId}
+            />
+          }
+        />
+        <NavGroup
+          label="NATION"
+          items={nationItems}
+          labelSlot={
+            <NationScopeSwitcher nationId={nationId} worldId={worldId} />
+          }
+        />
         <NavGroup label="WORLD" items={worldItems} />
         {effectiveCanAdmin ? (
           <ConfigurationNavItem
@@ -330,24 +392,26 @@ export function AppSidebar(): JSX.Element | null {
   );
 }
 
-// Mirrors SettlementDetailPage's SECTION_TABS — the settlement detail route
-// isn't split into child routes yet (that's a later phase), so the sidebar
-// links into the existing `?section=` tabs.
-type SettlementSection =
-  | "admin"
-  | "economy"
-  | "forecast"
-  | "history"
-  | "overview"
-  | "population"
-  | "reports";
+const SETTLEMENT_SECTIONS: ReadonlySet<string> = new Set<SettlementSection>([
+  "admin",
+  "economy",
+  "forecast",
+  "history",
+  "overview",
+  "population",
+  "reports",
+]);
 
-function sectionSearchValue(search: unknown): string | null {
+function isSettlementSection(value: string): value is SettlementSection {
+  return SETTLEMENT_SECTIONS.has(value);
+}
+
+function sectionSearchValue(search: unknown): SettlementSection | null {
   if (typeof search !== "object" || search === null) {
     return null;
   }
   const value = (search as Record<string, unknown>).section;
-  return typeof value === "string" ? value : null;
+  return typeof value === "string" && isSettlementSection(value) ? value : null;
 }
 
 function settlementSectionItem({
