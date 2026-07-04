@@ -11,6 +11,7 @@ export { NationRelationshipsSection } from "./components/NationDetailPage/Relati
 export { NationRoleAssignmentSection } from "./components/NationDetailPage/RoleAssignmentSection";
 export { NationSettlementsSection } from "./components/NationDetailPage/SettlementsSection";
 export { NationListPage } from "./components/NationListPage";
+export { NationOverviewStatTiles } from "./components/NationOverviewStatTiles";
 export {
   NationMutationError,
   createNationMutationOptions,

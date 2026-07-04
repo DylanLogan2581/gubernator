@@ -5,6 +5,7 @@ import { ActiveEventsCard } from "@/features/events";
 import {
   SettlementCoordinatesSection,
   SettlementDetailsSection,
+  SettlementOverviewStatTiles,
   SettlementReadinessSection,
   useSettlementDetailContext,
 } from "@/features/settlements";
@@ -27,34 +28,41 @@ function SettlementOverviewRoute(): JSX.Element {
 
   return (
     <>
-      <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
-
-      <SettlementReadinessSection
-        accessContext={accessContext}
-        canAdmin={effectiveCanAdmin}
-        canManage={canManageSettlement}
-        isArchived={isArchived}
+      <SettlementOverviewStatTiles
         settlementId={settlement.id}
         worldId={worldId}
       />
 
-      <ActiveEventsCard
-        scope="settlement"
-        scopeId={settlement.id}
-        worldId={worldId}
-      />
+      <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
 
-      <SettlementDetailsSection
-        canEdit={canEditDetails}
-        queryClient={queryClient}
-        settlement={settlement}
-      />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <SettlementReadinessSection
+          accessContext={accessContext}
+          canAdmin={effectiveCanAdmin}
+          canManage={canManageSettlement}
+          isArchived={isArchived}
+          settlementId={settlement.id}
+          worldId={worldId}
+        />
 
-      <SettlementCoordinatesSection
-        canEdit={canEditCoordinates}
-        queryClient={queryClient}
-        settlement={settlement}
-      />
+        <ActiveEventsCard
+          scope="settlement"
+          scopeId={settlement.id}
+          worldId={worldId}
+        />
+
+        <SettlementDetailsSection
+          canEdit={canEditDetails}
+          queryClient={queryClient}
+          settlement={settlement}
+        />
+
+        <SettlementCoordinatesSection
+          canEdit={canEditCoordinates}
+          queryClient={queryClient}
+          settlement={settlement}
+        />
+      </div>
     </>
   );
 }

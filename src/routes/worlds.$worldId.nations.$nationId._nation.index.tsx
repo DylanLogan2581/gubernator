@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ActiveEventsCard } from "@/features/events";
 import {
   NationDetailsSection,
+  NationOverviewStatTiles,
   useNationDetailContext,
 } from "@/features/nations";
 
@@ -15,13 +16,21 @@ function NationOverviewRoute(): JSX.Element {
 
   return (
     <>
-      <NationDetailsSection
-        canEdit={canEditDetails}
-        nation={nation}
-        queryClient={queryClient}
-      />
+      <NationOverviewStatTiles nationId={nation.id} worldId={worldId} />
 
-      <ActiveEventsCard scope="nation" scopeId={nation.id} worldId={worldId} />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <NationDetailsSection
+          canEdit={canEditDetails}
+          nation={nation}
+          queryClient={queryClient}
+        />
+
+        <ActiveEventsCard
+          scope="nation"
+          scopeId={nation.id}
+          worldId={worldId}
+        />
+      </div>
     </>
   );
 }
