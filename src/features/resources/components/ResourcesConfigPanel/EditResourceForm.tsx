@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ export function EditResourceForm({
     String(resource.baseStockpileCap),
   );
   const [decayRate, setDecayRate] = useState(String(resource.decayRate));
+  const [icon, setIcon] = useState<string | null>(resource.icon);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof ResourceFieldErrors>();
 
@@ -76,6 +78,7 @@ export function EditResourceForm({
     const input: UpdateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
       decayRate: decayRate !== "" ? decayRate : undefined,
+      icon,
       name,
       resourceId: resource.id,
       slug,
@@ -178,6 +181,10 @@ export function EditResourceForm({
           {fieldErrors.decayRate !== undefined ? (
             <p className="text-xs text-destructive">{fieldErrors.decayRate}</p>
           ) : null}
+        </Label>
+        <Label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Icon</span>
+          <IconPicker disabled={isPending} value={icon} onChange={setIcon} />
         </Label>
       </div>
       <div className="flex items-center justify-between gap-2">

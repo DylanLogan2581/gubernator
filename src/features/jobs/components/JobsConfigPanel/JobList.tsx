@@ -2,8 +2,11 @@ import { useMutation, type QueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -112,6 +115,11 @@ function JobRow({
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <div className="flex items-center gap-2">
+          <IconChip
+            icon={resolveEntityIcon(job.icon)}
+            tone={hashToCategoricalSlot(job.id)}
+            size="sm"
+          />
           <span className="text-sm font-medium">{job.name}</span>
           <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
         </div>
@@ -190,6 +198,11 @@ function TrashedJobRow({
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <div className="flex items-center gap-2">
+          <IconChip
+            icon={resolveEntityIcon(job.icon)}
+            tone={hashToCategoricalSlot(job.id)}
+            size="sm"
+          />
           <span className="text-sm font-medium">{job.name}</span>
           <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
           <Badge variant="outline">trashed</Badge>

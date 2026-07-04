@@ -24,6 +24,7 @@ type UsePopulationTypeFormReturn = {
   readonly cullingJobId: string;
   readonly husbandryWorkersPerNAnimals: string;
   readonly growthRate: number;
+  readonly icon: string | null;
   readonly maintenanceRules: ResourceAmountEntry[];
   readonly cullingOutputs: ResourceAmountEntry[];
   readonly regularOutputs: ResourceAmountEntry[];
@@ -38,6 +39,7 @@ type UsePopulationTypeFormReturn = {
   readonly setCullingJobId: (value: string) => void;
   readonly setHusbandryWorkersPerNAnimals: (value: string) => void;
   readonly setGrowthRate: (value: number) => void;
+  readonly setIcon: (value: string | null) => void;
   readonly setMaintenanceRules: (value: ResourceAmountEntry[]) => void;
   readonly setCullingOutputs: (value: ResourceAmountEntry[]) => void;
   readonly setRegularOutputs: (value: ResourceAmountEntry[]) => void;
@@ -57,6 +59,7 @@ type UsePopulationTypeFormOptions = {
   readonly initialCullingJobId?: string;
   readonly initialHusbandryWorkersPerNAnimals?: string;
   readonly initialGrowthRate?: number;
+  readonly initialIcon?: string | null;
   readonly initialMaintenanceRules?: ResourceAmountEntry[];
   readonly initialCullingOutputs?: ResourceAmountEntry[];
   readonly initialRegularOutputs?: ResourceAmountEntry[];
@@ -71,6 +74,7 @@ export function usePopulationTypeForm({
   initialCullingJobId = "",
   initialHusbandryWorkersPerNAnimals = "1",
   initialGrowthRate = 0,
+  initialIcon = null,
   initialMaintenanceRules = [],
   initialCullingOutputs = [],
   initialRegularOutputs = [],
@@ -83,6 +87,7 @@ export function usePopulationTypeForm({
   const [husbandryWorkersPerNAnimals, setHusbandryWorkersPerNAnimals] =
     useState(initialHusbandryWorkersPerNAnimals);
   const [growthRate, setGrowthRate] = useState(initialGrowthRate);
+  const [icon, setIcon] = useState<string | null>(initialIcon);
   const [maintenanceRules, setMaintenanceRules] = useState<
     ResourceAmountEntry[]
   >(initialMaintenanceRules);
@@ -165,6 +170,7 @@ export function usePopulationTypeForm({
     cullingJobId,
     husbandryWorkersPerNAnimals,
     growthRate,
+    icon,
     maintenanceRules,
     cullingOutputs,
     regularOutputs,
@@ -180,6 +186,7 @@ export function usePopulationTypeForm({
     setCullingJobId,
     setHusbandryWorkersPerNAnimals,
     setGrowthRate,
+    setIcon,
     setMaintenanceRules,
     setCullingOutputs,
     setRegularOutputs,

@@ -5,6 +5,7 @@ import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -74,6 +75,7 @@ export function EditDepositTypeForm({
   const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>(() =>
     toWorkerInputsEntries(depositType.workerInputsJson),
   );
+  const [icon, setIcon] = useState<string | null>(depositType.icon);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof DepositTypeFieldErrors>();
   const { jobId, jobLinkError, handleJobChange } = useDepositTypeJobLink(
@@ -101,6 +103,7 @@ export function EditDepositTypeForm({
 
     const updateInput: UpdateDepositTypeInput = {
       depositTypeId: depositType.id,
+      icon,
       jobId,
       name,
       outputUnitsPerWorker:
@@ -173,6 +176,10 @@ export function EditDepositTypeForm({
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
           <SlugHint slug={slug} error={fieldErrors.slug} />
+        </Label>
+        <Label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Icon</span>
+          <IconPicker disabled={isPending} value={icon} onChange={setIcon} />
         </Label>
         {depositJobs.length === 0 ? (
           <div className="grid gap-1 text-sm">

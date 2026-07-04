@@ -88,6 +88,7 @@ export type Database = {
           created_at: string;
           description: string | null;
           grace_period_turns: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string;
           description?: string | null;
           grace_period_turns?: number;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           max_instances_per_settlement?: number | null;
@@ -112,6 +114,7 @@ export type Database = {
           created_at?: string;
           description?: string | null;
           grace_period_turns?: number;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           max_instances_per_settlement?: number | null;
@@ -675,6 +678,7 @@ export type Database = {
       deposit_types: {
         Row: {
           created_at: string;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -687,6 +691,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           job_id: string;
@@ -699,6 +704,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           job_id?: string;
@@ -1033,6 +1039,7 @@ export type Database = {
         Row: {
           base_capacity: number | null;
           created_at: string;
+          icon: string | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -1049,6 +1056,7 @@ export type Database = {
         Insert: {
           base_capacity?: number | null;
           created_at?: string;
+          icon?: string | null;
           id?: string;
           inputs_json?: Json;
           is_trashed?: boolean;
@@ -1065,6 +1073,7 @@ export type Database = {
         Update: {
           base_capacity?: number | null;
           created_at?: string;
+          icon?: string | null;
           id?: string;
           inputs_json?: Json;
           is_trashed?: boolean;
@@ -1161,6 +1170,7 @@ export type Database = {
           growth_rate: number;
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -1177,6 +1187,7 @@ export type Database = {
           growth_rate?: number;
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
@@ -1193,6 +1204,7 @@ export type Database = {
           growth_rate?: number;
           husbandry_job_id?: string;
           husbandry_workers_per_n_animals?: number;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
@@ -1592,6 +1604,7 @@ export type Database = {
           base_stockpile_cap: number;
           created_at: string;
           decay_rate: number;
+          icon: string | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -1605,6 +1618,7 @@ export type Database = {
           base_stockpile_cap?: number;
           created_at?: string;
           decay_rate?: number;
+          icon?: string | null;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1618,6 +1632,7 @@ export type Database = {
           base_stockpile_cap?: number;
           created_at?: string;
           decay_rate?: number;
+          icon?: string | null;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -2659,6 +2674,7 @@ export type Database = {
           effective_cap: number | null;
           is_system_resource: boolean | null;
           quantity: number | null;
+          resource_icon: string | null;
           resource_id: string | null;
           resource_name: string | null;
           settlement_id: string | null;
@@ -3956,6 +3972,7 @@ export type Database = {
           created_at: string;
           description: string | null;
           grace_period_turns: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -3982,6 +3999,7 @@ export type Database = {
         Args: { p_deposit_type_id: string; p_world_id: string };
         Returns: {
           created_at: string;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -4004,6 +4022,7 @@ export type Database = {
         Returns: {
           base_capacity: number | null;
           created_at: string;
+          icon: string | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -4033,6 +4052,7 @@ export type Database = {
           growth_rate: number;
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -4062,6 +4082,7 @@ export type Database = {
           base_stockpile_cap: number;
           created_at: string;
           decay_rate: number;
+          icon: string | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -4424,6 +4445,7 @@ export type Database = {
           created_at: string;
           description: string | null;
           grace_period_turns: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -4443,6 +4465,7 @@ export type Database = {
         Args: { p_deposit_type_id: string; p_world_id: string };
         Returns: {
           created_at: string;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -4465,6 +4488,7 @@ export type Database = {
         Returns: {
           base_capacity: number | null;
           created_at: string;
+          icon: string | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -4494,6 +4518,7 @@ export type Database = {
           growth_rate: number;
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -4523,6 +4548,7 @@ export type Database = {
           base_stockpile_cap: number;
           created_at: string;
           decay_rate: number;
+          icon: string | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;

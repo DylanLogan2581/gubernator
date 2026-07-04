@@ -39,6 +39,7 @@ type JobMutationErrorCode =
 // in Supabase's strict overloads.
 type JobInsertPayload = {
   base_capacity?: number | null;
+  icon?: string | null;
   inputs_json?: Json;
   job_type: string;
   linked_deposit_type_id?: string | null;
@@ -52,6 +53,7 @@ type JobInsertPayload = {
 
 type JobUpdatePayload = {
   base_capacity?: number | null;
+  icon?: string | null;
   inputs_json?: Json;
   linked_deposit_type_id?: string | null;
   linked_managed_population_type_id?: string | null;
@@ -129,6 +131,7 @@ async function createJob(
   const values = parseInput(createJobInputSchema, input);
 
   const insertPayload: JobInsertPayload = {
+    icon: values.icon ?? null,
     inputs_json: toIoJson(
       values.jobType === "standard" ? (values.inputsJson ?? []) : [],
     ),
@@ -211,6 +214,9 @@ async function updateJob(
   }
   if (values.outputsJson !== undefined) {
     updatePayload.outputs_json = toIoJson(values.outputsJson);
+  }
+  if (values.icon !== undefined) {
+    updatePayload.icon = values.icon;
   }
 
   const { data, error } = await client

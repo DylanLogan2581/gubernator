@@ -11,6 +11,7 @@ export type ManagedPopulationType = {
   readonly hasActiveReferences: boolean;
   readonly husbandryJobId: string;
   readonly husbandryWorkersPerNAnimals: number;
+  readonly icon: string | null;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly maintenanceRulesJson: readonly PopulationResourceEntry[];

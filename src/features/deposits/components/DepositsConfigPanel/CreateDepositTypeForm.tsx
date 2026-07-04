@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { type FormEvent, type JSX, useState } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -62,6 +63,7 @@ export function CreateDepositTypeForm({
   const [jobId, setJobId] = useState("");
   const [outputUnitsPerWorker, setOutputUnitsPerWorker] = useState("1");
   const [workerInputs, setWorkerInputs] = useState<ResourceAmountEntry[]>([]);
+  const [icon, setIcon] = useState<string | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof DepositTypeFieldErrors>();
   const [jobLinkError, setJobLinkError] = useState<string | undefined>(
@@ -91,6 +93,7 @@ export function CreateDepositTypeForm({
     if (jobLinkError !== undefined) return;
 
     const input: CreateDepositTypeInput = {
+      icon,
       jobId,
       name,
       outputUnitsPerWorker:
@@ -150,6 +153,14 @@ export function CreateDepositTypeForm({
                 <p className="text-xs text-destructive">{fieldErrors.name}</p>
               ) : null}
               <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon</span>
+              <IconPicker
+                disabled={isPending}
+                value={icon}
+                onChange={setIcon}
+              />
             </Label>
             {depositJobs.length === 0 ? (
               <div className="grid gap-1 text-sm">

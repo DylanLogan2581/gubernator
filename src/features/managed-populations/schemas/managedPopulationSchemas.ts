@@ -45,6 +45,12 @@ export const populationResourceEntrySchema = z.strictObject({
 
 const populationResourceArraySchema = z.array(populationResourceEntrySchema);
 
+const populationTypeIconSchema = z
+  .string()
+  .max(64, "Icon name is too long.")
+  .optional()
+  .nullable();
+
 export const createManagedPopulationTypeInputSchema = z
   .strictObject({
     cullingJobId: jobIdSchema,
@@ -52,6 +58,7 @@ export const createManagedPopulationTypeInputSchema = z
     growthRate: growthRateSchema,
     husbandryJobId: jobIdSchema,
     husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema,
+    icon: populationTypeIconSchema,
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     name: populationTypeNameSchema,
     regularOutputsJson: populationResourceArraySchema.optional(),
@@ -75,6 +82,7 @@ export const updateManagedPopulationTypeInputSchema = z
     growthRate: growthRateSchema.optional(),
     husbandryJobId: jobIdSchema.optional(),
     husbandryWorkersPerNAnimals: husbandryWorkersPerNAnimalsSchema.optional(),
+    icon: populationTypeIconSchema,
     maintenanceRulesJson: populationResourceArraySchema.optional(),
     managedPopulationTypeId: managedPopulationTypeIdSchema,
     name: populationTypeNameSchema.optional(),
@@ -92,7 +100,8 @@ export const updateManagedPopulationTypeInputSchema = z
       value.growthRate === undefined &&
       value.maintenanceRulesJson === undefined &&
       value.cullingOutputsJson === undefined &&
-      value.regularOutputsJson === undefined
+      value.regularOutputsJson === undefined &&
+      value.icon === undefined
     ) {
       ctx.addIssue({
         code: "custom",

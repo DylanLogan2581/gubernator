@@ -72,6 +72,7 @@ export function CreateManagedPopulationTypeForm({
         form.husbandryWorkersPerNAnimals !== ""
           ? parseInt(form.husbandryWorkersPerNAnimals, 10)
           : 0,
+      icon: form.icon,
       maintenanceRulesJson:
         form.maintenanceRules.length > 0
           ? [...resourceEntriesToDtoArray(form.maintenanceRules)]
@@ -122,6 +123,7 @@ export function CreateManagedPopulationTypeForm({
               husbandryJobLinkError={form.husbandryJobLinkError}
               husbandryJobs={husbandryJobs}
               husbandryWorkersPerNAnimals={form.husbandryWorkersPerNAnimals}
+              icon={form.icon}
               isPending={isPending}
               jobCollisionError={form.jobCollisionError}
               name={form.name}
@@ -133,6 +135,7 @@ export function CreateManagedPopulationTypeForm({
               onHusbandryWorkersPerNAnimalsChange={
                 form.setHusbandryWorkersPerNAnimals
               }
+              onIconChange={form.setIcon}
               onNameChange={form.handleNameChange}
             />
             <ResourceAmountListEditor

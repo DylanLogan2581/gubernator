@@ -33,7 +33,14 @@ export const workerInputEntrySchema = z.strictObject({
 
 const workerInputArraySchema = z.array(workerInputEntrySchema);
 
+const depositTypeIconSchema = z
+  .string()
+  .max(64, "Icon name is too long.")
+  .optional()
+  .nullable();
+
 export const createDepositTypeInputSchema = z.strictObject({
+  icon: depositTypeIconSchema,
   jobId: jobIdSchema,
   name: depositTypeNameSchema,
   outputUnitsPerWorker: outputUnitsPerWorkerSchema,
@@ -45,6 +52,7 @@ export const createDepositTypeInputSchema = z.strictObject({
 export const updateDepositTypeInputSchema = z
   .strictObject({
     depositTypeId: depositTypeIdSchema,
+    icon: depositTypeIconSchema,
     jobId: jobIdSchema.optional(),
     name: depositTypeNameSchema.optional(),
     outputUnitsPerWorker: outputUnitsPerWorkerSchema.optional(),
@@ -58,7 +66,8 @@ export const updateDepositTypeInputSchema = z
       value.slug === undefined &&
       value.jobId === undefined &&
       value.outputUnitsPerWorker === undefined &&
-      value.workerInputsJson === undefined
+      value.workerInputsJson === undefined &&
+      value.icon === undefined
     ) {
       ctx.addIssue({
         code: "custom",

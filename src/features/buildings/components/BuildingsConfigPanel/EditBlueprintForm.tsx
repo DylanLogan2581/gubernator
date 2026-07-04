@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,7 @@ export function EditBlueprintForm({
       ? String(blueprint.maxInstancesPerSettlement)
       : "",
   );
+  const [icon, setIcon] = useState<string | null>(blueprint.icon);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof BlueprintFieldErrors>();
 
@@ -82,6 +84,7 @@ export function EditBlueprintForm({
       description: description.length > 0 ? description : undefined,
       gracePeriodTurns:
         gracePeriodTurns !== "" ? parseInt(gracePeriodTurns, 10) : undefined,
+      icon,
       maxInstancesPerSettlement:
         maxInstances !== "" ? parseInt(maxInstances, 10) : undefined,
       name,
@@ -202,6 +205,10 @@ export function EditBlueprintForm({
               {fieldErrors.maxInstancesPerSettlement}
             </p>
           ) : null}
+        </div>
+        <div className="grid gap-1">
+          <Label>Icon</Label>
+          <IconPicker disabled={isPending} value={icon} onChange={setIcon} />
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">

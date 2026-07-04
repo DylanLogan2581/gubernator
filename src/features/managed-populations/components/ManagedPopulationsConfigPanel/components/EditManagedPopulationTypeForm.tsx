@@ -60,6 +60,7 @@ export function EditManagedPopulationTypeForm({
       populationType.husbandryWorkersPerNAnimals,
     ),
     initialGrowthRate: populationType.growthRate,
+    initialIcon: populationType.icon,
     initialMaintenanceRules: databaseResourcesToEntries(
       populationType.maintenanceRulesJson,
     ),
@@ -91,6 +92,7 @@ export function EditManagedPopulationTypeForm({
         form.husbandryWorkersPerNAnimals !== ""
           ? parseInt(form.husbandryWorkersPerNAnimals, 10)
           : undefined,
+      icon: form.icon,
       maintenanceRulesJson: [
         ...resourceEntriesToDtoArray(form.maintenanceRules),
       ],
@@ -156,6 +158,7 @@ export function EditManagedPopulationTypeForm({
           husbandryJobLinkError={form.husbandryJobLinkError}
           husbandryJobs={husbandryJobs}
           husbandryWorkersPerNAnimals={form.husbandryWorkersPerNAnimals}
+          icon={form.icon}
           isPending={isPending}
           jobCollisionError={form.jobCollisionError}
           name={form.name}
@@ -167,6 +170,7 @@ export function EditManagedPopulationTypeForm({
           onHusbandryWorkersPerNAnimalsChange={
             form.setHusbandryWorkersPerNAnimals
           }
+          onIconChange={form.setIcon}
           onNameChange={form.handleNameChange}
         />
         <ResourceAmountListEditor

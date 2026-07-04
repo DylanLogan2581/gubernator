@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -81,6 +82,7 @@ export function EditJobForm({
   );
   const [linkedManagedPopulationTypeId, setLinkedManagedPopulationTypeId] =
     useState(job.linkedManagedPopulationTypeId ?? "");
+  const [icon, setIcon] = useState<string | null>(job.icon);
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>(() =>
     job.inputsJson.map(entryToRow),
   );
@@ -153,6 +155,7 @@ export function EditJobForm({
             ? parseInt(baseCapacity, 10)
             : undefined
           : undefined,
+      icon,
       inputsJson,
       jobId: job.id,
       linkedDepositTypeId:
@@ -232,6 +235,11 @@ export function EditJobForm({
             <p className="text-xs text-destructive">{fieldErrors.name}</p>
           ) : null}
           <SlugHint slug={slug} error={fieldErrors.slug} />
+        </Label>
+
+        <Label className="grid gap-1 text-sm">
+          <span className="text-muted-foreground">Icon</span>
+          <IconPicker disabled={isPending} value={icon} onChange={setIcon} />
         </Label>
 
         {job.jobType === "standard" || job.jobType === "construction" ? (

@@ -3,6 +3,7 @@ import { Pencil, TrendingDown, TrendingUp, X } from "lucide-react";
 import { useId, useState, type FormEvent, type JSX } from "react";
 
 import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { type Resource, type SettlementStockpile } from "@/features/resources";
 import { type TurnTransitionOutcome } from "@/features/turns";
-import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
+import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { parseManagedPopulationExtinctPayload } from "@/shared/simulation";
 
@@ -209,8 +210,8 @@ export function ManagedPopulationInstanceRow({
         <TableCell className="py-2 pr-4 font-medium">
           <span className="flex items-center gap-2">
             <IconChip
-              icon={DOMAIN_ICON_CHIPS.populations.icon}
-              tone={DOMAIN_ICON_CHIPS.populations.tone}
+              icon={resolveEntityIcon(type?.icon ?? null)}
+              tone={hashToCategoricalSlot(type?.id ?? instance.id)}
               size="sm"
             />
             {instance.name}

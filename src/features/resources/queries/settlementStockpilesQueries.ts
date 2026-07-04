@@ -13,6 +13,7 @@ export type SettlementStockpile = {
   readonly effectiveCap: number;
   readonly isSystemResource: boolean;
   readonly quantity: number;
+  readonly resourceIcon: string | null;
   readonly resourceId: string;
   readonly resourceName: string;
   readonly settlementId: string;
@@ -22,6 +23,7 @@ type StockpileRow = {
   readonly effective_cap: number;
   readonly is_system_resource: boolean;
   readonly quantity: number;
+  readonly resource_icon: string | null;
   readonly resource_id: string;
   readonly resource_name: string;
   readonly settlement_id: string;
@@ -39,13 +41,14 @@ type SettlementStockpilesQueryOptions = UseQueryOptions<
 >;
 
 const STOCKPILE_SELECT =
-  "settlement_id,resource_id,resource_name,is_system_resource,quantity,effective_cap";
+  "settlement_id,resource_id,resource_name,resource_icon,is_system_resource,quantity,effective_cap";
 
 function toStockpile(row: StockpileRow): SettlementStockpile {
   return {
     effectiveCap: row.effective_cap,
     isSystemResource: row.is_system_resource,
     quantity: row.quantity,
+    resourceIcon: row.resource_icon,
     resourceId: row.resource_id,
     resourceName: row.resource_name,
     settlementId: row.settlement_id,

@@ -10,6 +10,7 @@ import { useMemo, useState, type FormEvent, type JSX } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { settlementForecastQueryOptions } from "@/features/settlements";
-import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
+import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { useFieldErrors } from "@/lib/zodFieldErrors";
@@ -269,8 +270,8 @@ function StockpileRow({
       <TableCell className="py-2 pr-4">
         <div className="flex items-center gap-2">
           <IconChip
-            icon={DOMAIN_ICON_CHIPS.stockpiles.icon}
-            tone={DOMAIN_ICON_CHIPS.stockpiles.tone}
+            icon={resolveEntityIcon(stockpile.resourceIcon)}
+            tone={hashToCategoricalSlot(stockpile.resourceId)}
             size="sm"
           />
           <span>{stockpile.resourceName}</span>

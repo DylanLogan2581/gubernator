@@ -43,9 +43,16 @@ const decayRateSchema = z
       .max(100, "Decay rate cannot exceed 100."),
   );
 
+const resourceIconSchema = z
+  .string()
+  .max(64, "Icon name is too long.")
+  .optional()
+  .nullable();
+
 export const createResourceInputSchema = z.strictObject({
   baseStockpileCap: baseStockpileCapSchema.optional(),
   decayRate: decayRateSchema.optional(),
+  icon: resourceIconSchema,
   name: resourceNameSchema,
   slug: resourceSlugSchema,
   worldId: worldIdSchema,
@@ -55,6 +62,7 @@ export const updateResourceInputSchema = z
   .strictObject({
     baseStockpileCap: baseStockpileCapSchema.optional(),
     decayRate: decayRateSchema.optional(),
+    icon: resourceIconSchema,
     name: resourceNameSchema.optional(),
     resourceId: resourceIdSchema,
     slug: resourceSlugSchema.optional(),
@@ -65,7 +73,8 @@ export const updateResourceInputSchema = z
       value.name === undefined &&
       value.slug === undefined &&
       value.baseStockpileCap === undefined &&
-      value.decayRate === undefined
+      value.decayRate === undefined &&
+      value.icon === undefined
     ) {
       ctx.addIssue({
         code: "custom",

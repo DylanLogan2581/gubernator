@@ -21,6 +21,7 @@ function createResource(overrides: Partial<Resource> = {}): Resource {
     baseStockpileCap: 1000,
     createdAt: "2026-01-01T00:00:00.000Z",
     decayRate: 0,
+    icon: null,
     id: RESOURCE_ID_1,
     isTrashed: false,
     isSystemResource: false,

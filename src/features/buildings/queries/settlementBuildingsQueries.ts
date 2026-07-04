@@ -23,7 +23,10 @@ type SettlementBuildingRow = {
     readonly effects_json: readonly TierEffectRow[];
     readonly tier_number: number;
   };
-  readonly building_blueprints: { readonly name: string };
+  readonly building_blueprints: {
+    readonly icon: string | null;
+    readonly name: string;
+  };
   readonly created_at: string;
   readonly current_tier_id: string;
   readonly deactivated_in_transition_id: string | null;
@@ -43,7 +46,10 @@ type SettlementBuildingWithLocationRow = {
     readonly effects_json: readonly TierEffectRow[];
     readonly tier_number: number;
   };
-  readonly building_blueprints: { readonly name: string };
+  readonly building_blueprints: {
+    readonly icon: string | null;
+    readonly name: string;
+  };
   readonly created_at: string;
   readonly current_tier_id: string;
   readonly deactivated_in_transition_id: string | null;
@@ -67,10 +73,10 @@ export type SettlementBuildingWithLocation = SettlementBuilding & {
 };
 
 const SETTLEMENT_BUILDING_SELECT =
-  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number,effects_json)";
+  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json)";
 
 const SETTLEMENT_BUILDING_WITH_LOCATION_SELECT =
-  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name),building_blueprint_tiers(tier_number,effects_json),settlements(id,name,nations!inner(name))";
+  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json),settlements(id,name,nations!inner(name))";
 
 type SettlementBuildingDetailQueryKey = ReturnType<
   typeof buildingsQueryKeys.settlementBuildingById
@@ -238,6 +244,7 @@ function toSettlementBuilding(row: SettlementBuildingRow): SettlementBuilding {
     row.building_blueprint_tiers.effects_json.map(toTierEffect);
   return {
     activatedOnTurnNumber: row.activated_on_turn_number,
+    blueprintIcon: row.building_blueprints.icon,
     blueprintName: row.building_blueprints.name,
     buildingBlueprintId: row.building_blueprint_id,
     createdAt: row.created_at,
@@ -263,6 +270,7 @@ function toSettlementBuildingWithLocation(
     row.building_blueprint_tiers.effects_json.map(toTierEffect);
   return {
     activatedOnTurnNumber: row.activated_on_turn_number,
+    blueprintIcon: row.building_blueprints.icon,
     blueprintName: row.building_blueprints.name,
     buildingBlueprintId: row.building_blueprint_id,
     createdAt: row.created_at,

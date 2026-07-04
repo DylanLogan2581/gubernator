@@ -3,8 +3,11 @@ import { RotateCcw, Trash2 } from "lucide-react";
 import { type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -119,6 +122,11 @@ function ResourceRow({
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <div className="flex items-center gap-2">
+          <IconChip
+            icon={resolveEntityIcon(resource.icon)}
+            tone={hashToCategoricalSlot(resource.id)}
+            size="sm"
+          />
           <span className="text-sm font-medium">{resource.name}</span>
           {resource.isSystemResource ? (
             <Badge variant="secondary">system</Badge>
@@ -211,6 +219,11 @@ function TrashedResourceRow({
     <li className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
         <div className="flex items-center gap-2">
+          <IconChip
+            icon={resolveEntityIcon(resource.icon)}
+            tone={hashToCategoricalSlot(resource.id)}
+            size="sm"
+          />
           <span className="text-sm font-medium">{resource.name}</span>
           {resource.isSystemResource ? (
             <Badge variant="secondary">system</Badge>

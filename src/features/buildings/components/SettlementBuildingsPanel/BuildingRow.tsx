@@ -2,11 +2,12 @@ import { type QueryClient } from "@tanstack/react-query";
 import { useState, type JSX } from "react";
 
 import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { type TurnTransitionOutcome } from "@/features/turns";
-import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
+import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 import {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,
@@ -184,8 +185,8 @@ export function BuildingRow({
         <TableCell className="py-2 pr-4">
           <span className="flex items-center gap-2">
             <IconChip
-              icon={DOMAIN_ICON_CHIPS.buildings.icon}
-              tone={DOMAIN_ICON_CHIPS.buildings.tone}
+              icon={resolveEntityIcon(building.blueprintIcon)}
+              tone={hashToCategoricalSlot(building.buildingBlueprintId)}
               size="sm"
             />
             {building.name ?? building.blueprintName}

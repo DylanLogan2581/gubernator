@@ -1,9 +1,11 @@
 import { Trash2 } from "lucide-react";
 
-
+import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Button } from "@/components/ui/button";
 import { type JobDefinition } from "@/features/jobs";
 import { useSoftDeleteRow } from "@/hooks/useSoftDeleteRow";
+import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 
 import { softDeleteDepositTypeMutationOptions } from "../../mutations/depositsMutations";
 
@@ -35,7 +37,14 @@ export function DepositTypeRow({
   return (
     <div className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2">
       <div className="grid gap-0.5">
-        <span className="text-sm font-medium">{depositType.name}</span>
+        <div className="flex items-center gap-2">
+          <IconChip
+            icon={resolveEntityIcon(depositType.icon)}
+            tone={hashToCategoricalSlot(depositType.id)}
+            size="sm"
+          />
+          <span className="text-sm font-medium">{depositType.name}</span>
+        </div>
         <span className="text-xs text-muted-foreground">
           {depositType.outputUnitsPerWorker.toLocaleString()} output/worker
           {linkedJob !== undefined ? ` · ${linkedJob.name}` : null}

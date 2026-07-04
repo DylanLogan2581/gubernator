@@ -1108,6 +1108,7 @@ type TestJobRow = {
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
+  readonly icon: string | null;
   readonly id: string;
   readonly inputs_json: readonly {
     amount_per_worker: number;
@@ -1180,6 +1181,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     culling_mpt: [],
     deposit_types: [],
     husbandry_mpt: [],
+    icon: null,
     id: JOB_ID,
     inputs_json: [],
     is_trashed: false,

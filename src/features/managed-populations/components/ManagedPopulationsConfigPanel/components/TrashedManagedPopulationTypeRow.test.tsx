@@ -116,6 +116,7 @@ function createPopulationType(
     hasActiveReferences: false,
     husbandryJobId: "00000000-0000-0000-0000-000000000003",
     husbandryWorkersPerNAnimals: 2,
+    icon: null,
     id: "00000000-0000-0000-0000-000000000002",
     isTrashed: true,
     maintenanceRulesJson: [],

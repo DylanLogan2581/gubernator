@@ -109,6 +109,7 @@ function createDepositType(overrides: Partial<DepositType> = {}): DepositType {
   return {
     createdAt: "2026-01-01T00:00:00.000Z",
     hasActiveReferences: false,
+    icon: null,
     id: "00000000-0000-0000-0000-000000000002",
     isTrashed: true,
     jobId: "00000000-0000-0000-0000-000000000003",
