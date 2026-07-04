@@ -19,15 +19,21 @@ type AppShellProvidersProps = {
 export function AppShellProviders({
   children,
 }: AppShellProvidersProps): JSX.Element {
-  const { userId, worldId } = useAppShellWorldContext();
+  // Keyed off the sidebar's fallback-aware world id (not the route-only
+  // `worldId`) so the character card / scope switchers stay populated on
+  // world-less routes (Notifications, Superadmin) when a last-visited world
+  // is on record — see UseAppShellWorldContext's sidebarWorldId.
+  const { sidebarWorldId, userId } = useAppShellWorldContext();
 
-  if (worldId === null) {
+  if (sidebarWorldId === null) {
     return <>{children}</>;
   }
 
   return (
-    <ActivePlayerCharacterProvider userId={userId} worldId={worldId}>
-      <WorldScopeProvider worldId={worldId}>{children}</WorldScopeProvider>
+    <ActivePlayerCharacterProvider userId={userId} worldId={sidebarWorldId}>
+      <WorldScopeProvider worldId={sidebarWorldId}>
+        {children}
+      </WorldScopeProvider>
     </ActivePlayerCharacterProvider>
   );
 }

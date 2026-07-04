@@ -61,6 +61,10 @@ describe("AppHeader", () => {
     requireSupabaseClient.mockReset();
     useParams.mockReset();
     useParams.mockReturnValue({});
+    // useAppShellWorldContext persists the current route world to
+    // gubernator:last-world (sticky sidebar fallback) — clear it so one
+    // test's in-world route doesn't leak a stale fallback into the next.
+    window.localStorage.clear();
   });
 
   it("renders the sidebar trigger", () => {

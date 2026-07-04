@@ -52,13 +52,13 @@ import type { JSX } from "react";
 export function AppSidebar(): JSX.Element | null {
   const location = useLocation();
   const {
-    canAdmin,
     isAuthenticated,
     isSuperAdmin,
-    turnLabel,
+    sidebarCanAdmin: canAdmin,
+    sidebarTurnLabel: turnLabel,
+    sidebarWorldId: worldId,
+    sidebarWorldName: worldName,
     userId,
-    worldId,
-    worldName,
   } = useAppShellWorldContext();
   const { activeCharacter } = useActivePlayerCharacter();
   const { nationId, settlementId } = useWorldScope();
