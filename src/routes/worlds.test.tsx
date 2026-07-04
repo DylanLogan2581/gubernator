@@ -450,6 +450,28 @@ function createClient({
         return createNotificationsQueryBuilder();
       }
 
+      if (table === "citizens") {
+        const builder: Record<string, unknown> = {};
+        builder.eq = vi.fn(() => builder);
+        builder.order = vi.fn(() => builder);
+        builder.returns = vi.fn().mockResolvedValue({ data: [], error: null });
+        return { select: vi.fn(() => builder) };
+      }
+
+      if (table === "user_active_player_characters") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi
+                  .fn()
+                  .mockResolvedValue({ data: null, error: null }),
+              })),
+            })),
+          })),
+        };
+      }
+
       throw new Error(`Unexpected table ${table}`);
     }),
     channel: vi.fn().mockReturnValue({

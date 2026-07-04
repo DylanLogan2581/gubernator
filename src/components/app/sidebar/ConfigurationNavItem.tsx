@@ -1,0 +1,110 @@
+import { Link, useLocation, useSearch } from "@tanstack/react-router";
+import { ChevronRight, Settings2 } from "lucide-react";
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from "@/components/ui/sidebar";
+
+import type { JSX } from "react";
+
+// Mirrors WorldConfigurationPage's BASE_TABS/SUPER_ADMIN_TABS — kept as a
+// local literal here (rather than importing route/page internals) since the
+// sidebar only needs the stable key/label pairs, not the page's tab logic.
+const CONFIGURATION_TABS = [
+  { key: "resources", label: "Resources" },
+  { key: "jobs", label: "Jobs" },
+  { key: "buildings", label: "Buildings" },
+  { key: "deposits", label: "Deposits" },
+  { key: "managed-populations", label: "Managed Populations" },
+  { key: "calendar", label: "Calendar" },
+  { key: "namesets", label: "Namesets" },
+  { key: "npc-flavor", label: "NPC Flavor" },
+  { key: "population-rules", label: "Population Rules" },
+] as const;
+
+const SUPER_ADMIN_TAB = {
+  key: "world-settings",
+  label: "World Settings",
+} as const;
+
+const DEFAULT_TAB = "resources";
+
+type ConfigurationNavItemProps = {
+  readonly isSuperAdmin: boolean;
+  readonly worldId: string;
+};
+
+export function ConfigurationNavItem({
+  isSuperAdmin,
+  worldId,
+}: ConfigurationNavItemProps): JSX.Element {
+  const location = useLocation();
+  const search = useSearch({ strict: false });
+  const isOnConfigRoute =
+    location.pathname === `/worlds/${worldId}/configuration`;
+  const activeTab =
+    isOnConfigRoute && typeof search.tab === "string"
+      ? search.tab
+      : DEFAULT_TAB;
+
+  return (
+    <Collapsible defaultOpen={isOnConfigRoute} className="group/collapsible">
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton tooltip="Configuration">
+            <Settings2 aria-hidden="true" />
+            <span>Configuration</span>
+            <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {CONFIGURATION_TABS.map((tab) => (
+              <SidebarMenuSubItem key={tab.key}>
+                <SidebarMenuSubButton
+                  asChild
+                  isActive={isOnConfigRoute && activeTab === tab.key}
+                >
+                  <Link
+                    to="/worlds/$worldId/configuration"
+                    params={{ worldId }}
+                    search={{ tab: tab.key }}
+                  >
+                    <span>{tab.label}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            ))}
+            {isSuperAdmin ? (
+              <SidebarMenuSubItem>
+                <SidebarMenuSubButton
+                  asChild
+                  isActive={
+                    isOnConfigRoute && activeTab === SUPER_ADMIN_TAB.key
+                  }
+                >
+                  <Link
+                    to="/worlds/$worldId/configuration"
+                    params={{ worldId }}
+                    search={{ tab: SUPER_ADMIN_TAB.key }}
+                  >
+                    <span>{SUPER_ADMIN_TAB.label}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            ) : null}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}

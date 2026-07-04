@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { notificationQueryKeys } from "@/features/notifications";
 
 import { AppHeader } from "./AppHeader";
@@ -20,19 +21,11 @@ describe("AppHeader", () => {
     requireSupabaseClient.mockReturnValue(createClient().client);
   });
 
-  it("renders the Gubernator app name", () => {
+  it("renders the sidebar trigger", () => {
     renderAppHeader();
-    expect(screen.getByText("Gubernator")).toBeDefined();
-  });
-
-  it("renders the app description", () => {
-    renderAppHeader();
-    expect(screen.getByText(/turn-based world simulation/i)).toBeDefined();
-  });
-
-  it("renders the logo image", () => {
-    renderAppHeader();
-    expect(screen.getByAltText("Gubernator logo")).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /toggle sidebar/i }),
+    ).toBeDefined();
   });
 
   it("renders the notification bell", () => {
@@ -107,7 +100,11 @@ function renderAppHeader(ui = <AppHeader />): QueryClient {
     },
   });
 
-  render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  render(
+    <QueryClientProvider client={queryClient}>
+      <SidebarProvider>{ui}</SidebarProvider>
+    </QueryClientProvider>,
+  );
 
   return queryClient;
 }
