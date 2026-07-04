@@ -44,7 +44,7 @@ function TemplateLibraryFrame({
 }: {
   readonly children: ReactNode;
 }): JSX.Element {
-  return <div className="mx-auto max-w-5xl py-6">{children}</div>;
+  return <>{children}</>;
 }
 
 // ---------------------------------------------------------------------------

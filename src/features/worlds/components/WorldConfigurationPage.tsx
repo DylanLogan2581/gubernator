@@ -106,7 +106,7 @@ export function WorldConfigurationPage({
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
+    <div className="flex flex-col gap-4">
       <Button asChild variant="outline" size="sm" className="w-fit">
         <Link to="/worlds/$worldId" params={{ worldId }}>
           <ArrowLeft aria-hidden="true" />
@@ -146,10 +146,7 @@ export function WorldConfigurationPage({
           ))}
         </TabsList>
       </Tabs>
-      <section
-        aria-label={`${activeTab} configuration`}
-        className="min-h-[200px]"
-      >
+      <section aria-label={`${activeTab} configuration`}>
         {accessContextQuery.isPending ? (
           <LoadingState label="Loading configuration…" />
         ) : accessContextQuery.isError ? (
@@ -369,7 +366,7 @@ function ConfigPanelShell({
   readonly children: ReactNode;
 }): JSX.Element {
   return (
-    <section className="rounded-md border border-border bg-card p-5 text-card-foreground">
+    <section className="rounded-md border border-border bg-card p-4 text-card-foreground">
       {children}
     </section>
   );

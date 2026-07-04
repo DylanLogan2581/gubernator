@@ -132,7 +132,7 @@ function WorldShellContent({
     <WorldShellFrame>
       <section
         aria-labelledby="world-shell-title"
-        className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
+        className="grid gap-4 rounded-md border border-border bg-card p-4 text-card-foreground"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
@@ -198,7 +198,7 @@ function WorldShellContent({
         <Link
           to="/worlds/$worldId/events"
           params={{ worldId }}
-          className="flex flex-col gap-3 rounded-md border border-border bg-card p-6 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="flex flex-col gap-3 rounded-md border border-border bg-card p-4 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -222,7 +222,7 @@ function WorldShellContent({
             to="/worlds/$worldId/configuration"
             params={{ worldId }}
             search={{ tab: "resources" }}
-            className="flex flex-col gap-3 rounded-md border border-border bg-card p-6 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="flex flex-col gap-3 rounded-md border border-border bg-card p-4 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -267,7 +267,7 @@ function WorldShellFrame({
   readonly children: ReactNode;
 }): JSX.Element {
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
+    <div className="flex flex-col gap-4">
       <Button asChild variant="outline" size="sm" className="w-fit">
         <Link to="/worlds">
           <ArrowLeft aria-hidden="true" />

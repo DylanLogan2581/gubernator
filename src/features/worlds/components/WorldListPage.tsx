@@ -265,9 +265,7 @@ function WorldListFrame({
 }: {
   readonly children: ReactNode;
 }): JSX.Element {
-  return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-5 py-6">{children}</div>
-  );
+  return <div className="flex flex-col gap-5">{children}</div>;
 }
 
 function TrashToggleButton({

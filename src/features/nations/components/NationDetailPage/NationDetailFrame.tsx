@@ -13,7 +13,7 @@ export function NationDetailFrame({
   readonly worldId: string;
 }): JSX.Element {
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
+    <div className="flex flex-col gap-4">
       <Button asChild variant="outline" size="sm" className="w-fit">
         <Link to="/worlds/$worldId/nations" params={{ worldId }}>
           <ArrowLeft aria-hidden="true" />
