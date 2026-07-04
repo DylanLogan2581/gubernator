@@ -90,7 +90,9 @@ describe("not-found route", () => {
   it("still renders the app shell around the fallback", async () => {
     renderAt("/not-a-real-route");
     await screen.findByText("Page not found");
-    expect(screen.getByText("Gubernator")).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: /toggle sidebar/i }),
+    ).toBeDefined();
   });
 });
 

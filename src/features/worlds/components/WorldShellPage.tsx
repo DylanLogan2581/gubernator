@@ -21,7 +21,7 @@ import {
   SettlementReadinessListPanel,
   settlementReadinessSummaryQueryOptions,
 } from "@/features/settlements";
-import { EndTurnControl, TurnTransitionOutcomePanel } from "@/features/turns";
+import { TurnTransitionOutcomePanel } from "@/features/turns";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
@@ -243,15 +243,6 @@ function WorldShellContent({
           </Link>
         ) : null}
       </div>
-      <EndTurnControl
-        canAdmin={effectiveCanAdmin}
-        currentDateLabel={worldQuery.data.header.inWorldDateLabel}
-        currentTurnNumber={worldQuery.data.header.currentTurnNumber}
-        isArchived={worldQuery.data.header.isArchived}
-        nextDateLabel={worldQuery.data.header.nextInWorldDateLabel}
-        nextTurnNumber={worldQuery.data.header.nextTurnNumber}
-        worldId={worldId}
-      />
       <TurnTransitionOutcomePanel scope="world" id={worldId} />
       <SettlementReadinessListPanel
         accessContext={accessContext}

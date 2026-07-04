@@ -1,29 +1,98 @@
+import { useParams } from "@tanstack/react-router";
+import { Search } from "lucide-react";
 import { type JSX, type ReactNode } from "react";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useEffectiveCanAdmin } from "@/features/permissions";
+import { EndTurnControl } from "@/features/turns";
 
+import { HeaderReadinessChip } from "./HeaderReadinessChip";
 import { NotificationsPopover } from "./NotificationsPopover";
+import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
+import { WorldBreadcrumb } from "./WorldBreadcrumb";
 
 type AppHeaderProps = {
   readonly action?: ReactNode;
 };
 
-// Slim header inside SidebarInset: trigger + brand + action slot +
-// notifications. The world/nation/settlement breadcrumb now renders inline
-// in the world page content (see WorldEntryGate) rather than in this
-// persistent header, keeping this component free of route-param data
-// fetching. The brand label stays here (rather than only in the sidebar)
-// since the sidebar itself renders nothing for signed-out visitors.
+// Slim header inside SidebarInset: trigger + breadcrumb on the left; turn
+// chip, End Turn (effective admins only) / readiness chip (settlement
+// managers), notifications, and the command-palette trigger on the right
+// (docs/ui-redesign.md §3.3). Brand/logo lives in the sidebar only.
 export function AppHeader({ action }: AppHeaderProps): JSX.Element {
+  const routeParams = useParams({ strict: false });
+  const nationId = routeParams.nationId ?? null;
+  const settlementId = routeParams.settlementId ?? null;
+  const { canAdmin, turnLabel, worldAccess, worldId, worldName } =
+    useAppShellWorldContext();
+  const effectiveCanAdmin = useEffectiveCanAdmin(canAdmin);
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
       <SidebarTrigger />
-      <span className="text-sm font-medium">Gubernator</span>
+      {worldId !== null && worldName !== null ? (
+        <WorldBreadcrumb worldId={worldId} worldName={worldName} />
+      ) : null}
       <div className="flex-1" />
       <div className="flex items-center gap-2">
         {action}
+        {turnLabel !== null ? (
+          <span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">
+            {turnLabel}
+          </span>
+        ) : null}
+        {worldId !== null && worldAccess !== null ? (
+          <EndTurnControl
+            canAdmin={effectiveCanAdmin}
+            currentDateLabel={worldAccess.header.inWorldDateLabel}
+            currentTurnNumber={worldAccess.header.currentTurnNumber}
+            isArchived={worldAccess.header.isArchived}
+            nextDateLabel={worldAccess.header.nextInWorldDateLabel}
+            nextTurnNumber={worldAccess.header.nextTurnNumber}
+            worldId={worldId}
+          />
+        ) : null}
+        {worldId !== null && nationId !== null && settlementId !== null ? (
+          <HeaderReadinessChip
+            canAdmin={effectiveCanAdmin}
+            nationId={nationId}
+            settlementId={settlementId}
+            worldId={worldId}
+          />
+        ) : null}
         <NotificationsPopover />
+        <CommandPaletteTrigger />
       </div>
     </header>
+  );
+}
+
+// Placeholder trigger: full ⌘K command palette (entity search + actions) is
+// docs/ui-redesign.md Phase 3, not yet built.
+function CommandPaletteTrigger(): JSX.Element {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Command palette"
+          onClick={() => {
+            toast.message("Command palette coming soon");
+          }}
+        >
+          <Search className="size-4" aria-hidden="true" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Command palette (coming soon)</TooltipContent>
+    </Tooltip>
   );
 }

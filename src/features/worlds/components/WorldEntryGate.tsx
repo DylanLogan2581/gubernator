@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, type JSX, type ReactNode } from "react";
 
-import { WorldBreadcrumb } from "@/components/app/WorldBreadcrumb";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -190,11 +189,7 @@ function WorldEntryDecision({
 
   if (selectableCharacters.length === 0) {
     if (worldAccess.canAdmin) {
-      return (
-        <WorldEntryContent worldId={worldId} worldName={worldAccess.world.name}>
-          {children}
-        </WorldEntryContent>
-      );
+      return <>{children}</>;
     }
     return (
       <AccessDeniedState
@@ -205,50 +200,21 @@ function WorldEntryDecision({
   }
 
   if (selectableCharacters.length === 1) {
-    return (
-      <WorldEntryContent worldId={worldId} worldName={worldAccess.world.name}>
-        {children}
-      </WorldEntryContent>
-    );
+    return <>{children}</>;
   }
 
   if (resumedCitizen !== null) {
-    return (
-      <WorldEntryContent worldId={worldId} worldName={worldAccess.world.name}>
-        {children}
-      </WorldEntryContent>
-    );
+    return <>{children}</>;
   }
 
   // No resumed PC — normally that means "pick one," but an admin who
   // deliberately cleared their character to act as admin should re-enter
   // admin mode instead of being forced back into the chooser.
   if (worldAccess.canAdmin && (isExplicitAdminChoice ?? false)) {
-    return (
-      <WorldEntryContent worldId={worldId} worldName={worldAccess.world.name}>
-        {children}
-      </WorldEntryContent>
-    );
+    return <>{children}</>;
   }
 
   return <PlayerCharacterChooser />;
-}
-
-function WorldEntryContent({
-  children,
-  worldId,
-  worldName,
-}: {
-  readonly children: ReactNode;
-  readonly worldId: string;
-  readonly worldName: string;
-}): JSX.Element {
-  return (
-    <>
-      <WorldBreadcrumb worldId={worldId} worldName={worldName} />
-      {children}
-    </>
-  );
 }
 
 type AutoSelectMutate = (input: {

@@ -6,7 +6,10 @@ import {
   currentAccessContextQueryOptions,
   type AccessContext,
 } from "@/features/permissions";
-import { worldRouteAccessQueryOptions } from "@/features/worlds";
+import {
+  worldRouteAccessQueryOptions,
+  type WorldRouteAccess,
+} from "@/features/worlds";
 
 // Placeholder used only until the real access context resolves (or when
 // unauthenticated) so worldRouteAccessQueryOptions always has a context to
@@ -25,6 +28,7 @@ export type AppShellWorldContext = {
   readonly isWorldPending: boolean;
   readonly turnLabel: string | null;
   readonly userId: string | null;
+  readonly worldAccess: WorldRouteAccess | null;
   readonly worldId: string | null;
   readonly worldName: string | null;
 };
@@ -63,6 +67,7 @@ export function useAppShellWorldContext(): AppShellWorldContext {
         ? null
         : `Turn ${worldAccess.header.currentTurnNumber} · ${worldAccess.header.inWorldDateLabel}`,
     userId: accessContext.userId,
+    worldAccess,
     worldId,
     worldName: worldAccess?.header.name ?? null,
   };
