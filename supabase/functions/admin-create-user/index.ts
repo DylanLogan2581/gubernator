@@ -1,10 +1,16 @@
 import { logAdminCreateUserSuccess, logAuthorizationDenial } from "../_shared/auditLog.ts";
 import {
+  EDGE_COMMON_ENV_VAR_NAMES,
+  EDGE_SERVICE_ROLE_ENV_VAR_NAMES,
+} from "../_shared/envContract.ts";
+import {
+  assertEdgeEnvVars,
   getEdgeRuntime,
   getRequiredRuntimeEnv,
   getRequiredRuntimeUrl,
 } from "../_shared/http/env.ts";
 import { isRecord } from "../_shared/http/guards.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/http/rateLimit.ts";
 import { classifyHttpError, supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import {
@@ -94,7 +100,7 @@ export async function handleAdminCreateUserRequest(
 
     const validateResult = await parseAdminCreateUserRequestBody(request);
     if (!validateResult.ok) {
-      return respond(validateResult.error, 400);
+      return respond(validateResult.error, validateResult.status);
     }
 
     const authContextResult = await resolveAdminCreateUserAuthContext(request);
@@ -119,10 +125,30 @@ export async function handleAdminCreateUserRequest(
       );
     }
 
+    // Rate limit: 10 requests per minute per user for this privileged endpoint.
+    const rateLimitResult = await checkRateLimit(
+      authContextResult.context.userId,
+      "admin-create-user",
+      RATE_LIMITS["admin-create-user"],
+    );
+    if (!rateLimitResult.ok) {
+      const body = createErrorResponse({
+        code: "rate_limit_exceeded",
+        message: "Too many requests. Please wait before retrying.",
+      });
+      const res = respond(body, 429);
+      const headers = new Headers(res.headers);
+      headers.set("retry-after", String(rateLimitResult.retryAfterSeconds));
+      return new Response(res.body, { headers, status: 429 });
+    }
+
     // Idempotency key support: check if request with same key was already processed
     const idempotencyKey = request.headers.get("idempotency-key");
     if (idempotencyKey !== null) {
-      const cachedResult = await getIdempotencyKeyResult(idempotencyKey);
+      const cachedResult = await getIdempotencyKeyResult(
+        idempotencyKey,
+        authContextResult.context.userId,
+      );
       if (cachedResult !== null) {
         return respond({ data: cachedResult, ok: true }, 200);
       }
@@ -410,6 +436,7 @@ function isEmailConflict(message: string | undefined): boolean {
 
 async function getIdempotencyKeyResult(
   idempotencyKey: string,
+  callerUserId: string,
 ): Promise<AdminCreateUserSuccessData | null> {
   const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
   const serviceRoleKey = getRequiredRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
@@ -423,7 +450,7 @@ async function getIdempotencyKeyResult(
     const response = await supabaseFetch(
       `${supabaseUrl}/rest/v1/admin_create_user_idempotency_keys?idempotency_key=eq.${
         encodeURIComponent(idempotencyKey)
-      }&expires_at=gt.now()`,
+      }&caller_user_id=eq.${encodeURIComponent(callerUserId)}&expires_at=gt.now()`,
       {
         headers: {
           apikey: serviceRoleKey,
@@ -512,6 +539,8 @@ async function storeIdempotencyKeyResult(
     );
   }
 }
+
+assertEdgeEnvVars([...EDGE_COMMON_ENV_VAR_NAMES, ...EDGE_SERVICE_ROLE_ENV_VAR_NAMES]);
 
 const edgeRuntime = getEdgeRuntime();
 

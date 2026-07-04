@@ -287,6 +287,80 @@ export async function persistSimulationTransition(
   return { ok: true, summary: responseBody };
 }
 
+// Best-effort recovery path for #958: if plan/persist fails after
+// startTurnTransition already wrote a 'running' row, mark that row failed
+// via the same service-role RPC the superadmin recovery UI uses
+// (fail_stuck_turn_transition) so the world is immediately advanceable
+// again. Never throws — a failure here must not mask the original error
+// that triggered the cleanup attempt.
+export async function failStuckTurnTransition(
+  worldId: string,
+  transitionId: string,
+  actorUserId: string,
+  reason: string,
+): Promise<void> {
+  const requestId = generateRequestId();
+  logRequestEntry(requestId, actorUserId, "fail_stuck_turn_transition", worldId);
+
+  const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
+  const supabaseServiceRoleKey = getRequiredRuntimeEnv(
+    "SUPABASE_SERVICE_ROLE_KEY",
+  );
+
+  if (supabaseUrl === undefined || supabaseServiceRoleKey === undefined) {
+    logRequestFailure(
+      requestId,
+      "end_turn_transition_unavailable",
+      "Supabase configuration unavailable",
+    );
+    return;
+  }
+
+  let response: Response;
+  try {
+    response = await supabaseFetch(
+      `${supabaseUrl}/rest/v1/rpc/fail_stuck_turn_transition`,
+      {
+        body: JSON.stringify({
+          p_reason: reason,
+          p_transition_id: transitionId,
+          p_world_id: worldId,
+        }),
+        headers: {
+          apikey: supabaseServiceRoleKey,
+          authorization: `Bearer ${supabaseServiceRoleKey}`,
+          "content-type": "application/json",
+        },
+        method: "POST",
+      },
+      30000,
+    );
+  } catch {
+    logCaughtError(
+      requestId,
+      "fetch_error",
+      "Failed to reach fail_stuck_turn_transition RPC",
+    );
+    return;
+  }
+
+  if (!response.ok) {
+    const errorBody: unknown = await response.json().catch(() => undefined);
+    if (isSupabaseRpcError(errorBody)) {
+      logCaughtError(requestId, errorBody.code, errorBody.message, errorBody.hint);
+    } else {
+      logCaughtError(
+        requestId,
+        "unknown_error",
+        "Unexpected error response format",
+      );
+    }
+    return;
+  }
+
+  logRequestSuccess(requestId, `Stuck transition marked failed: ${transitionId}`);
+}
+
 function rpcErrorToStartResult(
   error: SupabaseRpcError,
   requestId: string,

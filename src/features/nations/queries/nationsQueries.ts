@@ -1,6 +1,7 @@
 import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { isSettlementReadyForCurrentTurn } from "@/features/settlements";
 import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
@@ -186,9 +187,12 @@ function toNationSettlement(
   row: NationSettlementRow,
   population: number,
 ): NationSettlement {
-  // Derive isReadyForCurrentTurn: true if autoReady enabled OR manually set ready
-  const isReadyForCurrentTurn =
-    row.auto_ready_enabled || row.is_ready_current_turn;
+  // isReadyForCurrentTurn mirrors is_ready_current_turn; auto-ready only takes effect at the
+  // next turn advance (see settlementReadinessState.ts truth table).
+  const isReadyForCurrentTurn = isSettlementReadyForCurrentTurn({
+    auto_ready_enabled: row.auto_ready_enabled,
+    is_ready_current_turn: row.is_ready_current_turn,
+  });
   return {
     autoReadyEnabled: row.auto_ready_enabled,
     id: row.id,

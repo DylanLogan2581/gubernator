@@ -21,6 +21,7 @@ export type EndTurnSimulationErrorCode =
   | "method_not_allowed"
   | "not_implemented"
   | "origin_not_allowed"
+  | "rate_limit_exceeded"
   | "session_expired"
   | "unauthorized"
   | "unauthenticated";

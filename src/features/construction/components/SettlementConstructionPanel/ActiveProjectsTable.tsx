@@ -26,12 +26,14 @@ export function ActiveProjectsTable({
   logEntries,
   queryClient,
   settlementId,
+  worldId,
 }: {
   readonly allProjects: readonly ConstructionProject[];
   readonly canAct: boolean;
   readonly logEntries: readonly TurnTransitionLogEntry[];
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const activeProjects = allProjects.filter((p) =>
     (ACTIVE_STATUSES as readonly string[]).includes(p.status),
@@ -93,6 +95,7 @@ export function ActiveProjectsTable({
             queryClient={queryClient}
             settlementId={settlementId}
             unassignedNpcCount={unassignedNpcCount}
+            worldId={worldId}
           />
         ))}
       </TableBody>

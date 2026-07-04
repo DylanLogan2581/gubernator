@@ -10,6 +10,7 @@ import { ActiveEventsCard } from "@/features/events";
 import { NationNamesetCard } from "@/features/namesets";
 import {
   currentAccessContextQueryOptions,
+  useEffectiveCanAdmin,
   type AccessContext,
 } from "@/features/permissions";
 import { TurnLogBrowser } from "@/features/turns";
@@ -148,6 +149,8 @@ function NationDetailContent({
   readonly worldId: string;
 }): JSX.Element {
   const nationQuery = useQuery(nationByIdQueryOptions(nationId));
+  // Must be called unconditionally before any early returns to satisfy rules-of-hooks.
+  const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
 
   if (nationQuery.isPending) {
     return (
@@ -180,7 +183,7 @@ function NationDetailContent({
     );
   }
 
-  if (nation.isHidden && !worldAccess.canAdmin) {
+  if (nation.isHidden && !effectiveCanAdmin) {
     return <HiddenNationRedirect worldId={worldId} />;
   }
 
@@ -226,9 +229,10 @@ function NationDetailLoaded({
 }): JSX.Element {
   const queryClient = useQueryClient();
   const isArchived = worldAccess.header.isArchived;
-  const canEditDetails = worldAccess.canManage && !isArchived;
-  const canToggleHidden = worldAccess.canAdmin && !isArchived;
-  const canDelete = worldAccess.canAdmin && !isArchived;
+  const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
+  const canEditDetails = effectiveCanAdmin && !isArchived;
+  const canToggleHidden = effectiveCanAdmin && !isArchived;
+  const canDelete = effectiveCanAdmin && !isArchived;
 
   return (
     <NationDetailFrame worldId={worldId}>
@@ -264,9 +268,9 @@ function NationDetailLoaded({
         <NationHiddenToggleSection nation={nation} queryClient={queryClient} />
       ) : null}
 
-      {worldAccess.canAdmin ? (
+      {effectiveCanAdmin ? (
         <NationNamesetCard
-          canAdmin={worldAccess.canAdmin}
+          canAdmin={effectiveCanAdmin}
           currentNamesetId={nation.namesetId}
           isArchived={isArchived}
           nationId={nation.id}
@@ -275,7 +279,7 @@ function NationDetailLoaded({
       ) : null}
 
       <NationSettlementsSection
-        canAdmin={worldAccess.canAdmin}
+        canAdmin={effectiveCanAdmin}
         isArchived={isArchived}
         nationId={nation.id}
         userId={null}
@@ -295,13 +299,13 @@ function NationDetailLoaded({
       />
 
       <NationRoleAssignmentSection
-        canAdminWorld={worldAccess.canAdmin}
+        canAdminWorld={effectiveCanAdmin}
         isArchived={isArchived}
         nation={nation}
       />
 
       <NationRelationshipsSection
-        canAdminWorld={worldAccess.canAdmin && !isArchived}
+        canAdminWorld={effectiveCanAdmin && !isArchived}
         isArchived={isArchived}
         nation={nation}
         queryClient={queryClient}

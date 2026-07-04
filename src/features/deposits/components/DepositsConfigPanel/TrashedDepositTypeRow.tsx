@@ -1,4 +1,6 @@
+import { useState } from "react";
 
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
@@ -22,6 +24,7 @@ export function TrashedDepositTypeRow({
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
+  const [hardDeleteConfirmOpen, setHardDeleteConfirmOpen] = useState(false);
   const restoreMutation = useRestoreRow(
     restoreDepositTypeMutationOptions({ queryClient }),
     { successMessage: "Deposit type restored." },
@@ -68,16 +71,39 @@ export function TrashedDepositTypeRow({
             size="sm"
             disabled={isPending}
             onClick={() => {
-              hardDeleteMutation.mutate({
-                depositTypeId: depositType.id,
-                worldId,
-              });
+              setHardDeleteConfirmOpen(true);
             }}
           >
             Delete permanently
           </Button>
         )}
       </div>
+      {hardDeleteConfirmOpen ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setHardDeleteConfirmOpen(false);
+          }}
+          title={`Permanently delete ${depositType.name}?`}
+          description={
+            <>
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">
+                {depositType.name}
+              </span>{" "}
+              and all its data. This action cannot be undone.
+            </>
+          }
+          confirmLabel="Delete permanently"
+          isPending={hardDeleteMutation.isPending}
+          onConfirm={() => {
+            hardDeleteMutation.mutate({
+              depositTypeId: depositType.id,
+              worldId,
+            });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

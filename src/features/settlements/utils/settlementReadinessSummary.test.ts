@@ -6,7 +6,23 @@ import {
 } from "./settlementReadinessSummary";
 
 describe("computeSettlementReadinessSummary", () => {
-  it("counts auto-ready settlements as ready", () => {
+  it("counts auto-ready settlements as ready once applied by a turn advance", () => {
+    expect(
+      computeSettlementReadinessSummary([
+        {
+          auto_ready_enabled: true,
+          is_ready_current_turn: true,
+        },
+      ]),
+    ).toEqual({
+      notReadySettlementCount: 0,
+      readyPercentage: 100,
+      readySettlementCount: 1,
+      totalSettlementCount: 1,
+    });
+  });
+
+  it("counts auto-ready settlements enabled mid-turn as not ready until the next turn advance", () => {
     expect(
       computeSettlementReadinessSummary([
         {
@@ -15,9 +31,9 @@ describe("computeSettlementReadinessSummary", () => {
         },
       ]),
     ).toEqual({
-      notReadySettlementCount: 0,
-      readyPercentage: 100,
-      readySettlementCount: 1,
+      notReadySettlementCount: 1,
+      readyPercentage: 0,
+      readySettlementCount: 0,
       totalSettlementCount: 1,
     });
   });
@@ -58,7 +74,7 @@ describe("computeSettlementReadinessSummary", () => {
     const summary = computeSettlementReadinessSummary([
       {
         auto_ready_enabled: true,
-        is_ready_current_turn: false,
+        is_ready_current_turn: true,
       },
       {
         auto_ready_enabled: false,

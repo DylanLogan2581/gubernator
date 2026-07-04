@@ -64,6 +64,13 @@ function SettlementTransitionOutcomePanel({
   return <OutcomePanelQueryResult query={query} />;
 }
 
+const SKELETON_METRIC_LABELS = [
+  "births",
+  "deaths",
+  "buildings-suspended",
+  "deposits-depleted",
+] as const;
+
 function TurnTransitionOutcomeSkeleton(): JSX.Element {
   return (
     <OutcomePanelFrame>
@@ -72,9 +79,9 @@ function TurnTransitionOutcomeSkeleton(): JSX.Element {
         <Skeleton className="h-4 w-48" />
       </div>
       <dl className="grid gap-3 sm:grid-cols-4">
-        {([0, 1, 2, 3] as const).map((i) => (
+        {SKELETON_METRIC_LABELS.map((label) => (
           <div
-            key={i}
+            key={label}
             className="rounded-md border border-border bg-background px-3 py-2"
           >
             <Skeleton className="mb-1 h-4 w-20" />

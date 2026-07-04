@@ -214,31 +214,35 @@ export function EventCreateStep5({
           <div className="space-y-2">
             <dt className="text-muted-foreground">Effects:</dt>
             <dd className="space-y-1">
-              {effects.map((effect, index) => {
-                const key = `${effect.effectType}-${effect.resourceId ?? effect.jobId ?? effect.managedPopulationInstanceId ?? effect.depositInstanceId ?? "default"}-${String(index)}`;
-                const impact = effectImpacts[index] ?? null;
-                return (
-                  <div
-                    key={key}
-                    className="flex items-start justify-between gap-2 text-xs text-foreground"
-                  >
-                    <span>• {formatEffect(effect)}</span>
-                    {impact !== null && (
-                      <span
-                        className={`shrink-0 tabular-nums ${
-                          impact.count === 0
-                            ? "font-medium text-destructive"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {impact.count === 0 && "⚠ "}
-                        {impact.count} {categoryLabel(impact.category)}
-                        {impact.count !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+              {effects.length === 0 ? (
+                <span className="text-xs text-muted-foreground">None</span>
+              ) : (
+                effects.map((effect, index) => {
+                  const key = `${effect.effectType}-${effect.resourceId ?? effect.jobId ?? effect.managedPopulationInstanceId ?? effect.depositInstanceId ?? "default"}-${String(index)}`;
+                  const impact = effectImpacts[index] ?? null;
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-start justify-between gap-2 text-xs text-foreground"
+                    >
+                      <span>• {formatEffect(effect)}</span>
+                      {impact !== null && (
+                        <span
+                          className={`shrink-0 tabular-nums ${
+                            impact.count === 0
+                              ? "font-medium text-destructive"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {impact.count === 0 && "⚠ "}
+                          {impact.count} {categoryLabel(impact.category)}
+                          {impact.count !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </dd>
           </div>
 

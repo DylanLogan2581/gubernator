@@ -79,6 +79,20 @@ function ChartContainer({
   )
 }
 
+// Defense in depth: ChartConfig is developer-defined today, but these guards
+// keep interpolation into `dangerouslySetInnerHTML` CSS safe even if config
+// ever derives from user-controlled data.
+const CSS_CUSTOM_PROPERTY_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
+const CSS_COLOR_VALUE_PATTERN = /^[#a-zA-Z0-9\s,.%()/-]+$/
+
+function isSafeCssCustomPropertyName(name: string): boolean {
+  return CSS_CUSTOM_PROPERTY_NAME_PATTERN.test(name)
+}
+
+function isSafeCssColorValue(value: string): boolean {
+  return CSS_COLOR_VALUE_PATTERN.test(value)
+}
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme ?? config.color
@@ -97,10 +111,16 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
+    if (!isSafeCssCustomPropertyName(key)) {
+      return null
+    }
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ??
       itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+    if (!color || !isSafeCssColorValue(color)) {
+      return null
+    }
+    return `  --color-${key}: ${color};`
   })
   .join("\n")}
 }

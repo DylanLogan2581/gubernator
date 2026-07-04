@@ -135,6 +135,10 @@ vi.mock("@/features/permissions", async () => {
   return {
     ...actual,
     useActivePlayerCharacter: useActivePlayerCharacterMock,
+    useEffectiveCanAdmin: (canAdmin: boolean) => {
+      const { activeCharacter } = useActivePlayerCharacterMock();
+      return canAdmin && activeCharacter === null;
+    },
     useSettlementManageAuthority: useSettlementManageAuthorityMock,
   };
 });
@@ -497,6 +501,41 @@ describe("SettlementDetailPage", () => {
     ).toBeNull();
   });
 
+  it("hides the Admin tab entirely for viewers who lack admin access outright", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldVisibility: "public" }),
+    );
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+    expect(screen.queryByRole("tab", { name: "Admin" })).toBeNull();
+  });
+
+  it("keeps the Admin tab visible but shows a suppression notice when an admin has an active character", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ adminRows: [{ world_id: WORLD_ID }] }),
+    );
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: {
+        id: "char-1",
+        name: "Aria",
+        roleType: "none",
+        status: "alive",
+      } as never,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+    renderPage("admin");
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+
+    expect(screen.getByRole("tab", { name: "Admin" })).toBeDefined();
+    expect(screen.getByText("Admin access paused")).toBeDefined();
+    expect(
+      screen.queryByRole("button", { name: "Delete settlement" }),
+    ).toBeNull();
+  });
+
   it("submits the edit-details form and closes the editor on success", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({ adminRows: [{ world_id: WORLD_ID }] }),
@@ -625,6 +664,35 @@ describe("SettlementDetailPage", () => {
         expect.objectContaining({ p_settlement_id: SETTLEMENT_ID }),
       );
     });
+  });
+
+  it("shows a read-only readiness status instead of an empty section when the viewer can set neither manual nor auto readiness", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({ adminRows: [{ world_id: WORLD_ID }] }),
+    );
+    useActivePlayerCharacterMock.mockReturnValue({
+      activeCharacter: {
+        id: "char-1",
+        name: "Aria",
+        roleType: "none",
+        status: "alive",
+      } as never,
+      clear: vi.fn(),
+      isPending: false,
+      selectableCharacters: [],
+      switchTo: vi.fn(),
+    });
+    useSettlementManageAuthorityMock.mockReturnValue({
+      canManageSettlement: false,
+      canManageNation: false,
+    });
+    renderPage();
+    await screen.findByRole("heading", { level: 1, name: "Hometown" });
+
+    expect(screen.getByText("Readiness")).toBeDefined();
+    expect(await screen.findByLabelText("Not ready")).toBeDefined();
+    expect(screen.queryByRole("switch", { name: "Ready" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Auto-ready" })).toBeNull();
   });
 
   it("hides coordinate edit button from nation manager viewers", async () => {

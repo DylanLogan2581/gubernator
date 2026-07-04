@@ -8,4 +8,7 @@ export const superadminQueryKeys = {
     [...superadminQueryKeys.all, "user-living-pcs", userId] as const,
   userActivePlayerCharacterRows: (userId: string) =>
     [...superadminQueryKeys.all, "user-active-pc-rows", userId] as const,
+  runningTransitions: () =>
+    [...superadminQueryKeys.all, "running-transitions"] as const,
+  trashedWorlds: () => [...superadminQueryKeys.all, "trashed-worlds"] as const,
 } as const;

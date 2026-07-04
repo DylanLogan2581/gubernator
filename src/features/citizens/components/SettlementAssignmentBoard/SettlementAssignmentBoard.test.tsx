@@ -1248,6 +1248,11 @@ describe("SettlementAssignmentBoard", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: citizensQueryKeys.settlementAggregateStats(SETTLEMENT_UUID),
     });
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["forecast", "world", "world-1"],
+      }),
+    );
   });
 
   it("Apply button is disabled with tooltip when no unassigned NPCs and count is raised", async () => {

@@ -47,6 +47,9 @@ const PC_ID_B = "00000000-0000-0000-0000-0000000000b1";
 describe("WorldEntryGate", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
+    // The explicit-admin-choice flag lives in localStorage, keyed by the
+    // fixed USER_ID/WORLD_ID constants below — clear it between tests.
+    window.localStorage.clear();
   });
 
   it("renders an inactive-user access denied when the user is not active", async () => {
@@ -319,6 +322,93 @@ describe("WorldEntryGate", () => {
       queryKey: ["settlements"],
     });
   });
+
+  // Regression for issue #978: a single-PC admin picking "Clear" used to
+  // race useAutoSelectSinglePlayerCharacter — the row-delete invalidated the
+  // active-row query, which refetched to "no row", and the effect
+  // immediately re-selected the only PC, permanently suppressing admin
+  // access. Entering Admin mode must persist as an explicit choice so
+  // auto-select backs off.
+  it("entering Admin mode for a single-PC admin sticks instead of racing auto-select", async () => {
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+    const del = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        deleteActiveRow: del,
+        playerCharacters: [createCitizenRow({ id: PC_ID_A, name: "Solo" })],
+        activeRow: null,
+        upsertActiveRow: upsert,
+        worldRows: [createWorldRow({ visibility: "public" })],
+      }),
+    );
+
+    const queryClient = renderGate();
+
+    expect(await screen.findByText("ENTERED")).toBeDefined();
+    await waitFor(() => {
+      expect(upsert).toHaveBeenCalledTimes(1);
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
+    await user.click(screen.getByRole("menuitem", { name: /Admin/ }));
+
+    await waitFor(() => {
+      expect(del).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(queryClient.isFetching()).toBe(0);
+      expect(queryClient.isMutating()).toBe(0);
+    });
+
+    expect(await screen.findByText("World Admin")).toBeDefined();
+    expect(screen.getByText("ENTERED")).toBeDefined();
+    // The critical assertion: auto-select must not have fired a second time
+    // once the row came back empty.
+    expect(upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("entering Admin mode for a multi-PC admin does not force the chooser back", async () => {
+    const del = vi.fn();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        deleteActiveRow: del,
+        playerCharacters: [
+          createCitizenRow({ id: PC_ID_A, name: "Alpha" }),
+          createCitizenRow({ id: PC_ID_B, name: "Bravo" }),
+        ],
+        activeRow: {
+          citizen_id: PC_ID_A,
+          updated_at: "2026-05-01T00:00:00.000Z",
+          user_id: USER_ID,
+          world_id: WORLD_ID,
+        },
+        worldRows: [createWorldRow({ visibility: "public" })],
+      }),
+    );
+
+    const queryClient = renderGate();
+
+    expect(await screen.findByText("ENTERED")).toBeDefined();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
+    await user.click(screen.getByRole("menuitem", { name: /Admin/ }));
+
+    await waitFor(() => {
+      expect(del).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(queryClient.isFetching()).toBe(0);
+      expect(queryClient.isMutating()).toBe(0);
+    });
+
+    expect(await screen.findByText("World Admin")).toBeDefined();
+    expect(screen.getByText("ENTERED")).toBeDefined();
+    expect(screen.queryByText("Choose your player character")).toBeNull();
+  });
 });
 
 function renderGate(): QueryClient {
@@ -448,8 +538,9 @@ function createCitizenRow(
 type ClientOptions = {
   readonly activeRow?: ActiveRowFixture | null;
   readonly adminRows?: ReadonlyArray<{ readonly world_id: string }>;
+  readonly deleteActiveRow?: () => void;
   readonly playerCharacters?: readonly CitizenRowFixture[];
-  readonly upsertActiveRow?: ReturnType<typeof vi.fn>;
+  readonly upsertActiveRow?: UpsertActiveRowFn;
   readonly userStatus?: "active" | "inactive";
   readonly worldRows?: readonly TestWorldRow[];
 };
@@ -457,6 +548,7 @@ type ClientOptions = {
 function createClient({
   activeRow = null,
   adminRows = [],
+  deleteActiveRow,
   playerCharacters = [],
   upsertActiveRow,
   userStatus = "active",
@@ -470,6 +562,15 @@ function createClient({
     status: userStatus,
     updated_at: "2026-01-01T00:00:00.000Z",
     username: "user",
+  };
+
+  // A plain closure variable here would be reset every time `.from(...)` is
+  // called, since createActiveRowBuilder runs fresh each call — lifting the
+  // mutable cell to this scope lets a delete/upsert in one call be reflected
+  // by a select in a later call, which the auto-select-vs-clear race tests
+  // depend on.
+  const activeRowCell: { current: ActiveRowFixture | null } = {
+    current: activeRow,
   };
 
   return {
@@ -512,7 +613,11 @@ function createClient({
         return createCitizensBuilder(playerCharacters);
       }
       if (table === "user_active_player_characters") {
-        return createActiveRowBuilder(activeRow, upsertActiveRow);
+        return createActiveRowBuilder(
+          activeRowCell,
+          upsertActiveRow,
+          deleteActiveRow,
+        );
       }
       throw new Error(`Unexpected table ${table}`);
     }),
@@ -592,18 +697,52 @@ function createCitizensBuilder(rows: readonly CitizenRowFixture[]): unknown {
   };
 }
 
+type UpsertActiveRowValues = {
+  readonly citizen_id: string;
+  readonly user_id: string;
+  readonly world_id: string;
+};
+type UpsertActiveRowFn = (
+  values: UpsertActiveRowValues,
+  options: unknown,
+) => Promise<{ readonly data: null; readonly error: null }>;
+
+// Stateful so delete/upsert calls are reflected in the row a subsequent
+// refetch (triggered by query invalidation) reads back — needed to exercise
+// the auto-select-vs-clear race in the "does not re-select" regression test.
 function createActiveRowBuilder(
-  row: ActiveRowFixture | null,
-  upsertFn: ReturnType<typeof vi.fn> | undefined,
+  cell: { current: ActiveRowFixture | null },
+  upsertFn: UpsertActiveRowFn = () =>
+    Promise.resolve({ data: null, error: null }),
+  deleteFn?: () => void,
 ): unknown {
   return {
     select: vi.fn(() => ({
       eq: vi.fn(() => ({
         eq: vi.fn(() => ({
-          maybeSingle: vi.fn().mockResolvedValue({ data: row, error: null }),
+          maybeSingle: vi.fn(() =>
+            Promise.resolve({ data: cell.current, error: null }),
+          ),
         })),
       })),
     })),
-    upsert: upsertFn ?? vi.fn().mockResolvedValue({ data: null, error: null }),
+    upsert: vi.fn((values: UpsertActiveRowValues, options: unknown) => {
+      cell.current = {
+        citizen_id: values.citizen_id,
+        updated_at: "2026-05-01T00:00:00.000Z",
+        user_id: values.user_id,
+        world_id: values.world_id,
+      };
+      return upsertFn(values, options);
+    }),
+    delete: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => {
+          cell.current = null;
+          deleteFn?.();
+          return Promise.resolve({ data: null, error: null });
+        }),
+      })),
+    })),
   };
 }

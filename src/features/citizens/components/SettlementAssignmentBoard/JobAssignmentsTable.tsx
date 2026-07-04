@@ -35,6 +35,7 @@ import type { SettlementJobCount } from "../../types/bulkAssignmentTypes";
 type JobAssignmentsTableProps = {
   readonly canEdit: boolean;
   readonly settlementId: string;
+  readonly worldId: string;
 };
 
 type UnassignedRow = {
@@ -102,6 +103,7 @@ type Row =
 export function JobAssignmentsTable({
   canEdit,
   settlementId,
+  worldId,
 }: JobAssignmentsTableProps): JSX.Element {
   const aggregateQuery = useQuery(
     citizenAggregateStatsForSettlementQueryOptions(settlementId),
@@ -332,6 +334,7 @@ export function JobAssignmentsTable({
             countByTradeRouteEnd={countByTradeRouteEnd}
             settlementId={settlementId}
             unassignedNpcCount={stats.unassignedNpcCount}
+            worldId={worldId}
           />
         ))}
       </TableBody>
@@ -398,6 +401,7 @@ function RowRenderer({
   countByTradeRouteEnd,
   settlementId,
   unassignedNpcCount,
+  worldId,
 }: {
   readonly row: Row;
   readonly canEdit: boolean;
@@ -407,6 +411,7 @@ function RowRenderer({
   readonly countByTradeRouteEnd: ReadonlyMap<string, number>;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
+  readonly worldId: string;
 }): JSX.Element {
   if (row.kind === "unassigned") {
     return (
@@ -424,6 +429,7 @@ function RowRenderer({
         job={row.job}
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
+        worldId={worldId}
       />
     );
   }
@@ -437,6 +443,7 @@ function RowRenderer({
         deposit={row.deposit}
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
+        worldId={worldId}
       />
     );
   }
@@ -452,6 +459,7 @@ function RowRenderer({
         population={row.population}
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
+        worldId={worldId}
       />
     );
   }
@@ -467,6 +475,7 @@ function RowRenderer({
         population={row.population}
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
+        worldId={worldId}
       />
     );
   }
@@ -500,6 +509,7 @@ function RowRenderer({
         settlementId={settlementId}
         tradeRouteEnd={row.tradeRouteEnd}
         unassignedNpcCount={unassignedNpcCount}
+        worldId={worldId}
       />
     );
   }
@@ -549,16 +559,18 @@ function BulkJobRow({
   job,
   settlementId,
   unassignedNpcCount,
+  worldId,
 }: {
   readonly canEdit: boolean;
   readonly job: SettlementJobCount;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
+  readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(job.currentCount));
   const mutation = useMutation(
-    setBulkStandardJobAssignmentMutationOptions({ queryClient }),
+    setBulkStandardJobAssignmentMutationOptions({ queryClient, worldId }),
   );
 
   const parsedCount = parseInt(localCount, 10);
@@ -627,17 +639,19 @@ function DepositTargetRow({
   deposit,
   settlementId,
   unassignedNpcCount,
+  worldId,
 }: {
   readonly canEdit: boolean;
   readonly currentCount: number;
   readonly deposit: DepositInstance;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
+  readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
-    setPerTargetBulkAssignmentMutationOptions({ queryClient }),
+    setPerTargetBulkAssignmentMutationOptions({ queryClient, worldId }),
   );
 
   const label = `${deposit.name} — ${deposit.depositTypeJobName}`;
@@ -727,6 +741,7 @@ function PopulationTargetRow({
   population,
   settlementId,
   unassignedNpcCount,
+  worldId,
 }: {
   readonly assignmentType: "culling" | "husbandry";
   readonly canEdit: boolean;
@@ -735,11 +750,12 @@ function PopulationTargetRow({
   readonly population: ManagedPopulationInstance;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
+  readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
-    setPerTargetBulkAssignmentMutationOptions({ queryClient }),
+    setPerTargetBulkAssignmentMutationOptions({ queryClient, worldId }),
   );
 
   const label = `${population.name} — ${jobName}`;
@@ -817,6 +833,7 @@ function TradeRouteLocalEndRow({
   settlementId,
   tradeRouteEnd,
   unassignedNpcCount,
+  worldId,
 }: {
   readonly canEdit: boolean;
   readonly currentCount: number;
@@ -826,11 +843,12 @@ function TradeRouteLocalEndRow({
   readonly settlementId: string;
   readonly tradeRouteEnd: "destination" | "origin";
   readonly unassignedNpcCount: number;
+  readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
-    setPerTargetBulkAssignmentMutationOptions({ queryClient }),
+    setPerTargetBulkAssignmentMutationOptions({ queryClient, worldId }),
   );
 
   const parsedCount = parseInt(localCount, 10);

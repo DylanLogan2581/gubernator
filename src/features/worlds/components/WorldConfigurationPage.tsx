@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useMemo } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -13,7 +14,11 @@ import { DepositsConfigPanel } from "@/features/deposits";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
 import { NamesetsConfigPanel } from "@/features/namesets";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  AdminSuppressedNotice,
+  currentAccessContextQueryOptions,
+  useEffectiveCanAdmin,
+} from "@/features/permissions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -64,10 +69,33 @@ export function WorldConfigurationPage({
   );
 
   const isSuperAdmin = accessContextQuery.data?.isSuperAdmin ?? false;
-  const visibleTabs: ReadonlyArray<{
-    readonly key: string;
-    readonly label: string;
-  }> = isSuperAdmin ? [...BASE_TABS, ...SUPER_ADMIN_TABS] : [...BASE_TABS];
+  const visibleTabs = useMemo(
+    () => (isSuperAdmin ? [...BASE_TABS, ...SUPER_ADMIN_TABS] : [...BASE_TABS]),
+    [isSuperAdmin],
+  );
+
+  const isTabVisible = visibleTabs.some((t) => t.key === activeTab);
+
+  useEffect(() => {
+    if (
+      !accessContextQuery.isPending &&
+      !isTabVisible &&
+      visibleTabs.length > 0
+    ) {
+      void navigate({
+        to: "/worlds/$worldId/configuration",
+        params: { worldId },
+        search: { tab: visibleTabs[0].key },
+        replace: true,
+      });
+    }
+  }, [
+    accessContextQuery.isPending,
+    isTabVisible,
+    navigate,
+    visibleTabs,
+    worldId,
+  ]);
 
   function handleTabSelect(key: TabKey): void {
     void navigate({
@@ -159,6 +187,11 @@ function WorldConfigurationContent({
   const worldQuery = useQuery(
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
+  // Must be called unconditionally before any early returns to satisfy
+  // rules-of-hooks.
+  const effectiveCanAdmin = useEffectiveCanAdmin(
+    worldQuery.data?.canAdmin ?? false,
+  );
 
   if (worldQuery.isPending) {
     return <LoadingState label="Loading configuration…" />;
@@ -174,6 +207,14 @@ function WorldConfigurationContent({
   }
 
   const { canAdmin, header } = worldQuery.data;
+
+  // The route guard only rejects viewers who lack `canAdmin` outright; admin
+  // capability suppressed by an active player character (see
+  // useEffectiveCanAdmin) is explained here instead of being silently
+  // redirected away.
+  if (canAdmin && !effectiveCanAdmin) {
+    return <AdminSuppressedNotice />;
+  }
 
   function renderPanel(): JSX.Element | null {
     if (activeTab === "resources") {

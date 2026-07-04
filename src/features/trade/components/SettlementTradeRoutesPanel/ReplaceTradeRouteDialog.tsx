@@ -65,7 +65,7 @@ export function ReplaceTradeRouteDialog({
 }: ReplaceTradeRouteDialogProps): JSX.Element {
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const mutation = useMutation(
-    replaceTradeRouteMutationOptions({ queryClient }),
+    replaceTradeRouteMutationOptions({ queryClient, worldId }),
   );
 
   const [legs, setLegs] = useState<LegDraft[]>(() =>

@@ -83,6 +83,15 @@ export function calendarDateToTurnNumber(
   const daysPerYear = getDaysPerYear(config.months);
   const startingDayOfYearIndex = getStartingDayOfYearIndex(config);
 
+  const hasMonth = config.months.some(
+    (month) => month.index === date.monthIndex,
+  );
+  if (!hasMonth) {
+    throw new RangeError(
+      `Calendar config has no month with index ${date.monthIndex}.`,
+    );
+  }
+
   // Compute 0-based day-of-year index for the given date.
   let dayOfYearIndex = date.dayOfMonth - 1;
   for (const month of config.months) {
@@ -286,8 +295,8 @@ export function getRelativeTurnDifference(
   }
 
   // Count complete months by walking forward
+  const monthList = [...config.months].sort((a, b) => a.index - b.index);
   while (true) {
-    const monthList = config.months.sort((a, b) => a.index - b.index);
     const currentIdx = monthList.findIndex(
       (m) => m.index === currentMonthIndex,
     );

@@ -1,7 +1,10 @@
+import { readCappedJsonBody } from "../_shared/http/body.ts";
+
 import { createErrorResponse } from "./http.ts";
 import { isRecord } from "./utils.ts";
 
 import type { EndTurnSimulationErrorResponse, EndTurnSimulationRequestBody } from "./types.ts";
+import type { ReadCappedJsonBodyFailureReason } from "../_shared/http/body.ts";
 
 const expectedRequestFields = [
   "expectedTurnNumber",
@@ -13,20 +16,6 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 const MAX_BODY_SIZE = 1024 * 10; // 10 KB
 
-export function validateContentType(
-  request: Request,
-): EndTurnSimulationErrorResponse | null {
-  const contentType = request.headers.get("content-type");
-  if (contentType === null || !contentType.includes("application/json")) {
-    return createErrorResponse({
-      code: "invalid_request",
-      details: ["body"],
-      message: "Content-Type must be application/json.",
-    });
-  }
-  return null;
-}
-
 export async function parseEndTurnSimulationRequestBody(
   request: Request,
 ): Promise<
@@ -37,49 +26,24 @@ export async function parseEndTurnSimulationRequestBody(
   | {
     readonly error: EndTurnSimulationErrorResponse;
     readonly ok: false;
+    readonly status: number;
   }
 > {
-  // Check Content-Type
-  const contentTypeError = validateContentType(request);
-  if (contentTypeError !== null) {
-    return {
-      error: contentTypeError,
-      ok: false,
-    };
-  }
+  const readResult = await readCappedJsonBody(request, { maxBytes: MAX_BODY_SIZE });
 
-  // Check body size
-  const contentLength = request.headers.get("content-length");
-  if (contentLength !== null) {
-    const size = parseInt(contentLength, 10);
-    if (size > MAX_BODY_SIZE) {
-      return {
-        error: createErrorResponse({
-          code: "invalid_request",
-          details: ["body"],
-          message: "Request body exceeds maximum size.",
-        }),
-        ok: false,
-      };
-    }
-  }
-
-  let body: unknown;
-
-  try {
-    body = await request.json();
-  } catch {
+  if (!readResult.ok) {
     return {
       error: createErrorResponse({
         code: "invalid_request",
         details: ["body"],
-        message: "Request body must be valid JSON.",
+        message: bodyReadErrorMessage(readResult.reason),
       }),
       ok: false,
+      status: readResult.status,
     };
   }
 
-  const bodyShapeResult = parseEndTurnSimulationRequestBodyShape(body);
+  const bodyShapeResult = parseEndTurnSimulationRequestBodyShape(readResult.value);
 
   if (!bodyShapeResult.ok) {
     return {
@@ -89,6 +53,7 @@ export async function parseEndTurnSimulationRequestBody(
         message: "Request body must include worldId and expectedTurnNumber.",
       }),
       ok: false,
+      status: 400,
     };
   }
 
@@ -100,6 +65,17 @@ export async function parseEndTurnSimulationRequestBody(
     },
     ok: true,
   };
+}
+
+function bodyReadErrorMessage(reason: ReadCappedJsonBodyFailureReason): string {
+  switch (reason) {
+    case "invalid_content_type":
+      return "Content-Type must be application/json.";
+    case "body_too_large":
+      return "Request body exceeds maximum size.";
+    case "invalid_json":
+      return "Request body must be valid JSON.";
+  }
 }
 
 function parseEndTurnSimulationRequestBodyShape(body: unknown):

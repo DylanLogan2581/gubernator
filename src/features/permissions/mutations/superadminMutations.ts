@@ -11,9 +11,18 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import { worldAccessQueryKeys } from "../../worlds/queries/worldAccessQueryKeys";
+import { permissionQueryKeys } from "../queries/permissionQueryKeys";
 import { superadminQueryKeys } from "../queries/superadminQueryKeys";
 
-import type { CreateUserInput } from "../types/superadminTypes";
+import type {
+  CreateUserInput,
+  FailStuckTransitionInput,
+  FailStuckTransitionResult,
+  PreviewWorldDeleteResult,
+  PruneWorldDataInput,
+  PruneWorldDataResult,
+} from "../types/superadminTypes";
 
 type SuperadminErrorCode =
   | "superadmin_not_authorized"
@@ -67,9 +76,17 @@ export function grantWorldAdminMutationOptions({
     mutationFn: (input: GrantWorldAdminInput) => grantWorldAdmin(client, input),
     mutationKey: [...superadminQueryKeys.all, "grant-world-admin"],
     onSuccess: async (_result, input): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: superadminQueryKeys.worldAdminsForUser(input.userId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: superadminQueryKeys.worldAdminsForUser(input.userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: worldAccessQueryKeys.currentUserAdminWorldIds(input.userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: permissionQueryKeys.currentAccessContext(),
+        }),
+      ]);
     },
   });
 }
@@ -87,9 +104,17 @@ export function revokeWorldAdminMutationOptions({
       revokeWorldAdmin(client, input),
     mutationKey: [...superadminQueryKeys.all, "revoke-world-admin"],
     onSuccess: async (_result, input): Promise<void> => {
-      await queryClient.invalidateQueries({
-        queryKey: superadminQueryKeys.worldAdminsForUser(input.userId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: superadminQueryKeys.worldAdminsForUser(input.userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: worldAccessQueryKeys.currentUserAdminWorldIds(input.userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: permissionQueryKeys.currentAccessContext(),
+        }),
+      ]);
     },
   });
 }
@@ -305,6 +330,47 @@ async function createUser(
   });
 }
 
+export function pruneWorldDataMutationOptions({
+  client = requireSupabaseClient(),
+}: {
+  readonly client?: GubernatorSupabaseClient;
+}): UseMutationOptions<
+  PruneWorldDataResult,
+  SuperadminMutationError,
+  PruneWorldDataInput
+> {
+  return mutationOptions({
+    mutationFn: (input: PruneWorldDataInput) => pruneWorldData(client, input),
+    mutationKey: [...superadminQueryKeys.all, "prune-world-data"],
+  });
+}
+
+async function pruneWorldData(
+  client: GubernatorSupabaseClient,
+  input: PruneWorldDataInput,
+): Promise<PruneWorldDataResult> {
+  const { data, error } = await client.rpc("prune_old_snapshots_and_logs", {
+    p_world_id: input.worldId,
+    p_retention_turns: input.retentionTurns,
+    p_dry_run: input.dryRun,
+  });
+
+  if (error !== null) {
+    if (error.code === "42501") {
+      throw new SuperadminMutationError({
+        code: "superadmin_not_authorized",
+        message: "Superadmin privileges are required.",
+      });
+    }
+    throw new SuperadminMutationError({
+      code: "superadmin_operation_failed",
+      message: error.message,
+    });
+  }
+
+  return data as PruneWorldDataResult;
+}
+
 async function readFunctionErrorPayload(
   error: unknown,
 ): Promise<Extract<AdminCreateUserFunctionResponse, { ok: false }> | null> {
@@ -356,4 +422,95 @@ function isAdminCreateUserErrorResponse(
     (value as { ok: unknown }).ok === false &&
     typeof (value as { error: unknown }).error === "object"
   );
+}
+
+export function failStuckTransitionMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: MutationFactoryOpts): UseMutationOptions<
+  FailStuckTransitionResult,
+  SuperadminMutationError,
+  FailStuckTransitionInput
+> {
+  return mutationOptions({
+    mutationFn: (input: FailStuckTransitionInput) =>
+      failStuckTransition(client, input),
+    mutationKey: [...superadminQueryKeys.all, "fail-stuck-transition"],
+    onSuccess: async (): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: superadminQueryKeys.runningTransitions(),
+      });
+    },
+  });
+}
+
+async function failStuckTransition(
+  client: GubernatorSupabaseClient,
+  input: FailStuckTransitionInput,
+): Promise<FailStuckTransitionResult> {
+  const { data, error } = await client.rpc("fail_stuck_turn_transition", {
+    p_world_id: input.worldId,
+    p_transition_id: input.transitionId,
+    ...(input.reason !== undefined ? { p_reason: input.reason } : {}),
+  });
+
+  if (error !== null) {
+    if (error.code === "42501") {
+      throw new SuperadminMutationError({
+        code: "superadmin_not_authorized",
+        message: "Superadmin privileges are required.",
+      });
+    }
+    throw new SuperadminMutationError({
+      code: "superadmin_operation_failed",
+      message: error.message,
+    });
+  }
+
+  return data as FailStuckTransitionResult;
+}
+
+export function previewWorldDeleteMutationOptions({
+  client = requireSupabaseClient(),
+}: {
+  readonly client?: GubernatorSupabaseClient;
+}): UseMutationOptions<
+  PreviewWorldDeleteResult,
+  SuperadminMutationError,
+  string
+> {
+  return mutationOptions({
+    mutationFn: (worldId: string) => previewWorldDelete(client, worldId),
+    mutationKey: [...superadminQueryKeys.all, "preview-world-delete"],
+  });
+}
+
+async function previewWorldDelete(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+): Promise<PreviewWorldDeleteResult> {
+  const { data, error } = await client.rpc("preview_world_delete", {
+    p_world_id: worldId,
+  });
+
+  if (error !== null) {
+    if (error.code === "42501") {
+      throw new SuperadminMutationError({
+        code: "superadmin_not_authorized",
+        message: "Superadmin privileges are required.",
+      });
+    }
+    if (error.code === "P0002") {
+      throw new SuperadminMutationError({
+        code: "superadmin_operation_failed",
+        message: "World not found.",
+      });
+    }
+    throw new SuperadminMutationError({
+      code: "superadmin_operation_failed",
+      message: error.message,
+    });
+  }
+
+  return data as PreviewWorldDeleteResult;
 }

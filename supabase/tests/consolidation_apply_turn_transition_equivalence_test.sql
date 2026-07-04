@@ -7,6 +7,12 @@
 -- This test confirms the consolidation is NOT introducing new bugs,
 -- though it may REVEAL existing bugs (e.g., 20260618000000's broken call).
 --
+-- NOTE (issue #973): this file is unrelated to the LATER
+-- 20260806000000_archive_guard_consolidation.sql migration despite the
+-- similar name -- that migration's guard-path coverage (one archived-world
+-- rejection test per consolidated RPC, all 31 of them) lives in
+-- archived_world_manager_rpc_rejection_test.sql, not here.
+--
 -- Run with: npx supabase test db
 begin;
 

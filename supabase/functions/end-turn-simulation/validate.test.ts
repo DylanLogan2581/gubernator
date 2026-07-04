@@ -94,19 +94,61 @@ describe("parseEndTurnSimulationRequestBody", () => {
     }
   });
 
-  it("rejects request body exceeding max size", async () => {
-    const req = new Request("http://localhost/", {
-      body: JSON.stringify({ expectedTurnNumber: 1, worldId: VALID_UUID }),
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "content-length": String(1024 * 11), // 11 KB, exceeds 10 KB limit
+  it("rejects a chunked body exceeding max size with no content-length header", async () => {
+    // Simulates Transfer-Encoding: chunked (no content-length): the actual
+    // streamed bytes exceed the 10 KB cap, not just a spoofable header.
+    const oversizedPayload = JSON.stringify({
+      expectedTurnNumber: 1,
+      padding: "x".repeat(1024 * 11),
+      worldId: VALID_UUID,
+    });
+    const encoded = new TextEncoder().encode(oversizedPayload);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const chunkSize = 256;
+        for (let offset = 0; offset < encoded.byteLength; offset += chunkSize) {
+          controller.enqueue(encoded.slice(offset, offset + chunkSize));
+        }
+        controller.close();
       },
     });
+    const req = new Request("http://localhost/", {
+      body: stream,
+      duplex: "half",
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    } as RequestInit);
+
+    expect(req.headers.get("content-length")).toBeNull();
+
     const result = await parseEndTurnSimulationRequestBody(req);
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error.error.code).toBe("invalid_request");
+      expect(result.status).toBe(413);
     }
+  });
+
+  it("accepts an under-cap body streamed without content-length", async () => {
+    const encoded = new TextEncoder().encode(
+      JSON.stringify({ expectedTurnNumber: 1, worldId: VALID_UUID }),
+    );
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoded);
+        controller.close();
+      },
+    });
+    const req = new Request("http://localhost/", {
+      body: stream,
+      duplex: "half",
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    } as RequestInit);
+
+    expect(req.headers.get("content-length")).toBeNull();
+
+    const result = await parseEndTurnSimulationRequestBody(req);
+    expect(result.ok).toBe(true);
   });
 });

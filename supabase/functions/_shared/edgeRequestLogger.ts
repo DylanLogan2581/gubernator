@@ -75,8 +75,9 @@ export function logCaughtError(
  * @param requestId - The request ID for tracing
  * @param summary - A summary of the successful operation
  */
-export function logRequestSuccess(requestId: string, summary: string): void {
+export function logRequestSuccess(requestId: string, summary: string, durationMs?: number): void {
   const entry: EdgeRequestLogEntry = {
+    durationMs,
     event: "request_success",
     requestId,
     summary,
@@ -96,8 +97,10 @@ export function logRequestFailure(
   requestId: string,
   errorCode: string,
   reason: string,
+  durationMs?: number,
 ): void {
   const entry: EdgeRequestLogEntry = {
+    durationMs,
     errorCode,
     event: "request_failure",
     reason,

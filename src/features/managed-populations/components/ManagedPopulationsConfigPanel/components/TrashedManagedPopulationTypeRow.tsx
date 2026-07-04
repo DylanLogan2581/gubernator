@@ -1,5 +1,6 @@
-import { type JSX } from "react";
+import { useState, type JSX } from "react";
 
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useHardDeleteRow } from "@/hooks/useHardDeleteRow";
@@ -22,6 +23,7 @@ export function TrashedManagedPopulationTypeRow({
   readonly queryClient: QueryClient;
   readonly worldId: string;
 }): JSX.Element {
+  const [hardDeleteConfirmOpen, setHardDeleteConfirmOpen] = useState(false);
   const restoreMutation = useRestoreRow(
     restoreManagedPopulationTypeMutationOptions({ queryClient }),
     { successMessage: "Managed population type restored." },
@@ -71,16 +73,39 @@ export function TrashedManagedPopulationTypeRow({
             size="sm"
             disabled={isPending}
             onClick={() => {
-              hardDeleteMutation.mutate({
-                managedPopulationTypeId: populationType.id,
-                worldId,
-              });
+              setHardDeleteConfirmOpen(true);
             }}
           >
             Delete permanently
           </Button>
         )}
       </div>
+      {hardDeleteConfirmOpen ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setHardDeleteConfirmOpen(false);
+          }}
+          title={`Permanently delete ${populationType.name}?`}
+          description={
+            <>
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">
+                {populationType.name}
+              </span>{" "}
+              and all its data. This action cannot be undone.
+            </>
+          }
+          confirmLabel="Delete permanently"
+          isPending={hardDeleteMutation.isPending}
+          onConfirm={() => {
+            hardDeleteMutation.mutate({
+              managedPopulationTypeId: populationType.id,
+              worldId,
+            });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { persistSimulationTransition, startTurnTransition } from "./persist";
+import {
+  failStuckTurnTransition,
+  persistSimulationTransition,
+  startTurnTransition,
+} from "./persist";
 
 import type { ApplyTurnTransitionPayload } from "./transition";
 import type {
@@ -469,5 +473,83 @@ describe("persistSimulationTransition — caller token never leaked", () => {
 
     const serialized = JSON.stringify(result);
     expect(serialized).not.toContain(USER_TOKEN);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// failStuckTurnTransition (#958 — plan/persist failure cleanup)
+// ---------------------------------------------------------------------------
+
+describe("failStuckTurnTransition", () => {
+  it("calls fail_stuck_turn_transition with world/transition/reason using service-role key", async () => {
+    const fetchMock = stubEnvAndFetch({
+      body: {
+        fromTurnNumber: 5,
+        markedFailedAt: "2026-01-01T00:00:00Z",
+        status: "failed",
+        toTurnNumber: 6,
+        transitionId: TRANSITION_ID,
+        worldId: WORLD_ID,
+      },
+      status: 200,
+    });
+
+    await failStuckTurnTransition(
+      WORLD_ID,
+      TRANSITION_ID,
+      USER_ID,
+      "apply_turn_transition RPC failed: constraint violation",
+    );
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+
+    expect(url).toContain("/rest/v1/rpc/fail_stuck_turn_transition");
+    expect(url).toContain(SUPABASE_URL);
+
+    const sentBody = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(sentBody.p_world_id).toBe(WORLD_ID);
+    expect(sentBody.p_transition_id).toBe(TRANSITION_ID);
+    expect(sentBody.p_reason).toBe(
+      "apply_turn_transition RPC failed: constraint violation",
+    );
+
+    const headers = init.headers as Record<string, string>;
+    expect(headers["apikey"]).toBe(SERVICE_KEY);
+    expect(headers["authorization"]).toBe(`Bearer ${SERVICE_KEY}`);
+  });
+
+  it("does not throw when the RPC responds with an error", async () => {
+    stubEnvAndFetch({
+      body: { code: "P0001", message: "transition is not in running status" },
+      status: 500,
+    });
+
+    await expect(
+      failStuckTurnTransition(WORLD_ID, TRANSITION_ID, USER_ID, "boom"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("does not throw when the fetch call itself fails", async () => {
+    stubEnvAndFetch("fetch_throws");
+
+    await expect(
+      failStuckTurnTransition(WORLD_ID, TRANSITION_ID, USER_ID, "boom"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("does not throw when SUPABASE_SERVICE_ROLE_KEY is absent", async () => {
+    vi.stubGlobal("Deno", {
+      env: {
+        get: (name: string): string | undefined => {
+          if (name === "SUPABASE_URL") return SUPABASE_URL;
+          return undefined;
+        },
+      },
+    });
+
+    await expect(
+      failStuckTurnTransition(WORLD_ID, TRANSITION_ID, USER_ID, "boom"),
+    ).resolves.toBeUndefined();
   });
 });

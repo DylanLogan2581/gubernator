@@ -8,8 +8,13 @@ import { buildingsQueryKeys } from "@/features/buildings";
 import { calendarQueryKeys } from "@/features/calendar";
 import { citizensQueryKeys } from "@/features/citizens";
 import { depositsQueryKeys } from "@/features/deposits";
+import { eventQueryKeys } from "@/features/events";
 import { managedPopulationsQueryKeys } from "@/features/managed-populations";
 import { notificationQueryKeys } from "@/features/notifications";
+import {
+  settlementSnapshotQueryKeys,
+  snapshotAggregateQueryKeys,
+} from "@/features/reports";
 import { resourcesQueryKeys } from "@/features/resources";
 import { settlementReadinessQueryKeys } from "@/features/settlements";
 import { tradeRoutesQueryKeys } from "@/features/trade";
@@ -171,6 +176,13 @@ export function endTurnTransitionMutationOptions({
         }),
         queryClient.invalidateQueries({ queryKey: tradeRoutesQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: citizensQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: eventQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: settlementSnapshotQueryKeys.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: snapshotAggregateQueryKeys.all,
+        }),
       ]);
     },
   });

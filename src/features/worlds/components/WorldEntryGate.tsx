@@ -22,6 +22,8 @@ import {
   worldRouteAccessQueryOptions,
 } from "../queries/worldQueries";
 
+import { WorldNav } from "./WorldNav";
+
 import type { WorldRouteAccess } from "../types/worldTypes";
 
 type WorldEntryGateProps = {
@@ -153,11 +155,20 @@ function WorldEntryDecision({
     ...activePlayerCharacterRowQueryOptions(userId ?? "", worldId),
     enabled: userId !== null,
   });
-  const { isPending: contextPending, selectableCharacters } =
-    useActivePlayerCharacter();
+  const {
+    isExplicitAdminChoice,
+    isPending: contextPending,
+    selectableCharacters,
+  } = useActivePlayerCharacter();
   const autoSelectMutation = useMutation(
     setActivePlayerCharacterMutationOptions({ queryClient }),
   );
+
+  // An explicit admin choice only overrides auto-select while the viewer is
+  // still an admin; a demoted admin's stale choice shouldn't permanently
+  // lock them out of their only character.
+  const skipAutoSelect =
+    (isExplicitAdminChoice ?? false) && worldAccess.canAdmin;
 
   useAutoSelectSinglePlayerCharacter({
     activeRowCitizenId: activeRowQuery.data?.citizenId ?? null,
@@ -166,6 +177,7 @@ function WorldEntryDecision({
     mutate: autoSelectMutation.mutate,
     mutationIsPending: autoSelectMutation.isPending,
     selectableCharacters,
+    skipAutoSelect,
     userId,
     worldId,
   });
@@ -226,6 +238,21 @@ function WorldEntryDecision({
     );
   }
 
+  // No resumed PC — normally that means "pick one," but an admin who
+  // deliberately cleared their character to act as admin should re-enter
+  // admin mode instead of being forced back into the chooser.
+  if (worldAccess.canAdmin && (isExplicitAdminChoice ?? false)) {
+    return (
+      <WorldEntryContent
+        canAdmin={worldAccess.canAdmin}
+        worldId={worldId}
+        worldName={worldAccess.world.name}
+      >
+        {children}
+      </WorldEntryContent>
+    );
+  }
+
   return <PlayerCharacterChooser />;
 }
 
@@ -245,6 +272,7 @@ function WorldEntryContent({
       <WorldContextBar worldId={worldId} worldName={worldName}>
         <ActiveCharacterSwitcher canAdmin={canAdmin} worldId={worldId} />
       </WorldContextBar>
+      <WorldNav canAdmin={canAdmin} worldId={worldId} />
       {children}
     </>
   );
@@ -263,6 +291,7 @@ function useAutoSelectSinglePlayerCharacter({
   mutate,
   mutationIsPending,
   selectableCharacters,
+  skipAutoSelect,
   userId,
   worldId,
 }: {
@@ -272,6 +301,7 @@ function useAutoSelectSinglePlayerCharacter({
   readonly mutate: AutoSelectMutate;
   readonly mutationIsPending: boolean;
   readonly selectableCharacters: readonly { readonly id: string }[];
+  readonly skipAutoSelect: boolean;
   readonly userId: string | null;
   readonly worldId: string;
 }): void {
@@ -280,6 +310,11 @@ function useAutoSelectSinglePlayerCharacter({
       return;
     }
     if (mutationIsPending) {
+      return;
+    }
+    // Respects a deliberate admin choice: without this, clearing the active
+    // row to act as admin races straight back into re-selecting the only PC.
+    if (skipAutoSelect) {
       return;
     }
     if (selectableCharacters.length !== 1) {
@@ -303,6 +338,7 @@ function useAutoSelectSinglePlayerCharacter({
     mutate,
     mutationIsPending,
     selectableCharacters,
+    skipAutoSelect,
     userId,
     worldId,
   ]);

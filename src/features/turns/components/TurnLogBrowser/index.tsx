@@ -2,11 +2,12 @@
 // Renders filters + data table. Embeddable with a fixedFilter to scope to a
 // settlement, nation, citizen, or resource.
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { currentAccessContextQueryOptions } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import {
@@ -40,6 +41,13 @@ export function TurnLogBrowser({
     ...fixedFilter,
   };
 
+  const queryClient = useQueryClient();
+  const accessContextQuery = useQuery(
+    currentAccessContextQueryOptions(queryClient),
+  );
+  const isAdmin =
+    accessContextQuery.data?.canAdminWorld({ id: worldId }) ?? false;
+
   const query = useQuery(
     turnLogBrowserQueryOptions({ filter: effectiveFilter, page, worldId }),
   );
@@ -70,6 +78,7 @@ export function TurnLogBrowser({
       ) : (
         <TurnLogTable
           entries={query.data.entries}
+          isAdmin={isAdmin}
           isFetching={query.isFetching}
           onPageChange={(p) => setPage(p)}
           page={page}

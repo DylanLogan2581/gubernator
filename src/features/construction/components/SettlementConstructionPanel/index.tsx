@@ -104,6 +104,7 @@ export function SettlementConstructionPanel({
             queryClient={queryClient}
             settlementId={settlementId}
             showCancelled={showCancelled}
+            worldId={worldId}
           />
         )}
 
@@ -129,6 +130,7 @@ function QueueContent({
   queryClient,
   settlementId,
   showCancelled,
+  worldId,
 }: {
   readonly allProjects: readonly ConstructionProject[];
   readonly canAct: boolean;
@@ -136,6 +138,7 @@ function QueueContent({
   readonly queryClient: QueryClient;
   readonly settlementId: string;
   readonly showCancelled: boolean;
+  readonly worldId: string;
 }): JSX.Element {
   if (showCancelled) {
     return (
@@ -144,6 +147,7 @@ function QueueContent({
         canAct={canAct}
         queryClient={queryClient}
         settlementId={settlementId}
+        worldId={worldId}
       />
     );
   }
@@ -155,6 +159,7 @@ function QueueContent({
       logEntries={logEntries}
       queryClient={queryClient}
       settlementId={settlementId}
+      worldId={worldId}
     />
   );
 }

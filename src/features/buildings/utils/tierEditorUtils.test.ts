@@ -180,4 +180,15 @@ describe("tierEffectsToState", () => {
     expect(rows[1].id).toBeTruthy();
     expect(rows[0].id).not.toBe(rows[1].id);
   });
+
+  it("throws for an unrecognized effect type", () => {
+    const bogusEffect = {
+      amount: 1,
+      type: "unknown_effect_type",
+    } as unknown as Parameters<typeof tierEffectsToState>[0][number];
+
+    expect(() => tierEffectsToState([bogusEffect])).toThrow(
+      "Unknown effect type: unknown_effect_type",
+    );
+  });
 });

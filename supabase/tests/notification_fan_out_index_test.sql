@@ -1,5 +1,8 @@
 -- pgTAP test for notification fan-out optimization (#695)
--- Verifies that refactored static recipient computation produces identical recipients.
+-- Verifies only that the supporting partial index exists; it does NOT verify
+-- recipient-set equivalence. Recipient correctness for the static-recipient
+-- refactor (world admins + super admins + settlement/nation managers) is
+-- covered by apply_turn_transition_log_entries_and_notifications_test.sql.
 -- Run with: npx supabase test db
 begin;
 

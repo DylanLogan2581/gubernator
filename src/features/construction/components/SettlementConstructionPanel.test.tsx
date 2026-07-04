@@ -544,7 +544,13 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManageSettlement: true, isArchived: false });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    renderPanel({
+      canManageSettlement: true,
+      isArchived: false,
+      queryClient,
+    });
 
     await screen.findByText("No active projects");
     await user.click(
@@ -578,6 +584,11 @@ describe("SettlementConstructionPanel", () => {
       );
     });
     expect(toastError).not.toHaveBeenCalled();
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["forecast", "world", WORLD_ID],
+      }),
+    );
   });
 
   it("shows cap overflow error when blueprint is at max instances", async () => {
@@ -683,7 +694,13 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManageSettlement: true, isArchived: false });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    renderPanel({
+      canManageSettlement: true,
+      isArchived: false,
+      queryClient,
+    });
 
     await screen.findByText("Barracks");
 
@@ -699,6 +716,13 @@ describe("SettlementConstructionPanel", () => {
           { position: 2, projectId: PROJECT_ID_1 },
         ],
       });
+    });
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryKey: ["forecast", "world", WORLD_ID],
+        }),
+      );
     });
   });
 
@@ -831,7 +855,13 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManageSettlement: true, isArchived: false });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    renderPanel({
+      canManageSettlement: true,
+      isArchived: false,
+      queryClient,
+    });
     await screen.findByText("Barracks");
 
     const input = screen.getByRole("spinbutton", {
@@ -857,6 +887,11 @@ describe("SettlementConstructionPanel", () => {
       undefined,
     );
     expect(toastError).not.toHaveBeenCalled();
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["forecast", "world", WORLD_ID],
+      }),
+    );
   });
 
   it("calls set_construction_project_workers when bumping worker count down", async () => {
@@ -992,7 +1027,13 @@ describe("SettlementConstructionPanel", () => {
       }),
     );
 
-    renderPanel({ canManageSettlement: true, isArchived: false });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    renderPanel({
+      canManageSettlement: true,
+      isArchived: false,
+      queryClient,
+    });
 
     await screen.findByText("Barracks");
     await user.click(screen.getByRole("button", { name: "Cancel Barracks" }));
@@ -1017,6 +1058,11 @@ describe("SettlementConstructionPanel", () => {
       );
     });
     expect(toastError).not.toHaveBeenCalled();
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["forecast", "world", WORLD_ID],
+      }),
+    );
   });
 });
 

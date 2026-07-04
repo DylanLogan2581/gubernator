@@ -115,6 +115,7 @@ export function phaseStandardJobs(
 
       allLogs.push({
         category: "standard_job.processed",
+        nationId: settlement.nationId,
         payload: {
           inputsConsumed,
           jobId: job.id,
@@ -124,6 +125,7 @@ export function phaseStandardJobs(
           workerCount,
         },
         phase: "standardJobs",
+        settlementId: sid,
       });
     }
   }

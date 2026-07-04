@@ -1,0 +1,18 @@
+# Build context hygiene for docker/app/Dockerfile (context = repo root)
+.git
+node_modules
+dist
+coverage
+docker/volumes
+docker/.env
+supabase/.branches
+supabase/.temp
+aur-malware-check
+.tanstack
+.serena
+.claude
+
+# Never bake local env values into the image — Vite vars arrive as build args
+.env
+.env.*
+!.env.example

@@ -16,6 +16,18 @@ describe("currentAccessContextQueryOptions", () => {
     requireSupabaseClient.mockReset();
   });
 
+  it("returns staleTime of 5 minutes", () => {
+    const queryClient = createQueryClient();
+    const options = currentAccessContextQueryOptions(queryClient);
+    expect(options.staleTime).toBe(5 * 60 * 1000);
+  });
+
+  it("returns gcTime of 10 minutes", () => {
+    const queryClient = createQueryClient();
+    const options = currentAccessContextQueryOptions(queryClient);
+    expect(options.gcTime).toBe(10 * 60 * 1000);
+  });
+
   it("returns anonymous access context without querying world admin ids", async () => {
     const queryClient = createQueryClient();
     const from = vi.fn();

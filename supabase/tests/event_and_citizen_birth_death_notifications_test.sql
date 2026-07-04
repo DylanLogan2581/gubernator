@@ -13,7 +13,7 @@
 --
 -- World layout:
 --   World 1 (b9200001): settlement-scoped event.activated + event.expired,
---             citizen.born aggregate, citizen.died per-citizen
+--             citizen.born per-newborn, citizen.died per-citizen
 --   World 2 (b9200002): nation-scoped event.activated
 --   World 3 (b9200003): world-scoped event.activated
 --   World 4 (b9200004): instant event (pending → expired; both activated + expired)
@@ -30,7 +30,7 @@
 begin;
 
 select
-  plan (14);
+  plan (15);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -203,6 +203,53 @@ values
     'starvation',
     'DeadNpc2',
     'female'
+  );
+
+-- Two NPC citizens in World 1 Settlement 1 that will "be born" this transition
+-- (simulated via the citizenBirths payload — these rows stand in for the ones
+-- internal_apply_turn_transition_citizen_partnership_patches would have already
+-- inserted before internal_apply_turn_transition_log_entries_and_notifications
+-- runs, in the real apply_turn_transition pipeline).
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    status,
+    given_name,
+    surname,
+    sex,
+    born_on_turn_number,
+    parent_a_citizen_id,
+    parent_b_citizen_id
+  )
+values
+  (
+    'b9600000-0000-0000-0000-000000000093',
+    'b9200000-0000-0000-0000-000000000001',
+    'b9400000-0000-0000-0000-000000000001',
+    'npc',
+    'alive',
+    'Newborn1',
+    'Testson',
+    'male',
+    6,
+    'b9600000-0000-0000-0000-000000000011',
+    'b9600000-0000-0000-0000-000000000012'
+  ),
+  (
+    'b9600000-0000-0000-0000-000000000094',
+    'b9200000-0000-0000-0000-000000000001',
+    'b9400000-0000-0000-0000-000000000001',
+    'npc',
+    'alive',
+    'Newborn2',
+    null,
+    'female',
+    6,
+    'b9600000-0000-0000-0000-000000000011',
+    'b9600000-0000-0000-0000-000000000012'
   );
 
 -- Settlement-scoped sustained event (will be activated this transition)
@@ -721,8 +768,8 @@ select
     'World 1: settlement-scoped event.expired produces 4 rows (turn.completed deduped)'
   );
 
--- ── World 1, Test 5: citizen.born aggregate ──
--- Two citizen.born log entries for the same settlement → 1 notification × 4 recipients
+-- ── World 1, Test 5: citizen.born per-newborn ──
+-- Two citizenBirths entries for the same settlement → 2 newborns × 4 recipients = 8 rows
 select
   is (
     (
@@ -734,33 +781,47 @@ select
           'b9200000-0000-0000-0000-000000000001'::uuid,
           jsonb_build_object(
             'logEntries',
-            jsonb_build_array(
-              jsonb_build_object(
-                'category',
-                'citizen.born',
-                'settlementId',
-                'b9400000-0000-0000-0000-000000000001',
-                'payload',
-                '{}'::jsonb
-              ),
-              jsonb_build_object(
-                'category',
-                'citizen.born',
-                'settlementId',
-                'b9400000-0000-0000-0000-000000000001',
-                'payload',
-                '{}'::jsonb
-              )
-            ),
+            '[]'::jsonb,
             'eventStatusPatches',
             '[]'::jsonb,
             'citizenDeaths',
-            '[]'::jsonb
+            '[]'::jsonb,
+            'citizenBirths',
+            jsonb_build_array(
+              jsonb_build_object(
+                'settlementId',
+                'b9400000-0000-0000-0000-000000000001',
+                'givenName',
+                'Newborn1',
+                'surname',
+                'Testson',
+                'parentACitizenId',
+                'b9600000-0000-0000-0000-000000000011',
+                'parentBCitizenId',
+                'b9600000-0000-0000-0000-000000000012',
+                'bornOnTurnNumber',
+                6
+              ),
+              jsonb_build_object(
+                'settlementId',
+                'b9400000-0000-0000-0000-000000000001',
+                'givenName',
+                'Newborn2',
+                'surname',
+                null,
+                'parentACitizenId',
+                'b9600000-0000-0000-0000-000000000011',
+                'parentBCitizenId',
+                'b9600000-0000-0000-0000-000000000012',
+                'bornOnTurnNumber',
+                6
+              )
+            )
           )
         )
     ),
-    4,
-    'World 1: two citizen.born log entries in same settlement → 4 aggregate rows (+ already-deduped rest)'
+    8,
+    'World 1: two citizenBirths entries in same settlement → 8 per-newborn rows (4 recipients × 2 newborns)'
   );
 
 select
@@ -773,10 +834,26 @@ select
       where
         generated_in_transition_id = 'b9500000-0000-0000-0000-000000000001'
         and notification_type = 'citizen.born'
-        and citizen_id is null
+        and citizen_id = 'b9600000-0000-0000-0000-000000000093'
     ),
     4,
-    'World 1: citizen.born notifications have no citizen_id (aggregate)'
+    'World 1: 4 citizen.born rows linked to newborn citizen b9600000…0093'
+  );
+
+select
+  is (
+    (
+      select distinct
+        message_text
+      from
+        public.notifications
+      where
+        generated_in_transition_id = 'b9500000-0000-0000-0000-000000000001'
+        and notification_type = 'citizen.born'
+        and citizen_id = 'b9600000-0000-0000-0000-000000000094'
+    ),
+    'Newborn2 was born in this settlement.',
+    'World 1: citizen.born message text interpolates the newborn''s name (no surname)'
   );
 
 -- ── World 1, Test 7 & 8: citizen.died per-citizen ──
@@ -991,16 +1068,7 @@ select
           'b9200000-0000-0000-0000-000000000001'::uuid,
           jsonb_build_object(
             'logEntries',
-            jsonb_build_array(
-              jsonb_build_object(
-                'category',
-                'citizen.born',
-                'settlementId',
-                'b9400000-0000-0000-0000-000000000001',
-                'payload',
-                '{}'::jsonb
-              )
-            ),
+            '[]'::jsonb,
             'eventStatusPatches',
             jsonb_build_array(
               jsonb_build_object(
@@ -1024,12 +1092,29 @@ select
                 'deathCause',
                 null
               )
+            ),
+            'citizenBirths',
+            jsonb_build_array(
+              jsonb_build_object(
+                'settlementId',
+                'b9400000-0000-0000-0000-000000000001',
+                'givenName',
+                'Newborn1',
+                'surname',
+                'Testson',
+                'parentACitizenId',
+                'b9600000-0000-0000-0000-000000000011',
+                'parentBCitizenId',
+                'b9600000-0000-0000-0000-000000000012',
+                'bornOnTurnNumber',
+                6
+              )
             )
           )
         )
     ),
     0,
-    'Dedup: calling same transition again with same payloads inserts 0 rows'
+    'Dedup: calling same transition again with same payloads (incl. citizenBirths) inserts 0 rows'
   );
 
 select

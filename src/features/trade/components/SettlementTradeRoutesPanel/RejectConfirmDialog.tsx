@@ -15,6 +15,7 @@ type RejectConfirmDialogProps = {
   readonly rejectorCitizenId: string;
   readonly route: TradeRoute;
   readonly side: "destination" | "origin";
+  readonly worldId: string;
 };
 
 export function RejectConfirmDialog({
@@ -24,9 +25,10 @@ export function RejectConfirmDialog({
   rejectorCitizenId,
   route,
   side,
+  worldId,
 }: RejectConfirmDialogProps): JSX.Element {
   const mutation = useMutation(
-    rejectTradeRouteSideMutationOptions({ queryClient }),
+    rejectTradeRouteSideMutationOptions({ queryClient, worldId }),
   );
 
   async function handleConfirm(): Promise<void> {

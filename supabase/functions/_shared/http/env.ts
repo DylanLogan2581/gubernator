@@ -36,3 +36,22 @@ export function getRequiredRuntimeUrl(name: string): string | undefined {
   if (value === undefined) return undefined;
   return value.replace(/\/$/, "");
 }
+
+export function assertEdgeEnvVars(names: readonly string[]): void {
+  const runtime = getEdgeRuntime();
+
+  if (runtime === undefined) {
+    return;
+  }
+
+  const missing = names.filter((name) => {
+    const value = runtime.env.get(name);
+    return value === undefined || value.trim().length === 0;
+  });
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Edge function cold-start failed — missing required env vars: ${missing.join(", ")}`,
+    );
+  }
+}

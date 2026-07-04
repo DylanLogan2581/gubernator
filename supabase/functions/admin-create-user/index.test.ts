@@ -62,11 +62,18 @@ function makeRequest(
 function setupMockFetch(
   responses: Record<
     string,
-    { status: number; body: Record<string, unknown> | boolean } | Error
+    { status: number; body: Record<string, unknown> | boolean | number } | Error
   >,
 ): void {
+  // Default: under the bucket limit, so tests unrelated to rate limiting
+  // don't need to mock it explicitly. Callers that care about rate-limit
+  // behavior (429, fail-closed) override this key in `responses`.
+  const withDefaults = {
+    "rpc/increment_rate_limit_bucket": { status: 200, body: 1 },
+    ...responses,
+  };
   mockFetch.mockImplementation((url: string) => {
-    for (const [pattern, response] of Object.entries(responses)) {
+    for (const [pattern, response] of Object.entries(withDefaults)) {
       if (url.includes(pattern)) {
         if (response instanceof Error) {
           return Promise.reject(response);
@@ -397,22 +404,43 @@ describe("handleAdminCreateUserRequest", () => {
       expect(body.error?.code).toBe("invalid_request");
     });
 
-    it("returns 400 when request body exceeds max size", async () => {
+    it("returns 413 for a chunked body exceeding max size with no content-length header", async () => {
       setupMockFetch({});
 
-      const request = makeRequest(
-        {
-          email: "test@example.com",
-          username: "testuser",
-          password: "password123",
+      // Simulates Transfer-Encoding: chunked (no content-length): the actual
+      // streamed bytes exceed the 10 KB cap, not just a spoofable header.
+      const oversizedPayload = JSON.stringify({
+        email: "test@example.com",
+        password: "password123",
+        padding: "x".repeat(1024 * 11),
+        username: "testuser",
+      });
+      const encoded = new TextEncoder().encode(oversizedPayload);
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          const chunkSize = 256;
+          for (let offset = 0; offset < encoded.byteLength; offset += chunkSize) {
+            controller.enqueue(encoded.slice(offset, offset + chunkSize));
+          }
+          controller.close();
         },
-        { "content-length": String(1024 * 11) }, // 11 KB, exceeds 10 KB limit
-      );
+      });
+      const request = new Request("https://example.com/functions/v1/admin-create-user", {
+        body: stream,
+        duplex: "half",
+        headers: {
+          authorization: "Bearer valid-token",
+          "content-type": "application/json",
+        },
+        method: "POST",
+      } as RequestInit);
+
+      expect(request.headers.get("content-length")).toBeNull();
 
       const response = await handleAdminCreateUserRequest(request);
       const body = await parseResponse(response);
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(413);
       expect(body.error?.code).toBe("invalid_request");
       expect(body.ok).toBe(false);
     });
@@ -699,6 +727,9 @@ describe("handleAdminCreateUserRequest", () => {
             new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
           );
         }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
+        }
         if (url.includes("rest/v1/rpc/is_super_admin")) {
           return Promise.resolve(
             new Response(JSON.stringify(true), { status: 200 }),
@@ -750,6 +781,9 @@ describe("handleAdminCreateUserRequest", () => {
             new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
           );
         }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
+        }
         if (url.includes("rest/v1/rpc/is_super_admin")) {
           return Promise.resolve(
             new Response(JSON.stringify(true), { status: 200 }),
@@ -798,6 +832,9 @@ describe("handleAdminCreateUserRequest", () => {
           return Promise.resolve(
             new Response(JSON.stringify({ id: "user-123" }), { status: 200 }),
           );
+        }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
         }
         if (url.includes("rest/v1/rpc/is_super_admin")) {
           return Promise.resolve(
@@ -874,6 +911,206 @@ describe("handleAdminCreateUserRequest", () => {
       expect(response.status).toBe(200);
       expect(body.ok).toBe(true);
       expect(body.data?.userId).toBe("no-key-user-id");
+    });
+
+    it("same idempotency-key from different callers produces independent results", async () => {
+      const capturedUrls: string[] = [];
+
+      // Caller A's request: no cached result yet, so a new user is created.
+      mockFetch.mockImplementation((url: string) => {
+        capturedUrls.push(url);
+        if (url.includes("auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: "caller-a" }), { status: 200 }),
+          );
+        }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
+        }
+        if (url.includes("rest/v1/rpc/is_super_admin")) {
+          return Promise.resolve(new Response(JSON.stringify(true), { status: 200 }));
+        }
+        if (url.includes("admin_create_user_idempotency_keys")) {
+          return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }));
+        }
+        if (url.includes("auth/v1/admin/users")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ id: "user-from-a", email: "a@example.com" }),
+              { status: 201 },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Not found" }), { status: 404 }),
+        );
+      });
+
+      const requestA = makeRequest(
+        { email: "a@example.com", username: "usera", password: "password123" },
+        { "idempotency-key": "shared-key" },
+      );
+      const responseA = await handleAdminCreateUserRequest(requestA);
+      const bodyA = await parseResponse(responseA);
+
+      expect(bodyA.data?.userId).toBe("user-from-a");
+
+      const lookupUrlA = capturedUrls.find(
+        (url) =>
+          url.includes("admin_create_user_idempotency_keys") &&
+          url.includes("expires_at=gt.now()"),
+      );
+      expect(lookupUrlA).toContain("caller_user_id=eq.caller-a");
+      expect(lookupUrlA).toContain("idempotency_key=eq.shared-key");
+
+      // Caller B reuses the same idempotency-key value. Even though caller A
+      // cached a result under that key, caller B's lookup is scoped to their
+      // own caller_user_id and must miss, producing an independent result.
+      capturedUrls.length = 0;
+      mockFetch.mockImplementation((url: string) => {
+        capturedUrls.push(url);
+        if (url.includes("auth/v1/user")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: "caller-b" }), { status: 200 }),
+          );
+        }
+        if (url.includes("rpc/increment_rate_limit_bucket")) {
+          return Promise.resolve(new Response(JSON.stringify(1), { status: 200 }));
+        }
+        if (url.includes("rest/v1/rpc/is_super_admin")) {
+          return Promise.resolve(new Response(JSON.stringify(true), { status: 200 }));
+        }
+        if (url.includes("admin_create_user_idempotency_keys")) {
+          // Caller B has never used this key before, so the caller-scoped
+          // lookup misses even though caller A cached a result under the
+          // same idempotency_key value.
+          return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }));
+        }
+        if (url.includes("auth/v1/admin/users")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ id: "user-from-b", email: "b@example.com" }),
+              { status: 201 },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "Not found" }), { status: 404 }),
+        );
+      });
+
+      const requestB = makeRequest(
+        { email: "b@example.com", username: "userb", password: "password123" },
+        { "idempotency-key": "shared-key" },
+      );
+      const responseB = await handleAdminCreateUserRequest(requestB);
+      const bodyB = await parseResponse(responseB);
+
+      expect(bodyB.data?.userId).toBe("user-from-b");
+      expect(bodyB.data?.userId).not.toBe(bodyA.data?.userId);
+
+      const lookupUrlB = capturedUrls.find(
+        (url) =>
+          url.includes("admin_create_user_idempotency_keys") &&
+          url.includes("expires_at=gt.now()"),
+      );
+      expect(lookupUrlB).toContain("caller_user_id=eq.caller-b");
+    });
+  });
+
+  describe("rate limiting: per-user 429 enforcement", () => {
+    it("returns 429 with rate_limit_exceeded code when limit is exceeded", async () => {
+      // rate limit bucket returns count > 10 (limit for admin-create-user)
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "rpc/increment_rate_limit_bucket": { status: 200, body: 11 },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(429);
+      expect(body.error?.code).toBe("rate_limit_exceeded");
+      expect(body.ok).toBe(false);
+      expect(response.headers.get("retry-after")).not.toBeNull();
+    });
+
+    it("returns 429 with stable error message (no upstream detail)", async () => {
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "rpc/increment_rate_limit_bucket": { status: 200, body: 100 },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(body.error?.message).toBe("Too many requests. Please wait before retrying.");
+    });
+
+    it("returns 429 when rate limit bucket DB call fails (fail-closed)", async () => {
+      // Rate limit DB unreachable (non-2xx) → fail closed → request rejected
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "rpc/increment_rate_limit_bucket": {
+          status: 500,
+          body: { error: "rate limit DB unavailable" },
+        },
+        "auth/v1/admin/users": {
+          status: 201,
+          body: { id: "new-user-id", email: "test@example.com" },
+        },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      const response = await handleAdminCreateUserRequest(request);
+      const body = await parseResponse(response);
+
+      expect(response.status).toBe(429);
+      expect(body.error?.code).toBe("rate_limit_exceeded");
+      expect(body.ok).toBe(false);
+      expect(response.headers.get("retry-after")).not.toBeNull();
+    });
+
+    it("does not call auth/admin/users when rate limit is exceeded", async () => {
+      setupMockFetch({
+        "auth/v1/user": { status: 200, body: { id: "user-123" } },
+        "rest/v1/rpc/is_super_admin": { status: 200, body: true },
+        "rpc/increment_rate_limit_bucket": { status: 200, body: 11 },
+      });
+
+      const request = makeRequest({
+        email: "test@example.com",
+        username: "testuser",
+        password: "password123",
+      });
+
+      await handleAdminCreateUserRequest(request);
+
+      const calls = mockFetch.mock.calls;
+      const adminUsersCallMade = calls.some((call) =>
+        String(call[0]).includes("auth/v1/admin/users"),
+      );
+      expect(adminUsersCallMade).toBe(false);
     });
   });
 });

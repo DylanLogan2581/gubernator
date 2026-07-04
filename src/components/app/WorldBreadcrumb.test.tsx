@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { citizensQueryKeys } from "@/features/citizens";
 import type { SettlementWithNation } from "@/features/settlements";
 
 import { WorldBreadcrumb } from "./WorldBreadcrumb";
@@ -48,10 +49,15 @@ vi.mock("@/lib/supabase", () => ({
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function renderBreadcrumb(worldId: string, worldName: string): void {
+function renderBreadcrumb(
+  worldId: string,
+  worldName: string,
+  seed?: (queryClient: QueryClient) => void,
+): void {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, enabled: false } },
   });
+  seed?.(queryClient);
   render(
     <QueryClientProvider client={queryClient}>
       <WorldBreadcrumb worldId={worldId} worldName={worldName} />
@@ -308,6 +314,44 @@ describe("WorldBreadcrumb", () => {
     expect(worldLink).toHaveAttribute("href", "/worlds/world-1");
     // Loading placeholder for citizen name
     expect(screen.getByText("…")).toBeDefined();
+  });
+
+  it("keeps the … placeholder (not the bare citizen name) once the citizen has loaded but its settlement is still in flight — regression for #943", () => {
+    useParams.mockReturnValue({ worldId: "world-1", citizenId: "citizen-1" });
+    renderBreadcrumb("world-1", "Verdant Reach", (queryClient) => {
+      // Simulates a cold direct-URL load: the citizen fetch has resolved
+      // (has a settlementId) but the dependent settlement fetch hasn't
+      // resolved yet — there's no in-app-navigation cache to short-circuit it.
+      queryClient.setQueryData(citizensQueryKeys.detail("citizen-1"), {
+        bornOnTurnNumber: null,
+        citizenType: "npc",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        deathCause: null,
+        deathCauseCategory: null,
+        givenName: "Aldric",
+        id: "citizen-1",
+        name: "Aldric Stonewall",
+        namesetId: null,
+        parentACitizenId: null,
+        parentBCitizenId: null,
+        profilePhotoUrl: null,
+        roleNationId: null,
+        roleSettlementId: null,
+        roleType: "none",
+        settlementId: "settlement-1",
+        sex: null,
+        status: "alive",
+        surname: "Stonewall",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        userId: null,
+        worldId: "world-1",
+      });
+    });
+
+    // Settlement fetch is still pending: must not collapse to just the
+    // citizen name and must not drop the nation/settlement crumbs.
+    expect(screen.getByText("…")).toBeDefined();
+    expect(screen.queryByText("Aldric Stonewall")).toBeNull();
   });
 
   it("does not show 'Active world' static text", () => {

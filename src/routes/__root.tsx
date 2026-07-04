@@ -95,18 +95,37 @@ function RootErrorBoundary({ error }: ErrorComponentProps): JSX.Element | null {
   useEffect(() => {
     if (isCancelledError(error)) {
       void router.invalidate();
+      return;
     }
+    console.error("Unhandled route error", error);
   }, [error, router]);
 
   if (isCancelledError(error)) {
     return null;
   }
 
-  const message = error instanceof Error ? error.message : String(error);
-
   return (
     <div className="mx-auto max-w-4xl py-6">
-      <ErrorState title="Something went wrong" description={message} />
+      <ErrorState
+        title="Something went wrong"
+        description="An unexpected error occurred. Try again or return to the home page."
+        action={
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void router.invalidate();
+              }}
+            >
+              Try again
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/">Go to home</Link>
+            </Button>
+          </div>
+        }
+      />
     </div>
   );
 }

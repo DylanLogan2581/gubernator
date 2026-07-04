@@ -172,21 +172,11 @@ async function proposeBilateral(
 ): Promise<NationRelationship> {
   const values = parseInput(proposeBilateralInputSchema, input);
 
-  const { data: existing } = await client
-    .from("nation_relationships")
-    .select("pending_status")
-    .eq("from_nation_id", values.fromNationId)
-    .eq("to_nation_id", values.toNationId)
-    .maybeSingle<{ pending_status: string | null }>();
-
-  if (existing?.pending_status === "accepted") {
-    throw new NationRelationshipMutationError({
-      code: "relationship_already_accepted",
-      message:
-        "This proposal has already been accepted. Withdraw the existing agreement before proposing again.",
-    });
-  }
-
+  // The already-accepted guard and pending_changed_by_citizen_id attribution
+  // are enforced server-side by the nation_relationships_guard_propose
+  // trigger (see supabase/migrations/20260811000000_guard_bilateral_relationship_propose.sql).
+  // A client-side pre-check-then-upsert would be TOCTOU-prone: two concurrent
+  // proposals could both read the pre-accept state before either writes.
   const { data, error } = await client
     .from("nation_relationships")
     .upsert(
@@ -201,6 +191,14 @@ async function proposeBilateral(
     )
     .select(NATION_RELATIONSHIP_SELECT)
     .maybeSingle<NationRelationshipRow>();
+
+  if (error !== null && error !== undefined && error.code === "P0001") {
+    throw new NationRelationshipMutationError({
+      code: "relationship_already_accepted",
+      message:
+        "This proposal has already been accepted. Withdraw the existing agreement before proposing again.",
+    });
+  }
 
   return assertRelationshipRow(
     data,
@@ -236,6 +234,15 @@ async function withdrawFromBilateral(
 ): Promise<NationRelationship> {
   const values = parseInput(withdrawFromBilateralInputSchema, input);
 
+  // Decision (issue #954): current_stance resets to "neutral" on withdraw by
+  // design, not by accident. nation_relationships has no separate column for
+  // an "underlying" unilateral stance — current_stance is the single source
+  // of truth, and forming a bilateral agreement already overwrote whatever
+  // unilateral stance predated it (both directions, via the mirror trigger in
+  // supabase/migrations/20260525000001_mirror_bilateral_nation_relationships.sql).
+  // Withdraw cannot restore a value that was never retained, so resetting to
+  // neutral is the correct and only recoverable state. The mirror trigger
+  // applies the same reset to the symmetric row.
   const { data, error } = await client
     .from("nation_relationships")
     .update({

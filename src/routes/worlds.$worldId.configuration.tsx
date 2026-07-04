@@ -81,6 +81,11 @@ export const Route = createFileRoute("/worlds/$worldId/configuration")({
           to: "/worlds/$worldId",
         });
       }
+
+      // Admin capability may still be suppressed by an active player
+      // character (see useEffectiveCanAdmin) — that case is handled by
+      // WorldConfigurationPage itself, which explains the suppression
+      // instead of silently bouncing the viewer back.
     } catch (error) {
       if (!isWorldNotFoundError(error)) {
         throw error;

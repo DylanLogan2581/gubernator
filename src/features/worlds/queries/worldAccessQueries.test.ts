@@ -46,6 +46,22 @@ describe("currentUserAdminWorldIdsQueryOptions", () => {
       "user-1",
     ]);
   });
+
+  it("returns staleTime of 5 minutes", () => {
+    const options = currentUserAdminWorldIdsQueryOptions(
+      "user-1",
+      {} as GubernatorSupabaseClient,
+    );
+    expect(options.staleTime).toBe(5 * 60 * 1000);
+  });
+
+  it("returns gcTime of 10 minutes", () => {
+    const options = currentUserAdminWorldIdsQueryOptions(
+      "user-1",
+      {} as GubernatorSupabaseClient,
+    );
+    expect(options.gcTime).toBe(10 * 60 * 1000);
+  });
 });
 
 describe("currentUserPlayerCharacterWorldIdsQueryOptions", () => {

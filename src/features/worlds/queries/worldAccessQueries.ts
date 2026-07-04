@@ -35,8 +35,10 @@ export function currentUserAdminWorldIdsQueryOptions(
   // The client is the configured Supabase singleton in app code; tests inject a fake.
   // eslint-disable-next-line @tanstack/query/exhaustive-deps
   return queryOptions({
+    gcTime: 10 * 60 * 1000,
     queryFn: () => getCurrentUserAdminWorldIds(client, userId),
     queryKey: worldAccessQueryKeys.currentUserAdminWorldIds(userId),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

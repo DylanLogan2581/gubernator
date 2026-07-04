@@ -20,10 +20,9 @@ const RELATIONSHIP_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 const WORLD_ID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 
 describe("proposeBilateralMutationOptions", () => {
-  it("upserts with proposed status when no existing row", async () => {
+  it("upserts with proposed status", async () => {
     const row = createRelationshipRow({ pending_status: "proposed" });
     const { client, upsertFn } = createProposeBilateralClient({
-      selectResult: { data: null, error: null },
       upsertResult: { data: row, error: null },
     });
     const queryClient = createQueryClient();
@@ -47,35 +46,15 @@ describe("proposeBilateralMutationOptions", () => {
     );
   });
 
-  it("upserts when existing row has pending_status of proposed", async () => {
-    const row = createRelationshipRow({ pending_status: "proposed" });
+  it("throws relationship_already_accepted when the server-side guard rejects with P0001", async () => {
     const { client, upsertFn } = createProposeBilateralClient({
-      selectResult: {
-        data: { pending_status: "proposed" },
-        error: null,
+      upsertResult: {
+        data: null,
+        error: {
+          code: "P0001",
+          message: "This proposal has already been accepted.",
+        },
       },
-      upsertResult: { data: row, error: null },
-    });
-    const queryClient = createQueryClient();
-    const options = proposeBilateralMutationOptions({ client, queryClient });
-
-    await executeMutation(queryClient, options, {
-      fromNationId: FROM_NATION_ID,
-      stance: "allied",
-      toNationId: TO_NATION_ID,
-      worldId: WORLD_ID,
-    });
-
-    expect(upsertFn).toHaveBeenCalled();
-  });
-
-  it("throws relationship_already_accepted when pending_status is accepted", async () => {
-    const { client, upsertFn } = createProposeBilateralClient({
-      selectResult: {
-        data: { pending_status: "accepted" },
-        error: null,
-      },
-      upsertResult: { data: null, error: null },
     });
     const queryClient = createQueryClient();
     const options = proposeBilateralMutationOptions({ client, queryClient });
@@ -89,16 +68,18 @@ describe("proposeBilateralMutationOptions", () => {
       }),
     ).rejects.toMatchObject({ code: "relationship_already_accepted" });
 
-    expect(upsertFn).not.toHaveBeenCalled();
+    expect(upsertFn).toHaveBeenCalled();
   });
 
-  it("raises NationRelationshipMutationError when accepted", async () => {
+  it("raises NationRelationshipMutationError when the server-side guard rejects with P0001", async () => {
     const { client } = createProposeBilateralClient({
-      selectResult: {
-        data: { pending_status: "accepted" },
-        error: null,
+      upsertResult: {
+        data: null,
+        error: {
+          code: "P0001",
+          message: "This proposal has already been accepted.",
+        },
       },
-      upsertResult: { data: null, error: null },
     });
     const queryClient = createQueryClient();
     const options = proposeBilateralMutationOptions({ client, queryClient });
@@ -115,7 +96,6 @@ describe("proposeBilateralMutationOptions", () => {
 
   it("raises with code relationship_not_found when upsert returns no row", async () => {
     const { client } = createProposeBilateralClient({
-      selectResult: { data: null, error: null },
       upsertResult: { data: null, error: null },
     });
     const queryClient = createQueryClient();
@@ -345,33 +325,18 @@ type SupabaseResult<TData> =
   | { readonly data: null; readonly error: SupabaseError | null };
 
 function createProposeBilateralClient({
-  selectResult,
   upsertResult,
 }: {
-  readonly selectResult: {
-    readonly data: { readonly pending_status: string | null } | null;
-    readonly error: null;
-  };
   readonly upsertResult: SupabaseResult<NationRelationshipRow>;
 }): {
   readonly client: GubernatorSupabaseClient;
   readonly upsertFn: ReturnType<typeof vi.fn>;
 } {
-  const selectMaybeSingle = vi.fn().mockResolvedValue(selectResult);
-  const selectEq = vi.fn(function (this: object) {
-    return this;
-  });
-  const selectChain = { eq: selectEq, maybeSingle: selectMaybeSingle };
-  const selectFn = vi.fn(() => selectChain);
-
   const upsertMaybeSingle = vi.fn().mockResolvedValue(upsertResult);
   const upsertSelect = vi.fn(() => ({ maybeSingle: upsertMaybeSingle }));
   const upsertFn = vi.fn(() => ({ select: upsertSelect }));
 
-  const from = vi
-    .fn()
-    .mockReturnValueOnce({ select: selectFn })
-    .mockReturnValue({ upsert: upsertFn });
+  const from = vi.fn(() => ({ upsert: upsertFn }));
 
   const client = { from } as unknown as GubernatorSupabaseClient;
   return { client, upsertFn };

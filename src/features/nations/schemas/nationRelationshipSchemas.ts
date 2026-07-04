@@ -3,6 +3,12 @@ import { z } from "zod";
 const nationIdSchema = z.guid("Select a nation.");
 const worldIdSchema = z.guid("Select a world.");
 
+// Domain decision (issue #955): hostile and at_war are conflict states and are
+// mirrored server-side to the reciprocal row (see the
+// mirror_bilateral_nation_relationship_stance trigger in
+// supabase/migrations/20260812000000_mirror_hostile_and_at_war_nation_relationships.sql).
+// neutral and friendly stay directional/asymmetric by design — one nation's
+// disposition toward another need not be reciprocated.
 const unilateralStanceSchema = z.enum([
   "neutral",
   "friendly",

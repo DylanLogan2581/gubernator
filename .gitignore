@@ -24,6 +24,10 @@ supabase/.branches
 supabase/.temp
 supabase/snippets
 
+# Self-hosted stack runtime data (docker compose volumes)
+docker/volumes/db/data
+docker/volumes/storage
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

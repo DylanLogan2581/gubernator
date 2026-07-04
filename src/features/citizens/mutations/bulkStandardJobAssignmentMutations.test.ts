@@ -16,6 +16,7 @@ const JOB_ID = "11111111-1111-1111-1111-111111111111";
 const SETTLEMENT_ID = "22222222-2222-2222-2222-222222222222";
 const CITIZEN_A_ID = "33333333-3333-3333-3333-333333333333";
 const CITIZEN_B_ID = "44444444-4444-4444-4444-444444444444";
+const WORLD_ID = "55555555-5555-5555-5555-555555555555";
 
 const VALID_INPUT = {
   jobId: JOB_ID,
@@ -69,6 +70,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     const result = executeMutation(queryClient, options, {
@@ -98,6 +100,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     const result = await executeMutation(queryClient, options, VALID_INPUT);
@@ -132,6 +135,9 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: [...citizensQueryKeys.all, "current-assignment-for-citizen"],
     });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["forecast", "world", WORLD_ID],
+    });
   });
 
   it("raises bulk_assignment_failed when the RPC returns no row", async () => {
@@ -140,6 +146,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -159,6 +166,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -175,6 +183,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -194,6 +203,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -213,6 +223,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -229,6 +240,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(
@@ -248,6 +260,7 @@ describe("setBulkStandardJobAssignmentMutationOptions", () => {
     const options = setBulkStandardJobAssignmentMutationOptions({
       client,
       queryClient,
+      worldId: WORLD_ID,
     });
 
     await expect(

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { availableUsersQueryOptions } from "@/features/auth";
 import { nationByIdQueryOptions } from "@/features/nations";
 import { RoleAssignmentControls } from "@/features/permissions";
@@ -174,12 +175,16 @@ function CitizenLinkedUserControl({
 
   const userChoices = usersQuery.data ?? [];
   const linkedUser = userChoices.find((u) => u.id === citizen.userId);
-  const linkedUserLabel =
+  // Show a skeleton while the lookup is in flight so the raw UUID never appears.
+  const linkedUserPending = citizen.userId !== null && usersQuery.isPending;
+  const linkedUserLabel: string | null =
     citizen.userId === null
       ? null
       : linkedUser !== undefined
         ? linkedUser.username
-        : citizen.userId;
+        : usersQuery.isPending || usersQuery.isError
+          ? null
+          : "Unknown user";
 
   function unlinkRoleDescription(): string {
     if (roleScope === "nation") {
@@ -200,7 +205,16 @@ function CitizenLinkedUserControl({
   return (
     <div className="grid gap-2">
       <dl>
-        <Readout label="Linked user" value={linkedUserLabel} mono={false} />
+        {linkedUserPending ? (
+          <div className="rounded-md border border-border bg-background px-3 py-2">
+            <dt className="text-xs text-muted-foreground">Linked user</dt>
+            <dd className="mt-1">
+              <Skeleton className="h-4 w-32" />
+            </dd>
+          </div>
+        ) : (
+          <Readout label="Linked user" value={linkedUserLabel} mono={false} />
+        )}
       </dl>
       {canEdit && !isEditing ? (
         <div className="flex flex-wrap gap-2">

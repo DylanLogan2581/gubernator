@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Badge } from "@/components/ui/badge";
@@ -154,23 +155,14 @@ function WorldListContent({
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold tracking-normal">Trash</h1>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon-sm"
-                  aria-label="Hide trash"
-                  aria-pressed
-                  onClick={() => {
-                    setShowTrash(false);
-                  }}
-                >
-                  <Trash2 aria-hidden="true" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Hide trash</TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-2">
+              <TrashToggleButton
+                showTrash
+                onToggle={() => {
+                  setShowTrash(false);
+                }}
+              />
+            </div>
           </div>
           {trashedWorldsQuery.isPending ? (
             <LoadingState label="Loading trashed worlds…" />
@@ -180,7 +172,10 @@ function WorldListContent({
               description={getErrorDescription(trashedWorldsQuery.error)}
             />
           ) : trashed.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No worlds in trash.</p>
+            <AccessDeniedState
+              title="No worlds in trash"
+              description="Worlds you move to trash will appear here."
+            />
           ) : (
             <ul className="grid gap-2" aria-label="Trashed worlds">
               {trashed.map((world) => (
@@ -205,9 +200,6 @@ function WorldListContent({
         <div className="flex items-center justify-between gap-2">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-normal">Worlds</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Choose an accessible simulation world to continue.
-            </p>
           </div>
           <div className="flex items-center gap-2">
             {accessContext.isSuperAdmin ? (
@@ -227,23 +219,12 @@ function WorldListContent({
               <WorldTemplateImportButton queryClient={queryClient} />
             ) : null}
             {accessContext.isSuperAdmin ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Show trash"
-                    aria-pressed={false}
-                    onClick={() => {
-                      setShowTrash(true);
-                    }}
-                  >
-                    <Trash2 aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Show trash</TooltipContent>
-              </Tooltip>
+              <TrashToggleButton
+                showTrash={false}
+                onToggle={() => {
+                  setShowTrash(true);
+                }}
+              />
             ) : null}
           </div>
         </div>
@@ -289,6 +270,33 @@ function WorldListFrame({
   );
 }
 
+function TrashToggleButton({
+  showTrash,
+  onToggle,
+}: {
+  readonly showTrash: boolean;
+  readonly onToggle: () => void;
+}): JSX.Element {
+  const label = showTrash ? "Hide trash" : "Show trash";
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          aria-pressed={showTrash}
+          onClick={onToggle}
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 function WorldListItem({
   isSuperAdmin,
   queryClient,
@@ -298,24 +306,21 @@ function WorldListItem({
   readonly queryClient: QueryClient;
   readonly world: AccessibleWorld;
 }): JSX.Element {
+  const [trashConfirmOpen, setTrashConfirmOpen] = useState(false);
   const trashMutation = useMutation(trashWorldMutationOptions({ queryClient }));
 
-  function handleTrash(): void {
-    trashMutation.mutate(
-      { worldId: world.id },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to move world to trash.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("World moved to trash.");
-        },
-      },
-    );
+  async function handleTrash(): Promise<void> {
+    try {
+      await trashMutation.mutateAsync({ worldId: world.id });
+      notifyMutationSuccess("World moved to trash.");
+      setTrashConfirmOpen(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to move world to trash.",
+      );
+    }
   }
 
   return (
@@ -351,17 +356,42 @@ function WorldListItem({
         />
       </Link>
       {isSuperAdmin ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Move ${world.name} to trash`}
-          title="Move to trash"
-          disabled={trashMutation.isPending}
-          onClick={handleTrash}
-        >
-          <Trash2 aria-hidden="true" />
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Move ${world.name} to trash`}
+            title="Move to trash"
+            disabled={trashMutation.isPending}
+            onClick={() => {
+              setTrashConfirmOpen(true);
+            }}
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
+          {trashConfirmOpen ? (
+            <ConfirmDialog
+              open
+              onOpenChange={(open) => {
+                if (!open) setTrashConfirmOpen(false);
+              }}
+              title={`Move ${world.name} to trash?`}
+              description={
+                <>
+                  This will move{" "}
+                  <span className="font-medium text-foreground">
+                    {world.name}
+                  </span>{" "}
+                  to the trash and remove it from the world list.
+                </>
+              }
+              confirmLabel="Move to trash"
+              isPending={trashMutation.isPending}
+              onConfirm={handleTrash}
+            />
+          ) : null}
+        </>
       ) : null}
     </li>
   );
@@ -374,6 +404,7 @@ function TrashedWorldRow({
   readonly queryClient: QueryClient;
   readonly world: AccessibleWorld;
 }): JSX.Element {
+  const [hardDeleteConfirmOpen, setHardDeleteConfirmOpen] = useState(false);
   const restoreMutation = useMutation(
     restoreWorldMutationOptions({ queryClient }),
   );
@@ -411,6 +442,7 @@ function TrashedWorldRow({
         },
         onSuccess: () => {
           notifyMutationSuccess("World permanently deleted.");
+          setHardDeleteConfirmOpen(false);
         },
       },
     );
@@ -442,11 +474,32 @@ function TrashedWorldRow({
           variant="destructive"
           size="sm"
           disabled={isPending}
-          onClick={handleHardDelete}
+          onClick={() => {
+            setHardDeleteConfirmOpen(true);
+          }}
         >
           Delete permanently
         </Button>
       </div>
+      {hardDeleteConfirmOpen ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setHardDeleteConfirmOpen(false);
+          }}
+          title={`Permanently delete ${world.name}?`}
+          description={
+            <>
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">{world.name}</span>{" "}
+              and all its data. This action cannot be undone.
+            </>
+          }
+          confirmLabel="Delete permanently"
+          isPending={hardDeleteMutation.isPending}
+          onConfirm={handleHardDelete}
+        />
+      ) : null}
     </li>
   );
 }
@@ -467,10 +520,18 @@ function WorldBadge({
 
   if (world.isHidden) {
     return (
-      <Badge variant="outline">
-        <LockKeyhole className="size-3" aria-hidden="true" />
-        Hidden
-      </Badge>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="outline">
+            <LockKeyhole className="size-3" aria-hidden="true" />
+            Hidden
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          Hidden from players; only visible to admins and users with explicit
+          access.
+        </TooltipContent>
+      </Tooltip>
     );
   }
 

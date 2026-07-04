@@ -11,7 +11,7 @@
 begin;
 
 select
-  plan (9);
+  plan (12);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -324,6 +324,88 @@ select
     'P0001',
     null,
     'RPC rejects archived world'
+  );
+
+-- ===========================================================================
+-- TEST 10: reason stored in readiness_summary_jsonb when p_reason supplied
+-- Uses a fresh world to avoid conflicts with the stale/archived worlds above.
+-- ===========================================================================
+insert into
+  public.worlds (id, name, current_turn_number, visibility, status)
+values
+  (
+    'f6200000-0000-0000-0000-000000000003',
+    'FSTTR Integration World',
+    7,
+    'private',
+    'active'
+  );
+
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status,
+    started_at
+  )
+values
+  (
+    'f6300000-0000-0000-0000-000000000004',
+    'f6200000-0000-0000-0000-000000000003',
+    7,
+    8,
+    'f6100000-0000-0000-0000-000000000001',
+    'running',
+    now() - interval '1 hour'
+  );
+
+select
+  is (
+    (
+      select
+        (
+          public.fail_stuck_turn_transition (
+            'f6200000-0000-0000-0000-000000000003',
+            'f6300000-0000-0000-0000-000000000004',
+            'manual recovery by superadmin'
+          )
+        ) ->> 'status'
+    ),
+    'failed',
+    'fail_stuck_turn_transition with reason returns failed status'
+  );
+
+select
+  is (
+    (
+      select
+        readiness_summary_jsonb ->> 'recovery_reason'
+      from
+        public.turn_transitions
+      where
+        id = 'f6300000-0000-0000-0000-000000000004'
+    ),
+    'manual recovery by superadmin',
+    'recovery_reason stored in readiness_summary_jsonb'
+  );
+
+-- ===========================================================================
+-- TEST 11: after recovery, world can start next turn transition
+-- (integration test: AC #1 — world can end turn after wedged transition fixed)
+-- ===========================================================================
+select
+  lives_ok (
+    $test$
+    select public.start_turn_transition (
+      'f6200000-0000-0000-0000-000000000003',
+      7,
+      'f6100000-0000-0000-0000-000000000001'
+    )
+    $test$,
+    'start_turn_transition succeeds after stuck transition is recovered'
   );
 
 select

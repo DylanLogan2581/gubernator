@@ -555,6 +555,42 @@ describe("CitizenDetailPage", () => {
       );
     });
 
+    it("shows a skeleton instead of the raw UUID while the linked-user lookup is pending", async () => {
+      // Make the users query hang so usersQuery.isPending stays true.
+      const rpcMock = vi.fn().mockImplementation((name: string) => {
+        if (name === "current_user_player_character_world_ids") {
+          return Promise.resolve({ data: [], error: null });
+        }
+        if (name === "search_users_for_admin_picker") {
+          return new Promise<never>(() => {
+            // never resolves — keeps usersQuery in the pending state
+          });
+        }
+        return undefined;
+      });
+
+      const client = createClient({
+        adminRows: [{ world_id: WORLD_ID }],
+        citizen: createCitizenRow({
+          citizen_type: "player_character",
+          name: "Aldra",
+          user_id: USER_ID,
+        }),
+      });
+      (client as Record<string, unknown>).rpc = rpcMock;
+      requireSupabaseClient.mockReturnValue(client);
+
+      renderPage();
+
+      await screen.findByRole("heading", { level: 1, name: "Aldra" });
+
+      // Raw UUID must never appear in the document.
+      expect(screen.queryByText(USER_ID)).toBeNull();
+
+      // A skeleton placeholder must be rendered in its place.
+      expect(document.querySelector("[data-slot='skeleton']")).not.toBeNull();
+    });
+
     it("renders linked user as username when user data is available", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
@@ -712,7 +748,8 @@ describe("CitizenDetailPage", () => {
         name: "This citizen existed before the simulation began",
       }),
     ).toBeDefined();
-    expect(screen.getByText("-23")).toBeDefined();
+    expect(screen.getByText("Before simulation")).toBeDefined();
+    expect(screen.queryByText("-23")).toBeNull();
   });
 
   it("does not show a pre-simulation tooltip for citizens born on positive turns", async () => {

@@ -9,10 +9,19 @@
 // ready_set_at := null.
 //
 // Truth table — legal (autoReadyEnabled, isReadyCurrentTurn) combinations and their UI state:
-//   false, false → "not-ready"       initial state or after turn advance with auto off
-//   false, true  → "manually-ready"  user set ready this turn via set_settlement_readiness(true)
-//   true,  false → "auto-ready"      auto-ready just enabled; takes effect at next turn advance
-//   true,  true  → "auto-ready"      normal state after turn advance with auto on
+//   false, false → "not-ready",      isReadyForCurrentTurn=false  initial state or after turn
+//                                                                 advance with auto off
+//   false, true  → "manually-ready", isReadyForCurrentTurn=true   user set ready this turn via
+//                                                                 set_settlement_readiness(true)
+//   true,  false → "auto-ready",     isReadyForCurrentTurn=false  auto-ready just enabled mid-turn;
+//                                                                 takes effect at next turn advance
+//   true,  true  → "auto-ready",     isReadyForCurrentTurn=true   normal state after turn advance
+//                                                                 with auto on
+//
+// `kind` is a display modifier (does auto-ready govern this settlement?) that is independent of
+// `isReadyForCurrentTurn`, which always mirrors the underlying is_ready_current_turn flag. A
+// settlement can be "auto-ready" and still not ready for the current turn (enabled mid-turn,
+// before the next advance applies it).
 //
 // Legal transitions:
 //   not-ready      → manually-ready         set_settlement_readiness(true)          [manage permission]
@@ -33,6 +42,7 @@ export type SettlementReadinessStateInput = {
 
 export type SettlementReadinessState =
   | { readonly isReadyForCurrentTurn: true; readonly kind: "auto-ready" }
+  | { readonly isReadyForCurrentTurn: false; readonly kind: "auto-ready" }
   | { readonly isReadyForCurrentTurn: true; readonly kind: "manually-ready" }
   | { readonly isReadyForCurrentTurn: false; readonly kind: "not-ready" };
 
@@ -40,7 +50,10 @@ export function deriveSettlementReadinessState(
   input: SettlementReadinessStateInput,
 ): SettlementReadinessState {
   if (input.autoReadyEnabled) {
-    return { isReadyForCurrentTurn: true, kind: "auto-ready" };
+    return {
+      isReadyForCurrentTurn: input.isReadyCurrentTurn,
+      kind: "auto-ready",
+    };
   }
   if (input.isReadyCurrentTurn) {
     return { isReadyForCurrentTurn: true, kind: "manually-ready" };

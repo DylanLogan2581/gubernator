@@ -91,6 +91,7 @@ describe("validateJobReferencesAgainstWorld", () => {
     const issues = validateJobReferencesAgainstWorld(
       { linkedManagedPopulationTypeId: MANAGED_POP_TYPE_ID },
       [],
+      [],
       [{ id: MANAGED_POP_TYPE_ID }],
     );
 
@@ -139,19 +140,46 @@ describe("validateJobReferencesAgainstWorld", () => {
     expect(fields.filter((f) => f === "linkedDepositTypeId")).toHaveLength(1);
   });
 
-  it("uses the linkedTypes list for both deposit and managed population checks", () => {
-    const sharedList = [{ id: DEPOSIT_TYPE_ID }, { id: MANAGED_POP_TYPE_ID }];
-
+  it("checks deposit and managed population types against distinct id sets", () => {
     const issues = validateJobReferencesAgainstWorld(
       {
         linkedDepositTypeId: DEPOSIT_TYPE_ID,
         linkedManagedPopulationTypeId: MANAGED_POP_TYPE_ID,
       },
       [],
-      sharedList,
+      [{ id: DEPOSIT_TYPE_ID }],
+      [{ id: MANAGED_POP_TYPE_ID }],
     );
 
     expect(issues).toHaveLength(0);
+  });
+
+  it("rejects a linkedDepositTypeId that is actually a managed population type id", () => {
+    const issues = validateJobReferencesAgainstWorld(
+      { linkedDepositTypeId: MANAGED_POP_TYPE_ID },
+      [],
+      [{ id: DEPOSIT_TYPE_ID }],
+      [{ id: MANAGED_POP_TYPE_ID }],
+    );
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0].field).toBe("linkedDepositTypeId");
+    expect(issues[0].message).toContain(MANAGED_POP_TYPE_ID);
+    expect(issues[0].message).toContain("Deposit type");
+  });
+
+  it("rejects a linkedManagedPopulationTypeId that is actually a deposit type id", () => {
+    const issues = validateJobReferencesAgainstWorld(
+      { linkedManagedPopulationTypeId: DEPOSIT_TYPE_ID },
+      [],
+      [{ id: DEPOSIT_TYPE_ID }],
+      [{ id: MANAGED_POP_TYPE_ID }],
+    );
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0].field).toBe("linkedManagedPopulationTypeId");
+    expect(issues[0].message).toContain(DEPOSIT_TYPE_ID);
+    expect(issues[0].message).toContain("Managed population type");
   });
 
   it("defaults linkedTypes to an empty array when not provided", () => {

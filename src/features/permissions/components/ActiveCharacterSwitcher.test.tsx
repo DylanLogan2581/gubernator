@@ -88,8 +88,69 @@ describe("ActiveCharacterSwitcher", () => {
     expect(link).toBeDefined();
     expect(link).toHaveAttribute("href", "/worlds/world-42/citizens/pc-1");
     expect(screen.getByText("Solo")).toBeDefined();
-    // No dropdown trigger when there is nothing to switch to.
+    // No dropdown trigger or clear button for a non-admin with nothing to
+    // switch to and no admin access to restore.
     expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("shows an admin-paused badge and an Admin menu entry when an admin has an active character", async () => {
+    const pc = createCitizen({ id: "pc-1", name: "Solo" });
+    const clear = vi.fn();
+    renderSwitcher({
+      activeCharacter: pc,
+      canAdmin: true,
+      clear,
+      selectableCharacters: [pc],
+    });
+
+    expect(screen.getByLabelText("Admin access paused")).toBeDefined();
+    expect(screen.getByText("Admin paused")).toBeDefined();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
+    await user.click(screen.getByRole("menuitem", { name: "Admin" }));
+    expect(clear).toHaveBeenCalled();
+  });
+
+  it("offers an Admin menu entry alongside the only character (issue #978 repro)", async () => {
+    const pc = createCitizen({ id: "pc-1", name: "Solo" });
+    const clear = vi.fn();
+    const switchTo = vi.fn();
+    renderSwitcher({
+      activeCharacter: null,
+      canAdmin: true,
+      clear,
+      selectableCharacters: [pc],
+      switchTo,
+    });
+
+    // With admin mode active (no active character) but a character available
+    // to switch to, the switcher must still expose a menu rather than the
+    // static World Admin badge — otherwise there's no way back to the PC.
+    expect(screen.getByText("World Admin")).toBeDefined();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
+
+    const adminItem = screen.getByRole("menuitem", { name: /Admin/ });
+    expect(adminItem.getAttribute("aria-disabled")).toBe("true");
+
+    await user.click(screen.getByRole("menuitem", { name: /Solo/ }));
+    expect(switchTo).toHaveBeenCalledWith("pc-1");
+  });
+
+  it("does not show an Admin menu entry for non-admin viewers", async () => {
+    const pcA = createCitizen({ id: "pc-a", name: "Alpha" });
+    const pcB = createCitizen({ id: "pc-b", name: "Bravo" });
+    renderSwitcher({
+      activeCharacter: pcA,
+      canAdmin: false,
+      selectableCharacters: [pcA, pcB],
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Switch character" }));
+
+    expect(screen.queryByRole("menuitem", { name: "Admin" })).toBeNull();
   });
 
   it("renders a link to citizen detail alongside the switcher for multiple characters", () => {
@@ -132,6 +193,18 @@ describe("ActiveCharacterSwitcher", () => {
     });
   });
 
+  it("shows 'None' as the role label for a player character with roleType 'none'", () => {
+    const pc = createCitizen({ id: "pc-1", name: "Solo", roleType: "none" });
+    renderSwitcher({
+      activeCharacter: pc,
+      canAdmin: false,
+      selectableCharacters: [pc],
+    });
+
+    expect(screen.getByText("None")).toBeDefined();
+    expect(screen.queryByText("Citizen")).toBeNull();
+  });
+
   it("does not call switchTo when selecting the already-active character", async () => {
     const pcA = createCitizen({ id: "pc-a", name: "Alpha" });
     const pcB = createCitizen({ id: "pc-b", name: "Bravo" });
@@ -156,6 +229,7 @@ describe("ActiveCharacterSwitcher", () => {
 type RenderOptions = {
   readonly activeCharacter: Citizen | null;
   readonly canAdmin: boolean;
+  readonly clear?: () => void;
   readonly selectableCharacters: readonly Citizen[];
   readonly switchTo?: (id: string) => void;
   readonly worldId?: string;
@@ -164,13 +238,15 @@ type RenderOptions = {
 function renderSwitcher({
   activeCharacter,
   canAdmin,
+  clear = (): void => {},
   selectableCharacters,
   switchTo = (): void => {},
   worldId = "world-42",
 }: RenderOptions): ReturnType<typeof render> {
   const value: ActivePlayerCharacterContextValue = {
     activeCharacter,
-    clear: (): void => {},
+    clear,
+    isExplicitAdminChoice: false,
     isPending: false,
     selectableCharacters,
     switchTo,

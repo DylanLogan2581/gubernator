@@ -3,6 +3,7 @@
 export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
 export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
+export { WorldNav } from "./components/WorldNav";
 export { WorldListPage } from "./components/WorldListPage";
 export { WorldNamingConfigPanel } from "./components/WorldNamingConfigPanel";
 export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";

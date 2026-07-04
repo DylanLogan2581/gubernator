@@ -10,6 +10,8 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import {
   activeNationEventsQueryOptions,
   activeSettlementEventsQueryOptions,
+  expiredNationEventsQueryOptions,
+  expiredSettlementEventsQueryOptions,
 } from "../queries/eventQueries";
 
 import type { EventWithGroup } from "../types/eventTypes";
@@ -35,7 +37,19 @@ export function ActiveEventsCard({
     [scope, scopeId, worldId],
   ) as ReturnType<typeof activeSettlementEventsQueryOptions>;
 
+  const expiredQueryOpts = useMemo(
+    () =>
+      scope === "settlement"
+        ? expiredSettlementEventsQueryOptions(worldId, scopeId)
+        : expiredNationEventsQueryOptions(worldId, scopeId),
+    [scope, scopeId, worldId],
+  ) as ReturnType<typeof expiredSettlementEventsQueryOptions>;
+
   const eventsQuery = useQuery(queryOpts);
+  const expiredEventsQuery = useQuery({
+    ...expiredQueryOpts,
+    enabled: showExpired,
+  });
 
   if (eventsQuery.isPending) {
     return <LoadingState label="Loading events…" />;
@@ -51,8 +65,7 @@ export function ActiveEventsCard({
   }
 
   const activeEvents = eventsQuery.data ?? [];
-  // TODO: Implement expired events query when status='inactive' is available
-  const expiredEvents: EventWithGroup[] = [];
+  const expiredEvents = showExpired ? (expiredEventsQuery.data ?? []) : [];
 
   const displayEvents =
     showExpired && expiredEvents.length > 0
@@ -65,22 +78,31 @@ export function ActiveEventsCard({
         <h2 id="active-events-heading" className="text-base font-medium">
           Active Events
         </h2>
-        {expiredEvents.length > 0 && (
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="show-expired"
-              className="text-sm text-muted-foreground"
-            >
-              Show expired
-            </label>
-            <Switch
-              id="show-expired"
-              checked={showExpired}
-              onCheckedChange={setShowExpired}
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="show-expired"
+            className="text-sm text-muted-foreground"
+          >
+            Show expired
+          </label>
+          <Switch
+            id="show-expired"
+            checked={showExpired}
+            onCheckedChange={setShowExpired}
+          />
+        </div>
       </div>
+
+      {showExpired && expiredEventsQuery.isPending && (
+        <p className="text-sm text-muted-foreground">Loading expired events…</p>
+      )}
+
+      {showExpired && expiredEventsQuery.isError && (
+        <ErrorState
+          title="Expired events could not be loaded"
+          description={getErrorDescription(expiredEventsQuery.error)}
+        />
+      )}
 
       {displayEvents.length === 0 ? (
         <EmptyState

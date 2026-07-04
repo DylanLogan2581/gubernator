@@ -1,4 +1,5 @@
 export { ActiveCharacterSwitcher } from "./components/ActiveCharacterSwitcher";
+export { AdminSuppressedNotice } from "./components/AdminSuppressedNotice";
 export { SuperadminSettingsPage } from "./components/SuperadminSettingsPage";
 export { PlayerCharacterChooser } from "./components/PlayerCharacterChooser";
 export { RoleAssignmentControls } from "./components/RoleAssignmentControls";
@@ -23,16 +24,22 @@ export {
   checkCanManageSettlement,
 } from "./utils/manageAuthority";
 export { toWorldAccessTarget } from "./utils/worldAccessTarget";
+export { useEffectiveCanAdmin } from "./hooks/useEffectiveCanAdmin";
 export { useSettlementManageAuthority } from "./hooks/useSettlementManageAuthority";
 export {
   allUsersForSuperadminQueryOptions,
   allWorldsForSuperadminQueryOptions,
+  runningTransitionsQueryOptions,
+  trashedWorldsForSuperadminQueryOptions,
   worldAdminsForUserQueryOptions,
 } from "./queries/superadminQueries";
 export { superadminQueryKeys } from "./queries/superadminQueryKeys";
 export {
   createUserMutationOptions,
+  failStuckTransitionMutationOptions,
   grantWorldAdminMutationOptions,
+  previewWorldDeleteMutationOptions,
+  pruneWorldDataMutationOptions,
   revokeWorldAdminMutationOptions,
   setUserSuperAdminMutationOptions,
   SuperadminMutationError,
@@ -44,6 +51,7 @@ export type {
   SettlementManageInput,
 } from "./utils/manageAuthority";
 export type { ActiveCharacterSwitcherProps } from "./components/ActiveCharacterSwitcher";
+export type { AdminSuppressedNoticeProps } from "./components/AdminSuppressedNotice";
 export type { PlayerCharacterChooserProps } from "./components/PlayerCharacterChooser";
 export type { RoleAssignmentControlsProps } from "./components/RoleAssignmentControls/index";
 export type { ActivePlayerCharacterContextValue } from "./context/activePlayerCharacterContext";
@@ -60,5 +68,11 @@ export type {
   SuperadminUser,
   SuperadminWorld,
   SuperadminWorldAdmin,
+  SuperadminRunningTransition,
   CreateUserInput,
+  FailStuckTransitionInput,
+  FailStuckTransitionResult,
+  PreviewWorldDeleteResult,
+  PruneWorldDataInput,
+  PruneWorldDataResult,
 } from "./types/superadminTypes";

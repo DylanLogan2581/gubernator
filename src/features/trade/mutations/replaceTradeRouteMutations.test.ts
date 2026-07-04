@@ -16,6 +16,7 @@ const CITIZEN_ID = "33333333-3333-3333-3333-333333333333";
 const RESOURCE_ID = "44444444-4444-4444-4444-444444444444";
 const OLD_ROUTE_ID = "55555555-5555-5555-5555-555555555555";
 const NEW_ROUTE_ID = "66666666-6666-6666-6666-666666666666";
+const WORLD_ID = "77777777-7777-7777-7777-777777777777";
 
 const VALID_INPUT = {
   newRoutePayload: {
@@ -75,7 +76,11 @@ describe("replaceTradeRouteMutationOptions", () => {
     const rpc = vi.fn();
     const client = { rpc } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, {
@@ -90,7 +95,11 @@ describe("replaceTradeRouteMutationOptions", () => {
     const rpc = vi.fn();
     const client = { rpc } as unknown as GubernatorSupabaseClient;
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, {
@@ -114,7 +123,11 @@ describe("replaceTradeRouteMutationOptions", () => {
     const { client, calls } = createRpcClient({ data: row, error: null });
     const queryClient = createQueryClient();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     const result = await executeMutation(queryClient, options, VALID_INPUT);
 
@@ -144,12 +157,21 @@ describe("replaceTradeRouteMutationOptions", () => {
         queryKey: tradeRoutesQueryKeys.forSettlement(DESTINATION_ID),
       }),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["forecast", "world", WORLD_ID],
+      }),
+    );
   });
 
   it("raises replace_trade_route_not_found when RPC returns no row", async () => {
     const { client } = createRpcClient({ data: null, error: null });
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -162,7 +184,11 @@ describe("replaceTradeRouteMutationOptions", () => {
       error: { code: "42501", message: "permission denied" },
     });
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -175,7 +201,11 @@ describe("replaceTradeRouteMutationOptions", () => {
       error: { code: "P0002", message: "no rows" },
     });
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -188,7 +218,11 @@ describe("replaceTradeRouteMutationOptions", () => {
       error: { code: "P0001", message: "cannot replace in current status" },
     });
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -201,7 +235,11 @@ describe("replaceTradeRouteMutationOptions", () => {
       error: { code: "P0001", message: "resource is trashed" },
     });
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -214,7 +252,11 @@ describe("replaceTradeRouteMutationOptions", () => {
       error: { code: "P0001", message: "citizen not in endpoint nation" },
     });
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),
@@ -229,7 +271,11 @@ describe("replaceTradeRouteMutationOptions", () => {
       error: { code: "P0001", message: "some other error" },
     });
     const queryClient = createQueryClient();
-    const options = replaceTradeRouteMutationOptions({ client, queryClient });
+    const options = replaceTradeRouteMutationOptions({
+      client,
+      queryClient,
+      worldId: WORLD_ID,
+    });
 
     await expect(
       executeMutation(queryClient, options, VALID_INPUT),

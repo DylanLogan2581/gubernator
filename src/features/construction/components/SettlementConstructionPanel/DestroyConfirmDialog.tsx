@@ -21,14 +21,20 @@ export function DestroyConfirmDialog({
   project,
   queryClient,
   settlementId,
+  worldId,
 }: {
   readonly onClose: () => void;
   readonly project: ConstructionProject;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const destroyMutation = useMutation(
-    hardDeleteConstructionProjectMutationOptions({ queryClient, settlementId }),
+    hardDeleteConstructionProjectMutationOptions({
+      queryClient,
+      settlementId,
+      worldId,
+    }),
   );
 
   async function handleConfirm(): Promise<void> {

@@ -24,15 +24,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { currentAppUserQueryOptions } from "@/features/auth";
 import { getErrorDescription } from "@/lib/errorUtils";
 
-import { allUsersForSuperadminQueryOptions } from "../queries/superadminQueries";
+import {
+  allUsersForSuperadminQueryOptions,
+  allWorldsForSuperadminQueryOptions,
+} from "../queries/superadminQueries";
 
 import { ActivePlayerCharacterAdminDialog } from "./ActivePlayerCharacterAdminDialog";
 import { CreateUserDialog } from "./CreateUserDialog";
+import { PruneWorldDataPanel } from "./PruneWorldDataPanel";
+import { StuckTransitionPanel } from "./StuckTransitionPanel";
 import { ToggleSuperadminDialog } from "./ToggleSuperadminDialog";
 import { WorldAdminGrantDialog } from "./WorldAdminGrantDialog";
+import { WorldCascadeDeletePanel } from "./WorldCascadeDeletePanel";
 
 import type { SuperadminUser } from "../types/superadminTypes";
 
@@ -47,6 +58,7 @@ export function SuperadminSettingsPage(): JSX.Element {
   const queryClient = useQueryClient();
   const currentUserQuery = useQuery(currentAppUserQueryOptions());
   const usersQuery = useQuery(allUsersForSuperadminQueryOptions());
+  const worldsQuery = useQuery(allWorldsForSuperadminQueryOptions());
 
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
@@ -81,6 +93,7 @@ export function SuperadminSettingsPage(): JSX.Element {
   }
 
   const users = usersQuery.data ?? [];
+  const worlds = worldsQuery.data ?? [];
   const searchTrimmed = search.trim().toLowerCase();
   const filteredUsers =
     searchTrimmed.length === 0
@@ -110,16 +123,6 @@ export function SuperadminSettingsPage(): JSX.Element {
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => {
-            setDialog({ kind: "create-user" });
-          }}
-        >
-          <UserPlus aria-hidden="true" />
-          Create user
-        </Button>
       </div>
 
       <div className="mt-4 flex items-center gap-2">
@@ -131,7 +134,13 @@ export function SuperadminSettingsPage(): JSX.Element {
         </Button>
       </div>
 
-      <div className="mt-4">
+      <StuckTransitionPanel />
+
+      <PruneWorldDataPanel worlds={worlds} />
+
+      <WorldCascadeDeletePanel />
+
+      <div className="mt-4 flex items-center justify-between gap-2">
         <Input
           type="search"
           placeholder="Search by email or username…"
@@ -139,6 +148,16 @@ export function SuperadminSettingsPage(): JSX.Element {
           onChange={handleSearchChange}
           className="max-w-sm"
         />
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => {
+            setDialog({ kind: "create-user" });
+          }}
+        >
+          <UserPlus aria-hidden="true" />
+          Create user
+        </Button>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-border">
@@ -291,18 +310,26 @@ function UserRow({
             title="Manage world admin access"
           >
             <Globe2 className="size-3.5" aria-hidden="true" />
-            Worlds
+            World Admin
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onManageActivePlayerCharacter}
-            title="Manage active player character (recovery)"
-          >
-            <UserCog className="size-3.5" aria-hidden="true" />
-            Active PC
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onManageActivePlayerCharacter}
+                title="Manage active player character (recovery)"
+              >
+                <UserCog className="size-3.5" aria-hidden="true" />
+                Active PC
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Active PC (Player Character) — manage this user&apos;s active
+              character for account recovery.
+            </TooltipContent>
+          </Tooltip>
           <Button
             type="button"
             variant="ghost"

@@ -8,12 +8,16 @@
 --   • After B withdraws (updating B's own row), both rows return to neutral.
 --   • Setting a unilateral stance over an existing bilateral clears the
 --     symmetric row back to neutral.
+--   • Setting hostile or at_war mirrors the same stance to the symmetric row
+--     (issue #955), and escalating hostile -> at_war re-mirrors the new value.
+--   • De-escalating away from hostile/at_war clears the symmetric row back to
+--     neutral, same as leaving an allied/non_aggression_pact bilateral.
 --   • An unauthorized caller (no nation manager role) gets an empty set from
 --     respond_to_bilateral.
 begin;
 
 select
-  plan (9);
+  plan (12);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -353,6 +357,58 @@ values
   (
     'e2000000-0000-0000-0000-00000000000a',
     'e2000000-0000-0000-0000-00000000000b',
+    'friendly',
+    null,
+    null,
+    null
+  )
+on conflict (from_nation_id, to_nation_id) do update
+set
+  current_stance = 'friendly',
+  pending_stance = null,
+  pending_status = null,
+  pending_changed_by_citizen_id = null;
+
+reset role;
+
+select
+  is (
+    (
+      select
+        current_stance
+      from
+        public.nation_relationships
+      where
+        from_nation_id = 'e2000000-0000-0000-0000-00000000000b'
+        and to_nation_id = 'e2000000-0000-0000-0000-00000000000a'
+    ),
+    'neutral',
+    'symmetric row (B→A) is cleared to neutral when A sets a directional stance (friendly) over the bilateral'
+  );
+
+-- ===========================================================================
+-- A sets hostile (issue #955): the trigger mirrors hostile to the symmetric
+-- (B→A) row, since conflict stances are symmetric by domain decision.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+insert into
+  public.nation_relationships (
+    from_nation_id,
+    to_nation_id,
+    current_stance,
+    pending_stance,
+    pending_status,
+    pending_changed_by_citizen_id
+  )
+values
+  (
+    'e2000000-0000-0000-0000-00000000000a',
+    'e2000000-0000-0000-0000-00000000000b',
     'hostile',
     null,
     null,
@@ -378,8 +434,76 @@ select
         from_nation_id = 'e2000000-0000-0000-0000-00000000000b'
         and to_nation_id = 'e2000000-0000-0000-0000-00000000000a'
     ),
+    'hostile',
+    'symmetric row (B→A) mirrors hostile when A sets hostile toward B'
+  );
+
+-- ===========================================================================
+-- A escalates hostile -> at_war: the trigger re-mirrors the new value to the
+-- symmetric (B→A) row.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+update public.nation_relationships
+set
+  current_stance = 'at_war'
+where
+  from_nation_id = 'e2000000-0000-0000-0000-00000000000a'
+  and to_nation_id = 'e2000000-0000-0000-0000-00000000000b';
+
+reset role;
+
+select
+  is (
+    (
+      select
+        current_stance
+      from
+        public.nation_relationships
+      where
+        from_nation_id = 'e2000000-0000-0000-0000-00000000000b'
+        and to_nation_id = 'e2000000-0000-0000-0000-00000000000a'
+    ),
+    'at_war',
+    'symmetric row (B→A) mirrors at_war when A escalates from hostile to at_war'
+  );
+
+-- ===========================================================================
+-- A de-escalates from at_war back to neutral: the trigger clears the
+-- symmetric (B→A) row back to neutral, same as leaving a bilateral pact.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e0000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+update public.nation_relationships
+set
+  current_stance = 'neutral'
+where
+  from_nation_id = 'e2000000-0000-0000-0000-00000000000a'
+  and to_nation_id = 'e2000000-0000-0000-0000-00000000000b';
+
+reset role;
+
+select
+  is (
+    (
+      select
+        current_stance
+      from
+        public.nation_relationships
+      where
+        from_nation_id = 'e2000000-0000-0000-0000-00000000000b'
+        and to_nation_id = 'e2000000-0000-0000-0000-00000000000a'
+    ),
     'neutral',
-    'symmetric row (B→A) is cleared to neutral when A sets a unilateral stance over the bilateral'
+    'symmetric row (B→A) clears to neutral when A de-escalates from at_war'
   );
 
 -- ===========================================================================

@@ -8,6 +8,7 @@ export { EventCreateWizard } from "./components/EventCreateWizard";
 export { EventCreateNewPage } from "./components/EventCreateNewPage";
 export { EventEditPage } from "./components/EventEditPage";
 export { EventDetail } from "./components/EventDetail";
+export { EventDetailPage } from "./components/EventDetailPage";
 
 export {
   EventMutationError,

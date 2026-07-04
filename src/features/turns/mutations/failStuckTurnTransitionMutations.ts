@@ -77,7 +77,13 @@ export function failStuckTurnTransitionMutationOptions({
     onSuccess: async (_result, input): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
+          queryKey: turnQueryKeys.currentTurnState(input.worldId),
+        }),
+        queryClient.invalidateQueries({
           queryKey: turnQueryKeys.latestTransitionStatus(input.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: turnQueryKeys.latestTransitionOutcome(input.worldId),
         }),
       ]);
     },
@@ -119,8 +125,8 @@ async function failStuckTurnTransition(
   } catch (err) {
     const supabaseError = normalizeSupabaseError(err);
 
-    // Map Supabase error codes to specific error codes
-    const code = mapErrorCode(supabaseError.code);
+    // Map Supabase error code + message to a specific error code.
+    const code = mapErrorCode(supabaseError);
     throw new FailStuckTurnTransitionError({
       code,
       message: supabaseError.message,
@@ -129,15 +135,34 @@ async function failStuckTurnTransition(
   }
 }
 
-function mapErrorCode(
-  code: string | undefined,
-): FailStuckTurnTransitionErrorCode {
-  switch (code) {
-    case "42883": // function does not exist
-      return "fail_stuck_unauthorized";
-    case undefined:
-      return "fail_stuck_unknown_error";
-    default:
-      return "fail_stuck_unknown_error";
+function mapErrorCode({
+  code,
+  message,
+}: {
+  readonly code?: string;
+  readonly message: string;
+}): FailStuckTurnTransitionErrorCode {
+  if (code === "42501") {
+    return "fail_stuck_unauthorized";
   }
+
+  if (code === "P0001") {
+    if (message.includes("archived")) {
+      return "fail_stuck_archived_world";
+    }
+    if (message.includes("not found for world")) {
+      return "fail_stuck_transition_not_found";
+    }
+    if (message.includes("not in running status")) {
+      return "fail_stuck_transition_not_running";
+    }
+    if (message.includes("advanced past") || message.includes("stale")) {
+      return "fail_stuck_stale_transition";
+    }
+  }
+
+  // Covers 42883 (function does not exist / RPC not deployed) and any other
+  // unrecognized Postgres error: report honestly as unknown rather than
+  // guessing at a more specific (and potentially misleading) code.
+  return "fail_stuck_unknown_error";
 }

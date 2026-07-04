@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
+  useEffectiveCanAdmin,
 } from "@/features/permissions";
 import {
   SettlementReadinessListPanel,
@@ -80,6 +81,9 @@ function WorldShellContent({
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
   const { activeCharacter } = useActivePlayerCharacter();
+  const effectiveCanAdmin = useEffectiveCanAdmin(
+    worldQuery.data?.canAdmin ?? false,
+  );
   // Prefetch settlement readiness summary for SettlementReadinessListPanel
   void useQuery(settlementReadinessSummaryQueryOptions(worldId));
 
@@ -213,7 +217,7 @@ function WorldShellContent({
             active and scheduled world events
           </p>
         </Link>
-        {worldQuery.data.canAdmin ? (
+        {effectiveCanAdmin ? (
           <Link
             to="/worlds/$worldId/configuration"
             params={{ worldId }}
@@ -240,7 +244,7 @@ function WorldShellContent({
         ) : null}
       </div>
       <EndTurnControl
-        canAdmin={worldQuery.data.canAdmin}
+        canAdmin={effectiveCanAdmin}
         currentDateLabel={worldQuery.data.header.inWorldDateLabel}
         currentTurnNumber={worldQuery.data.header.currentTurnNumber}
         isArchived={worldQuery.data.header.isArchived}
@@ -251,12 +255,12 @@ function WorldShellContent({
       <TurnTransitionOutcomePanel scope="world" id={worldId} />
       <SettlementReadinessListPanel
         accessContext={accessContext}
-        canAdmin={worldQuery.data.canAdmin}
-        canManage={worldQuery.data.canManage}
+        canAdmin={effectiveCanAdmin}
+        canManage={effectiveCanAdmin}
         isArchived={worldQuery.data.header.isArchived}
         worldId={worldId}
       />
-      {worldQuery.data.canAdmin ? (
+      {effectiveCanAdmin ? (
         <WorldReportsSection
           currentTurnNumber={worldQuery.data.header.currentTurnNumber}
           worldId={worldId}

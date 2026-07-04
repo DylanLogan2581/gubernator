@@ -1,14 +1,22 @@
+import {
+  EDGE_COMMON_ENV_VAR_NAMES,
+  EDGE_SERVICE_ROLE_ENV_VAR_NAMES,
+} from "../_shared/envContract.ts";
 import { buildCorsHeaders, parseAllowedOrigins } from "../_shared/http/cors.ts";
-import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "../_shared/http/env.ts";
+import {
+  assertEdgeEnvVars,
+  getEdgeRuntime,
+  getRequiredRuntimeEnv,
+  getRequiredRuntimeUrl,
+} from "../_shared/http/env.ts";
+import { checkRateLimit, RATE_LIMITS } from "../_shared/http/rateLimit.ts";
 import { createErrorResponse, createJsonResponse } from "../_shared/http/response.ts";
-import { getAuthorizationHeader } from "../_shared/http/session.ts";
+import { getAuthorizationHeader, resolveAuthContext } from "../_shared/http/session.ts";
 import { supabaseFetch } from "../_shared/supabaseFetch.ts";
 
 import { assembleWorldTemplate } from "./assemble.ts";
 import { fetchWorldConfigData } from "./query.ts";
-
-// Deno runtime declaration (provided by Supabase Edge Runtime)
-declare const Deno: { serve: (handler: (req: Request) => Promise<Response>) => void };
+import { parseExportWorldTemplateRequestBody } from "./validate.ts";
 
 function getAllowedOrigins(): readonly string[] {
   return parseAllowedOrigins("EXPORT_WORLD_TEMPLATE_ALLOWED_ORIGINS");
@@ -74,15 +82,29 @@ async function isAuthorized(
   return worldAdminResult.value;
 }
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function handleExportWorldTemplateRequest(
   request: Request,
   options: { readonly allowedOrigins?: readonly string[] } = {},
 ): Promise<Response> {
   const allowedOrigins = options.allowedOrigins ?? getAllowedOrigins();
   const origin = request.headers.get("origin");
-  const allowedOrigin = origin !== null && allowedOrigins.includes(origin) ? origin : null;
+
+  // CORS allowlist is enforced for browser requests (those with an Origin header).
+  // Requests without the Origin header (non-browser clients, scripts, servers)
+  // bypass this check and proceed to the JWT + world-admin/super-admin checks,
+  // which are the actual access boundary.
+  if (origin !== null && !allowedOrigins.includes(origin)) {
+    return createJsonResponse(
+      createErrorResponse({
+        code: "origin_not_allowed",
+        message: "Origin not allowed.",
+      }),
+      403,
+      null,
+    );
+  }
+
+  const allowedOrigin = origin;
 
   // CORS preflight
   if (request.method === "OPTIONS") {
@@ -102,33 +124,9 @@ export async function handleExportWorldTemplateRequest(
     );
   }
 
-  // Parse body
-  let parsedBody: unknown;
-  try {
-    parsedBody = await request.json();
-  } catch {
-    return respond(
-      createErrorResponse({ code: "invalid_request", message: "Request body must be JSON." }),
-      400,
-    );
-  }
-
-  if (
-    parsedBody === null ||
-    typeof parsedBody !== "object" ||
-    !("worldId" in parsedBody) ||
-    typeof (parsedBody as Record<string, unknown>).worldId !== "string" ||
-    !UUID_REGEX.test((parsedBody as Record<string, unknown>).worldId as string)
-  ) {
-    return respond(
-      createErrorResponse({ code: "invalid_request", message: "worldId must be a UUID." }),
-      400,
-    );
-  }
-
-  const worldId = (parsedBody as Record<string, unknown>).worldId as string;
-
-  // Auth: extract JWT
+  // Auth: extract JWT. Checked before the body is read (cheap, no network
+  // round-trip) so an unauthenticated caller is rejected before anything is
+  // buffered.
   const authorizationHeader = getAuthorizationHeader(request);
   if (authorizationHeader === null) {
     return respond(
@@ -136,6 +134,13 @@ export async function handleExportWorldTemplateRequest(
       401,
     );
   }
+
+  const validateResult = await parseExportWorldTemplateRequestBody(request);
+  if (!validateResult.ok) {
+    return respond(validateResult.error, validateResult.status);
+  }
+
+  const worldId = validateResult.body.worldId;
 
   const supabaseUrl = getRequiredRuntimeUrl("SUPABASE_URL");
   const supabaseAnonKey = getRequiredRuntimeEnv("SUPABASE_ANON_KEY");
@@ -148,6 +153,49 @@ export async function handleExportWorldTemplateRequest(
       }),
       500,
     );
+  }
+
+  // Resolve the caller's user id for rate limiting, the same /auth/v1/user
+  // lookup end-turn-simulation and admin-create-user use for their buckets.
+  const authContextResult = await resolveAuthContext<{ readonly userId: string }>(
+    request,
+    {
+      fetchFn: fetch,
+      supabaseUrl,
+      supabaseAnonKey,
+      onAuthError: () => ({
+        ok: false,
+        error: createErrorResponse({
+          code: "unauthenticated",
+          message: "Authentication required.",
+        }),
+        status: 401,
+      }),
+      onSuccess: (context) => ({ ok: true, context }),
+    },
+  );
+
+  if (!authContextResult.ok) {
+    return respond(authContextResult.error, authContextResult.status);
+  }
+
+  // Rate limit: this endpoint fans out into a 7-table parallel export
+  // (fetchWorldConfigData), so cap per-user calls before doing any of that
+  // work or the authorization RPC round-trips below.
+  const rateLimitResult = await checkRateLimit(
+    authContextResult.context.userId,
+    "export-world-template",
+    RATE_LIMITS["export-world-template"],
+  );
+  if (!rateLimitResult.ok) {
+    const body = createErrorResponse({
+      code: "rate_limit_exceeded",
+      message: "Too many requests. Please wait before retrying.",
+    });
+    const res = respond(body, 429);
+    const headers = new Headers(res.headers);
+    headers.set("retry-after", String(rateLimitResult.retryAfterSeconds));
+    return new Response(res.body, { headers, status: 429 });
   }
 
   // Authz: must be world admin or super admin
@@ -202,4 +250,10 @@ export async function handleExportWorldTemplateRequest(
   return respond({ ok: true, data: template }, 200);
 }
 
-Deno.serve((req: Request) => handleExportWorldTemplateRequest(req));
+assertEdgeEnvVars([...EDGE_COMMON_ENV_VAR_NAMES, ...EDGE_SERVICE_ROLE_ENV_VAR_NAMES]);
+
+const edgeRuntime = getEdgeRuntime();
+
+if (edgeRuntime !== undefined) {
+  edgeRuntime.serve((req: Request) => handleExportWorldTemplateRequest(req));
+}

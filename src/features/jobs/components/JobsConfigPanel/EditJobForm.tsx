@@ -117,9 +117,6 @@ export function EditJobForm({
 
     // Reference validation before Zod to surface deleted-resource errors as
     // inline errors rather than generic "invalid" messages.
-    const linkedTypes: readonly { id: string }[] =
-      job.jobType === "deposit" ? activeDepositTypes : availableManagedPopTypes;
-
     const refIssues = validateJobReferencesAgainstWorld(
       {
         inputsJson,
@@ -138,7 +135,8 @@ export function EditJobForm({
         outputsJson,
       },
       resources,
-      linkedTypes,
+      activeDepositTypes,
+      availableManagedPopTypes,
     );
 
     if (refIssues.length > 0) {

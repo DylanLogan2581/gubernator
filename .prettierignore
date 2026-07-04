@@ -16,3 +16,8 @@ supabase/seed.sql
 
 # seed regeneration tooling is hand-formatted dev scripting.
 supabase/seed_tools/
+
+# Vendored Supabase self-hosted docker init scripts (psql `\set` meta-commands
+# aren't valid SQL, so sql-formatter can't parse them). Kept diffable against
+# upstream.
+docker/volumes/db/

@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 
 import { normalizeSupabaseError, type AuthUiError } from "@/features/auth";
+import { settlementForecastQueryKeys } from "@/features/settlements";
 import { createMutationError, type MutationIssue } from "@/lib/mutationError";
 import { parseMutationInput } from "@/lib/parseMutationInput";
 import {
@@ -22,7 +23,6 @@ import type {
   BulkStandardJobAssignmentResult,
   SettlementJobCount,
 } from "../types/bulkAssignmentTypes";
-import type { CitizenAggregateStats } from "../types/citizenTypes";
 import type { z } from "zod";
 
 type BulkStandardJobAssignmentMutationErrorCode =
@@ -57,9 +57,11 @@ type RpcResultRow = {
 export function setBulkStandardJobAssignmentMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
+  worldId,
 }: {
   readonly client?: GubernatorSupabaseClient;
   readonly queryClient: QueryClient;
+  readonly worldId: string;
 }): SetBulkStandardJobAssignmentMutationOptions {
   return mutationOptions({
     mutationFn: (input: SetBulkStandardJobAssignmentInput) =>
@@ -67,7 +69,6 @@ export function setBulkStandardJobAssignmentMutationOptions({
     mutationKey: [...citizensQueryKeys.all, "set-bulk-standard-job-assignment"],
     onSuccess: async (result, input): Promise<void> => {
       const values = setBulkStandardJobAssignmentInputSchema.parse(input);
-      const delta = result.after - result.before;
 
       // Optimistically update job counts cache so all rows see the change immediately
       queryClient.setQueryData(
@@ -82,19 +83,11 @@ export function setBulkStandardJobAssignmentMutationOptions({
         },
       );
 
-      // Optimistically update aggregate stats cache (unassigned count) so it reflects immediately
-      queryClient.setQueryData(
-        citizensQueryKeys.settlementAggregateStats(values.settlementId),
-        (prev: CitizenAggregateStats | undefined) => {
-          if (prev === null || prev === undefined) return prev;
-          return {
-            ...prev,
-            unassignedNpcCount: Math.max(0, prev.unassignedNpcCount - delta),
-          };
-        },
-      );
-
-      // Invalidate queries to ensure consistency on background refresh
+      // Invalidate queries to ensure consistency on background refresh. The
+      // aggregate unassigned-npc-count is not optimistically patched here —
+      // the RPC may pull citizens from other jobs, not just the unassigned
+      // pool, so an after-before delta would be wrong; invalidation refetches
+      // the true value instead.
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: citizensQueryKeys.assignmentsInSettlement(
@@ -119,7 +112,7 @@ export function setBulkStandardJobAssignmentMutationOptions({
           ],
         }),
         queryClient.invalidateQueries({
-          queryKey: ["forecast"],
+          queryKey: settlementForecastQueryKeys.byWorld(worldId),
         }),
       ]);
     },

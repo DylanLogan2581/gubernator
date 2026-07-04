@@ -115,9 +115,11 @@ function ScopeCell({
 function PayloadDetailRow({
   entry,
   colSpan,
+  isAdmin,
 }: {
   readonly entry: TurnLogBrowserEntry;
   readonly colSpan: number;
+  readonly isAdmin: boolean;
 }): JSX.Element {
   return (
     <tr className="bg-muted/30">
@@ -126,6 +128,7 @@ function PayloadDetailRow({
           <TurnLogPayloadRenderer
             logCategory={entry.logCategory}
             payload={entry.payloadJsonb}
+            isAdmin={isAdmin}
           />
         </div>
       </td>
@@ -137,7 +140,10 @@ function PayloadDetailRow({
 // Column definitions
 // ---------------------------------------------------------------------------
 
-function buildColumns(worldId: string): ColumnDef<TurnLogBrowserEntry>[] {
+function buildColumns(
+  worldId: string,
+  isAdmin: boolean,
+): ColumnDef<TurnLogBrowserEntry>[] {
   return [
     {
       id: "expand",
@@ -177,6 +183,7 @@ function buildColumns(worldId: string): ColumnDef<TurnLogBrowserEntry>[] {
         <TurnLogPayloadRenderer
           logCategory={row.original.logCategory}
           payload={row.original.payloadJsonb}
+          isAdmin={isAdmin}
         />
       ),
     },
@@ -189,6 +196,7 @@ function buildColumns(worldId: string): ColumnDef<TurnLogBrowserEntry>[] {
 
 type TurnLogTableProps = {
   readonly entries: readonly TurnLogBrowserEntry[];
+  readonly isAdmin: boolean;
   readonly isFetching: boolean;
   readonly onPageChange: (page: number) => void;
   readonly page: number;
@@ -198,6 +206,7 @@ type TurnLogTableProps = {
 
 export function TurnLogTable({
   entries,
+  isAdmin,
   isFetching,
   onPageChange,
   page,
@@ -208,7 +217,7 @@ export function TurnLogTable({
     () => new Set(),
   );
 
-  const columns = buildColumns(worldId);
+  const columns = buildColumns(worldId, isAdmin);
   const pageCount = Math.ceil(totalCount / TURN_LOG_PAGE_SIZE);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable is a TanStack Table hook, not a React hook
@@ -323,6 +332,7 @@ export function TurnLogTable({
                       <PayloadDetailRow
                         entry={row.original}
                         colSpan={columns.length}
+                        isAdmin={isAdmin}
                       />
                     ) : null}
                   </Fragment>

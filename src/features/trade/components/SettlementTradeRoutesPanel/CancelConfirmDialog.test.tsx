@@ -32,6 +32,7 @@ const ROUTE_ID = "00000000-0000-0000-0000-000000000010";
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000001";
 const DEST_SETTLEMENT_ID = "00000000-0000-0000-0000-000000000002";
 const CITIZEN_ID = "00000000-0000-0000-0000-000000000040";
+const WORLD_ID = "00000000-0000-0000-0000-000000000050";
 
 function makeRoute(): TradeRoute {
   return {
@@ -107,6 +108,7 @@ function renderDialog({
         queryClient={queryClient}
         route={makeRoute()}
         traderCount={traderCount}
+        worldId={WORLD_ID}
       />
     </QueryClientProvider>,
   );
