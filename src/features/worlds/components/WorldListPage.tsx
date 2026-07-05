@@ -56,7 +56,6 @@ import type { WorldTemplate } from "@/shared/worldTemplateSchema";
 
 import {
   createWorldMutationOptions,
-  hardDeleteWorldMutationOptions,
   restoreWorldMutationOptions,
   trashWorldMutationOptions,
 } from "../mutations/worldAdminMutations";
@@ -165,6 +164,12 @@ function WorldListContent({
               />
             }
           />
+          <p className="text-sm text-muted-foreground">
+            Permanent deletion happens in Superadmin → Worlds.{" "}
+            <Button asChild variant="link" size="sm" className="h-auto p-0">
+              <Link to="/superadmin/worlds">Go to Superadmin → Worlds</Link>
+            </Button>
+          </p>
           {trashedWorldsQuery.isPending ? (
             <LoadingState label="Loading trashed worlds…" />
           ) : trashedWorldsQuery.isError ? (
@@ -284,12 +289,13 @@ function TrashToggleButton({
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="sm"
           aria-label={label}
           aria-pressed={showTrash}
           onClick={onToggle}
         >
           <Trash2 aria-hidden="true" />
+          Trash
         </Button>
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
@@ -407,14 +413,9 @@ function TrashedWorldRow({
   readonly queryClient: QueryClient;
   readonly world: AccessibleWorld;
 }): JSX.Element {
-  const [hardDeleteConfirmOpen, setHardDeleteConfirmOpen] = useState(false);
   const restoreMutation = useMutation(
     restoreWorldMutationOptions({ queryClient }),
   );
-  const hardDeleteMutation = useMutation(
-    hardDeleteWorldMutationOptions({ queryClient }),
-  );
-  const isPending = restoreMutation.isPending || hardDeleteMutation.isPending;
 
   function handleRestore(): void {
     restoreMutation.mutate(
@@ -427,25 +428,6 @@ function TrashedWorldRow({
         },
         onSuccess: () => {
           notifyMutationSuccess("World restored.");
-        },
-      },
-    );
-  }
-
-  function handleHardDelete(): void {
-    hardDeleteMutation.mutate(
-      { worldId: world.id },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to permanently delete world.",
-          );
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("World permanently deleted.");
-          setHardDeleteConfirmOpen(false);
         },
       },
     );
@@ -467,42 +449,12 @@ function TrashedWorldRow({
           type="button"
           variant="outline"
           size="sm"
-          disabled={isPending}
+          disabled={restoreMutation.isPending}
           onClick={handleRestore}
         >
           Restore
         </Button>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          disabled={isPending}
-          onClick={() => {
-            setHardDeleteConfirmOpen(true);
-          }}
-        >
-          Delete permanently
-        </Button>
       </div>
-      {hardDeleteConfirmOpen ? (
-        <ConfirmDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setHardDeleteConfirmOpen(false);
-          }}
-          title={`Permanently delete ${world.name}?`}
-          description={
-            <>
-              This will permanently delete{" "}
-              <span className="font-medium text-foreground">{world.name}</span>{" "}
-              and all its data. This action cannot be undone.
-            </>
-          }
-          confirmLabel="Delete permanently"
-          isPending={hardDeleteMutation.isPending}
-          onConfirm={handleHardDelete}
-        />
-      ) : null}
     </li>
   );
 }
