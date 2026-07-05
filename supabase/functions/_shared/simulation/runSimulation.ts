@@ -419,10 +419,12 @@ export function runSimulation(
     ...p12dot5.stockpileDeltas,
   ];
 
+  const allCitizenBirths = [...p9.citizenBirths, ...p11.citizenBirths];
+
   const p13 = phaseLogsAndSnapshots(context, {
     allDeaths,
     buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
-    citizenBirths: p9.citizenBirths,
+    citizenBirths: allCitizenBirths,
     consumptionDeltas,
     depositUpdates: p2.depositUpdates,
     managedPopulationUpdates,
@@ -493,7 +495,7 @@ export function runSimulation(
     ],
     buildingStateChanges: [...p4.buildingStateChanges, ...p11.buildingStateChanges],
     buildingsCreated: p3.buildingsCreated,
-    citizenBirths: p9.citizenBirths,
+    citizenBirths: allCitizenBirths,
     citizenDeaths: allDeaths,
     citizenPatches: p9.citizenPatches,
     constructionUpdates: p3.constructionUpdates,

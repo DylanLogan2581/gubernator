@@ -251,6 +251,60 @@ describe("EventCreateEffectsStep", () => {
     });
   });
 
+  describe("population gain effect", () => {
+    it("renders the Population Gain card with a Citizens-to-add field and no percent mode toggle", () => {
+      const effect: EffectRow = {
+        effectType: "population_boost",
+        isPercent: false,
+        amountValue: 5,
+        multiplierValue: null,
+        resourceId: null,
+        jobId: null,
+        managedPopulationInstanceId: null,
+        managedPopulationTypeId: null,
+        depositInstanceId: null,
+        settlementBuildingId: null,
+      };
+
+      renderStep([effect]);
+
+      expect(screen.getByText("Population Gain")).toBeInTheDocument();
+      expect(screen.getByText("Citizens to add")).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Positive number, applied each turn the event is active.",
+        ),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Flat amount")).not.toBeInTheDocument();
+      expect(screen.queryByText("Percent of current")).not.toBeInTheDocument();
+    });
+
+    it("updates amountValue when the Citizens-to-add input changes", async () => {
+      const user = userEvent.setup();
+      const effect: EffectRow = {
+        effectType: "population_boost",
+        isPercent: false,
+        amountValue: null,
+        multiplierValue: null,
+        resourceId: null,
+        jobId: null,
+        managedPopulationInstanceId: null,
+        managedPopulationTypeId: null,
+        depositInstanceId: null,
+        settlementBuildingId: null,
+      };
+
+      const { onEffectsChange } = renderStep([effect]);
+
+      const input = screen.getByLabelText("Citizens to add");
+      await user.type(input, "5");
+
+      expect(onEffectsChange).toHaveBeenLastCalledWith([
+        expect.objectContaining({ amountValue: 5 }),
+      ]);
+    });
+  });
+
   describe("production multiplier zero-jobs validation", () => {
     it("shows a validation message when Select Jobs mode has no jobs chosen", async () => {
       queryData.jobs = [{ id: "job-1", name: "Farmer" }];

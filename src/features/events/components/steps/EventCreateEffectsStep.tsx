@@ -119,6 +119,12 @@ const EFFECT_TYPE_OPTIONS: Array<{
       "Kill a number of citizens (flat count or percent of living population)",
   },
   {
+    value: "population_boost",
+    label: "Population Gain",
+    description:
+      "Add citizens to targeted settlements each turn the event is active",
+  },
+  {
     value: "managed_population_change",
     label: "Managed Population Change",
     description: "Adjust managed population (animals, etc.)",
@@ -674,33 +680,35 @@ function EffectEditor({
 
         {isModifyPopulation && (
           <>
-            <div className="space-y-2">
-              <Label>Mode</Label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={!effect.isPercent}
-                    onChange={() => onUpdate({ ...effect, isPercent: false })}
-                  />
-                  <span className="text-sm">Flat amount</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={effect.isPercent}
-                    onChange={() => onUpdate({ ...effect, isPercent: true })}
-                  />
-                  <span className="text-sm">Percent of current</span>
-                </label>
+            {effect.effectType === "population_loss" && (
+              <div className="space-y-2">
+                <Label>Mode</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={!effect.isPercent}
+                      onChange={() => onUpdate({ ...effect, isPercent: false })}
+                    />
+                    <span className="text-sm">Flat amount</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={effect.isPercent}
+                      onChange={() => onUpdate({ ...effect, isPercent: true })}
+                    />
+                    <span className="text-sm">Percent of current</span>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor={`amount-${index}-${effect.effectType}`}>
                 {effect.effectType === "population_loss"
                   ? "Citizens to kill"
-                  : `${effect.isPercent ? "Percent" : "Amount"} (positive = boost, negative = loss)`}
+                  : "Citizens to add"}
               </Label>
               <Input
                 id={`amount-${index}-${effect.effectType}`}
@@ -710,7 +718,7 @@ function EffectEditor({
                     ? "e.g., 100"
                     : effect.isPercent
                       ? "e.g., 10 for 10%"
-                      : "e.g., 100 or -50"
+                      : "e.g., 5"
                 }
                 value={effect.amountValue ?? ""}
                 onChange={(e) =>
@@ -725,6 +733,11 @@ function EffectEditor({
                 <p className="text-xs text-muted-foreground">
                   Positive number. For population gain use the Population Gain
                   effect.
+                </p>
+              )}
+              {effect.effectType === "population_boost" && (
+                <p className="text-xs text-muted-foreground">
+                  Positive number, applied each turn the event is active.
                 </p>
               )}
             </div>
