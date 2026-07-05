@@ -43,6 +43,16 @@ export function categoricalForegroundClassName(slot: CategoricalSlot): string {
   return CATEGORICAL_FOREGROUND_CLASSNAMES[slot - 1];
 }
 
+/**
+ * Raw CSS color for a slot's foreground token (e.g. `var(--category-3-foreground)`).
+ * For contexts that need an actual paintable color rather than a Tailwind
+ * class — chart fills/strokes (recharts, canvas) can't consume `bg-*`/`text-*`
+ * classes.
+ */
+export function categoricalForegroundCssVar(slot: CategoricalSlot): string {
+  return `var(--category-${String(slot)}-foreground)`;
+}
+
 // Deterministic string hash (djb2-style, no RNG) — stable across renders and
 // sessions for a given id, matching the prior art in WorldListPage's
 // worldIconPalette.
