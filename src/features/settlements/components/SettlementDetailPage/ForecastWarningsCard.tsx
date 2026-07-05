@@ -40,7 +40,7 @@ export function SettlementForecastWarningsCard({
   }
 
   const forecast =
-    forecastQuery.data.forecastSnapshot.bySettlement[settlementId] ?? null;
+    forecastQuery.data?.forecastSnapshot.bySettlement[settlementId] ?? null;
   const warnings =
     forecast === null ? [] : deriveSettlementForecastWarnings(forecast);
 
