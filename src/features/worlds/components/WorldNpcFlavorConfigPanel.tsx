@@ -11,8 +11,8 @@ import { toast } from "sonner";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { PoolEditor } from "@/components/shared/PoolEditor";
 import { sanitizePoolEntries } from "@/components/shared/PoolEditorUtils";
+import { TagListEditor } from "@/components/shared/TagListEditor";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { generateNpcFlavor, renderNpcFlavorLine } from "@/features/citizens";
@@ -199,7 +199,7 @@ function WorldNpcFlavorConfigPanelContent({
                 />
               </Tabs.List>
               <Tabs.Content value="traits" className="mt-3">
-                <PoolEditor
+                <TagListEditor
                   label="Traits"
                   entries={draftConfig.traits}
                   onChange={(traits) => {
@@ -209,7 +209,7 @@ function WorldNpcFlavorConfigPanelContent({
                 />
               </Tabs.Content>
               <Tabs.Content value="contradictions" className="mt-3">
-                <PoolEditor
+                <TagListEditor
                   label="Contradictions"
                   entries={draftConfig.contradictions}
                   onChange={(contradictions) => {
@@ -222,7 +222,7 @@ function WorldNpcFlavorConfigPanelContent({
                 />
               </Tabs.Content>
               <Tabs.Content value="goals" className="mt-3">
-                <PoolEditor
+                <TagListEditor
                   label="Goals"
                   entries={draftConfig.goals}
                   onChange={(goals) => {
@@ -232,7 +232,7 @@ function WorldNpcFlavorConfigPanelContent({
                 />
               </Tabs.Content>
               <Tabs.Content value="flaws" className="mt-3">
-                <PoolEditor
+                <TagListEditor
                   label="Flaws"
                   entries={draftConfig.flaws}
                   onChange={(flaws) => {

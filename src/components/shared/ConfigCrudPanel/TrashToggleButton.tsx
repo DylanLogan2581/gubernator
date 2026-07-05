@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore } from "lucide-react";
 import { type JSX } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,18 @@ export function TrashToggleButton({
     <Button
       type="button"
       variant={isActive ? "secondary" : "ghost"}
-      size="icon-sm"
+      size="sm"
       aria-label={isActive ? "Hide trash" : "Show trash"}
       aria-pressed={isActive}
       title={isActive ? "Hide trash" : "Show trash"}
       onClick={onClick}
     >
-      <Trash2 aria-hidden="true" />
+      {isActive ? (
+        <ArchiveRestore aria-hidden="true" />
+      ) : (
+        <Archive aria-hidden="true" />
+      )}
+      Trash
     </Button>
   );
 }

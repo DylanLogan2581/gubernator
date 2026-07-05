@@ -75,6 +75,10 @@ describe("WorldNpcFlavorConfigPanel", () => {
     await screen.findByRole("heading", { name: "NPC flavor pools" });
     expect(useBlockerMock.mock.calls[0][0].shouldBlockFn()).toBe(false);
 
+    await user.type(
+      screen.getByRole("textbox", { name: "Add traits entry" }),
+      "wry",
+    );
     await user.click(screen.getAllByRole("button", { name: "Add entry" })[0]);
 
     expect(
