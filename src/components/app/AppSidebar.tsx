@@ -49,6 +49,11 @@ import type { JSX } from "react";
 // this unconditionally so the SidebarProvider/SidebarInset shape stays
 // constant across the auth-pending -> resolved transition (avoiding a
 // remount of routed page content); this component itself opts out instead.
+// Prefix-aware active match: exact match, or a descendant route below href.
+function isNavPathActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function AppSidebar(): JSX.Element | null {
   const location = useLocation();
   const {
@@ -76,12 +81,23 @@ export function AppSidebar(): JSX.Element | null {
     return null;
   }
 
+  // Prefix-aware so /superadmin/anything highlights an item once
+  // /superadmin gets sub-routes, with the more specific item (Template
+  // Library) winning over its ancestor (Superadmin) when both would match.
+  const isTemplateLibraryActive = isNavPathActive(
+    location.pathname,
+    "/superadmin/templates",
+  );
+  const isSuperadminActive =
+    isNavPathActive(location.pathname, "/superadmin") &&
+    !isTemplateLibraryActive;
+
   const adminItems: NavGroupItem[] = effectiveIsSuperAdmin
     ? [
         {
           key: "superadmin",
           label: "Superadmin",
-          isActive: location.pathname === "/superadmin",
+          isActive: isSuperadminActive,
           link: (
             <Link to="/superadmin">
               <ShieldCheck aria-hidden="true" />
@@ -92,7 +108,7 @@ export function AppSidebar(): JSX.Element | null {
         {
           key: "template-library",
           label: "Template Library",
-          isActive: location.pathname === "/superadmin/templates",
+          isActive: isTemplateLibraryActive,
           link: (
             <Link to="/superadmin/templates">
               <BookOpen aria-hidden="true" />
@@ -136,7 +152,7 @@ export function AppSidebar(): JSX.Element | null {
               },
             ]}
           />
-          <NavGroup label="ADMIN" items={adminItems} />
+          <NavGroup label="Superadmin" items={adminItems} />
         </SidebarContent>
         <SidebarRail />
       </Sidebar>
@@ -478,14 +494,19 @@ export function AppSidebar(): JSX.Element | null {
             />
           }
         />
-        <NavGroup label="WORLD" items={worldItems} />
-        {effectiveCanAdmin ? (
-          <ConfigurationNavItem
-            isSuperAdmin={effectiveIsSuperAdmin}
-            worldId={worldId}
-          />
-        ) : null}
-        <NavGroup label="ADMIN" items={adminItems} />
+        <NavGroup
+          label="WORLD"
+          items={worldItems}
+          extraContent={
+            effectiveCanAdmin ? (
+              <ConfigurationNavItem
+                isSuperAdmin={effectiveIsSuperAdmin}
+                worldId={worldId}
+              />
+            ) : null
+          }
+        />
+        <NavGroup label="Superadmin" items={adminItems} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

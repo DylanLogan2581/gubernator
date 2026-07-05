@@ -52,7 +52,7 @@ export function ScopeGroupSwitcher({
           <button type="button">
             <span className="truncate">{title}</span>
             <ChevronsUpDown
-              className="ml-auto size-3.5 shrink-0 text-sidebar-foreground/50"
+              className="ml-auto size-4 shrink-0 text-sidebar-foreground/50"
               aria-hidden="true"
             />
           </button>

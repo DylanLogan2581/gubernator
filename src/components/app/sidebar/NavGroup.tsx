@@ -19,6 +19,10 @@ export type NavGroupItem = {
 };
 
 type NavGroupProps = {
+  // Rendered as a trailing sibling <li> inside the same <SidebarMenu>/<ul> —
+  // for items whose menu button isn't a plain link (e.g. ConfigurationNavItem's
+  // own collapsible sub-menu) so they still get the group's shared `p-2` inset.
+  readonly extraContent?: ReactNode;
   readonly items: readonly NavGroupItem[];
   readonly label: string;
   // Overrides the plain-text label with a custom element (e.g. a
@@ -32,6 +36,7 @@ type NavGroupProps = {
 // `to`/`params`/`search` stay literal and type-checked at the call site
 // instead of being widened to `string` by a generic prop here.
 export function NavGroup({
+  extraContent,
   items,
   label,
   labelSlot,
@@ -59,6 +64,7 @@ export function NavGroup({
               ) : null}
             </SidebarMenuItem>
           ))}
+          {extraContent}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
