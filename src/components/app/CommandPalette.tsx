@@ -1,6 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Globe2, Landmark, MapPin, Users, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Clock,
+  Globe2,
+  Landmark,
+  MapPin,
+  Users,
+  Zap,
+} from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -25,7 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { citizensInWorldQueryOptions } from "@/features/citizens";
+import { citizensDirectoryQueryOptions } from "@/features/citizens";
 import { nationsListQueryOptions } from "@/features/nations";
 import {
   createAccessContext,
@@ -36,6 +44,7 @@ import {
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { accessibleWorldsQueryOptions, WorldAvatar } from "@/features/worlds";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { readRecentPages, type RecentPageEntry } from "@/lib/recentPages";
 
 import { useAppShellWorldContext } from "./sidebar/UseAppShellWorldContext";
 import { useWorldScope } from "./sidebar/WorldScopeContext";
@@ -43,6 +52,33 @@ import { useSettlementReadinessAction } from "./UseSettlementReadinessAction";
 
 const DEBOUNCE_MS = 150;
 const MAX_RESULTS_PER_GROUP = 8;
+// Actions and Jump to are curated, permission-bounded lists (not open-ended
+// entity search), so they aren't truncated the way search results are.
+const UNLIMITED = Number.POSITIVE_INFINITY;
+
+// Mirrors CONFIGURATION_TABS in worlds.$worldId.configuration.tsx (not
+// exported from that route module, so the tab literals are duplicated here
+// -- `as const` keeps them assignable to the route's search schema).
+const CONFIGURATION_JUMP_TABS = [
+  { label: "Resources", tab: "resources" },
+  { label: "Jobs", tab: "jobs" },
+  { label: "Buildings", tab: "buildings" },
+  { label: "Deposits", tab: "deposits" },
+  { label: "Managed Populations", tab: "managed-populations" },
+  { label: "Calendar", tab: "calendar" },
+  { label: "Namesets", tab: "namesets" },
+  { label: "NPC Flavor", tab: "npc-flavor" },
+  { label: "Population Rules", tab: "population-rules" },
+  { label: "Images", tab: "images" },
+  { label: "World Settings", tab: "world-settings" },
+] as const;
+
+const RECENT_KIND_LABELS: Record<RecentPageEntry["kind"], string> = {
+  citizen: "Citizen",
+  nation: "Nation",
+  settlement: "Settlement",
+  world: "World",
+};
 
 type PaletteEntry = {
   readonly disabled?: boolean;
@@ -61,6 +97,7 @@ type CommandPaletteProps = {
 function filterEntries(
   entries: readonly PaletteEntry[],
   query: string,
+  limit: number = MAX_RESULTS_PER_GROUP,
 ): readonly PaletteEntry[] {
   const matching =
     query === ""
@@ -70,15 +107,18 @@ function filterEntries(
             .toLowerCase()
             .includes(query),
         );
-  return matching.slice(0, MAX_RESULTS_PER_GROUP);
+  return matching.slice(0, limit);
 }
 
-// Global ⌘K / Ctrl+K jump palette (docs/ui-redesign.md §3.2): search worlds,
-// nations, settlements, and citizens in the current world, plus quick
-// actions gated by the same permission hooks as their always-visible
+// Global ⌘K / Ctrl+K jump palette (docs/ui-redesign.md §3.2, expanded #1011):
+// search worlds, nations, settlements, and citizens in the current world;
+// quick actions gated by the same permission hooks as their always-visible
 // header/sidebar equivalents (switch character, mark settlement ready, end
-// turn). Mounted once in AppLayout so it works from any route; the header's
-// search button and the global ⌘K shortcut both open the same instance.
+// turn, create event/nation); jump-to links for config tabs and superadmin
+// sections gated exactly like the sidebar; and a Recents ring shown while
+// the query box is empty. Mounted once in AppLayout so it works from any
+// route; the header's search button and the global ⌘K shortcut both open
+// the same instance.
 export function CommandPalette({
   onOpenChange,
   open,
@@ -90,8 +130,11 @@ export function CommandPalette({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { canAdmin, worldId } = useAppShellWorldContext();
+  const { canAdmin, isSuperAdmin, worldId } = useAppShellWorldContext();
   const effectiveCanAdmin = useEffectiveCanAdmin(canAdmin);
+  // Suppresses admin-only jump targets while playing a character, exactly
+  // like the sidebar's ADMIN nav group (AppSidebar.tsx).
+  const effectiveIsSuperAdmin = useEffectiveCanAdmin(isSuperAdmin);
   const { nationId, settlementId } = useWorldScope();
   const { activeCharacter, clear, selectableCharacters, switchTo } =
     useActivePlayerCharacter();
@@ -123,9 +166,16 @@ export function CommandPalette({
     ...settlementsByWorldQueryOptions(worldId ?? ""),
     enabled: open && worldId !== null,
   });
+  // Server-side search-as-you-type (#989's citizen directory) instead of
+  // pulling every citizen in the world — only queried once the viewer types,
+  // since an empty query has nothing useful to page through here.
   const citizensQuery = useQuery({
-    ...citizensInWorldQueryOptions(worldId ?? ""),
-    enabled: open && worldId !== null,
+    ...citizensDirectoryQueryOptions(
+      worldId ?? "",
+      { search: debouncedSearch === "" ? undefined : debouncedSearch },
+      { pageIndex: 0, pageSize: MAX_RESULTS_PER_GROUP },
+    ),
+    enabled: open && worldId !== null && debouncedSearch !== "",
   });
 
   const readinessAction = useSettlementReadinessAction({
@@ -217,6 +267,31 @@ export function CommandPalette({
           ?.click();
       },
     });
+    actionEntries.push({
+      key: "create-event",
+      label: "Create event",
+      onSelect: () => {
+        closeAndReset();
+        void navigate({
+          params: { worldId },
+          to: "/worlds/$worldId/events/new",
+        });
+      },
+    });
+    actionEntries.push({
+      key: "create-nation",
+      label: "Create nation",
+      onSelect: () => {
+        closeAndReset();
+        // No standalone Create Nation dialog exists yet (separate issue,
+        // not landed) — land on the nations list, which already has an
+        // inline create form, until that dialog ships.
+        void navigate({
+          params: { worldId },
+          to: "/worlds/$worldId/nations",
+        });
+      },
+    });
   }
 
   const goToEntries: PaletteEntry[] = [
@@ -230,20 +305,86 @@ export function CommandPalette({
     },
   ];
 
-  if (worldId !== null && canAdmin) {
-    goToEntries.push({
-      key: "go-to-configuration",
-      label: "Go to configuration",
-      onSelect: () => {
-        closeAndReset();
-        void navigate({
-          params: { worldId },
-          search: { tab: "resources" },
-          to: "/worlds/$worldId/configuration",
-        });
-      },
-    });
+  if (worldId !== null && effectiveCanAdmin) {
+    for (const { label, tab } of CONFIGURATION_JUMP_TABS) {
+      goToEntries.push({
+        key: `go-to-configuration-${tab}`,
+        label: `Configuration: ${label}`,
+        onSelect: () => {
+          closeAndReset();
+          void navigate({
+            params: { worldId },
+            search: { tab },
+            to: "/worlds/$worldId/configuration",
+          });
+        },
+      });
+    }
   }
+
+  if (effectiveIsSuperAdmin) {
+    goToEntries.push(
+      {
+        key: "go-to-superadmin",
+        label: "Go to superadmin",
+        onSelect: () => {
+          closeAndReset();
+          void navigate({ to: "/superadmin" });
+        },
+      },
+      {
+        key: "go-to-template-library",
+        label: "Go to template library",
+        onSelect: () => {
+          closeAndReset();
+          void navigate({ to: "/superadmin/templates" });
+        },
+      },
+    );
+  }
+
+  // Shown only while the query box is empty (docs: recents are a browse
+  // aid, not part of search-as-you-type) — most-recent first, per the
+  // gubernator:recent-pages ring (recentPages.ts).
+  const recentEntries: PaletteEntry[] =
+    open && debouncedSearch === ""
+      ? readRecentPages().map((recent) => ({
+          key: `recent-${recent.path}`,
+          label: recent.label,
+          onSelect: () => {
+            closeAndReset();
+            if (recent.kind === "world") {
+              void navigate({
+                params: { worldId: recent.worldId },
+                to: "/worlds/$worldId",
+              });
+            } else if (recent.kind === "nation") {
+              void navigate({
+                params: { nationId: recent.nationId, worldId: recent.worldId },
+                to: "/worlds/$worldId/nations/$nationId",
+              });
+            } else if (recent.kind === "settlement") {
+              void navigate({
+                params: {
+                  nationId: recent.nationId,
+                  settlementId: recent.settlementId,
+                  worldId: recent.worldId,
+                },
+                to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
+              });
+            } else {
+              void navigate({
+                params: {
+                  citizenId: recent.citizenId,
+                  worldId: recent.worldId,
+                },
+                to: "/worlds/$worldId/citizens/$citizenId",
+              });
+            }
+          },
+          subtitle: RECENT_KIND_LABELS[recent.kind],
+        }))
+      : [];
 
   const worldEntries: PaletteEntry[] = (worldsQuery.data ?? []).map(
     (world) => ({
@@ -307,9 +448,9 @@ export function CommandPalette({
   const citizenEntries: PaletteEntry[] =
     worldId === null
       ? []
-      : (citizensQuery.data ?? []).map((citizen) => ({
+      : (citizensQuery.data?.rows ?? []).map((citizen) => ({
           key: `citizen-${citizen.id}`,
-          label: citizen.name,
+          label: citizen.name ?? "Unnamed citizen",
           onSelect: () => {
             closeAndReset();
             void navigate({
@@ -323,12 +464,20 @@ export function CommandPalette({
               : "NPC",
         }));
 
-  const filteredActions = filterEntries(actionEntries, debouncedSearch);
-  const filteredGoTo = filterEntries(goToEntries, debouncedSearch);
+  const filteredRecents = recentEntries;
+  const filteredActions = filterEntries(
+    actionEntries,
+    debouncedSearch,
+    UNLIMITED,
+  );
+  const filteredGoTo = filterEntries(goToEntries, debouncedSearch, UNLIMITED);
   const filteredWorlds = filterEntries(worldEntries, debouncedSearch);
   const filteredNations = filterEntries(nationEntries, debouncedSearch);
   const filteredSettlements = filterEntries(settlementEntries, debouncedSearch);
-  const filteredCitizens = filterEntries(citizenEntries, debouncedSearch);
+  // citizensQuery is already server-filtered/paginated by debouncedSearch —
+  // re-filtering client-side could drop rows the server matched on a
+  // column filterEntries doesn't check (e.g. settlement/nation name).
+  const filteredCitizens = citizenEntries;
 
   const isLoadingEntities =
     open &&
@@ -336,7 +485,7 @@ export function CommandPalette({
       (worldId !== null &&
         (nationsQuery.isPending ||
           settlementsQuery.isPending ||
-          citizensQuery.isPending)));
+          (debouncedSearch !== "" && citizensQuery.isPending))));
 
   const totalResults =
     filteredActions.length +
@@ -379,6 +528,11 @@ export function CommandPalette({
             {showEmptyState ? (
               <CommandEmpty>No results for "{search.trim()}".</CommandEmpty>
             ) : null}
+            <PaletteGroup
+              entries={filteredRecents}
+              icon={Clock}
+              title="Recent"
+            />
             <PaletteGroup
               entries={filteredActions}
               icon={Zap}

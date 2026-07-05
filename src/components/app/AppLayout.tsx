@@ -6,6 +6,7 @@ import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
 import { CommandPalette } from "./CommandPalette";
 import { AppShellProviders } from "./sidebar/AppShellProviders";
+import { useRecentPageTracker } from "./UseRecentPageTracker";
 
 type AppLayoutProps = {
   readonly headerAction?: ReactNode;
@@ -17,6 +18,7 @@ export function AppLayout({
   headerAction,
 }: AppLayoutProps): JSX.Element {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  useRecentPageTracker();
 
   return (
     <SidebarProvider>

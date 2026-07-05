@@ -7,6 +7,7 @@ import type { Citizen } from "@/features/citizens";
 import { ActivePlayerCharacterContext } from "@/features/permissions";
 import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
 import type * as PermissionsModule from "@/features/permissions";
+import { recordRecentPage } from "@/lib/recentPages";
 
 import { CommandPalette } from "./CommandPalette";
 
@@ -91,15 +92,25 @@ vi.mock("@/features/settlements", () => ({
   }),
 }));
 
+// citizensDirectoryQueryOptions (#989/#1011) is server-side search — the mock
+// filters the fixture by `filters.search` the way the real directory view
+// would, so the palette's search-as-you-type behavior is exercised for real.
 vi.mock("@/features/citizens", () => ({
-  citizensInWorldQueryOptions: (worldId: string) => ({
-    // Never resolves while citizensQueryState.isPending is true, so tests can
-    // exercise the loading-skeleton branch.
-    queryFn: () =>
-      citizensQueryState.isPending
-        ? new Promise<never>(() => {})
-        : Promise.resolve(CITIZENS_FIXTURE),
-    queryKey: ["test", "citizens", worldId],
+  citizensDirectoryQueryOptions: (
+    worldId: string,
+    filters: { readonly search?: string },
+  ) => ({
+    queryFn: () => {
+      if (citizensQueryState.isPending) {
+        return new Promise<never>(() => {});
+      }
+      const search = (filters.search ?? "").toLowerCase();
+      const rows = CITIZENS_FIXTURE.filter((citizen) =>
+        citizen.name.toLowerCase().includes(search),
+      );
+      return Promise.resolve({ rows, totalCount: rows.length });
+    },
+    queryKey: ["test", "citizens", worldId, filters.search ?? ""],
   }),
 }));
 
@@ -134,11 +145,13 @@ const CITIZENS_FIXTURE = [
 
 describe("CommandPalette", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     citizensQueryState.isPending = false;
     navigateMock.mockReset();
     useAppShellWorldContextMock.mockReset();
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: false,
+      isSuperAdmin: false,
       worldId: null,
     });
     useWorldScopeMock.mockReset();
@@ -200,23 +213,36 @@ describe("CommandPalette", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("lists nations, settlements, and citizens inside a world", async () => {
+  it("lists nations and settlements inside a world", async () => {
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: false,
+      isSuperAdmin: false,
       worldId: WORLD_ID,
     });
     renderPalette();
 
     expect((await screen.findAllByText("Ironmark")).length).toBeGreaterThan(0);
     expect(await screen.findByText("Amberhold")).toBeDefined();
-    expect(await screen.findByText("Alaric Stormwind")).toBeDefined();
-    expect(await screen.findByText("Beren Thistlewood")).toBeDefined();
+  });
+
+  it("does not show citizens until the query has text", async () => {
+    useAppShellWorldContextMock.mockReturnValue({
+      canAdmin: false,
+      isSuperAdmin: false,
+      worldId: WORLD_ID,
+    });
+    renderPalette();
+
+    await screen.findByText("Amberhold");
+    expect(screen.queryByText("Alaric Stormwind")).toBeNull();
+    expect(screen.queryByText("Beren Thistlewood")).toBeNull();
   });
 
   it("shows a loading skeleton while entity queries are pending", async () => {
     citizensQueryState.isPending = true;
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: false,
+      isSuperAdmin: false,
       worldId: WORLD_ID,
     });
     renderPalette();
@@ -227,6 +253,7 @@ describe("CommandPalette", () => {
   it("navigates to a settlement using its own nation scope", async () => {
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: false,
+      isSuperAdmin: false,
       worldId: WORLD_ID,
     });
     const user = userEvent.setup();
@@ -244,7 +271,7 @@ describe("CommandPalette", () => {
     });
   });
 
-  it("filters results after the search debounce", async () => {
+  it("filters results and searches citizens after the search debounce", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({
       advanceTimers: (ms) => {
@@ -253,11 +280,12 @@ describe("CommandPalette", () => {
     });
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: false,
+      isSuperAdmin: false,
       worldId: WORLD_ID,
     });
     renderPalette();
 
-    await screen.findByText("Alaric Stormwind");
+    await screen.findByText("Amberhold");
 
     await user.type(screen.getByPlaceholderText(/Jump to/i), "Alaric");
 
@@ -353,9 +381,10 @@ describe("CommandPalette", () => {
     expect(toggle).toHaveBeenCalled();
   });
 
-  it("shows the end-turn action only for effective admins and bridges to the header button", async () => {
+  it("shows the end-turn, create-event, and create-nation actions only for effective admins", async () => {
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: true,
+      isSuperAdmin: false,
       worldId: WORLD_ID,
     });
     const endTurnClick = vi.fn();
@@ -368,19 +397,56 @@ describe("CommandPalette", () => {
     container.append(bridgeButton);
 
     await user.click(await screen.findByText("End turn"));
-
     expect(endTurnClick).toHaveBeenCalled();
+
+    await user.click(await screen.findByText("Create event"));
+    expect(navigateMock).toHaveBeenCalledWith({
+      params: { worldId: WORLD_ID },
+      to: "/worlds/$worldId/events/new",
+    });
+
+    await user.click(await screen.findByText("Create nation"));
+    expect(navigateMock).toHaveBeenCalledWith({
+      params: { worldId: WORLD_ID },
+      to: "/worlds/$worldId/nations",
+    });
   });
 
-  it("does not show the end-turn action for non-admins", async () => {
+  it("does not show admin actions for non-admins", async () => {
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: false,
+      isSuperAdmin: false,
       worldId: WORLD_ID,
     });
     renderPalette();
 
     await screen.findByText("Amberhold");
     expect(screen.queryByText("End turn")).toBeNull();
+    expect(screen.queryByText("Create event")).toBeNull();
+    expect(screen.queryByText("Create nation")).toBeNull();
+  });
+
+  it("hides admin actions live when switching to a non-admin character", async () => {
+    useAppShellWorldContextMock.mockReturnValue({
+      canAdmin: true,
+      isSuperAdmin: false,
+      worldId: WORLD_ID,
+    });
+    renderPalette({
+      activePlayerCharacter: {
+        activeCharacter: createCitizen({ id: "citizen-1" }),
+        clear: vi.fn(),
+        isPending: false,
+        selectableCharacters: [],
+        switchTo: vi.fn(),
+      },
+    });
+
+    await screen.findByText("Amberhold");
+    expect(screen.queryByText("End turn")).toBeNull();
+    expect(screen.queryByText("Create event")).toBeNull();
+    expect(screen.queryByText("Create nation")).toBeNull();
+    expect(screen.queryByText("Configuration: Resources")).toBeNull();
   });
 
   it("always shows the go-to-notifications action", async () => {
@@ -394,15 +460,17 @@ describe("CommandPalette", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("shows go-to-configuration only for world admins", async () => {
+  it("shows configuration jump entries only for world admins", async () => {
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: true,
+      isSuperAdmin: false,
       worldId: WORLD_ID,
     });
     const user = userEvent.setup();
     renderPalette();
 
-    await user.click(await screen.findByText("Go to configuration"));
+    expect(await screen.findByText("Configuration: Jobs")).toBeDefined();
+    await user.click(await screen.findByText("Configuration: Resources"));
 
     expect(navigateMock).toHaveBeenCalledWith({
       params: { worldId: WORLD_ID },
@@ -411,15 +479,100 @@ describe("CommandPalette", () => {
     });
   });
 
-  it("hides go-to-configuration for non-admins", async () => {
+  it("hides configuration jump entries for non-admins", async () => {
     useAppShellWorldContextMock.mockReturnValue({
       canAdmin: false,
+      isSuperAdmin: false,
       worldId: WORLD_ID,
     });
     renderPalette();
 
     await screen.findByText("Amberhold");
-    expect(screen.queryByText("Go to configuration")).toBeNull();
+    expect(screen.queryByText("Configuration: Resources")).toBeNull();
+  });
+
+  it("shows superadmin jump entries only for effective superadmins", async () => {
+    useAppShellWorldContextMock.mockReturnValue({
+      canAdmin: false,
+      isSuperAdmin: true,
+      worldId: null,
+    });
+    const user = userEvent.setup();
+    renderPalette();
+
+    await user.click(await screen.findByText("Go to superadmin"));
+    expect(navigateMock).toHaveBeenCalledWith({ to: "/superadmin" });
+
+    await user.click(await screen.findByText("Go to template library"));
+    expect(navigateMock).toHaveBeenCalledWith({ to: "/superadmin/templates" });
+  });
+
+  it("hides superadmin jump entries live when switching to a character", () => {
+    useAppShellWorldContextMock.mockReturnValue({
+      canAdmin: false,
+      isSuperAdmin: true,
+      worldId: null,
+    });
+    renderPalette({
+      activePlayerCharacter: {
+        activeCharacter: createCitizen({ id: "citizen-1" }),
+        clear: vi.fn(),
+        isPending: false,
+        selectableCharacters: [],
+        switchTo: vi.fn(),
+      },
+    });
+
+    expect(screen.queryByText("Go to superadmin")).toBeNull();
+  });
+
+  it("shows recent pages at the top when the query is empty and navigates on select", async () => {
+    recordRecentPage({
+      kind: "nation",
+      label: "Ironmark",
+      nationId: NATION_ID,
+      path: `/worlds/${WORLD_ID}/nations/${NATION_ID}`,
+      worldId: WORLD_ID,
+    });
+    const user = userEvent.setup();
+    renderPalette();
+
+    const recentEntry = await screen.findByRole("option", {
+      name: /Ironmark/,
+    });
+    expect(recentEntry).toBeDefined();
+
+    await user.click(recentEntry);
+
+    expect(navigateMock).toHaveBeenCalledWith({
+      params: { nationId: NATION_ID, worldId: WORLD_ID },
+      to: "/worlds/$worldId/nations/$nationId",
+    });
+  });
+
+  it("hides recent pages while a search query is active", async () => {
+    recordRecentPage({
+      kind: "world",
+      label: "Recently Visited World",
+      path: "/worlds/world-9",
+      worldId: "world-9",
+    });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({
+      advanceTimers: (ms) => {
+        vi.advanceTimersByTime(ms);
+      },
+    });
+    renderPalette();
+
+    await screen.findByText("Recently Visited World");
+    await user.type(screen.getByPlaceholderText(/Jump to/i), "no-match-xyz");
+
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(screen.queryByText("Recently Visited World")).toBeNull();
   });
 });
 
