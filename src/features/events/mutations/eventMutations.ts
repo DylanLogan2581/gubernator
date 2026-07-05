@@ -79,7 +79,7 @@ export function createEventGroupMutationOptions({
       ) {
         throw new EventMutationError({
           code: "event_input_invalid",
-          message: "Duration transitions required for sustained events",
+          message: "Duration in turns is required for sustained events",
         });
       }
 
@@ -275,7 +275,7 @@ export function editEventGroupMutationOptions({
       ) {
         throw new EventMutationError({
           code: "event_input_invalid",
-          message: "Duration transitions required for sustained events",
+          message: "Duration in turns is required for sustained events",
         });
       }
 

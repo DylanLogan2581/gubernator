@@ -251,7 +251,7 @@ export function EventCreateStep5({
             <dd className="font-medium">
               {durationType === "instant"
                 ? "Instant"
-                : `${durationTransitions} transition${durationTransitions === 1 ? "" : "s"}`}
+                : `${durationTransitions} turn${durationTransitions === 1 ? "" : "s"}`}
             </dd>
           </div>
 

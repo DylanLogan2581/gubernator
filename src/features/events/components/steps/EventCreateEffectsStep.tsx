@@ -1,8 +1,9 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { SearchableResourcePicker } from "@/components/shared/SearchableResourcePicker";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -44,6 +45,9 @@ import {
   managedPopulationInstancesBySettlementQueryOptions,
 } from "@/features/managed-populations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
+
+import { computeEffectImpact } from "../../utils/effectImpact";
 
 type EventEffectType =
   | "building_destroyed"
@@ -276,6 +280,12 @@ function EffectEditor({
   // Query for building blueprints for blueprint-targeted upkeep effects
   const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
 
+  // Query for settlement names to resolve settlement-scope labels (avoids raw UUIDs)
+  const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
+  const settlementNameById = new Map(
+    (settlementsQuery.data ?? []).map((s) => [s.id, s.name]),
+  );
+
   // Query for managed population instances if this is a managed_population_change effect
   const instanceQueries = useQueries({
     queries:
@@ -305,15 +315,17 @@ function EffectEditor({
       const settlementId = selectedIds[index];
       const deposits = query.data as DepositInstance[] | undefined;
       if (deposits !== undefined && Array.isArray(deposits)) {
+        const settlementName =
+          settlementNameById.get(settlementId) ?? settlementId;
         deposits.forEach((deposit) => {
           allDeposits.push({
             id: deposit.id,
             settlementId,
-            settlementName: settlementId,
+            settlementName,
             nationName: "",
             name: deposit.name,
-            label: `${deposit.name} (Settlement: ${settlementId.slice(0, 8)})`,
-            groupLabel: `Settlement: ${settlementId.slice(0, 8)}`,
+            label: `${deposit.name} (${settlementName})`,
+            groupLabel: settlementName,
           });
         });
       }
@@ -371,15 +383,17 @@ function EffectEditor({
       const settlementId = selectedIds[index];
       const buildings = query.data as SettlementBuilding[] | undefined;
       if (buildings !== undefined && Array.isArray(buildings)) {
+        const settlementName =
+          settlementNameById.get(settlementId) ?? settlementId;
         buildings.forEach((building) => {
           allBuildings.push({
             id: building.id,
             settlementId,
-            settlementName: settlementId,
+            settlementName,
             nationName: "",
             blueprintName: building.blueprintName,
-            label: `${building.blueprintName} (Settlement: ${settlementId.slice(0, 8)})`,
-            groupLabel: `Settlement: ${settlementId.slice(0, 8)}`,
+            label: `${building.blueprintName} (${settlementName})`,
+            groupLabel: settlementName,
           });
         });
       }
@@ -436,13 +450,15 @@ function EffectEditor({
         const settlementId = selectedIds[index];
         const instances = query.data as ManagedPopulationInstance[] | undefined;
         if (instances !== undefined && Array.isArray(instances)) {
+          const settlementName =
+            settlementNameById.get(settlementId) ?? settlementId;
           instances.forEach((instance) => {
             allInstances.push({
               id: instance.id,
               settlementId,
               name: instance.name,
               typeName: instance.managedPopulationTypeName,
-              label: `${instance.name} [${instance.managedPopulationTypeName}] (Settlement: ${settlementId.slice(0, 8)})`,
+              label: `${instance.name} [${instance.managedPopulationTypeName}] (${settlementName})`,
             });
           });
         }
@@ -474,6 +490,18 @@ function EffectEditor({
     "consumption_multiplier",
     "upkeep_multiplier",
   ].includes(effect.effectType);
+
+  // Zero-target check: warn inline as soon as the effect resolves to 0 targets
+  const effectImpact =
+    scopeType !== null
+      ? computeEffectImpact(
+          effect,
+          scopeType,
+          selectedIds,
+          settlementsQuery.data ?? [],
+        )
+      : null;
+  const hasZeroTargets = effectImpact !== null && effectImpact.count === 0;
 
   // Get label from options or mapping
   let displayLabel = "";
@@ -509,6 +537,17 @@ function EffectEditor({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {hasZeroTargets && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Zero targets</AlertTitle>
+            <AlertDescription>
+              This effect currently resolves to 0 targets and will have no
+              effect. Review scope and effect configuration.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {isModifyResource && (
           <>
             <div className="space-y-2">
@@ -656,16 +695,19 @@ function EffectEditor({
 
             <div className="space-y-2">
               <Label htmlFor={`amount-${effect.effectType}`}>
-                {effect.isPercent ? "Percent" : "Amount"}{" "}
                 {effect.effectType === "population_loss"
-                  ? "(citizens to kill)"
-                  : "(positive = boost, negative = loss)"}
+                  ? "Citizens to kill"
+                  : `${effect.isPercent ? "Percent" : "Amount"} (positive = boost, negative = loss)`}
               </Label>
               <Input
                 id={`amount-${effect.effectType}`}
                 type="number"
                 placeholder={
-                  effect.isPercent ? "e.g., 10 for 10%" : "e.g., 100 or -50"
+                  effect.effectType === "population_loss"
+                    ? "e.g., 100"
+                    : effect.isPercent
+                      ? "e.g., 10 for 10%"
+                      : "e.g., 100 or -50"
                 }
                 value={effect.amountValue ?? ""}
                 onChange={(e) =>
@@ -676,6 +718,12 @@ function EffectEditor({
                   })
                 }
               />
+              {effect.effectType === "population_loss" && (
+                <p className="text-xs text-muted-foreground">
+                  Positive number. For population gain use the Population Gain
+                  effect.
+                </p>
+              )}
             </div>
           </>
         )}
@@ -723,6 +771,9 @@ function EffectEditor({
                   })
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Positive adds, negative removes.
+              </p>
             </div>
           </>
         )}

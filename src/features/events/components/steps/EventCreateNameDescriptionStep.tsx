@@ -29,7 +29,7 @@ export function EventCreateNameDescriptionStep({
 
       <div className="space-y-2">
         <Label htmlFor="groupName" className="font-medium">
-          Group Name
+          Event Name
         </Label>
         <Input
           id="groupName"

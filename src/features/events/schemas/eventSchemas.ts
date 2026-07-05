@@ -162,8 +162,8 @@ export const createEventGroupInputSchema = z
     worldId: worldIdSchema,
     groupName: z
       .string()
-      .max(eventInputLimits.eventGroupNameMax, "Group name is too long.")
-      .refine((v): boolean => v.trim().length > 0, "Group name is required."),
+      .max(eventInputLimits.eventGroupNameMax, "Event name is too long.")
+      .refine((v): boolean => v.trim().length > 0, "Event name is required."),
     groupDescription: z
       .string()
       .max(
@@ -181,7 +181,7 @@ export const createEventGroupInputSchema = z
     durationTransitions: z
       .number()
       .int()
-      .min(1, "Duration must be at least 1 transition.")
+      .min(1, "Duration must be at least 1 turn.")
       .optional()
       .nullable(),
     activationTurn: z
@@ -236,8 +236,8 @@ export const editEventGroupInputSchema = z
     worldId: worldIdSchema,
     groupName: z
       .string()
-      .max(eventInputLimits.eventGroupNameMax, "Group name is too long.")
-      .refine((v): boolean => v.trim().length > 0, "Group name is required."),
+      .max(eventInputLimits.eventGroupNameMax, "Event name is too long.")
+      .refine((v): boolean => v.trim().length > 0, "Event name is required."),
     groupDescription: z
       .string()
       .max(
@@ -251,7 +251,7 @@ export const editEventGroupInputSchema = z
     durationTransitions: z
       .number()
       .int()
-      .min(1, "Duration must be at least 1 transition.")
+      .min(1, "Duration must be at least 1 turn.")
       .optional()
       .nullable(),
     activationTurn: z
