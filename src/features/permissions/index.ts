@@ -1,9 +1,11 @@
 export { ActiveCharacterSwitcher } from "./components/ActiveCharacterSwitcher";
 export { AdminSuppressedNotice } from "./components/AdminSuppressedNotice";
 export { CharacterRoleLabel } from "./components/CharacterRoleLabel";
-export { SuperadminSettingsPage } from "./components/SuperadminSettingsPage";
 export { PlayerCharacterChooser } from "./components/PlayerCharacterChooser";
 export { RoleAssignmentControls } from "./components/RoleAssignmentControls";
+export { StuckTransitionPanel } from "./components/StuckTransitionPanel";
+export { SuperadminUsersPanel } from "./components/SuperadminUsersPanel";
+export { SuperadminWorldsPanel } from "./components/SuperadminWorldsPanel";
 export { ActivePlayerCharacterProvider } from "./context/ActivePlayerCharacterProvider";
 export {
   ActivePlayerCharacterContext,

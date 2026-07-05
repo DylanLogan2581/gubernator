@@ -1,13 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { SuperadminSettingsPage } from "@/features/permissions";
-
-import type { JSX } from "react";
-
-function SuperadminIndexRoute(): JSX.Element {
-  return <SuperadminSettingsPage />;
-}
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/superadmin/")({
-  component: SuperadminIndexRoute,
+  beforeLoad: () => {
+    return redirect({ to: "/superadmin/users" });
+  },
 });

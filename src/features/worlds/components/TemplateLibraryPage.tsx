@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Download, Upload } from "lucide-react";
-import { useRef, useState, type JSX, type ReactNode } from "react";
+import { useRef, useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -26,18 +26,6 @@ import {
   ImportConfirmDialog,
   ImportErrorDialog,
 } from "./WorldTemplateImportButton";
-
-// ---------------------------------------------------------------------------
-// Frame
-// ---------------------------------------------------------------------------
-
-function TemplateLibraryFrame({
-  children,
-}: {
-  readonly children: ReactNode;
-}): JSX.Element {
-  return <>{children}</>;
-}
 
 // ---------------------------------------------------------------------------
 // Bundled scenario card
@@ -197,7 +185,7 @@ export function TemplateLibraryPage(): JSX.Element {
   );
 
   return (
-    <TemplateLibraryFrame>
+    <>
       <div className="space-y-6">
         {/* Page header */}
         <PageHeader
@@ -242,6 +230,6 @@ export function TemplateLibraryPage(): JSX.Element {
           }}
         />
       ) : null}
-    </TemplateLibraryFrame>
+    </>
   );
 }

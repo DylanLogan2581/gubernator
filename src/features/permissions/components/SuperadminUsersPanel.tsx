@@ -1,14 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import {
-  Library,
+  MoreHorizontal,
   Shield,
   ShieldCheck,
   UserPlus,
   Globe2,
   UserCog,
 } from "lucide-react";
-import { useState, type ChangeEvent, type JSX, type ReactNode } from "react";
+import { useState, type ChangeEvent, type JSX } from "react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -16,6 +15,12 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -25,26 +30,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { currentAppUserQueryOptions } from "@/features/auth";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { formatDate } from "@/lib/formatDate";
 
-import {
-  allUsersForSuperadminQueryOptions,
-  allWorldsForSuperadminQueryOptions,
-} from "../queries/superadminQueries";
+import { allUsersForSuperadminQueryOptions } from "../queries/superadminQueries";
 
 import { ActivePlayerCharacterAdminDialog } from "./ActivePlayerCharacterAdminDialog";
 import { CreateUserDialog } from "./CreateUserDialog";
-import { PruneWorldDataPanel } from "./PruneWorldDataPanel";
-import { StuckTransitionPanel } from "./StuckTransitionPanel";
 import { ToggleSuperadminDialog } from "./ToggleSuperadminDialog";
 import { WorldAdminGrantDialog } from "./WorldAdminGrantDialog";
-import { WorldCascadeDeletePanel } from "./WorldCascadeDeletePanel";
 
 import type { SuperadminUser } from "../types/superadminTypes";
 
@@ -55,11 +50,10 @@ type DialogState =
   | { readonly kind: "world-admin"; readonly user: SuperadminUser }
   | { readonly kind: "active-player-character"; readonly user: SuperadminUser };
 
-export function SuperadminSettingsPage(): JSX.Element {
+export function SuperadminUsersPanel(): JSX.Element {
   const queryClient = useQueryClient();
   const currentUserQuery = useQuery(currentAppUserQueryOptions());
   const usersQuery = useQuery(allUsersForSuperadminQueryOptions());
-  const worldsQuery = useQuery(allWorldsForSuperadminQueryOptions());
 
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
@@ -67,34 +61,23 @@ export function SuperadminSettingsPage(): JSX.Element {
   const currentUser = currentUserQuery.data ?? null;
 
   if (currentUserQuery.isPending || usersQuery.isPending) {
-    return (
-      <SuperadminFrame>
-        <LoadingState label="Loading users…" />
-      </SuperadminFrame>
-    );
+    return <LoadingState label="Loading users…" />;
   }
 
   if (currentUser === null || !currentUser.is_super_admin) {
-    return (
-      <SuperadminFrame>
-        <AccessDeniedState />
-      </SuperadminFrame>
-    );
+    return <AccessDeniedState />;
   }
 
   if (usersQuery.isError) {
     return (
-      <SuperadminFrame>
-        <ErrorState
-          title="Could not load users"
-          description={getErrorDescription(usersQuery.error)}
-        />
-      </SuperadminFrame>
+      <ErrorState
+        title="Could not load users"
+        description={getErrorDescription(usersQuery.error)}
+      />
     );
   }
 
   const users = usersQuery.data ?? [];
-  const worlds = worldsQuery.data ?? [];
   const searchTrimmed = search.trim().toLowerCase();
   const filteredUsers =
     searchTrimmed.length === 0
@@ -110,27 +93,12 @@ export function SuperadminSettingsPage(): JSX.Element {
   }
 
   return (
-    <SuperadminFrame>
+    <>
       <PageHeader
         icon={ShieldCheck}
-        title="Superadmin Settings"
+        title="Users"
         description="Manage users and system privileges."
       />
-
-      <div className="mt-4 flex items-center gap-2">
-        <Button asChild type="button" variant="outline" size="sm">
-          <Link to="/superadmin/templates">
-            <Library aria-hidden="true" />
-            Template Library
-          </Link>
-        </Button>
-      </div>
-
-      <StuckTransitionPanel />
-
-      <PruneWorldDataPanel worlds={worlds} />
-
-      <WorldCascadeDeletePanel />
 
       <div className="mt-4 flex items-center justify-between gap-2">
         <Input
@@ -238,7 +206,7 @@ export function SuperadminSettingsPage(): JSX.Element {
           }}
         />
       )}
-    </SuperadminFrame>
+    </>
   );
 }
 
@@ -290,60 +258,36 @@ function UserRow({
         )}
       </TableCell>
       <TableCell className="px-4 py-3 text-xs text-muted-foreground">
-        {user.created_at.slice(0, 10)}
+        {formatDate(user.created_at)}
       </TableCell>
-      <TableCell className="px-4 py-3">
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onManageWorldAdmin}
-            title="Manage world admin access"
-          >
-            <Globe2 className="size-3.5" aria-hidden="true" />
-            World Admin
-          </Button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onManageActivePlayerCharacter}
-                title="Manage active player character (recovery)"
-              >
-                <UserCog className="size-3.5" aria-hidden="true" />
-                Active PC
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              Active PC (Player Character) — manage this user&apos;s active
-              character for account recovery.
-            </TooltipContent>
-          </Tooltip>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onToggleSuperadmin}
-            title={
-              user.is_super_admin ? "Remove superadmin" : "Grant superadmin"
-            }
-          >
-            <Shield className="size-3.5" aria-hidden="true" />
-            {user.is_super_admin ? "Demote" : "Promote"}
-          </Button>
-        </div>
+      <TableCell className="px-4 py-3 text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={`Actions for ${user.username}`}
+            >
+              <MoreHorizontal className="size-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onManageWorldAdmin}>
+              <Globe2 aria-hidden="true" />
+              Manage world admin
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onManageActivePlayerCharacter}>
+              <UserCog aria-hidden="true" />
+              Manage active PC
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onToggleSuperadmin}>
+              <Shield aria-hidden="true" />
+              {user.is_super_admin ? "Remove superadmin" : "Grant superadmin"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
     </TableRow>
   );
-}
-
-function SuperadminFrame({
-  children,
-}: {
-  readonly children: ReactNode;
-}): JSX.Element {
-  return <>{children}</>;
 }

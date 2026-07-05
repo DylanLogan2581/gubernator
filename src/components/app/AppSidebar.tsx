@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   ArrowLeftRight,
   Bell,
   BookOpen,
@@ -81,34 +82,50 @@ export function AppSidebar(): JSX.Element | null {
     return null;
   }
 
-  // Prefix-aware so /superadmin/anything highlights an item once
-  // /superadmin gets sub-routes, with the more specific item (Template
-  // Library) winning over its ancestor (Superadmin) when both would match.
-  const isTemplateLibraryActive = isNavPathActive(
-    location.pathname,
-    "/superadmin/templates",
-  );
-  const isSuperadminActive =
-    isNavPathActive(location.pathname, "/superadmin") &&
-    !isTemplateLibraryActive;
-
+  // Prefix-aware so /superadmin/<sub-route>/anything highlights its sidebar
+  // entry once /superadmin has sub-routes — each entry checks its own path.
   const adminItems: NavGroupItem[] = effectiveIsSuperAdmin
     ? [
         {
-          key: "superadmin",
-          label: "Superadmin",
-          isActive: isSuperadminActive,
+          key: "superadmin-users",
+          label: "Users",
+          isActive: isNavPathActive(location.pathname, "/superadmin/users"),
           link: (
-            <Link to="/superadmin">
+            <Link to="/superadmin/users">
               <ShieldCheck aria-hidden="true" />
-              <span>Superadmin</span>
+              <span>Users</span>
+            </Link>
+          ),
+        },
+        {
+          key: "superadmin-transitions",
+          label: "Stuck Transitions",
+          isActive: isNavPathActive(
+            location.pathname,
+            "/superadmin/transitions",
+          ),
+          link: (
+            <Link to="/superadmin/transitions">
+              <AlertTriangle aria-hidden="true" />
+              <span>Stuck Transitions</span>
+            </Link>
+          ),
+        },
+        {
+          key: "superadmin-worlds",
+          label: "Worlds",
+          isActive: isNavPathActive(location.pathname, "/superadmin/worlds"),
+          link: (
+            <Link to="/superadmin/worlds">
+              <Globe2 aria-hidden="true" />
+              <span>Worlds</span>
             </Link>
           ),
         },
         {
           key: "template-library",
           label: "Template Library",
-          isActive: isTemplateLibraryActive,
+          isActive: isNavPathActive(location.pathname, "/superadmin/templates"),
           link: (
             <Link to="/superadmin/templates">
               <BookOpen aria-hidden="true" />
