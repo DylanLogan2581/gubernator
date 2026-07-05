@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { useMemo } from "react";
 
+import { IconChip } from "@/components/shared/IconChip";
+import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import {
   Accordion,
   AccordionContent,
@@ -20,11 +22,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  formatCalendarDateShort,
+  resolveTurnCalendarDate,
+} from "@/features/calendar";
+import type { WorldCalendarConfig } from "@/features/calendar";
+import { settlementResourceSnapshotsQueryOptions } from "@/features/reports";
 import { settlementStockpilesByIdQueryOptions } from "@/features/resources";
+import { currentTurnStateQueryOptions } from "@/features/turns";
+import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 
 import { settlementForecastQueryOptions } from "../queries/settlementForecastQueries";
 import { deriveSettlementForecastWarnings } from "../utils/settlementForecastWarnings";
 
+import { ForecastResourceSparkline } from "./ForecastResourceSparkline";
+
+import type { ForecastSparklinePoint } from "./ForecastResourceSparkline";
 import type { SettlementForecastData } from "../schemas/forecastSchemas";
 import type { JSX } from "react";
 
@@ -32,6 +45,47 @@ type ForecastPanelProps = {
   readonly settlementId: string;
   readonly worldId: string;
 };
+
+// Recent-turn window for the per-resource trend sparklines (#1041) — enough
+// points for a shape, short enough to stay a glance-able table-cell chart.
+const SPARKLINE_TURN_WINDOW = 8;
+
+type ResourceDelta = SettlementForecastData["resourceDeltas"][number];
+
+function computeTurnsUntilEmpty(delta: ResourceDelta): number | null {
+  return delta.netDelta < 0 && delta.quantityBefore > 0
+    ? Math.floor(delta.quantityBefore / -delta.netDelta)
+    : null;
+}
+
+function turnsUntilEmptyToneClassName(
+  turnsUntilEmpty: number | null,
+): string | null {
+  if (turnsUntilEmpty === null) return null;
+  if (turnsUntilEmpty <= 3) return "text-destructive";
+  if (turnsUntilEmpty <= 10) return "text-warning-foreground";
+  return null;
+}
+
+function formatRunOutLabel({
+  calendarConfig,
+  currentTurnNumber,
+  turnsUntilEmpty,
+}: {
+  readonly calendarConfig: WorldCalendarConfig | null;
+  readonly currentTurnNumber: number | null;
+  readonly turnsUntilEmpty: number | null;
+}): string {
+  if (turnsUntilEmpty === null) return "—";
+  if (calendarConfig === null || currentTurnNumber === null) {
+    return `${String(turnsUntilEmpty)} turns`;
+  }
+  const runOutTurn = currentTurnNumber + turnsUntilEmpty;
+  const date = resolveTurnCalendarDate(calendarConfig, runOutTurn);
+  return formatCalendarDateShort(date, {
+    shortDateFormatTemplate: calendarConfig.shortDateFormatTemplate,
+  });
+}
 
 export function ForecastPanel({
   settlementId,
@@ -71,26 +125,80 @@ export function ForecastPanel({
   }
 
   return (
-    <ForecastPanelContent forecast={forecast} settlementId={settlementId} />
+    <ForecastPanelContent
+      forecast={forecast}
+      settlementId={settlementId}
+      worldId={worldId}
+    />
   );
 }
 
 function ForecastPanelContent({
   forecast,
   settlementId,
+  worldId,
 }: {
   readonly forecast: SettlementForecastData;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const stockpilesQuery = useQuery(
     settlementStockpilesByIdQueryOptions(settlementId),
   );
+  const turnStateQuery = useQuery(currentTurnStateQueryOptions(worldId));
 
-  const resourceNameMap = useMemo<ReadonlyMap<string, string>>(() => {
+  const currentTurnNumber = turnStateQuery.data?.currentTurnNumber ?? null;
+  const calendarConfig = turnStateQuery.data?.calendarConfig ?? null;
+
+  const sparklineToTurn = currentTurnNumber ?? 1;
+  const sparklineFromTurn = Math.max(
+    1,
+    sparklineToTurn - (SPARKLINE_TURN_WINDOW - 1),
+  );
+  const resourceSnapshotsQuery = useQuery({
+    ...settlementResourceSnapshotsQueryOptions(
+      settlementId,
+      sparklineFromTurn,
+      sparklineToTurn,
+    ),
+    enabled: currentTurnNumber !== null,
+  });
+
+  const resourceInfoMap = useMemo<
+    ReadonlyMap<string, { readonly name: string; readonly icon: string | null }>
+  >(() => {
     const stockpiles = stockpilesQuery.data;
     if (stockpiles === undefined) return new Map();
-    return new Map(stockpiles.map((s) => [s.resourceId, s.resourceName]));
+    return new Map(
+      stockpiles.map((s) => [
+        s.resourceId,
+        { icon: s.resourceIcon, name: s.resourceName },
+      ]),
+    );
   }, [stockpilesQuery.data]);
+
+  const sparklinePointsByResource = useMemo<
+    ReadonlyMap<string, readonly ForecastSparklinePoint[]>
+  >(() => {
+    const byResource = new Map<string, ForecastSparklinePoint[]>();
+    for (const row of resourceSnapshotsQuery.data ?? []) {
+      const points = byResource.get(row.resource_id) ?? [];
+      points.push({ quantity: row.quantity_after, turn: row.turn_number });
+      byResource.set(row.resource_id, points);
+    }
+    return byResource;
+  }, [resourceSnapshotsQuery.data]);
+
+  const sortedResourceDeltas = useMemo(() => {
+    return [...forecast.resourceDeltas].sort((a, b) => {
+      const aTurns = computeTurnsUntilEmpty(a);
+      const bTurns = computeTurnsUntilEmpty(b);
+      if (aTurns === null && bTurns === null) return 0;
+      if (aTurns === null) return 1;
+      if (bTurns === null) return -1;
+      return aTurns - bTurns;
+    });
+  }, [forecast.resourceDeltas]);
 
   const warnings = deriveSettlementForecastWarnings(forecast);
 
@@ -101,7 +209,7 @@ function ForecastPanelContent({
           <CardTitle>Resources Forecast</CardTitle>
         </CardHeader>
         <CardContent>
-          {forecast.resourceDeltas.length === 0 ? (
+          {sortedResourceDeltas.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No resource data available for this turn.
             </p>
@@ -113,23 +221,37 @@ function ForecastPanelContent({
                   <TableHead scope="col" className="tabular-nums text-right">
                     Net/turn
                   </TableHead>
-                  <TableHead scope="col" className="tabular-nums text-right">
-                    Turns until empty
+                  <TableHead scope="col">Trend</TableHead>
+                  <TableHead scope="col" className="text-right">
+                    Runs out
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {forecast.resourceDeltas.map((delta) => {
-                  const name =
-                    resourceNameMap.get(delta.resourceId) ?? delta.resourceId;
-                  const turnsUntilEmpty =
-                    delta.netDelta < 0 && delta.quantityBefore > 0
-                      ? Math.floor(delta.quantityBefore / -delta.netDelta)
-                      : null;
+                {sortedResourceDeltas.map((delta) => {
+                  const info = resourceInfoMap.get(delta.resourceId);
+                  const name = info?.name ?? delta.resourceId;
+                  const turnsUntilEmpty = computeTurnsUntilEmpty(delta);
+                  const toneClassName =
+                    turnsUntilEmptyToneClassName(turnsUntilEmpty);
+                  const runOutLabel = formatRunOutLabel({
+                    calendarConfig,
+                    currentTurnNumber,
+                    turnsUntilEmpty,
+                  });
 
                   return (
                     <TableRow key={delta.resourceId}>
-                      <TableCell className="py-2">{name}</TableCell>
+                      <TableCell className="py-2">
+                        <div className="flex items-center gap-2">
+                          <IconChip
+                            icon={resolveEntityIcon(info?.icon ?? null)}
+                            tone={hashToCategoricalSlot(delta.resourceId)}
+                            size="sm"
+                          />
+                          <span>{name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="py-2 tabular-nums text-right">
                         {delta.netDelta > 0 ? (
                           <span className="text-success-foreground">
@@ -143,21 +265,21 @@ function ForecastPanelContent({
                           <span className="text-muted-foreground">0</span>
                         )}
                       </TableCell>
+                      <TableCell className="py-2">
+                        <ForecastResourceSparkline
+                          points={
+                            sparklinePointsByResource.get(delta.resourceId) ??
+                            []
+                          }
+                        />
+                      </TableCell>
                       <TableCell className="py-2 tabular-nums text-right">
-                        {turnsUntilEmpty !== null ? (
-                          turnsUntilEmpty <= 3 ? (
-                            <span className="text-destructive">
-                              {turnsUntilEmpty}
-                            </span>
-                          ) : turnsUntilEmpty <= 10 ? (
-                            <span className="text-warning-foreground">
-                              {turnsUntilEmpty}
-                            </span>
-                          ) : (
-                            <span>{turnsUntilEmpty}</span>
-                          )
+                        {toneClassName === null ? (
+                          <span className="text-muted-foreground">
+                            {runOutLabel}
+                          </span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className={toneClassName}>{runOutLabel}</span>
                         )}
                       </TableCell>
                     </TableRow>
