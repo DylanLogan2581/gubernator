@@ -31,6 +31,36 @@ describe("MasterDetailLayout", () => {
     expect(screen.queryByText("Nothing")).toBeNull();
   });
 
+  it("renders the emptyState in the detail slot when nothing is selected", () => {
+    render(
+      <MasterDetailLayout
+        list={<div>the list</div>}
+        detail={null}
+        detailTitle="Nothing"
+        onCloseDetail={vi.fn()}
+        emptyState={<div>pick something</div>}
+      />,
+    );
+
+    expect(screen.getByText("the list")).toBeDefined();
+    expect(screen.getByText("pick something")).toBeDefined();
+  });
+
+  it("swaps the emptyState for the detail panel once something is selected", () => {
+    render(
+      <MasterDetailLayout
+        list={<div>the list</div>}
+        detail={<div>detail content</div>}
+        detailTitle="Selected item"
+        onCloseDetail={vi.fn()}
+        emptyState={<div>pick something</div>}
+      />,
+    );
+
+    expect(screen.getByText("detail content")).toBeDefined();
+    expect(screen.queryByText("pick something")).toBeNull();
+  });
+
   it("renders the detail panel inline as a Card on wide screens", () => {
     setViewportWidth(1280);
 

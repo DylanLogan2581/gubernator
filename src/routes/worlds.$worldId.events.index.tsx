@@ -15,10 +15,13 @@ const EVENT_STATUS_VALUES = [
 
 const EVENT_SCOPE_VALUES = ["world", "nation", "settlement"] as const;
 
+const EVENT_SORT_VALUES = ["status", "created_at"] as const;
+
 const eventsSearchSchema = z.object({
   status: z.array(z.enum(EVENT_STATUS_VALUES)).optional(),
   scope: z.enum(EVENT_SCOPE_VALUES).optional(),
   q: z.string().optional(),
+  sort: z.enum(EVENT_SORT_VALUES).optional(),
 });
 
 type EventsRouteSearch = z.infer<typeof eventsSearchSchema>;
@@ -37,6 +40,7 @@ function EventsListRoute(): JSX.Element {
     status: routeSearch.status ?? [],
     scope: routeSearch.scope,
     q: routeSearch.q ?? "",
+    sort: routeSearch.sort ?? "created_at",
   };
 
   return <EventsPage worldId={worldId} search={search} />;

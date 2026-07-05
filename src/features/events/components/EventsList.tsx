@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Zap } from "lucide-react";
 import { useEffect, useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -62,6 +62,7 @@ type EventDisplayItem =
 import type {
   EventListFilters,
   EventScopeType,
+  EventSortBy,
   EventsSearchParams,
   EventWithGroup,
 } from "../types/eventTypes";
@@ -125,7 +126,6 @@ export function EventsList({
   search,
 }: EventsListProps): JSX.Element {
   const navigate = useNavigate();
-  const [sortBy, setSortBy] = useState<"status" | "created_at">("created_at");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -162,7 +162,7 @@ export function EventsList({
 
   const filters: EventListFilters = {
     statusFilter: search.status.length > 0 ? [...search.status] : undefined,
-    sortBy,
+    sortBy: search.sort,
   };
 
   const eventsQuery = useQuery(eventsListQueryOptions(worldId, filters));
@@ -268,9 +268,17 @@ export function EventsList({
           </DropdownMenu>
 
           <Select
-            value={sortBy}
+            value={search.sort}
             onValueChange={(value) => {
-              setSortBy(value as "status" | "created_at");
+              void navigate({
+                to: "/worlds/$worldId/events",
+                params: { worldId },
+                search: (prev) => ({
+                  ...prev,
+                  sort:
+                    value === "created_at" ? undefined : (value as EventSortBy),
+                }),
+              });
             }}
           >
             <SelectTrigger aria-label="Sort events" className="w-[180px]">
@@ -406,6 +414,20 @@ export function EventsList({
         onCloseDetail={() => {
           setSelectedEventId(null);
         }}
+        emptyState={
+          <EmptyState
+            icon={Zap}
+            title="Select an event to see its details"
+            action={
+              canCreate ? (
+                <Button onClick={onCreateClick} size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create event
+                </Button>
+              ) : undefined
+            }
+          />
+        }
       />
     </div>
   );

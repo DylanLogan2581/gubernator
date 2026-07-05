@@ -112,12 +112,14 @@ export type EventEffect = {
   readonly updated_at: string;
 };
 
+export type EventSortBy = "status" | "created_at";
+
 /**
  * Filter state for events list.
  */
 export type EventListFilters = {
   readonly statusFilter?: EventStatus[];
-  readonly sortBy?: "status" | "created_at";
+  readonly sortBy?: EventSortBy;
   readonly scopeEntityFilter?: {
     readonly type: "nation" | "settlement";
     readonly id: string;
@@ -131,4 +133,5 @@ export type EventsSearchParams = {
   readonly status: readonly EventStatus[];
   readonly scope?: EventScopeType;
   readonly q: string;
+  readonly sort: EventSortBy;
 };

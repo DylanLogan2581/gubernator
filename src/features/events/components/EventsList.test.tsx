@@ -98,7 +98,11 @@ function buildClient(events: readonly EventWithGroup[]): unknown {
   };
 }
 
-const EMPTY_SEARCH: EventsSearchParams = { status: [], q: "" };
+const EMPTY_SEARCH: EventsSearchParams = {
+  status: [],
+  q: "",
+  sort: "created_at",
+};
 
 function renderList(
   search: EventsSearchParams = EMPTY_SEARCH,
@@ -157,11 +161,29 @@ describe("EventsList", () => {
       buildClient([createEvent({ name: "Drought" })]),
     );
 
-    renderList({ status: [], q: "famine" });
+    renderList({ status: [], q: "famine", sort: "created_at" });
 
     expect(
       await screen.findByText("No events match your filters"),
     ).toBeDefined();
+  });
+
+  it("shows a placeholder in the detail slot until a row is selected", async () => {
+    requireSupabaseClient.mockReturnValue(
+      buildClient([createEvent({ name: "Drought" })]),
+    );
+    const user = userEvent.setup();
+
+    renderList();
+
+    expect(
+      await screen.findByText("Select an event to see its details"),
+    ).toBeDefined();
+
+    await user.click(await screen.findByText("Drought"));
+
+    expect(await screen.findByTestId("event-detail")).toBeDefined();
+    expect(screen.queryByText("Select an event to see its details")).toBeNull();
   });
 
   it("selects a row and shows the detail panel without navigating", async () => {
@@ -205,6 +227,7 @@ describe("EventsList", () => {
     expect(call.search(EMPTY_SEARCH)).toEqual({
       status: ["active"],
       q: "",
+      sort: "created_at",
     });
   });
 
@@ -226,7 +249,32 @@ describe("EventsList", () => {
     expect(call.search(EMPTY_SEARCH)).toEqual({
       status: [],
       q: "",
+      sort: "created_at",
       scope: "nation",
+    });
+  });
+
+  it("navigates with an updated sort when a sort option is selected", async () => {
+    requireSupabaseClient.mockReturnValue(
+      buildClient([createEvent({ name: "Drought" })]),
+    );
+    const user = userEvent.setup();
+
+    renderList();
+
+    await screen.findByText("Drought");
+    await user.click(screen.getByRole("combobox", { name: "Sort events" }));
+    await user.click(
+      await screen.findByRole("option", { name: "Sort by Status" }),
+    );
+
+    const call = navigateMock.mock.calls.at(-1)?.[0] as {
+      readonly search: (prev: EventsSearchParams) => EventsSearchParams;
+    };
+    expect(call.search(EMPTY_SEARCH)).toEqual({
+      status: [],
+      q: "",
+      sort: "status",
     });
   });
 
@@ -255,6 +303,7 @@ describe("EventsList", () => {
     expect(call.search(EMPTY_SEARCH)).toEqual({
       status: [],
       q: "famine",
+      sort: "created_at",
     });
   });
 
