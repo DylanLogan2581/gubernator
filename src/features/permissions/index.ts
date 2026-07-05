@@ -1,5 +1,6 @@
 export { ActiveCharacterSwitcher } from "./components/ActiveCharacterSwitcher";
 export { AdminSuppressedNotice } from "./components/AdminSuppressedNotice";
+export { CharacterRoleLabel } from "./components/CharacterRoleLabel";
 export { SuperadminSettingsPage } from "./components/SuperadminSettingsPage";
 export { PlayerCharacterChooser } from "./components/PlayerCharacterChooser";
 export { RoleAssignmentControls } from "./components/RoleAssignmentControls";
