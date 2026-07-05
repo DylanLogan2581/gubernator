@@ -22,6 +22,17 @@ export const eventTargetSchema = z.strictObject({
 
 export type EventTargetSchema = z.input<typeof eventTargetSchema>;
 
+// Single per-turn citizen memory in the create/edit wizard's forecast step.
+export const eventMemorySchema = z.strictObject({
+  turnOffset: z.number().int().min(0, "Turn offset must be non-negative."),
+  memoryText: z
+    .string()
+    .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
+    .refine((v): boolean => v.trim().length > 0, "Memory text is required."),
+});
+
+export type EventMemorySchema = z.input<typeof eventMemorySchema>;
+
 /**
  * Input for creating an event group with multiple events atomically.
  */
@@ -206,21 +217,31 @@ export const createEventGroupInputSchema = z
       .number()
       .int()
       .min(0, "Activation turn must be non-negative."),
-    createCitizenMemories: z.boolean().default(false),
-    memoryText: z
-      .string()
-      .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
-      .optional()
-      .nullable(),
+    memories: z.array(eventMemorySchema).default([]),
   })
-  .refine(
-    (data) =>
-      !data.createCitizenMemories || (data.memoryText?.trim().length ?? 0) > 0,
-    {
-      message: "Memory text is required when recording citizen memories.",
-      path: ["memoryText"],
-    },
-  );
+  .superRefine((data, ctx): void => {
+    const maxTurnOffset =
+      data.durationType === "sustained" ? (data.durationTransitions ?? 1) : 1;
+    const seenOffsets = new Set<number>();
+    data.memories.forEach((memory, index) => {
+      if (memory.turnOffset >= maxTurnOffset) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Memory turn offset is out of range for this event's duration.",
+          path: ["memories", index, "turnOffset"],
+        });
+      }
+      if (seenOffsets.has(memory.turnOffset)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Only one memory is allowed per turn.",
+          path: ["memories", index, "turnOffset"],
+        });
+      }
+      seenOffsets.add(memory.turnOffset);
+    });
+  });
 
 export type CreateEventGroupInput = z.input<typeof createEventGroupInputSchema>;
 
@@ -276,21 +297,31 @@ export const editEventGroupInputSchema = z
       .number()
       .int()
       .min(0, "Activation turn must be non-negative."),
-    createCitizenMemories: z.boolean().default(false),
-    memoryText: z
-      .string()
-      .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
-      .optional()
-      .nullable(),
+    memories: z.array(eventMemorySchema).default([]),
   })
-  .refine(
-    (data) =>
-      !data.createCitizenMemories || (data.memoryText?.trim().length ?? 0) > 0,
-    {
-      message: "Memory text is required when recording citizen memories.",
-      path: ["memoryText"],
-    },
-  );
+  .superRefine((data, ctx): void => {
+    const maxTurnOffset =
+      data.durationType === "sustained" ? (data.durationTransitions ?? 1) : 1;
+    const seenOffsets = new Set<number>();
+    data.memories.forEach((memory, index) => {
+      if (memory.turnOffset >= maxTurnOffset) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Memory turn offset is out of range for this event's duration.",
+          path: ["memories", index, "turnOffset"],
+        });
+      }
+      if (seenOffsets.has(memory.turnOffset)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Only one memory is allowed per turn.",
+          path: ["memories", index, "turnOffset"],
+        });
+      }
+      seenOffsets.add(memory.turnOffset);
+    });
+  });
 
 export type EditEventGroupInput = z.input<typeof editEventGroupInputSchema>;
 

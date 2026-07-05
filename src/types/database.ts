@@ -231,6 +231,7 @@ export type Database = {
           created_at: string;
           created_by_user_id: string | null;
           event_id: string | null;
+          event_memory_id: string | null;
           id: string;
           memory_text: string;
           occurred_on_turn_number: number;
@@ -242,6 +243,7 @@ export type Database = {
           created_at?: string;
           created_by_user_id?: string | null;
           event_id?: string | null;
+          event_memory_id?: string | null;
           id?: string;
           memory_text: string;
           occurred_on_turn_number: number;
@@ -253,6 +255,7 @@ export type Database = {
           created_at?: string;
           created_by_user_id?: string | null;
           event_id?: string | null;
+          event_memory_id?: string | null;
           id?: string;
           memory_text?: string;
           occurred_on_turn_number?: number;
@@ -286,6 +289,13 @@ export type Database = {
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_memories_event_memory_id_fkey";
+            columns: ["event_memory_id"];
+            isOneToOne: false;
+            referencedRelation: "event_memories";
             referencedColumns: ["id"];
           },
           {
@@ -943,12 +953,46 @@ export type Database = {
           },
         ];
       };
+      event_memories: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          id: string;
+          memory_text: string;
+          turn_offset: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          memory_text: string;
+          turn_offset?: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          memory_text?: string;
+          turn_offset?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_memories_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       events: {
         Row: {
           activate_on_transition_after_turn_number: number;
           amount_value: number | null;
           building_blueprint_id: string | null;
-          create_citizen_memories: boolean;
           created_at: string;
           description: string | null;
           duration_transitions: number | null;
@@ -960,7 +1004,6 @@ export type Database = {
           id: string;
           job_id: number | null;
           managed_population_type_id: string | null;
-          memory_text: string | null;
           multiplier_value: number | null;
           name: string;
           remaining_transitions: number | null;
@@ -975,7 +1018,6 @@ export type Database = {
           activate_on_transition_after_turn_number: number;
           amount_value?: number | null;
           building_blueprint_id?: string | null;
-          create_citizen_memories?: boolean;
           created_at?: string;
           description?: string | null;
           duration_transitions?: number | null;
@@ -987,7 +1029,6 @@ export type Database = {
           id?: string;
           job_id?: number | null;
           managed_population_type_id?: string | null;
-          memory_text?: string | null;
           multiplier_value?: number | null;
           name: string;
           remaining_transitions?: number | null;
@@ -1002,7 +1043,6 @@ export type Database = {
           activate_on_transition_after_turn_number?: number;
           amount_value?: number | null;
           building_blueprint_id?: string | null;
-          create_citizen_memories?: boolean;
           created_at?: string;
           description?: string | null;
           duration_transitions?: number | null;
@@ -1014,7 +1054,6 @@ export type Database = {
           id?: string;
           job_id?: number | null;
           managed_population_type_id?: string | null;
-          memory_text?: string | null;
           multiplier_value?: number | null;
           name?: string;
           remaining_transitions?: number | null;
@@ -3141,6 +3180,7 @@ export type Database = {
           p_effects: Json;
           p_group_description: string;
           p_group_name: string;
+          p_memories?: Json;
           p_memory_text: string;
           p_scope_type: string;
           p_targets: Json;
@@ -4731,6 +4771,7 @@ export type Database = {
           p_group_description: string;
           p_group_id: string;
           p_group_name: string;
+          p_memories?: Json;
           p_memory_text: string;
         };
         Returns: Json;

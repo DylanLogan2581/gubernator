@@ -13,7 +13,11 @@ import {
 } from "./eventQueries";
 import { eventQueryKeys } from "./eventQueryKeys";
 
-import type { EventEffect, EventWithGroup } from "../types/eventTypes";
+import type {
+  EventEffect,
+  EventMemory,
+  EventWithGroup,
+} from "../types/eventTypes";
 
 const WORLD_ID = "11111111-1111-1111-1111-111111111111";
 const SETTLEMENT_ID = "22222222-2222-2222-2222-222222222222";
@@ -47,8 +51,6 @@ function createEventRow(
     amount_value: null,
     multiplier_value: null,
     extra_data_jsonb: null,
-    create_citizen_memories: false,
-    memory_text: null,
     created_at: "2026-05-01T00:00:00.000Z",
     updated_at: "2026-05-01T00:00:00.000Z",
     group: null,
@@ -334,11 +336,26 @@ describe("eventDetailQueryOptions", () => {
       eq: vi.fn(() => effectsBuilder),
       returns: vi.fn().mockResolvedValue({ data: [effectRow], error: null }),
     };
+    const memoryRow: EventMemory = {
+      id: "66666666-6666-6666-6666-666666666666",
+      event_id: EVENT_ID,
+      memory_text: "They remember the drought.",
+      turn_offset: 0,
+      created_at: "2026-05-01T00:00:00.000Z",
+      updated_at: "2026-05-01T00:00:00.000Z",
+    };
+    const memoriesBuilder: Record<string, unknown> = {
+      eq: vi.fn(() => memoriesBuilder),
+      order: vi.fn(() => memoriesBuilder),
+      returns: vi.fn().mockResolvedValue({ data: [memoryRow], error: null }),
+    };
     const client = {
       from: vi.fn((table: string) => {
         if (table === "events") return { select: vi.fn(() => eventsBuilder) };
         if (table === "event_effects")
           return { select: vi.fn(() => effectsBuilder) };
+        if (table === "event_memories")
+          return { select: vi.fn(() => memoriesBuilder) };
         throw new Error(`Unexpected table: ${table}`);
       }),
     } as unknown as GubernatorSupabaseClient;
@@ -348,7 +365,11 @@ describe("eventDetailQueryOptions", () => {
       eventDetailQueryOptions(WORLD_ID, EVENT_ID, client),
     );
 
-    expect(result).toEqual({ ...eventRow, effects: [effectRow] });
+    expect(result).toEqual({
+      ...eventRow,
+      effects: [effectRow],
+      memories: [memoryRow],
+    });
   });
 
   it("throws when the event is not found", async () => {

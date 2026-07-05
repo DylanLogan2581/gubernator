@@ -25,8 +25,10 @@ type EditEventData = {
   readonly durationType: string;
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
-  readonly createCitizenMemories: boolean;
-  readonly memoryText: string | null;
+  readonly memories: Array<{
+    readonly turnOffset: number;
+    readonly memoryText: string;
+  }>;
   readonly effects: Array<{
     readonly effectType: string;
     readonly isPercent: boolean;
@@ -106,8 +108,10 @@ export function EventEditPage({
     durationType: event.duration_type,
     durationTransitions: event.duration_transitions,
     activationTurn: event.activate_on_transition_after_turn_number,
-    createCitizenMemories: event.create_citizen_memories,
-    memoryText: event.memory_text,
+    memories: event.memories.map((m) => ({
+      turnOffset: m.turn_offset,
+      memoryText: m.memory_text,
+    })),
     effects: event.effects.map((e) => ({
       effectType: e.effect_type,
       isPercent: e.is_percent,

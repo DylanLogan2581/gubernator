@@ -151,8 +151,12 @@ export function createEventGroupMutationOptions({
               ? values.durationTransitions
               : null,
           p_activate_on_transition_after_turn_number: values.activationTurn,
-          p_create_citizen_memories: values.createCitizenMemories,
-          p_memory_text: values.memoryText ?? null,
+          p_create_citizen_memories: false,
+          p_memory_text: null,
+          p_memories: values.memories.map((m) => ({
+            memory_text: m.memoryText,
+            turn_offset: m.turnOffset,
+          })),
         },
       );
 
@@ -359,8 +363,12 @@ export function editEventGroupMutationOptions({
               ? values.durationTransitions
               : null,
           p_activate_on_transition_after_turn_number: values.activationTurn,
-          p_create_citizen_memories: values.createCitizenMemories,
-          p_memory_text: values.memoryText ?? null,
+          p_create_citizen_memories: false,
+          p_memory_text: null,
+          p_memories: values.memories.map((m) => ({
+            memory_text: m.memoryText,
+            turn_offset: m.turnOffset,
+          })),
         },
       );
 

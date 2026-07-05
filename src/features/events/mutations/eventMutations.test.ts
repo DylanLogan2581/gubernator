@@ -100,8 +100,7 @@ function createGroupInput(
     durationType: "instant",
     durationTransitions: null,
     activationTurn: 1,
-    createCitizenMemories: false,
-    memoryText: null,
+    memories: [],
     ...overrides,
   };
 }
@@ -118,8 +117,7 @@ function createEditGroupInput(
     durationType: "instant",
     durationTransitions: null,
     activationTurn: 1,
-    createCitizenMemories: false,
-    memoryText: null,
+    memories: [],
     ...overrides,
   };
 }
@@ -166,11 +164,44 @@ describe("createEventGroupMutationOptions", () => {
       p_activate_on_transition_after_turn_number: 1,
       p_create_citizen_memories: false,
       p_memory_text: null,
+      p_memories: [],
     });
     expect(options.mutationKey).toEqual([
       ...eventQueryKeys.all,
       "create-group",
     ]);
+  });
+
+  it("maps memories to snake_case turn_offset/memory_text pairs", async () => {
+    const { client, rpc } = createRpcClient({
+      data: { group_id: GROUP_ID, event_ids: [EVENT_ID] },
+      error: null,
+    });
+    const queryClient = createQueryClient();
+    const options = createEventGroupMutationOptions({ client, queryClient });
+
+    await executeMutation(
+      queryClient,
+      options,
+      createGroupInput({
+        durationType: "sustained",
+        durationTransitions: 2,
+        memories: [
+          { turnOffset: 0, memoryText: "Turn 1 memory" },
+          { turnOffset: 1, memoryText: "Turn 2 memory" },
+        ],
+      }),
+    );
+
+    expect(rpc).toHaveBeenCalledWith(
+      "create_event_group_with_events",
+      expect.objectContaining({
+        p_memories: [
+          { memory_text: "Turn 1 memory", turn_offset: 0 },
+          { memory_text: "Turn 2 memory", turn_offset: 1 },
+        ],
+      }),
+    );
   });
 
   it("maps managed_population_change mode into extra_data_jsonb", async () => {
@@ -531,6 +562,7 @@ describe("editEventGroupMutationOptions", () => {
       p_activate_on_transition_after_turn_number: 1,
       p_create_citizen_memories: false,
       p_memory_text: null,
+      p_memories: [],
     });
     expect(options.mutationKey).toEqual([...eventQueryKeys.all, "edit-group"]);
   });

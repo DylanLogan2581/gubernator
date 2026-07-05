@@ -258,14 +258,23 @@ export function EventDetail({
             </div>
           )}
 
-          {event.memory_text !== null ? (
-            <div className="rounded-md bg-muted p-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase mb-2">
-                Memory Text
+          {event.memories.length > 0 && (
+            <div className="space-y-2 rounded-md bg-muted p-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase">
+                Citizen Memories
               </p>
-              <p className="text-sm">{event.memory_text}</p>
+              <div className="space-y-2">
+                {event.memories.map((memory) => (
+                  <div key={memory.id}>
+                    <p className="text-xs text-muted-foreground">
+                      Turn offset {memory.turn_offset}
+                    </p>
+                    <p className="text-sm">{memory.memory_text}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ) : null}
+          )}
 
           {event.effects.length > 0 && (
             <div className="space-y-3 border-t pt-4">
