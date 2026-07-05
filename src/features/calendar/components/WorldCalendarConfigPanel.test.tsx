@@ -35,11 +35,63 @@ vi.mock("sonner", () => ({
   },
 }));
 
+const { useBlockerMock } = vi.hoisted(() => ({
+  useBlockerMock: vi.fn<
+    (opts: { readonly shouldBlockFn: () => boolean }) => {
+      readonly status: "blocked" | "idle";
+    }
+  >(),
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  useBlocker: useBlockerMock,
+}));
+
 describe("WorldCalendarConfigPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
     toastSuccess.mockReset();
+    useBlockerMock.mockReset();
+    useBlockerMock.mockReturnValue({ status: "idle" });
+  });
+
+  it("blocks navigation once a field is edited and unblocks after save", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: ["00000000-0000-0000-0000-000000000001"],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+    expect(useBlockerMock.mock.calls[0][0].shouldBlockFn()).toBe(false);
+
+    await user.type(screen.getByRole("textbox", { name: "Day 1" }), "Edited");
+
+    expect(
+      useBlockerMock.mock.calls[
+        useBlockerMock.mock.calls.length - 1
+      ][0].shouldBlockFn(),
+    ).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    await waitFor(() => {
+      expect(
+        useBlockerMock.mock.calls[
+          useBlockerMock.mock.calls.length - 1
+        ][0].shouldBlockFn(),
+      ).toBe(false);
+    });
   });
 
   it("renders editable calendar controls for world admins", async () => {

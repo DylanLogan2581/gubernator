@@ -46,6 +46,7 @@ vi.mock("@tanstack/react-router", () => ({
     );
   },
   useNavigate: () => vi.fn(),
+  useBlocker: () => ({ status: "idle" }),
 }));
 
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";

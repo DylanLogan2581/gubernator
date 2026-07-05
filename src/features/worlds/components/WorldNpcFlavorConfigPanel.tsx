@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { generateNpcFlavor, renderNpcFlavorLine } from "@/features/citizens";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { notifyMutationSuccess } from "@/lib/notify";
 import { createSeededRng } from "@/lib/seededRng";
 
@@ -95,6 +96,8 @@ function WorldNpcFlavorConfigPanelContent({
   const [exampleOutput, setExampleOutput] = useState<string | null>(null);
   const [exampleDialogOpen, setExampleDialogOpen] = useState(false);
   const [previewSeed, setPreviewSeed] = useState<number>(0);
+  const [isDirty, setIsDirty] = useState(false);
+  const unsavedChangesDialog = useUnsavedChangesGuard(isDirty);
 
   const canEdit = canAdmin && !isArchived;
 
@@ -114,6 +117,7 @@ function WorldNpcFlavorConfigPanelContent({
           toast.error(getNpcFlavorErrorDescription(error));
         },
         onSuccess: () => {
+          setIsDirty(false);
           notifyMutationSuccess("NPC flavor pools saved.");
         },
       },
@@ -198,39 +202,43 @@ function WorldNpcFlavorConfigPanelContent({
                 <PoolEditor
                   label="Traits"
                   entries={draftConfig.traits}
-                  onChange={(traits) =>
-                    setDraftConfig((current) => ({ ...current, traits }))
-                  }
+                  onChange={(traits) => {
+                    setDraftConfig((current) => ({ ...current, traits }));
+                    setIsDirty(true);
+                  }}
                 />
               </Tabs.Content>
               <Tabs.Content value="contradictions" className="mt-3">
                 <PoolEditor
                   label="Contradictions"
                   entries={draftConfig.contradictions}
-                  onChange={(contradictions) =>
+                  onChange={(contradictions) => {
                     setDraftConfig((current) => ({
                       ...current,
                       contradictions,
-                    }))
-                  }
+                    }));
+                    setIsDirty(true);
+                  }}
                 />
               </Tabs.Content>
               <Tabs.Content value="goals" className="mt-3">
                 <PoolEditor
                   label="Goals"
                   entries={draftConfig.goals}
-                  onChange={(goals) =>
-                    setDraftConfig((current) => ({ ...current, goals }))
-                  }
+                  onChange={(goals) => {
+                    setDraftConfig((current) => ({ ...current, goals }));
+                    setIsDirty(true);
+                  }}
                 />
               </Tabs.Content>
               <Tabs.Content value="flaws" className="mt-3">
                 <PoolEditor
                   label="Flaws"
                   entries={draftConfig.flaws}
-                  onChange={(flaws) =>
-                    setDraftConfig((current) => ({ ...current, flaws }))
-                  }
+                  onChange={(flaws) => {
+                    setDraftConfig((current) => ({ ...current, flaws }));
+                    setIsDirty(true);
+                  }}
                 />
               </Tabs.Content>
             </Tabs.Root>
@@ -260,6 +268,7 @@ function WorldNpcFlavorConfigPanelContent({
       ) : (
         <NpcFlavorPoolReadOnlySummary config={draftConfig} />
       )}
+      {unsavedChangesDialog}
     </div>
   );
 }

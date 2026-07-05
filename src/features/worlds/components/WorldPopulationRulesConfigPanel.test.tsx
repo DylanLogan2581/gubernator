@@ -31,6 +31,18 @@ vi.mock("sonner", () => ({
   },
 }));
 
+const { useBlockerMock } = vi.hoisted(() => ({
+  useBlockerMock: vi.fn<
+    (opts: { readonly shouldBlockFn: () => boolean }) => {
+      readonly status: "blocked" | "idle";
+    }
+  >(),
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  useBlocker: useBlockerMock,
+}));
+
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 
 describe("WorldPopulationRulesConfigPanel", () => {
@@ -38,6 +50,49 @@ describe("WorldPopulationRulesConfigPanel", () => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
     toastSuccess.mockReset();
+    useBlockerMock.mockReset();
+    useBlockerMock.mockReturnValue({ status: "idle" });
+  });
+
+  it("blocks navigation once a rule field is edited and unblocks after save", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [WORLD_ID],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Population rules" });
+    expect(useBlockerMock.mock.calls[0][0].shouldBlockFn()).toBe(false);
+
+    const input = screen.getByRole("spinbutton", {
+      name: /Mourning period/,
+    });
+    fireEvent.change(input, { target: { value: "25" } });
+
+    expect(
+      useBlockerMock.mock.calls[
+        useBlockerMock.mock.calls.length - 1
+      ][0].shouldBlockFn(),
+    ).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Save rules" }));
+
+    await waitFor(() => {
+      expect(
+        useBlockerMock.mock.calls[
+          useBlockerMock.mock.calls.length - 1
+        ][0].shouldBlockFn(),
+      ).toBe(false);
+    });
   });
 
   it("emits a success toast after saving population rules", async () => {

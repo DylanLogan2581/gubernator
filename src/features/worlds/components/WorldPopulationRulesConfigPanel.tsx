@@ -13,6 +13,7 @@ import { PercentInput } from "@/components/shared/PercentInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { saveWorldPopulationRulesMutationOptions } from "../mutations/worldPopulationRulesMutations";
@@ -90,8 +91,17 @@ function WorldPopulationRulesConfigPanelContent({
   );
   const [draftRules, setDraftRules] =
     useState<WorldPopulationRules>(initialRules);
+  const [isDirty, setIsDirty] = useState(false);
+  const unsavedChangesDialog = useUnsavedChangesGuard(isDirty);
 
   const canEdit = canAdmin && !isArchived;
+
+  function updateDraftRules(
+    updater: (rules: WorldPopulationRules) => WorldPopulationRules,
+  ): void {
+    setDraftRules(updater);
+    setIsDirty(true);
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -102,6 +112,7 @@ function WorldPopulationRulesConfigPanelContent({
           notifyMutationError(error, "Population rules could not be saved.");
         },
         onSuccess: () => {
+          setIsDirty(false);
           notifyMutationSuccess("Population rules saved.");
         },
       },
@@ -149,7 +160,7 @@ function WorldPopulationRulesConfigPanelContent({
                 hint="Probability (0–100%)"
                 value={draftRules.partnership_seek_chance}
                 onChange={(value) =>
-                  setDraftRules((r) => ({
+                  updateDraftRules((r) => ({
                     ...r,
                     partnership_seek_chance: value,
                   }))
@@ -160,7 +171,7 @@ function WorldPopulationRulesConfigPanelContent({
                 hint="Probability (0–100%)"
                 value={draftRules.fertility_chance}
                 onChange={(value) =>
-                  setDraftRules((r) => ({ ...r, fertility_chance: value }))
+                  updateDraftRules((r) => ({ ...r, fertility_chance: value }))
                 }
               />
               <NumberRuleField
@@ -170,7 +181,7 @@ function WorldPopulationRulesConfigPanelContent({
                 step={1}
                 value={draftRules.minimum_partnership_age_turns}
                 onChange={(value) =>
-                  setDraftRules((r) => ({
+                  updateDraftRules((r) => ({
                     ...r,
                     minimum_partnership_age_turns: value,
                   }))
@@ -182,7 +193,7 @@ function WorldPopulationRulesConfigPanelContent({
                 min={0}
                 value={draftRules.maximum_fertility_age_turns}
                 onChange={(value) =>
-                  setDraftRules((r) => ({
+                  updateDraftRules((r) => ({
                     ...r,
                     maximum_fertility_age_turns: value,
                   }))
@@ -201,7 +212,10 @@ function WorldPopulationRulesConfigPanelContent({
                 step={1}
                 value={draftRules.mourning_period_turns}
                 onChange={(value) =>
-                  setDraftRules((r) => ({ ...r, mourning_period_turns: value }))
+                  updateDraftRules((r) => ({
+                    ...r,
+                    mourning_period_turns: value,
+                  }))
                 }
               />
               <NumberRuleField
@@ -212,7 +226,7 @@ function WorldPopulationRulesConfigPanelContent({
                 step={1}
                 value={draftRules.incest_prevention_depth}
                 onChange={(value) =>
-                  setDraftRules((r) => ({
+                  updateDraftRules((r) => ({
                     ...r,
                     incest_prevention_depth: value,
                   }))
@@ -233,7 +247,7 @@ function WorldPopulationRulesConfigPanelContent({
                 step={0.01}
                 value={draftRules.food_consumption_per_citizen}
                 onChange={(value) =>
-                  setDraftRules((r) => ({
+                  updateDraftRules((r) => ({
                     ...r,
                     food_consumption_per_citizen: value,
                   }))
@@ -246,7 +260,7 @@ function WorldPopulationRulesConfigPanelContent({
                 step={0.01}
                 value={draftRules.water_consumption_per_citizen}
                 onChange={(value) =>
-                  setDraftRules((r) => ({
+                  updateDraftRules((r) => ({
                     ...r,
                     water_consumption_per_citizen: value,
                   }))
@@ -259,7 +273,7 @@ function WorldPopulationRulesConfigPanelContent({
                 step={0.01}
                 value={draftRules.homelessness_decline_rate}
                 onChange={(value) =>
-                  setDraftRules((r) => ({
+                  updateDraftRules((r) => ({
                     ...r,
                     homelessness_decline_rate: value,
                   }))
@@ -272,7 +286,7 @@ function WorldPopulationRulesConfigPanelContent({
                 step={0.01}
                 value={draftRules.starvation_severity_multiplier}
                 onChange={(value) =>
-                  setDraftRules((r) => ({
+                  updateDraftRules((r) => ({
                     ...r,
                     starvation_severity_multiplier: value,
                   }))
@@ -291,6 +305,7 @@ function WorldPopulationRulesConfigPanelContent({
       ) : (
         <PopulationRulesReadOnlySummary rules={draftRules} />
       )}
+      {unsavedChangesDialog}
     </div>
   );
 }

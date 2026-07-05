@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import type { WorldPermissionContext } from "@/features/worlds";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import { saveWorldCalendarConfigMutationOptions } from "../mutations/calendarMutations";
@@ -96,6 +97,8 @@ function WorldCalendarConfigPanelContent({
   const [validationErrors, setValidationErrors] = useState(
     emptyCalendarValidationErrors,
   );
+  const [isDirty, setIsDirty] = useState(false);
+  const unsavedChangesDialog = useUnsavedChangesGuard(isDirty);
 
   const canEdit = canAdmin && !isArchived;
 
@@ -119,6 +122,7 @@ function WorldCalendarConfigPanelContent({
           toast.error(getCalendarErrorDescription(error));
         },
         onSuccess: () => {
+          setIsDirty(false);
           notifyMutationSuccess("Calendar saved.");
         },
       },
@@ -128,6 +132,7 @@ function WorldCalendarConfigPanelContent({
   function resetDraftConfig(): void {
     setDraftConfig(initialConfig);
     setValidationErrors(emptyCalendarValidationErrors);
+    setIsDirty(false);
   }
 
   return (
@@ -166,6 +171,7 @@ function WorldCalendarConfigPanelContent({
             onChange={(config) => {
               setDraftConfig(config);
               setValidationErrors(emptyCalendarValidationErrors);
+              setIsDirty(true);
             }}
           />
 
@@ -188,6 +194,7 @@ function WorldCalendarConfigPanelContent({
       ) : (
         <CalendarReadOnlySummary config={draftConfig} />
       )}
+      {unsavedChangesDialog}
     </div>
   );
 }

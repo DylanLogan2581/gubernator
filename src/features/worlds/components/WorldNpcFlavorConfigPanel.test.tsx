@@ -33,6 +33,18 @@ vi.mock("sonner", () => ({
   },
 }));
 
+const { useBlockerMock } = vi.hoisted(() => ({
+  useBlockerMock: vi.fn<
+    (opts: { readonly shouldBlockFn: () => boolean }) => {
+      readonly status: "blocked" | "idle";
+    }
+  >(),
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  useBlocker: useBlockerMock,
+}));
+
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 
 describe("WorldNpcFlavorConfigPanel", () => {
@@ -40,6 +52,46 @@ describe("WorldNpcFlavorConfigPanel", () => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
     toastSuccess.mockReset();
+    useBlockerMock.mockReset();
+    useBlockerMock.mockReturnValue({ status: "idle" });
+  });
+
+  it("blocks navigation once a pool entry is edited and unblocks after save", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [WORLD_ID],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "NPC flavor pools" });
+    expect(useBlockerMock.mock.calls[0][0].shouldBlockFn()).toBe(false);
+
+    await user.click(screen.getAllByRole("button", { name: "Add entry" })[0]);
+
+    expect(
+      useBlockerMock.mock.calls[
+        useBlockerMock.mock.calls.length - 1
+      ][0].shouldBlockFn(),
+    ).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Save pools" }));
+
+    await waitFor(() => {
+      expect(
+        useBlockerMock.mock.calls[
+          useBlockerMock.mock.calls.length - 1
+        ][0].shouldBlockFn(),
+      ).toBe(false);
+    });
   });
 
   it("emits a success toast after saving the NPC flavor config", async () => {
