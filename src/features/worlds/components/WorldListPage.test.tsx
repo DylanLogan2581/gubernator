@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { WorldCalendarConfig } from "@/features/calendar";
 
+import { writeWorldScopePin } from "../utils/worldScopePin";
+
 import { WorldListPage } from "./WorldListPage";
 
 import type { ReactNode } from "react";
@@ -57,6 +59,7 @@ describe("WorldListPage", () => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
     toastSuccess.mockReset();
+    localStorage.clear();
   });
 
   it("renders the world list loading state", async () => {
@@ -126,6 +129,80 @@ describe("WorldListPage", () => {
       "href",
       "/worlds/00000000-0000-0000-0000-000000000101",
     );
+  });
+
+  it("uses a responsive card grid for the world list", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Grid World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Grid World");
+    expect(screen.getByRole("list", { name: "Accessible worlds" })).toHaveClass(
+      "sm:grid-cols-2",
+      "lg:grid-cols-3",
+    );
+  });
+
+  it("shows a resume link to the pinned nation when a scope pin is stored", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000501";
+    writeWorldScopePin(worldId, { nationId: "nation-1", settlementId: null });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ id: worldId, name: "Resume World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Resume World");
+    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute(
+      "href",
+      `/worlds/${worldId}/nations/nation-1`,
+    );
+  });
+
+  it("shows a resume link to the pinned settlement when both nation and settlement are stored", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000502";
+    writeWorldScopePin(worldId, {
+      nationId: "nation-1",
+      settlementId: "settlement-1",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({ id: worldId, name: "Resume Settlement World" }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Resume Settlement World");
+    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute(
+      "href",
+      `/worlds/${worldId}/nations/nation-1/settlements/settlement-1`,
+    );
+  });
+
+  it("does not show a resume link when no scope pin is stored", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "No Pin World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("No Pin World");
+    expect(screen.queryByRole("link", { name: "Resume" })).toBeNull();
   });
 
   it("shows a world icon with the first letter of the world name", async () => {

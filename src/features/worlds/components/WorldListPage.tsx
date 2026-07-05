@@ -9,6 +9,7 @@ import {
   Archive,
   ArrowRight,
   Globe2,
+  History,
   LockKeyhole,
   Plus,
   ShieldCheck,
@@ -66,6 +67,7 @@ import {
 } from "../queries/worldQueries";
 import { parseWorldTemplate } from "../queries/worldTemplateExportQueries";
 import { BUNDLED_SCENARIOS } from "../scenarios/bundledScenarios";
+import { readWorldScopePin } from "../utils/worldScopePin";
 import { computeDryRunReport } from "../utils/worldTemplateDryRun";
 
 import { WorldAvatar } from "./WorldAvatar";
@@ -242,7 +244,10 @@ function WorldListContent({
             description="Your Gubernator account does not currently have access to any worlds."
           />
         ) : (
-          <ul className="grid gap-3" aria-label="Accessible worlds">
+          <ul
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+            aria-label="Accessible worlds"
+          >
             {activeWorlds.map((world) => (
               <WorldListItem
                 key={world.id}
@@ -303,6 +308,22 @@ function TrashToggleButton({
   );
 }
 
+type ResumeTarget = {
+  readonly nationId: string;
+  readonly settlementId: string | null;
+};
+
+// #1005's stored scope pin is a free "where was I" bookmark per world
+// (localStorage, no request needed) — surface it as a resume shortcut when
+// present, otherwise the card just links to the world dashboard as before.
+function resumeTargetForWorld(worldId: string): ResumeTarget | null {
+  const pin = readWorldScopePin(worldId);
+  if (pin.nationId === null) {
+    return null;
+  }
+  return { nationId: pin.nationId, settlementId: pin.settlementId };
+}
+
 function WorldListItem({
   isSuperAdmin,
   queryClient,
@@ -314,6 +335,7 @@ function WorldListItem({
 }): JSX.Element {
   const [trashConfirmOpen, setTrashConfirmOpen] = useState(false);
   const trashMutation = useMutation(trashWorldMutationOptions({ queryClient }));
+  const resumeTarget = resumeTargetForWorld(world.id);
 
   async function handleTrash(): Promise<void> {
     try {
@@ -330,77 +352,101 @@ function WorldListItem({
   }
 
   return (
-    <li className="group grid gap-3 p-3 sm:grid-cols-[1fr_auto] sm:items-center rounded-md border border-border bg-card text-card-foreground">
+    <li className="group grid gap-3 rounded-md border border-border bg-card p-3 text-card-foreground">
       <Link
         to="/worlds/$worldId"
         params={{ worldId: world.id }}
-        className="grid gap-3 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:grid-cols-[1fr_auto] sm:items-center"
+        className="grid gap-3 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <div className="flex min-w-0 items-center gap-3">
           <WorldIcon world={world} />
-          <div className="min-w-0 space-y-2">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h2 className="truncate text-base font-medium">{world.name}</h2>
-              <WorldBadge world={world} />
-            </div>
-            <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
-              <div>
-                <dt className="font-medium text-foreground">Planning turn</dt>
-                <dd>{world.planningTurnNumber}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-foreground">In-world date</dt>
-                <dd>{world.inWorldDateLabel}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-foreground">Status</dt>
-                <dd className="capitalize">{world.status}</dd>
-              </div>
-            </dl>
+          <div className="min-w-0 flex-1 space-y-1">
+            <h2 className="truncate text-base font-medium">{world.name}</h2>
+            <WorldBadge world={world} />
           </div>
+          <ArrowRight
+            className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
         </div>
-        <ArrowRight
-          className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
+        <dl className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+          <div>
+            <dt className="font-medium text-foreground">Planning turn</dt>
+            <dd>{world.planningTurnNumber}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-foreground">In-world date</dt>
+            <dd>{world.inWorldDateLabel}</dd>
+          </div>
+        </dl>
       </Link>
-      {isSuperAdmin ? (
-        <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Move ${world.name} to trash`}
-            title="Move to trash"
-            disabled={trashMutation.isPending}
-            onClick={() => {
-              setTrashConfirmOpen(true);
-            }}
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
-          {trashConfirmOpen ? (
-            <ConfirmDialog
-              open
-              onOpenChange={(open) => {
-                if (!open) setTrashConfirmOpen(false);
+      {resumeTarget !== null || isSuperAdmin ? (
+        <div className="flex items-center justify-between gap-2">
+          {resumeTarget !== null ? (
+            <Button asChild variant="outline" size="sm">
+              {resumeTarget.settlementId !== null ? (
+                <Link
+                  to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
+                  params={{
+                    nationId: resumeTarget.nationId,
+                    settlementId: resumeTarget.settlementId,
+                    worldId: world.id,
+                  }}
+                >
+                  <History aria-hidden="true" />
+                  Resume
+                </Link>
+              ) : (
+                <Link
+                  to="/worlds/$worldId/nations/$nationId"
+                  params={{
+                    nationId: resumeTarget.nationId,
+                    worldId: world.id,
+                  }}
+                >
+                  <History aria-hidden="true" />
+                  Resume
+                </Link>
+              )}
+            </Button>
+          ) : (
+            <span />
+          )}
+          {isSuperAdmin ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Move ${world.name} to trash`}
+              title="Move to trash"
+              disabled={trashMutation.isPending}
+              onClick={() => {
+                setTrashConfirmOpen(true);
               }}
-              title={`Move ${world.name} to trash?`}
-              description={
-                <>
-                  This will move{" "}
-                  <span className="font-medium text-foreground">
-                    {world.name}
-                  </span>{" "}
-                  to the trash and remove it from the world list.
-                </>
-              }
-              confirmLabel="Move to trash"
-              isPending={trashMutation.isPending}
-              onConfirm={handleTrash}
-            />
+            >
+              <Trash2 aria-hidden="true" />
+            </Button>
           ) : null}
-        </>
+        </div>
+      ) : null}
+      {trashConfirmOpen ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setTrashConfirmOpen(false);
+          }}
+          title={`Move ${world.name} to trash?`}
+          description={
+            <>
+              This will move{" "}
+              <span className="font-medium text-foreground">{world.name}</span>{" "}
+              to the trash and remove it from the world list.
+            </>
+          }
+          confirmLabel="Move to trash"
+          isPending={trashMutation.isPending}
+          onConfirm={handleTrash}
+        />
       ) : null}
     </li>
   );
@@ -515,6 +561,7 @@ function WorldIcon({
   return (
     <WorldAvatar
       className="shrink-0"
+      size="lg"
       thumbnailPath={world.thumbnailPath}
       worldId={world.id}
       worldName={world.name}
