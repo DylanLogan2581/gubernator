@@ -20,6 +20,10 @@ type MockQueryData = {
     string,
     Array<{ id: string; name: string; managedPopulationTypeName: string }>
   >;
+  buildingsBySettlement: Record<
+    string,
+    Array<{ id: string; blueprintName: string }>
+  >;
 };
 
 const { queryData } = vi.hoisted((): { queryData: MockQueryData } => ({
@@ -30,6 +34,7 @@ const { queryData } = vi.hoisted((): { queryData: MockQueryData } => ({
     settlements: [],
     managedPopulationTypes: [],
     managedPopulationInstances: {},
+    buildingsBySettlement: {},
   },
 }));
 
@@ -40,7 +45,8 @@ vi.mock("@/features/buildings", () => ({
   }),
   settlementBuildingsBySettlementQueryOptions: (settlementId: string) => ({
     queryKey: ["buildings-settlement-test", settlementId],
-    queryFn: () => Promise.resolve([]),
+    queryFn: () =>
+      Promise.resolve(queryData.buildingsBySettlement[settlementId] ?? []),
   }),
   settlementBuildingsByNationsQueryOptions: () => ({
     queryKey: ["buildings-nation-test"],
@@ -117,6 +123,9 @@ type EffectRow = {
   managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
   settlementBuildingId: string | null;
+  buildingBlueprintMode?: "all" | "select" | "instance";
+  buildingBlueprintIds?: string[];
+  buildingInstanceIds?: string[];
 };
 
 function renderStep(
@@ -155,6 +164,7 @@ describe("EventCreateEffectsStep", () => {
     queryData.settlements = [];
     queryData.managedPopulationTypes = [];
     queryData.managedPopulationInstances = {};
+    queryData.buildingsBySettlement = {};
   });
 
   describe("managed population instance selection", () => {
@@ -206,6 +216,125 @@ describe("EventCreateEffectsStep", () => {
 
       expect(onEffectsChange).toHaveBeenCalledWith([
         expect.objectContaining({ managedPopulationInstanceId: "inst-2" }),
+      ]);
+    });
+  });
+
+  describe("upkeep_multiplier specific-buildings selection", () => {
+    it("lists building instances labeled with blueprint and settlement name, grouped by settlement", async () => {
+      queryData.settlements = [
+        {
+          id: "settlement-1",
+          name: "Riverton",
+          nationId: "n1",
+          nationName: "Nation A",
+        },
+      ];
+      queryData.buildingsBySettlement = {
+        "settlement-1": [
+          { id: "building-1", blueprintName: "Farm" },
+          { id: "building-2", blueprintName: "Mill" },
+        ],
+      };
+
+      const effect: EffectRow = {
+        effectType: "upkeep_multiplier",
+        isPercent: false,
+        amountValue: null,
+        multiplierValue: 1.5,
+        resourceId: null,
+        jobId: null,
+        managedPopulationInstanceId: null,
+        managedPopulationTypeId: null,
+        depositInstanceId: null,
+        settlementBuildingId: null,
+        buildingBlueprintMode: "instance",
+        buildingInstanceIds: [],
+      };
+
+      renderStep([effect], {
+        scopeType: "settlement",
+        selectedIds: ["settlement-1"],
+      });
+
+      expect(await screen.findByText("Farm (Riverton)")).toBeInTheDocument();
+      expect(screen.getByText("Mill (Riverton)")).toBeInTheDocument();
+      expect(screen.getByText("Riverton")).toBeInTheDocument();
+    });
+
+    it("checking a building adds its id to buildingInstanceIds", async () => {
+      const user = userEvent.setup();
+      queryData.settlements = [
+        {
+          id: "settlement-1",
+          name: "Riverton",
+          nationId: "n1",
+          nationName: "Nation A",
+        },
+      ];
+      queryData.buildingsBySettlement = {
+        "settlement-1": [{ id: "building-1", blueprintName: "Farm" }],
+      };
+
+      const effect: EffectRow = {
+        effectType: "upkeep_multiplier",
+        isPercent: false,
+        amountValue: null,
+        multiplierValue: 1.5,
+        resourceId: null,
+        jobId: null,
+        managedPopulationInstanceId: null,
+        managedPopulationTypeId: null,
+        depositInstanceId: null,
+        settlementBuildingId: null,
+        buildingBlueprintMode: "instance",
+        buildingInstanceIds: [],
+      };
+
+      const { onEffectsChange } = renderStep([effect], {
+        scopeType: "settlement",
+        selectedIds: ["settlement-1"],
+      });
+
+      const checkbox = await screen.findByRole("checkbox");
+      await user.click(checkbox);
+
+      expect(onEffectsChange).toHaveBeenCalledWith([
+        expect.objectContaining({ buildingInstanceIds: ["building-1"] }),
+      ]);
+    });
+
+    it("switching to Specific Buildings clears blueprint ids and switching away clears instance ids", async () => {
+      const user = userEvent.setup();
+      queryData.blueprints = [{ id: "bp-1", name: "Sawmill" }];
+
+      const effect: EffectRow = {
+        effectType: "upkeep_multiplier",
+        isPercent: false,
+        amountValue: null,
+        multiplierValue: 1.5,
+        resourceId: null,
+        jobId: null,
+        managedPopulationInstanceId: null,
+        managedPopulationTypeId: null,
+        depositInstanceId: null,
+        settlementBuildingId: null,
+        buildingBlueprintMode: "select",
+        buildingBlueprintIds: ["bp-1"],
+      };
+
+      const { onEffectsChange } = renderStep([effect], { scopeType: "world" });
+
+      const specificBuildingsRadio =
+        await screen.findByLabelText("Specific Buildings");
+      await user.click(specificBuildingsRadio);
+
+      expect(onEffectsChange).toHaveBeenLastCalledWith([
+        expect.objectContaining({
+          buildingBlueprintMode: "instance",
+          buildingBlueprintIds: undefined,
+          buildingInstanceIds: [],
+        }),
       ]);
     });
   });

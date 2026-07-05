@@ -8,6 +8,7 @@ import { nationsListQueryOptions } from "@/features/nations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 
+import { useBuildingsInScope } from "../../hooks/useBuildingsInScope";
 import {
   computeEffectImpact,
   type EffectImpactCategory,
@@ -33,6 +34,8 @@ type EventCreateStep5Props = {
     depositInstanceIds?: string[];
     settlementBuildingId?: string | null;
     settlementBuildingIds?: string[];
+    buildingBlueprintMode?: "all" | "select" | "instance";
+    buildingInstanceIds?: string[];
   }>;
   readonly durationType: EventDurationType;
   readonly durationTransitions: number | null;
@@ -71,6 +74,21 @@ export function EventCreateStep5({
     (resourcesQuery.data ?? []).map((r) => [r.id, r]),
   );
   const jobMap = new Map((jobsQuery.data ?? []).map((j) => [j.id, j]));
+
+  // Only fetch building instances when an effect actually targets specific
+  // building instances (upkeep_multiplier "Specific Buildings" mode).
+  const needsBuildingNames = effects.some(
+    (e) => e.buildingBlueprintMode === "instance",
+  );
+  const { buildings: buildingsInScope } = useBuildingsInScope({
+    worldId,
+    scopeType,
+    selectedIds,
+    enabled: needsBuildingNames,
+  });
+  const buildingLabelById = new Map(
+    buildingsInScope.map((b) => [b.id, b.label]),
+  );
 
   // Compute per-effect impact counts
   const settlements = settlementsQuery.data ?? [];
@@ -150,6 +168,14 @@ export function EventCreateStep5({
       effect.depositInstanceId.length > 0
     ) {
       targetLabel = "Deposit";
+    } else if (
+      effect.buildingBlueprintMode === "instance" &&
+      effect.buildingInstanceIds !== undefined &&
+      effect.buildingInstanceIds.length > 0
+    ) {
+      targetLabel = effect.buildingInstanceIds
+        .map((id) => buildingLabelById.get(id) ?? id)
+        .join(", ");
     }
 
     let valueLabel = "";

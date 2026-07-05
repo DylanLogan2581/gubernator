@@ -151,6 +151,7 @@ function applyEffect(
       consumption: number;
       upkeep: number;
       upkeepByBlueprintId: Map<string, number>;
+      upkeepByBuildingInstanceId: Map<string, number>;
     }
   >,
   pendingManagedPopulationDeltas: Map<string, number>,
@@ -194,6 +195,7 @@ function applyEffect(
               productionByJobId: new Map(),
               upkeep: 1,
               upkeepByBlueprintId: new Map(),
+              upkeepByBuildingInstanceId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
@@ -346,6 +348,7 @@ function applyEffect(
               productionByJobId: new Map(),
               upkeep: 1,
               upkeepByBlueprintId: new Map(),
+              upkeepByBuildingInstanceId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
@@ -441,16 +444,26 @@ function applyEffect(
               productionByJobId: new Map(),
               upkeep: 1,
               upkeepByBlueprintId: new Map(),
+              upkeepByBuildingInstanceId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
 
-          // Check if building blueprint targeting is specified
+          // Check if building blueprint or instance targeting is specified
           const extraData = effect.extraDataJsonb ?? {};
           const buildingBlueprintMode = extraData.building_blueprint_mode as string | undefined;
           const buildingBlueprintIds = extraData.building_blueprint_ids as string[] | undefined;
+          const buildingInstanceIds = extraData.building_instance_ids as string[] | undefined;
 
-          if (buildingBlueprintMode === "select" && Array.isArray(buildingBlueprintIds)) {
+          if (buildingBlueprintMode === "instance" && Array.isArray(buildingInstanceIds)) {
+            // Apply multiplier to specific building instances
+            for (const buildingId of buildingInstanceIds) {
+              mults.upkeepByBuildingInstanceId.set(
+                buildingId,
+                (mults.upkeepByBuildingInstanceId.get(buildingId) ?? 1) * multiplier,
+              );
+            }
+          } else if (buildingBlueprintMode === "select" && Array.isArray(buildingBlueprintIds)) {
             // Apply multiplier to specific blueprints
             for (const blueprintId of buildingBlueprintIds) {
               mults.upkeepByBlueprintId.set(

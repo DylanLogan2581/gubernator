@@ -617,6 +617,7 @@ export type SimulationSharedState = {
       consumption: number;
       upkeep: number;
       upkeepByBlueprintId: Map<string, number>;
+      upkeepByBuildingInstanceId: Map<string, number>;
     }
   >;
   // Managed population ID -> population delta from managed_population_change effects.

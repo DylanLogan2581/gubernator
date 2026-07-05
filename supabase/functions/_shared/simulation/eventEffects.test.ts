@@ -1112,4 +1112,34 @@ describe("phaseEvents — upkeep_multiplier blueprint targeting via extraDataJso
     expect(mults?.upkeep).toBe(2.0);
     expect(mults?.upkeepByBlueprintId.size).toBe(0);
   });
+
+  it("applies multiplier to specific building instances when building_blueprint_mode is instance", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "upkeep_multiplier",
+          effects: [
+            makeEffect({
+              effectType: "upkeep_multiplier",
+              extraDataJsonb: {
+                building_blueprint_mode: "instance",
+                building_instance_ids: ["building-1", "building-2"],
+              },
+              multiplierValue: 1.5,
+            }),
+          ],
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    phaseEvents(context);
+
+    const mults = context.shared.pendingEventMultipliers.get("settlement1");
+    expect(mults?.upkeepByBuildingInstanceId.get("building-1")).toBe(1.5);
+    expect(mults?.upkeepByBuildingInstanceId.get("building-2")).toBe(1.5);
+    // Global and blueprint-scoped multipliers should remain untouched
+    expect(mults?.upkeep).toBe(1);
+    expect(mults?.upkeepByBlueprintId.size).toBe(0);
+  });
 });

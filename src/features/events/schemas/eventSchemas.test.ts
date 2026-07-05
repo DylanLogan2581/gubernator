@@ -169,6 +169,27 @@ describe("eventEffectSchema", () => {
     });
   });
 
+  describe("upkeep_multiplier building targeting", () => {
+    it("accepts instance mode with buildingInstanceIds", () => {
+      const result = eventEffectSchema.safeParse({
+        effectType: "upkeep_multiplier",
+        multiplierValue: 1.5,
+        buildingBlueprintMode: "instance",
+        buildingInstanceIds: [TEST_UUID],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects an unknown buildingBlueprintMode value", () => {
+      const result = eventEffectSchema.safeParse({
+        effectType: "upkeep_multiplier",
+        multiplierValue: 1.5,
+        buildingBlueprintMode: "bogus",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe("deposit_discovered (no extra required fields)", () => {
     it("accepts without any optional fields", () => {
       const result = eventEffectSchema.safeParse({

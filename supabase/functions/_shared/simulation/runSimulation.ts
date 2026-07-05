@@ -80,6 +80,7 @@ export function runSimulation(
       consumption: number;
       upkeep: number;
       upkeepByBlueprintId: Map<string, number>;
+      upkeepByBuildingInstanceId: Map<string, number>;
     }
   >();
 

@@ -67,8 +67,12 @@ const eventEffectBaseSchema = z.strictObject({
     .nullable(),
   depositInstanceId: z.guid().optional().nullable(),
   settlementBuildingId: z.guid().optional().nullable(),
-  buildingBlueprintMode: z.enum(["all", "select"]).optional().nullable(),
+  buildingBlueprintMode: z
+    .enum(["all", "select", "instance"])
+    .optional()
+    .nullable(),
   buildingBlueprintIds: z.array(z.guid()).optional().nullable(),
+  buildingInstanceIds: z.array(z.guid()).optional().nullable(),
 });
 
 export const eventEffectSchema = eventEffectBaseSchema.superRefine(

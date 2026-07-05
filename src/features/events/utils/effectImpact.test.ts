@@ -137,6 +137,51 @@ describe("computeEffectImpact — building_destroyed", () => {
 });
 
 // ---------------------------------------------------------------------------
+// computeEffectImpact — upkeep_multiplier instance targeting
+// ---------------------------------------------------------------------------
+describe("computeEffectImpact — upkeep_multiplier instance targeting", () => {
+  it('mode "instance" with two building ids → buildings category, count 2', () => {
+    const impact = computeEffectImpact(
+      {
+        effectType: "upkeep_multiplier",
+        buildingBlueprintMode: "instance",
+        buildingInstanceIds: ["b1", "b2"],
+      },
+      "world",
+      [],
+      SETTLEMENTS,
+    );
+    expect(impact).toEqual({ category: "buildings", count: 2 });
+  });
+
+  it('mode "instance" with no ids selected → zero targets', () => {
+    const impact = computeEffectImpact(
+      {
+        effectType: "upkeep_multiplier",
+        buildingBlueprintMode: "instance",
+      },
+      "world",
+      [],
+      SETTLEMENTS,
+    );
+    expect(impact).toEqual({ category: "buildings", count: 0 });
+  });
+
+  it('mode "select" still falls back to settlements category', () => {
+    const impact = computeEffectImpact(
+      {
+        effectType: "upkeep_multiplier",
+        buildingBlueprintMode: "select",
+      },
+      "world",
+      [],
+      SETTLEMENTS,
+    );
+    expect(impact).toEqual({ category: "settlements", count: 3 });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computeEffectImpact — deposit_destroyed
 // ---------------------------------------------------------------------------
 describe("computeEffectImpact — deposit_destroyed", () => {

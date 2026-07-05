@@ -16,16 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type {
-  SettlementBuilding,
-  SettlementBuildingWithLocation,
-} from "@/features/buildings";
-import {
-  blueprintsByWorldQueryOptions,
-  settlementBuildingsBySettlementQueryOptions,
-  settlementBuildingsByNationsQueryOptions,
-  settlementBuildingsByWorldQueryOptions,
-} from "@/features/buildings";
+import { blueprintsByWorldQueryOptions } from "@/features/buildings";
 import type {
   DepositInstance,
   DepositInstanceWithLocation,
@@ -48,6 +39,10 @@ import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { generateLocalId } from "@/lib/uid";
 
+import {
+  useBuildingsInScope,
+  type BuildingWithLocationInfo,
+} from "../../hooks/useBuildingsInScope";
 import { computeEffectImpact } from "../../utils/effectImpact";
 
 type EventEffectType =
@@ -82,8 +77,9 @@ type EffectData = {
   depositInstanceIds?: string[];
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
-  buildingBlueprintMode?: "all" | "select";
+  buildingBlueprintMode?: "all" | "select" | "instance";
   buildingBlueprintIds?: string[];
+  buildingInstanceIds?: string[];
   _id?: string;
 };
 
@@ -243,43 +239,10 @@ function EffectEditor({
     }) as never,
   );
 
-  // Query for buildings if this is a building_destroyed effect
-  // For settlement scope: fetch individually per settlement
-  const settlementBuildingQueries = useQueries({
-    queries:
-      scopeType === "settlement" && selectedIds.length > 0
-        ? selectedIds.map((settlementId) =>
-            settlementBuildingsBySettlementQueryOptions(settlementId),
-          )
-        : [],
-  });
-
-  // For nation/world scope: fetch in bulk
-  const nationBuildingQueryOptions =
-    scopeType === "nation" && selectedIds.length > 0
-      ? settlementBuildingsByNationsQueryOptions(selectedIds)
-      : null;
-  const nationBuildingQuery = useQuery(
-    (nationBuildingQueryOptions ?? {
-      queryKey: ["buildings", "nations-disabled"] as const,
-      queryFn: () =>
-        Promise.resolve([] as readonly SettlementBuildingWithLocation[]),
-      enabled: false,
-    }) as never,
-  );
-
-  const worldBuildingQueryOptions =
-    scopeType === "world"
-      ? settlementBuildingsByWorldQueryOptions(worldId)
-      : null;
-  const worldBuildingQuery = useQuery(
-    (worldBuildingQueryOptions ?? {
-      queryKey: ["buildings", "world-disabled"] as const,
-      queryFn: () =>
-        Promise.resolve([] as readonly SettlementBuildingWithLocation[]),
-      enabled: false,
-    }) as never,
-  );
+  // Query for building instances in scope (building_destroyed target picker,
+  // upkeep_multiplier "Specific Buildings" target picker).
+  const { buildings: allBuildings, isLoading: buildingsLoading } =
+    useBuildingsInScope({ worldId, scopeType, selectedIds });
 
   // Query for managed population types for type-targeted effects
   const typesQuery = useQuery(
@@ -370,74 +333,6 @@ function EffectEditor({
           name: deposit.name,
           label: `${deposit.name} - ${deposit.settlementName} - ${deposit.nationName}`,
           groupLabel: `${deposit.settlementName}`,
-        });
-      });
-    }
-  }
-
-  // Pool all buildings from selected settlements, grouped by nation/settlement
-  type BuildingWithLocationInfo = {
-    readonly id: string;
-    readonly settlementId: string;
-    readonly settlementName: string;
-    readonly nationName: string;
-    readonly blueprintName: string;
-    readonly label: string;
-    readonly groupLabel: string;
-  };
-  const allBuildings: BuildingWithLocationInfo[] = [];
-
-  if (scopeType === "settlement") {
-    settlementBuildingQueries.forEach((query, index) => {
-      const settlementId = selectedIds[index];
-      const buildings = query.data as SettlementBuilding[] | undefined;
-      if (buildings !== undefined && Array.isArray(buildings)) {
-        const settlementName =
-          settlementNameById.get(settlementId) ?? settlementId;
-        buildings.forEach((building) => {
-          allBuildings.push({
-            id: building.id,
-            settlementId,
-            settlementName,
-            nationName: "",
-            blueprintName: building.blueprintName,
-            label: `${building.blueprintName} (${settlementName})`,
-            groupLabel: settlementName,
-          });
-        });
-      }
-    });
-  } else if (scopeType === "nation") {
-    const buildings = nationBuildingQuery.data as
-      | SettlementBuildingWithLocation[]
-      | undefined;
-    if (buildings !== undefined && Array.isArray(buildings)) {
-      buildings.forEach((building) => {
-        allBuildings.push({
-          id: building.id,
-          settlementId: building.settlementId,
-          settlementName: building.settlementName,
-          nationName: building.nationName,
-          blueprintName: building.blueprintName,
-          label: `${building.blueprintName} - ${building.settlementName} - ${building.nationName}`,
-          groupLabel: `${building.settlementName}`,
-        });
-      });
-    }
-  } else if (scopeType === "world") {
-    const buildings = worldBuildingQuery.data as
-      | SettlementBuildingWithLocation[]
-      | undefined;
-    if (buildings !== undefined && Array.isArray(buildings)) {
-      buildings.forEach((building) => {
-        allBuildings.push({
-          id: building.id,
-          settlementId: building.settlementId,
-          settlementName: building.settlementName,
-          nationName: building.nationName,
-          blueprintName: building.blueprintName,
-          label: `${building.blueprintName} - ${building.settlementName} - ${building.nationName}`,
-          groupLabel: `${building.settlementName}`,
         });
       });
     }
@@ -1066,12 +961,16 @@ function EffectEditor({
                       <label className="flex items-center gap-2">
                         <input
                           type="radio"
-                          checked={effect.buildingBlueprintMode !== "select"}
+                          checked={
+                            effect.buildingBlueprintMode !== "select" &&
+                            effect.buildingBlueprintMode !== "instance"
+                          }
                           onChange={() =>
                             onUpdate({
                               ...effect,
                               buildingBlueprintMode: "all",
                               buildingBlueprintIds: undefined,
+                              buildingInstanceIds: undefined,
                             })
                           }
                         />
@@ -1087,21 +986,40 @@ function EffectEditor({
                               buildingBlueprintMode: "select",
                               buildingBlueprintIds:
                                 effect.buildingBlueprintIds ?? [],
+                              buildingInstanceIds: undefined,
                             })
                           }
                         />
                         <span className="text-sm">Specific Building Types</span>
                       </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={effect.buildingBlueprintMode === "instance"}
+                          onChange={() =>
+                            onUpdate({
+                              ...effect,
+                              buildingBlueprintMode: "instance",
+                              buildingInstanceIds:
+                                effect.buildingInstanceIds ?? [],
+                              buildingBlueprintIds: undefined,
+                            })
+                          }
+                        />
+                        <span className="text-sm">Specific Buildings</span>
+                      </label>
                     </div>
 
-                    {effect.buildingBlueprintMode === "all" ? (
+                    {effect.buildingBlueprintMode === "all" ||
+                    effect.buildingBlueprintMode === undefined ||
+                    effect.buildingBlueprintMode === null ? (
                       <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
                         <p className="text-sm font-medium">
                           ✓ All {blueprintsQuery.data.length} building types
                           selected
                         </p>
                       </div>
-                    ) : (
+                    ) : effect.buildingBlueprintMode === "select" ? (
                       blueprintsQuery.data.length > 0 && (
                         <SearchableResourcePicker
                           resources={blueprintsQuery.data.map((b) => ({
@@ -1117,13 +1035,88 @@ function EffectEditor({
                           }
                         />
                       )
+                    ) : scopeType === null ? (
+                      <p className="text-sm text-muted-foreground">
+                        Select a scope in step 1 to target buildings
+                      </p>
+                    ) : selectedIds.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {scopeType === "settlement"
+                          ? "No settlements selected"
+                          : scopeType === "nation"
+                            ? "No nations selected"
+                            : "No world selected"}
+                      </p>
+                    ) : allBuildings.length === 0 && buildingsLoading ? (
+                      <p className="text-sm text-muted-foreground">
+                        Loading buildings...
+                      </p>
+                    ) : allBuildings.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No buildings available in selected {scopeType}
+                      </p>
+                    ) : (
+                      <div className="space-y-2 rounded-md border p-3 max-h-64 overflow-y-auto">
+                        {/* Group buildings by settlement for clarity at scale */}
+                        {Object.entries(
+                          allBuildings.reduce(
+                            (acc, building) => {
+                              const group = building.groupLabel;
+                              if (!(group in acc)) acc[group] = [];
+                              acc[group].push(building);
+                              return acc;
+                            },
+                            {} as Record<string, BuildingWithLocationInfo[]>,
+                          ),
+                        ).map(([group, groupBuildings]) => (
+                          <div key={group}>
+                            <p className="text-xs font-semibold text-muted-foreground mb-2">
+                              {group}
+                            </p>
+                            <div className="space-y-2 ml-2">
+                              {groupBuildings.map((building) => (
+                                <label
+                                  key={building.id}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Checkbox
+                                    checked={
+                                      effect.buildingInstanceIds?.includes(
+                                        building.id,
+                                      ) ?? false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const currentIds =
+                                        effect.buildingInstanceIds ?? [];
+                                      const newIds = new Set(currentIds);
+                                      if (checked === true) {
+                                        newIds.add(building.id);
+                                      } else if (checked === false) {
+                                        newIds.delete(building.id);
+                                      }
+                                      onUpdate({
+                                        ...effect,
+                                        buildingInstanceIds: Array.from(newIds),
+                                      });
+                                    }}
+                                  />
+                                  <span className="text-sm">
+                                    {building.label}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
 
-                    {blueprintsQuery.data.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No building types available
-                      </p>
-                    )}
+                    {effect.buildingBlueprintMode === "select" &&
+                      blueprintsQuery.data.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No building types available
+                        </p>
+                      )}
                   </div>
                 )}
 
@@ -1240,12 +1233,7 @@ function EffectEditor({
                     ? "No nations selected"
                     : "No world selected"}
               </p>
-            ) : allBuildings.length === 0 &&
-              (scopeType === "settlement"
-                ? settlementBuildingQueries.some((q) => q.isLoading)
-                : scopeType === "nation"
-                  ? nationBuildingQuery.isLoading
-                  : worldBuildingQuery.isLoading) ? (
+            ) : allBuildings.length === 0 && buildingsLoading ? (
               <p className="text-sm text-muted-foreground">
                 Loading buildings...
               </p>
@@ -1342,6 +1330,7 @@ export function EventCreateEffectsStep({
       depositInstanceIds: undefined,
       settlementBuildingId: null,
       buildingBlueprintMode: undefined,
+      buildingInstanceIds: undefined,
       _id: generateLocalId(),
     };
     onEffectsChange([...effects, newEffect]);

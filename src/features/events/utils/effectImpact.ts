@@ -15,6 +15,8 @@ export type EffectImpactInput = {
   readonly depositInstanceIds?: readonly string[];
   readonly managedPopulationInstanceId?: string | null;
   readonly managedPopulationMode?: "all" | "type" | "instance";
+  readonly buildingBlueprintMode?: "all" | "select" | "instance";
+  readonly buildingInstanceIds?: readonly string[];
 };
 
 export type EffectImpact = {
@@ -74,9 +76,18 @@ export function computeEffectImpact(
     case "modify_resource":
     case "consumption_multiplier":
     case "production_multiplier":
-    case "upkeep_multiplier":
     case "deposit_discovered":
       return { category: "settlements", count: scopeCount };
+
+    case "upkeep_multiplier": {
+      if (effect.buildingBlueprintMode === "instance") {
+        return {
+          category: "buildings",
+          count: effect.buildingInstanceIds?.length ?? 0,
+        };
+      }
+      return { category: "settlements", count: scopeCount };
+    }
 
     case "building_destroyed": {
       const ids = effect.settlementBuildingIds;

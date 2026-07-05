@@ -58,8 +58,9 @@ type EffectData = {
   depositInstanceIds?: string[];
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
-  buildingBlueprintMode?: "all" | "select";
+  buildingBlueprintMode?: "all" | "select" | "instance";
   buildingBlueprintIds?: string[];
+  buildingInstanceIds?: string[];
   _id?: string;
 };
 
@@ -113,8 +114,9 @@ export type EventCreateWizardState = {
 /** Extracts wizard-only targeting fields persisted in an effect's extra_data_jsonb column. */
 function extractEffectExtraData(extraDataJsonb: unknown): {
   managedPopulationMode?: "all" | "type" | "instance";
-  buildingBlueprintMode?: "all" | "select";
+  buildingBlueprintMode?: "all" | "select" | "instance";
   buildingBlueprintIds?: string[];
+  buildingInstanceIds?: string[];
 } {
   if (typeof extraDataJsonb !== "object" || extraDataJsonb === null) return {};
   const data = extraDataJsonb as Record<string, unknown>;
@@ -128,7 +130,8 @@ function extractEffectExtraData(extraDataJsonb: unknown): {
 
   const buildingBlueprintMode =
     data.building_blueprint_mode === "all" ||
-    data.building_blueprint_mode === "select"
+    data.building_blueprint_mode === "select" ||
+    data.building_blueprint_mode === "instance"
       ? data.building_blueprint_mode
       : undefined;
 
@@ -138,7 +141,18 @@ function extractEffectExtraData(extraDataJsonb: unknown): {
       )
     : undefined;
 
-  return { managedPopulationMode, buildingBlueprintMode, buildingBlueprintIds };
+  const buildingInstanceIds = Array.isArray(data.building_instance_ids)
+    ? data.building_instance_ids.filter(
+        (id): id is string => typeof id === "string",
+      )
+    : undefined;
+
+  return {
+    managedPopulationMode,
+    buildingBlueprintMode,
+    buildingBlueprintIds,
+    buildingInstanceIds,
+  };
 }
 
 const createInitialState = (
@@ -201,6 +215,7 @@ export function EventCreateWizard({
             settlementBuildingId: e.settlementBuildingId,
             buildingBlueprintMode: extra.buildingBlueprintMode,
             buildingBlueprintIds: extra.buildingBlueprintIds,
+            buildingInstanceIds: extra.buildingInstanceIds,
             _id: generateLocalId(),
           };
         }),
@@ -474,6 +489,7 @@ export function EventCreateWizard({
         settlementBuildingId: e.settlementBuildingId,
         buildingBlueprintMode: e.buildingBlueprintMode,
         buildingBlueprintIds: e.buildingBlueprintIds,
+        buildingInstanceIds: e.buildingInstanceIds,
       }));
 
       if (isEditMode) {

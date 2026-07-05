@@ -111,6 +111,12 @@ export function createEventGroupMutationOptions({
               ) {
                 extraData.building_blueprint_ids = e.buildingBlueprintIds;
               }
+              if (
+                e.buildingBlueprintMode === "instance" &&
+                Array.isArray(e.buildingInstanceIds)
+              ) {
+                extraData.building_instance_ids = e.buildingInstanceIds;
+              }
             }
 
             return {
@@ -306,6 +312,12 @@ export function editEventGroupMutationOptions({
                 Array.isArray(e.buildingBlueprintIds)
               ) {
                 extraData.building_blueprint_ids = e.buildingBlueprintIds;
+              }
+              if (
+                e.buildingBlueprintMode === "instance" &&
+                Array.isArray(e.buildingInstanceIds)
+              ) {
+                extraData.building_instance_ids = e.buildingInstanceIds;
               }
             }
 
