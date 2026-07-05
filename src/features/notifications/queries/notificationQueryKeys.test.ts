@@ -22,5 +22,10 @@ describe("notificationQueryKeys", () => {
       "unread-count",
       "user-1",
     ]);
+    expect(notificationQueryKeys.preferences("user-1")).toEqual([
+      "notifications",
+      "preferences",
+      "user-1",
+    ]);
   });
 });

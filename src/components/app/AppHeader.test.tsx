@@ -551,6 +551,15 @@ function createClient({
         }),
       }),
       from: vi.fn((table: string) => {
+        if (table === "notification_preferences") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+              })),
+            })),
+          };
+        }
         if (table === "notifications") {
           return { select: notificationsSelect };
         }

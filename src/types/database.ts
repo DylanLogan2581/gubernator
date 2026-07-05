@@ -1483,6 +1483,35 @@ export type Database = {
           },
         ];
       };
+      notification_preferences: {
+        Row: {
+          enabled: boolean;
+          notification_type: Database["public"]["Enums"]["notification_type"];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          enabled?: boolean;
+          notification_type: Database["public"]["Enums"]["notification_type"];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          enabled?: boolean;
+          notification_type?: Database["public"]["Enums"]["notification_type"];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           citizen_id: string | null;

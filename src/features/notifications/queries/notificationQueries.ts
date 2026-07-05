@@ -248,17 +248,51 @@ async function getUnreadNotificationsCount(
     return 0;
   }
 
-  const { count, error } = await client
+  const disabledTypes = await getDisabledNotificationTypes(client, userId);
+
+  let query = client
     .from("notifications")
     .select("id", { count: "exact", head: true })
     .eq("recipient_user_id", userId)
     .eq("is_read", false);
+
+  if (disabledTypes.length > 0) {
+    query = query.not(
+      "notification_type",
+      "in",
+      `(${disabledTypes.join(",")})`,
+    );
+  }
+
+  const { count, error } = await query;
 
   if (error !== null) {
     throw normalizeSupabaseError(error);
   }
 
   return count ?? 0;
+}
+
+/**
+ * Notification types the user has muted via notification_preferences.
+ * Filtering happens here (server-side, via a `not(... in ...)` clause built
+ * from this list) rather than by fetching every row and filtering in JS.
+ */
+async function getDisabledNotificationTypes(
+  client: GubernatorSupabaseClient,
+  userId: string,
+): Promise<readonly string[]> {
+  const { data, error } = await client
+    .from("notification_preferences")
+    .select("notification_type")
+    .eq("user_id", userId)
+    .eq("enabled", false);
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map((row) => row.notification_type);
 }
 
 async function getTurnCompletedNotifications(
@@ -307,10 +341,20 @@ async function getAllNotifications(
     return { notifications: [], total: 0 };
   }
 
+  const disabledTypes = await getDisabledNotificationTypes(client, userId);
+
   let countQuery = client
     .from("notifications")
     .select("id", { count: "exact", head: true })
     .eq("recipient_user_id", userId);
+
+  if (disabledTypes.length > 0) {
+    countQuery = countQuery.not(
+      "notification_type",
+      "in",
+      `(${disabledTypes.join(",")})`,
+    );
+  }
 
   if (isRead !== null) {
     countQuery = countQuery.eq("is_read", isRead);
@@ -354,6 +398,14 @@ async function getAllNotifications(
     .eq("recipient_user_id", userId)
     .order("generated_at", { ascending: false })
     .range(offset, offset + limit - 1);
+
+  if (disabledTypes.length > 0) {
+    dataQuery = dataQuery.not(
+      "notification_type",
+      "in",
+      `(${disabledTypes.join(",")})`,
+    );
+  }
 
   if (isRead !== null) {
     dataQuery = dataQuery.eq("is_read", isRead);

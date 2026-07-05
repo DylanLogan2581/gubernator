@@ -17,7 +17,10 @@ describe("unreadNotificationsCountQueryOptions", () => {
     const secondEq = vi.fn().mockResolvedValue({ count: 2, error: null });
     const firstEq = vi.fn(() => ({ eq: secondEq }));
     const select = vi.fn(() => ({ eq: firstEq }));
-    const from = vi.fn(() => ({ select }));
+    const from = vi
+      .fn()
+      .mockReturnValueOnce({ select: createDisabledTypesSelect([]) })
+      .mockReturnValueOnce({ select });
     const queryClient = createQueryClient();
 
     const count = await queryClient.fetchQuery(
@@ -28,12 +31,40 @@ describe("unreadNotificationsCountQueryOptions", () => {
 
     expect(count).toBe(2);
     expect(from).toHaveBeenCalledWith("notifications");
+    expect(from).toHaveBeenCalledWith("notification_preferences");
     expect(select).toHaveBeenCalledWith("id", {
       count: "exact",
       head: true,
     });
     expect(firstEq).toHaveBeenCalledWith("recipient_user_id", "user-1");
     expect(secondEq).toHaveBeenCalledWith("is_read", false);
+  });
+
+  it("excludes muted notification types from the unread count", async () => {
+    const notCall = vi.fn().mockResolvedValue({ count: 1, error: null });
+    const secondEq = vi.fn(() => ({ not: notCall }));
+    const firstEq = vi.fn(() => ({ eq: secondEq }));
+    const select = vi.fn(() => ({ eq: firstEq }));
+    const from = vi
+      .fn()
+      .mockReturnValueOnce({
+        select: createDisabledTypesSelect(["turn.completed"]),
+      })
+      .mockReturnValueOnce({ select });
+    const queryClient = createQueryClient();
+
+    const count = await queryClient.fetchQuery(
+      unreadNotificationsCountQueryOptions("user-1", {
+        from,
+      } as unknown as GubernatorSupabaseClient),
+    );
+
+    expect(count).toBe(1);
+    expect(notCall).toHaveBeenCalledWith(
+      "notification_type",
+      "in",
+      "(turn.completed)",
+    );
   });
 
   it("uses user-scoped query keys", () => {
@@ -291,6 +322,64 @@ describe("allNotificationsQueryOptions", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
+  it("excludes muted notification types from the list and total", async () => {
+    const row = {
+      citizen_id: null,
+      event_id: null,
+      generated_at: "2026-05-03T10:00:00.000Z",
+      generated_in_transition_id: null,
+      id: "notif-5",
+      is_read: false,
+      message_text: "Turn 2 is complete.",
+      nation_id: null,
+      nation: null,
+      notification_type: "trade_proposal_received",
+      settlement_id: null,
+      settlement: null,
+      severity: "info" as const,
+      trade_route_id: null,
+      world_id: "world-1",
+      world: { name: "Earth" },
+    };
+
+    const countNot = vi.fn().mockResolvedValue({ count: 1, error: null });
+    const countRecipientEq = vi.fn(() => ({ not: countNot }));
+    const countSelect = vi.fn(() => ({ eq: countRecipientEq }));
+
+    const dataNot = vi.fn().mockResolvedValue({ data: [row], error: null });
+    const range = vi.fn(() => ({ not: dataNot }));
+    const order = vi.fn(() => ({ range }));
+    const dataRecipientEq = vi.fn(() => ({ order }));
+    const dataSelect = vi.fn(() => ({ eq: dataRecipientEq }));
+
+    const from = vi
+      .fn()
+      .mockReturnValueOnce({
+        select: createDisabledTypesSelect(["turn.completed"]),
+      })
+      .mockReturnValueOnce({ select: countSelect })
+      .mockReturnValueOnce({ select: dataSelect });
+    const client = { from } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions("user-1", {}, client),
+    );
+
+    expect(result.total).toBe(1);
+    expect(result.notifications).toHaveLength(1);
+    expect(countNot).toHaveBeenCalledWith(
+      "notification_type",
+      "in",
+      "(turn.completed)",
+    );
+    expect(dataNot).toHaveBeenCalledWith(
+      "notification_type",
+      "in",
+      "(turn.completed)",
+    );
+  });
+
   it("maps severity from the row", async () => {
     const row = {
       citizen_id: null,
@@ -433,6 +522,7 @@ function createAllNotificationsClient({
 
   const from = vi
     .fn()
+    .mockReturnValueOnce({ select: createDisabledTypesSelect([]) })
     .mockReturnValueOnce({ select: countSelect })
     .mockReturnValueOnce({ select: dataSelect });
 
@@ -444,13 +534,30 @@ function createClient({
 }: {
   readonly secondEq: ReturnType<typeof vi.fn>;
 }): GubernatorSupabaseClient {
-  return {
-    from: vi.fn(() => ({
+  const from = vi
+    .fn()
+    .mockReturnValueOnce({ select: createDisabledTypesSelect([]) })
+    .mockReturnValueOnce({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({ eq: secondEq })),
       })),
+    });
+
+  return { from } as unknown as GubernatorSupabaseClient;
+}
+
+/** Mocks the notification_preferences select→eq(user_id)→eq(enabled,false) chain. */
+function createDisabledTypesSelect(
+  disabledTypes: readonly string[],
+): ReturnType<typeof vi.fn> {
+  const enabledEq = vi.fn().mockResolvedValue({
+    data: disabledTypes.map((notificationType) => ({
+      notification_type: notificationType,
     })),
-  } as unknown as GubernatorSupabaseClient;
+    error: null,
+  });
+  const userEq = vi.fn(() => ({ eq: enabledEq }));
+  return vi.fn(() => ({ eq: userEq }));
 }
 
 function createTurnCompletedQueryChain({

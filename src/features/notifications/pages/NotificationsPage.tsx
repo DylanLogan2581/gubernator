@@ -40,6 +40,7 @@ import { accessibleWorldsQueryOptions } from "@/features/worlds";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { NotificationListItem } from "../components/NotificationListItem";
+import { NotificationPreferencesSheet } from "../components/NotificationPreferencesSheet";
 import { NotificationsPageFrame } from "../components/NotificationsPageFrame";
 import { formatTransitionHeading } from "../utils/formatTransitionHeading";
 import { groupNotificationsByTransition } from "../utils/groupNotificationsByTransition";
@@ -227,7 +228,9 @@ function NotificationsPageContent({
   );
 
   return (
-    <NotificationsPageFrame>
+    <NotificationsPageFrame
+      actions={<NotificationPreferencesSheet userId={userId} />}
+    >
       <div className="flex flex-col gap-4">
         {/* Filters */}
         <div className="flex flex-wrap items-start justify-between gap-3">

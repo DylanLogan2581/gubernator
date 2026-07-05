@@ -26,6 +26,8 @@ export const notificationQueryKeys = {
       nationId,
       settlementId,
     ] as const,
+  preferences: (userId: string | null) =>
+    [...notificationQueryKeys.all, "preferences", userId] as const,
   turnCompleted: (userId: string | null, worldId: string | null = null) =>
     [...notificationQueryKeys.all, "turn-completed", userId, worldId] as const,
   unreadCount: (userId: string | null) =>
