@@ -8,9 +8,12 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import { jobsByWorldQueryOptions } from "@/features/jobs";
+import { nationsListQueryOptions } from "@/features/nations";
 import type { AccessContext } from "@/features/permissions";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { worldRouteAccessQueryOptions } from "@/features/worlds";
+import { generateLocalId } from "@/lib/uid";
 import {
   formatCalendarDate,
   formatRelativeTurnDifference,
@@ -49,12 +52,14 @@ type EffectData = {
   jobIds?: string[];
   jobMode?: "all" | "select";
   managedPopulationInstanceId: string | null;
-  managedPopulationTypeId?: string | null;
+  managedPopulationTypeId: string | null;
   managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
   depositInstanceIds?: string[];
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
+  buildingBlueprintMode?: "all" | "select";
+  buildingBlueprintIds?: string[];
   _id?: string;
 };
 
@@ -97,25 +102,44 @@ export type EventCreateWizardState = {
   step: 1 | 2 | 3 | 4 | 5 | 6;
   scopeType: "world" | "nation" | "settlement" | null;
   selectedIds: string[]; // nation or settlement IDs
-  effects: Array<{
-    effectType: string;
-    isPercent: boolean;
-    amountValue: number | null;
-    multiplierValue: number | null;
-    resourceId: string | null;
-    jobId: string | null;
-    managedPopulationInstanceId: string | null;
-    managedPopulationTypeId: string | null;
-    managedPopulationMode?: "all" | "type" | "instance";
-    depositInstanceId: string | null;
-    settlementBuildingId: string | null;
-  }>;
+  effects: EffectData[];
   durationType: "instant" | "sustained";
   durationTransitions: number | null;
   activationTurn: number;
   createCitizenMemories: boolean;
   memoryText: string;
 };
+
+/** Extracts wizard-only targeting fields persisted in an effect's extra_data_jsonb column. */
+function extractEffectExtraData(extraDataJsonb: unknown): {
+  managedPopulationMode?: "all" | "type" | "instance";
+  buildingBlueprintMode?: "all" | "select";
+  buildingBlueprintIds?: string[];
+} {
+  if (typeof extraDataJsonb !== "object" || extraDataJsonb === null) return {};
+  const data = extraDataJsonb as Record<string, unknown>;
+
+  const managedPopulationMode =
+    data.managed_population_mode === "all" ||
+    data.managed_population_mode === "type" ||
+    data.managed_population_mode === "instance"
+      ? data.managed_population_mode
+      : undefined;
+
+  const buildingBlueprintMode =
+    data.building_blueprint_mode === "all" ||
+    data.building_blueprint_mode === "select"
+      ? data.building_blueprint_mode
+      : undefined;
+
+  const buildingBlueprintIds = Array.isArray(data.building_blueprint_ids)
+    ? data.building_blueprint_ids.filter(
+        (id): id is string => typeof id === "string",
+      )
+    : undefined;
+
+  return { managedPopulationMode, buildingBlueprintMode, buildingBlueprintIds };
+}
 
 const createInitialState = (
   nextTurnNumber: number = 1,
@@ -161,18 +185,25 @@ export function EventCreateWizard({
           (editEventData.scopeType as "world" | "nation" | "settlement") ??
           null,
         selectedIds: [], // Locked in edit mode
-        effects: editEventData.effects.map((e) => ({
-          effectType: e.effectType,
-          isPercent: e.isPercent,
-          amountValue: e.amountValue,
-          multiplierValue: e.multiplierValue,
-          resourceId: e.resourceId,
-          jobId: e.jobId,
-          managedPopulationInstanceId: e.managedPopulationInstanceId,
-          managedPopulationTypeId: e.managedPopulationTypeId,
-          depositInstanceId: e.depositInstanceId,
-          settlementBuildingId: e.settlementBuildingId,
-        })),
+        effects: editEventData.effects.map((e) => {
+          const extra = extractEffectExtraData(e.extraDataJsonb);
+          return {
+            effectType: e.effectType,
+            isPercent: e.isPercent,
+            amountValue: e.amountValue,
+            multiplierValue: e.multiplierValue,
+            resourceId: e.resourceId,
+            jobId: e.jobId,
+            managedPopulationInstanceId: e.managedPopulationInstanceId,
+            managedPopulationTypeId: e.managedPopulationTypeId,
+            managedPopulationMode: extra.managedPopulationMode,
+            depositInstanceId: e.depositInstanceId,
+            settlementBuildingId: e.settlementBuildingId,
+            buildingBlueprintMode: extra.buildingBlueprintMode,
+            buildingBlueprintIds: extra.buildingBlueprintIds,
+            _id: generateLocalId(),
+          };
+        }),
         durationType:
           (editEventData.durationType as "instant" | "sustained") ?? "instant",
         durationTransitions: editEventData.durationTransitions,
@@ -387,6 +418,14 @@ export function EventCreateWizard({
     return expanded;
   };
 
+  const hasInvalidJobSelection = (effects: EffectData[]): boolean =>
+    effects.some(
+      (e) =>
+        e.effectType === "production_multiplier" &&
+        e.jobMode === "select" &&
+        (e.jobIds === undefined || e.jobIds.length === 0),
+    );
+
   const handleSubmit = async (): Promise<void> => {
     if (state.scopeType === null) return;
     if (
@@ -394,6 +433,12 @@ export function EventCreateWizard({
       (editGroupId === undefined || editEventData === undefined)
     )
       return;
+    if (hasInvalidJobSelection(state.effects)) {
+      toast.error(
+        "Select at least one job for the production multiplier, or choose All Jobs.",
+      );
+      return;
+    }
 
     try {
       // Fetch all resources to expand "all" mode if needed
@@ -427,6 +472,8 @@ export function EventCreateWizard({
         managedPopulationMode: e.managedPopulationMode,
         depositInstanceId: e.depositInstanceId,
         settlementBuildingId: e.settlementBuildingId,
+        buildingBlueprintMode: e.buildingBlueprintMode,
+        buildingBlueprintIds: e.buildingBlueprintIds,
       }));
 
       if (isEditMode) {
@@ -457,6 +504,19 @@ export function EventCreateWizard({
         onClose();
       } else {
         // Create mode: use CreateEventGroupInput
+        let scopeNameById = new Map<string, string>();
+        if (state.scopeType === "nation") {
+          const nations = await queryClient.ensureQueryData(
+            nationsListQueryOptions(worldId),
+          );
+          scopeNameById = new Map(nations.map((n) => [n.id, n.name]));
+        } else if (state.scopeType === "settlement") {
+          const settlements = await queryClient.ensureQueryData(
+            settlementsByWorldQueryOptions(worldId),
+          );
+          scopeNameById = new Map(settlements.map((s) => [s.id, s.name]));
+        }
+
         const targets =
           state.scopeType === "world"
             ? [
@@ -475,9 +535,10 @@ export function EventCreateWizard({
                 nation_id: state.scopeType === "nation" ? id : null,
                 settlement_id: state.scopeType === "settlement" ? id : null,
                 scope_name:
-                  state.scopeType === "nation"
+                  scopeNameById.get(id) ??
+                  (state.scopeType === "nation"
                     ? `Nation ${id}`
-                    : `Settlement ${id}`,
+                    : `Settlement ${id}`),
                 job_id: null,
                 building_blueprint_id: null,
                 managed_population_type_id: null,
@@ -523,9 +584,14 @@ export function EventCreateWizard({
     }
   };
 
-  // In edit mode, calculate effective step number (skip 1-2, map 3-6 to 1-4)
-  const effectiveStep = isEditMode ? state.step - 2 : state.step;
-  const totalSteps = isEditMode ? 4 : 6;
+  // In edit mode, scope/target step (2) is skipped, so 5 of the 6 steps remain
+  // reachable (1, 3, 4, 5, 6), mapped to a contiguous 1-5 display range.
+  const effectiveStep = isEditMode
+    ? state.step === 1
+      ? 1
+      : state.step - 1
+    : state.step;
+  const totalSteps = isEditMode ? 5 : 6;
 
   return (
     <>
@@ -680,11 +746,7 @@ export function EventCreateWizard({
           </Button>
 
           {state.step !== 1 && (
-            <Button
-              variant="outline"
-              onClick={handlePrev}
-              disabled={isEditMode && state.step === 3}
-            >
+            <Button variant="outline" onClick={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
               Previous
             </Button>
@@ -701,6 +763,7 @@ export function EventCreateWizard({
                   state.step === 2 &&
                   state.scopeType !== "world" &&
                   state.selectedIds.length === 0) ||
+                (state.step === 3 && hasInvalidJobSelection(state.effects)) ||
                 (state.step === 5 &&
                   state.createCitizenMemories &&
                   state.memoryText.trim().length === 0)
@@ -723,6 +786,7 @@ export function EventCreateWizard({
                   (state.scopeType === null ||
                     (state.scopeType !== "world" &&
                       state.selectedIds.length === 0))) ||
+                hasInvalidJobSelection(state.effects) ||
                 (state.createCitizenMemories &&
                   state.memoryText.trim().length === 0)
               }

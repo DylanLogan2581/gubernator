@@ -46,6 +46,7 @@ import {
 } from "@/features/managed-populations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
+import { generateLocalId } from "@/lib/uid";
 
 import { computeEffectImpact } from "../../utils/effectImpact";
 
@@ -179,6 +180,7 @@ const ALL_EFFECT_TYPES: Record<string, { label: string; description: string }> =
 
 function EffectEditor({
   effect,
+  index,
   onUpdate,
   onRemove,
   worldId,
@@ -186,6 +188,7 @@ function EffectEditor({
   scopeType,
 }: {
   readonly effect: EffectData;
+  readonly index: number;
   readonly onUpdate: (updated: EffectData) => void;
   readonly onRemove: () => void;
   readonly worldId: string;
@@ -573,12 +576,12 @@ function EffectEditor({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`amount-${effect.effectType}`}>
+              <Label htmlFor={`amount-${index}-${effect.effectType}`}>
                 {effect.isPercent ? "Percent" : "Amount"} (positive = grant,
                 negative = drain)
               </Label>
               <Input
-                id={`amount-${effect.effectType}`}
+                id={`amount-${index}-${effect.effectType}`}
                 type="number"
                 placeholder={
                   effect.isPercent ? "e.g., 10 for 10%" : "e.g., 100 or -50"
@@ -694,13 +697,13 @@ function EffectEditor({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`amount-${effect.effectType}`}>
+              <Label htmlFor={`amount-${index}-${effect.effectType}`}>
                 {effect.effectType === "population_loss"
                   ? "Citizens to kill"
                   : `${effect.isPercent ? "Percent" : "Amount"} (positive = boost, negative = loss)`}
               </Label>
               <Input
-                id={`amount-${effect.effectType}`}
+                id={`amount-${index}-${effect.effectType}`}
                 type="number"
                 placeholder={
                   effect.effectType === "population_loss"
@@ -753,11 +756,11 @@ function EffectEditor({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`amount-${effect.effectType}`}>
+              <Label htmlFor={`amount-${index}-${effect.effectType}`}>
                 {effect.isPercent ? "Percent" : "Amount"}
               </Label>
               <Input
-                id={`amount-${effect.effectType}`}
+                id={`amount-${index}-${effect.effectType}`}
                 type="number"
                 placeholder={
                   effect.isPercent ? "e.g., 10 for 10%" : "e.g., 100"
@@ -836,7 +839,9 @@ function EffectEditor({
 
             {effect.managedPopulationMode === "type" && (
               <div className="space-y-2">
-                <Label htmlFor="population-type-select">Select Type</Label>
+                <Label htmlFor={`population-type-select-${index}`}>
+                  Select Type
+                </Label>
                 {typesQuery.isLoading ? (
                   <p className="text-sm text-muted-foreground">
                     Loading population types...
@@ -856,7 +861,7 @@ function EffectEditor({
                       })
                     }
                   >
-                    <SelectTrigger id="population-type-select">
+                    <SelectTrigger id={`population-type-select-${index}`}>
                       <SelectValue placeholder="Choose a type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -898,17 +903,18 @@ function EffectEditor({
                         key={instance.id}
                         className="flex items-center gap-2"
                       >
-                        <Checkbox
+                        <input
+                          type="radio"
+                          name={`managed-population-instance-${index}`}
                           checked={
                             effect.managedPopulationInstanceId === instance.id
                           }
-                          onCheckedChange={(checked) => {
+                          onChange={() =>
                             onUpdate({
                               ...effect,
-                              managedPopulationInstanceId:
-                                checked === true ? instance.id : null,
-                            });
-                          }}
+                              managedPopulationInstanceId: instance.id,
+                            })
+                          }
                         />
                         <span className="text-sm">{instance.label}</span>
                       </label>
@@ -922,11 +928,11 @@ function EffectEditor({
 
         {isMultiplierEffect && (
           <div className="space-y-2">
-            <Label htmlFor={`multiplier-${effect.effectType}`}>
+            <Label htmlFor={`multiplier-${index}-${effect.effectType}`}>
               Multiplier (e.g., 1.2 for 20% increase, 0.8 for 20% decrease)
             </Label>
             <Input
-              id={`multiplier-${effect.effectType}`}
+              id={`multiplier-${index}-${effect.effectType}`}
               type="number"
               placeholder="1.0"
               step="0.1"
@@ -1010,6 +1016,14 @@ function EffectEditor({
                         No jobs available
                       </p>
                     )}
+
+                    {effect.jobMode === "select" &&
+                      (effect.jobIds === undefined ||
+                        effect.jobIds.length === 0) && (
+                        <p className="text-sm text-destructive">
+                          Select at least one job, or choose All Jobs.
+                        </p>
+                      )}
                   </div>
                 )}
 
@@ -1315,6 +1329,7 @@ export function EventCreateEffectsStep({
       depositInstanceIds: undefined,
       settlementBuildingId: null,
       buildingBlueprintMode: undefined,
+      _id: generateLocalId(),
     };
     onEffectsChange([...effects, newEffect]);
     setSelectedType("");
@@ -1369,6 +1384,7 @@ export function EventCreateEffectsStep({
               <EffectEditor
                 key={effect._id ?? idx}
                 effect={effect}
+                index={idx}
                 onUpdate={(updated) => updateEffect(idx, updated)}
                 onRemove={() => removeEffect(idx)}
                 worldId={worldId}
