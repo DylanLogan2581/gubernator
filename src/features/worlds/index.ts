@@ -1,5 +1,12 @@
 // Worlds feature — create, list, and manage simulation worlds.
 // Implemented in Epic 2.
+export {
+  CONFIG_TABS,
+  CONFIG_TAB_IDS,
+  DEFAULT_CONFIG_TAB,
+  getVisibleConfigTabs,
+} from "./configTabs";
+export type { ConfigTab, ConfigTabId } from "./configTabs";
 export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
 export { WorldAvatar } from "./components/WorldAvatar";
 export { WorldDashboardHeroBanner } from "./components/WorldDashboardHeroBanner";

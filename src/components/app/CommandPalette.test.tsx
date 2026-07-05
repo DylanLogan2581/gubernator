@@ -7,6 +7,7 @@ import type { Citizen } from "@/features/citizens";
 import { ActivePlayerCharacterContext } from "@/features/permissions";
 import type { ActivePlayerCharacterContextValue } from "@/features/permissions";
 import type * as PermissionsModule from "@/features/permissions";
+import type * as WorldsModule from "@/features/worlds";
 import { recordRecentPage } from "@/lib/recentPages";
 
 import { CommandPalette } from "./CommandPalette";
@@ -68,15 +69,19 @@ vi.mock("@/features/permissions", async (importOriginal) => {
   };
 });
 
-vi.mock("@/features/worlds", () => ({
-  accessibleWorldsQueryOptions: () => ({
-    queryFn: () => Promise.resolve(WORLDS_FIXTURE),
-    queryKey: ["test", "worlds"],
-  }),
-  // Real WorldAvatar resolves a signed URL via the Supabase client, which
-  // isn't configured in this test's module graph — stub it to a no-op.
-  WorldAvatar: () => null,
-}));
+vi.mock("@/features/worlds", async (importOriginal) => {
+  const actual = await importOriginal<typeof WorldsModule>();
+  return {
+    ...actual,
+    accessibleWorldsQueryOptions: () => ({
+      queryFn: () => Promise.resolve(WORLDS_FIXTURE),
+      queryKey: ["test", "worlds"],
+    }),
+    // Real WorldAvatar resolves a signed URL via the Supabase client, which
+    // isn't configured in this test's module graph — stub it to a no-op.
+    WorldAvatar: () => null,
+  };
+});
 
 vi.mock("@/features/nations", () => ({
   nationsListQueryOptions: (worldId: string) => ({

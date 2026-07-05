@@ -1,18 +1,5 @@
 import { Link, useLocation, useSearch } from "@tanstack/react-router";
-import {
-  Briefcase,
-  Building2,
-  CalendarDays,
-  ChevronRight,
-  Gem,
-  PawPrint,
-  Package,
-  Settings,
-  Settings2,
-  Sparkles,
-  Tag,
-  ScrollText,
-} from "lucide-react";
+import { ChevronRight, Settings2 } from "lucide-react";
 
 import {
   Collapsible,
@@ -26,31 +13,9 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { DEFAULT_CONFIG_TAB, getVisibleConfigTabs } from "@/features/worlds";
 
 import type { JSX } from "react";
-
-// Mirrors WorldConfigurationPage's BASE_TABS/SUPER_ADMIN_TABS — kept as a
-// local literal here (rather than importing route/page internals) since the
-// sidebar only needs the stable key/label pairs, not the page's tab logic.
-const CONFIGURATION_TABS = [
-  { key: "resources", label: "Resources", icon: Package },
-  { key: "jobs", label: "Jobs", icon: Briefcase },
-  { key: "buildings", label: "Buildings", icon: Building2 },
-  { key: "deposits", label: "Deposits", icon: Gem },
-  { key: "managed-populations", label: "Managed Populations", icon: PawPrint },
-  { key: "calendar", label: "Calendar", icon: CalendarDays },
-  { key: "namesets", label: "Namesets", icon: Tag },
-  { key: "npc-flavor", label: "NPC Flavor", icon: Sparkles },
-  { key: "population-rules", label: "Population Rules", icon: ScrollText },
-] as const;
-
-const SUPER_ADMIN_TAB = {
-  key: "world-settings",
-  label: "World Settings",
-  icon: Settings,
-} as const;
-
-const DEFAULT_TAB = "resources";
 
 type ConfigurationNavItemProps = {
   readonly isSuperAdmin: boolean;
@@ -68,7 +33,8 @@ export function ConfigurationNavItem({
   const activeTab =
     isOnConfigRoute && typeof search.tab === "string"
       ? search.tab
-      : DEFAULT_TAB;
+      : DEFAULT_CONFIG_TAB;
+  const visibleTabs = getVisibleConfigTabs(isSuperAdmin);
 
   return (
     <Collapsible defaultOpen={isOnConfigRoute} className="group/collapsible">
@@ -82,18 +48,18 @@ export function ConfigurationNavItem({
         </CollapsibleTrigger>
         <CollapsibleContent>
           <SidebarMenuSub>
-            {CONFIGURATION_TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const TabIcon = tab.icon;
               return (
-                <SidebarMenuSubItem key={tab.key}>
+                <SidebarMenuSubItem key={tab.id}>
                   <SidebarMenuSubButton
                     asChild
-                    isActive={isOnConfigRoute && activeTab === tab.key}
+                    isActive={isOnConfigRoute && activeTab === tab.id}
                   >
                     <Link
                       to="/worlds/$worldId/configuration"
                       params={{ worldId }}
-                      search={{ tab: tab.key }}
+                      search={{ tab: tab.id }}
                     >
                       <TabIcon aria-hidden="true" />
                       <span>{tab.label}</span>
@@ -102,25 +68,6 @@ export function ConfigurationNavItem({
                 </SidebarMenuSubItem>
               );
             })}
-            {isSuperAdmin ? (
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton
-                  asChild
-                  isActive={
-                    isOnConfigRoute && activeTab === SUPER_ADMIN_TAB.key
-                  }
-                >
-                  <Link
-                    to="/worlds/$worldId/configuration"
-                    params={{ worldId }}
-                    search={{ tab: SUPER_ADMIN_TAB.key }}
-                  >
-                    <SUPER_ADMIN_TAB.icon aria-hidden="true" />
-                    <span>{SUPER_ADMIN_TAB.label}</span>
-                  </Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            ) : null}
           </SidebarMenuSub>
         </CollapsibleContent>
       </SidebarMenuItem>

@@ -4,42 +4,29 @@ import { z } from "zod";
 import { requireAuthenticatedRoute } from "@/features/auth";
 import { currentAccessContextQueryOptions } from "@/features/permissions";
 import {
+  CONFIG_TAB_IDS,
+  DEFAULT_CONFIG_TAB,
   WorldConfigurationPage,
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
 } from "@/features/worlds";
+import type { ConfigTabId } from "@/features/worlds";
 
 import type { JSX } from "react";
 
-const CONFIGURATION_TABS = [
-  "resources",
-  "jobs",
-  "buildings",
-  "deposits",
-  "managed-populations",
-  "calendar",
-  "namesets",
-  "npc-flavor",
-  "population-rules",
-  "images",
-  "world-settings",
-] as const;
-
-type ConfigurationTab = (typeof CONFIGURATION_TABS)[number];
-
-const DEFAULT_TAB: ConfigurationTab = "resources";
-
 const configurationSearchSchema = z.object({
   blueprint: z.string().optional(),
-  tab: z.enum(CONFIGURATION_TABS).optional(),
+  tab: z.enum(CONFIG_TAB_IDS).optional(),
 });
 
 function parseConfigurationSearch(search: unknown): {
   readonly blueprint?: string;
-  readonly tab: ConfigurationTab;
+  readonly tab: ConfigTabId;
 } {
   const result = configurationSearchSchema.safeParse(search);
-  const tab = result.success ? (result.data.tab ?? DEFAULT_TAB) : DEFAULT_TAB;
+  const tab = result.success
+    ? (result.data.tab ?? DEFAULT_CONFIG_TAB)
+    : DEFAULT_CONFIG_TAB;
   const blueprint = result.success ? result.data.blueprint : undefined;
   return { blueprint, tab };
 }

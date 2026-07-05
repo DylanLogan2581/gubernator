@@ -42,7 +42,11 @@ import {
   useEffectiveCanAdmin,
 } from "@/features/permissions";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
-import { accessibleWorldsQueryOptions, WorldAvatar } from "@/features/worlds";
+import {
+  accessibleWorldsQueryOptions,
+  getVisibleConfigTabs,
+  WorldAvatar,
+} from "@/features/worlds";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { readRecentPages, type RecentPageEntry } from "@/lib/recentPages";
 
@@ -55,23 +59,6 @@ const MAX_RESULTS_PER_GROUP = 8;
 // Actions and Jump to are curated, permission-bounded lists (not open-ended
 // entity search), so they aren't truncated the way search results are.
 const UNLIMITED = Number.POSITIVE_INFINITY;
-
-// Mirrors CONFIGURATION_TABS in worlds.$worldId.configuration.tsx (not
-// exported from that route module, so the tab literals are duplicated here
-// -- `as const` keeps them assignable to the route's search schema).
-const CONFIGURATION_JUMP_TABS = [
-  { label: "Resources", tab: "resources" },
-  { label: "Jobs", tab: "jobs" },
-  { label: "Buildings", tab: "buildings" },
-  { label: "Deposits", tab: "deposits" },
-  { label: "Managed Populations", tab: "managed-populations" },
-  { label: "Calendar", tab: "calendar" },
-  { label: "Namesets", tab: "namesets" },
-  { label: "NPC Flavor", tab: "npc-flavor" },
-  { label: "Population Rules", tab: "population-rules" },
-  { label: "Images", tab: "images" },
-  { label: "World Settings", tab: "world-settings" },
-] as const;
 
 const RECENT_KIND_LABELS: Record<RecentPageEntry["kind"], string> = {
   citizen: "Citizen",
@@ -306,15 +293,15 @@ export function CommandPalette({
   ];
 
   if (worldId !== null && effectiveCanAdmin) {
-    for (const { label, tab } of CONFIGURATION_JUMP_TABS) {
+    for (const { id, label } of getVisibleConfigTabs(effectiveIsSuperAdmin)) {
       goToEntries.push({
-        key: `go-to-configuration-${tab}`,
+        key: `go-to-configuration-${id}`,
         label: `Configuration: ${label}`,
         onSelect: () => {
           closeAndReset();
           void navigate({
             params: { worldId },
-            search: { tab },
+            search: { tab: id },
             to: "/worlds/$worldId/configuration",
           });
         },

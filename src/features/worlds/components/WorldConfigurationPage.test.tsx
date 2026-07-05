@@ -127,7 +127,7 @@ describe("WorldConfigurationPage", () => {
     ).toHaveTextContent("Calendar");
   });
 
-  it("marks the active tab with aria-selected in the tab list", async () => {
+  it("does not render a desktop tab strip (sidebar is the sole desktop nav)", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         session: { user: { id: "user-1" } },
@@ -137,10 +137,9 @@ describe("WorldConfigurationPage", () => {
 
     renderPage({ activeTab: "calendar", worldId: WORLD_ID });
 
-    const calendarTab = await screen.findByRole("tab", { name: "Calendar" });
-    const resourcesTab = screen.getByRole("tab", { name: "Resources" });
-    expect(calendarTab).toHaveAttribute("aria-selected", "true");
-    expect(resourcesTab).toHaveAttribute("aria-selected", "false");
+    await screen.findByRole("heading", { name: "Calendar" });
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
   });
 
   it("renders a back navigation link to the world page", async () => {
