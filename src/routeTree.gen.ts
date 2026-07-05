@@ -21,6 +21,7 @@ import { Route as SuperadminWorldsRouteImport } from './routes/superadmin.worlds
 import { Route as SuperadminUsersRouteImport } from './routes/superadmin.users'
 import { Route as SuperadminTransitionsRouteImport } from './routes/superadmin.transitions'
 import { Route as SuperadminTemplatesRouteImport } from './routes/superadmin.templates'
+import { Route as SuperadminEmailRouteImport } from './routes/superadmin.email'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as WorldsWorldIdIndexRouteImport } from './routes/worlds.$worldId.index'
@@ -116,6 +117,11 @@ const SuperadminTransitionsRoute = SuperadminTransitionsRouteImport.update({
 const SuperadminTemplatesRoute = SuperadminTemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
+  getParentRoute: () => SuperadminRoute,
+} as any)
+const SuperadminEmailRoute = SuperadminEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
   getParentRoute: () => SuperadminRoute,
 } as any)
 const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
@@ -363,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/worlds': typeof WorldsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/email': typeof SuperadminEmailRoute
   '/superadmin/templates': typeof SuperadminTemplatesRoute
   '/superadmin/transitions': typeof SuperadminTransitionsRoute
   '/superadmin/users': typeof SuperadminUsersRoute
@@ -410,6 +417,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/email': typeof SuperadminEmailRoute
   '/superadmin/templates': typeof SuperadminTemplatesRoute
   '/superadmin/transitions': typeof SuperadminTransitionsRoute
   '/superadmin/users': typeof SuperadminUsersRoute
@@ -454,6 +462,7 @@ export interface FileRoutesById {
   '/worlds': typeof WorldsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/email': typeof SuperadminEmailRoute
   '/superadmin/templates': typeof SuperadminTemplatesRoute
   '/superadmin/transitions': typeof SuperadminTransitionsRoute
   '/superadmin/users': typeof SuperadminUsersRoute
@@ -506,6 +515,7 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/email'
     | '/superadmin/templates'
     | '/superadmin/transitions'
     | '/superadmin/users'
@@ -553,6 +563,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/email'
     | '/superadmin/templates'
     | '/superadmin/transitions'
     | '/superadmin/users'
@@ -596,6 +607,7 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/email'
     | '/superadmin/templates'
     | '/superadmin/transitions'
     | '/superadmin/users'
@@ -733,6 +745,13 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/superadmin/templates'
       preLoaderRoute: typeof SuperadminTemplatesRouteImport
+      parentRoute: typeof SuperadminRoute
+    }
+    '/superadmin/email': {
+      id: '/superadmin/email'
+      path: '/email'
+      fullPath: '/superadmin/email'
+      preLoaderRoute: typeof SuperadminEmailRouteImport
       parentRoute: typeof SuperadminRoute
     }
     '/auth/set-password': {
@@ -991,6 +1010,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface SuperadminRouteChildren {
+  SuperadminEmailRoute: typeof SuperadminEmailRoute
   SuperadminTemplatesRoute: typeof SuperadminTemplatesRoute
   SuperadminTransitionsRoute: typeof SuperadminTransitionsRoute
   SuperadminUsersRoute: typeof SuperadminUsersRoute
@@ -999,6 +1019,7 @@ interface SuperadminRouteChildren {
 }
 
 const SuperadminRouteChildren: SuperadminRouteChildren = {
+  SuperadminEmailRoute: SuperadminEmailRoute,
   SuperadminTemplatesRoute: SuperadminTemplatesRoute,
   SuperadminTransitionsRoute: SuperadminTransitionsRoute,
   SuperadminUsersRoute: SuperadminUsersRoute,

@@ -14,6 +14,7 @@ import {
   Handshake,
   Landmark,
   LayoutDashboard,
+  Mail,
   MapPin,
   Package,
   PawPrint,
@@ -130,6 +131,17 @@ export function AppSidebar(): JSX.Element | null {
             <Link to="/superadmin/templates">
               <BookOpen aria-hidden="true" />
               <span>Template Library</span>
+            </Link>
+          ),
+        },
+        {
+          key: "superadmin-email",
+          label: "Email",
+          isActive: isNavPathActive(location.pathname, "/superadmin/email"),
+          link: (
+            <Link to="/superadmin/email">
+              <Mail aria-hidden="true" />
+              <span>Email</span>
             </Link>
           ),
         },

@@ -217,27 +217,29 @@ otp_length = 6
 otp_expiry = 3600
 
 # SMTP Configuration for magic-link email delivery
-# For local development: uses Inbucket (same as inbucket.port above)
+# For local development: uses Inbucket. Inbucket's SMTP port (1025) is only
+# reachable over the Docker network via its "inbucket" alias -- inbucket.port
+# above (54324) is the *web UI* port mapped to the host, not SMTP. Set
+# SUPABASE_SMTP_HOST=inbucket in .env (send-email Edge Function reads the
+# same host/port pair from SUPABASE_SMTP_HOST/SUPABASE_SMTP_PORT directly).
 # For production: update these values based on your email provider
 [auth.email.smtp]
 enabled = true
 host = "env(SUPABASE_SMTP_HOST)"
-port = 54324
+port = 1025
 user = "env(SUPABASE_SMTP_USER)"
 pass = "env(SUPABASE_SMTP_PASS)"
 admin_email = "env(SUPABASE_SMTP_ADMIN_EMAIL)"
 sender_name = "env(SUPABASE_SMTP_SENDER_NAME)"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Gubernator-branded auth email templates.
+[auth.email.template.magic_link]
+subject = "Your Gubernator sign-in code"
+content_path = "./supabase/templates/magic-link.html"
 
-# Uncomment to customize notification email template
-# [auth.email.notification.password_changed]
-# enabled = true
-# subject = "Your password has been changed"
-# content_path = "./templates/password_changed_notification.html"
+[auth.email.template.invite]
+subject = "You have been invited to Gubernator"
+content_path = "./supabase/templates/invite.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
@@ -381,6 +383,19 @@ deno_version = 2
 END_TURN_SIMULATION_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 ADMIN_CREATE_USER_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 EXPORT_WORLD_TEMPLATE_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+SEND_EMAIL_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+
+# send-email reuses the same SMTP creds Supabase Auth uses for magic-link/
+# invite mail (see [auth.email.smtp] above). Edge runtime secret names may
+# not start with "SUPABASE_" (the CLI silently drops those), so these are
+# re-exposed to the function under a SEND_EMAIL_ prefix, sourced from the
+# same underlying SUPABASE_SMTP_* .env values.
+SEND_EMAIL_SMTP_HOST = "env(SUPABASE_SMTP_HOST)"
+SEND_EMAIL_SMTP_PORT = "env(SUPABASE_SMTP_PORT)"
+SEND_EMAIL_SMTP_USER = "env(SUPABASE_SMTP_USER)"
+SEND_EMAIL_SMTP_PASS = "env(SUPABASE_SMTP_PASS)"
+SEND_EMAIL_SMTP_ADMIN_EMAIL = "env(SUPABASE_SMTP_ADMIN_EMAIL)"
+SEND_EMAIL_SMTP_SENDER_NAME = "env(SUPABASE_SMTP_SENDER_NAME)"
 
 [analytics]
 enabled = true

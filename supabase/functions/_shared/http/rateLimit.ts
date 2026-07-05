@@ -15,6 +15,8 @@
  *   export-world-template:   5 (heavier 7-table parallel read, infrequent
  *                               legitimate use — tighter cap curbs DB-load
  *                               amplification)
+ *   send-email:             10 (SMTP send, bulk recipient resolution — same
+ *                               tier as admin-create-user)
  */
 
 import { getRequiredRuntimeEnv, getRequiredRuntimeUrl } from "./env.ts";
@@ -23,6 +25,7 @@ export const RATE_LIMITS: Record<string, number> = {
   "admin-create-user": 10,
   "end-turn-simulation": 10,
   "export-world-template": 5,
+  "send-email": 10,
 };
 
 /**

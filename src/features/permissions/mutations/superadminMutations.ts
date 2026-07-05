@@ -22,13 +22,17 @@ import type {
   PreviewWorldDeleteResult,
   PruneWorldDataInput,
   PruneWorldDataResult,
+  SendEmailInput,
+  SendEmailResult,
 } from "../types/superadminTypes";
 
 type SuperadminErrorCode =
   | "superadmin_not_authorized"
   | "superadmin_last_guard"
   | "superadmin_user_exists"
-  | "superadmin_operation_failed";
+  | "superadmin_operation_failed"
+  | "superadmin_no_recipients"
+  | "superadmin_rate_limited";
 
 export const {
   ErrorClass: SuperadminMutationError,
@@ -327,6 +331,156 @@ async function createUser(
   throw new SuperadminMutationError({
     code: "superadmin_operation_failed",
     message: "Unexpected response from user creation service.",
+  });
+}
+
+export function sendEmailMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: MutationFactoryOpts): UseMutationOptions<
+  SendEmailResult,
+  SuperadminMutationError,
+  SendEmailInput
+> {
+  return mutationOptions({
+    mutationFn: (input: SendEmailInput) => sendEmail(client, input),
+    mutationKey: [...superadminQueryKeys.all, "send-email"],
+    onSuccess: async (_result, input): Promise<void> => {
+      if (input.dryRun === true) return;
+      await queryClient.invalidateQueries({
+        queryKey: superadminQueryKeys.smtpStatus(),
+      });
+    },
+  });
+}
+
+type SendEmailFunctionResponse =
+  | { readonly ok: true; readonly data: SendEmailResult }
+  | {
+      readonly ok: false;
+      readonly error: { readonly code: string; readonly message: string };
+    };
+
+function isSendEmailSuccessResponse(
+  value: unknown,
+): value is Extract<SendEmailFunctionResponse, { ok: true }> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { ok: unknown }).ok === true &&
+    typeof (value as { data: unknown }).data === "object"
+  );
+}
+
+function isSendEmailErrorResponse(
+  value: unknown,
+): value is Extract<SendEmailFunctionResponse, { ok: false }> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { ok: unknown }).ok === false &&
+    typeof (value as { error: unknown }).error === "object"
+  );
+}
+
+async function readSendEmailErrorPayload(
+  error: unknown,
+): Promise<Extract<SendEmailFunctionResponse, { ok: false }> | null> {
+  if (typeof error !== "object" || error === null || !("context" in error)) {
+    return null;
+  }
+
+  const maybeContext = (error as Record<string, unknown>)["context"];
+  if (typeof maybeContext !== "object" || maybeContext === null) {
+    return null;
+  }
+
+  const context = maybeContext as Record<string, unknown>;
+  if (typeof context["json"] !== "function") {
+    return null;
+  }
+
+  try {
+    const payload: unknown = await (
+      context as { json: () => Promise<unknown> }
+    ).json();
+    if (isSendEmailErrorResponse(payload)) {
+      return payload;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function mapSendEmailErrorCode(
+  code: string,
+  message: string,
+): SuperadminMutationError {
+  if (code === "superadmin_required" || code === "unauthenticated") {
+    return new SuperadminMutationError({
+      code: "superadmin_not_authorized",
+      message:
+        code === "unauthenticated"
+          ? "Sign-in expired, please sign in again."
+          : message,
+    });
+  }
+  if (code === "rate_limit_exceeded") {
+    return new SuperadminMutationError({
+      code: "superadmin_rate_limited",
+      message: "Too many send attempts. Wait a moment before trying again.",
+    });
+  }
+  if (code === "no_recipients" || code === "too_many_recipients") {
+    return new SuperadminMutationError({
+      code: "superadmin_no_recipients",
+      message,
+    });
+  }
+  return new SuperadminMutationError({
+    code: "superadmin_operation_failed",
+    message,
+  });
+}
+
+async function sendEmail(
+  client: GubernatorSupabaseClient,
+  input: SendEmailInput,
+): Promise<SendEmailResult> {
+  const response = await client.functions.invoke<unknown>("send-email", {
+    body: input,
+  });
+
+  if (response.error !== null) {
+    const errorPayload = await readSendEmailErrorPayload(response.error);
+    if (errorPayload !== null) {
+      throw mapSendEmailErrorCode(
+        errorPayload.error.code,
+        errorPayload.error.message,
+      );
+    }
+    throw new SuperadminMutationError({
+      code: "superadmin_operation_failed",
+      message: "Sending email failed.",
+    });
+  }
+
+  if (isSendEmailSuccessResponse(response.data)) {
+    return response.data.data;
+  }
+
+  if (isSendEmailErrorResponse(response.data)) {
+    throw mapSendEmailErrorCode(
+      response.data.error.code,
+      response.data.error.message,
+    );
+  }
+
+  throw new SuperadminMutationError({
+    code: "superadmin_operation_failed",
+    message: "Unexpected response from send-email service.",
   });
 }
 

@@ -11,6 +11,7 @@ import { superadminQueryKeys } from "./superadminQueryKeys";
 
 import type { ActivePlayerCharacterRow } from "./activePlayerCharacterQueries";
 import type {
+  SmtpStatus,
   SuperadminRunningTransition,
   SuperadminUser,
   SuperadminWorld,
@@ -51,6 +52,13 @@ type TrashedWorldsQueryOptions = UseQueryOptions<
   AuthUiError,
   readonly SuperadminWorld[],
   TrashedWorldsQueryKey
+>;
+type SmtpStatusQueryKey = ReturnType<typeof superadminQueryKeys.smtpStatus>;
+type SmtpStatusQueryOptions = UseQueryOptions<
+  SmtpStatus,
+  AuthUiError,
+  SmtpStatus,
+  SmtpStatusQueryKey
 >;
 type WorldAdminsForUserQueryOptions = UseQueryOptions<
   readonly SuperadminWorldAdmin[],
@@ -99,6 +107,16 @@ export function trashedWorldsForSuperadminQueryOptions(
   return queryOptions({
     queryFn: () => getTrashedWorlds(client),
     queryKey: superadminQueryKeys.trashedWorlds(),
+  });
+}
+
+export function smtpStatusQueryOptions(
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SmtpStatusQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getSmtpStatus(client),
+    queryKey: superadminQueryKeys.smtpStatus(),
   });
 }
 
@@ -191,6 +209,59 @@ async function getWorldAdminsForUser(
   }
 
   return data;
+}
+
+type SendEmailStatusFunctionResponse =
+  | { readonly ok: true; readonly data: SmtpStatus }
+  | {
+      readonly ok: false;
+      readonly error: { readonly code: string; readonly message: string };
+    };
+
+function isSendEmailStatusSuccessResponse(
+  value: unknown,
+): value is Extract<SendEmailStatusFunctionResponse, { ok: true }> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { ok: unknown }).ok === true &&
+    typeof (value as { data: unknown }).data === "object"
+  );
+}
+
+function isSendEmailStatusErrorResponse(
+  value: unknown,
+): value is Extract<SendEmailStatusFunctionResponse, { ok: false }> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { ok: unknown }).ok === false &&
+    typeof (value as { error: unknown }).error === "object"
+  );
+}
+
+async function getSmtpStatus(
+  client: GubernatorSupabaseClient,
+): Promise<SmtpStatus> {
+  const response = await client.functions.invoke<unknown>("send-email", {
+    method: "GET",
+  });
+
+  if (response.error !== null) {
+    throw normalizeSupabaseError(response.error);
+  }
+
+  if (isSendEmailStatusSuccessResponse(response.data)) {
+    return response.data.data;
+  }
+
+  if (isSendEmailStatusErrorResponse(response.data)) {
+    throw normalizeSupabaseError(new Error(response.data.error.message));
+  }
+
+  throw normalizeSupabaseError(
+    new Error("Unexpected response from SMTP status service."),
+  );
 }
 
 type UserLivingPlayerCharactersQueryKey = ReturnType<

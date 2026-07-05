@@ -753,6 +753,41 @@ export type Database = {
         };
         Relationships: [];
       };
+      email_send_log: {
+        Row: {
+          created_at: string;
+          id: string;
+          recipient_count: number;
+          recipient_spec: Json;
+          sender_user_id: string | null;
+          subject: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          recipient_count: number;
+          recipient_spec: Json;
+          sender_user_id?: string | null;
+          subject: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          recipient_count?: number;
+          recipient_spec?: Json;
+          sender_user_id?: string | null;
+          subject?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "email_send_log_sender_user_id_fkey";
+            columns: ["sender_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       event_effects: {
         Row: {
           amount_value: number | null;
