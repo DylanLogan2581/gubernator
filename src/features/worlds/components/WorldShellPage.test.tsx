@@ -82,10 +82,6 @@ describe("WorldShellPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Eastern Marches" }),
     ).toBeDefined();
-    expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(
-      screen.getByText("Planning turn").nextElementSibling?.textContent,
-    ).toBe("7");
     expect(screen.getByText("Firstday, Dawn 2, 101 AG")).toBeDefined();
     expect(screen.getByText("private")).toBeDefined();
     expect(await screen.findByText("Readiness Summary")).toBeDefined();
@@ -117,10 +113,6 @@ describe("WorldShellPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Archived Realm" }),
     ).toBeDefined();
-    expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(
-      screen.getByText("Planning turn").nextElementSibling?.textContent,
-    ).toBe("3");
     expect(screen.getByText("Firstday, Ember 1, 100 AG")).toBeDefined();
     expect(screen.getByText("Read-only archive")).toBeDefined();
     expect(
@@ -148,10 +140,6 @@ describe("WorldShellPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Broken Calendar Realm" }),
     ).toBeDefined();
-    expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(
-      screen.getByText("Planning turn").nextElementSibling?.textContent,
-    ).toBe("2");
     expect(screen.getByText("Calendar unavailable")).toBeDefined();
   });
 
@@ -342,7 +330,7 @@ describe("WorldShellPage", () => {
 
     const statTileGrid = container.querySelector(".xl\\:grid-cols-5");
     expect(statTileGrid).not.toBeNull();
-    expect(statTileGrid).toHaveClass("grid-cols-2", "md:grid-cols-3");
+    expect(statTileGrid).toHaveClass("grid-cols-1", "md:grid-cols-3");
 
     const statTiles = within(statTileGrid as HTMLElement);
     expect(await statTiles.findByText("2")).toBeDefined(); // Nations
@@ -350,6 +338,8 @@ describe("WorldShellPage", () => {
     expect(await statTiles.findByText("42")).toBeDefined(); // Population
     expect(await statTiles.findByText("1/3")).toBeDefined(); // Settlements ready
     expect(await statTiles.findByText("1")).toBeDefined(); // Active events
+    expect(statTileGrid?.childElementCount).toBe(5); // even rows at every breakpoint
+    expect(statTiles.queryByText("Planning turn")).toBeNull();
 
     expect(await screen.findByText("Harvest Festival")).toBeDefined();
     expect(screen.getByText("Construction Completed")).toBeDefined();

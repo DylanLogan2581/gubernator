@@ -1,12 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  Building2,
-  CalendarClock,
-  CheckCircle2,
-  Flag,
-  Users,
-  Zap,
-} from "lucide-react";
+import { Building2, CheckCircle2, Flag, Users, Zap } from "lucide-react";
 
 import { StatTile } from "@/components/shared/StatTile";
 import { citizensDirectoryQueryOptions } from "@/features/citizens";
@@ -27,8 +20,6 @@ const ALIVE_FILTER = { status: "alive" } as const;
 const ACTIVE_EVENTS_FILTER: EventListFilters = { statusFilter: ["active"] };
 
 type WorldDashboardStatTilesProps = {
-  readonly inWorldDateLabel: string;
-  readonly planningTurnNumber: number;
   readonly worldId: string;
 };
 
@@ -38,8 +29,6 @@ type WorldDashboardStatTilesProps = {
  * happen when other panels on the page request the same data).
  */
 export function WorldDashboardStatTiles({
-  inWorldDateLabel,
-  planningTurnNumber,
   worldId,
 }: WorldDashboardStatTilesProps): JSX.Element {
   const nationsQuery = useQuery(nationsListQueryOptions(worldId));
@@ -59,13 +48,7 @@ export function WorldDashboardStatTiles({
     totalSettlementCount > 0 && readySettlementCount === totalSettlementCount;
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-      <StatTile
-        icon={CalendarClock}
-        label="Planning turn"
-        value={planningTurnNumber}
-        context={inWorldDateLabel}
-      />
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-5">
       <StatTile
         icon={Flag}
         label="Nations"

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Archive, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -20,6 +20,7 @@ import {
 } from "../queries/worldQueries";
 
 import { WorldActiveEventsFeed } from "./WorldActiveEventsFeed";
+import { WorldDashboardHeroBanner } from "./WorldDashboardHeroBanner";
 import { WorldDashboardStatTiles } from "./WorldDashboardStatTiles";
 import { WorldReportsSection } from "./WorldReportsSection";
 import { WorldTurnLogExcerpt } from "./WorldTurnLogExcerpt";
@@ -120,51 +121,22 @@ function WorldShellContent({
 
   return (
     <WorldShellFrame>
-      <section
-        aria-labelledby="world-shell-title"
-        className="grid gap-4 rounded-md border border-border bg-card p-4 text-card-foreground"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-2">
-            <h1
-              id="world-shell-title"
-              className="text-2xl font-semibold tracking-normal"
-            >
-              {worldQuery.data.header.name}
-            </h1>
-            <dl className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <div>
-                <dt className="font-medium text-foreground">Status</dt>
-                <dd className="capitalize">{worldQuery.data.header.status}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-foreground">Visibility</dt>
-                <dd className="capitalize">
-                  {worldQuery.data.header.visibility}
-                </dd>
-              </div>
-            </dl>
-          </div>
-          {worldQuery.data.header.isArchived ? (
-            <span className="inline-flex w-fit items-center gap-1 rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground">
-              <Archive className="size-3" aria-hidden="true" />
-              Read-only archive
-            </span>
-          ) : null}
-        </div>
-
-        {worldQuery.data.header.isArchived ? (
-          <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-            This world is archived and available for review.
-          </p>
-        ) : null}
-      </section>
-
-      <WorldDashboardStatTiles
+      <WorldDashboardHeroBanner
         inWorldDateLabel={worldQuery.data.header.inWorldDateLabel}
-        planningTurnNumber={worldQuery.data.header.planningTurnNumber}
+        isArchived={worldQuery.data.header.isArchived}
+        name={worldQuery.data.header.name}
+        status={worldQuery.data.header.status}
+        visibility={worldQuery.data.header.visibility}
         worldId={worldId}
       />
+
+      {worldQuery.data.header.isArchived ? (
+        <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+          This world is archived and available for review.
+        </p>
+      ) : null}
+
+      <WorldDashboardStatTiles worldId={worldId} />
 
       <EndTurnControl
         canAdmin={effectiveCanAdmin}
@@ -176,10 +148,8 @@ function WorldShellContent({
         worldId={worldId}
       />
 
-      <TurnTransitionOutcomePanel scope="world" id={worldId} />
-
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="xl:col-span-2">
+        <div className="flex flex-col gap-4">
           <SettlementReadinessListPanel
             accessContext={accessContext}
             canAdmin={effectiveCanAdmin}
@@ -187,9 +157,12 @@ function WorldShellContent({
             isArchived={worldQuery.data.header.isArchived}
             worldId={worldId}
           />
+          <TurnTransitionOutcomePanel scope="world" id={worldId} />
         </div>
-        <WorldActiveEventsFeed worldId={worldId} />
-        <WorldTurnLogExcerpt worldId={worldId} />
+        <div className="flex flex-col gap-4">
+          <WorldActiveEventsFeed worldId={worldId} />
+          <WorldTurnLogExcerpt worldId={worldId} />
+        </div>
         {effectiveCanAdmin ? (
           <div className="xl:col-span-2">
             <WorldReportsSection

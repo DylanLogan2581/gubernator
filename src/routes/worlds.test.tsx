@@ -248,9 +248,7 @@ describe("worlds route list", () => {
     expect(
       await screen.findByRole("heading", { name: "Public World" }),
     ).toBeDefined();
-    const planningTurnLabel = screen.getByText("Planning turn");
-
-    expect(planningTurnLabel.nextElementSibling).toHaveTextContent("1");
+    expect(screen.getByText("private")).toBeDefined();
   });
 });
 
@@ -286,8 +284,7 @@ describe("world shell route", () => {
     expect(
       await screen.findByRole("heading", { name: "Eastern Marches" }),
     ).toBeDefined();
-    expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(screen.getByText("12")).toBeDefined();
+    expect(screen.getByText("active")).toBeDefined();
     expect(await screen.findByText("Readiness Summary")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
   });

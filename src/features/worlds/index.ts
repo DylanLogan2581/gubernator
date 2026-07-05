@@ -2,6 +2,7 @@
 // Implemented in Epic 2.
 export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
 export { WorldAvatar } from "./components/WorldAvatar";
+export { WorldDashboardHeroBanner } from "./components/WorldDashboardHeroBanner";
 export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
 export { WorldHeroImage } from "./components/WorldHeroImage";
