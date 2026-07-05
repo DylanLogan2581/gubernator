@@ -87,6 +87,81 @@ export function jobByIdQueryOptions(
   });
 }
 
+export type JobsPageParams = {
+  readonly jobType?: JobType;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly search?: string;
+  readonly trash: boolean;
+};
+
+export type JobsPage = {
+  readonly items: readonly JobDefinition[];
+  readonly totalCount: number;
+};
+
+type JobsPageQueryKey = ReturnType<typeof jobsQueryKeys.page>;
+type JobsPageQueryOptions = UseQueryOptions<
+  JobsPage,
+  AuthUiError,
+  JobsPage,
+  JobsPageQueryKey
+>;
+
+// Config panel table (#1032): server-side search + pagination + trash
+// filtering so the client only ever holds one page of jobs, not the whole
+// world's list.
+export function jobsPageQueryOptions(
+  worldId: string,
+  params: JobsPageParams,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): JobsPageQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return {
+    queryFn: () => getJobsPage(client, worldId, params),
+    queryKey: jobsQueryKeys.page(worldId, params),
+  };
+}
+
+async function getJobsPage(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+  params: JobsPageParams,
+): Promise<JobsPage> {
+  const pageStart = params.page * params.pageSize;
+  const pageEnd = pageStart + params.pageSize - 1;
+  const search = params.search?.trim() ?? "";
+
+  let query = client
+    .from("job_definitions")
+    .select(JOB_SELECT, { count: "exact" })
+    .eq("world_id", worldId)
+    .eq("is_trashed", params.trash);
+
+  if (params.jobType !== undefined) {
+    query = query.eq("job_type", params.jobType);
+  }
+
+  if (search !== "") {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data, error, count } = await query
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .range(pageStart, pageEnd)
+    .returns<JobRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return {
+    items: data.map(toJob),
+    totalCount: count ?? 0,
+  };
+}
+
 async function getJobsByWorld(
   client: GubernatorSupabaseClient,
   worldId: string,

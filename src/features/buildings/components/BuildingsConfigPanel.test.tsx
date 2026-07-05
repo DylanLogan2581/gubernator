@@ -105,6 +105,36 @@ describe("BuildingsConfigPanel", () => {
     expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
   });
 
+  it("narrows results via the search input", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        blueprintRows: [
+          createBlueprintRow({ name: "Farmhouse" }),
+          createBlueprintRow({
+            id: "00000000-0000-0000-0000-000000000011",
+            name: "Windmill",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farmhouse");
+    expect(screen.getByText("Windmill")).toBeDefined();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Search blueprints by name" }),
+      "Farm",
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Windmill")).toBeNull();
+      expect(screen.getByText("Farmhouse")).toBeDefined();
+    });
+  });
+
   it("emits a success toast after creating a blueprint", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
@@ -400,6 +430,7 @@ type TestBlueprintRow = {
   readonly max_instances_per_settlement: number | null;
   readonly name: string;
   readonly slug: string;
+  readonly tier_count: readonly { readonly count: number }[];
   readonly updated_at: string;
   readonly world_id: string;
 };
@@ -462,6 +493,7 @@ function createBlueprintRow(
     max_instances_per_settlement: null,
     name: "Test Blueprint",
     slug: "test-blueprint",
+    tier_count: [{ count: 0 }],
     updated_at: "2026-01-01T00:00:00.000Z",
     world_id: WORLD_ID,
     ...overrides,
@@ -562,11 +594,41 @@ function createBlueprintsQueryBuilder(
   },
   insertSpy?: ReturnType<typeof vi.fn>,
 ): unknown {
-  const selectBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => selectBuilder),
-    order: vi.fn(() => selectBuilder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-  };
+  // Emulates enough of the real filter/order/range/returns chain that the
+  // panel's server-side search + pagination + trash filtering (#1032)
+  // behaves like the real Supabase query would, instead of always
+  // returning every row regardless of the applied filters.
+  function buildSelectBuilder(): Record<string, unknown> {
+    let filtered: TestBlueprintRow[] = [...rows];
+    let range: readonly [number, number] | null = null;
+
+    const selectBuilder: Record<string, unknown> = {
+      eq: vi.fn((column: string, value: unknown) => {
+        filtered = filtered.filter(
+          (row) => row[column as keyof TestBlueprintRow] === value,
+        );
+        return selectBuilder;
+      }),
+      ilike: vi.fn((column: "name", pattern: string) => {
+        const needle = pattern.replaceAll("%", "").toLowerCase();
+        filtered = filtered.filter((row) =>
+          row[column].toLowerCase().includes(needle),
+        );
+        return selectBuilder;
+      }),
+      order: vi.fn(() => selectBuilder),
+      range: vi.fn((start: number, end: number) => {
+        range = [start, end];
+        return selectBuilder;
+      }),
+      returns: vi.fn(() => {
+        const data =
+          range === null ? filtered : filtered.slice(range[0], range[1] + 1);
+        return Promise.resolve({ count: filtered.length, data, error: null });
+      }),
+    };
+    return selectBuilder;
+  }
 
   const updateBuilder: Record<string, unknown> = {
     eq: vi.fn(() => updateBuilder),
@@ -583,7 +645,7 @@ function createBlueprintsQueryBuilder(
 
   return {
     insert: insertSpy ?? defaultInsert,
-    select: vi.fn(() => selectBuilder),
+    select: vi.fn(() => buildSelectBuilder()),
     update: vi.fn(() => updateBuilder),
   };
 }

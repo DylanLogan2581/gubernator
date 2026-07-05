@@ -6,6 +6,13 @@ import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -121,124 +128,143 @@ export function EditBlueprintForm({
   }
 
   return (
-    <form
-      aria-label="Edit blueprint"
-      className="grid gap-4 rounded-md border border-border bg-background p-4"
-      noValidate
-      onSubmit={(e) => {
-        void handleSubmit(e);
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <h3 className="text-sm font-medium">Edit blueprint</h3>
-      <div className="grid gap-3">
-        <div className="grid gap-1">
-          <Label htmlFor="edit-blueprint-name">Name</Label>
-          <Input
-            id="edit-blueprint-name"
-            aria-invalid={fieldErrors.name !== undefined}
-            disabled={isPending}
-            maxLength={buildingInputLimits.blueprintNameMax}
-            value={name}
-            onChange={(e) => {
-              handleNameChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.name !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.name}</p>
-          ) : null}
-          <SlugHint slug={slug} error={fieldErrors.slug} />
-        </div>
-        <div className="grid gap-1">
-          <Label htmlFor="edit-blueprint-description">Description</Label>
-          <Textarea
-            id="edit-blueprint-description"
-            aria-invalid={fieldErrors.description !== undefined}
-            disabled={isPending}
-            maxLength={buildingInputLimits.blueprintDescriptionMax}
-            value={description}
-            onChange={(e) => {
-              setDescription(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.description !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.description}
-            </p>
-          ) : null}
-        </div>
-        <div className="grid gap-1">
-          <Label htmlFor="edit-grace-period-turns">Grace period (turns)</Label>
-          <Input
-            id="edit-grace-period-turns"
-            aria-invalid={fieldErrors.gracePeriodTurns !== undefined}
-            disabled={isPending}
-            inputMode="numeric"
-            placeholder="0"
-            value={gracePeriodTurns}
-            onChange={(e) => {
-              setGracePeriodTurns(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.gracePeriodTurns !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.gracePeriodTurns}
-            </p>
-          ) : null}
-        </div>
-        <div className="grid gap-1">
-          <Label htmlFor="edit-max-instances-settlement">
-            Max instances per settlement
-          </Label>
-          <Input
-            id="edit-max-instances-settlement"
-            aria-invalid={fieldErrors.maxInstancesPerSettlement !== undefined}
-            disabled={isPending}
-            inputMode="numeric"
-            placeholder="Unlimited"
-            value={maxInstances}
-            onChange={(e) => {
-              setMaxInstances(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.maxInstancesPerSettlement !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.maxInstancesPerSettlement}
-            </p>
-          ) : null}
-        </div>
-        <div className="grid gap-1">
-          <Label>Icon</Label>
-          <IconPicker disabled={isPending} value={icon} onChange={setIcon} />
-        </div>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2">
-          <Button type="submit" size="sm" disabled={isPending}>
-            Save
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={() => {
-            void handleTrash();
+      <DialogContent className="max-w-lg">
+        <form
+          aria-label="Edit blueprint"
+          className="contents"
+          noValidate
+          onSubmit={(e) => {
+            void handleSubmit(e);
           }}
         >
-          <Trash2 aria-hidden="true" />
-          Move to trash
-        </Button>
-      </div>
-    </form>
+          <DialogHeader>
+            <DialogTitle>Edit blueprint</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1">
+              <Label htmlFor="edit-blueprint-name">Name</Label>
+              <Input
+                id="edit-blueprint-name"
+                aria-invalid={fieldErrors.name !== undefined}
+                disabled={isPending}
+                maxLength={buildingInputLimits.blueprintNameMax}
+                value={name}
+                onChange={(e) => {
+                  handleNameChange(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.name !== undefined ? (
+                <p className="text-xs text-destructive">{fieldErrors.name}</p>
+              ) : null}
+              <SlugHint slug={slug} error={fieldErrors.slug} />
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="edit-blueprint-description">Description</Label>
+              <Textarea
+                id="edit-blueprint-description"
+                aria-invalid={fieldErrors.description !== undefined}
+                disabled={isPending}
+                maxLength={buildingInputLimits.blueprintDescriptionMax}
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.description !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.description}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="edit-grace-period-turns">
+                Grace period (turns)
+              </Label>
+              <Input
+                id="edit-grace-period-turns"
+                aria-invalid={fieldErrors.gracePeriodTurns !== undefined}
+                disabled={isPending}
+                inputMode="numeric"
+                placeholder="0"
+                value={gracePeriodTurns}
+                onChange={(e) => {
+                  setGracePeriodTurns(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.gracePeriodTurns !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.gracePeriodTurns}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="edit-max-instances-settlement">
+                Max instances per settlement
+              </Label>
+              <Input
+                id="edit-max-instances-settlement"
+                aria-invalid={
+                  fieldErrors.maxInstancesPerSettlement !== undefined
+                }
+                disabled={isPending}
+                inputMode="numeric"
+                placeholder="Unlimited"
+                value={maxInstances}
+                onChange={(e) => {
+                  setMaxInstances(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.maxInstancesPerSettlement !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.maxInstancesPerSettlement}
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-1">
+              <Label>Icon</Label>
+              <IconPicker
+                disabled={isPending}
+                value={icon}
+                onChange={setIcon}
+              />
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={() => {
+                void handleTrash();
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              Move to trash
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={isPending}>
+                Save
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

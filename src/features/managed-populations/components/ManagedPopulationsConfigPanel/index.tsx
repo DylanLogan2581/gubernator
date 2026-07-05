@@ -1,22 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type JSX } from "react";
+import { Plus } from "lucide-react";
+import { useState, type JSX } from "react";
 
 import {
-  ConfigCrudPanel,
   handleCrudError,
+  TrashToggleButton,
 } from "@/components/shared/ConfigCrudPanel";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { jobsByTypeQueryOptions } from "@/features/jobs";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import { createManagedPopulationTypeMutationOptions } from "../../mutations/managedPopulationsMutations";
-import { managedPopulationTypesByWorldQueryOptions } from "../../queries/managedPopulationsQueries";
+import {
+  activeManagedPopulationTypesByWorldQueryOptions,
+  managedPopulationTypesPageQueryOptions,
+} from "../../queries/managedPopulationsQueries";
 
 import { CreateManagedPopulationTypeForm } from "./components/CreateManagedPopulationTypeForm";
-import { EditManagedPopulationTypeForm } from "./components/EditManagedPopulationTypeForm";
-import { ManagedPopulationTypeRow } from "./components/ManagedPopulationTypeRow";
-import { TrashedManagedPopulationTypeRow } from "./components/TrashedManagedPopulationTypeRow";
+import { ManagedPopulationTypesTable } from "./components/ManagedPopulationTypesTable";
 
-import type { ManagedPopulationType } from "../../types/managedPopulationTypes";
+import type { CreateManagedPopulationTypeInput } from "../../schemas/managedPopulationSchemas";
+
+const PAGE_SIZE = 25;
 
 type ManagedPopulationsConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -30,118 +41,165 @@ export function ManagedPopulationsConfigPanel({
   worldId,
 }: ManagedPopulationsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
-  const populationTypesQuery = useQuery(
-    managedPopulationTypesByWorldQueryOptions(worldId),
+  const canEdit = canAdmin && !isArchived;
+
+  const [search, setSearch] = useState("");
+  const [pageIndex, setPageIndex] = useState(0);
+  const [showTrash, setShowTrash] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const populationTypesPageQuery = useQuery(
+    managedPopulationTypesPageQueryOptions(worldId, {
+      page: pageIndex,
+      pageSize: PAGE_SIZE,
+      search: debouncedSearch,
+      trash: showTrash,
+    }),
   );
+
+  // Unpaginated active list, used only to feed the create/edit forms'
+  // client-side slug/name conflict validation — must stay the full active
+  // list, not the currently visible page slice, or conflicts outside the
+  // page would be silently missed.
+  const activePopulationTypesQuery = useQuery(
+    activeManagedPopulationTypesByWorldQueryOptions(worldId),
+  );
+
   const husbandryJobsQuery = useQuery(
     jobsByTypeQueryOptions(worldId, "husbandry"),
   );
   const cullingJobsQuery = useQuery(jobsByTypeQueryOptions(worldId, "culling"));
-  const canEdit = canAdmin && !isArchived;
+
   const createMutation = useMutation(
     createManagedPopulationTypeMutationOptions({ queryClient }),
   );
+
+  function resetToFirstPage(): void {
+    setPageIndex(0);
+  }
+
+  const items = populationTypesPageQuery.data?.items ?? [];
+  const totalCount = populationTypesPageQuery.data?.totalCount ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const allPopulationTypes = activePopulationTypesQuery.data ?? [];
   const husbandryJobs = husbandryJobsQuery.data ?? [];
   const cullingJobs = cullingJobsQuery.data ?? [];
 
   return (
-    <ConfigCrudPanel<ManagedPopulationType>
-      addButtonLabel="Add population type"
-      allData={populationTypesQuery}
-      canEdit={canEdit}
-      emptyTitle="No managed population types yet"
-      emptyDescription="Add the first managed population type for this world."
-      headerTitle="Managed Population Types"
-      isTrashed={(pt) => pt.isTrashed}
-      renderContent={({
-        canEdit: canEditProp,
-        editingId,
-        items,
-        queryClient: qc,
-        setEditingId,
-        setShowForm,
-        showForm,
-        showTrash,
-      }) => (
-        <>
-          {items.length > 0 ? (
-            <ul aria-label="Population types" className="grid gap-2">
-              {items.map((populationType) => {
-                if (editingId === populationType.id) {
-                  return (
-                    <li key={populationType.id}>
-                      <EditManagedPopulationTypeForm
-                        allPopulationTypes={items}
-                        cullingJobs={cullingJobs}
-                        husbandryJobs={husbandryJobs}
-                        populationType={populationType}
-                        queryClient={qc}
-                        worldId={worldId}
-                        onClose={() => {
-                          setEditingId(null);
-                        }}
-                      />
-                    </li>
-                  );
-                }
-                if (showTrash) {
-                  return (
-                    <li key={populationType.id}>
-                      <TrashedManagedPopulationTypeRow
-                        populationType={populationType}
-                        queryClient={qc}
-                        worldId={worldId}
-                      />
-                    </li>
-                  );
-                }
-                return (
-                  <li key={populationType.id}>
-                    <ManagedPopulationTypeRow
-                      canEdit={canEditProp}
-                      cullingJobs={cullingJobs}
-                      husbandryJobs={husbandryJobs}
-                      populationType={populationType}
-                      queryClient={qc}
-                      worldId={worldId}
-                      onEdit={() => {
-                        setEditingId(populationType.id);
-                      }}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
+    <div className="grid gap-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold tracking-normal">
+          Managed Population Types
+        </h2>
+        <div className="flex items-center gap-2">
+          {canEdit && !showForm && !showTrash ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowForm(true);
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Add population type
+            </Button>
           ) : null}
+          <TrashToggleButton
+            isActive={showTrash}
+            onClick={() => {
+              setShowTrash((v) => !v);
+              resetToFirstPage();
+            }}
+          />
+        </div>
+      </div>
 
-          {canEditProp && showForm && !showTrash ? (
-            <CreateManagedPopulationTypeForm
-              allPopulationTypes={items}
-              cullingJobs={cullingJobs}
-              husbandryJobs={husbandryJobs}
-              isPending={createMutation.isPending}
-              worldId={worldId}
-              onCancel={() => {
-                setShowForm(false);
-              }}
-              onSubmit={(input) => {
-                createMutation.mutate(input, {
-                  onError: (error) => {
-                    handleCrudError(
-                      error,
-                      "Failed to create managed population type.",
-                    );
-                  },
-                  onSuccess: () => {
-                    notifyMutationSuccess("Managed population type created.");
-                    setShowForm(false);
-                  },
-                });
-              }}
-            />
-          ) : null}
+      <Input
+        aria-label="Search population types by name"
+        className="sm:w-[280px]"
+        placeholder="Search by name…"
+        value={search}
+        onChange={(event) => {
+          setSearch(event.currentTarget.value);
+          resetToFirstPage();
+        }}
+      />
+
+      {populationTypesPageQuery.isPending ? (
+        <TableSkeleton columnCount={3} rowCount={PAGE_SIZE} />
+      ) : populationTypesPageQuery.isError ? (
+        <ErrorState
+          title="Managed population types could not be loaded"
+          description={getErrorDescription(populationTypesPageQuery.error)}
+        />
+      ) : items.length === 0 ? (
+        showTrash ? (
+          <EmptyState title="No managed population types in trash" />
+        ) : debouncedSearch !== "" ? (
+          <EmptyState
+            title="No matching managed population types"
+            description="Try a different search."
+          />
+        ) : (
+          <EmptyState
+            title="No managed population types yet"
+            description="Add the first managed population type for this world."
+          />
+        )
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground" role="status">
+            {`Showing ${(pageIndex * PAGE_SIZE + 1).toString()}–${(
+              pageIndex * PAGE_SIZE +
+              items.length
+            ).toString()} of ${totalCount.toString()}`}
+          </p>
+          <ManagedPopulationTypesTable
+            allPopulationTypes={allPopulationTypes}
+            canEdit={canEdit}
+            cullingJobs={cullingJobs}
+            husbandryJobs={husbandryJobs}
+            isPaginationDisabled={populationTypesPageQuery.isFetching}
+            pageCount={pageCount}
+            pageIndex={pageIndex}
+            populationTypes={items}
+            queryClient={queryClient}
+            showTrash={showTrash}
+            worldId={worldId}
+            onPageChange={setPageIndex}
+          />
         </>
       )}
-    />
+
+      {canEdit && showForm && !showTrash ? (
+        <CreateManagedPopulationTypeForm
+          allPopulationTypes={allPopulationTypes}
+          cullingJobs={cullingJobs}
+          husbandryJobs={husbandryJobs}
+          isPending={createMutation.isPending}
+          worldId={worldId}
+          onCancel={() => {
+            setShowForm(false);
+          }}
+          onSubmit={(input: CreateManagedPopulationTypeInput) => {
+            createMutation.mutate(input, {
+              onError: (error) => {
+                handleCrudError(
+                  error,
+                  "Failed to create managed population type.",
+                );
+              },
+              onSuccess: () => {
+                notifyMutationSuccess("Managed population type created.");
+                setShowForm(false);
+              },
+            });
+          }}
+        />
+      ) : null}
+    </div>
   );
 }

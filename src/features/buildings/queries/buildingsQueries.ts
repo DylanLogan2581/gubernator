@@ -102,6 +102,99 @@ export function tierByIdQueryOptions(
   });
 }
 
+export type BlueprintsPageParams = {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly search?: string;
+  readonly trash: boolean;
+};
+
+export type BuildingBlueprintSummary = BuildingBlueprint & {
+  readonly tierCount: number;
+};
+
+export type BlueprintsPage = {
+  readonly items: readonly BuildingBlueprintSummary[];
+  readonly totalCount: number;
+};
+
+type BlueprintsPageQueryKey = ReturnType<
+  typeof buildingsQueryKeys.blueprintsPage
+>;
+type BlueprintsPageQueryOptions = UseQueryOptions<
+  BlueprintsPage,
+  AuthUiError,
+  BlueprintsPage,
+  BlueprintsPageQueryKey
+>;
+
+// Config panel table (#1032): server-side search + pagination + trash
+// filtering so the client only ever holds one page of blueprints, not the
+// whole world's list. Also embeds a per-blueprint tier count via a Supabase
+// embedded count select, without touching BLUEPRINT_SELECT/BlueprintRow
+// (used elsewhere, e.g. BlueprintTierEditor).
+export function blueprintsPageQueryOptions(
+  worldId: string,
+  params: BlueprintsPageParams,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): BlueprintsPageQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return {
+    queryFn: () => getBlueprintsPage(client, worldId, params),
+    queryKey: buildingsQueryKeys.blueprintsPage(worldId, params),
+  };
+}
+
+type BlueprintSummaryRow = BlueprintRow & {
+  readonly tier_count: readonly { readonly count: number }[];
+};
+
+const BLUEPRINT_SUMMARY_SELECT = `${BLUEPRINT_SELECT},tier_count:building_blueprint_tiers(count)`;
+
+function toBlueprintSummary(
+  row: BlueprintSummaryRow,
+): BuildingBlueprintSummary {
+  return {
+    ...toBlueprint(row),
+    tierCount: row.tier_count[0]?.count ?? 0,
+  };
+}
+
+async function getBlueprintsPage(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+  params: BlueprintsPageParams,
+): Promise<BlueprintsPage> {
+  const pageStart = params.page * params.pageSize;
+  const pageEnd = pageStart + params.pageSize - 1;
+  const search = params.search?.trim() ?? "";
+
+  let query = client
+    .from("building_blueprints")
+    .select(BLUEPRINT_SUMMARY_SELECT, { count: "exact" })
+    .eq("world_id", worldId)
+    .eq("is_trashed", params.trash);
+
+  if (search !== "") {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data, error, count } = await query
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .range(pageStart, pageEnd)
+    .returns<BlueprintSummaryRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return {
+    items: data.map(toBlueprintSummary),
+    totalCount: count ?? 0,
+  };
+}
+
 async function getBlueprintsByWorld(
   client: GubernatorSupabaseClient,
   worldId: string,

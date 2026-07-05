@@ -5,6 +5,13 @@ import { type FormEvent, type JSX } from "react";
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
 import { ResourceAmountListEditor } from "@/components/shared/ResourceAmountListEditor";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { JobDefinition } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -138,101 +145,112 @@ export function EditManagedPopulationTypeForm({
   const resources = resourcesQuery.data ?? [];
 
   return (
-    <form
-      aria-label="Edit managed population type"
-      className="grid gap-4 rounded-md border border-border bg-background p-4"
-      noValidate
-      onSubmit={(e) => {
-        void handleSubmit(e);
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <h3 className="text-sm font-medium">Edit managed population type</h3>
-      <div className="grid gap-3">
-        <PopulationTypeScalarFields
-          cullingJobId={form.cullingJobId}
-          cullingJobLinkError={form.cullingJobLinkError}
-          cullingJobs={cullingJobs}
-          fieldErrors={form.fieldErrors}
-          growthRate={form.growthRate}
-          husbandryJobId={form.husbandryJobId}
-          husbandryJobLinkError={form.husbandryJobLinkError}
-          husbandryJobs={husbandryJobs}
-          husbandryWorkersPerNAnimals={form.husbandryWorkersPerNAnimals}
-          icon={form.icon}
-          isPending={isPending}
-          jobCollisionError={form.jobCollisionError}
-          name={form.name}
-          slug={form.slug}
-          worldId={worldId}
-          onCullingJobChange={form.handleCullingJobChange}
-          onGrowthRateChange={form.setGrowthRate}
-          onHusbandryJobChange={form.handleHusbandryJobChange}
-          onHusbandryWorkersPerNAnimalsChange={
-            form.setHusbandryWorkersPerNAnimals
-          }
-          onIconChange={form.setIcon}
-          onNameChange={form.handleNameChange}
-        />
-        <ResourceAmountListEditor
-          addLabel="Add entry"
-          amountLabel="amount per N animals"
-          disabled={isPending}
-          entries={form.maintenanceRules}
-          label="Maintenance rules"
-          resources={resources}
-          onChange={form.setMaintenanceRules}
-        />
-        <ResourceAmountListEditor
-          addLabel="Add entry"
-          amountLabel="amount per N animals"
-          disabled={isPending}
-          entries={form.cullingOutputs}
-          label="Culling outputs"
-          resources={resources}
-          onChange={form.setCullingOutputs}
-        />
-        <ResourceAmountListEditor
-          addLabel="Add entry"
-          amountLabel="amount per N animals"
-          disabled={isPending}
-          entries={form.regularOutputs}
-          label="Regular outputs"
-          resources={resources}
-          onChange={form.setRegularOutputs}
-        />
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2">
-          <Button
-            type="submit"
-            size="sm"
-            disabled={isPending || form.hasJobError}
-          >
-            Save
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={() => {
-            void handleTrash();
+      <DialogContent className="max-w-lg">
+        <form
+          aria-label="Edit managed population type"
+          className="contents"
+          noValidate
+          onSubmit={(e) => {
+            void handleSubmit(e);
           }}
         >
-          <Trash2 aria-hidden="true" />
-          Move to trash
-        </Button>
-      </div>
-    </form>
+          <DialogHeader>
+            <DialogTitle>Edit managed population type</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <PopulationTypeScalarFields
+              cullingJobId={form.cullingJobId}
+              cullingJobLinkError={form.cullingJobLinkError}
+              cullingJobs={cullingJobs}
+              fieldErrors={form.fieldErrors}
+              growthRate={form.growthRate}
+              husbandryJobId={form.husbandryJobId}
+              husbandryJobLinkError={form.husbandryJobLinkError}
+              husbandryJobs={husbandryJobs}
+              husbandryWorkersPerNAnimals={form.husbandryWorkersPerNAnimals}
+              icon={form.icon}
+              isPending={isPending}
+              jobCollisionError={form.jobCollisionError}
+              name={form.name}
+              slug={form.slug}
+              worldId={worldId}
+              onCullingJobChange={form.handleCullingJobChange}
+              onGrowthRateChange={form.setGrowthRate}
+              onHusbandryJobChange={form.handleHusbandryJobChange}
+              onHusbandryWorkersPerNAnimalsChange={
+                form.setHusbandryWorkersPerNAnimals
+              }
+              onIconChange={form.setIcon}
+              onNameChange={form.handleNameChange}
+            />
+            <ResourceAmountListEditor
+              addLabel="Add entry"
+              amountLabel="amount per N animals"
+              disabled={isPending}
+              entries={form.maintenanceRules}
+              label="Maintenance rules"
+              resources={resources}
+              onChange={form.setMaintenanceRules}
+            />
+            <ResourceAmountListEditor
+              addLabel="Add entry"
+              amountLabel="amount per N animals"
+              disabled={isPending}
+              entries={form.cullingOutputs}
+              label="Culling outputs"
+              resources={resources}
+              onChange={form.setCullingOutputs}
+            />
+            <ResourceAmountListEditor
+              addLabel="Add entry"
+              amountLabel="amount per N animals"
+              disabled={isPending}
+              entries={form.regularOutputs}
+              label="Regular outputs"
+              resources={resources}
+              onChange={form.setRegularOutputs}
+            />
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={() => {
+                void handleTrash();
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              Move to trash
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isPending || form.hasJobError}
+              >
+                Save
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

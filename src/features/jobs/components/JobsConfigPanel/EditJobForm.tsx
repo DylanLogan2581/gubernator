@@ -10,6 +10,13 @@ import {
 } from "@/components/shared/ResourceAmountListEditor";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -208,189 +215,213 @@ export function EditJobForm({
   }
 
   return (
-    <form
-      aria-label="Edit job"
-      className="grid gap-4 rounded-md border border-border bg-background p-4"
-      noValidate
-      onSubmit={(e) => {
-        void handleSubmit(e);
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <h3 className="text-sm font-medium">Edit job</h3>
-      <div className="grid gap-3">
-        <Label htmlFor="edit-job-name" className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Name</span>
-          <Input
-            id="edit-job-name"
-            aria-invalid={fieldErrors.name !== undefined}
-            aria-label="Name"
-            disabled={isPending}
-            maxLength={jobInputLimits.jobNameMax}
-            value={name}
-            onChange={(e) => {
-              handleNameChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.name !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.name}</p>
-          ) : null}
-          <SlugHint slug={slug} error={fieldErrors.slug} />
-        </Label>
-
-        <Label className="grid gap-1 text-sm">
-          <span className="text-muted-foreground">Icon</span>
-          <IconPicker disabled={isPending} value={icon} onChange={setIcon} />
-        </Label>
-
-        {job.jobType === "standard" || job.jobType === "construction" ? (
-          <Label htmlFor="edit-job-basecapacity" className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Base capacity</span>
-            <Input
-              id="edit-job-basecapacity"
-              aria-invalid={fieldErrors.baseCapacity !== undefined}
-              disabled={isPending}
-              inputMode="numeric"
-              placeholder="0"
-              value={baseCapacity}
-              onChange={(e) => {
-                setBaseCapacity(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.baseCapacity !== undefined ? (
-              <p className="text-xs text-destructive">
-                {fieldErrors.baseCapacity}
-              </p>
-            ) : null}
-          </Label>
-        ) : null}
-
-        {job.jobType === "trader" ? (
-          <Label htmlFor="edit-job-trader" className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">
-              Trader capacity per worker
-            </span>
-            <Input
-              id="edit-job-trader"
-              aria-invalid={fieldErrors.traderCapacityPerWorker !== undefined}
-              disabled={isPending}
-              inputMode="numeric"
-              placeholder="0"
-              value={traderCapacityPerWorker}
-              onChange={(e) => {
-                setTraderCapacityPerWorker(e.currentTarget.value);
-              }}
-            />
-            {fieldErrors.traderCapacityPerWorker !== undefined ? (
-              <p className="text-xs text-destructive">
-                {fieldErrors.traderCapacityPerWorker}
-              </p>
-            ) : null}
-          </Label>
-        ) : null}
-
-        {job.jobType === "deposit" ? (
-          <Label htmlFor="edit-job-deposit" className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">Linked deposit type</span>
-            <NativeSelect
-              id="edit-job-deposit"
-              className="w-full"
-              disabled={isPending}
-              value={linkedDepositTypeId}
-              onChange={(e) => {
-                setLinkedDepositTypeId(e.currentTarget.value);
-              }}
-            >
-              <option value="">None</option>
-              {activeDepositTypes.map((dt) => (
-                <option key={dt.id} value={dt.id}>
-                  {dt.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </Label>
-        ) : null}
-
-        {job.jobType === "husbandry" || job.jobType === "culling" ? (
-          <Label htmlFor="edit-job-managedpop" className="grid gap-1 text-sm">
-            <span className="text-muted-foreground">
-              Linked managed population type
-            </span>
-            <NativeSelect
-              id="edit-job-managedpop"
-              className="w-full"
-              disabled={isPending}
-              value={linkedManagedPopulationTypeId}
-              onChange={(e) => {
-                setLinkedManagedPopulationTypeId(e.currentTarget.value);
-              }}
-            >
-              <option value="">None</option>
-              {availableManagedPopTypes.map((mpt) => (
-                <option key={mpt.id} value={mpt.id}>
-                  {mpt.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </Label>
-        ) : null}
-
-        {job.jobType === "standard" ? (
-          <>
-            <ResourceAmountListEditor
-              addLabel="Add input"
-              amountLabel="amount per worker"
-              disabled={isPending}
-              entries={inputRows}
-              fieldError={fieldErrors.inputsJson}
-              label="Inputs"
-              resources={resources}
-              showNotes={true}
-              onChange={setInputRows}
-            />
-
-            <ResourceAmountListEditor
-              addLabel="Add output"
-              amountLabel="amount per worker"
-              disabled={isPending}
-              entries={outputRows}
-              fieldError={fieldErrors.outputsJson}
-              label="Outputs"
-              resources={resources}
-              showNotes={true}
-              onChange={setOutputRows}
-            />
-          </>
-        ) : null}
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2">
-          <Button type="submit" size="sm" disabled={isPending}>
-            Save
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={() => {
-            void handleTrash();
+      <DialogContent className="max-w-lg">
+        <form
+          aria-label="Edit job"
+          className="contents"
+          noValidate
+          onSubmit={(e) => {
+            void handleSubmit(e);
           }}
         >
-          <Trash2 aria-hidden="true" />
-          Move to trash
-        </Button>
-      </div>
-    </form>
+          <DialogHeader>
+            <DialogTitle>Edit job</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <Label htmlFor="edit-job-name" className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Name</span>
+              <Input
+                id="edit-job-name"
+                aria-invalid={fieldErrors.name !== undefined}
+                aria-label="Name"
+                disabled={isPending}
+                maxLength={jobInputLimits.jobNameMax}
+                value={name}
+                onChange={(e) => {
+                  handleNameChange(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.name !== undefined ? (
+                <p className="text-xs text-destructive">{fieldErrors.name}</p>
+              ) : null}
+              <SlugHint slug={slug} error={fieldErrors.slug} />
+            </Label>
+
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon</span>
+              <IconPicker
+                disabled={isPending}
+                value={icon}
+                onChange={setIcon}
+              />
+            </Label>
+
+            {job.jobType === "standard" || job.jobType === "construction" ? (
+              <Label
+                htmlFor="edit-job-basecapacity"
+                className="grid gap-1 text-sm"
+              >
+                <span className="text-muted-foreground">Base capacity</span>
+                <Input
+                  id="edit-job-basecapacity"
+                  aria-invalid={fieldErrors.baseCapacity !== undefined}
+                  disabled={isPending}
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={baseCapacity}
+                  onChange={(e) => {
+                    setBaseCapacity(e.currentTarget.value);
+                  }}
+                />
+                {fieldErrors.baseCapacity !== undefined ? (
+                  <p className="text-xs text-destructive">
+                    {fieldErrors.baseCapacity}
+                  </p>
+                ) : null}
+              </Label>
+            ) : null}
+
+            {job.jobType === "trader" ? (
+              <Label htmlFor="edit-job-trader" className="grid gap-1 text-sm">
+                <span className="text-muted-foreground">
+                  Trader capacity per worker
+                </span>
+                <Input
+                  id="edit-job-trader"
+                  aria-invalid={
+                    fieldErrors.traderCapacityPerWorker !== undefined
+                  }
+                  disabled={isPending}
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={traderCapacityPerWorker}
+                  onChange={(e) => {
+                    setTraderCapacityPerWorker(e.currentTarget.value);
+                  }}
+                />
+                {fieldErrors.traderCapacityPerWorker !== undefined ? (
+                  <p className="text-xs text-destructive">
+                    {fieldErrors.traderCapacityPerWorker}
+                  </p>
+                ) : null}
+              </Label>
+            ) : null}
+
+            {job.jobType === "deposit" ? (
+              <Label htmlFor="edit-job-deposit" className="grid gap-1 text-sm">
+                <span className="text-muted-foreground">
+                  Linked deposit type
+                </span>
+                <NativeSelect
+                  id="edit-job-deposit"
+                  className="w-full"
+                  disabled={isPending}
+                  value={linkedDepositTypeId}
+                  onChange={(e) => {
+                    setLinkedDepositTypeId(e.currentTarget.value);
+                  }}
+                >
+                  <option value="">None</option>
+                  {activeDepositTypes.map((dt) => (
+                    <option key={dt.id} value={dt.id}>
+                      {dt.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Label>
+            ) : null}
+
+            {job.jobType === "husbandry" || job.jobType === "culling" ? (
+              <Label
+                htmlFor="edit-job-managedpop"
+                className="grid gap-1 text-sm"
+              >
+                <span className="text-muted-foreground">
+                  Linked managed population type
+                </span>
+                <NativeSelect
+                  id="edit-job-managedpop"
+                  className="w-full"
+                  disabled={isPending}
+                  value={linkedManagedPopulationTypeId}
+                  onChange={(e) => {
+                    setLinkedManagedPopulationTypeId(e.currentTarget.value);
+                  }}
+                >
+                  <option value="">None</option>
+                  {availableManagedPopTypes.map((mpt) => (
+                    <option key={mpt.id} value={mpt.id}>
+                      {mpt.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </Label>
+            ) : null}
+
+            {job.jobType === "standard" ? (
+              <>
+                <ResourceAmountListEditor
+                  addLabel="Add input"
+                  amountLabel="amount per worker"
+                  disabled={isPending}
+                  entries={inputRows}
+                  fieldError={fieldErrors.inputsJson}
+                  label="Inputs"
+                  resources={resources}
+                  showNotes={true}
+                  onChange={setInputRows}
+                />
+
+                <ResourceAmountListEditor
+                  addLabel="Add output"
+                  amountLabel="amount per worker"
+                  disabled={isPending}
+                  entries={outputRows}
+                  fieldError={fieldErrors.outputsJson}
+                  label="Outputs"
+                  resources={resources}
+                  showNotes={true}
+                  onChange={setOutputRows}
+                />
+              </>
+            ) : null}
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={() => {
+                void handleTrash();
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              Move to trash
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={isPending}>
+                Save
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

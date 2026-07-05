@@ -325,6 +325,36 @@ describe("ResourcesConfigPanel", () => {
     expect(screen.getByText("Trashed Resource")).toBeDefined();
     expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
   });
+
+  it("narrows results via the search input", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        resourceRows: [
+          createResourceRow({ name: "Gold" }),
+          createResourceRow({
+            id: "00000000-0000-0000-0000-000000000011",
+            name: "Silver",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Gold");
+    expect(screen.getByText("Silver")).toBeDefined();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Search resources by name" }),
+      "Gol",
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Silver")).toBeNull();
+      expect(screen.getByText("Gold")).toBeDefined();
+    });
+  });
 });
 
 function renderPanel({
@@ -439,11 +469,43 @@ function createResourcesQueryBuilder(
     readonly error: { readonly message: string } | null;
   },
 ): unknown {
-  const selectBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => selectBuilder),
-    order: vi.fn(() => selectBuilder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-  };
+  // Emulates enough of the real filter/order/range/returns chain that the
+  // panel's server-side search + pagination + trash filtering (#1032)
+  // behaves like the real Supabase query would, instead of always
+  // returning every row regardless of the applied filters.
+  function buildSelectBuilder(): Record<string, unknown> {
+    let filtered: TestResourceRow[] = [...rows];
+    let range: readonly [number, number] | null = null;
+
+    const selectBuilder: Record<string, unknown> = {
+      eq: vi.fn((column: string, value: unknown) => {
+        filtered = filtered.filter(
+          (row) => row[column as keyof TestResourceRow] === value,
+        );
+        return selectBuilder;
+      }),
+      ilike: vi.fn((column: string, pattern: string) => {
+        const needle = pattern.replaceAll("%", "").toLowerCase();
+        filtered = filtered.filter((row) =>
+          String(row[column as keyof TestResourceRow])
+            .toLowerCase()
+            .includes(needle),
+        );
+        return selectBuilder;
+      }),
+      order: vi.fn(() => selectBuilder),
+      range: vi.fn((start: number, end: number) => {
+        range = [start, end];
+        return selectBuilder;
+      }),
+      returns: vi.fn(() => {
+        const data =
+          range === null ? filtered : filtered.slice(range[0], range[1] + 1);
+        return Promise.resolve({ count: filtered.length, data, error: null });
+      }),
+    };
+    return selectBuilder;
+  }
 
   const updateBuilder: Record<string, unknown> = {
     eq: vi.fn(() => updateBuilder),
@@ -458,7 +520,7 @@ function createResourcesQueryBuilder(
         maybeSingle: vi.fn().mockResolvedValue(insertResult),
       })),
     })),
-    select: vi.fn(() => selectBuilder),
+    select: vi.fn(() => buildSelectBuilder()),
     update: vi.fn(() => updateBuilder),
   };
 }
