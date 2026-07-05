@@ -223,6 +223,33 @@ describe("computeEffectImpact — deposit_destroyed", () => {
     );
     expect(impact).toEqual({ category: "deposits", count: 0 });
   });
+
+  it("type mode: uses the live matchingDepositCount, not scope size", () => {
+    const impact = computeEffectImpact(
+      {
+        effectType: "deposit_destroyed",
+        depositDestroyedMode: "type",
+        matchingDepositCount: 4,
+      },
+      "world",
+      [],
+      SETTLEMENTS,
+    );
+    expect(impact).toEqual({ category: "deposits", count: 4 });
+  });
+
+  it("type mode: missing matchingDepositCount → zero targets", () => {
+    const impact = computeEffectImpact(
+      {
+        effectType: "deposit_destroyed",
+        depositDestroyedMode: "type",
+      },
+      "world",
+      [],
+      SETTLEMENTS,
+    );
+    expect(impact).toEqual({ category: "deposits", count: 0 });
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -71,6 +71,10 @@ vi.mock("@/features/deposits", () => ({
     queryKey: ["deposits-world-test"],
     queryFn: () => Promise.resolve([]),
   }),
+  activeDepositTypesByWorldQueryOptions: () => ({
+    queryKey: ["deposit-types-test"],
+    queryFn: () => Promise.resolve([]),
+  }),
 }));
 
 vi.mock("@/features/jobs", () => ({

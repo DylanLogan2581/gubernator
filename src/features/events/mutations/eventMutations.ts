@@ -119,6 +119,15 @@ export function createEventGroupMutationOptions({
               }
             }
 
+            if (
+              e.effectType === "deposit_destroyed" &&
+              e.depositDestroyedMode === "type" &&
+              typeof e.depositTypeId === "string"
+            ) {
+              extraData.deposit_destroyed_mode = e.depositDestroyedMode;
+              extraData.deposit_type_id = e.depositTypeId;
+            }
+
             return {
               effect_type: e.effectType,
               is_percent: e.isPercent,
@@ -319,6 +328,15 @@ export function editEventGroupMutationOptions({
               ) {
                 extraData.building_instance_ids = e.buildingInstanceIds;
               }
+            }
+
+            if (
+              e.effectType === "deposit_destroyed" &&
+              e.depositDestroyedMode === "type" &&
+              typeof e.depositTypeId === "string"
+            ) {
+              extraData.deposit_destroyed_mode = e.depositDestroyedMode;
+              extraData.deposit_type_id = e.depositTypeId;
             }
 
             return {

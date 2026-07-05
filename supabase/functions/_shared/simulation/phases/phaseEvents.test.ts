@@ -271,6 +271,83 @@ describe("phaseEvents — deposit_destroyed", () => {
     ]);
   });
 
+  it("type mode: destroys every matching deposit within the event's scope", () => {
+    const context = makeContextWith({
+      deposits: [
+        { depositTypeId: "type-forest", id: "dep-a", maxWorkers: null, name: "Forest A", resources: [], settlementId: "s1", status: "active" },
+        { depositTypeId: "type-forest", id: "dep-b", maxWorkers: null, name: "Forest B", resources: [], settlementId: "s1", status: "depleted" },
+        // Different type — must not be destroyed.
+        { depositTypeId: "type-iron", id: "dep-c", maxWorkers: null, name: "Iron C", resources: [], settlementId: "s1", status: "active" },
+        // Matching type but outside the event's settlement scope.
+        { depositTypeId: "type-forest", id: "dep-d", maxWorkers: null, name: "Forest D", resources: [], settlementId: "s2", status: "active" },
+        // Matching type and in scope, but already removed.
+        { depositTypeId: "type-forest", id: "dep-e", maxWorkers: null, name: "Forest E", resources: [], settlementId: "s1", status: "removed" },
+      ],
+      events: [
+        makeEvent({
+          effectType: "deposit_destroyed",
+          effects: [
+            makeEffect({
+              effectType: "deposit_destroyed",
+              extraDataJsonb: { deposit_destroyed_mode: "type", deposit_type_id: "type-forest" },
+            }),
+          ],
+          id: "evt-dep-type",
+          scopeSettlementId: "s1",
+          scopeType: "settlement",
+        }),
+      ],
+      settlements: [makeSettlement({ id: "s1" }), makeSettlement({ id: "s2" })],
+    });
+
+    const result = phaseEvents(context);
+
+    expect(result.depositUpdates).toEqual([
+      { depositInstanceId: "dep-a", resourceDeltas: [], toStatus: "removed" },
+      { depositInstanceId: "dep-b", resourceDeltas: [], toStatus: "removed" },
+    ]);
+    expect(result.logs).toContainEqual(
+      expect.objectContaining({
+        category: "event.deposit_destroyed",
+        payload: expect.objectContaining({
+          depositTypeId: "type-forest",
+          destroyedCount: 2,
+          eventId: "evt-dep-type",
+        }),
+      }),
+    );
+  });
+
+  it("type mode: includes deposits present at application time even if not present in an older snapshot", () => {
+    // Simulates a deposit created after the event was configured but before
+    // the turn it activates on — the engine resolves against current input
+    // state, not a snapshot taken at event-creation time.
+    const context = makeContextWith({
+      deposits: [
+        { depositTypeId: "type-forest", id: "dep-new", maxWorkers: null, name: "New Forest", resources: [], settlementId: "s1", status: "active" },
+      ],
+      events: [
+        makeEvent({
+          effectType: "deposit_destroyed",
+          effects: [
+            makeEffect({
+              effectType: "deposit_destroyed",
+              extraDataJsonb: { deposit_destroyed_mode: "type", deposit_type_id: "type-forest" },
+            }),
+          ],
+          id: "evt-dep-type-late",
+          scopeType: "world",
+        }),
+      ],
+    });
+
+    const result = phaseEvents(context);
+
+    expect(result.depositUpdates).toEqual([
+      { depositInstanceId: "dep-new", resourceDeltas: [], toStatus: "removed" },
+    ]);
+  });
+
   it("dedupes repeated destroys of the same deposit across multiple events", () => {
     const context = makeContextWith({
       events: [

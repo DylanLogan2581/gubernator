@@ -66,6 +66,8 @@ const eventEffectBaseSchema = z.strictObject({
     .optional()
     .nullable(),
   depositInstanceId: z.guid().optional().nullable(),
+  depositTypeId: z.guid().optional().nullable(),
+  depositDestroyedMode: z.enum(["instance", "type"]).optional().nullable(),
   settlementBuildingId: z.guid().optional().nullable(),
   buildingBlueprintMode: z
     .enum(["all", "select", "instance"])
@@ -130,7 +132,19 @@ export const eventEffectSchema = eventEffectBaseSchema.superRefine(
     }
 
     if (effect.effectType === "deposit_destroyed") {
-      if (
+      if (effect.depositDestroyedMode === "type") {
+        if (
+          effect.depositTypeId === null ||
+          effect.depositTypeId === undefined
+        ) {
+          ctx.addIssue({
+            code: "custom",
+            message:
+              "Effect type deposit_destroyed requires a deposit type selection.",
+            path: ["depositTypeId"],
+          });
+        }
+      } else if (
         effect.depositInstanceId === null ||
         effect.depositInstanceId === undefined
       ) {

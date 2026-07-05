@@ -13,6 +13,8 @@ export type EffectImpactInput = {
   readonly settlementBuildingIds?: readonly string[];
   readonly depositInstanceId?: string | null;
   readonly depositInstanceIds?: readonly string[];
+  readonly depositDestroyedMode?: "instance" | "type";
+  readonly matchingDepositCount?: number;
   readonly managedPopulationInstanceId?: string | null;
   readonly managedPopulationMode?: "all" | "type" | "instance";
   readonly buildingBlueprintMode?: "all" | "select" | "instance";
@@ -105,6 +107,14 @@ export function computeEffectImpact(
     }
 
     case "deposit_destroyed": {
+      if (effect.depositDestroyedMode === "type") {
+        // Real-time count of currently matching deposits in scope, supplied
+        // by the caller (resolved from live deposit data, not scope size).
+        return {
+          category: "deposits",
+          count: effect.matchingDepositCount ?? 0,
+        };
+      }
       const ids = effect.depositInstanceIds;
       if (ids !== undefined && ids.length > 0) {
         return { category: "deposits", count: ids.length };

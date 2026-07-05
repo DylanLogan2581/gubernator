@@ -17,15 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { blueprintsByWorldQueryOptions } from "@/features/buildings";
-import type {
-  DepositInstance,
-  DepositInstanceWithLocation,
-} from "@/features/deposits";
-import {
-  depositInstancesBySettlementQueryOptions,
-  depositInstancesByNationsQueryOptions,
-  depositInstancesByWorldQueryOptions,
-} from "@/features/deposits";
+import { activeDepositTypesByWorldQueryOptions } from "@/features/deposits";
+import type { DepositType } from "@/features/deposits";
 import { jobsByWorldQueryOptions, type JobDefinition } from "@/features/jobs";
 import type {
   ManagedPopulationInstance,
@@ -43,6 +36,10 @@ import {
   useBuildingsInScope,
   type BuildingWithLocationInfo,
 } from "../../hooks/useBuildingsInScope";
+import {
+  useDepositsInScope,
+  type DepositWithLocationInfo,
+} from "../../hooks/useDepositsInScope";
 import { computeEffectImpact } from "../../utils/effectImpact";
 
 type EventEffectType =
@@ -75,6 +72,8 @@ type EffectData = {
   managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
   depositInstanceIds?: string[];
+  depositTypeId?: string | null;
+  depositDestroyedMode?: "instance" | "type";
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
   buildingBlueprintMode?: "all" | "select" | "instance";
@@ -203,40 +202,14 @@ function EffectEditor({
   // Query for jobs if this is a production_multiplier effect
   const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
 
-  // Query for deposits if this is a deposit_destroyed effect
-  // For settlement scope: fetch individually per settlement
-  const settlementDepositQueries = useQueries({
-    queries:
-      scopeType === "settlement" && selectedIds.length > 0
-        ? selectedIds.map((settlementId) =>
-            depositInstancesBySettlementQueryOptions(settlementId),
-          )
-        : [],
-  });
+  // Query for deposits if this is a deposit_destroyed effect (instance picker,
+  // and "all of a type" live-count/type-count resolution).
+  const { deposits: allDeposits, isLoading: depositsLoading } =
+    useDepositsInScope({ worldId, scopeType, selectedIds });
 
-  // For nation/world scope: fetch in bulk
-  const nationDepositQueryOptions =
-    scopeType === "nation" && selectedIds.length > 0
-      ? depositInstancesByNationsQueryOptions(selectedIds)
-      : null;
-  const nationDepositQuery = useQuery(
-    (nationDepositQueryOptions ?? {
-      queryKey: ["deposits", "nations-disabled"] as const,
-      queryFn: () =>
-        Promise.resolve([] as readonly DepositInstanceWithLocation[]),
-      enabled: false,
-    }) as never,
-  );
-
-  const worldDepositQueryOptions =
-    scopeType === "world" ? depositInstancesByWorldQueryOptions(worldId) : null;
-  const worldDepositQuery = useQuery(
-    (worldDepositQueryOptions ?? {
-      queryKey: ["deposits", "world-disabled"] as const,
-      queryFn: () =>
-        Promise.resolve([] as readonly DepositInstanceWithLocation[]),
-      enabled: false,
-    }) as never,
+  // Query for deposit types for the "all of a deposit type in scope" mode
+  const depositTypesQuery = useQuery(
+    activeDepositTypesByWorldQueryOptions(worldId),
   );
 
   // Query for building instances in scope (building_destroyed target picker,
@@ -269,74 +242,6 @@ function EffectEditor({
           )
         : [],
   });
-
-  // Pool all deposits from selected settlements with settlement and nation labels
-  type DepositWithLocation = {
-    readonly id: string;
-    readonly settlementId: string;
-    readonly settlementName: string;
-    readonly nationName: string;
-    readonly name: string;
-    readonly label: string;
-    readonly groupLabel: string;
-  };
-  const allDeposits: DepositWithLocation[] = [];
-
-  if (scopeType === "settlement") {
-    settlementDepositQueries.forEach((query, index) => {
-      const settlementId = selectedIds[index];
-      const deposits = query.data as DepositInstance[] | undefined;
-      if (deposits !== undefined && Array.isArray(deposits)) {
-        const settlementName =
-          settlementNameById.get(settlementId) ?? settlementId;
-        deposits.forEach((deposit) => {
-          allDeposits.push({
-            id: deposit.id,
-            settlementId,
-            settlementName,
-            nationName: "",
-            name: deposit.name,
-            label: `${deposit.name} (${settlementName})`,
-            groupLabel: settlementName,
-          });
-        });
-      }
-    });
-  } else if (scopeType === "nation") {
-    const deposits = nationDepositQuery.data as
-      | DepositInstanceWithLocation[]
-      | undefined;
-    if (deposits !== undefined && Array.isArray(deposits)) {
-      deposits.forEach((deposit) => {
-        allDeposits.push({
-          id: deposit.id,
-          settlementId: deposit.settlementId,
-          settlementName: deposit.settlementName,
-          nationName: deposit.nationName,
-          name: deposit.name,
-          label: `${deposit.name} - ${deposit.settlementName} - ${deposit.nationName}`,
-          groupLabel: `${deposit.settlementName}`,
-        });
-      });
-    }
-  } else if (scopeType === "world") {
-    const deposits = worldDepositQuery.data as
-      | DepositInstanceWithLocation[]
-      | undefined;
-    if (deposits !== undefined && Array.isArray(deposits)) {
-      deposits.forEach((deposit) => {
-        allDeposits.push({
-          id: deposit.id,
-          settlementId: deposit.settlementId,
-          settlementName: deposit.settlementName,
-          nationName: deposit.nationName,
-          name: deposit.name,
-          label: `${deposit.name} - ${deposit.settlementName} - ${deposit.nationName}`,
-          groupLabel: `${deposit.settlementName}`,
-        });
-      });
-    }
-  }
 
   // Pool all managed population instances from selected settlements
   type InstanceWithLocation = {
@@ -395,11 +300,23 @@ function EffectEditor({
     "upkeep_multiplier",
   ].includes(effect.effectType);
 
+  // Live count of deposits currently matching the selected type in scope,
+  // used both for the zero-target warning and the "All <type> deposits"
+  // picker summary.
+  const matchingDepositCount =
+    effect.effectType === "deposit_destroyed" &&
+    effect.depositDestroyedMode === "type" &&
+    effect.depositTypeId !== null &&
+    effect.depositTypeId !== undefined
+      ? allDeposits.filter((d) => d.depositTypeId === effect.depositTypeId)
+          .length
+      : undefined;
+
   // Zero-target check: warn inline as soon as the effect resolves to 0 targets
   const effectImpact =
     scopeType !== null
       ? computeEffectImpact(
-          effect,
+          { ...effect, matchingDepositCount },
           scopeType,
           selectedIds,
           settlementsQuery.data ?? [],
@@ -1133,7 +1050,88 @@ function EffectEditor({
         {effect.effectType === "deposit_destroyed" && (
           <div className="space-y-2">
             <Label>Deposits to Destroy</Label>
-            {scopeType === null ? (
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={effect.depositDestroyedMode !== "type"}
+                  onChange={() =>
+                    onUpdate({
+                      ...effect,
+                      depositDestroyedMode: "instance",
+                      depositTypeId: null,
+                    })
+                  }
+                />
+                <span className="text-sm">Specific deposits</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={effect.depositDestroyedMode === "type"}
+                  onChange={() =>
+                    onUpdate({
+                      ...effect,
+                      depositDestroyedMode: "type",
+                      depositInstanceId: null,
+                      depositInstanceIds: undefined,
+                    })
+                  }
+                />
+                <span className="text-sm">All of a deposit type in scope</span>
+              </label>
+            </div>
+
+            {effect.depositDestroyedMode === "type" ? (
+              <div className="space-y-2">
+                <Label htmlFor={`deposit-type-select-${index}`}>
+                  Select Deposit Type
+                </Label>
+                {depositTypesQuery.isLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading deposit types...
+                  </p>
+                ) : depositTypesQuery.data === undefined ||
+                  depositTypesQuery.data.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No deposit types available
+                  </p>
+                ) : (
+                  <Select
+                    value={effect.depositTypeId ?? ""}
+                    onValueChange={(value) =>
+                      onUpdate({
+                        ...effect,
+                        depositTypeId: value !== "" ? value : null,
+                      })
+                    }
+                  >
+                    <SelectTrigger id={`deposit-type-select-${index}`}>
+                      <SelectValue placeholder="Choose a deposit type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {depositTypesQuery.data.map((type: DepositType) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {effect.depositTypeId !== null &&
+                  effect.depositTypeId !== undefined &&
+                  scopeType !== null && (
+                    <p className="text-sm text-muted-foreground">
+                      {depositsLoading
+                        ? "Loading matching deposits..."
+                        : `Currently ${matchingDepositCount ?? 0} matching deposit${
+                            (matchingDepositCount ?? 0) === 1 ? "" : "s"
+                          } in scope`}
+                    </p>
+                  )}
+              </div>
+            ) : scopeType === null ? (
               <p className="text-sm text-muted-foreground">
                 Select a scope in step 1 to target deposits
               </p>
@@ -1145,14 +1143,7 @@ function EffectEditor({
                     ? "No nations selected"
                     : "No world selected"}
               </p>
-            ) : allDeposits.length === 0 &&
-              (scopeType === "settlement"
-                ? settlementDepositQueries.some((q) => q.isLoading)
-                : scopeType === "nation"
-                  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/strict-boolean-expressions
-                    !!(nationDepositQuery as any).isLoading
-                  : // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/strict-boolean-expressions
-                    !!(worldDepositQuery as any).isLoading) ? (
+            ) : allDeposits.length === 0 && depositsLoading ? (
               <p className="text-sm text-muted-foreground">
                 Loading deposits...
               </p>
@@ -1171,7 +1162,7 @@ function EffectEditor({
                       acc[group].push(deposit);
                       return acc;
                     },
-                    {} as Record<string, DepositWithLocation[]>,
+                    {} as Record<string, DepositWithLocationInfo[]>,
                   ),
                 ).map(([group, groupDeposits]) => (
                   <div key={group}>
@@ -1328,6 +1319,8 @@ export function EventCreateEffectsStep({
       managedPopulationMode: undefined,
       depositInstanceId: null,
       depositInstanceIds: undefined,
+      depositTypeId: null,
+      depositDestroyedMode: undefined,
       settlementBuildingId: null,
       buildingBlueprintMode: undefined,
       buildingInstanceIds: undefined,

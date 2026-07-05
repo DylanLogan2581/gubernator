@@ -3,12 +3,14 @@ import { AlertTriangle } from "lucide-react";
 import { type JSX } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { depositTypesByWorldQueryOptions } from "@/features/deposits";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { nationsListQueryOptions } from "@/features/nations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 
 import { useBuildingsInScope } from "../../hooks/useBuildingsInScope";
+import { useDepositsInScope } from "../../hooks/useDepositsInScope";
 import {
   computeEffectImpact,
   type EffectImpactCategory,
@@ -32,6 +34,8 @@ type EventCreateStep5Props = {
     managedPopulationMode?: "all" | "type" | "instance";
     depositInstanceId: string | null;
     depositInstanceIds?: string[];
+    depositTypeId?: string | null;
+    depositDestroyedMode?: "instance" | "type";
     settlementBuildingId?: string | null;
     settlementBuildingIds?: string[];
     buildingBlueprintMode?: "all" | "select" | "instance";
@@ -90,10 +94,42 @@ export function EventCreateStep5({
     buildingsInScope.map((b) => [b.id, b.label]),
   );
 
+  // Only fetch deposit type names / scope deposits when an effect targets
+  // "all deposits of a type in scope".
+  const needsDepositTypeNames = effects.some(
+    (e) => e.depositDestroyedMode === "type",
+  );
+  const depositTypesQuery = useQuery(depositTypesByWorldQueryOptions(worldId));
+  const depositTypeNameById = new Map(
+    (depositTypesQuery.data ?? []).map((t) => [t.id, t.name]),
+  );
+  const { deposits: depositsInScope } = useDepositsInScope({
+    worldId,
+    scopeType,
+    selectedIds,
+    enabled: needsDepositTypeNames,
+  });
+
+  // Live count of deposits currently matching each type-mode effect's
+  // selected deposit type, within the event's scope.
+  const matchingDepositCounts = effects.map((effect) =>
+    effect.depositDestroyedMode === "type" &&
+    effect.depositTypeId !== null &&
+    effect.depositTypeId !== undefined
+      ? depositsInScope.filter((d) => d.depositTypeId === effect.depositTypeId)
+          .length
+      : undefined,
+  );
+
   // Compute per-effect impact counts
   const settlements = settlementsQuery.data ?? [];
-  const effectImpacts = effects.map((effect) =>
-    computeEffectImpact(effect, scopeType, selectedIds, settlements),
+  const effectImpacts = effects.map((effect, index) =>
+    computeEffectImpact(
+      { ...effect, matchingDepositCount: matchingDepositCounts[index] },
+      scopeType,
+      selectedIds,
+      settlements,
+    ),
   );
   const hasZeroTargets = effectImpacts.some(
     (impact) => impact !== null && impact.count === 0,
@@ -144,6 +180,7 @@ export function EventCreateStep5({
   // Format effect label based on type and targets
   const formatEffect = (
     effect: EventCreateStep5Props["effects"][number],
+    index: number,
   ): string => {
     const typeName = effect.effectType
       .split("_")
@@ -152,7 +189,16 @@ export function EventCreateStep5({
 
     let targetLabel = "";
 
-    if (effect.resourceId !== null && effect.resourceId.length > 0) {
+    if (
+      effect.depositDestroyedMode === "type" &&
+      effect.depositTypeId !== null &&
+      effect.depositTypeId !== undefined
+    ) {
+      const depositTypeName =
+        depositTypeNameById.get(effect.depositTypeId) ?? "Unknown type";
+      const count = matchingDepositCounts[index] ?? 0;
+      targetLabel = `All ${depositTypeName} deposits in ${getScopeLabel()} (currently ${count})`;
+    } else if (effect.resourceId !== null && effect.resourceId.length > 0) {
       const resource = resourceMap.get(effect.resourceId);
       targetLabel = resource !== undefined ? resource.name : "Unknown resource";
     } else if (effect.jobId !== null && effect.jobId.length > 0) {
@@ -251,7 +297,7 @@ export function EventCreateStep5({
                       key={key}
                       className="flex items-start justify-between gap-2 text-xs text-foreground"
                     >
-                      <span>• {formatEffect(effect)}</span>
+                      <span>• {formatEffect(effect, index)}</span>
                       {impact !== null && (
                         <span
                           className={`shrink-0 tabular-nums ${

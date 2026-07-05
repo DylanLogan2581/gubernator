@@ -24,7 +24,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { settlementBuildingByIdQueryOptions } from "@/features/buildings";
-import { depositInstanceByIdQueryOptions } from "@/features/deposits";
+import {
+  depositInstanceByIdQueryOptions,
+  depositTypeByIdQueryOptions,
+} from "@/features/deposits";
 import { jobByIdQueryOptions } from "@/features/jobs";
 import { managedPopulationTypeByIdQueryOptions } from "@/features/managed-populations";
 import { nationByIdQueryOptions } from "@/features/nations";
@@ -542,6 +545,18 @@ function EffectTargets({
     );
   }
 
+  if (
+    extraData.deposit_destroyed_mode === "type" &&
+    typeof extraData.deposit_type_id === "string"
+  ) {
+    targets.push(
+      <DepositTypeTarget
+        key="deposit-type"
+        depositTypeId={extraData.deposit_type_id}
+      />,
+    );
+  }
+
   if (typeof extraData.building_blueprint_mode === "string") {
     targets.push(
       <div key="blueprint-mode">
@@ -661,6 +676,39 @@ function ManagedPopulationTypeTarget({
     <div>
       <span className="text-muted-foreground">Population Type: </span>
       <span>{query.data.name}</span>
+    </div>
+  );
+}
+
+function DepositTypeTarget({
+  depositTypeId,
+}: {
+  readonly depositTypeId: string;
+}): JSX.Element {
+  const query = useQuery(depositTypeByIdQueryOptions(depositTypeId));
+
+  if (query.isPending) {
+    return (
+      <div>
+        <span className="text-muted-foreground">Deposit Type: </span>
+        <span className="text-xs">Loading…</span>
+      </div>
+    );
+  }
+
+  if (query.isError || query.data === null) {
+    return (
+      <div>
+        <span className="text-muted-foreground">Deposit Type: </span>
+        <span>unknown</span>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <span className="text-muted-foreground">Deposit Type: </span>
+      <span>All {query.data.name} deposits in scope</span>
     </div>
   );
 }

@@ -27,6 +27,7 @@ import type {
   EventEffectType,
   EventStatusPatch,
   NpcFlavorConfig,
+  SimDeposit,
   SimEffect,
   SimEvent,
   SimNamingConfig,
@@ -157,6 +158,8 @@ function applyEffect(
   pendingManagedPopulationDeltas: Map<string, number>,
   pendingStockpiles: Map<string, number>,
   pendingDepositDestroys: Set<string>,
+  deposits: readonly SimDeposit[],
+  targetSettlementIds: readonly string[],
   pendingEventCitizenDeaths: Set<string>,
   livingCitizenIdsBySettlement: Map<string, string[]>,
   logs: SimulationLogEntry[],
@@ -219,14 +222,39 @@ function applyEffect(
       }
 
       case "deposit_destroyed": {
-        const depositInstanceId = effect.depositInstanceId ?? payload.depositInstanceId;
-        if (typeof depositInstanceId === "string") {
-          pendingDepositDestroys.add(depositInstanceId);
+        const extraData = effect.extraDataJsonb ?? {};
+        const depositDestroyedMode = extraData.deposit_destroyed_mode as string | undefined;
+        const depositTypeId = extraData.deposit_type_id as string | undefined;
+
+        if (depositDestroyedMode === "type" && typeof depositTypeId === "string") {
+          // Resolve type -> all matching deposit instances within the event's
+          // scope at application time, so deposits created after event
+          // creation but before activation are included.
+          const scopedSettlementIds = new Set(targetSettlementIds);
+          const matches = deposits.filter(
+            (deposit) =>
+              deposit.depositTypeId === depositTypeId &&
+              deposit.status !== "removed" &&
+              scopedSettlementIds.has(deposit.settlementId),
+          );
+          for (const deposit of matches) {
+            pendingDepositDestroys.add(deposit.id);
+          }
           logs.push({
             category: "event.deposit_destroyed",
-            payload: { depositInstanceId, eventId },
+            payload: { depositTypeId, destroyedCount: matches.length, eventId },
             phase: "events",
           });
+        } else {
+          const depositInstanceId = effect.depositInstanceId ?? payload.depositInstanceId;
+          if (typeof depositInstanceId === "string") {
+            pendingDepositDestroys.add(depositInstanceId);
+            logs.push({
+              category: "event.deposit_destroyed",
+              payload: { depositInstanceId, eventId },
+              phase: "events",
+            });
+          }
         }
         break;
       }
@@ -505,6 +533,7 @@ function applyEffect(
 
 export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
   const {
+    deposits,
     events,
     fallbackNamesetIdBySettlementId,
     namesetConfigById,
@@ -596,6 +625,8 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
             pendingManagedPopulationDeltas,
             pendingStockpiles,
             pendingDepositDestroys,
+            deposits,
+            targetSettlementIds,
             pendingEventCitizenDeaths,
             livingCitizenIdsBySettlement,
             logs,
@@ -615,6 +646,8 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
           pendingManagedPopulationDeltas,
           pendingStockpiles,
           pendingDepositDestroys,
+          deposits,
+          targetSettlementIds,
           pendingEventCitizenDeaths,
           livingCitizenIdsBySettlement,
           logs,

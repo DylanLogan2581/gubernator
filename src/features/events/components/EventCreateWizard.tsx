@@ -56,6 +56,8 @@ type EffectData = {
   managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
   depositInstanceIds?: string[];
+  depositTypeId?: string | null;
+  depositDestroyedMode?: "instance" | "type";
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
   buildingBlueprintMode?: "all" | "select" | "instance";
@@ -117,6 +119,8 @@ function extractEffectExtraData(extraDataJsonb: unknown): {
   buildingBlueprintMode?: "all" | "select" | "instance";
   buildingBlueprintIds?: string[];
   buildingInstanceIds?: string[];
+  depositDestroyedMode?: "instance" | "type";
+  depositTypeId?: string;
 } {
   if (typeof extraDataJsonb !== "object" || extraDataJsonb === null) return {};
   const data = extraDataJsonb as Record<string, unknown>;
@@ -147,11 +151,22 @@ function extractEffectExtraData(extraDataJsonb: unknown): {
       )
     : undefined;
 
+  const depositDestroyedMode =
+    data.deposit_destroyed_mode === "instance" ||
+    data.deposit_destroyed_mode === "type"
+      ? data.deposit_destroyed_mode
+      : undefined;
+
+  const depositTypeId =
+    typeof data.deposit_type_id === "string" ? data.deposit_type_id : undefined;
+
   return {
     managedPopulationMode,
     buildingBlueprintMode,
     buildingBlueprintIds,
     buildingInstanceIds,
+    depositDestroyedMode,
+    depositTypeId,
   };
 }
 
@@ -212,6 +227,8 @@ export function EventCreateWizard({
             managedPopulationTypeId: e.managedPopulationTypeId,
             managedPopulationMode: extra.managedPopulationMode,
             depositInstanceId: e.depositInstanceId,
+            depositTypeId: extra.depositTypeId,
+            depositDestroyedMode: extra.depositDestroyedMode,
             settlementBuildingId: e.settlementBuildingId,
             buildingBlueprintMode: extra.buildingBlueprintMode,
             buildingBlueprintIds: extra.buildingBlueprintIds,
@@ -486,6 +503,8 @@ export function EventCreateWizard({
         managedPopulationTypeId: e.managedPopulationTypeId,
         managedPopulationMode: e.managedPopulationMode,
         depositInstanceId: e.depositInstanceId,
+        depositTypeId: e.depositTypeId,
+        depositDestroyedMode: e.depositDestroyedMode,
         settlementBuildingId: e.settlementBuildingId,
         buildingBlueprintMode: e.buildingBlueprintMode,
         buildingBlueprintIds: e.buildingBlueprintIds,

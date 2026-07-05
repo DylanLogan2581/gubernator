@@ -143,6 +143,28 @@ describe("eventEffectSchema", () => {
       });
       expect(result.success).toBe(true);
     });
+
+    it("type mode: rejects missing depositTypeId", () => {
+      const result = eventEffectSchema.safeParse({
+        effectType: "deposit_destroyed",
+        depositDestroyedMode: "type",
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(
+          result.error.issues.some((i) => i.path.includes("depositTypeId")),
+        ).toBe(true);
+      }
+    });
+
+    it("type mode: accepts valid depositTypeId without a depositInstanceId", () => {
+      const result = eventEffectSchema.safeParse({
+        effectType: "deposit_destroyed",
+        depositDestroyedMode: "type",
+        depositTypeId: TEST_UUID,
+      });
+      expect(result.success).toBe(true);
+    });
   });
 
   describe("building_destroyed", () => {
