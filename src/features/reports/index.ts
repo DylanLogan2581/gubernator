@@ -16,6 +16,11 @@ export {
   worldResourceAggregatesQueryOptions,
 } from "./queries/snapshotAggregateQueries";
 export { snapshotAggregateQueryKeys } from "./queries/snapshotAggregateQueryKeys";
+export {
+  createTurnLabelers,
+  defaultReportTurnRange,
+  type TurnLabelers,
+} from "./utils/reportTurnRange";
 export type {
   NationPopulationAggregateRow,
   NationResourceAggregateRow,

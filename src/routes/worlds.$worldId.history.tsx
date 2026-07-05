@@ -8,12 +8,14 @@ import { TurnLogPage } from "@/features/turns";
 import type { JSX } from "react";
 
 const historySearchSchema = z.object({
+  nationId: z.string().optional(),
   turn: z
     .union([z.literal("all"), z.coerce.number().int().positive()])
     .optional(),
 });
 
 function parseHistorySearch(search: unknown): {
+  readonly nationId?: string;
   readonly turn?: number | "all";
 } {
   const result = historySearchSchema.safeParse(search);
@@ -22,9 +24,11 @@ function parseHistorySearch(search: unknown): {
 
 function WorldHistoryRoute(): JSX.Element {
   const { worldId } = Route.useParams();
-  const { turn } = Route.useSearch();
+  const { nationId, turn } = Route.useSearch();
 
-  return <TurnLogPage selectedTurn={turn} worldId={worldId} />;
+  return (
+    <TurnLogPage nationId={nationId} selectedTurn={turn} worldId={worldId} />
+  );
 }
 
 export const Route = createFileRoute("/worlds/$worldId/history")({

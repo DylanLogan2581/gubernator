@@ -585,7 +585,7 @@ describe("nation detail route", () => {
       ).toBeNull();
     });
 
-    it("renders reports + the nation-filtered turn log at /reports", async () => {
+    it("renders reports + a link to the nation-filtered turn log at /reports", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
@@ -594,7 +594,13 @@ describe("nation detail route", () => {
       );
       renderAt(`${BASE_PATH}/reports`);
       await screen.findByRole("heading", { level: 1, name: "Highmark" });
-      expect(screen.getByTestId("turn-log-browser")).toBeDefined();
+      const turnLogLink = screen.getByRole("link", {
+        name: /view nation turn log/i,
+      });
+      expect(turnLogLink).toHaveAttribute(
+        "href",
+        expect.stringContaining(`/worlds/${WORLD_ID}/history`),
+      );
     });
 
     it("renders role assignment at /government for a world admin", async () => {
