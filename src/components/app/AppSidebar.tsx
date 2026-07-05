@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   Bell,
   BookOpen,
+  Briefcase,
   Building2,
   Clock,
   FileText,
@@ -315,6 +316,13 @@ export function AppSidebar(): JSX.Element | null {
             settlementId,
             worldId,
           }),
+          settlementSectionItem("assignments", {
+            isActive: currentSection === "assignments",
+            label: "Job Assignments",
+            nationId,
+            settlementId,
+            worldId,
+          }),
           settlementSectionItem("populations", {
             isActive: currentSection === "populations",
             label: "Populations",
@@ -545,6 +553,7 @@ export function AppSidebar(): JSX.Element | null {
 const SETTLEMENT_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
   Exclude<SettlementSection, "overview">
 >([
+  "assignments",
   "buildings",
   "citizens",
   "construction",
@@ -597,6 +606,7 @@ function settlementSectionItem(
   },
 ): NavGroupItem {
   const icons: Record<SettlementSection, JSX.Element> = {
+    assignments: <Briefcase aria-hidden="true" />,
     buildings: <Building2 aria-hidden="true" />,
     citizens: <Users aria-hidden="true" />,
     construction: <HardHat aria-hidden="true" />,
@@ -612,6 +622,21 @@ function settlementSectionItem(
   };
 
   switch (section) {
+    case "assignments":
+      return {
+        key: "settlement-assignments",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
     case "overview":
       return {
         key: "settlement-overview",

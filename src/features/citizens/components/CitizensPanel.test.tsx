@@ -42,32 +42,18 @@ vi.mock("@tanstack/react-router", () => ({
   },
 }));
 
-type CitizenRowFixture = {
-  readonly born_on_turn_number: number | null;
+type DirectoryRowFixture = {
+  readonly age_turns: number | null;
+  readonly assignment_label: string | null;
   readonly citizen_type: "npc" | "player_character";
-  readonly created_at: string;
-  readonly death_cause: string | null;
   readonly id: string;
-  readonly name: string;
-  readonly npc_flaw: string | null;
-  readonly npc_goal: string | null;
-  readonly npc_secret_contradiction: string | null;
-  readonly npc_trait_1: string | null;
-  readonly npc_trait_2: string | null;
-  readonly parent_a_citizen_id: string | null;
-  readonly parent_b_citizen_id: string | null;
-  readonly personality_text: string | null;
-  readonly profile_photo_url: string | null;
-  readonly role_nation_id: string | null;
-  readonly role_settlement_id: string | null;
-  readonly role_type: "none" | "nation_manager" | "settlement_manager";
+  readonly name: string | null;
+  readonly nation_id: string | null;
+  readonly nation_name: string | null;
   readonly settlement_id: string | null;
+  readonly settlement_name: string | null;
   readonly sex: string | null;
-  readonly skills_text: string | null;
   readonly status: "alive" | "dead";
-  readonly updated_at: string;
-  readonly user_id: string | null;
-  readonly world_id: string;
 };
 
 type AggregateRowFixture = {
@@ -85,25 +71,21 @@ type AggregateRowFixture = {
   readonly status: "alive" | "dead";
 };
 
-type AssignmentRowFixture = {
-  readonly assigned_on_turn_number: number;
-  readonly assignment_type:
-    | "construction_project"
-    | "culling"
-    | "deposit"
-    | "husbandry"
-    | "standard_job"
-    | "trade_route";
-  readonly citizen_id: string;
-  readonly construction_project: null;
-  readonly created_at: string;
-  readonly deposit_instance: null;
-  readonly job: { readonly id: string; readonly name: string } | null;
-  readonly managed_population_instance: null;
-  readonly trade_route: null;
-  readonly trade_route_end: null;
-  readonly updated_at: string;
-};
+// Generic chainable stub: every filter/order/range method returns itself so
+// callers can chain in any order, and `.returns()` resolves with whatever
+// payload was registered for that table's `.from(...)` call.
+function chainable(resolved: {
+  readonly data: readonly unknown[];
+  readonly error: unknown;
+  readonly count?: number | null;
+}): Record<string, ReturnType<typeof vi.fn>> {
+  const builder: Record<string, ReturnType<typeof vi.fn>> = {};
+  for (const method of ["eq", "ilike", "order", "range"]) {
+    builder[method] = vi.fn(() => builder);
+  }
+  builder.returns = vi.fn(() => Promise.resolve(resolved));
+  return builder;
+}
 
 describe("CitizensPanel", () => {
   beforeEach(() => {
@@ -114,27 +96,19 @@ describe("CitizensPanel", () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizens: [
-          createCitizenRow({ id: "c-1", name: "Aldra" }),
-          createCitizenRow({
+        directoryRows: [
+          createDirectoryRow({
+            assignment_label: "Brewer",
+            id: "c-1",
+            name: "Aldra",
+          }),
+          createDirectoryRow({
             citizen_type: "player_character",
             id: "c-2",
             name: "Brann",
           }),
-          createCitizenRow({
-            death_cause: "fever",
-            id: "c-3",
-            name: "Cael",
-            status: "dead",
-          }),
         ],
-        assignments: [
-          createAssignmentRow({
-            assignment_type: "standard_job",
-            citizen_id: "c-1",
-            job: { id: "j-1", name: "Brewer" },
-          }),
-        ],
+        totalCount: 2,
       }),
     );
 
@@ -142,19 +116,27 @@ describe("CitizensPanel", () => {
 
     expect(await screen.findByText("Aldra")).toBeDefined();
     expect(screen.getByText("Brann")).toBeDefined();
-    expect(screen.queryByText("Cael")).toBeNull();
 
-    const aldraRow = screen.getByText("Aldra").closest("li");
+    const aldraRow = screen.getByText("Aldra").closest("tr");
     expect(aldraRow).toHaveTextContent("Brewer");
 
-    const brannRow = screen.getByText("Brann").closest("li");
+    const brannRow = screen.getByText("Brann").closest("tr");
     expect(brannRow).toHaveTextContent("Unassigned");
     expect(brannRow).toHaveTextContent("Player character");
+
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        directoryRows: [
+          createDirectoryRow({ id: "c-3", name: "Cael", status: "dead" }),
+        ],
+        totalCount: 1,
+      }),
+    );
 
     await user.click(screen.getByLabelText("Show deceased"));
 
     expect(await screen.findByText("Cael")).toBeDefined();
-    const caelRow = screen.getByText("Cael").closest("li");
+    const caelRow = screen.getByText("Cael").closest("tr");
     expect(caelRow).toHaveTextContent("Deceased");
 
     // Dead toggle shows only dead and hides create buttons
@@ -169,8 +151,8 @@ describe("CitizensPanel", () => {
   it("exposes Create NPC and Create player character actions for world admins on active worlds", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizens: [createCitizenRow({ id: "c-1", name: "Aldra" })],
-        assignments: [],
+        directoryRows: [createDirectoryRow({ id: "c-1", name: "Aldra" })],
+        totalCount: 1,
       }),
     );
 
@@ -187,8 +169,8 @@ describe("CitizensPanel", () => {
   it("disables the create actions when the world is archived", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        citizens: [createCitizenRow({ id: "c-1", name: "Aldra" })],
-        assignments: [],
+        directoryRows: [createDirectoryRow({ id: "c-1", name: "Aldra" })],
+        totalCount: 1,
       }),
     );
 
@@ -248,7 +230,7 @@ describe("CitizensPanel", () => {
     expectBreakdownRow("Unassigned", "2");
 
     expect(screen.queryByText("c-1")).toBeNull();
-    expect(screen.queryByRole("list", { name: "Citizens" })).toBeNull();
+    expect(screen.queryByRole("table")).toBeNull();
     expect(screen.queryByRole("button", { name: "Create NPC" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Create player character" }),
@@ -320,9 +302,9 @@ describe("CitizensPanel", () => {
   it("surfaces citizen list query errors for admins", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
-        assignments: [],
-        citizens: [],
-        citizensError: new Error("Citizens unavailable."),
+        directoryError: new Error("Citizens unavailable."),
+        directoryRows: [],
+        totalCount: 0,
       }),
     );
 
@@ -332,6 +314,22 @@ describe("CitizensPanel", () => {
       await screen.findByText("Citizens could not be loaded"),
     ).toBeDefined();
     expect(screen.getByText("Citizens unavailable.")).toBeDefined();
+  });
+
+  it("links to the settlement's job assignments route", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        directoryRows: [createDirectoryRow({ id: "c-1", name: "Aldra" })],
+        totalCount: 1,
+      }),
+    );
+
+    renderPanel({ canAdmin: true });
+
+    const link = await screen.findByRole("link", { name: /Job assignments/ });
+    expect(link.getAttribute("href")).toBe(
+      "/worlds/world-1/nations/nation-1/settlements/settlement-1/assignments",
+    );
   });
 });
 
@@ -350,6 +348,7 @@ function renderPanel({
         canAdmin={canAdmin}
         incestPreventionDepth={incestPreventionDepth}
         isArchived={isArchived}
+        nationId="nation-1"
         settlementId="settlement-1"
         worldId="world-1"
       />
@@ -363,35 +362,21 @@ function createQueryClient(): QueryClient {
   });
 }
 
-function createCitizenRow(
-  overrides: Partial<CitizenRowFixture> = {},
-): CitizenRowFixture {
+function createDirectoryRow(
+  overrides: Partial<DirectoryRowFixture> = {},
+): DirectoryRowFixture {
   return {
-    born_on_turn_number: null,
+    age_turns: null,
+    assignment_label: null,
     citizen_type: "npc",
-    created_at: "2026-05-01T00:00:00.000Z",
-    death_cause: null,
     id: "c-1",
     name: "Citizen",
-    npc_flaw: null,
-    npc_goal: null,
-    npc_secret_contradiction: null,
-    npc_trait_1: null,
-    npc_trait_2: null,
-    parent_a_citizen_id: null,
-    parent_b_citizen_id: null,
-    personality_text: null,
-    profile_photo_url: null,
-    role_nation_id: null,
-    role_settlement_id: null,
-    role_type: "none",
+    nation_id: "nation-1",
+    nation_name: "Nation",
     settlement_id: "settlement-1",
+    settlement_name: "Settlement",
     sex: null,
-    skills_text: null,
     status: "alive",
-    updated_at: "2026-05-01T00:00:00.000Z",
-    user_id: null,
-    world_id: "world-1",
     ...overrides,
   };
 }
@@ -408,49 +393,36 @@ function createAggregateRow(
   };
 }
 
-function createAssignmentRow(
-  overrides: Partial<AssignmentRowFixture> = {},
-): AssignmentRowFixture {
-  return {
-    assigned_on_turn_number: 1,
-    assignment_type: "standard_job",
-    citizen_id: "c-1",
-    construction_project: null,
-    created_at: "2026-05-01T00:00:00.000Z",
-    deposit_instance: null,
-    job: null,
-    managed_population_instance: null,
-    trade_route: null,
-    trade_route_end: null,
-    updated_at: "2026-05-01T00:00:00.000Z",
-    ...overrides,
-  };
-}
-
 function createClient({
   aggregates = [],
-  assignments = [],
-  citizens = [],
-  citizensError = null,
+  directoryError = null,
+  directoryRows = [],
   populationCap = null,
+  totalCount = 0,
 }: {
   readonly aggregates?: readonly AggregateRowFixture[];
-  readonly assignments?: readonly AssignmentRowFixture[];
-  readonly citizens?: readonly CitizenRowFixture[];
-  readonly citizensError?: Error | null;
+  readonly directoryError?: Error | null;
+  readonly directoryRows?: readonly DirectoryRowFixture[];
   readonly populationCap?: number | null;
+  readonly totalCount?: number;
 }): unknown {
   return {
     from: vi.fn((table: string) => {
-      if (table === "citizens") {
-        return createCitizensQueryBuilder({
-          aggregates,
-          citizens,
-          citizensError,
-        });
+      if (table === "citizen_directory_view") {
+        return {
+          select: vi.fn(() =>
+            chainable({
+              count: totalCount,
+              data: directoryRows,
+              error: directoryError,
+            }),
+          ),
+        };
       }
-      if (table === "citizen_assignments") {
-        return createAssignmentsQueryBuilder(assignments);
+      if (table === "citizens") {
+        return {
+          select: vi.fn(() => chainable({ data: aggregates, error: null })),
+        };
       }
       throw new Error(`Unexpected table ${table}`);
     }),
@@ -467,45 +439,6 @@ function createClient({
         error: new Error(`Unexpected rpc ${fn}`),
       });
     }),
-  };
-}
-
-function createCitizensQueryBuilder({
-  aggregates,
-  citizens,
-  citizensError,
-}: {
-  readonly aggregates: readonly AggregateRowFixture[];
-  readonly citizens: readonly CitizenRowFixture[];
-  readonly citizensError: Error | null;
-}): unknown {
-  return {
-    select: vi.fn((selection: string) => {
-      const isAggregate = selection.includes("citizen_assignments");
-      const data = isAggregate ? aggregates : citizens;
-      const builder = {
-        eq: vi.fn(() => builder),
-        order: vi.fn(() => builder),
-        returns: vi.fn().mockResolvedValue({
-          data,
-          error: isAggregate ? null : citizensError,
-        }),
-      };
-      return builder;
-    }),
-  };
-}
-
-function createAssignmentsQueryBuilder(
-  assignments: readonly AssignmentRowFixture[],
-): unknown {
-  const builder = {
-    eq: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    returns: vi.fn().mockResolvedValue({ data: assignments, error: null }),
-  };
-  return {
-    select: vi.fn(() => builder),
   };
 }
 

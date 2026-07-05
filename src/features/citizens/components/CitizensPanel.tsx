@@ -1,13 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Skull, UserPlus } from "lucide-react";
-import { useMemo, useState, type JSX } from "react";
+import { useState, type JSX } from "react";
 
+import { DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
-import { TablePagination } from "@/components/shared/TablePagination";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,36 +15,126 @@ import { settlementPopulationCapQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
-import { assignmentsInSettlementQueryOptions } from "../queries/citizenAssignmentsQueries";
-import {
-  citizenAggregateStatsForSettlementQueryOptions,
-  citizensInSettlementQueryOptions,
-} from "../queries/citizensQueries";
+import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
+import { citizenAggregateStatsForSettlementQueryOptions } from "../queries/citizensQueries";
 
 import { CreateNpcDialog } from "./citizenCreation/CreateNpcDialog";
 import { CreatePlayerCharacterDialog } from "./citizenCreation/CreatePlayerCharacterDialog";
 
-import type { CitizenAssignment } from "../types/citizenAssignmentTypes";
 import type {
-  Citizen,
+  CitizenDirectoryFilters,
+  CitizenDirectoryRow,
+  CitizenDirectorySortColumn,
+} from "../queries/citizenDirectoryQueries";
+import type {
   CitizenAggregateStats,
   CitizenAssignmentType,
+  CitizenStatus,
+  CitizenType,
 } from "../types/citizenTypes";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type CitizensPanelProps = {
   readonly canAdmin: boolean;
   readonly incestPreventionDepth: number;
   readonly isArchived: boolean;
+  readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
 };
 
 const PAGE_SIZE = 25;
 
+const CITIZEN_TYPE_LABELS: Record<CitizenType, string> = {
+  npc: "NPC",
+  player_character: "Player character",
+};
+
+const STATUS_LABELS: Record<CitizenStatus, string> = {
+  alive: "Alive",
+  dead: "Deceased",
+};
+
+const DEFAULT_SORTING: SortingState = [{ id: "name", desc: false }];
+
+// Maps a DataTable column id to the citizen_directory_view column the
+// server-side `.order()` call should use (see citizenDirectoryQueries.ts).
+const SORT_COLUMN_BY_ID: Record<string, CitizenDirectorySortColumn> = {
+  age: "age_turns",
+  name: "name",
+  status: "status",
+};
+
+const SETTLEMENT_CITIZENS_COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
+  {
+    id: "name",
+    accessorFn: (row) => row.name ?? "—",
+    header: "Name",
+    cell: ({ row }) => (
+      <span className="font-medium">{row.original.name ?? "—"}</span>
+    ),
+  },
+  {
+    id: "age",
+    accessorFn: (row) => row.ageTurns,
+    header: "Age",
+    cell: ({ row }) => (
+      <span className="tabular-nums text-muted-foreground">
+        {row.original.ageTurns ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "sex",
+    enableSorting: false,
+    header: "Sex",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.original.sex ?? "—"}</span>
+    ),
+  },
+  {
+    id: "assignment",
+    enableSorting: false,
+    header: "Job / assignment",
+    cell: ({ row }) => (
+      <Badge
+        variant={
+          row.original.assignmentLabel === null ? "outline" : "secondary"
+        }
+      >
+        {row.original.assignmentLabel ?? "Unassigned"}
+      </Badge>
+    ),
+  },
+  {
+    id: "type",
+    enableSorting: false,
+    header: "Type",
+    cell: ({ row }) => (
+      <Badge variant="secondary">
+        {CITIZEN_TYPE_LABELS[row.original.citizenType]}
+      </Badge>
+    ),
+  },
+  {
+    id: "status",
+    accessorFn: (row) => row.status,
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge
+        variant={row.original.status === "alive" ? "secondary" : "destructive"}
+      >
+        {STATUS_LABELS[row.original.status]}
+      </Badge>
+    ),
+  },
+];
+
 export function CitizensPanel({
   canAdmin,
   incestPreventionDepth,
   isArchived,
+  nationId,
   settlementId,
   worldId,
 }: CitizensPanelProps): JSX.Element {
@@ -82,34 +172,44 @@ export function CitizensPanel({
             </p>
           ) : null}
         </div>
-        {canAdmin ? (
-          <div className="flex items-center gap-2">
-            {!includeDead ? (
-              <CitizensCreateActions
-                incestPreventionDepth={incestPreventionDepth}
-                isArchived={isArchived}
-                settlementId={settlementId}
-                worldId={worldId}
-              />
-            ) : null}
-            <Button
-              aria-label={includeDead ? "Hide deceased" : "Show deceased"}
-              aria-pressed={includeDead}
-              size="icon-sm"
-              title={includeDead ? "Hide deceased" : "Show deceased"}
-              type="button"
-              variant={includeDead ? "secondary" : "ghost"}
-              onClick={() => setIncludeDead(!includeDead)}
-            >
-              <Skull aria-hidden="true" />
-            </Button>
-          </div>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments"
+            params={{ nationId, settlementId, worldId }}
+            className="text-sm font-medium underline-offset-4 hover:underline"
+          >
+            Job assignments →
+          </Link>
+          {canAdmin ? (
+            <>
+              {!includeDead ? (
+                <CitizensCreateActions
+                  incestPreventionDepth={incestPreventionDepth}
+                  isArchived={isArchived}
+                  settlementId={settlementId}
+                  worldId={worldId}
+                />
+              ) : null}
+              <Button
+                aria-label={includeDead ? "Hide deceased" : "Show deceased"}
+                aria-pressed={includeDead}
+                size="icon-sm"
+                title={includeDead ? "Hide deceased" : "Show deceased"}
+                type="button"
+                variant={includeDead ? "secondary" : "ghost"}
+                onClick={() => setIncludeDead(!includeDead)}
+              >
+                <Skull aria-hidden="true" />
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <CardContent>
         {canAdmin ? (
           <CitizensAdminList
+            key={includeDead ? "dead" : "alive"}
             includeDead={includeDead}
             settlementId={settlementId}
             worldId={worldId}
@@ -203,40 +303,37 @@ function CitizensAdminList({
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
-  const [page, setPage] = useState(0);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
+
+  const activeSort = sorting[0];
+  const order =
+    activeSort !== undefined
+      ? {
+          ascending: !activeSort.desc,
+          column: SORT_COLUMN_BY_ID[activeSort.id],
+        }
+      : undefined;
+
+  const filters: CitizenDirectoryFilters = {
+    order,
+    settlementId,
+    status: includeDead ? "dead" : "alive",
+  };
 
   const citizensQuery = useQuery(
-    citizensInSettlementQueryOptions(settlementId),
+    citizensDirectoryQueryOptions(worldId, filters, {
+      pageIndex,
+      pageSize: PAGE_SIZE,
+    }),
   );
-  const assignmentsQuery = useQuery(
-    assignmentsInSettlementQueryOptions(settlementId),
-  );
 
-  const assignmentByCitizenId = useMemo(() => {
-    if (assignmentsQuery.data === undefined) {
-      return new Map<string, CitizenAssignment>();
-    }
-    return new Map(
-      assignmentsQuery.data.map((row) => [row.citizenId, row] as const),
-    );
-  }, [assignmentsQuery.data]);
-
-  const filtered = useMemo(() => {
-    if (citizensQuery.data === undefined) {
-      return [];
-    }
-    return includeDead
-      ? citizensQuery.data.filter((citizen) => citizen.status === "dead")
-      : citizensQuery.data.filter((citizen) => citizen.status === "alive");
-  }, [citizensQuery.data, includeDead]);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount - 1);
-  const pageStart = safePage * PAGE_SIZE;
-  const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const rows = citizensQuery.data?.rows ?? [];
+  const totalCount = citizensQuery.data?.totalCount ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   if (citizensQuery.isPending) {
-    return <CardListSkeleton rowCount={5} />;
+    return <TableSkeleton columnCount={6} rowCount={5} />;
   }
 
   if (citizensQuery.isError) {
@@ -250,15 +347,7 @@ function CitizensAdminList({
 
   return (
     <div className="grid gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground" role="status">
-          {filtered.length === 0
-            ? "0 citizens"
-            : `Showing ${pageStart + 1}–${pageStart + pageItems.length} of ${filtered.length}`}
-        </p>
-      </div>
-
-      {filtered.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
           title={includeDead ? "No citizens yet" : "No living citizens"}
           description={
@@ -269,66 +358,39 @@ function CitizensAdminList({
         />
       ) : (
         <>
-          <ul aria-label="Citizens" className="grid gap-2">
-            {pageItems.map((citizen) => (
-              <CitizenRow
-                key={citizen.id}
-                assignment={assignmentByCitizenId.get(citizen.id) ?? null}
-                citizen={citizen}
-                worldId={worldId}
-              />
-            ))}
-          </ul>
-          {pageCount > 1 ? (
-            <TablePagination
-              page={safePage}
-              pageCount={pageCount}
-              onPageChange={setPage}
-            />
-          ) : null}
+          <p className="text-xs text-muted-foreground" role="status">
+            {`Showing ${(pageIndex * PAGE_SIZE + 1).toString()}–${(
+              pageIndex * PAGE_SIZE +
+              rows.length
+            ).toString()} of ${totalCount.toString()}`}
+          </p>
+
+          <DataTable
+            columns={SETTLEMENT_CITIZENS_COLUMNS}
+            data={rows}
+            getRowId={(row) => row.id}
+            sorting={sorting}
+            onSortingChange={(nextSorting) => {
+              setSorting(nextSorting);
+              setPageIndex(0);
+            }}
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            onPageChange={setPageIndex}
+            isPaginationDisabled={citizensQuery.isFetching}
+            renderRowLink={(row, children) => (
+              <Link
+                to="/worlds/$worldId/citizens/$citizenId"
+                params={{ citizenId: row.id, worldId }}
+                className="flex items-center gap-2 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                {children}
+              </Link>
+            )}
+          />
         </>
       )}
     </div>
-  );
-}
-
-function CitizenRow({
-  assignment,
-  citizen,
-  worldId,
-}: {
-  readonly assignment: CitizenAssignment | null;
-  readonly citizen: Citizen;
-  readonly worldId: string;
-}): JSX.Element {
-  return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2">
-      <div className="flex min-w-0 flex-col">
-        <Link
-          to="/worlds/$worldId/citizens/$citizenId"
-          params={{ citizenId: citizen.id, worldId }}
-          className="truncate text-sm font-medium underline-offset-4 hover:underline"
-        >
-          {citizen.name}
-        </Link>
-        {citizen.sex === null ? null : (
-          <span className="text-xs text-muted-foreground">{citizen.sex}</span>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <Badge variant="secondary">
-          {citizenTypeLabel(citizen.citizenType)}
-        </Badge>
-        <Badge
-          variant={citizen.status === "alive" ? "secondary" : "destructive"}
-        >
-          {citizen.status === "alive" ? "Alive" : "Deceased"}
-        </Badge>
-        <Badge variant={assignment === null ? "outline" : "secondary"}>
-          {assignment === null ? "Unassigned" : assignmentJobName(assignment)}
-        </Badge>
-      </div>
-    </li>
   );
 }
 
@@ -461,27 +523,4 @@ function assignmentTypeLabel(type: CitizenAssignmentType): string {
     case "trade_route":
       return "Trade route";
   }
-}
-
-function assignmentJobName(assignment: CitizenAssignment): string {
-  switch (assignment.assignmentType) {
-    case "standard_job":
-      return assignment.job?.name ?? "Standard Job";
-    case "deposit":
-      return assignment.depositInstance?.depositTypeJobName ?? "Deposit";
-    case "husbandry":
-      return (
-        assignment.managedPopulationInstance?.husbandryJobName ?? "Husbandry"
-      );
-    case "culling":
-      return assignment.managedPopulationInstance?.cullingJobName ?? "Culling";
-    case "trade_route":
-      return "Trader";
-    case "construction_project":
-      return "Construction";
-  }
-}
-
-function citizenTypeLabel(type: Citizen["citizenType"]): string {
-  return type === "npc" ? "NPC" : "Player character";
 }

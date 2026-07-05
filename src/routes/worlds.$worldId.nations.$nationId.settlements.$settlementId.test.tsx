@@ -543,7 +543,7 @@ describe("settlement detail route", () => {
       expect(screen.getByTestId("active-events-card")).toBeDefined();
     });
 
-    it("renders citizens + the assignment board without the removed activeTab prop", async () => {
+    it("renders the citizens panel at /citizens", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({ adminRows: [{ world_id: WORLD_ID }] }),
       );
@@ -551,6 +551,16 @@ describe("settlement detail route", () => {
       await screen.findByRole("heading", { level: 1, name: "Hometown" });
 
       expect(screen.getByTestId("citizens-panel")).toBeDefined();
+      expect(screen.queryByTestId("assignment-board")).toBeNull();
+    });
+
+    it("renders the assignment board at /assignments without the removed activeTab prop", async () => {
+      requireSupabaseClient.mockReturnValue(
+        createClient({ adminRows: [{ world_id: WORLD_ID }] }),
+      );
+      renderAt(`${BASE_PATH}/assignments`);
+      await screen.findByRole("heading", { level: 1, name: "Hometown" });
+
       const board = screen.getByTestId("assignment-board");
       const props = JSON.parse(board.dataset.props ?? "{}") as Record<
         string,

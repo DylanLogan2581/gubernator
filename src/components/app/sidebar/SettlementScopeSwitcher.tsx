@@ -11,6 +11,7 @@ import type { JSX } from "react";
 // Mirrors the settlement detail child routes (see also AppSidebar's
 // settlementSectionItem) — one value per sidebar SETTLEMENT item.
 export type SettlementSection =
+  | "assignments"
   | "buildings"
   | "citizens"
   | "construction"
@@ -32,6 +33,7 @@ export type SettlementScopeSwitcherProps = {
 
 type SettlementSectionRouteId =
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId"
+  | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction"
@@ -48,6 +50,8 @@ function sectionRouteId(
   section: SettlementSection | null,
 ): SettlementSectionRouteId {
   switch (section) {
+    case "assignments":
+      return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments";
     case "buildings":
       return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings";
     case "citizens":
