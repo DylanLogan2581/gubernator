@@ -7,6 +7,15 @@ import viteConfig from "./vite.config";
 // default unit run, which has no Supabase available.
 const runIntegration = process.env.VITEST_INTEGRATION === "true";
 
+// Cap worker forks so a local run (pre-commit hook, or an agent running the
+// suite to diagnose) cannot oversubscribe every core and starve the machine.
+// CI can raise this via VITEST_MAX_FORKS on dedicated runners.
+const maxWorkersEnv = process.env.VITEST_MAX_FORKS;
+const maxWorkers =
+  maxWorkersEnv !== undefined && maxWorkersEnv !== ""
+    ? Number(maxWorkersEnv)
+    : 4;
+
 export default mergeConfig(
   viteConfig,
   defineConfig({
@@ -15,6 +24,8 @@ export default mergeConfig(
       globals: true,
       setupFiles: ["./src/test/setup.ts"],
       css: true,
+      pool: "forks",
+      maxWorkers,
       exclude: runIntegration
         ? configDefaults.exclude
         : [...configDefaults.exclude, "**/integration.test.ts"],
