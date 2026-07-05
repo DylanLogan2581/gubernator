@@ -5,47 +5,77 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, ChevronDown, Plus, X } from "lucide-react";
+import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
-  CreateSettlementDialog,
+  CitizenAvatar,
+  managerScopeLabel,
+  playerCharactersInNationQueryOptions,
+  type Citizen,
+} from "@/features/citizens";
+import { useSettlementManageAuthority } from "@/features/permissions";
+import {
   ManualReadinessControl,
+  ReadOnlyReadinessIndicator,
+  CreateSettlementDialog,
+  deleteSettlementMutationOptions,
   setSettlementReadinessMutationOptions,
 } from "@/features/settlements";
+import type { WorldPermissionContext } from "@/features/worlds";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { notifyMutationError } from "@/lib/notify";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
 import { nationsQueryKeys } from "../../queries/nationsQueryKeys";
 
 import type { NationSettlement } from "../../types/nationTypes";
 
+function findSettlementManager(
+  citizens: readonly Citizen[],
+  settlementId: string,
+): Citizen | null {
+  return (
+    citizens.find(
+      (citizen) =>
+        managerScopeLabel(citizen.roleType) === "settlement" &&
+        citizen.roleSettlementId === settlementId,
+    ) ?? null
+  );
+}
+
 export function NationSettlementsSection({
+  accessContext,
   canAdmin = false,
   isArchived = false,
   nationId,
-  userId,
   worldId,
 }: {
+  readonly accessContext: WorldPermissionContext;
   readonly canAdmin?: boolean;
   readonly isArchived?: boolean;
   readonly nationId: string;
-  readonly userId: string | null;
   readonly worldId: string;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const settlementsQuery = useQuery(nationSettlementsQueryOptions(nationId));
+  const playerCharactersQuery = useQuery(
+    playerCharactersInNationQueryOptions(nationId),
+  );
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  const managers = playerCharactersQuery.data ?? [];
 
   return (
     <section
@@ -85,10 +115,12 @@ export function NationSettlementsSection({
           {settlementsQuery.data.map((settlement) => (
             <NationSettlementListItem
               key={settlement.id}
+              accessContext={accessContext}
+              canAdmin={canAdmin}
               isArchived={isArchived}
+              manager={findSettlementManager(managers, settlement.id)}
               queryClient={queryClient}
               settlement={settlement}
-              userId={userId}
               worldId={worldId}
             />
           ))}
@@ -110,33 +142,35 @@ export function NationSettlementsSection({
 }
 
 function NationSettlementListItem({
+  accessContext,
+  canAdmin,
   isArchived,
+  manager,
   queryClient,
   settlement,
-  userId,
   worldId,
 }: {
+  readonly accessContext: WorldPermissionContext;
+  readonly canAdmin: boolean;
   readonly isArchived: boolean;
+  readonly manager: Citizen | null;
   readonly queryClient: QueryClient;
   readonly settlement: NationSettlement;
-  readonly userId: string | null;
   readonly worldId: string;
 }): JSX.Element {
   const [isPending, setIsPending] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const { canManageSettlement } = useSettlementManageAuthority({
+    canAdmin,
+    nationId: settlement.nationId,
+    settlementId: settlement.id,
+  });
+
   const readinessMutation = useMutation(
-    setSettlementReadinessMutationOptions({
-      accessContext: {
-        canAccessWorld: () => true,
-        canAdminWorld: () => false,
-        isActiveUser: userId !== null,
-        isAuthenticated: userId !== null,
-        isSuperAdmin: false,
-        userId: userId ?? null,
-        worldAdminWorldIds: [],
-        playerCharacterWorldIds: [],
-      },
-      queryClient,
-    }),
+    setSettlementReadinessMutationOptions({ accessContext, queryClient }),
+  );
+  const deleteMutation = useMutation(
+    deleteSettlementMutationOptions({ queryClient }),
   );
 
   const handleSetReadiness = (isReady: boolean): void => {
@@ -163,60 +197,128 @@ function NationSettlementListItem({
     );
   };
 
-  const isReady = settlement.isReadyForCurrentTurn;
+  function handleConfirmDelete(): void {
+    deleteMutation.reset();
+    deleteMutation.mutate(
+      {
+        nationId: settlement.nationId,
+        settlementId: settlement.id,
+        worldId,
+      },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to delete settlement.");
+        },
+        onSuccess: () => {
+          setIsConfirmingDelete(false);
+          notifyMutationSuccess("Settlement deleted.");
+        },
+      },
+    );
+  }
+
+  const canDelete = canAdmin && !isArchived;
 
   return (
-    <li className="rounded-md border border-border bg-background p-0">
-      <Collapsible className="group">
-        <div className="flex w-full items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 shrink-0 flex items-center justify-center">
-              {isReady ? (
-                <Check
-                  className="w-4 h-4 text-green-600 dark:text-green-500"
-                  aria-label="Settlement ready"
-                />
-              ) : (
-                <X
-                  className="w-4 h-4 text-red-600 dark:text-red-500"
-                  aria-label="Settlement not ready"
-                />
-              )}
-            </div>
+    <li className="rounded-md border border-border bg-background p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
+            params={{
+              nationId: settlement.nationId,
+              settlementId: settlement.id,
+              worldId,
+            }}
+            search={{}}
+            className="text-sm font-medium underline-offset-4 hover:underline text-left"
+          >
+            {settlement.name}
+          </Link>
+          <span className="text-xs text-muted-foreground">
+            Population: {settlement.population.toLocaleString()}
+          </span>
+          {manager === null ? (
+            <span className="text-xs text-muted-foreground">Unassigned</span>
+          ) : (
             <Link
-              to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-              params={{
-                nationId: settlement.nationId,
-                settlementId: settlement.id,
-                worldId,
-              }}
+              to="/worlds/$worldId/citizens/$citizenId"
+              params={{ citizenId: manager.id, worldId }}
               search={{}}
-              className="text-sm font-medium underline-offset-4 hover:underline text-left"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:underline"
             >
-              {settlement.name}
+              <CitizenAvatar
+                id={manager.id}
+                name={manager.name}
+                profilePhotoUrl={manager.profilePhotoUrl}
+                size="sm"
+              />
+              {manager.name}
             </Link>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>Population: {settlement.population.toLocaleString()}</span>
-            <CollapsibleTrigger
-              className="rounded p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-              aria-label={`Toggle details for ${settlement.name}`}
-            >
-              <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-          </div>
+          )}
         </div>
-        <CollapsibleContent className="border-t border-border px-4 pb-4 pt-2">
-          <div className="space-y-3">
+
+        <div className="flex items-center gap-3">
+          {canManageSettlement ? (
             <ManualReadinessControl
               isArchived={isArchived}
               item={settlement}
               isPending={isPending}
               setReadiness={handleSetReadiness}
             />
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+          ) : (
+            <ReadOnlyReadinessIndicator item={settlement} />
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Actions for ${settlement.name}`}
+              >
+                <MoreHorizontal className="size-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={!canDelete}
+                onSelect={() => {
+                  setIsConfirmingDelete(true);
+                }}
+              >
+                <Trash2 aria-hidden="true" />
+                Delete settlement
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={isConfirmingDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsConfirmingDelete(false);
+            deleteMutation.reset();
+          }
+        }}
+        title="Delete settlement"
+        description={
+          <>
+            Are you sure you want to delete{" "}
+            <span className="font-medium">{settlement.name}</span>? This action
+            cannot be undone.
+          </>
+        }
+        confirmLabel={
+          deleteMutation.isPending ? "Deleting…" : "Delete settlement"
+        }
+        isPending={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+      />
     </li>
   );
 }

@@ -8,15 +8,15 @@ import {
 import type { JSX } from "react";
 
 function NationSettlementsRoute(): JSX.Element {
-  const { effectiveCanAdmin, isArchived, nation, worldId } =
+  const { accessContext, effectiveCanAdmin, isArchived, nation, worldId } =
     useNationDetailContext();
 
   return (
     <NationSettlementsSection
+      accessContext={accessContext}
       canAdmin={effectiveCanAdmin}
       isArchived={isArchived}
       nationId={nation.id}
-      userId={null}
       worldId={worldId}
     />
   );

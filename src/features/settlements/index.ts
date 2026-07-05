@@ -13,6 +13,7 @@ export {
 export { CreateSettlementDialog } from "./components/CreateSettlementDialog";
 export { ForecastPanel } from "./components/ForecastPanel";
 export { ManualReadinessControl } from "./components/ManualReadinessControl";
+export { ReadOnlyReadinessIndicator } from "./components/ReadinessStateBadge";
 export { SettlementCoordinatesSection } from "./components/SettlementDetailPage/CoordinatesSection";
 export { SettlementDeleteSection } from "./components/SettlementDetailPage/DeleteSection";
 export { SettlementDetailsSection } from "./components/SettlementDetailPage/DetailsSection";

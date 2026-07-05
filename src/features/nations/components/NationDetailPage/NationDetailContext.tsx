@@ -1,10 +1,14 @@
 import { createContext, use } from "react";
 
-import type { WorldRouteAccess } from "@/features/worlds";
+import type {
+  WorldPermissionContext,
+  WorldRouteAccess,
+} from "@/features/worlds";
 
 import type { Nation } from "../../types/nationTypes";
 
 export type NationDetailContextValue = {
+  readonly accessContext: WorldPermissionContext;
   readonly canDelete: boolean;
   readonly canEditDetails: boolean;
   readonly canToggleHidden: boolean;

@@ -129,6 +129,7 @@ function NationDetailWorldGate({
 
   return (
     <NationDetailContent
+      accessContext={accessContext}
       nationId={nationId}
       worldAccess={worldQuery.data}
       worldId={worldId}
@@ -139,11 +140,13 @@ function NationDetailWorldGate({
 }
 
 function NationDetailContent({
+  accessContext,
   children,
   nationId,
   worldAccess,
   worldId,
 }: {
+  readonly accessContext: AccessContext;
   readonly children: ReactNode;
   readonly nationId: string;
   readonly worldAccess: WorldRouteAccess;
@@ -190,6 +193,7 @@ function NationDetailContent({
 
   return (
     <NationDetailLoaded
+      accessContext={accessContext}
       nation={nation}
       worldAccess={worldAccess}
       worldId={worldId}
@@ -222,11 +226,13 @@ function HiddenNationRedirect({
 }
 
 function NationDetailLoaded({
+  accessContext,
   children,
   nation,
   worldAccess,
   worldId,
 }: {
+  readonly accessContext: AccessContext;
   readonly children: ReactNode;
   readonly nation: Nation;
   readonly worldAccess: WorldRouteAccess;
@@ -262,6 +268,7 @@ function NationDetailLoaded({
 
       <NationDetailContext
         value={{
+          accessContext,
           canDelete,
           canEditDetails,
           canToggleHidden,
