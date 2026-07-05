@@ -94,6 +94,55 @@ describe("WorldCalendarConfigPanel", () => {
     expect(screen.getByRole("button", { name: "Add weekday" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Add month" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Save calendar" })).toBeDefined();
+    expect(screen.getByText(/Tokens:/)).toBeDefined();
+    expect(screen.getByText("{weekday}")).toBeDefined();
+    expect(screen.getByText("{yearNumber}")).toBeDefined();
+  });
+
+  it("appends a typed weekday chip and reorders it with the move buttons", async () => {
+    const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+
+    await user.type(
+      screen.getByRole("textbox", { name: "New weekday" }),
+      "Moonday",
+    );
+    await user.click(screen.getByRole("button", { name: "Add weekday" }));
+
+    expect(screen.getByRole("textbox", { name: "Day 3" })).toHaveValue(
+      "Moonday",
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Move weekdays 1 up" }),
+    ).toBeDisabled();
+
+    await user.click(
+      screen.getByRole("button", { name: "Move weekdays 1 down" }),
+    );
+
+    expect(screen.getByRole("textbox", { name: "Day 1" })).toHaveValue(
+      "Secondday",
+    );
+    expect(screen.getByRole("textbox", { name: "Day 2" })).toHaveValue(
+      "Firstday",
+    );
   });
 
   it("blocks save and exposes an accessible error when weekdays are empty", async () => {
