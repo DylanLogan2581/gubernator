@@ -210,6 +210,35 @@ describe("turnLogBrowserQueryOptions", () => {
       10,
     );
   });
+
+  it("filters to an exact completed turn via turnNumber, independent of the range filters", async () => {
+    const queryClient = createQueryClient();
+    const client = createClient({
+      rows: [createRow({ id: "entry-7" })],
+      count: 1,
+    });
+    requireSupabaseClient.mockReturnValue(client);
+
+    await queryClient.fetchQuery(
+      turnLogBrowserQueryOptions({
+        filter: { turnNumber: 32 },
+        page: 0,
+        worldId: "world-1",
+      }),
+    );
+
+    const builder = client.from("turn_log_entries") as unknown as MockBuilder;
+    expect(builder.filter).toHaveBeenCalledWith(
+      "turn_transitions.to_turn_number",
+      "eq",
+      32,
+    );
+    expect(builder.filter).not.toHaveBeenCalledWith(
+      "turn_transitions.from_turn_number",
+      "gte",
+      expect.anything(),
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

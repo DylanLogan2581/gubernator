@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import {
   flexRender,
   getCoreRowModel,
@@ -6,7 +5,7 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { TablePagination } from "@/components/shared/TablePagination";
 import { Badge } from "@/components/ui/badge";
@@ -19,18 +18,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { useTurnLogEntityLookup } from "../../hooks/useTurnLogEntityLookup";
 import {
   TURN_LOG_PAGE_SIZE,
   type TurnLogBrowserEntry,
 } from "../../queries/turnLogBrowserQueries";
+import {
+  aggregateJobProcessedRows,
+  summarizeJobBreakdown,
+  type TurnLogRow,
+} from "../../utils/aggregateJobProcessedRows";
+import { isTurnLogRowExpandable } from "../../utils/isTurnLogRowExpandable";
 import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
 
+import { EntityRef } from "./EntityRef";
 import { TurnLogPayloadRenderer } from "./TurnLogPayloadRenderer";
 
+import type { TurnLogEntityLookup } from "../../hooks/useTurnLogEntityLookup";
 import type { JSX } from "react";
-
-// Renders raw JSONB as formatted text for the audit trail detail panel.
-// JSON.stringify is intentional here — this is debug/audit output, not app UI.
 
 // ---------------------------------------------------------------------------
 // Scope cell — links to settlement / nation / citizen pages
@@ -49,55 +54,40 @@ function ScopeCell({
     // Prefer the log entry's own nation_id; fall back to the nation_id carried
     // by the joined settlement row (settlement always has a nation).
     const resolvedNationId = entry.nationId ?? entry.settlementNationId;
-    const settlementLabel = entry.settlementName ?? "Unknown settlement";
 
-    if (resolvedNationId !== null) {
-      parts.push(
-        <Link
-          key="settlement"
-          to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-          params={{
-            worldId,
-            nationId: resolvedNationId,
-            settlementId: entry.settlementId,
-          }}
-          className="text-primary underline-offset-2 hover:underline"
-        >
-          {settlementLabel}
-        </Link>,
-      );
-    } else {
-      parts.push(
-        <span key="settlement" className="text-muted-foreground">
-          {settlementLabel}
-        </span>,
-      );
-    }
+    parts.push(
+      <EntityRef
+        key="settlement"
+        name={entry.settlementName}
+        href={
+          resolvedNationId === null
+            ? null
+            : `/worlds/${worldId}/nations/${resolvedNationId}/settlements/${entry.settlementId}`
+        }
+        kindLabel="Settlement"
+      />,
+    );
   }
 
   if (entry.nationId !== null && entry.settlementId === null) {
     parts.push(
-      <Link
+      <EntityRef
         key="nation"
-        to="/worlds/$worldId/nations/$nationId"
-        params={{ worldId, nationId: entry.nationId }}
-        className="text-primary underline-offset-2 hover:underline"
-      >
-        {entry.nationName ?? "Unknown nation"}
-      </Link>,
+        name={entry.nationName}
+        href={`/worlds/${worldId}/nations/${entry.nationId}`}
+        kindLabel="Nation"
+      />,
     );
   }
 
   if (entry.citizenId !== null) {
     parts.push(
-      <Link
+      <EntityRef
         key="citizen"
-        to="/worlds/$worldId/citizens/$citizenId"
-        params={{ worldId, citizenId: entry.citizenId }}
-        className="text-primary underline-offset-2 hover:underline"
-      >
-        {entry.citizenName ?? "Unknown citizen"}
-      </Link>,
+        name={entry.citizenName}
+        href={`/worlds/${worldId}/citizens/${entry.citizenId}`}
+        kindLabel="Citizen"
+      />,
     );
   }
 
@@ -109,30 +99,104 @@ function ScopeCell({
 }
 
 // ---------------------------------------------------------------------------
-// Expanded payload row
+// Job summary — aggregated standard_job.processed rows
 // ---------------------------------------------------------------------------
 
-function PayloadDetailRow({
-  entry,
+function formatResourceDeltas(
+  deltas: Readonly<Record<string, number>>,
+  sign: "+" | "-",
+  lookup: TurnLogEntityLookup,
+): string {
+  return Object.entries(deltas)
+    .filter(([, amount]) => amount !== 0)
+    .map(
+      ([resourceId, amount]) =>
+        `${lookup.resourceName(resourceId) ?? "Unknown resource"} ${sign}${Math.round(amount)}`,
+    )
+    .join(", ");
+}
+
+function JobSummaryDetail({
+  entries,
+  lookup,
+}: {
+  readonly entries: readonly TurnLogBrowserEntry[];
+  readonly lookup: TurnLogEntityLookup;
+}): JSX.Element {
+  const breakdown = summarizeJobBreakdown(entries);
+
+  return (
+    <ul className="space-y-1 text-sm">
+      {breakdown.map((row) => {
+        const consumed = formatResourceDeltas(row.inputsConsumed, "-", lookup);
+        const produced = formatResourceDeltas(row.outputsProduced, "+", lookup);
+        const deltas = [consumed, produced].filter(Boolean).join(", ");
+        return (
+          <li key={row.jobId}>
+            <strong>{lookup.jobName(row.jobId) ?? "Unknown job"}</strong> —{" "}
+            {row.workerCount} workers
+            {deltas !== "" ? ` — ${deltas}` : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Expanded row
+// ---------------------------------------------------------------------------
+
+function ExpandedDetailRow({
   colSpan,
   isAdmin,
+  lookup,
+  row,
 }: {
-  readonly entry: TurnLogBrowserEntry;
   readonly colSpan: number;
   readonly isAdmin: boolean;
+  readonly lookup: TurnLogEntityLookup;
+  readonly row: TurnLogRow;
 }): JSX.Element {
   return (
     <tr className="bg-muted/30">
       <td colSpan={colSpan} className="px-4 py-2">
         <div className="text-sm">
-          <TurnLogPayloadRenderer
-            logCategory={entry.logCategory}
-            payload={entry.payloadJsonb}
-            isAdmin={isAdmin}
-          />
+          {row.kind === "job-summary" ? (
+            <JobSummaryDetail entries={row.entries} lookup={lookup} />
+          ) : (
+            <TurnLogPayloadRenderer
+              logCategory={row.entry.logCategory}
+              payload={row.entry.payloadJsonb}
+              isAdmin={isAdmin}
+              lookup={lookup}
+              mode="expanded"
+            />
+          )}
         </div>
       </td>
     </tr>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Row helpers
+// ---------------------------------------------------------------------------
+
+function rowId(row: TurnLogRow): string {
+  return row.kind === "entry" ? row.entry.id : row.id;
+}
+
+function rowScopeEntry(row: TurnLogRow): TurnLogBrowserEntry {
+  return row.kind === "entry" ? row.entry : row.representativeEntry;
+}
+
+function isRowExpandable(row: TurnLogRow, isAdmin: boolean): boolean {
+  if (row.kind === "job-summary") return true;
+  return isTurnLogRowExpandable(
+    row.entry.logCategory,
+    row.entry.payloadJsonb,
+    isAdmin,
   );
 }
 
@@ -143,7 +207,8 @@ function PayloadDetailRow({
 function buildColumns(
   worldId: string,
   isAdmin: boolean,
-): ColumnDef<TurnLogBrowserEntry>[] {
+  lookup: TurnLogEntityLookup,
+): ColumnDef<TurnLogRow>[] {
   return [
     {
       id: "expand",
@@ -152,40 +217,63 @@ function buildColumns(
       size: 32,
     },
     {
-      accessorKey: "toTurnNumber",
+      id: "turn",
       header: "Turn",
       cell: ({ row }) => (
-        <span className="tabular-nums">{row.original.toTurnNumber}</span>
+        <span className="tabular-nums">
+          {rowScopeEntry(row.original).toTurnNumber}
+        </span>
       ),
       size: 64,
     },
     {
-      accessorKey: "logCategory",
+      id: "category",
       header: "Category",
-      cell: ({ row }) => (
-        <Badge variant="outline" className="font-mono text-xs">
-          {LOG_CATEGORY_LABELS[row.original.logCategory] ??
-            row.original.logCategory}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const logCategory =
+          row.original.kind === "entry"
+            ? row.original.entry.logCategory
+            : "standard_job.processed";
+        return (
+          <Badge variant="outline" className="font-mono text-xs">
+            {LOG_CATEGORY_LABELS[logCategory] ?? logCategory}
+          </Badge>
+        );
+      },
       size: 220,
     },
     {
       id: "scope",
       header: "Scope",
-      cell: ({ row }) => <ScopeCell entry={row.original} worldId={worldId} />,
+      cell: ({ row }) => (
+        <ScopeCell entry={rowScopeEntry(row.original)} worldId={worldId} />
+      ),
       size: 140,
     },
     {
       id: "summary",
       header: "Summary",
-      cell: ({ row }) => (
-        <TurnLogPayloadRenderer
-          logCategory={row.original.logCategory}
-          payload={row.original.payloadJsonb}
-          isAdmin={isAdmin}
-        />
-      ),
+      cell: ({ row }) => {
+        const original = row.original;
+        if (original.kind === "job-summary") {
+          return (
+            <span className="text-sm">
+              <strong>{original.count}</strong> jobs processed —{" "}
+              {original.representativeEntry.settlementName ??
+                "Unknown settlement"}
+            </span>
+          );
+        }
+        return (
+          <TurnLogPayloadRenderer
+            logCategory={original.entry.logCategory}
+            payload={original.entry.payloadJsonb}
+            isAdmin={isAdmin}
+            lookup={lookup}
+            mode="summary"
+          />
+        );
+      },
     },
   ];
 }
@@ -213,18 +301,26 @@ export function TurnLogTable({
   totalCount,
   worldId,
 }: TurnLogTableProps): JSX.Element {
+  // Keyed by the entry/synthetic-row id (stable across pages), not the
+  // table's positional row index.
   const [expandedRows, setExpandedRows] = useState<Set<string>>(
     () => new Set(),
   );
 
-  const columns = buildColumns(worldId, isAdmin);
+  const lookup = useTurnLogEntityLookup(worldId, entries);
+  const rows = useMemo(() => aggregateJobProcessedRows(entries), [entries]);
+  const columns = useMemo(
+    () => buildColumns(worldId, isAdmin, lookup),
+    [worldId, isAdmin, lookup],
+  );
   const pageCount = Math.ceil(totalCount / TURN_LOG_PAGE_SIZE);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable is a TanStack Table hook, not a React hook
   const table = useReactTable({
-    data: entries as TurnLogBrowserEntry[],
+    data: rows as TurnLogRow[],
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getRowId: rowId,
     manualPagination: true,
     rowCount: totalCount,
     state: {
@@ -294,27 +390,30 @@ export function TurnLogTable({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => {
-                const isExpanded = expandedRows.has(row.id);
+                const expandable = isRowExpandable(row.original, isAdmin);
+                const isExpanded = expandable && expandedRows.has(row.id);
                 return (
                   <Fragment key={row.id}>
                     <TableRow
                       data-state={isExpanded ? "expanded" : undefined}
-                      className="cursor-pointer"
-                      onClick={() => toggleRow(row.id)}
-                      aria-expanded={isExpanded}
+                      className={expandable ? "cursor-pointer" : undefined}
+                      onClick={expandable ? () => toggleRow(row.id) : undefined}
+                      aria-expanded={expandable ? isExpanded : undefined}
                     >
                       <TableCell className="w-8 pr-0">
-                        {isExpanded ? (
-                          <ChevronDown
-                            className="size-4 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <ChevronRight
-                            className="size-4 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        )}
+                        {expandable ? (
+                          isExpanded ? (
+                            <ChevronDown
+                              className="size-4 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <ChevronRight
+                              className="size-4 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                          )
+                        ) : null}
                       </TableCell>
                       {row
                         .getVisibleCells()
@@ -329,10 +428,11 @@ export function TurnLogTable({
                         ))}
                     </TableRow>
                     {isExpanded ? (
-                      <PayloadDetailRow
-                        entry={row.original}
+                      <ExpandedDetailRow
+                        row={row.original}
                         colSpan={columns.length}
                         isAdmin={isAdmin}
+                        lookup={lookup}
                       />
                     ) : null}
                   </Fragment>

@@ -2,17 +2,14 @@
 //
 // Each known log_category has a typed renderer that parses the payload using
 // the same parsers as supabase/functions/_shared/simulation/outcomes/notificationPayloads.ts.
-// Unknown categories fall back to a raw-JSON collapsible.
+// Unknown categories fall back to a raw-JSON view (admins only).
+//
+// Renderers take a `mode`: "summary" (the collapsed row's one-liner) or
+// "expanded" (the detail row shown when the table's chevron is toggled open).
+// The expanded view must always add information beyond the summary —
+// `isTurnLogRowExpandable` tells the table when there's nothing more to show
+// so it can skip the chevron entirely ("no dead expand").
 
-import { useState } from "react";
-
-import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils";
 import {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,
@@ -29,55 +26,42 @@ import {
   parseTradeRouteResumedPayload,
 } from "@/shared/simulation/outcomes/notificationPayloads";
 
-import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
+import { hasMeaningfulPayload } from "../../utils/isTurnLogRowExpandable";
 
+import { EntityRef } from "./EntityRef";
+
+import type { TurnLogEntityLookup } from "../../hooks/useTurnLogEntityLookup";
 import type { JSX } from "react";
 
+export type TurnLogPayloadRendererMode = "summary" | "expanded";
+
 // ---------------------------------------------------------------------------
-// Raw-JSON fallback
+// Raw-JSON fallback (unknown categories)
 // ---------------------------------------------------------------------------
 
 function RawJsonFallback({
-  category,
   isAdmin,
+  mode,
   payload,
 }: {
-  readonly category: string;
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
-  const [open, setOpen] = useState(false);
+  if (mode === "summary") {
+    // The Category column already shows the badge — nothing more to say
+    // here without an admin explicitly expanding the row.
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  if (!isAdmin || !hasMeaningfulPayload(payload)) {
+    return <span className="text-muted-foreground">No further detail</span>;
+  }
+
   // eslint-disable-next-line no-restricted-syntax
   const json = JSON.stringify(payload, null, 2);
-
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">
-          <Badge variant="outline" className="font-mono text-xs">
-            {LOG_CATEGORY_LABELS[category] ?? category}
-          </Badge>
-        </span>
-        {isAdmin && json !== "{}" && json !== "null" ? (
-          <CollapsibleTrigger
-            className={cn(
-              "rounded px-1.5 py-0.5 text-xs underline-offset-2 hover:underline",
-              open ? "bg-secondary text-secondary-foreground" : "text-primary",
-            )}
-            aria-expanded={open}
-            aria-pressed={open}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {open ? "hide payload" : "show payload"}
-          </CollapsibleTrigger>
-        ) : null}
-      </div>
-      <CollapsibleContent>
-        <pre className="mt-1 overflow-x-auto rounded bg-muted p-2 text-xs">
-          {json}
-        </pre>
-      </CollapsibleContent>
-    </Collapsible>
+    <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">{json}</pre>
   );
 }
 
@@ -87,68 +71,118 @@ function RawJsonFallback({
 
 function BuildingAutoDeconstructedRenderer({
   isAdmin,
+  lookup,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly lookup: TurnLogEntityLookup;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseBuildingAutoDeconstructedPayload(payload);
-  if (p === null)
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
+  const building = lookup.building(p.buildingId);
+
+  if (mode === "summary") {
     return (
-      <RawJsonFallback
-        category="building.auto_deconstructed"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
+      <span className="text-sm">
+        Building{" "}
+        <EntityRef
+          name={building.name}
+          href={building.href}
+          kindLabel="Building"
+        />{" "}
+        auto-deconstructed after <strong>{p.missedUpkeepCount}</strong> missed
+        upkeeps
+      </span>
     );
+  }
+
   return (
-    <span className="text-sm">
-      Building auto-deconstructed after <strong>{p.missedUpkeepCount}</strong>{" "}
-      missed upkeeps (grace: {p.gracePeriodTurns} turns)
-    </span>
+    <div className="space-y-1 text-sm">
+      <div>
+        Building{" "}
+        <EntityRef
+          name={building.name}
+          href={building.href}
+          kindLabel="Building"
+        />{" "}
+        auto-deconstructed after <strong>{p.missedUpkeepCount}</strong> missed
+        upkeeps
+      </div>
+      <div className="text-muted-foreground">
+        Blueprint: {building.blueprintName ?? "Unknown blueprint"} · Grace
+        period: {p.gracePeriodTurns} turns
+      </div>
+    </div>
   );
 }
 
 function BuildingSuspendedRenderer({
   isAdmin,
+  lookup,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly lookup: TurnLogEntityLookup;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseBuildingSuspendedPayload(payload);
-  if (p === null)
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
+  const building = lookup.building(p.buildingId);
+
+  if (mode === "summary") {
     return (
-      <RawJsonFallback
-        category="building.suspended"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
+      <span className="text-sm">
+        Building{" "}
+        <EntityRef
+          name={building.name}
+          href={building.href}
+          kindLabel="Building"
+        />{" "}
+        suspended after <strong>{p.missedUpkeepCount}</strong> missed upkeeps
+      </span>
     );
+  }
+
   return (
-    <span className="text-sm">
-      Building suspended after <strong>{p.missedUpkeepCount}</strong> missed
-      upkeeps
-    </span>
+    <div className="space-y-1 text-sm">
+      <div>
+        Building{" "}
+        <EntityRef
+          name={building.name}
+          href={building.href}
+          kindLabel="Building"
+        />{" "}
+        suspended after <strong>{p.missedUpkeepCount}</strong> missed upkeeps
+      </div>
+      <div className="text-muted-foreground">
+        Blueprint: {building.blueprintName ?? "Unknown blueprint"}
+      </div>
+    </div>
   );
 }
 
 function ConstructionCompletedRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseConstructionCompletedPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="construction.completed"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   return (
     <span className="text-sm">
       Construction completed with <strong>{p.workers}</strong> workers
@@ -158,20 +192,17 @@ function ConstructionCompletedRenderer({
 
 function ConstructionPausedRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseConstructionPausedPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="construction.paused"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   return (
     <span className="text-sm">
       Construction paused (<strong>{p.workers}</strong> workers assigned)
@@ -181,20 +212,17 @@ function ConstructionPausedRenderer({
 
 function DepositDepletedRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseDepositDepletedPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="deposit.depleted"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   return (
     <span className="text-sm">
       Deposit <strong>{p.depositName}</strong> depleted
@@ -204,20 +232,17 @@ function DepositDepletedRenderer({
 
 function ManagedPopulationDecliningRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseManagedPopulationDecliningPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="managed_population.declining"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   const husbandry = Math.round(p.husbandryCoverage * 100);
   const maintenance = Math.round(p.maintenanceCoverage * 100);
   return (
@@ -230,20 +255,17 @@ function ManagedPopulationDecliningRenderer({
 
 function ManagedPopulationExtinctRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseManagedPopulationExtinctPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="managed_population.extinct"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   return (
     <span className="text-sm">
       Population <strong>{p.name}</strong> has gone extinct
@@ -253,50 +275,62 @@ function ManagedPopulationExtinctRenderer({
 
 function PartnershipFormedRenderer({
   isAdmin,
+  lookup,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly lookup: TurnLogEntityLookup;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parsePartnershipFormedPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="partnership.formed"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
+  const citizenA = lookup.citizen(p.citizenAId);
+  const citizenB = lookup.citizen(p.citizenBId);
   return (
-    <span className="text-sm font-mono text-xs">
-      Partnership formed: {p.citizenAId.slice(0, 8)}… &amp;{" "}
-      {p.citizenBId.slice(0, 8)}…
+    <span className="text-sm">
+      Partnership formed:{" "}
+      <EntityRef
+        name={citizenA.name}
+        href={citizenA.href}
+        kindLabel="Citizen"
+      />{" "}
+      &amp;{" "}
+      <EntityRef
+        name={citizenB.name}
+        href={citizenB.href}
+        kindLabel="Citizen"
+      />
     </span>
   );
 }
 
 function PartnershipWidowedRenderer({
   isAdmin,
+  lookup,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly lookup: TurnLogEntityLookup;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parsePartnershipWidowedPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="partnership.widowed"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
+  const survivor = lookup.citizen(p.survivingCitizenId);
   return (
     <span className="text-sm">
-      Citizen{" "}
-      <span className="font-mono text-xs">
-        {p.survivingCitizenId.slice(0, 8)}…
-      </span>{" "}
+      <EntityRef
+        name={survivor.name}
+        href={survivor.href}
+        kindLabel="Citizen"
+      />{" "}
       widowed
     </span>
   );
@@ -304,39 +338,33 @@ function PartnershipWidowedRenderer({
 
 function SettlementStarvationOccurredRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseSettlementStarvationOccurredPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="settlement.starvation_occurred"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   return <span className="text-sm">Starvation deaths occurred this turn</span>;
 }
 
 function SettlementHomelessnessOccurredRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseSettlementHomelessnessOccurredPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="settlement.homelessness_occurred"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   return (
     <span className="text-sm">Homelessness deaths occurred this turn</span>
   );
@@ -344,20 +372,17 @@ function SettlementHomelessnessOccurredRenderer({
 
 function TradeRoutePausedRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseTradeRoutePausedPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="trade_route.paused"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   return (
     <span className="text-sm">
       Trade route paused — <em>{p.pauseReason}</em> ({p.quantityPerTransition}{" "}
@@ -368,20 +393,17 @@ function TradeRoutePausedRenderer({
 
 function TradeRouteResumedRenderer({
   isAdmin,
+  mode,
   payload,
 }: {
   readonly isAdmin: boolean;
+  readonly mode: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 }): JSX.Element {
   const p = parseTradeRouteResumedPayload(payload);
-  if (p === null)
-    return (
-      <RawJsonFallback
-        category="trade_route.resumed"
-        isAdmin={isAdmin}
-        payload={payload}
-      />
-    );
+  if (p === null) {
+    return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
+  }
   return (
     <span className="text-sm">
       Trade route resumed — <strong>{p.quantityTransferred}</strong> units
@@ -397,12 +419,16 @@ function TradeRouteResumedRenderer({
 type TurnLogPayloadRendererProps = {
   readonly isAdmin?: boolean;
   readonly logCategory: string;
+  readonly lookup: TurnLogEntityLookup;
+  readonly mode?: TurnLogPayloadRendererMode;
   readonly payload: unknown;
 };
 
 export function TurnLogPayloadRenderer({
   isAdmin = false,
   logCategory,
+  lookup,
+  mode = "summary",
   payload,
 }: TurnLogPayloadRendererProps): JSX.Element {
   switch (logCategory) {
@@ -410,38 +436,83 @@ export function TurnLogPayloadRenderer({
       return (
         <BuildingAutoDeconstructedRenderer
           isAdmin={isAdmin}
+          lookup={lookup}
+          mode={mode}
           payload={payload}
         />
       );
     case "building.suspended":
-      return <BuildingSuspendedRenderer isAdmin={isAdmin} payload={payload} />;
+      return (
+        <BuildingSuspendedRenderer
+          isAdmin={isAdmin}
+          lookup={lookup}
+          mode={mode}
+          payload={payload}
+        />
+      );
     case "construction.completed":
       return (
-        <ConstructionCompletedRenderer isAdmin={isAdmin} payload={payload} />
+        <ConstructionCompletedRenderer
+          isAdmin={isAdmin}
+          mode={mode}
+          payload={payload}
+        />
       );
     case "construction.paused":
-      return <ConstructionPausedRenderer isAdmin={isAdmin} payload={payload} />;
+      return (
+        <ConstructionPausedRenderer
+          isAdmin={isAdmin}
+          mode={mode}
+          payload={payload}
+        />
+      );
     case "deposit.depleted":
-      return <DepositDepletedRenderer isAdmin={isAdmin} payload={payload} />;
+      return (
+        <DepositDepletedRenderer
+          isAdmin={isAdmin}
+          mode={mode}
+          payload={payload}
+        />
+      );
     case "managed_population.declining":
       return (
         <ManagedPopulationDecliningRenderer
           isAdmin={isAdmin}
+          mode={mode}
           payload={payload}
         />
       );
     case "managed_population.extinct":
       return (
-        <ManagedPopulationExtinctRenderer isAdmin={isAdmin} payload={payload} />
+        <ManagedPopulationExtinctRenderer
+          isAdmin={isAdmin}
+          mode={mode}
+          payload={payload}
+        />
       );
     case "partnership.formed":
-      return <PartnershipFormedRenderer isAdmin={isAdmin} payload={payload} />;
+      return (
+        <PartnershipFormedRenderer
+          isAdmin={isAdmin}
+          lookup={lookup}
+          mode={mode}
+          payload={payload}
+        />
+      );
     case "partnership.widowed":
-      return <PartnershipWidowedRenderer isAdmin={isAdmin} payload={payload} />;
+      return (
+        <PartnershipWidowedRenderer
+          isAdmin={isAdmin}
+          lookup={lookup}
+          mode={mode}
+          payload={payload}
+        />
+      );
     case "settlement.starvation_occurred":
       return (
         <SettlementStarvationOccurredRenderer
           isAdmin={isAdmin}
+          mode={mode}
           payload={payload}
         />
       );
@@ -449,20 +520,29 @@ export function TurnLogPayloadRenderer({
       return (
         <SettlementHomelessnessOccurredRenderer
           isAdmin={isAdmin}
+          mode={mode}
           payload={payload}
         />
       );
     case "trade_route.paused":
-      return <TradeRoutePausedRenderer isAdmin={isAdmin} payload={payload} />;
-    case "trade_route.resumed":
-      return <TradeRouteResumedRenderer isAdmin={isAdmin} payload={payload} />;
-    default:
       return (
-        <RawJsonFallback
-          category={logCategory}
+        <TradeRoutePausedRenderer
           isAdmin={isAdmin}
+          mode={mode}
           payload={payload}
         />
+      );
+    case "trade_route.resumed":
+      return (
+        <TradeRouteResumedRenderer
+          isAdmin={isAdmin}
+          mode={mode}
+          payload={payload}
+        />
+      );
+    default:
+      return (
+        <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />
       );
   }
 }

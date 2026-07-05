@@ -6,6 +6,8 @@ export const citizensQueryKeys = {
     [...citizensQueryKeys.all, "admin-details", citizenId] as const,
   detail: (citizenId: string) =>
     [...citizensQueryKeys.all, "detail", citizenId] as const,
+  byIds: (ids: readonly string[]) =>
+    [...citizensQueryKeys.all, "by-ids", [...ids].sort().join(",")] as const,
   activePartnershipForCitizen: (citizenId: string) =>
     [
       ...citizensQueryKeys.all,

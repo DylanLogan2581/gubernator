@@ -6,12 +6,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { citizensInWorldQueryOptions } from "@/features/citizens";
 import { nationsListQueryOptions } from "@/features/nations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 
 import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
+
+import { TurnLogCitizenCombobox } from "./TurnLogCitizenCombobox";
 
 import type { TurnLogBrowserFilter } from "../../queries/turnLogBrowserQueries";
 import type { JSX } from "react";
@@ -93,12 +94,10 @@ export function TurnLogFilters({
 
   const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
   const nationsQuery = useQuery(nationsListQueryOptions(worldId));
-  const citizensQuery = useQuery(citizensInWorldQueryOptions(worldId));
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
 
   const settlements = settlementsQuery.data ?? [];
   const nations = nationsQuery.data ?? [];
-  const citizens = citizensQuery.data ?? [];
   const resources = resourcesQuery.data ?? [];
 
   return (
@@ -218,23 +217,12 @@ export function TurnLogFilters({
           <Label htmlFor="tlb-citizen" className="text-xs">
             Citizen
           </Label>
-          <NativeSelect
+          <TurnLogCitizenCombobox
+            citizenId={filter.citizenId}
             id="tlb-citizen"
-            value={filter.citizenId ?? ""}
-            onChange={(e) =>
-              set({
-                citizenId: e.target.value !== "" ? e.target.value : undefined,
-              })
-            }
-            className="h-8 text-sm"
-          >
-            <option value="">All citizens</option>
-            {citizens.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </NativeSelect>
+            onChange={(citizenId) => set({ citizenId })}
+            worldId={worldId}
+          />
         </div>
       ) : null}
 

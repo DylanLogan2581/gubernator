@@ -19,6 +19,9 @@ export type TurnLogBrowserFilter = {
   readonly resourceId?: string;
   readonly settlementId?: string;
   readonly turnFrom?: number;
+  /** Exact completed-turn match (`turn_transitions.to_turn_number`). Used by
+   *  the turn picker; independent of the turnFrom/turnTo range filters. */
+  readonly turnNumber?: number;
   readonly turnTo?: number;
 };
 
@@ -174,6 +177,13 @@ async function getTurnLogPage(
       "turn_transitions.to_turn_number",
       "lte",
       filter.turnTo,
+    );
+  }
+  if (filter.turnNumber !== undefined) {
+    query = query.filter(
+      "turn_transitions.to_turn_number",
+      "eq",
+      filter.turnNumber,
     );
   }
 
