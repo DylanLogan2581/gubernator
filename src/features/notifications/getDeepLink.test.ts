@@ -5,7 +5,9 @@ import { type AllNotification } from "./queries/notificationQueries";
 
 const base: AllNotification = {
   citizenId: null,
+  citizenName: null,
   eventId: null,
+  eventName: null,
   generatedAt: "2026-01-01T00:00:00Z",
   generatedInTransitionId: null,
   id: "notif-1",
@@ -18,6 +20,8 @@ const base: AllNotification = {
   settlementName: null,
   severity: "info",
   tradeRouteId: null,
+  tradeRoute: null,
+  transition: null,
   worldId: "world-1",
   worldName: "Test World",
 };

@@ -319,6 +319,96 @@ describe("allNotificationsQueryOptions", () => {
 
     expect(result.notifications[0]).toMatchObject({ severity: "critical" });
   });
+
+  it("maps embedded citizen, event, transition, and trade route names", async () => {
+    const row = {
+      citizen_id: "citizen-1",
+      citizen: { name: "Frodo" },
+      event_id: "event-1",
+      event: { name: "Harvest Festival" },
+      generated_at: "2026-05-03T10:00:00.000Z",
+      generated_in_transition_id: "transition-1",
+      id: "notif-3",
+      is_read: false,
+      message_text: "Turn 2 is complete.",
+      nation_id: null,
+      nation: null,
+      notification_type: "turn.completed",
+      settlement_id: null,
+      settlement: null,
+      severity: "info" as const,
+      trade_route_id: "route-1",
+      trade_route: {
+        origin_settlement: {
+          id: "settlement-1",
+          name: "Minas Tirith",
+          nation_id: "nation-1",
+        },
+      },
+      transition: {
+        to_turn_number: 2,
+        finished_at: "2026-05-03T12:00:00.000Z",
+        started_at: "2026-05-03T11:00:00.000Z",
+      },
+      world_id: "world-1",
+      world: { name: "Earth" },
+    };
+    const client = createAllNotificationsClient({ rows: [row], total: 1 });
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions("user-1", {}, client),
+    );
+
+    expect(result.notifications[0]).toMatchObject({
+      citizenName: "Frodo",
+      eventName: "Harvest Festival",
+      transition: {
+        toTurnNumber: 2,
+        finishedAt: "2026-05-03T12:00:00.000Z",
+        startedAt: "2026-05-03T11:00:00.000Z",
+      },
+      tradeRoute: {
+        originSettlementId: "settlement-1",
+        originSettlementName: "Minas Tirith",
+        originNationId: "nation-1",
+      },
+    });
+  });
+
+  it("maps null citizen, event, transition, and trade route when embeds are absent", async () => {
+    const row = {
+      citizen_id: null,
+      event_id: null,
+      generated_at: "2026-05-03T10:00:00.000Z",
+      generated_in_transition_id: null,
+      id: "notif-4",
+      is_read: false,
+      message_text: "Nothing to report.",
+      nation_id: null,
+      nation: null,
+      notification_type: "turn.completed",
+      settlement_id: null,
+      settlement: null,
+      severity: "info" as const,
+      trade_route_id: null,
+      world_id: "world-1",
+      world: { name: "Earth" },
+    };
+    const client = createAllNotificationsClient({ rows: [row], total: 1 });
+    const queryClient = createQueryClient();
+
+    const result = await queryClient.fetchQuery(
+      allNotificationsQueryOptions("user-1", {}, client),
+    );
+
+    expect(result.notifications[0]).toMatchObject({
+      citizenName: null,
+      eventName: null,
+      transition: null,
+      tradeRoute: null,
+    });
+  });
 });
 
 function createAllNotificationsClient({

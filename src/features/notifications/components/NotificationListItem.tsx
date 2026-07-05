@@ -1,9 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, AlertTriangle } from "lucide-react";
+import { Check } from "lucide-react";
 import { type JSX } from "react";
 
+import { IconChip, type IconChipTone } from "@/components/shared/IconChip";
 import { Button } from "@/components/ui/button";
-import { type AllNotification, getDeepLink } from "@/features/notifications";
+import { type AllNotification } from "@/features/notifications";
+import { formatDate } from "@/lib/formatDate";
+import { cn } from "@/lib/utils";
+
+import { getNotificationEntityLinks } from "../utils/notificationEntityLinks";
+import { getNotificationTypeIcon } from "../utils/notificationTypeIcons";
 
 type NotificationListItemProps = {
   readonly notification: AllNotification;
@@ -11,73 +17,81 @@ type NotificationListItemProps = {
   readonly isMarkingRead: boolean;
 };
 
+function severityIconTone(severity: AllNotification["severity"]): IconChipTone {
+  if (severity === "critical") return "destructive";
+  if (severity === "warning") return "warning";
+  return "default";
+}
+
 export function NotificationListItem({
   notification,
   onMarkRead,
   isMarkingRead,
 }: NotificationListItemProps): JSX.Element {
-  const deepLink = getDeepLink(notification);
-
-  const contextParts = [
-    notification.worldName,
-    notification.nationName,
-    notification.settlementName,
-  ].filter((name): name is string => name !== null);
-
-  const severityIcon =
-    notification.severity === "critical" ? (
-      <AlertCircle className="size-4 shrink-0 text-destructive" />
-    ) : notification.severity === "warning" ? (
-      <AlertTriangle className="size-4 shrink-0 text-amber-500" />
-    ) : null;
+  const entityLinks = getNotificationEntityLinks(notification);
 
   return (
     <div
-      className={`flex items-start gap-4 p-4 transition-colors hover:bg-muted ${
-        !notification.isRead ? "bg-muted/50" : ""
-      }`}
+      className={cn(
+        "group flex items-center gap-3 px-3 py-2 transition-colors hover:bg-muted",
+        !notification.isRead && "bg-muted/50",
+      )}
     >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          {severityIcon}
-          <p className="text-sm font-medium">{notification.messageText}</p>
-          {!notification.isRead ? (
-            <span className="inline-block size-2 rounded-full bg-primary shrink-0" />
+      <IconChip
+        icon={getNotificationTypeIcon(notification.notificationType)}
+        tone={severityIconTone(notification.severity)}
+        size="sm"
+      />
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm">
+          {notification.messageText}
+          {entityLinks.length > 0 ? (
+            <>
+              {" · "}
+              {entityLinks.map((link, index) => (
+                <span key={link.key}>
+                  {index > 0 ? ", " : null}
+                  {link.href !== null ? (
+                    <Link
+                      to={link.href}
+                      className="font-medium text-foreground underline-offset-2 hover:underline"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    link.label
+                  )}
+                </span>
+              ))}
+            </>
           ) : null}
-        </div>
-        {contextParts.length > 0 ? (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {contextParts.join(" · ")}
-          </p>
-        ) : null}
-        <p className="text-xs text-muted-foreground mt-1">
-          {/* eslint-disable-next-line no-restricted-syntax */}
-          {new Date(notification.generatedAt).toLocaleString()}
         </p>
-        <div className="flex gap-2 mt-2">
-          {deepLink !== null ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="text-xs h-7 px-2"
-            >
-              <Link to={deepLink.href}>{deepLink.label}</Link>
-            </Button>
-          ) : null}
-          {!notification.isRead ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onMarkRead}
-              disabled={isMarkingRead}
-              className="text-xs h-7 px-2"
-            >
-              Clear
-            </Button>
-          ) : null}
-        </div>
+        <p className="text-xs text-muted-foreground">
+          {formatDate(notification.generatedAt)}
+        </p>
       </div>
+
+      {!notification.isRead ? (
+        <span
+          aria-hidden="true"
+          className="size-2 shrink-0 rounded-full bg-primary"
+        />
+      ) : null}
+
+      {!notification.isRead ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onMarkRead}
+          disabled={isMarkingRead}
+          aria-label="Mark as read"
+          className="h-7 shrink-0 px-2 text-xs opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+        >
+          <Check aria-hidden="true" />
+          Mark read
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -7,14 +7,23 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import type { JSX } from "react";
 
-export type IconChipTone = "default" | "success" | "warning" | CategoricalSlot;
+export type IconChipTone =
+  | "default"
+  | "success"
+  | "warning"
+  | "destructive"
+  | CategoricalSlot;
 
 export type IconChipSize = "sm" | "default" | "lg";
 
-const TONE_CLASSNAMES: Record<"default" | "success" | "warning", string> = {
+const TONE_CLASSNAMES: Record<
+  "default" | "success" | "warning" | "destructive",
+  string
+> = {
   default: "bg-muted text-muted-foreground",
   success: "bg-success text-success-foreground",
   warning: "bg-warning text-warning-foreground",
+  destructive: "bg-destructive/10 text-destructive",
 };
 
 const SIZE_CLASSNAMES: Record<
@@ -37,7 +46,7 @@ type IconChipProps = {
  * Icon chip: a lucide icon on a tinted, rounded-square background. Shared
  * across the sidebar, stat tiles, and table name-cells so a domain's icon +
  * color reads the same everywhere (docs/ui-redesign.md §5). `tone` accepts
- * the existing default/success/warning triad (for state-driven tiles) or a
+ * the default/success/warning/destructive set (for state-driven tiles) or a
  * fixed categorical slot 1-8 (for domain identity — see
  * `src/lib/domainIconography.ts`).
  */
