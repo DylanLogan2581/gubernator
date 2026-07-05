@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Landmark, LockKeyhole, Plus, X } from "lucide-react";
+import { ArrowRight, Landmark, LockKeyhole, Plus } from "lucide-react";
 import { useState, type FormEvent, type JSX, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -15,8 +15,16 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
@@ -154,11 +162,12 @@ function NationListContent({
             <span className="font-medium">{worldAccess.header.name}</span>.
           </>
         }
+        actions={
+          canCreate ? (
+            <CreateNationSection queryClient={queryClient} worldId={worldId} />
+          ) : null
+        }
       />
-
-      {canCreate ? (
-        <CreateNationSection queryClient={queryClient} worldId={worldId} />
-      ) : null}
 
       {nationsQuery.isPending ? (
         <LoadingState label="Loading nations…" />
@@ -289,90 +298,86 @@ function CreateNationSection({
     );
   }
 
-  if (!isOpen) {
-    return (
-      <div>
-        <Button type="button" onClick={() => setIsOpen(true)}>
-          <Plus aria-hidden="true" />
-          Create nation
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <form
-      aria-label="Create nation"
-      className="grid gap-3 p-4"
-      noValidate
-      onSubmit={handleSubmit}
-    >
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium">New nation</h2>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={closeForm}
-          aria-label="Cancel"
-        >
-          <X aria-hidden="true" />
-        </Button>
-      </div>
-      <Label className="grid gap-1 text-sm" htmlFor="nation-create-name">
-        <span className="text-muted-foreground">Name</span>
-        <Input
-          aria-invalid={nameError === undefined ? undefined : true}
-          aria-describedby={
-            nameError === undefined ? undefined : "nation-name-error"
-          }
-          id="nation-create-name"
-          maxLength={textInputLimits.nationNameMax}
-          required
-          value={name}
-          onChange={(event) => {
-            setName(event.currentTarget.value);
-            if (nameError !== undefined) {
-              setNameError(undefined);
-            }
-          }}
-        />
-        {nameError === undefined ? null : (
-          <p
-            id="nation-name-error"
-            role="alert"
-            className="text-sm text-destructive"
+    <>
+      <Button type="button" onClick={() => setIsOpen(true)}>
+        <Plus aria-hidden="true" />
+        Create nation
+      </Button>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeForm();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New nation</DialogTitle>
+          </DialogHeader>
+          <form
+            aria-label="Create nation"
+            className="grid gap-3"
+            noValidate
+            onSubmit={handleSubmit}
           >
-            {nameError}
-          </p>
-        )}
-      </Label>
-      <Label className="grid gap-1 text-sm" htmlFor="nation-create-desc">
-        <span className="text-muted-foreground">Description (optional)</span>
-        <textarea
-          className="min-h-[5rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          aria-label="Description"
-          id="nation-create-desc"
-          maxLength={textInputLimits.nationDescriptionMax}
-          value={description}
-          onChange={(event) => setDescription(event.currentTarget.value)}
-        />
-      </Label>
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={createMutation.isPending}>
-          <Plus aria-hidden="true" />
-          Create nation
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={closeForm}
-          disabled={createMutation.isPending}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+            <Label className="grid gap-1 text-sm" htmlFor="nation-create-name">
+              <span className="text-muted-foreground">Name</span>
+              <Input
+                aria-invalid={nameError === undefined ? undefined : true}
+                aria-describedby={
+                  nameError === undefined ? undefined : "nation-name-error"
+                }
+                id="nation-create-name"
+                maxLength={textInputLimits.nationNameMax}
+                required
+                value={name}
+                onChange={(event) => {
+                  setName(event.currentTarget.value);
+                  if (nameError !== undefined) {
+                    setNameError(undefined);
+                  }
+                }}
+              />
+              {nameError === undefined ? null : (
+                <p
+                  id="nation-name-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {nameError}
+                </p>
+              )}
+            </Label>
+            <Label className="grid gap-1 text-sm" htmlFor="nation-create-desc">
+              <span className="text-muted-foreground">
+                Description (optional)
+              </span>
+              <Textarea
+                aria-label="Description"
+                id="nation-create-desc"
+                maxLength={textInputLimits.nationDescriptionMax}
+                value={description}
+                onChange={(event) => setDescription(event.currentTarget.value)}
+              />
+            </Label>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeForm}
+                disabled={createMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                <Plus aria-hidden="true" />
+                Create nation
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
