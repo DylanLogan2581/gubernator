@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, CalendarCheck2, Users, Wheat, Zap } from "lucide-react";
 
 import { StatTile } from "@/components/shared/StatTile";
@@ -6,11 +6,19 @@ import { settlementBuildingsBySettlementQueryOptions } from "@/features/building
 import { citizensDirectoryQueryOptions } from "@/features/citizens";
 import { activeSettlementEventsQueryOptions } from "@/features/events";
 import { settlementStockpilesByIdQueryOptions } from "@/features/resources";
+import type { WorldPermissionContext } from "@/features/worlds";
+import { notifyMutationError } from "@/lib/notify";
 
+import {
+  setSettlementAutoReadyMutationOptions,
+  setSettlementReadinessMutationOptions,
+} from "../mutations/settlementReadinessMutations";
 import { settlementForecastQueryOptions } from "../queries/settlementForecastQueries";
 import { settlementReadinessListQueryOptions } from "../queries/settlementReadinessQueries";
 import { deriveSettlementReadinessState } from "../utils/settlementReadinessState";
 
+import { AutoReadyControl } from "./AutoReadyControl";
+import { ManualReadinessControl } from "./ManualReadinessControl";
 import { getReadinessStateLabel } from "./SettlementReadinessDisplayText";
 
 import type { JSX } from "react";
@@ -21,6 +29,10 @@ const ACTIVE_BUILDING_STATES = new Set(["active", "suspended"]);
 const AT_RISK_TURNS_THRESHOLD = 3;
 
 type SettlementOverviewStatTilesProps = {
+  readonly accessContext: WorldPermissionContext;
+  readonly canManageReadiness: boolean;
+  readonly canSetAutoReady: boolean;
+  readonly isArchived: boolean;
   readonly settlementId: string;
   readonly worldId: string;
 };
@@ -31,9 +43,20 @@ type SettlementOverviewStatTilesProps = {
  * calls happen when other panels on the page request the same data).
  */
 export function SettlementOverviewStatTiles({
+  accessContext,
+  canManageReadiness,
+  canSetAutoReady,
+  isArchived,
   settlementId,
   worldId,
 }: SettlementOverviewStatTilesProps): JSX.Element {
+  const queryClient = useQueryClient();
+  const setReadinessMutation = useMutation(
+    setSettlementReadinessMutationOptions({ accessContext, queryClient }),
+  );
+  const setAutoReadyMutation = useMutation(
+    setSettlementAutoReadyMutationOptions({ accessContext, queryClient }),
+  );
   const populationQuery = useQuery(
     citizensDirectoryQueryOptions(
       worldId,
@@ -127,7 +150,44 @@ export function SettlementOverviewStatTiles({
               : "warning"
         }
         isLoading={readinessQuery.isPending}
-      />
+      >
+        {readinessItem !== null && (canManageReadiness || canSetAutoReady) ? (
+          <div className="grid gap-2 border-t pt-2">
+            {canManageReadiness ? (
+              <ManualReadinessControl
+                isArchived={isArchived}
+                isPending={
+                  setReadinessMutation.isPending &&
+                  setReadinessMutation.variables.settlementId === settlementId
+                }
+                item={readinessItem}
+                setReadiness={(isReady) => {
+                  setReadinessMutation.mutate(
+                    { isReady, settlementId, worldId },
+                    { onError: (error) => notifyMutationError(error) },
+                  );
+                }}
+              />
+            ) : null}
+            {canSetAutoReady ? (
+              <AutoReadyControl
+                isArchived={isArchived}
+                isPending={
+                  setAutoReadyMutation.isPending &&
+                  setAutoReadyMutation.variables.settlementId === settlementId
+                }
+                item={readinessItem}
+                setAutoReady={(autoReadyEnabled) => {
+                  setAutoReadyMutation.mutate(
+                    { autoReadyEnabled, settlementId, worldId },
+                    { onError: (error) => notifyMutationError(error) },
+                  );
+                }}
+              />
+            ) : null}
+          </div>
+        ) : null}
+      </StatTile>
       <StatTile
         icon={Wheat}
         label="Net food/turn"

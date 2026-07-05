@@ -5,8 +5,8 @@ import { ActiveEventsCard } from "@/features/events";
 import {
   SettlementCoordinatesSection,
   SettlementDetailsSection,
+  SettlementForecastWarningsCard,
   SettlementOverviewStatTiles,
-  SettlementReadinessSection,
   useSettlementDetailContext,
 } from "@/features/settlements";
 import { TurnTransitionOutcomePanel } from "@/features/turns";
@@ -29,6 +29,10 @@ function SettlementOverviewRoute(): JSX.Element {
   return (
     <>
       <SettlementOverviewStatTiles
+        accessContext={accessContext}
+        canManageReadiness={canManageSettlement}
+        canSetAutoReady={effectiveCanAdmin}
+        isArchived={isArchived}
         settlementId={settlement.id}
         worldId={worldId}
       />
@@ -36,11 +40,7 @@ function SettlementOverviewRoute(): JSX.Element {
       <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SettlementReadinessSection
-          accessContext={accessContext}
-          canAdmin={effectiveCanAdmin}
-          canManage={canManageSettlement}
-          isArchived={isArchived}
+        <SettlementForecastWarningsCard
           settlementId={settlement.id}
           worldId={worldId}
         />

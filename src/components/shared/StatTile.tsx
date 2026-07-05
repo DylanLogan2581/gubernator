@@ -14,6 +14,7 @@ type StatTileProps = {
   readonly context?: ReactNode;
   readonly tone?: StatTileTone;
   readonly isLoading?: boolean;
+  readonly children?: ReactNode;
 };
 
 /**
@@ -27,6 +28,7 @@ export function StatTile({
   context,
   tone = "default",
   isLoading = false,
+  children,
 }: StatTileProps): JSX.Element {
   return (
     <Card className="gap-2 p-4">
@@ -46,6 +48,7 @@ export function StatTile({
       ) : context !== undefined ? (
         <p className="truncate text-xs text-muted-foreground">{context}</p>
       ) : null}
+      {!isLoading && children !== undefined ? children : null}
     </Card>
   );
 }

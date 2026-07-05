@@ -23,6 +23,7 @@ import {
 import { settlementStockpilesByIdQueryOptions } from "@/features/resources";
 
 import { settlementForecastQueryOptions } from "../queries/settlementForecastQueries";
+import { deriveSettlementForecastWarnings } from "../utils/settlementForecastWarnings";
 
 import type { SettlementForecastData } from "../schemas/forecastSchemas";
 import type { JSX } from "react";
@@ -91,47 +92,7 @@ function ForecastPanelContent({
     return new Map(stockpiles.map((s) => [s.resourceId, s.resourceName]));
   }, [stockpilesQuery.data]);
 
-  const warnings: Array<{ readonly key: string; readonly label: string }> = [];
-  if (forecast.deathsBy.starvation > 0) {
-    warnings.push({
-      key: "deaths-starvation",
-      label: `${forecast.deathsBy.starvation} citizen${
-        forecast.deathsBy.starvation === 1 ? "" : "s"
-      } will starve this turn`,
-    });
-  }
-  if (forecast.deathsBy.homelessness > 0) {
-    warnings.push({
-      key: "deaths-homelessness",
-      label: `${forecast.deathsBy.homelessness} citizen${
-        forecast.deathsBy.homelessness === 1 ? "" : "s"
-      } will die from homelessness this turn`,
-    });
-  }
-  if (forecast.deathsBy.other > 0) {
-    warnings.push({
-      key: "deaths-other",
-      label: `${forecast.deathsBy.other} citizen death${
-        forecast.deathsBy.other === 1 ? "" : "s"
-      } expected this turn`,
-    });
-  }
-  for (const buildingId of forecast.buildingUpkeepFailures) {
-    warnings.push({
-      key: `upkeep-${buildingId}`,
-      label: `Building upkeep failed: ${buildingId}`,
-    });
-  }
-  for (const trade of forecast.tradeChanges) {
-    if (!trade.delivered) {
-      const reason =
-        trade.pauseReason !== null ? ` — ${trade.pauseReason}` : "";
-      warnings.push({
-        key: `trade-${trade.tradeRouteId}`,
-        label: `Trade route paused${reason}`,
-      });
-    }
-  }
+  const warnings = deriveSettlementForecastWarnings(forecast);
 
   return (
     <div className="space-y-4">

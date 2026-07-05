@@ -18,8 +18,8 @@ export { SettlementCoordinatesSection } from "./components/SettlementDetailPage/
 export { SettlementDeleteSection } from "./components/SettlementDetailPage/DeleteSection";
 export { SettlementDetailsSection } from "./components/SettlementDetailPage/DetailsSection";
 export { SettlementDetailPage } from "./components/SettlementDetailPage";
+export { SettlementForecastWarningsCard } from "./components/SettlementDetailPage/ForecastWarningsCard";
 export { SettlementOverviewStatTiles } from "./components/SettlementOverviewStatTiles";
-export { SettlementReadinessSection } from "./components/SettlementDetailPage/ReadinessSection";
 export { useSettlementDetailContext } from "./components/SettlementDetailPage/SettlementDetailContext";
 export {
   SettlementReadinessListPanel,
