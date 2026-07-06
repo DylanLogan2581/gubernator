@@ -237,6 +237,92 @@ describe("CitizensPanel", () => {
     ).toBeNull();
   });
 
+  it("hides zero-count assignment categories from the breakdown", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({
+            citizen_assignments: [{ assignment_type: "standard_job" }],
+            id: "c-1",
+            status: "alive",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false });
+
+    expect(await screen.findByText("Living citizens")).toBeDefined();
+
+    const list = screen.getByLabelText("Assignment breakdown");
+    const labels = Array.from(list.querySelectorAll("li")).map(
+      (li) => li.textContent,
+    );
+    expect(labels).toEqual(["Standard job1"]);
+  });
+
+  it("shows a warning CTA linking to job assignments when unassigned dominates", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({
+            citizen_assignments: [{ assignment_type: "standard_job" }],
+            id: "c-1",
+            status: "alive",
+          }),
+          ...Array.from({ length: 3 }, (_unused, index) =>
+            createAggregateRow({
+              citizen_assignments: null,
+              id: `unassigned-${String(index)}`,
+              status: "alive",
+            }),
+          ),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false });
+
+    const warning = await screen.findByRole("link", {
+      name: /3 unassigned — assign jobs/,
+    });
+    expect(warning).toHaveAttribute(
+      "href",
+      "/worlds/world-1/nations/nation-1/settlements/settlement-1/assignments",
+    );
+  });
+
+  it("does not show the warning CTA when unassigned is a minority", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({
+            citizen_assignments: [{ assignment_type: "standard_job" }],
+            id: "c-1",
+            status: "alive",
+          }),
+          createAggregateRow({
+            citizen_assignments: [{ assignment_type: "husbandry" }],
+            id: "c-2",
+            status: "alive",
+          }),
+          createAggregateRow({
+            citizen_assignments: null,
+            id: "c-3",
+            status: "alive",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false });
+
+    expect(await screen.findByText("Living citizens")).toBeDefined();
+    expect(
+      screen.queryByRole("link", { name: /unassigned — assign jobs/ }),
+    ).toBeNull();
+  });
+
   it("shows living count and population cap in the panel header", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({

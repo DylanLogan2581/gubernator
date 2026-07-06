@@ -216,7 +216,11 @@ export function CitizensPanel({
             worldId={worldId}
           />
         ) : (
-          <CitizensAggregateView settlementId={settlementId} />
+          <CitizensAggregateView
+            nationId={nationId}
+            settlementId={settlementId}
+            worldId={worldId}
+          />
         )}
       </CardContent>
     </Card>
@@ -404,9 +408,13 @@ function CitizensAdminList({
 // feature needs per-citizen detail for those roles, reuse the existing
 // citizensInSettlementQueryOptions query — no schema or RLS change required.
 function CitizensAggregateView({
+  nationId,
   settlementId,
+  worldId,
 }: {
+  readonly nationId: string;
   readonly settlementId: string;
+  readonly worldId: string;
 }): JSX.Element {
   const aggregateQuery = useQuery(
     citizenAggregateStatsForSettlementQueryOptions(settlementId),
@@ -425,13 +433,26 @@ function CitizensAggregateView({
     );
   }
 
-  return <CitizensAggregateContent stats={aggregateQuery.data} />;
+  return (
+    <CitizensAggregateContent
+      nationId={nationId}
+      settlementId={settlementId}
+      stats={aggregateQuery.data}
+      worldId={worldId}
+    />
+  );
 }
 
 function CitizensAggregateContent({
+  nationId,
+  settlementId,
   stats,
+  worldId,
 }: {
+  readonly nationId: string;
+  readonly settlementId: string;
   readonly stats: CitizenAggregateStats;
+  readonly worldId: string;
 }): JSX.Element {
   const aliveTotal = stats.statusBreakdown.alive;
 
@@ -443,6 +464,20 @@ function CitizensAggregateContent({
       />
     );
   }
+
+  const segments = ASSIGNMENT_BREAKDOWN_ORDER.map((key) => ({
+    count: stats.assignmentTypeBreakdown[key],
+    key,
+    label: assignmentBreakdownLabel(key),
+  })).filter((segment) => segment.count > 0);
+  const assignedTotal = segments.reduce(
+    (sum, segment) => sum + segment.count,
+    0,
+  );
+  const unassignedCount = stats.assignmentTypeBreakdown.unassigned;
+  const showUnassignedWarning =
+    assignedTotal > 0 &&
+    unassignedCount / assignedTotal >= UNASSIGNED_WARNING_RATIO;
 
   return (
     <div className="grid gap-4">
@@ -456,21 +491,63 @@ function CitizensAggregateContent({
 
       <div className="grid gap-2">
         <p className="text-sm font-medium">Assignments</p>
-        <ul aria-label="Assignment breakdown" className="grid gap-1.5">
-          {ASSIGNMENT_BREAKDOWN_ORDER.map((key) => (
-            <li
-              key={key}
-              className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+        {assignedTotal > 0 ? (
+          <>
+            <div
+              aria-label={segments
+                .map((segment) => `${segment.label}: ${String(segment.count)}`)
+                .join(", ")}
+              className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-muted"
+              role="img"
             >
-              <span className="text-muted-foreground">
-                {assignmentBreakdownLabel(key)}
-              </span>
-              <span className="font-medium tabular-nums">
-                {stats.assignmentTypeBreakdown[key]}
-              </span>
-            </li>
-          ))}
-        </ul>
+              {segments.map((segment) => (
+                <div
+                  key={segment.key}
+                  className={cn(
+                    "h-full first:rounded-l-full last:rounded-r-full",
+                    ASSIGNMENT_SEGMENT_COLORS[segment.key],
+                  )}
+                  style={{
+                    width: `${String((segment.count / assignedTotal) * 100)}%`,
+                  }}
+                />
+              ))}
+            </div>
+            <ul
+              aria-label="Assignment breakdown"
+              className="flex flex-wrap gap-x-4 gap-y-1"
+            >
+              {segments.map((segment) => (
+                <li
+                  key={segment.key}
+                  className="flex items-center gap-1.5 text-sm"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "size-2.5 rounded-full",
+                      ASSIGNMENT_SEGMENT_COLORS[segment.key],
+                    )}
+                  />
+                  <span className="text-muted-foreground">{segment.label}</span>
+                  <span className="font-medium tabular-nums">
+                    {segment.count}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {showUnassignedWarning ? (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments"
+            params={{ nationId, settlementId, worldId }}
+            className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/20"
+          >
+            <span>{unassignedCount} unassigned — assign jobs</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        ) : null}
       </div>
     </div>
   );
@@ -490,6 +567,26 @@ function Stat({
     </div>
   );
 }
+
+// Categorical palette validated for CVD safety at both light and dark surfaces
+// (see dataviz skill palette reference); "unassigned" uses a neutral tone so it
+// reads as absence-of-assignment rather than another job category.
+const ASSIGNMENT_SEGMENT_COLORS: Record<
+  CitizenAssignmentType | "unassigned",
+  string
+> = {
+  standard_job: "bg-[#2a78d6] dark:bg-[#3987e5]",
+  construction_project: "bg-[#1baf7a] dark:bg-[#199e70]",
+  deposit: "bg-[#eda100] dark:bg-[#c98500]",
+  husbandry: "bg-[#008300] dark:bg-[#008300]",
+  culling: "bg-[#4a3aa7] dark:bg-[#9085e9]",
+  trade_route: "bg-[#e87ba4] dark:bg-[#d55181]",
+  unassigned: "bg-muted-foreground/40",
+};
+
+// Assignment mix warrants a prominent CTA once unassigned citizens make up at
+// least half of the assigned+unassigned living population.
+const UNASSIGNED_WARNING_RATIO = 0.5;
 
 const ASSIGNMENT_BREAKDOWN_ORDER: ReadonlyArray<
   CitizenAssignmentType | "unassigned"
