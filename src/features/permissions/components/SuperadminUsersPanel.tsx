@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/table";
 import { currentAppUserQueryOptions } from "@/features/auth";
 import { getErrorDescription } from "@/lib/errorUtils";
-import { formatDate } from "@/lib/formatDate";
+import { formatDate, formatRelativeTime } from "@/lib/formatDate";
 
 import { allUsersForSuperadminQueryOptions } from "../queries/superadminQueries";
 
@@ -243,7 +243,7 @@ function UserRow({
         </div>
       </TableCell>
       <TableCell className="px-4 py-3">
-        <Badge variant={user.status === "active" ? "default" : "secondary"}>
+        <Badge variant={user.status === "active" ? "outline" : "destructive"}>
           {user.status}
         </Badge>
       </TableCell>
@@ -258,7 +258,10 @@ function UserRow({
         )}
       </TableCell>
       <TableCell className="px-4 py-3 text-xs text-muted-foreground">
-        {formatDate(user.created_at)}
+        <span title={user.created_at}>{formatDate(user.created_at)}</span>
+        <span className="block text-muted-foreground/70">
+          {formatRelativeTime(user.created_at)}
+        </span>
       </TableCell>
       <TableCell className="px-4 py-3 text-right">
         <DropdownMenu>
