@@ -50,7 +50,7 @@ export function WorldDashboardStatTiles({
   const noneReady = totalSettlementCount > 0 && readySettlementCount === 0;
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-5">
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
       <StatTile
         icon={Flag}
         label="Nations"
@@ -104,7 +104,7 @@ export function WorldDashboardStatTiles({
         icon={Zap}
         label="Active events"
         value={activeEventsQuery.data?.length ?? 0}
-        context="Currently affecting the world"
+        context="Active now"
         isLoading={activeEventsQuery.isPending}
       />
     </div>

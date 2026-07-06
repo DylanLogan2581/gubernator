@@ -385,6 +385,10 @@ export function TurnLogTable({
   return (
     <div className="space-y-2">
       <div className="relative overflow-x-auto rounded-md border">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent sm:hidden"
+        />
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -478,7 +482,7 @@ export function TurnLogTable({
       </div>
 
       {/* Pagination controls */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span>
           {totalCount === 0 ? "No entries" : `${from}–${to} of ${totalCount}`}
         </span>

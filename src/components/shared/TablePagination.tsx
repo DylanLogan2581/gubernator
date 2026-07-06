@@ -215,7 +215,7 @@ export function TablePagination({
         </PaginationContent>
       </Pagination>
 
-      <p className="text-xs whitespace-nowrap text-muted-foreground">
+      <p className="hidden text-xs whitespace-nowrap text-muted-foreground sm:block">
         Page {currentPage} of {safePageCount}
       </p>
     </div>

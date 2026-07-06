@@ -330,7 +330,7 @@ describe("WorldShellPage", () => {
 
     const statTileGrid = container.querySelector(".xl\\:grid-cols-5");
     expect(statTileGrid).not.toBeNull();
-    expect(statTileGrid).toHaveClass("grid-cols-1", "md:grid-cols-3");
+    expect(statTileGrid).toHaveClass("grid-cols-2", "md:grid-cols-3");
 
     const statTiles = within(statTileGrid as HTMLElement);
     expect(await statTiles.findByText("2")).toBeDefined(); // Nations

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, CalendarCheck2, Users, Wheat, Zap } from "lucide-react";
 
 import { StatTile } from "@/components/shared/StatTile";
+import { Badge } from "@/components/ui/badge";
 import { settlementBuildingsBySettlementQueryOptions } from "@/features/buildings";
 import { citizensDirectoryQueryOptions } from "@/features/citizens";
 import { activeSettlementEventsQueryOptions } from "@/features/events";
@@ -133,7 +134,17 @@ export function SettlementOverviewStatTiles({
         icon={CalendarCheck2}
         label="Readiness"
         value={
-          readinessState === null ? "—" : getReadinessStateLabel(readinessState)
+          readinessState === null ? (
+            "—"
+          ) : (
+            <Badge
+              variant={
+                readinessState.isReadyForCurrentTurn ? "success" : "warning"
+              }
+            >
+              {getReadinessStateLabel(readinessState)}
+            </Badge>
+          )
         }
         context={
           readinessState === null
@@ -210,7 +221,7 @@ export function SettlementOverviewStatTiles({
         icon={Zap}
         label="Active events"
         value={activeEventsQuery.data?.length ?? 0}
-        context="Currently affecting this settlement"
+        context="Active now"
         isLoading={activeEventsQuery.isPending}
       />
     </div>
