@@ -30,6 +30,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,7 +89,7 @@ export function WorldListPage(): JSX.Element {
   if (accessContextQuery.isPending) {
     return (
       <WorldListFrame>
-        <LoadingState label="Loading world access…" />
+        <CardListSkeleton rowCount={6} />
       </WorldListFrame>
     );
   }
@@ -99,6 +100,17 @@ export function WorldListPage(): JSX.Element {
         <ErrorState
           title="World access could not be loaded"
           description={getErrorDescription(accessContextQuery.error)}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void accessContextQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          }
         />
       </WorldListFrame>
     );

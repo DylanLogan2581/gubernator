@@ -7,7 +7,7 @@ import {
 import { type JSX, useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
-import { LoadingState } from "@/components/shared/LoadingState";
+import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,7 +70,7 @@ export function NotificationsPage(): JSX.Element {
   if (accessContextQuery.isPending) {
     return (
       <NotificationsPageFrame>
-        <LoadingState label="Loading notification access…" />
+        <CardListSkeleton rowCount={6} />
       </NotificationsPageFrame>
     );
   }
@@ -81,6 +81,17 @@ export function NotificationsPage(): JSX.Element {
         <ErrorState
           title="Notifications could not be loaded"
           description={getErrorDescription(accessContextQuery.error)}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void accessContextQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          }
         />
       </NotificationsPageFrame>
     );

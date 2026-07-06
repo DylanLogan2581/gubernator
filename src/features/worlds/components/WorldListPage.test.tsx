@@ -77,6 +77,53 @@ describe("WorldListPage", () => {
     ).toBeDefined();
   });
 
+  it("renders a skeleton while access context is pending", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        getSessionOverride: () => new Promise(() => undefined),
+      }),
+    );
+
+    renderWorldListPage();
+
+    expect(
+      await screen.findByRole("status", { name: "Loading list" }),
+    ).toBeDefined();
+  });
+
+  it("shows a retryable error state when access context fails to load", async () => {
+    const user = userEvent.setup();
+    let getSessionCallCount = 0;
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        getSessionOverride: () => {
+          getSessionCallCount += 1;
+          if (getSessionCallCount === 1) {
+            return Promise.reject(new Error("network unreachable"));
+          }
+          return Promise.resolve({
+            data: { session: { user: { id: "user-1" } } },
+            error: null,
+          });
+        },
+      }),
+    );
+
+    renderWorldListPage();
+
+    expect(
+      await screen.findByText("World access could not be loaded"),
+    ).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("No accessible worlds")).toBeDefined();
+  });
+
   it("renders the no-access empty state", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -521,6 +568,7 @@ function createQueryClient(): QueryClient {
 
 function createClient({
   adminRows = [],
+  getSessionOverride,
   isSuperAdmin = false,
   rpcOverride,
   session,
@@ -528,6 +576,7 @@ function createClient({
   trashedWorldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly getSessionOverride?: () => Promise<unknown>;
   readonly isSuperAdmin?: boolean;
   readonly rpcOverride?: (fn: string, args: unknown) => unknown;
   readonly session: {
@@ -540,10 +589,12 @@ function createClient({
 }): unknown {
   return {
     auth: {
-      getSession: vi.fn().mockResolvedValue({
-        data: { session },
-        error: null,
-      }),
+      getSession:
+        getSessionOverride ??
+        vi.fn().mockResolvedValue({
+          data: { session },
+          error: null,
+        }),
     },
     from: vi.fn((table: string) => {
       if (table === "users") {
