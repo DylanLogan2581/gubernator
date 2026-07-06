@@ -514,8 +514,8 @@ function computeAggregate(
     statusBreakdown[row.status] += 1;
     const assignment = row.citizen_assignments?.[0]?.assignment_type ?? null;
     if (assignment === null) {
-      assignmentTypeBreakdown.unassigned += 1;
       if (row.status === "alive") {
+        assignmentTypeBreakdown.unassigned += 1;
         if (row.citizen_type === "npc") {
           unassignedNpcCount += 1;
         } else {

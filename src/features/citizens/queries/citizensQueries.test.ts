@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { GubernatorSupabaseClient } from "@/lib/supabase";
 
-import { citizensByIdsQueryOptions } from "./citizensQueries";
+import {
+  citizenAggregateStatsForSettlementQueryOptions,
+  citizensByIdsQueryOptions,
+} from "./citizensQueries";
 
 function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -90,5 +93,41 @@ describe("citizensByIdsQueryOptions", () => {
 
     expect(citizens).toEqual([]);
     expect(builder.in).not.toHaveBeenCalled();
+  });
+});
+
+describe("citizenAggregateStatsForSettlementQueryOptions", () => {
+  it("excludes dead citizens from the unassigned breakdown", async () => {
+    const { client } = createClient([
+      {
+        id: "citizen-1",
+        citizen_type: "npc",
+        status: "alive",
+        citizen_assignments: null,
+      },
+      {
+        id: "citizen-2",
+        citizen_type: "npc",
+        status: "dead",
+        citizen_assignments: null,
+      },
+      {
+        id: "citizen-3",
+        citizen_type: "player_character",
+        status: "dead",
+        citizen_assignments: null,
+      },
+    ]);
+
+    const queryClient = createQueryClient();
+    const stats = await queryClient.fetchQuery(
+      citizenAggregateStatsForSettlementQueryOptions("settlement-1", client),
+    );
+
+    expect(stats.statusBreakdown.alive).toBe(1);
+    expect(stats.statusBreakdown.dead).toBe(2);
+    expect(stats.assignmentTypeBreakdown.unassigned).toBe(1);
+    expect(stats.unassignedNpcCount).toBe(1);
+    expect(stats.unassignedPcCount).toBe(0);
   });
 });

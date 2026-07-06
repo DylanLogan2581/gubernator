@@ -227,7 +227,7 @@ describe("CitizensPanel", () => {
 
     expectBreakdownRow("Standard job", "1");
     expectBreakdownRow("Husbandry", "1");
-    expectBreakdownRow("Unassigned", "2");
+    expectBreakdownRow("Unassigned", "1");
 
     expect(screen.queryByText("c-1")).toBeNull();
     expect(screen.queryByRole("table")).toBeNull();
