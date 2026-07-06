@@ -462,7 +462,8 @@ insert into public.citizens (
 values
   ('00000000-0000-0000-0000-000000000401','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000301','player_character','Wynflaed','Hayward','female','alive',-29,'00000000-0000-0000-0000-000000000002','settlement_manager',null,'00000000-0000-0000-0000-000000000301','Pragmatic steward who keeps the Aldercross watch turning over.','Logistics, masonry, town-square diplomacy.'),
   ('00000000-0000-0000-0000-000000000402','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000302','player_character','Aldous','Pennington','male','alive',-37,'00000000-0000-0000-0000-000000000003','nation_manager','00000000-0000-0000-0000-000000000201',null,'Career reeve of Brammel; reads every charter twice.','Statecraft, ledger work, courtly debate.'),
-  ('00000000-0000-0000-0000-000000000403','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000301','player_character','Kestrel','Crane','female','alive',-23,'00000000-0000-0000-0000-000000000001','none',null,null,'Wandering surveyor with no formal portfolio.','Cartography, surveying, quiet listening.');
+  ('00000000-0000-0000-0000-000000000403','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000301','player_character','Kestrel','Crane','female','alive',-23,'00000000-0000-0000-0000-000000000001','none',null,null,'Wandering surveyor with no formal portfolio.','Cartography, surveying, quiet listening.'),
+  ('00000000-0000-0000-0000-000000000404','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000301','player_character','Osric','Fenwick','male','alive',-26,'00000000-0000-0000-0000-000000000005','none',null,null,'Aldercross yeoman content to till, trade, and gossip.','Field work, bartering, dice.');
 
 insert into public.citizens (
   id, world_id, settlement_id, citizen_type, given_name, surname, sex, status,
@@ -759,13 +760,13 @@ end$$;
 -- ---------------------------------------------------------------------------
 insert into public.user_active_player_characters (user_id, world_id, citizen_id) values
   ('00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000401'),
-  ('00000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000402');
+  ('00000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000402'),
+  ('00000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000404');
 
 -- ---------------------------------------------------------------------------
--- 17. World admins (all three seeded users administer Aldermoor so the reports
---     RLS path is reachable for every demo account).
+-- 17. World admins. Only user 004 administers Aldermoor so each demo account
+--     exercises exactly one permission path (superadmin bypasses via flag;
+--     002/003 act purely as settlement/nation managers; 005 is a plain player).
 -- ---------------------------------------------------------------------------
 insert into public.world_admins (world_id, user_id) values
-  ('00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000001'),
-  ('00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000002'),
-  ('00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000003');
+  ('00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000004');

@@ -77,6 +77,8 @@ while :; do
     18) q "update public.settlement_buildings set state='suspended' where id='00000000-0000-0000-000a-000000000505'" >/dev/null; echo "    t$CUR a longhouse fire leaves Cobbleford overcrowded" ;;
     24) q "update public.settlement_buildings set state='active' where id='00000000-0000-0000-000a-000000000505'" >/dev/null; echo "    t$CUR Cobbleford longhouse rebuilt" ;;
   esac
+  # Local stack only: keep the per-minute limiter from stalling the 32-turn replay.
+  q "delete from public.edge_rate_limit_buckets" >/dev/null
   curl -s "$API/functions/v1/end-turn-simulation" -H 'content-type: application/json' \
     -H "authorization: Bearer $TOKEN" \
     -d "{\"worldId\":\"$W\",\"expectedTurnNumber\":$CUR}" \
