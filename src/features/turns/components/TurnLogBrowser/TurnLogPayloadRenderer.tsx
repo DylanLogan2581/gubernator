@@ -10,6 +10,7 @@
 // `isTurnLogRowExpandable` tells the table when there's nothing more to show
 // so it can skip the chevron entirely ("no dead expand").
 
+import { PAUSE_REASON_LABELS } from "@/features/trade";
 import {
   parseBuildingAutoDeconstructedPayload,
   parseBuildingSuspendedPayload,
@@ -383,10 +384,11 @@ function TradeRoutePausedRenderer({
   if (p === null) {
     return <RawJsonFallback isAdmin={isAdmin} mode={mode} payload={payload} />;
   }
+  const pauseReasonLabel = PAUSE_REASON_LABELS[p.pauseReason] ?? p.pauseReason;
   return (
     <span className="text-sm">
-      Trade route paused — <em>{p.pauseReason}</em> ({p.quantityPerTransition}{" "}
-      units/turn)
+      Trade route paused — <em>{pauseReasonLabel}</em> (
+      {p.quantityPerTransition} units/turn)
     </span>
   );
 }

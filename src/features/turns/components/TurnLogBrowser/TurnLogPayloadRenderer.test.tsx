@@ -162,3 +162,42 @@ describe("TurnLogPayloadRenderer — building renderers", () => {
     expect(screen.getByText(/3 turns/)).toBeDefined();
   });
 });
+
+describe("TurnLogPayloadRenderer — trade route renderers", () => {
+  it("renders the human-readable label for a known pause reason", () => {
+    render(
+      <TurnLogPayloadRenderer
+        logCategory="trade_route.paused"
+        payload={{
+          destinationSettlementId: "settlement-2",
+          pauseReason: "insufficient_trader_origin",
+          quantityPerTransition: 10,
+          resourceId: "resource-1",
+          tradeRouteId: "route-1",
+        }}
+        lookup={EMPTY_LOOKUP}
+      />,
+    );
+
+    expect(screen.getByText(/Insufficient traders at origin/)).toBeDefined();
+    expect(screen.queryByText(/insufficient_trader_origin/)).toBeNull();
+  });
+
+  it("falls back to the raw reason string when unknown", () => {
+    render(
+      <TurnLogPayloadRenderer
+        logCategory="trade_route.paused"
+        payload={{
+          destinationSettlementId: "settlement-2",
+          pauseReason: "some_new_reason",
+          quantityPerTransition: 10,
+          resourceId: "resource-1",
+          tradeRouteId: "route-1",
+        }}
+        lookup={EMPTY_LOOKUP}
+      />,
+    );
+
+    expect(screen.getByText(/some_new_reason/)).toBeDefined();
+  });
+});
