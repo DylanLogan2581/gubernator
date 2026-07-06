@@ -274,6 +274,7 @@ function ImageUploadControls({
         type="file"
         accept="image/*"
         aria-hidden="true"
+        tabIndex={-1}
         className="sr-only"
         onChange={(event) => {
           void handleFileChange(event);

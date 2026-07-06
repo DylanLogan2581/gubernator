@@ -78,8 +78,8 @@ function NationAccordionRow({
 
   return (
     <Collapsible className="group">
-      <CollapsibleTrigger
-        className={`flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors ${bgColor}`}
+      <div
+        className={`flex w-full items-center justify-between px-4 text-left transition-colors ${bgColor}`}
       >
         <Link
           to="/worlds/$worldId/nations/$nationId"
@@ -88,12 +88,14 @@ function NationAccordionRow({
             worldId,
           }}
           search={{}}
-          className="font-medium underline-offset-4 hover:underline"
-          onClick={(e) => e.stopPropagation()}
+          className="py-3 font-medium underline-offset-4 hover:underline"
         >
           {group.nationName}
         </Link>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <CollapsibleTrigger
+          aria-label={`Toggle ${group.nationName} settlements (${group.readyCount}/${group.totalCount} ready)`}
+          className="flex flex-1 items-center justify-end gap-4 py-3 pl-4 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+        >
           <span>
             {group.readyCount}/{group.totalCount} ready
           </span>
@@ -118,8 +120,8 @@ function NationAccordionRow({
             )}
           </div>
           <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
-        </div>
-      </CollapsibleTrigger>
+        </CollapsibleTrigger>
+      </div>
       <CollapsibleContent>
         <div className="border-t border-border px-4 pb-4 pt-2">
           <SettlementReadinessTable

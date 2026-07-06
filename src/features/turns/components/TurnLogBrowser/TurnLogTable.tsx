@@ -395,10 +395,15 @@ export function TurnLogTable({
                 return (
                   <Fragment key={row.id}>
                     <TableRow
-                      data-state={isExpanded ? "expanded" : undefined}
+                      data-state={
+                        expandable
+                          ? isExpanded
+                            ? "expanded"
+                            : "collapsed"
+                          : undefined
+                      }
                       className={expandable ? "cursor-pointer" : undefined}
                       onClick={expandable ? () => toggleRow(row.id) : undefined}
-                      aria-expanded={expandable ? isExpanded : undefined}
                     >
                       <TableCell className="w-8 pr-0">
                         {expandable ? (

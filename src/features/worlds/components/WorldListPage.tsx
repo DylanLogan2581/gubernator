@@ -715,6 +715,7 @@ function CreateWorldDialog({
         type="file"
         accept=".json,application/json"
         aria-hidden="true"
+        tabIndex={-1}
         className="sr-only"
         onChange={handleFileChange}
       />

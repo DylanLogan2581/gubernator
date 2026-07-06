@@ -78,7 +78,7 @@ function TurnTransitionOutcomeSkeleton(): JSX.Element {
         <Skeleton className="h-6 w-36" />
         <Skeleton className="h-4 w-48" />
       </div>
-      <dl className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-4">
         {SKELETON_METRIC_LABELS.map((label) => (
           <div
             key={label}
@@ -88,7 +88,7 @@ function TurnTransitionOutcomeSkeleton(): JSX.Element {
             <Skeleton className="h-8 w-12" />
           </div>
         ))}
-      </dl>
+      </div>
     </OutcomePanelFrame>
   );
 }
@@ -307,7 +307,7 @@ function OutcomePanelFrame({
 }): JSX.Element {
   return (
     <section
-      aria-labelledby="turn-transition-outcome-title"
+      aria-label="Last transition"
       className="grid gap-4 rounded-md border border-border bg-card p-5 text-card-foreground"
     >
       {children}

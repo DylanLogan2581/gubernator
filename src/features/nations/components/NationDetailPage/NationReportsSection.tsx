@@ -160,6 +160,15 @@ function SortIcon({
   );
 }
 
+function ariaSortFor(
+  column: SortKey,
+  sortKey: SortKey,
+  sortDir: SortDir,
+): "ascending" | "descending" | undefined {
+  if (column !== sortKey) return undefined;
+  return sortDir === "asc" ? "ascending" : "descending";
+}
+
 // ---------------------------------------------------------------------------
 // ColumnSortButton — module-level component
 // ---------------------------------------------------------------------------
@@ -188,9 +197,6 @@ function ColumnSortButton({
           : "font-medium text-muted-foreground"
       }`}
       onClick={() => onSort(column)}
-      aria-sort={
-        isActive ? (sortDir === "asc" ? "ascending" : "descending") : undefined
-      }
     >
       {label}
       <SortIcon column={column} sortKey={sortKey} sortDir={sortDir} />
@@ -257,7 +263,7 @@ function SettlementComparisonTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>
+          <TableHead aria-sort={ariaSortFor("name", sortKey, sortDir)}>
             <ColumnSortButton
               column="name"
               label="Settlement"
@@ -266,7 +272,10 @@ function SettlementComparisonTable({
               onSort={handleSort}
             />
           </TableHead>
-          <TableHead className="text-right">
+          <TableHead
+            className="text-right"
+            aria-sort={ariaSortFor("population", sortKey, sortDir)}
+          >
             <ColumnSortButton
               column="population"
               label="Latest pop."
@@ -275,7 +284,10 @@ function SettlementComparisonTable({
               onSort={handleSort}
             />
           </TableHead>
-          <TableHead className="text-right">
+          <TableHead
+            className="text-right"
+            aria-sort={ariaSortFor("births", sortKey, sortDir)}
+          >
             <ColumnSortButton
               column="births"
               label="Births"
@@ -284,7 +296,10 @@ function SettlementComparisonTable({
               onSort={handleSort}
             />
           </TableHead>
-          <TableHead className="text-right">
+          <TableHead
+            className="text-right"
+            aria-sort={ariaSortFor("deaths", sortKey, sortDir)}
+          >
             <ColumnSortButton
               column="deaths"
               label="Deaths"

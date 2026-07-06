@@ -125,7 +125,7 @@ export function WorldCascadeDeletePanel(): JSX.Element {
             setPreview(null);
           }}
         >
-          <SelectTrigger className="w-56">
+          <SelectTrigger className="w-56" aria-label="Trashed world">
             <SelectValue
               placeholder={
                 hasNoTrashedWorlds

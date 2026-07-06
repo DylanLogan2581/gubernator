@@ -70,7 +70,7 @@ describe("TurnLogTable", () => {
     const rows = screen.getAllByRole("row");
     // header row + one data row
     expect(rows).toHaveLength(2);
-    expect(rows[1]?.getAttribute("aria-expanded")).toBeNull();
+    expect(rows[1]?.getAttribute("data-state")).toBeNull();
   });
 
   it("renders an expand chevron and reveals extra detail for an expandable row", async () => {
@@ -88,7 +88,7 @@ describe("TurnLogTable", () => {
     ]);
 
     const dataRow = screen.getAllByRole("row")[1];
-    expect(dataRow?.getAttribute("aria-expanded")).toBe("false");
+    expect(dataRow?.getAttribute("data-state")).toBe("collapsed");
 
     await user.click(dataRow);
 
@@ -132,8 +132,8 @@ describe("TurnLogTable", () => {
 
     // Expand the row for entryA, which is at position 0.
     await user.click(screen.getAllByRole("row")[1]);
-    expect(screen.getAllByRole("row")[1]?.getAttribute("aria-expanded")).toBe(
-      "true",
+    expect(screen.getAllByRole("row")[1]?.getAttribute("data-state")).toBe(
+      "expanded",
     );
 
     // Simulate paging: entryB now occupies position 0, entryA is gone.
@@ -153,8 +153,8 @@ describe("TurnLogTable", () => {
 
     // entryB was never expanded itself — a position-keyed bug would show it
     // expanded here since it now sits at row index 0.
-    expect(screen.getAllByRole("row")[1]?.getAttribute("aria-expanded")).toBe(
-      "false",
+    expect(screen.getAllByRole("row")[1]?.getAttribute("data-state")).toBe(
+      "collapsed",
     );
   });
 

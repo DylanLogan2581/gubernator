@@ -37,7 +37,11 @@ export function ConfigurationNavItem({
   const visibleTabs = getVisibleConfigTabs(isSuperAdmin);
 
   return (
-    <Collapsible defaultOpen={isOnConfigRoute} className="group/collapsible">
+    <Collapsible
+      asChild
+      defaultOpen={isOnConfigRoute}
+      className="group/collapsible"
+    >
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton tooltip="Configuration">

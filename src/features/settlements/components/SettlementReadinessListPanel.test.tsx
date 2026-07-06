@@ -720,10 +720,12 @@ describe("SettlementReadinessListPanel", () => {
       const [firstTrigger, secondTrigger] = screen.getAllByRole("button", {
         name: /ready/i,
       });
-      expect(firstTrigger).toHaveTextContent("Ironhaven");
+      expect(firstTrigger).toHaveAccessibleName(/Ironhaven/);
+      expect(firstTrigger).toHaveAccessibleName(/1\/2 ready/);
       expect(firstTrigger).toHaveTextContent("1/2 ready");
       expect(firstTrigger).toHaveTextContent("50%");
-      expect(secondTrigger).toHaveTextContent("Stormkeep");
+      expect(secondTrigger).toHaveAccessibleName(/Stormkeep/);
+      expect(secondTrigger).toHaveAccessibleName(/0\/1 ready/);
       expect(secondTrigger).toHaveTextContent("0/1 ready");
       expect(secondTrigger).toHaveTextContent("0%");
 
@@ -838,9 +840,9 @@ describe("SettlementReadinessListPanel", () => {
       renderSettlementReadinessListPanel();
 
       const triggers = await screen.findAllByRole("button", { name: /ready/i });
-      expect(triggers[0]).toHaveTextContent("Ashford");
-      expect(triggers[1]).toHaveTextContent("Mirewood");
-      expect(triggers[2]).toHaveTextContent("Thornveil");
+      expect(triggers[0]).toHaveAccessibleName(/Ashford/);
+      expect(triggers[1]).toHaveAccessibleName(/Mirewood/);
+      expect(triggers[2]).toHaveAccessibleName(/Thornveil/);
     });
   });
 });
