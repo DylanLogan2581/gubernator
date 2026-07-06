@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { IconChip } from "@/components/shared/IconChip";
 import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -22,6 +23,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   formatCalendarDateShort,
   resolveTurnCalendarDate,
@@ -87,6 +93,16 @@ function formatRunOutLabel({
   });
 }
 
+// Depleting resources at or below this many turns-until-empty get the
+// "Critical" banner treatment (#1057) — matches the destructive tone tier.
+const CRITICAL_TURNS_UNTIL_EMPTY = 3;
+
+function formatRunOutTurnsLabel(turnsUntilEmpty: number | null): string {
+  if (turnsUntilEmpty === null) return "—";
+  if (turnsUntilEmpty === 0) return "Runs out this turn";
+  return `Runs out in ${String(turnsUntilEmpty)} turn${turnsUntilEmpty === 1 ? "" : "s"}`;
+}
+
 export function ForecastPanel({
   settlementId,
   worldId,
@@ -146,6 +162,7 @@ function ForecastPanelContent({
     settlementStockpilesByIdQueryOptions(settlementId),
   );
   const turnStateQuery = useQuery(currentTurnStateQueryOptions(worldId));
+  const [showStableResources, setShowStableResources] = useState(false);
 
   const currentTurnNumber = turnStateQuery.data?.currentTurnNumber ?? null;
   const calendarConfig = turnStateQuery.data?.calendarConfig ?? null;
@@ -200,10 +217,111 @@ function ForecastPanelContent({
     });
   }, [forecast.resourceDeltas]);
 
+  const depletingResourceDeltas = useMemo(
+    () =>
+      sortedResourceDeltas.filter(
+        (delta) => computeTurnsUntilEmpty(delta) !== null,
+      ),
+    [sortedResourceDeltas],
+  );
+  const stableResourceDeltas = useMemo(
+    () =>
+      sortedResourceDeltas.filter(
+        (delta) => computeTurnsUntilEmpty(delta) === null,
+      ),
+    [sortedResourceDeltas],
+  );
+  const criticalResourceDeltas = useMemo(
+    () =>
+      depletingResourceDeltas.filter((delta) => {
+        const turnsUntilEmpty = computeTurnsUntilEmpty(delta);
+        return (
+          turnsUntilEmpty !== null &&
+          turnsUntilEmpty <= CRITICAL_TURNS_UNTIL_EMPTY
+        );
+      }),
+    [depletingResourceDeltas],
+  );
+
   const warnings = deriveSettlementForecastWarnings(forecast);
+
+  function renderResourceRow(delta: ResourceDelta): JSX.Element {
+    const info = resourceInfoMap.get(delta.resourceId);
+    const name = info?.name ?? delta.resourceId;
+    const turnsUntilEmpty = computeTurnsUntilEmpty(delta);
+    const toneClassName = turnsUntilEmptyToneClassName(turnsUntilEmpty);
+    const turnsLabel = formatRunOutTurnsLabel(turnsUntilEmpty);
+    const dateLabel = formatRunOutLabel({
+      calendarConfig,
+      currentTurnNumber,
+      turnsUntilEmpty,
+    });
+
+    return (
+      <TableRow key={delta.resourceId}>
+        <TableCell className="py-2">
+          <div className="flex items-center gap-2">
+            <IconChip
+              icon={resolveEntityIcon(info?.icon ?? null)}
+              tone={hashToCategoricalSlot(delta.resourceId)}
+              size="sm"
+            />
+            <span>{name}</span>
+          </div>
+        </TableCell>
+        <TableCell className="py-2 tabular-nums text-right">
+          {delta.netDelta > 0 ? (
+            <span className="text-success-foreground">
+              +{delta.netDelta.toLocaleString()}
+            </span>
+          ) : delta.netDelta < 0 ? (
+            <span className="text-destructive">
+              {delta.netDelta.toLocaleString()}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">0</span>
+          )}
+        </TableCell>
+        <TableCell className="py-2">
+          <ForecastResourceSparkline
+            points={sparklinePointsByResource.get(delta.resourceId) ?? []}
+          />
+        </TableCell>
+        <TableCell className="py-2 tabular-nums text-right">
+          {turnsUntilEmpty === null ? (
+            <span className="text-muted-foreground">{turnsLabel}</span>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={toneClassName ?? undefined}>{turnsLabel}</span>
+              </TooltipTrigger>
+              <TooltipContent>{dateLabel}</TooltipContent>
+            </Tooltip>
+          )}
+        </TableCell>
+      </TableRow>
+    );
+  }
 
   return (
     <div className="space-y-4">
+      {criticalResourceDeltas.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Critical: resources running out</AlertTitle>
+          <AlertDescription>
+            {criticalResourceDeltas
+              .map((delta) => {
+                const info = resourceInfoMap.get(delta.resourceId);
+                const name = info?.name ?? delta.resourceId;
+                const turnsUntilEmpty = computeTurnsUntilEmpty(delta);
+                return `${name} (${formatRunOutTurnsLabel(turnsUntilEmpty).toLowerCase()})`;
+              })
+              .join(", ")}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Resources Forecast</CardTitle>
@@ -228,63 +346,27 @@ function ForecastPanelContent({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedResourceDeltas.map((delta) => {
-                  const info = resourceInfoMap.get(delta.resourceId);
-                  const name = info?.name ?? delta.resourceId;
-                  const turnsUntilEmpty = computeTurnsUntilEmpty(delta);
-                  const toneClassName =
-                    turnsUntilEmptyToneClassName(turnsUntilEmpty);
-                  const runOutLabel = formatRunOutLabel({
-                    calendarConfig,
-                    currentTurnNumber,
-                    turnsUntilEmpty,
-                  });
-
-                  return (
-                    <TableRow key={delta.resourceId}>
-                      <TableCell className="py-2">
-                        <div className="flex items-center gap-2">
-                          <IconChip
-                            icon={resolveEntityIcon(info?.icon ?? null)}
-                            tone={hashToCategoricalSlot(delta.resourceId)}
-                            size="sm"
-                          />
-                          <span>{name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-2 tabular-nums text-right">
-                        {delta.netDelta > 0 ? (
-                          <span className="text-success-foreground">
-                            +{delta.netDelta.toLocaleString()}
-                          </span>
-                        ) : delta.netDelta < 0 ? (
-                          <span className="text-destructive">
-                            {delta.netDelta.toLocaleString()}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-2">
-                        <ForecastResourceSparkline
-                          points={
-                            sparklinePointsByResource.get(delta.resourceId) ??
-                            []
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="py-2 tabular-nums text-right">
-                        {toneClassName === null ? (
-                          <span className="text-muted-foreground">
-                            {runOutLabel}
-                          </span>
-                        ) : (
-                          <span className={toneClassName}>{runOutLabel}</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {depletingResourceDeltas.map(renderResourceRow)}
+                {stableResourceDeltas.length > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 text-xs text-muted-foreground"
+                        onClick={() => {
+                          setShowStableResources((prev) => !prev);
+                        }}
+                      >
+                        {showStableResources
+                          ? "Hide stable resources"
+                          : `Show ${String(stableResourceDeltas.length)} stable resources`}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {showStableResources &&
+                  stableResourceDeltas.map(renderResourceRow)}
               </TableBody>
             </Table>
           )}

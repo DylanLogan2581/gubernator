@@ -28,4 +28,49 @@ describe("ForecastResourceSparkline", () => {
     expect(screen.getByTestId("forecast-sparkline")).toBeInTheDocument();
     expect(screen.queryByText("—")).toBeNull();
   });
+
+  it("marks a falling trend when quantity drops meaningfully", () => {
+    render(
+      <ForecastResourceSparkline
+        points={[
+          { quantity: 10, turn: 1 },
+          { quantity: 6, turn: 2 },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId("forecast-sparkline")).toHaveAttribute(
+      "data-trend",
+      "falling",
+    );
+  });
+
+  it("marks a rising trend when quantity climbs meaningfully", () => {
+    render(
+      <ForecastResourceSparkline
+        points={[
+          { quantity: 6, turn: 1 },
+          { quantity: 10, turn: 2 },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId("forecast-sparkline")).toHaveAttribute(
+      "data-trend",
+      "rising",
+    );
+  });
+
+  it("marks a flat trend when quantity barely moves", () => {
+    render(
+      <ForecastResourceSparkline
+        points={[
+          { quantity: 100, turn: 1 },
+          { quantity: 100, turn: 2 },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId("forecast-sparkline")).toHaveAttribute(
+      "data-trend",
+      "flat",
+    );
+  });
 });
