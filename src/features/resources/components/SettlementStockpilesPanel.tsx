@@ -4,7 +4,8 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { AlertTriangle, Loader2, Lock } from "lucide-react";
 import { useMemo, useState, type FormEvent, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -51,6 +52,7 @@ type ForecastDeltaMap = ReadonlyMap<string, number>;
 type SettlementStockpilesPanelProps = {
   readonly canAdmin: boolean;
   readonly isArchived: boolean;
+  readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
 };
@@ -58,6 +60,7 @@ type SettlementStockpilesPanelProps = {
 export function SettlementStockpilesPanel({
   canAdmin,
   isArchived,
+  nationId,
   settlementId,
   worldId,
 }: SettlementStockpilesPanelProps): JSX.Element {
@@ -81,15 +84,21 @@ export function SettlementStockpilesPanel({
       aria-labelledby="settlement-stockpiles-heading"
       className="grid gap-3"
     >
-      <h2
-        id="settlement-stockpiles-heading"
-        className="text-base font-medium px-4 pt-4"
-      >
-        Stockpiles
-      </h2>
+      <div className="flex items-center justify-between gap-2 px-4 pt-4">
+        <h2
+          id="settlement-stockpiles-heading"
+          className="text-base font-medium"
+        >
+          Stockpiles
+        </h2>
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+          Stockpiles are simulation-managed
+        </span>
+      </div>
       <CardContent>
         {stockpilesQuery.isPending ? (
-          <TableSkeleton columnCount={6} rowCount={5} />
+          <TableSkeleton columnCount={5} rowCount={5} />
         ) : stockpilesQuery.isError ? (
           <ErrorState
             title="Stockpiles could not be loaded"
@@ -107,8 +116,10 @@ export function SettlementStockpilesPanel({
             isForecastError={forecastQuery.isError}
             isForecastPending={forecastQuery.isPending}
             isArchived={isArchived}
+            nationId={nationId}
             queryClient={queryClient}
             stockpiles={sortStockpiles(stockpilesQuery.data)}
+            worldId={worldId}
           />
         )}
       </CardContent>
@@ -133,16 +144,20 @@ function StockpilesTable({
   isForecastError,
   isForecastPending,
   isArchived,
+  nationId,
   queryClient,
   stockpiles,
+  worldId,
 }: {
   readonly canAdmin: boolean;
   readonly forecastDeltaMap: ForecastDeltaMap;
   readonly isForecastError: boolean;
   readonly isForecastPending: boolean;
   readonly isArchived: boolean;
+  readonly nationId: string;
   readonly queryClient: QueryClient;
   readonly stockpiles: readonly SettlementStockpile[];
+  readonly worldId: string;
 }): JSX.Element {
   const [editingStockpile, setEditingStockpile] =
     useState<SettlementStockpile | null>(null);
@@ -159,10 +174,7 @@ function StockpilesTable({
         <TableRow>
           <TableHead scope="col">Resource</TableHead>
           <TableHead scope="col" className="tabular-nums">
-            Quantity
-          </TableHead>
-          <TableHead scope="col" className="tabular-nums">
-            Cap
+            Capacity
           </TableHead>
           <TableHead scope="col" className="tabular-nums">
             Forecast
@@ -180,7 +192,9 @@ function StockpilesTable({
             isForecastError={isForecastError}
             isForecastPending={isForecastPending}
             isSelected={stockpile.resourceId === selectedResourceId}
+            nationId={nationId}
             stockpile={stockpile}
+            worldId={worldId}
             onEdit={() => {
               setEditingStockpile(stockpile);
             }}
@@ -204,7 +218,9 @@ function StockpilesTable({
               forecastDelta={forecastDeltaMap.get(selectedStockpile.resourceId)}
               isForecastError={isForecastError}
               isForecastPending={isForecastPending}
+              nationId={nationId}
               stockpile={selectedStockpile}
+              worldId={worldId}
               onEdit={() => {
                 setEditingStockpile(selectedStockpile);
               }}
@@ -236,7 +252,9 @@ function StockpileRow({
   isForecastError,
   isForecastPending,
   isSelected,
+  nationId,
   stockpile,
+  worldId,
   onEdit,
   onSelect,
 }: {
@@ -245,9 +263,11 @@ function StockpileRow({
   readonly isForecastError: boolean;
   readonly isForecastPending: boolean;
   readonly isSelected: boolean;
+  readonly nationId: string;
   readonly onEdit: () => void;
   readonly onSelect: () => void;
   readonly stockpile: SettlementStockpile;
+  readonly worldId: string;
 }): JSX.Element {
   const atCap = stockpile.quantity >= stockpile.effectiveCap;
   const formatInt = (n: number): string =>
@@ -281,35 +301,26 @@ function StockpileRow({
         </div>
       </TableCell>
       <TableCell className="py-2 pr-4 tabular-nums">
-        {formatInt(stockpile.quantity)}
+        <div className="grid gap-1">
+          <span>
+            {formatInt(stockpile.quantity)} /{" "}
+            {stockpile.effectiveCap.toLocaleString()}
+          </span>
+          <CapacityBar
+            cap={stockpile.effectiveCap}
+            quantity={stockpile.quantity}
+          />
+        </div>
       </TableCell>
       <TableCell className="py-2 pr-4 tabular-nums">
-        {stockpile.effectiveCap.toLocaleString()}
-      </TableCell>
-      <TableCell className="py-2 pr-4 tabular-nums">
-        {isForecastPending ? (
-          <Loader2
-            className="h-3.5 w-3.5 animate-spin text-muted-foreground"
-            aria-label="Loading forecast"
-          />
-        ) : isForecastError ? (
-          <AlertTriangle
-            className="h-3.5 w-3.5 text-destructive"
-            aria-label="Forecast error"
-          />
-        ) : forecastDelta === undefined ? (
-          <span className="text-muted-foreground">—</span>
-        ) : forecastDelta > 0 ? (
-          <span className="text-green-700 dark:text-green-500">
-            +{formatInt(forecastDelta)}
-          </span>
-        ) : forecastDelta < 0 ? (
-          <span className="text-red-700 dark:text-red-500">
-            {formatInt(forecastDelta)}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">0</span>
-        )}
+        <ForecastValue
+          forecastDelta={forecastDelta}
+          isForecastError={isForecastError}
+          isForecastPending={isForecastPending}
+          nationId={nationId}
+          settlementId={stockpile.settlementId}
+          worldId={worldId}
+        />
       </TableCell>
       <TableCell className="w-16 py-2 pr-2">
         {atCap ? (
@@ -334,12 +345,104 @@ function StockpileRow({
           >
             Edit
           </Button>
-        ) : (
-          <Badge variant="secondary">read-only</Badge>
-        )}
+        ) : null}
       </TableCell>
     </TableRow>
   );
+}
+
+function CapacityBar({
+  cap,
+  quantity,
+}: {
+  readonly cap: number;
+  readonly quantity: number;
+}): JSX.Element {
+  const ratio = cap > 0 ? quantity / cap : 0;
+  const fillPercent = Math.min(100, Math.max(0, ratio * 100));
+  const fillColorClass =
+    ratio >= 1
+      ? "bg-red-600 dark:bg-red-500"
+      : ratio > 0.8
+        ? "bg-amber-500 dark:bg-amber-400"
+        : "bg-primary";
+
+  return (
+    <div
+      className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+      role="progressbar"
+      aria-label="Capacity"
+      aria-valuemin={0}
+      aria-valuemax={cap}
+      aria-valuenow={Math.min(quantity, cap)}
+    >
+      <div
+        className={`h-full rounded-full ${fillColorClass}`}
+        style={{ width: `${fillPercent}%` }}
+      />
+    </div>
+  );
+}
+
+function ForecastValue({
+  forecastDelta,
+  isForecastError,
+  isForecastPending,
+  nationId,
+  settlementId,
+  worldId,
+}: {
+  readonly forecastDelta: number | undefined;
+  readonly isForecastError: boolean;
+  readonly isForecastPending: boolean;
+  readonly nationId: string;
+  readonly settlementId: string;
+  readonly worldId: string;
+}): JSX.Element {
+  const formatInt = (n: number): string =>
+    n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+  if (isForecastPending) {
+    return (
+      <Loader2
+        className="h-3.5 w-3.5 animate-spin text-muted-foreground"
+        aria-label="Loading forecast"
+      />
+    );
+  }
+  if (isForecastError) {
+    return (
+      <AlertTriangle
+        className="h-3.5 w-3.5 text-destructive"
+        aria-label="Forecast error"
+      />
+    );
+  }
+  if (forecastDelta === undefined) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  if (forecastDelta > 0) {
+    return (
+      <span className="text-green-700 dark:text-green-500">
+        +{formatInt(forecastDelta)}
+      </span>
+    );
+  }
+  if (forecastDelta < 0) {
+    return (
+      <Link
+        className="text-red-700 underline underline-offset-2 hover:no-underline dark:text-red-500"
+        params={{ nationId, settlementId, worldId }}
+        to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        {formatInt(forecastDelta)}
+      </Link>
+    );
+  }
+  return <span className="text-muted-foreground">0</span>;
 }
 
 function StockpileDetailPanel({
@@ -347,28 +450,22 @@ function StockpileDetailPanel({
   forecastDelta,
   isForecastError,
   isForecastPending,
+  nationId,
   stockpile,
+  worldId,
   onEdit,
 }: {
   readonly canEdit: boolean;
   readonly forecastDelta: number | undefined;
   readonly isForecastError: boolean;
   readonly isForecastPending: boolean;
+  readonly nationId: string;
   readonly onEdit: () => void;
   readonly stockpile: SettlementStockpile;
+  readonly worldId: string;
 }): JSX.Element {
   const formatInt = (n: number): string =>
     n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-
-  const forecastDisplay = isForecastPending
-    ? "Loading…"
-    : isForecastError
-      ? "Unavailable"
-      : forecastDelta === undefined
-        ? "—"
-        : forecastDelta > 0
-          ? `+${formatInt(forecastDelta)}`
-          : formatInt(forecastDelta);
 
   return (
     <div className="grid gap-3 text-sm">
@@ -380,8 +477,18 @@ function StockpileDetailPanel({
           {stockpile.effectiveCap.toLocaleString()}
         </span>
         <span className="text-muted-foreground">Per-turn delta</span>
-        <span className="tabular-nums">{forecastDisplay}</span>
+        <span className="tabular-nums">
+          <ForecastValue
+            forecastDelta={forecastDelta}
+            isForecastError={isForecastError}
+            isForecastPending={isForecastPending}
+            nationId={nationId}
+            settlementId={stockpile.settlementId}
+            worldId={worldId}
+          />
+        </span>
       </div>
+      <CapacityBar cap={stockpile.effectiveCap} quantity={stockpile.quantity} />
       <div className="grid gap-1">
         <span className="text-muted-foreground">Contributing buildings</span>
         <span className="text-muted-foreground">Not tracked yet</span>

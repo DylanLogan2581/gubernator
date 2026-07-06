@@ -13,6 +13,7 @@ function SettlementStockpilesRoute(): JSX.Element {
     <SettlementStockpilesPanel
       canAdmin={effectiveCanAdmin}
       isArchived={isArchived}
+      nationId={settlement.nationId}
       settlementId={settlement.id}
       worldId={worldId}
     />

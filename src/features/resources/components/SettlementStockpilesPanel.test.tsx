@@ -5,12 +5,43 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SettlementStockpilesPanel } from "./SettlementStockpilesPanel";
 
+import type { ReactNode } from "react";
+
 const { requireSupabaseClient } = vi.hoisted(() => ({
   requireSupabaseClient: vi.fn<() => unknown>(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
   requireSupabaseClient,
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    to,
+    params,
+    className,
+    onClick,
+  }: {
+    readonly children: ReactNode;
+    readonly to: string;
+    readonly params?: Readonly<Record<string, string>>;
+    readonly className?: string;
+    readonly onClick?: () => void;
+  }) => {
+    const href =
+      params === undefined
+        ? to
+        : Object.entries(params).reduce(
+            (path, [name, value]) => path.replace(`$${name}`, value),
+            to,
+          );
+    return (
+      <a href={href} className={className} onClick={onClick}>
+        {children}
+      </a>
+    );
+  },
 }));
 
 const { toastError, toastSuccess } = vi.hoisted(() => ({
@@ -30,6 +61,7 @@ const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000001";
 const FOOD_RESOURCE_ID = "00000000-0000-0000-0000-000000000002";
 const WATER_RESOURCE_ID = "00000000-0000-0000-0000-000000000003";
 const WORLD_ID = "00000000-0000-0000-0000-000000000010";
+const NATION_ID = "00000000-0000-0000-0000-000000000020";
 
 describe("SettlementStockpilesPanel", () => {
   beforeEach(() => {
@@ -63,10 +95,8 @@ describe("SettlementStockpilesPanel", () => {
 
     await screen.findByText("Food");
     expect(screen.getByText("Fresh Water")).toBeDefined();
-    expect(screen.getByText("100")).toBeDefined();
-    expect(screen.getByText("250")).toBeDefined();
-    expect(screen.getByText("500")).toBeDefined();
-    expect(screen.getByText("300")).toBeDefined();
+    expect(screen.getByText("100 / 500")).toBeDefined();
+    expect(screen.getByText("250 / 300")).toBeDefined();
   });
 
   it("shows system badge for system resources", async () => {
@@ -154,7 +184,7 @@ describe("SettlementStockpilesPanel", () => {
     expect(
       screen.queryByRole("button", { name: /Edit Food quantity/i }),
     ).toBeNull();
-    expect(screen.getByText("read-only")).toBeDefined();
+    expect(screen.getByText("Stockpiles are simulation-managed")).toBeDefined();
   });
 
   it("hides the edit affordance when the world is archived", async () => {
@@ -172,7 +202,7 @@ describe("SettlementStockpilesPanel", () => {
     expect(
       screen.queryByRole("button", { name: /Edit Food quantity/i }),
     ).toBeNull();
-    expect(screen.getByText("read-only")).toBeDefined();
+    expect(screen.getByText("Stockpiles are simulation-managed")).toBeDefined();
   });
 
   it("opens the edit dialog when the admin clicks Edit", async () => {
@@ -372,7 +402,37 @@ describe("SettlementStockpilesPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Food");
-    expect(screen.getByText("-20")).toBeDefined();
+    const forecastLink = screen.getByRole("link", { name: "-20" });
+    expect(forecastLink.getAttribute("href")).toBe(
+      `/worlds/${WORLD_ID}/nations/${NATION_ID}/settlements/${SETTLEMENT_ID}/forecast`,
+    );
+  });
+
+  it("colors the capacity bar amber above 80% and red at cap", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        stockpileRows: [
+          createStockpileRow({
+            resource_name: "Food",
+            quantity: 90,
+            effective_cap: 100,
+          }),
+          createStockpileRow({
+            resource_id: WATER_RESOURCE_ID,
+            resource_name: "Fresh Water",
+            quantity: 100,
+            effective_cap: 100,
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Food");
+    const bars = screen.getAllByRole("progressbar");
+    expect(bars[0]?.firstElementChild?.className).toContain("bg-amber-500");
+    expect(bars[1]?.firstElementChild?.className).toContain("bg-red-600");
   });
 
   it("shows — for resources not in forecast snapshot", async () => {
@@ -452,6 +512,7 @@ function renderPanel({
       <SettlementStockpilesPanel
         canAdmin={canAdmin}
         isArchived={isArchived}
+        nationId={NATION_ID}
         settlementId={SETTLEMENT_ID}
         worldId={WORLD_ID}
       />
