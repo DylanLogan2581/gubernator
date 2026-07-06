@@ -135,8 +135,38 @@ describe("CitizensDirectoryTable", () => {
     expect(screen.getByText("Amberhold")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
     expect(screen.getByText("Blacksmith")).toBeDefined();
-    expect(screen.getByText("NPC")).toBeDefined();
-    expect(screen.getByText("Alive")).toBeDefined();
+    expect(screen.getByText("citizen-1".slice(0, 8))).toBeDefined();
+    expect(screen.queryByText("Player")).toBeNull();
+    expect(screen.queryByText("Deceased")).toBeNull();
+  });
+
+  it("badges player characters and deceased citizens on the name cell", async () => {
+    requireSupabaseClient.mockReturnValue(
+      buildClient({
+        citizens: [
+          {
+            age_turns: 40,
+            assignment_label: null,
+            citizen_type: "player_character",
+            id: "citizen-3",
+            name: "Cora",
+            nation_id: null,
+            nation_name: null,
+            settlement_id: null,
+            settlement_name: null,
+            sex: null,
+            status: "dead",
+          },
+        ],
+        totalCount: 1,
+      }),
+    );
+
+    renderTable();
+
+    expect(await screen.findByText("Cora")).toBeDefined();
+    expect(screen.getByText("Player")).toBeDefined();
+    expect(screen.getByText("Deceased")).toBeDefined();
   });
 
   it("renders an empty state when no citizens match", async () => {

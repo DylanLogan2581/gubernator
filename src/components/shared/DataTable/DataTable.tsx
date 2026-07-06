@@ -41,6 +41,8 @@ export type DataTableProps<TData> = {
    */
   readonly renderRowLink?: (row: TData, children: ReactNode) => ReactElement;
   readonly emptyMessage?: string;
+  /** Optional extra className per row, e.g. to mute deceased citizens. */
+  readonly rowClassName?: (row: TData) => string | undefined;
 };
 
 function SortIndicator({
@@ -87,6 +89,7 @@ export function DataTable<TData>({
   isPaginationDisabled = false,
   renderRowLink,
   emptyMessage = "No results.",
+  rowClassName,
 }: DataTableProps<TData>): JSX.Element {
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable is a TanStack Table hook, not a React hook
   const table = useReactTable({
@@ -160,7 +163,7 @@ export function DataTable<TData>({
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className={rowClassName?.(row.original)}>
                   {row.getVisibleCells().map((cell, cellIndex) => {
                     const cellContent = flexRender(
                       cell.column.columnDef.cell,

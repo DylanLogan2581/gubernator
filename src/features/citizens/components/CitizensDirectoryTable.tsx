@@ -19,6 +19,7 @@ import { nationsListQueryOptions } from "@/features/nations";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { cn } from "@/lib/utils";
 
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
 
@@ -32,17 +33,7 @@ import type {
 import type { CitizenStatus, CitizenType } from "../types/citizenTypes";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
-const PAGE_SIZE = 25;
-
-const CITIZEN_TYPE_LABELS: Record<CitizenType, string> = {
-  npc: "NPC",
-  player_character: "Player character",
-};
-
-const STATUS_LABELS: Record<CitizenStatus, string> = {
-  alive: "Alive",
-  dead: "Deceased",
-};
+const PAGE_SIZE = 50;
 
 const DEFAULT_SORTING: SortingState = [{ id: "name", desc: false }];
 
@@ -53,7 +44,6 @@ const SORT_COLUMN_BY_ID: Record<string, CitizenDirectorySortColumn> = {
   name: "name",
   nation: "nation_name",
   settlement: "settlement_name",
-  status: "status",
 };
 
 const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
@@ -61,16 +51,46 @@ const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
     id: "name",
     accessorFn: (row) => row.name ?? "—",
     header: "Name",
-    cell: ({ row }) => (
-      <>
-        <CitizenAvatar
-          id={row.original.id}
-          name={row.original.name ?? "—"}
-          size="sm"
-        />
-        <span className="font-medium">{row.original.name ?? "—"}</span>
-      </>
-    ),
+    cell: ({ row }) => {
+      const citizen = row.original;
+      const isPlayerCharacter = citizen.citizenType === "player_character";
+      const isDeceased = citizen.status === "dead";
+      return (
+        <>
+          <CitizenAvatar
+            id={citizen.id}
+            name={citizen.name ?? "—"}
+            size="sm"
+            className={
+              isPlayerCharacter
+                ? "ring-2 ring-primary ring-offset-1"
+                : undefined
+            }
+          />
+          <span className="flex flex-col">
+            <span className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "font-medium",
+                  isDeceased && "text-muted-foreground",
+                )}
+              >
+                {citizen.name ?? "—"}
+              </span>
+              {isPlayerCharacter ? (
+                <Badge variant="default">Player</Badge>
+              ) : null}
+              {isDeceased ? (
+                <Badge variant="destructive">Deceased</Badge>
+              ) : null}
+            </span>
+            <span className="font-mono text-[11px] text-muted-foreground/70">
+              {citizen.id.slice(0, 8)}
+            </span>
+          </span>
+        </>
+      );
+    },
   },
   {
     id: "age",
@@ -120,28 +140,6 @@ const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
       </span>
     ),
   },
-  {
-    id: "type",
-    enableSorting: false,
-    header: "Type",
-    cell: ({ row }) => (
-      <Badge variant="secondary">
-        {CITIZEN_TYPE_LABELS[row.original.citizenType]}
-      </Badge>
-    ),
-  },
-  {
-    id: "status",
-    accessorFn: (row) => row.status,
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge
-        variant={row.original.status === "alive" ? "secondary" : "destructive"}
-      >
-        {STATUS_LABELS[row.original.status]}
-      </Badge>
-    ),
-  },
 ];
 
 type CitizensDirectoryTableProps = {
@@ -163,7 +161,7 @@ export function CitizensDirectoryTable({
   const [citizenType, setCitizenType] = useState<CitizenType | undefined>(
     undefined,
   );
-  const [status, setStatus] = useState<CitizenStatus | undefined>(undefined);
+  const [status, setStatus] = useState<CitizenStatus | undefined>("alive");
   const [pageIndex, setPageIndex] = useState(0);
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
 
@@ -303,7 +301,7 @@ export function CitizensDirectoryTable({
       </div>
 
       {directoryQuery.isPending ? (
-        <TableSkeleton columnCount={8} rowCount={PAGE_SIZE} />
+        <TableSkeleton columnCount={6} rowCount={PAGE_SIZE} />
       ) : directoryQuery.isError ? (
         <ErrorState
           title="Citizens could not be loaded"
@@ -327,6 +325,9 @@ export function CitizensDirectoryTable({
             columns={COLUMNS}
             data={rows}
             getRowId={(row) => row.id}
+            rowClassName={(row) =>
+              row.status === "dead" ? "opacity-70" : undefined
+            }
             sorting={sorting}
             onSortingChange={(nextSorting) => {
               setSorting(nextSorting);
