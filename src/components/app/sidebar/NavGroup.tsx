@@ -7,6 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { formatUnreadBadgeCount } from "@/features/notifications";
 
 import type { JSX, ReactNode } from "react";
 
@@ -60,7 +61,9 @@ export function NavGroup({
                 {item.link}
               </SidebarMenuButton>
               {item.badge !== undefined && item.badge > 0 ? (
-                <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                <SidebarMenuBadge>
+                  {formatUnreadBadgeCount(item.badge)}
+                </SidebarMenuBadge>
               ) : null}
             </SidebarMenuItem>
           ))}

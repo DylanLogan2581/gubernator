@@ -21,5 +21,6 @@ export {
 export { useMarkAllNotificationsRead } from "./hooks/useMarkAllNotificationsRead";
 export { useNotificationsRealtime } from "./hooks/useNotificationsRealtime";
 export { getDeepLink } from "./getDeepLink";
+export { formatUnreadBadgeCount } from "./utils/formatUnreadBadgeCount";
 export { NotificationPreferencesSheet } from "./components/NotificationPreferencesSheet";
 export { NotificationsPage } from "./pages/NotificationsPage";

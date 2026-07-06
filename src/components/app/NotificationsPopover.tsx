@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { currentSessionQueryOptions } from "@/features/auth";
 import {
   allNotificationsQueryOptions,
+  formatUnreadBadgeCount,
   getDeepLink,
   markNotificationReadMutationOptions,
   notificationQueryKeys,
@@ -55,7 +56,7 @@ export function NotificationsPopover({
     });
   };
 
-  const badgeText = unreadCount > 99 ? "99+" : unreadCount.toString();
+  const badgeText = formatUnreadBadgeCount(unreadCount);
   const notificationLabel =
     unreadCount > 0
       ? `Notifications (${badgeText} unread)`
