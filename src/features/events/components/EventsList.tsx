@@ -189,6 +189,29 @@ export function EventsList({
   }
 
   const events = eventsQuery.data ?? [];
+
+  if (events.length === 0) {
+    return (
+      <EmptyState
+        icon={Zap}
+        title="No events yet"
+        description={
+          canCreate
+            ? "Create your first event to get started."
+            : "Events will appear here once a world admin creates one."
+        }
+        action={
+          canCreate ? (
+            <Button onClick={onCreateClick} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create event
+            </Button>
+          ) : undefined
+        }
+      />
+    );
+  }
+
   const scopeFiltered =
     search.scope === undefined
       ? events
@@ -329,16 +352,7 @@ export function EventsList({
       <MasterDetailLayout
         list={
           <div className="space-y-4">
-            {events.length === 0 ? (
-              <EmptyState
-                title="No events yet"
-                description={
-                  canCreate
-                    ? "Create your first event to get started."
-                    : "No events exist in this world."
-                }
-              />
-            ) : filteredEvents.length === 0 ? (
+            {filteredEvents.length === 0 ? (
               <EmptyState
                 title="No events match your filters"
                 description="Try adjusting the status, scope, or search filters."
@@ -415,18 +429,20 @@ export function EventsList({
           setSelectedEventId(null);
         }}
         emptyState={
-          <EmptyState
-            icon={Zap}
-            title="Select an event to see its details"
-            action={
-              canCreate ? (
-                <Button onClick={onCreateClick} size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create event
-                </Button>
-              ) : undefined
-            }
-          />
+          displayItems.length === 0 ? undefined : (
+            <EmptyState
+              icon={Zap}
+              title="Select an event to see its details"
+              action={
+                canCreate ? (
+                  <Button onClick={onCreateClick} size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create event
+                  </Button>
+                ) : undefined
+              }
+            />
+          )
         }
       />
     </div>
