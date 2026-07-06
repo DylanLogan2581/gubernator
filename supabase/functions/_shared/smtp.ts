@@ -91,7 +91,7 @@ function assertCode(response: SmtpResponse, expected: readonly number[], step: s
   }
 }
 
-async function upgradeToTls(conn: SmtpConn, host: string): Promise<SmtpConn> {
+function upgradeToTls(conn: SmtpConn, host: string): Promise<SmtpConn> {
   return Deno.startTls(conn, { hostname: host });
 }
 

@@ -40,7 +40,7 @@ export async function resolveSendEmailAuthContext(
     };
   }
 
-  return resolveAuthContext<SendEmailAuthContext, SendEmailErrorResponse>(request, {
+  return await resolveAuthContext<SendEmailAuthContext, SendEmailErrorResponse>(request, {
     fetchFn: fetch,
     supabaseUrl,
     supabaseAnonKey,
