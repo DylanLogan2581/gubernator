@@ -50,6 +50,64 @@ describe("latestSettlementTransitionOutcomeQueryOptions notification filtering",
   });
 });
 
+// -- World-level fetch uses scoped, non-embedded queries --
+//
+// Regression coverage for issue #1045: a single multi-embed select on
+// turn_transitions (settlement_turn_snapshots + resource snapshots +
+// turn_log_entries + notifications all joined in one PostgREST request)
+// intermittently 500'd under parallel load. The fetcher now issues a base
+// transition query plus separate scoped child queries instead.
+
+describe("latestWorldTransitionOutcomeQueryOptions data fetching", () => {
+  it("assembles the outcome from separate world+transition scoped queries, without an embedded select", async () => {
+    const queryClient = createQueryClient();
+    const client = createWorldFilterClient({
+      logEntries: [makeLogEntryRow({ id: "log-1" })],
+      notifications: [makeNotificationRow({ id: "notif-1" })],
+      resourceSnapshots: [],
+      snapshots: [],
+    });
+
+    const options = latestWorldTransitionOutcomeQueryOptions(
+      "world-1",
+      client.client as GubernatorSupabaseClient,
+    );
+    const result = await queryClient.fetchQuery(options);
+
+    expect(result?.id).toEqual("transition-1");
+    expect(result?.logEntries.map((e) => e.id)).toEqual(["log-1"]);
+    expect(result?.notifications.map((n) => n.id)).toEqual(["notif-1"]);
+    // The base transition select must carry no embedded relations (no
+    // `table(...)` syntax) — that embedded shape is exactly what caused the
+    // intermittent 500s under load.
+    for (const selectArg of client.selectCalls.turn_transitions ?? []) {
+      expect(selectArg).not.toContain("(");
+    }
+    expect(client.callCounts.turn_log_entries).toEqual(1);
+    expect(client.callCounts.notifications).toEqual(1);
+  });
+
+  it("returns null without querying child tables when no transition exists", async () => {
+    const queryClient = createQueryClient();
+    const client = createWorldFilterClient({
+      logEntries: [],
+      notifications: [],
+      resourceSnapshots: [],
+      snapshots: [],
+      transition: null,
+    });
+
+    const options = latestWorldTransitionOutcomeQueryOptions(
+      "world-1",
+      client.client as GubernatorSupabaseClient,
+    );
+    const result = await queryClient.fetchQuery(options);
+
+    expect(result).toBeNull();
+    expect(client.callCounts.turn_log_entries ?? 0).toEqual(0);
+  });
+});
+
 // -- Query key shape --
 
 describe("latestWorldTransitionOutcomeQueryOptions", () => {
@@ -327,5 +385,117 @@ function createSettlementFilterClient(
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
+  };
+}
+
+// -- World-level fetch fixtures --
+
+type LogEntryRowFixture = {
+  readonly citizen_id: null;
+  readonly id: string;
+  readonly log_category: string;
+  readonly nation_id: null;
+  readonly payload_jsonb: Record<string, unknown>;
+  readonly resource_id: null;
+  readonly settlement_id: string | null;
+  readonly world_id: string;
+};
+
+function makeLogEntryRow(
+  overrides: Partial<LogEntryRowFixture> = {},
+): LogEntryRowFixture {
+  return {
+    citizen_id: null,
+    id: "log-1",
+    log_category: "turn.advanced",
+    nation_id: null,
+    payload_jsonb: {},
+    resource_id: null,
+    settlement_id: "settlement-1",
+    world_id: "world-1",
+    ...overrides,
+  };
+}
+
+function createWorldFilterClient(fixture: {
+  readonly logEntries: readonly LogEntryRowFixture[];
+  readonly notifications: readonly NotificationRowFixture[];
+  readonly resourceSnapshots: readonly unknown[];
+  readonly snapshots: readonly unknown[];
+  readonly transition?: Record<string, unknown> | null;
+}): {
+  readonly callCounts: Record<string, number>;
+  readonly client: unknown;
+  readonly selectCalls: Record<string, string[]>;
+} {
+  const callCounts: Record<string, number> = {};
+  const selectCalls: Record<string, string[]> = {};
+
+  const transitionRow =
+    fixture.transition === undefined
+      ? {
+          finished_at: "2026-06-01T12:00:00Z",
+          forecast_snapshot_jsonb: null,
+          from_turn_number: 5,
+          id: "transition-1",
+          started_at: "2026-06-01T11:55:00Z",
+          status: "completed",
+          to_turn_number: 6,
+          world_id: "world-1",
+        }
+      : fixture.transition;
+
+  const transitionBuilder: Record<string, unknown> = {};
+  transitionBuilder.select = vi.fn((columns: string) => {
+    (selectCalls.turn_transitions ??= []).push(columns);
+    return transitionBuilder;
+  });
+  transitionBuilder.eq = vi.fn(() => transitionBuilder);
+  transitionBuilder.order = vi.fn(() => transitionBuilder);
+  transitionBuilder.limit = vi.fn(() => transitionBuilder);
+  transitionBuilder.returns = vi.fn(() => transitionBuilder);
+  transitionBuilder.maybeSingle = vi
+    .fn()
+    .mockResolvedValue({ data: transitionRow, error: null });
+
+  const makeChildBuilder = (
+    table: string,
+    data: readonly unknown[],
+  ): Record<string, unknown> => {
+    const builder: Record<string, unknown> = {};
+    builder.select = vi.fn((columns: string) => {
+      (selectCalls[table] ??= []).push(columns);
+      return builder;
+    });
+    builder.eq = vi.fn(() => builder);
+    builder.returns = vi.fn(() => Promise.resolve({ data, error: null }));
+    return builder;
+  };
+
+  return {
+    callCounts,
+    client: {
+      from: vi.fn((table: string) => {
+        callCounts[table] = (callCounts[table] ?? 0) + 1;
+
+        if (table === "turn_transitions") {
+          return transitionBuilder;
+        }
+        if (table === "settlement_turn_snapshots") {
+          return makeChildBuilder(table, fixture.snapshots);
+        }
+        if (table === "settlement_turn_resource_snapshots") {
+          return makeChildBuilder(table, fixture.resourceSnapshots);
+        }
+        if (table === "turn_log_entries") {
+          return makeChildBuilder(table, fixture.logEntries);
+        }
+        if (table === "notifications") {
+          return makeChildBuilder(table, fixture.notifications);
+        }
+        throw new Error(`Unexpected table: ${table}`);
+      }),
+    },
+    selectCalls,
   };
 }
