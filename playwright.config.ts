@@ -58,5 +58,6 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: true,
     timeout: 60_000,
+    env: { VITE_DISABLE_DEVTOOLS: "true" },
   },
 });

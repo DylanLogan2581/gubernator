@@ -24,7 +24,8 @@ import {
   supabaseConfig,
 } from "@/lib/supabaseConfig";
 
-const isDev = import.meta.env.DEV;
+const isDev =
+  import.meta.env.DEV && import.meta.env.VITE_DISABLE_DEVTOOLS !== "true";
 
 const TanStackRouterDevtools = isDev
   ? lazy(() =>
