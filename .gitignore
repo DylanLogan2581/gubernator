@@ -16,6 +16,12 @@ dist-ssr
 !.env.example
 *.local
 
+# Playwright
+e2e/.auth
+screenshots/auto
+test-results
+playwright-report
+
 # Tanstack Temporary Files
 .tanstack
 

@@ -27,8 +27,8 @@ export default mergeConfig(
       pool: "forks",
       maxWorkers,
       exclude: runIntegration
-        ? configDefaults.exclude
-        : [...configDefaults.exclude, "**/integration.test.ts"],
+        ? [...configDefaults.exclude, "e2e/**"]
+        : [...configDefaults.exclude, "**/integration.test.ts", "e2e/**"],
       coverage: {
         provider: "v8",
         reporter: ["text", "text-summary", "json-summary"],
