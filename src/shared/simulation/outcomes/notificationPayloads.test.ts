@@ -2,6 +2,28 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseBuildingAutoDeconstructedPayload,
+  parseBuildingRecoveredPayload,
+  parseCitizenBornPayload,
+  parseCitizenConsumedFoodWaterPayload,
+  parseCitizenDiedHomelessPayload,
+  parseCitizenStarvedPayload,
+  parseConstructionProgressPayload,
+  parseDepositProcessedPayload,
+  parseEventBuildingDestroyedPayload,
+  parseEventConsumptionMultiplierPayload,
+  parseEventDepositDestroyedPayload,
+  parseEventDepositDiscoveredPayload,
+  parseEventManagedPopulationChangePayload,
+  parseEventPopulationBoostPayload,
+  parseEventPopulationLossPayload,
+  parseEventProductionMultiplierPayload,
+  parseEventResourceDrainPayload,
+  parseEventResourceGrantPayload,
+  parseEventUpkeepMultiplierPayload,
+  parseManualDeconstructOvershootPayload,
+  parsePassiveEffectAppliedPayload,
+  parseStockpileClampedPayload,
+  parseStockpileDecayedPayload,
   parseBuildingSuspendedPayload,
   parseConstructionCompletedPayload,
   parseConstructionPausedPayload,
@@ -25,6 +47,19 @@ function expectNullForCommonMalformed(
   expect(parse("string")).toBeNull();
   expect(parse(42)).toBeNull();
   expect(parse([])).toBeNull();
+}
+
+// For each field in the valid payload, verify the parser rejects a copy where
+// that field is missing and a copy where it has the wrong type.
+function expectNullPerInvalidField(
+  parse: (input: unknown) => unknown,
+  valid: Record<string, unknown>,
+): void {
+  for (const key of Object.keys(valid)) {
+    const { [key]: _omitted, ...missing } = valid;
+    expect(parse(missing)).toBeNull();
+    expect(parse({ ...valid, [key]: true })).toBeNull();
+  }
 }
 
 describe("parseBuildingAutoDeconstructedPayload", () => {
@@ -372,5 +407,431 @@ describe("parseTradeRouteResumedPayload", () => {
       resourceId: "r-1",
       tradeRouteId: "tr-1",
     });
+  });
+});
+
+describe("parseBuildingRecoveredPayload", () => {
+  const valid = { blueprintId: "bp-1", buildingId: "b-1" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseBuildingRecoveredPayload);
+    expectNullPerInvalidField(parseBuildingRecoveredPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseBuildingRecoveredPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseCitizenBornPayload", () => {
+  const valid = { parentACitizenId: "c-1", parentBCitizenId: "c-2" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseCitizenBornPayload);
+    expectNullPerInvalidField(parseCitizenBornPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseCitizenBornPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseCitizenConsumedFoodWaterPayload", () => {
+  const valid = {
+    aliveCount: 10,
+    foodConsumed: 20,
+    foodRequired: 20,
+    foodStock: 100,
+    settlementId: "s-1",
+    waterConsumed: 10,
+    waterRequired: 10,
+    waterStock: 50,
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseCitizenConsumedFoodWaterPayload);
+    expectNullPerInvalidField(parseCitizenConsumedFoodWaterPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseCitizenConsumedFoodWaterPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseCitizenDiedHomelessPayload", () => {
+  const valid = { deathDetail: "exposure" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseCitizenDiedHomelessPayload);
+    expectNullPerInvalidField(parseCitizenDiedHomelessPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseCitizenDiedHomelessPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseCitizenStarvedPayload", () => {
+  const valid = { deathDetail: "no food" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseCitizenStarvedPayload);
+    expectNullPerInvalidField(parseCitizenStarvedPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseCitizenStarvedPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseConstructionProgressPayload", () => {
+  const valid = {
+    costsDeducted: { "r-1": 5 },
+    newProgress: 40,
+    projectId: "p-1",
+    settlementId: "s-1",
+    workers: 4,
+    workerTurnsRequired: 100,
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseConstructionProgressPayload);
+    expectNullPerInvalidField(parseConstructionProgressPayload, valid);
+    expect(
+      parseConstructionProgressPayload({ ...valid, costsDeducted: null }),
+    ).toBeNull();
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseConstructionProgressPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseDepositProcessedPayload", () => {
+  const valid = {
+    depositId: "d-1",
+    extractedByResource: { "r-1": 8 },
+    inputShortfallScale: 1,
+    inputsConsumed: { "r-2": 2 },
+    settlementId: "s-1",
+    totalExtraction: 8,
+    workers: 3,
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseDepositProcessedPayload);
+    expectNullPerInvalidField(parseDepositProcessedPayload, valid);
+    expect(
+      parseDepositProcessedPayload({ ...valid, extractedByResource: null }),
+    ).toBeNull();
+    expect(
+      parseDepositProcessedPayload({ ...valid, inputsConsumed: null }),
+    ).toBeNull();
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseDepositProcessedPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventBuildingDestroyedPayload", () => {
+  const valid = { eventId: "e-1", settlementBuildingId: "sb-1" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventBuildingDestroyedPayload);
+    expectNullPerInvalidField(parseEventBuildingDestroyedPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventBuildingDestroyedPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventConsumptionMultiplierPayload", () => {
+  const valid = { eventId: "e-1", multiplier: 1.5, settlementId: "s-1" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventConsumptionMultiplierPayload);
+    expectNullPerInvalidField(parseEventConsumptionMultiplierPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventConsumptionMultiplierPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventDepositDiscoveredPayload", () => {
+  const valid = { eventId: "e-1" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventDepositDiscoveredPayload);
+    expectNullPerInvalidField(parseEventDepositDiscoveredPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventDepositDiscoveredPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventDepositDestroyedPayload", () => {
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventDepositDestroyedPayload);
+    expect(parseEventDepositDestroyedPayload({})).toBeNull();
+    // eventId present but neither type-target nor instance-target shape
+    expect(parseEventDepositDestroyedPayload({ eventId: "e-1" })).toBeNull();
+    expect(
+      parseEventDepositDestroyedPayload({
+        depositTypeId: "dt-1",
+        destroyedCount: 2,
+        // missing eventId
+      }),
+    ).toBeNull();
+    expect(
+      parseEventDepositDestroyedPayload({
+        depositTypeId: "dt-1",
+        destroyedCount: "two",
+        eventId: "e-1",
+      }),
+    ).toBeNull();
+  });
+
+  it("returns type-target payload when depositTypeId and destroyedCount present", () => {
+    expect(
+      parseEventDepositDestroyedPayload({
+        depositTypeId: "dt-1",
+        destroyedCount: 2,
+        eventId: "e-1",
+      }),
+    ).toEqual({ depositTypeId: "dt-1", destroyedCount: 2, eventId: "e-1" });
+  });
+
+  it("returns instance-target payload when depositInstanceId present", () => {
+    expect(
+      parseEventDepositDestroyedPayload({
+        depositInstanceId: "di-1",
+        eventId: "e-1",
+      }),
+    ).toEqual({ depositInstanceId: "di-1", eventId: "e-1" });
+  });
+});
+
+describe("parseEventManagedPopulationChangePayload", () => {
+  const valid = { delta: -3, eventId: "e-1", managedPopulationId: "mp-1" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventManagedPopulationChangePayload);
+    expectNullPerInvalidField(parseEventManagedPopulationChangePayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventManagedPopulationChangePayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventPopulationBoostPayload", () => {
+  const valid = {
+    amount: 5,
+    citizenCount: 25,
+    eventId: "e-1",
+    settlementId: "s-1",
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventPopulationBoostPayload);
+    expectNullPerInvalidField(parseEventPopulationBoostPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventPopulationBoostPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventPopulationLossPayload", () => {
+  const valid = {
+    amount: 4,
+    citizenCount: 21,
+    eventId: "e-1",
+    settlementId: "s-1",
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventPopulationLossPayload);
+    expectNullPerInvalidField(parseEventPopulationLossPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventPopulationLossPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventProductionMultiplierPayload", () => {
+  const required = { eventId: "e-1", multiplier: 2, settlementId: "s-1" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventProductionMultiplierPayload);
+    expectNullPerInvalidField(parseEventProductionMultiplierPayload, required);
+    expect(
+      parseEventProductionMultiplierPayload({
+        ...required,
+        buildingBlueprintId: 42,
+      }),
+    ).toBeNull();
+    expect(
+      parseEventProductionMultiplierPayload({ ...required, jobId: 42 }),
+    ).toBeNull();
+  });
+
+  it("returns typed payload with optional targets omitted", () => {
+    expect(parseEventProductionMultiplierPayload(required)).toEqual({
+      ...required,
+      buildingBlueprintId: undefined,
+      jobId: undefined,
+    });
+  });
+
+  it("returns typed payload with optional targets present", () => {
+    expect(
+      parseEventProductionMultiplierPayload({
+        ...required,
+        buildingBlueprintId: "bp-1",
+        jobId: "j-1",
+      }),
+    ).toEqual({ ...required, buildingBlueprintId: "bp-1", jobId: "j-1" });
+  });
+});
+
+describe("parseEventResourceDrainPayload", () => {
+  const valid = {
+    amount: 12,
+    eventId: "e-1",
+    resourceId: "r-1",
+    settlementId: "s-1",
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventResourceDrainPayload);
+    expectNullPerInvalidField(parseEventResourceDrainPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventResourceDrainPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventResourceGrantPayload", () => {
+  const valid = {
+    amount: 12,
+    eventId: "e-1",
+    resourceId: "r-1",
+    settlementId: "s-1",
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventResourceGrantPayload);
+    expectNullPerInvalidField(parseEventResourceGrantPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventResourceGrantPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseEventUpkeepMultiplierPayload", () => {
+  const valid = { eventId: "e-1", multiplier: 0.5, settlementId: "s-1" };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseEventUpkeepMultiplierPayload);
+    expectNullPerInvalidField(parseEventUpkeepMultiplierPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseEventUpkeepMultiplierPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseManualDeconstructOvershootPayload", () => {
+  const valid = {
+    current_citizens: 12,
+    new_cap: 10,
+    settlement_building_id: "sb-1",
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseManualDeconstructOvershootPayload);
+    expectNullPerInvalidField(parseManualDeconstructOvershootPayload, valid);
+  });
+
+  it("maps snake_case fields to camelCase payload", () => {
+    expect(parseManualDeconstructOvershootPayload(valid)).toEqual({
+      currentCitizens: 12,
+      newCap: 10,
+      settlementBuildingId: "sb-1",
+    });
+  });
+});
+
+describe("parsePassiveEffectAppliedPayload", () => {
+  const valid = {
+    amount: 3,
+    buildingId: "b-1",
+    resourceId: "r-1",
+    settlementId: "s-1",
+    tierId: "t-1",
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parsePassiveEffectAppliedPayload);
+    expectNullPerInvalidField(parsePassiveEffectAppliedPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parsePassiveEffectAppliedPayload(valid)).toEqual(valid);
+  });
+});
+
+describe("parseStockpileClampedPayload", () => {
+  const valid = {
+    delta: -5,
+    effectiveCap: 100,
+    post: 100,
+    pre: 105,
+    reason: "over_cap",
+    resourceId: "r-1",
+    settlementId: "s-1",
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseStockpileClampedPayload);
+    expectNullPerInvalidField(parseStockpileClampedPayload, valid);
+    expect(
+      parseStockpileClampedPayload({ ...valid, reason: "unknown" }),
+    ).toBeNull();
+  });
+
+  it("returns typed payload for both clamp reasons", () => {
+    expect(parseStockpileClampedPayload(valid)).toEqual(valid);
+    expect(
+      parseStockpileClampedPayload({ ...valid, reason: "negative" }),
+    ).toEqual({ ...valid, reason: "negative" });
+  });
+});
+
+describe("parseStockpileDecayedPayload", () => {
+  const valid = {
+    decayRate: 0.1,
+    delta: -2,
+    post: 18,
+    pre: 20,
+    resourceId: "r-1",
+    settlementId: "s-1",
+  };
+
+  it("returns null for malformed inputs", () => {
+    expectNullForCommonMalformed(parseStockpileDecayedPayload);
+    expectNullPerInvalidField(parseStockpileDecayedPayload, valid);
+  });
+
+  it("returns typed payload for valid input", () => {
+    expect(parseStockpileDecayedPayload(valid)).toEqual(valid);
   });
 });
