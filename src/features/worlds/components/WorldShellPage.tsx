@@ -138,16 +138,6 @@ function WorldShellContent({
 
       <WorldDashboardStatTiles worldId={worldId} />
 
-      <EndTurnControl
-        canAdmin={effectiveCanAdmin}
-        currentDateLabel={worldQuery.data.header.inWorldDateLabel}
-        currentTurnNumber={worldQuery.data.header.currentTurnNumber}
-        isArchived={worldQuery.data.header.isArchived}
-        nextDateLabel={worldQuery.data.header.nextInWorldDateLabel}
-        nextTurnNumber={worldQuery.data.header.nextTurnNumber}
-        worldId={worldId}
-      />
-
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="flex flex-col gap-4">
           <SettlementReadinessListPanel
@@ -155,6 +145,15 @@ function WorldShellContent({
             canAdmin={effectiveCanAdmin}
             canManage={effectiveCanAdmin}
             isArchived={worldQuery.data.header.isArchived}
+            worldId={worldId}
+          />
+          <EndTurnControl
+            canAdmin={effectiveCanAdmin}
+            currentDateLabel={worldQuery.data.header.inWorldDateLabel}
+            currentTurnNumber={worldQuery.data.header.currentTurnNumber}
+            isArchived={worldQuery.data.header.isArchived}
+            nextDateLabel={worldQuery.data.header.nextInWorldDateLabel}
+            nextTurnNumber={worldQuery.data.header.nextTurnNumber}
             worldId={worldId}
           />
           <TurnTransitionOutcomePanel scope="world" id={worldId} />

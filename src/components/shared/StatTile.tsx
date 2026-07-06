@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { LucideIcon } from "lucide-react";
 import type { JSX, ReactNode } from "react";
 
-type StatTileTone = "default" | "success" | "warning";
+type StatTileTone = "default" | "success" | "warning" | "destructive";
 
 type StatTileProps = {
   readonly icon: LucideIcon;

@@ -7,10 +7,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
 import type { WorldPermissionContext } from "@/features/worlds";
 
 import { groupSettlementsByNation } from "../utils/settlementNationGrouping";
-import { formatSettlementReadinessPercentage } from "../utils/settlementReadinessSummary";
 
 import { SettlementReadinessTable } from "./SettlementReadinessTable";
 
@@ -72,6 +72,7 @@ function NationAccordionRow({
   worldId,
 }: NationAccordionRowProps): JSX.Element {
   const allReady = group.readyCount === group.totalCount;
+  const noneReady = group.readyCount === 0;
   const bgColor = allReady
     ? "group-data-[state=closed]:bg-green-50 dark:group-data-[state=closed]:bg-green-950/30"
     : "";
@@ -99,25 +100,28 @@ function NationAccordionRow({
           <span>
             {group.readyCount}/{group.totalCount} ready
           </span>
-          <span>
-            {formatSettlementReadinessPercentage(group.readyPercentage)}
-          </span>
+          <Progress
+            value={group.readyPercentage}
+            className={`w-20 ${noneReady ? "[&>div]:bg-destructive" : ""}`}
+          />
           <div
             className="w-5 h-5 shrink-0 flex items-center justify-center"
             role="img"
-            aria-label={allReady ? "all ready" : "not ready"}
+            aria-label={
+              allReady ? "all ready" : noneReady ? "none ready" : "not ready"
+            }
           >
             {allReady ? (
               <Check
                 aria-hidden="true"
                 className="w-4 h-4 text-green-600 dark:text-green-500"
               />
-            ) : (
+            ) : noneReady ? (
               <AlertCircle
                 aria-hidden="true"
                 className="w-4 h-4 text-red-600 dark:text-red-500"
               />
-            )}
+            ) : null}
           </div>
           <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
         </CollapsibleTrigger>

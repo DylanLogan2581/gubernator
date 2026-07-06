@@ -4,7 +4,6 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { formatSettlementReadinessPercentage } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { useEndTurnControl } from "../hooks/useEndTurnControl";
@@ -119,24 +118,10 @@ function EndTurnControlContent({
       ) : null}
 
       {readinessSummaryQuery.isSuccess ? (
-        <dl className="grid gap-3 sm:grid-cols-4">
+        <dl className="grid gap-3 sm:w-fit sm:grid-cols-1">
           <MetricTile
             label="Current turn"
             value={currentTurnNumber.toString()}
-          />
-          <MetricTile
-            label="Ready"
-            value={readinessSummaryQuery.data.readySettlementCount.toString()}
-          />
-          <MetricTile
-            label="Not ready"
-            value={readinessSummaryQuery.data.notReadySettlementCount.toString()}
-          />
-          <MetricTile
-            label="Ready percent"
-            value={formatSettlementReadinessPercentage(
-              readinessSummaryQuery.data.readyPercentage,
-            )}
           />
         </dl>
       ) : null}

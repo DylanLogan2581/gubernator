@@ -723,11 +723,13 @@ describe("SettlementReadinessListPanel", () => {
       expect(firstTrigger).toHaveAccessibleName(/Ironhaven/);
       expect(firstTrigger).toHaveAccessibleName(/1\/2 ready/);
       expect(firstTrigger).toHaveTextContent("1/2 ready");
-      expect(firstTrigger).toHaveTextContent("50%");
+      expect(progressIndicatorTransform(firstTrigger)).toBe("translateX(-50%)");
       expect(secondTrigger).toHaveAccessibleName(/Stormkeep/);
       expect(secondTrigger).toHaveAccessibleName(/0\/1 ready/);
       expect(secondTrigger).toHaveTextContent("0/1 ready");
-      expect(secondTrigger).toHaveTextContent("0%");
+      expect(progressIndicatorTransform(secondTrigger)).toBe(
+        "translateX(-100%)",
+      );
 
       // Expand Ironhaven and verify its settlements appear
       await user.click(firstTrigger);
@@ -775,7 +777,7 @@ describe("SettlementReadinessListPanel", () => {
         name: /Ironhaven/,
       });
       expect(trigger).toHaveTextContent("2/2 ready");
-      expect(trigger).toHaveTextContent("100%");
+      expect(progressIndicatorTransform(trigger)).toBe("translateX(-0%)");
     });
 
     it("shows 0% in the summary for a none-ready nation", async () => {
@@ -804,7 +806,7 @@ describe("SettlementReadinessListPanel", () => {
         name: /Ironhaven/,
       });
       expect(trigger).toHaveTextContent("0/2 ready");
-      expect(trigger).toHaveTextContent("0%");
+      expect(progressIndicatorTransform(trigger)).toBe("translateX(-100%)");
     });
 
     it("renders nations alphabetically regardless of readiness mix", async () => {
@@ -1096,6 +1098,13 @@ function expectSettlementRow(settlementName: string): void {
   const row = nameCell.closest("tr");
 
   expect(row).not.toBeNull();
+}
+
+function progressIndicatorTransform(container: HTMLElement): string | null {
+  const indicator = container.querySelector<HTMLElement>(
+    '[data-slot="progress-indicator"]',
+  );
+  return indicator?.style.transform ?? null;
 }
 
 function createAccessRow(): TestSettlementReadinessAccessRow {

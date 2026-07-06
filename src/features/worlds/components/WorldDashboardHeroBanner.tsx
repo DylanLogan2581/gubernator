@@ -2,12 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Archive } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
-import {
-  useWorldImageSignedUrl,
-  worldImagesQueryOptions,
-} from "../queries/worldImageQueries";
+import { worldImagesQueryOptions } from "../queries/worldImageQueries";
 
 import { WorldHeroImage } from "./WorldHeroImage";
 
@@ -23,9 +19,9 @@ type WorldDashboardHeroBannerProps = {
 };
 
 /**
- * World dashboard header: hero image (or gradient fallback when unset) with
- * the world name, status/visibility badges, and in-world date overlaid.
- * Replaces the plain identity `<dl>` that used to sit above the stat tiles.
+ * Compact world dashboard header: a small hero thumbnail (or gradient
+ * fallback when unset) beside the world name, status/visibility badges, and
+ * in-world date.
  */
 export function WorldDashboardHeroBanner({
   inWorldDateLabel,
@@ -37,29 +33,23 @@ export function WorldDashboardHeroBanner({
 }: WorldDashboardHeroBannerProps): JSX.Element {
   const imagesQuery = useQuery(worldImagesQueryOptions(worldId));
   const heroPath = imagesQuery.data?.heroPath ?? null;
-  const { url } = useWorldImageSignedUrl(heroPath);
-  const hasImage = url !== null;
 
   return (
     <section
       aria-labelledby="world-shell-title"
-      className="relative isolate min-h-48 overflow-hidden rounded-md border border-border bg-gradient-to-br from-muted to-muted/40"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3"
     >
-      <WorldHeroImage
-        className="absolute inset-0 size-full object-cover"
-        heroPath={heroPath}
-      />
-      {hasImage ? (
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-      ) : null}
-      <div className="absolute inset-0 flex flex-col justify-end gap-3 p-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="relative size-10 shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-muted to-muted/40">
+          <WorldHeroImage
+            className="absolute inset-0 size-full object-cover"
+            heroPath={heroPath}
+          />
+        </div>
+        <div className="min-w-0 space-y-1">
           <h1
             id="world-shell-title"
-            className={cn(
-              "text-2xl font-semibold tracking-normal",
-              hasImage && "text-white",
-            )}
+            className="truncate text-xl font-semibold tracking-normal"
           >
             {name}
           </h1>
@@ -78,15 +68,10 @@ export function WorldDashboardHeroBanner({
             ) : null}
           </div>
         </div>
-        <p
-          className={cn(
-            "text-sm",
-            hasImage ? "text-white/90" : "text-muted-foreground",
-          )}
-        >
-          {inWorldDateLabel}
-        </p>
       </div>
+      <p className="shrink-0 text-sm text-muted-foreground">
+        {inWorldDateLabel}
+      </p>
     </section>
   );
 }

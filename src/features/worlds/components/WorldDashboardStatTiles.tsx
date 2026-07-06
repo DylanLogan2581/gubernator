@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Building2, CheckCircle2, Flag, Users, Zap } from "lucide-react";
 
 import { StatTile } from "@/components/shared/StatTile";
+import { Progress } from "@/components/ui/progress";
 import { citizensDirectoryQueryOptions } from "@/features/citizens";
 import {
   eventsListQueryOptions,
@@ -46,6 +47,7 @@ export function WorldDashboardStatTiles({
   const totalSettlementCount = readinessQuery.data?.totalSettlementCount ?? 0;
   const allReady =
     totalSettlementCount > 0 && readySettlementCount === totalSettlementCount;
+  const noneReady = totalSettlementCount > 0 && readySettlementCount === 0;
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-5">
@@ -84,10 +86,20 @@ export function WorldDashboardStatTiles({
             ? "default"
             : allReady
               ? "success"
-              : "warning"
+              : noneReady
+                ? "destructive"
+                : "warning"
         }
         isLoading={readinessQuery.isPending}
-      />
+      >
+        {readinessQuery.data === undefined ? null : (
+          <Progress
+            value={readinessQuery.data.readyPercentage}
+            className={noneReady ? "[&>div]:bg-destructive" : undefined}
+            aria-label="Settlements ready progress"
+          />
+        )}
+      </StatTile>
       <StatTile
         icon={Zap}
         label="Active events"
