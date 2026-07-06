@@ -16,9 +16,14 @@ import { resourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import {
   parseBuildingAutoDeconstructedPayload,
+  parseBuildingRecoveredPayload,
   parseBuildingSuspendedPayload,
+  parseCitizenBornPayload,
+  parseEventBuildingDestroyedPayload,
+  parseManualDeconstructOvershootPayload,
   parsePartnershipFormedPayload,
   parsePartnershipWidowedPayload,
+  parsePassiveEffectAppliedPayload,
 } from "@/shared/simulation/outcomes/notificationPayloads";
 
 import type { TurnLogBrowserEntry } from "../queries/turnLogBrowserQueries";
@@ -43,6 +48,10 @@ function citizenIdsInPayload(
   payload: unknown,
 ): readonly string[] {
   switch (logCategory) {
+    case "citizen.born": {
+      const p = parseCitizenBornPayload(payload);
+      return p === null ? [] : [p.parentACitizenId, p.parentBCitizenId];
+    }
     case "partnership.formed": {
       const p = parsePartnershipFormedPayload(payload);
       return p === null ? [] : [p.citizenAId, p.citizenBId];
@@ -63,12 +72,40 @@ function buildingIdInPayload(
   switch (logCategory) {
     case "building.auto_deconstructed":
       return parseBuildingAutoDeconstructedPayload(payload)?.buildingId ?? null;
+    case "building.recovered":
+      return parseBuildingRecoveredPayload(payload)?.buildingId ?? null;
     case "building.suspended":
       return parseBuildingSuspendedPayload(payload)?.buildingId ?? null;
+    case "event.building_destroyed":
+      return (
+        parseEventBuildingDestroyedPayload(payload)?.settlementBuildingId ??
+        null
+      );
+    case "manual_deconstruct_overshoot":
+      return (
+        parseManualDeconstructOvershootPayload(payload)?.settlementBuildingId ??
+        null
+      );
+    case "passive_effect.applied":
+      return parsePassiveEffectAppliedPayload(payload)?.buildingId ?? null;
     default:
       return null;
   }
 }
+
+// Categories whose payload references a resourceId — the resource-name
+// lookup only needs to fetch the world's resource list when at least one
+// visible entry belongs to one of these.
+const RESOURCE_PAYLOAD_CATEGORIES = new Set([
+  "construction.progress",
+  "deposit.processed",
+  "event.resource_drain",
+  "event.resource_grant",
+  "passive_effect.applied",
+  "standard_job.processed",
+  "stockpile.clamped",
+  "stockpile.decayed",
+]);
 
 export function useTurnLogEntityLookup(
   worldId: string,
@@ -95,9 +132,16 @@ export function useTurnLogEntityLookup(
       ),
     [entries],
   );
-  const needsJobsOrResources = useMemo(
+  const needsJobs = useMemo(
     () =>
       entries.some((entry) => entry.logCategory === "standard_job.processed"),
+    [entries],
+  );
+  const needsResources = useMemo(
+    () =>
+      entries.some((entry) =>
+        RESOURCE_PAYLOAD_CATEGORIES.has(entry.logCategory),
+      ),
     [entries],
   );
 
@@ -112,11 +156,11 @@ export function useTurnLogEntityLookup(
   });
   const jobsQuery = useQuery({
     ...jobsByWorldQueryOptions(worldId),
-    enabled: needsJobsOrResources,
+    enabled: needsJobs,
   });
   const resourcesQuery = useQuery({
     ...resourcesByWorldQueryOptions(worldId),
-    enabled: needsJobsOrResources,
+    enabled: needsResources,
   });
 
   return useMemo<TurnLogEntityLookup>(() => {
@@ -141,8 +185,8 @@ export function useTurnLogEntityLookup(
         (citizenIds.length > 0 && citizensQuery.isPending) ||
         (needsBuildings &&
           (buildingsQuery.isPending || settlementsQuery.isPending)) ||
-        (needsJobsOrResources &&
-          (jobsQuery.isPending || resourcesQuery.isPending)),
+        (needsJobs && jobsQuery.isPending) ||
+        (needsResources && resourcesQuery.isPending),
       citizen: (citizenId) => {
         const citizen = citizenById.get(citizenId);
         return {
@@ -181,7 +225,8 @@ export function useTurnLogEntityLookup(
     resourcesQuery.data,
     resourcesQuery.isPending,
     needsBuildings,
-    needsJobsOrResources,
+    needsJobs,
+    needsResources,
     worldId,
   ]);
 }

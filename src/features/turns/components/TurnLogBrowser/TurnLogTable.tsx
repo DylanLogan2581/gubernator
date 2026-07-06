@@ -28,6 +28,7 @@ import {
   summarizeJobBreakdown,
   type TurnLogRow,
 } from "../../utils/aggregateJobProcessedRows";
+import { formatResourceDeltas } from "../../utils/formatResourceDeltas";
 import { isTurnLogRowExpandable } from "../../utils/isTurnLogRowExpandable";
 import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
 
@@ -102,20 +103,6 @@ function ScopeCell({
 // Job summary — aggregated standard_job.processed rows
 // ---------------------------------------------------------------------------
 
-function formatResourceDeltas(
-  deltas: Readonly<Record<string, number>>,
-  sign: "+" | "-",
-  lookup: TurnLogEntityLookup,
-): string {
-  return Object.entries(deltas)
-    .filter(([, amount]) => amount !== 0)
-    .map(
-      ([resourceId, amount]) =>
-        `${lookup.resourceName(resourceId) ?? "Unknown resource"} ${sign}${Math.round(amount)}`,
-    )
-    .join(", ");
-}
-
 function JobSummaryDetail({
   entries,
   lookup,
@@ -164,6 +151,20 @@ function ExpandedDetailRow({
         <div className="text-sm">
           {row.kind === "job-summary" ? (
             <JobSummaryDetail entries={row.entries} lookup={lookup} />
+          ) : row.kind === "category-summary" ? (
+            <ul className="space-y-1">
+              {row.entries.map((entry) => (
+                <li key={entry.id}>
+                  <TurnLogPayloadRenderer
+                    logCategory={entry.logCategory}
+                    payload={entry.payloadJsonb}
+                    isAdmin={isAdmin}
+                    lookup={lookup}
+                    mode="summary"
+                  />
+                </li>
+              ))}
+            </ul>
           ) : (
             <TurnLogPayloadRenderer
               logCategory={row.entry.logCategory}
@@ -192,7 +193,9 @@ function rowScopeEntry(row: TurnLogRow): TurnLogBrowserEntry {
 }
 
 function isRowExpandable(row: TurnLogRow, isAdmin: boolean): boolean {
-  if (row.kind === "job-summary") return true;
+  if (row.kind === "job-summary" || row.kind === "category-summary") {
+    return true;
+  }
   return isTurnLogRowExpandable(
     row.entry.logCategory,
     row.entry.payloadJsonb,
@@ -208,15 +211,19 @@ function buildColumns(
   worldId: string,
   isAdmin: boolean,
   lookup: TurnLogEntityLookup,
+  hideTurnColumn: boolean,
 ): ColumnDef<TurnLogRow>[] {
-  return [
+  const columns: ColumnDef<TurnLogRow>[] = [
     {
       id: "expand",
       header: "",
       cell: () => null,
       size: 32,
     },
-    {
+  ];
+
+  if (!hideTurnColumn) {
+    columns.push({
       id: "turn",
       header: "Turn",
       cell: ({ row }) => (
@@ -225,15 +232,21 @@ function buildColumns(
         </span>
       ),
       size: 64,
-    },
+    });
+  }
+
+  columns.push(
     {
       id: "category",
       header: "Category",
       cell: ({ row }) => {
+        const original = row.original;
         const logCategory =
-          row.original.kind === "entry"
-            ? row.original.entry.logCategory
-            : "standard_job.processed";
+          original.kind === "entry"
+            ? original.entry.logCategory
+            : original.kind === "category-summary"
+              ? original.logCategory
+              : "standard_job.processed";
         return (
           <Badge variant="outline" className="font-mono text-xs">
             {LOG_CATEGORY_LABELS[logCategory] ?? logCategory}
@@ -264,6 +277,15 @@ function buildColumns(
             </span>
           );
         }
+        if (original.kind === "category-summary") {
+          const label =
+            LOG_CATEGORY_LABELS[original.logCategory] ?? original.logCategory;
+          return (
+            <span className="text-sm">
+              <strong>{label}</strong> ×{original.count}
+            </span>
+          );
+        }
         return (
           <TurnLogPayloadRenderer
             logCategory={original.entry.logCategory}
@@ -275,7 +297,9 @@ function buildColumns(
         );
       },
     },
-  ];
+  );
+
+  return columns;
 }
 
 // ---------------------------------------------------------------------------
@@ -284,6 +308,10 @@ function buildColumns(
 
 type TurnLogTableProps = {
   readonly entries: readonly TurnLogBrowserEntry[];
+  // Hides the redundant Turn column when the caller has pinned the log to a
+  // single turn (e.g. the default "latest turn" view) — every row would
+  // otherwise repeat the same value.
+  readonly hideTurnColumn?: boolean;
   readonly isAdmin: boolean;
   readonly isFetching: boolean;
   readonly onPageChange: (page: number) => void;
@@ -294,6 +322,7 @@ type TurnLogTableProps = {
 
 export function TurnLogTable({
   entries,
+  hideTurnColumn = false,
   isAdmin,
   isFetching,
   onPageChange,
@@ -310,8 +339,8 @@ export function TurnLogTable({
   const lookup = useTurnLogEntityLookup(worldId, entries);
   const rows = useMemo(() => aggregateJobProcessedRows(entries), [entries]);
   const columns = useMemo(
-    () => buildColumns(worldId, isAdmin, lookup),
-    [worldId, isAdmin, lookup],
+    () => buildColumns(worldId, isAdmin, lookup, hideTurnColumn),
+    [worldId, isAdmin, lookup, hideTurnColumn],
   );
   const pageCount = Math.ceil(totalCount / TURN_LOG_PAGE_SIZE);
 

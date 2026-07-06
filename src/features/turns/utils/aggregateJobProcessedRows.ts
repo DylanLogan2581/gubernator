@@ -20,6 +20,14 @@ export type TurnLogRow =
       // needed to render the Turn and Scope columns the same way a plain
       // entry row does.
       readonly representativeEntry: TurnLogBrowserEntry;
+    }
+  | {
+      readonly kind: "category-summary";
+      readonly count: number;
+      readonly entries: readonly TurnLogBrowserEntry[];
+      readonly id: string;
+      readonly logCategory: string;
+      readonly representativeEntry: TurnLogBrowserEntry;
     };
 
 export function aggregateJobProcessedRows(
@@ -29,28 +37,57 @@ export function aggregateJobProcessedRows(
   const groupIndexByKey = new Map<string, number>();
 
   for (const entry of entries) {
-    if (entry.logCategory !== "standard_job.processed") {
-      rows.push({ kind: "entry", entry });
+    if (entry.logCategory === "standard_job.processed") {
+      const key = `job:${String(entry.toTurnNumber)}:${entry.settlementId ?? "none"}`;
+      const existingIndex = groupIndexByKey.get(key);
+
+      if (existingIndex === undefined) {
+        groupIndexByKey.set(key, rows.length);
+        rows.push({
+          kind: "job-summary",
+          count: 1,
+          entries: [entry],
+          id: `job-summary:${key}`,
+          representativeEntry: entry,
+        });
+        continue;
+      }
+
+      const existing = rows[existingIndex];
+      if (existing.kind === "job-summary") {
+        rows[existingIndex] = {
+          ...existing,
+          count: existing.count + 1,
+          entries: [...existing.entries, entry],
+        };
+      }
       continue;
     }
 
-    const key = `${String(entry.toTurnNumber)}:${entry.settlementId ?? "none"}`;
+    // Generic grouping: any other category repeated within the same turn
+    // and scope collapses into a "category-summary" row with a count
+    // (e.g. "Passive Effect Applied ×12"), so a busy turn doesn't drown the
+    // log in near-identical rows. Single occurrences stay as plain entries.
+    const key = `cat:${entry.logCategory}:${String(entry.toTurnNumber)}:${entry.settlementId ?? "none"}:${entry.nationId ?? "none"}:${entry.citizenId ?? "none"}`;
     const existingIndex = groupIndexByKey.get(key);
 
     if (existingIndex === undefined) {
       groupIndexByKey.set(key, rows.length);
-      rows.push({
-        kind: "job-summary",
-        count: 1,
-        entries: [entry],
-        id: `job-summary:${key}`,
-        representativeEntry: entry,
-      });
+      rows.push({ kind: "entry", entry });
       continue;
     }
 
     const existing = rows[existingIndex];
-    if (existing.kind === "job-summary") {
+    if (existing.kind === "entry") {
+      rows[existingIndex] = {
+        kind: "category-summary",
+        count: 2,
+        entries: [existing.entry, entry],
+        id: `category-summary:${key}`,
+        logCategory: entry.logCategory,
+        representativeEntry: existing.entry,
+      };
+    } else if (existing.kind === "category-summary") {
       rows[existingIndex] = {
         ...existing,
         count: existing.count + 1,

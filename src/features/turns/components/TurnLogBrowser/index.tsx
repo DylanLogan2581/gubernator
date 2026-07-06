@@ -139,6 +139,7 @@ export function TurnLogBrowser({
       ) : (
         <TurnLogTable
           entries={query.data.entries}
+          hideTurnColumn={typeof selectedTurn === "number"}
           isAdmin={isAdmin}
           isFetching={query.isFetching}
           onPageChange={(p) => setPage(p)}
