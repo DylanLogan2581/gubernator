@@ -515,7 +515,7 @@ describe("SettlementAssignmentBoard", () => {
     const tables = screen.getAllByRole("table");
     expect(tables).toHaveLength(1);
     const rows = tables[0].querySelectorAll("tbody tr");
-    expect(rows.length).toBeGreaterThan(2); // Unassigned + Farmer + Iron Vein deposit
+    expect(rows.length).toBeGreaterThan(1); // Farmer + Iron Vein deposit
   });
 
   it("shows standard job rows with current/capacity display", async () => {
@@ -618,7 +618,7 @@ describe("SettlementAssignmentBoard", () => {
     expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
   });
 
-  it("shows Unassigned row as first row in standard jobs table", async () => {
+  it("shows a live unassigned summary above the table, not as a table row", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [
@@ -648,14 +648,14 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard();
 
     await screen.findByText("Farmer");
+    expect(screen.getByText("2")).toBeDefined();
+    expect(screen.getByText("unassigned")).toBeDefined();
+    // rows[0] is the header; rows[1] is the first data row (no separate Unassigned row)
     const rows = screen.getAllByRole("row");
-    // rows[0] is the header; rows[1] is the first data row
-    expect(rows[1]).toHaveTextContent("Unassigned");
-    expect(rows[1]).toHaveTextContent("2");
-    expect(rows[1]).toHaveTextContent("∞");
+    expect(rows[1]).toHaveTextContent("Farmer");
   });
 
-  it("Unassigned row appears first even when other job names sort alphabetically earlier", async () => {
+  it("standard job rows sort alphabetically without a pinned Unassigned row", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [],
@@ -670,12 +670,11 @@ describe("SettlementAssignmentBoard", () => {
 
     await screen.findByText("Archer");
     const rows = screen.getAllByRole("row");
-    expect(rows[1]).toHaveTextContent("Unassigned");
-    expect(rows[2]).toHaveTextContent("Archer");
-    expect(rows[3]).toHaveTextContent("Baker");
+    expect(rows[1]).toHaveTextContent("Archer");
+    expect(rows[2]).toHaveTextContent("Baker");
   });
 
-  it("Unassigned row has no Set count editor when canEdit is true", async () => {
+  it("unassigned summary has no Set count editor", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [],
@@ -686,18 +685,12 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard({ canManageSettlement: true });
 
     await screen.findByText("Farmer");
-    const rows = screen.getAllByRole("row");
-    const unassignedRow = rows[1];
-    expect(unassignedRow).toHaveTextContent("Unassigned");
-    expect(unassignedRow).not.toContainElement(
-      unassignedRow.querySelector("input"),
-    );
-    expect(unassignedRow).not.toContainElement(
-      unassignedRow.querySelector("button"),
-    );
+    const summary = screen.getByText("unassigned").closest("div");
+    expect(summary?.querySelector("input")).toBeNull();
+    expect(summary?.querySelector("button")).toBeNull();
   });
 
-  it("Unassigned count shows only NPC count, excluding player characters", async () => {
+  it("unassigned summary shows only NPC count, excluding player characters", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         aggregates: [
@@ -727,12 +720,8 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard();
 
     await screen.findByText("Farmer");
-    const rows = screen.getAllByRole("row");
-    const unassignedRow = rows[1];
     // 2 NPCs unassigned; the PC is not counted
-    expect(unassignedRow).toHaveTextContent("2");
-    // The total including the PC (3) should not appear in the Unassigned row
-    expect(unassignedRow).not.toHaveTextContent("3 /");
+    expect(screen.getByText("2")).toBeDefined();
   });
 
   it("construction workers are not counted as unassigned", async () => {
@@ -767,10 +756,8 @@ describe("SettlementAssignmentBoard", () => {
     renderBoard();
 
     await screen.findByText("Stone Mason");
-    const rows = screen.getAllByRole("row");
-    const unassignedRow = rows[1];
     // Only 1 truly unassigned NPC; the construction worker is assigned
-    expect(unassignedRow).toHaveTextContent("1");
+    expect(screen.getByText("1")).toBeDefined();
   });
 
   it("disables Apply button when raising count and no citizens are unassigned", async () => {
@@ -1030,7 +1017,7 @@ describe("SettlementAssignmentBoard", () => {
 
     expect(await screen.findByText("Iron Vein — Miner")).toBeDefined();
     expect(
-      screen.getByText((_, el) => el?.textContent === "1 / ∞"),
+      screen.getByText((_, el) => el?.textContent === "1 / unlimited"),
     ).toBeDefined();
   });
 

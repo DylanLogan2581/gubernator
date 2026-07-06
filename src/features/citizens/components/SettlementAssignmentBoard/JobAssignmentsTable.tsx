@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
-import { useState, type JSX, type ReactNode } from "react";
+import { useCallback, useState, type JSX, type ReactNode } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -23,6 +24,7 @@ import { tradeRoutesForSettlementQueryOptions } from "@/features/trade";
 import type { TradeRoute, TradeRouteLeg } from "@/features/trade";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import { cn } from "@/lib/utils";
 
 import { setBulkStandardJobAssignmentMutationOptions } from "../../mutations/bulkStandardJobAssignmentMutations";
 import { setPerTargetBulkAssignmentMutationOptions } from "../../mutations/perTargetBulkAssignmentMutations";
@@ -36,11 +38,6 @@ type JobAssignmentsTableProps = {
   readonly canEdit: boolean;
   readonly settlementId: string;
   readonly worldId: string;
-};
-
-type UnassignedRow = {
-  readonly kind: "unassigned";
-  readonly unassignedNpcCount: number;
 };
 
 type BulkJobRow = {
@@ -92,7 +89,6 @@ type TradeRouteDestinationRow = {
 };
 
 type Row =
-  | UnassignedRow
   | BulkJobRow
   | DepositRow
   | HusbandryRow
@@ -123,6 +119,23 @@ export function JobAssignmentsTable({
   const tradeRoutesQuery = useQuery(
     tradeRoutesForSettlementQueryOptions(settlementId),
   );
+
+  const [pendingDeltas, setPendingDeltas] = useState<Record<string, number>>(
+    {},
+  );
+
+  const handleDirtyChange = useCallback((key: string, delta: number): void => {
+    setPendingDeltas((prev) => {
+      if (delta === 0) {
+        if (!(key in prev)) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      if (prev[key] === delta) return prev;
+      return { ...prev, [key]: delta };
+    });
+  }, []);
 
   const isLoading =
     aggregateQuery.isPending ||
@@ -207,12 +220,6 @@ export function JobAssignmentsTable({
   // Build unified row list
   const rows: Row[] = [];
 
-  // Unassigned (pinned first)
-  rows.push({
-    kind: "unassigned",
-    unassignedNpcCount: stats.unassignedNpcCount,
-  });
-
   // Bulk jobs
   for (const job of jobCounts) {
     rows.push({
@@ -287,8 +294,7 @@ export function JobAssignmentsTable({
     });
   }
 
-  // Sort: alphabetical by job name + target name (except unassigned stays first)
-  const unassignedRow = rows.shift();
+  // Sort: alphabetical by job name + target name
   rows.sort((a, b) => {
     const aName = getRowJobName(a);
     const bName = getRowJobName(b);
@@ -297,53 +303,71 @@ export function JobAssignmentsTable({
     const bTarget = getRowTargetName(b);
     return aTarget.localeCompare(bTarget);
   });
-  if (unassignedRow !== undefined) {
-    rows.unshift(unassignedRow);
-  }
 
   // Check if any rows to display
-  const hasBulkOrPerTarget = rows.length > 1; // > 1 because unassigned is always present
+  const hasBulkOrPerTarget = rows.length > 0;
 
-  if (!hasBulkOrPerTarget) {
-    return (
-      <EmptyState
-        title="No jobs"
-        description="No jobs are configured for this settlement."
-      />
-    );
-  }
+  const pendingDeltaSum = Object.values(pendingDeltas).reduce(
+    (sum, delta) => sum + delta,
+    0,
+  );
+  const liveUnassignedCount = stats.unassignedNpcCount - pendingDeltaSum;
+  const pendingChangeCount = Object.keys(pendingDeltas).length;
 
   return (
-    <Table className="w-full text-sm">
-      <TableHeader>
-        <TableRow className="text-muted-foreground">
-          <TableHead scope="col">Job</TableHead>
-          <TableHead scope="col">Assigned / Capacity</TableHead>
-          {canEdit ? <TableHead scope="col">Set count</TableHead> : null}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row, idx) => (
-          <RowRenderer
-            key={getRowKey(row, idx)}
-            row={row}
-            canEdit={canEdit}
-            countByDeposit={countByDeposit}
-            countByHusbandry={countByHusbandry}
-            countByCulling={countByCulling}
-            countByTradeRouteEnd={countByTradeRouteEnd}
-            settlementId={settlementId}
-            unassignedNpcCount={stats.unassignedNpcCount}
-            worldId={worldId}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <div>
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 rounded-md border border-border bg-muted/30 px-4 py-3">
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold tabular-nums">
+            {liveUnassignedCount}
+          </span>
+          <span className="text-sm text-muted-foreground">unassigned</span>
+        </div>
+        {pendingChangeCount > 0 ? (
+          <span className="text-sm text-muted-foreground">
+            {pendingChangeCount} pending change
+            {pendingChangeCount === 1 ? "" : "s"}
+          </span>
+        ) : null}
+      </div>
+      {hasBulkOrPerTarget ? (
+        <Table className="w-full text-sm">
+          <TableHeader>
+            <TableRow className="text-muted-foreground">
+              <TableHead scope="col">Job</TableHead>
+              <TableHead scope="col">Assigned / Capacity</TableHead>
+              {canEdit ? <TableHead scope="col">Set count</TableHead> : null}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row, idx) => (
+              <RowRenderer
+                key={getRowKey(row, idx)}
+                row={row}
+                canEdit={canEdit}
+                countByDeposit={countByDeposit}
+                countByHusbandry={countByHusbandry}
+                countByCulling={countByCulling}
+                countByTradeRouteEnd={countByTradeRouteEnd}
+                settlementId={settlementId}
+                unassignedNpcCount={stats.unassignedNpcCount}
+                worldId={worldId}
+                onDirtyChange={handleDirtyChange}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <EmptyState
+          title="No jobs"
+          description="No jobs are configured for this settlement."
+        />
+      )}
+    </div>
   );
 }
 
 function getRowJobName(row: Row): string {
-  if (row.kind === "unassigned") return "Unassigned";
   if (row.kind === "bulk") return row.job.jobName;
   if (row.kind === "deposit") return row.jobName;
   if (row.kind === "husbandry") return row.jobName;
@@ -359,7 +383,7 @@ function getRowJobName(row: Row): string {
 }
 
 function getRowTargetName(row: Row): string {
-  if (row.kind === "unassigned" || row.kind === "bulk") return "";
+  if (row.kind === "bulk") return "";
   if (row.kind === "deposit") return row.targetName;
   if (row.kind === "husbandry") return row.targetName;
   if (row.kind === "culling") return row.targetName;
@@ -374,7 +398,6 @@ function getRowTargetName(row: Row): string {
 }
 
 function getRowKey(row: Row, idx: number): string {
-  if (row.kind === "unassigned") return "unassigned";
   if (row.kind === "bulk") return `bulk-${row.job.jobId}`;
   if (row.kind === "deposit") return `deposit-${row.targetId}`;
   if (row.kind === "husbandry") return `husbandry-${row.targetId}`;
@@ -402,6 +425,7 @@ function RowRenderer({
   settlementId,
   unassignedNpcCount,
   worldId,
+  onDirtyChange,
 }: {
   readonly row: Row;
   readonly canEdit: boolean;
@@ -412,16 +436,8 @@ function RowRenderer({
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
   readonly worldId: string;
+  readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
-  if (row.kind === "unassigned") {
-    return (
-      <UnassignedRow
-        canEdit={canEdit}
-        unassignedNpcCount={unassignedNpcCount}
-      />
-    );
-  }
-
   if (row.kind === "bulk") {
     return (
       <BulkJobRow
@@ -430,6 +446,7 @@ function RowRenderer({
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
         worldId={worldId}
+        onDirtyChange={onDirtyChange}
       />
     );
   }
@@ -444,6 +461,7 @@ function RowRenderer({
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
         worldId={worldId}
+        onDirtyChange={onDirtyChange}
       />
     );
   }
@@ -460,6 +478,7 @@ function RowRenderer({
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
         worldId={worldId}
+        onDirtyChange={onDirtyChange}
       />
     );
   }
@@ -476,6 +495,7 @@ function RowRenderer({
         settlementId={settlementId}
         unassignedNpcCount={unassignedNpcCount}
         worldId={worldId}
+        onDirtyChange={onDirtyChange}
       />
     );
   }
@@ -510,6 +530,7 @@ function RowRenderer({
         tradeRouteEnd={row.tradeRouteEnd}
         unassignedNpcCount={unassignedNpcCount}
         worldId={worldId}
+        onDirtyChange={onDirtyChange}
       />
     );
   }
@@ -533,24 +554,41 @@ function RowRenderer({
   return _;
 }
 
-function UnassignedRow({
-  canEdit,
-  unassignedNpcCount,
+function CapacityDisplay({
+  current,
+  capacity,
 }: {
-  readonly canEdit: boolean;
-  readonly unassignedNpcCount: number;
+  readonly capacity: number | null;
+  readonly current: number;
 }): JSX.Element {
+  if (capacity === null) {
+    return (
+      <>
+        {current} / <span aria-label="no upper bound">unlimited</span>
+      </>
+    );
+  }
+
+  const isEmpty = current === 0;
+  const fillPct =
+    capacity > 0 ? Math.min(100, Math.round((current / capacity) * 100)) : 0;
+
   return (
-    <TableRow>
-      <TableCell className="py-2 pr-4 font-medium">Unassigned</TableCell>
-      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
-        {unassignedNpcCount.toString()} /{" "}
-        <span aria-label="no upper bound">∞</span>
-      </TableCell>
-      {canEdit ? (
-        <TableCell className="py-2 text-muted-foreground">—</TableCell>
-      ) : null}
-    </TableRow>
+    <div className="flex min-w-28 flex-col gap-1">
+      <span
+        className={cn(
+          "tabular-nums",
+          isEmpty && "font-medium text-amber-600 dark:text-amber-500",
+        )}
+      >
+        {current} / {capacity}
+      </span>
+      <Progress
+        aria-label={`${current.toString()} of ${capacity.toString()} filled`}
+        className={cn("h-1.5", isEmpty && "bg-amber-100 dark:bg-amber-950")}
+        value={fillPct}
+      />
+    </div>
   );
 }
 
@@ -560,18 +598,22 @@ function BulkJobRow({
   settlementId,
   unassignedNpcCount,
   worldId,
+  onDirtyChange,
 }: {
   readonly canEdit: boolean;
   readonly job: SettlementJobCount;
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
   readonly worldId: string;
+  readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(job.currentCount));
   const mutation = useMutation(
     setBulkStandardJobAssignmentMutationOptions({ queryClient, worldId }),
   );
+
+  const dirtyKey = `bulk-${job.jobId}`;
 
   const parsedCount = parseInt(localCount, 10);
   const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
@@ -589,6 +631,7 @@ function BulkJobRow({
         targetCount: parsedCount,
       });
       setLocalCount(String(result.after));
+      onDirtyChange(dirtyKey, 0);
       notifyMutationSuccess("Job assignment updated.");
     } catch (error) {
       notifyMutationError(error, "Failed to update job assignment.");
@@ -598,8 +641,8 @@ function BulkJobRow({
   return (
     <TableRow className="border-b border-border last:border-0">
       <TableCell className="py-2 pr-4 font-medium">{job.jobName}</TableCell>
-      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
-        {job.currentCount} / {job.capacity}
+      <TableCell className="py-2 pr-4 text-muted-foreground">
+        <CapacityDisplay capacity={job.capacity} current={job.currentCount} />
       </TableCell>
       {canEdit ? (
         <TableCell className="py-2">
@@ -613,7 +656,11 @@ function BulkJobRow({
               type="number"
               value={localCount}
               onChange={(e) => {
-                setLocalCount(e.currentTarget.value);
+                const value = e.currentTarget.value;
+                setLocalCount(value);
+                const parsed = parseInt(value, 10);
+                const valid = !Number.isNaN(parsed) && parsed >= 0;
+                onDirtyChange(dirtyKey, valid ? parsed - job.currentCount : 0);
               }}
             />
             <Button
@@ -640,6 +687,7 @@ function DepositTargetRow({
   settlementId,
   unassignedNpcCount,
   worldId,
+  onDirtyChange,
 }: {
   readonly canEdit: boolean;
   readonly currentCount: number;
@@ -647,6 +695,7 @@ function DepositTargetRow({
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
   readonly worldId: string;
+  readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(currentCount));
@@ -656,12 +705,7 @@ function DepositTargetRow({
 
   const label = `${deposit.name} — ${deposit.depositTypeJobName}`;
   const capacity = deposit.maxWorkers;
-  const capacityDisplay =
-    capacity !== null ? (
-      capacity.toString()
-    ) : (
-      <span aria-label="no upper bound">∞</span>
-    );
+  const dirtyKey = `deposit-${deposit.id}`;
 
   const parsedCount = parseInt(localCount, 10);
   const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
@@ -687,6 +731,7 @@ function DepositTargetRow({
         targetId: deposit.id,
       });
       setLocalCount(String(result.after));
+      onDirtyChange(dirtyKey, 0);
       notifyMutationSuccess("Deposit assignment updated.");
     } catch (error) {
       notifyMutationError(error, "Failed to update deposit assignment.");
@@ -696,8 +741,8 @@ function DepositTargetRow({
   return (
     <TableRow className="border-b border-border last:border-0">
       <TableCell className="py-2 pr-4 font-medium">{label}</TableCell>
-      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
-        {currentCount} / {capacityDisplay}
+      <TableCell className="py-2 pr-4 text-muted-foreground">
+        <CapacityDisplay capacity={capacity} current={currentCount} />
       </TableCell>
       {canEdit ? (
         <TableCell className="py-2">
@@ -711,7 +756,11 @@ function DepositTargetRow({
               type="number"
               value={localCount}
               onChange={(e) => {
-                setLocalCount(e.currentTarget.value);
+                const value = e.currentTarget.value;
+                setLocalCount(value);
+                const parsed = parseInt(value, 10);
+                const valid = !Number.isNaN(parsed) && parsed >= 0;
+                onDirtyChange(dirtyKey, valid ? parsed - currentCount : 0);
               }}
             />
             <span title={applyTooltip}>
@@ -742,6 +791,7 @@ function PopulationTargetRow({
   settlementId,
   unassignedNpcCount,
   worldId,
+  onDirtyChange,
 }: {
   readonly assignmentType: "culling" | "husbandry";
   readonly canEdit: boolean;
@@ -751,6 +801,7 @@ function PopulationTargetRow({
   readonly settlementId: string;
   readonly unassignedNpcCount: number;
   readonly worldId: string;
+  readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(currentCount));
@@ -759,6 +810,7 @@ function PopulationTargetRow({
   );
 
   const label = `${population.name} — ${jobName}`;
+  const dirtyKey = `${assignmentType}-${population.id}`;
 
   const parsedCount = parseInt(localCount, 10);
   const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
@@ -778,6 +830,7 @@ function PopulationTargetRow({
         targetId: population.id,
       });
       setLocalCount(String(result.after));
+      onDirtyChange(dirtyKey, 0);
       notifyMutationSuccess("Assignment updated.");
     } catch (error) {
       notifyMutationError(error, "Failed to update assignment.");
@@ -787,8 +840,8 @@ function PopulationTargetRow({
   return (
     <TableRow className="border-b border-border last:border-0">
       <TableCell className="py-2 pr-4 font-medium">{label}</TableCell>
-      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
-        {currentCount} / <span aria-label="no upper bound">∞</span>
+      <TableCell className="py-2 pr-4 text-muted-foreground">
+        <CapacityDisplay capacity={null} current={currentCount} />
       </TableCell>
       {canEdit ? (
         <TableCell className="py-2">
@@ -802,7 +855,11 @@ function PopulationTargetRow({
               type="number"
               value={localCount}
               onChange={(e) => {
-                setLocalCount(e.currentTarget.value);
+                const value = e.currentTarget.value;
+                setLocalCount(value);
+                const parsed = parseInt(value, 10);
+                const valid = !Number.isNaN(parsed) && parsed >= 0;
+                onDirtyChange(dirtyKey, valid ? parsed - currentCount : 0);
               }}
             />
             <span title={applyTooltip}>
@@ -834,6 +891,7 @@ function TradeRouteLocalEndRow({
   tradeRouteEnd,
   unassignedNpcCount,
   worldId,
+  onDirtyChange,
 }: {
   readonly canEdit: boolean;
   readonly currentCount: number;
@@ -844,12 +902,15 @@ function TradeRouteLocalEndRow({
   readonly tradeRouteEnd: "destination" | "origin";
   readonly unassignedNpcCount: number;
   readonly worldId: string;
+  readonly onDirtyChange: (key: string, delta: number) => void;
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [localCount, setLocalCount] = useState(String(currentCount));
   const mutation = useMutation(
     setPerTargetBulkAssignmentMutationOptions({ queryClient, worldId }),
   );
+
+  const dirtyKey = `trade-route-${routeId}-${tradeRouteEnd}`;
 
   const parsedCount = parseInt(localCount, 10);
   const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
@@ -870,6 +931,7 @@ function TradeRouteLocalEndRow({
         tradeRouteEnd,
       });
       setLocalCount(String(result.after));
+      onDirtyChange(dirtyKey, 0);
       notifyMutationSuccess("Trade route assignment updated.");
     } catch (error) {
       notifyMutationError(error, "Failed to update trade route assignment.");
@@ -884,8 +946,8 @@ function TradeRouteLocalEndRow({
           <span>{label}</span>
         </div>
       </TableCell>
-      <TableCell className="py-2 pr-4 tabular-nums text-muted-foreground">
-        {currentCount} / <span aria-label="no upper bound">∞</span>
+      <TableCell className="py-2 pr-4 text-muted-foreground">
+        <CapacityDisplay capacity={null} current={currentCount} />
       </TableCell>
       {canEdit ? (
         <TableCell className="py-2">
@@ -899,7 +961,11 @@ function TradeRouteLocalEndRow({
               type="number"
               value={localCount}
               onChange={(e) => {
-                setLocalCount(e.currentTarget.value);
+                const value = e.currentTarget.value;
+                setLocalCount(value);
+                const parsed = parseInt(value, 10);
+                const valid = !Number.isNaN(parsed) && parsed >= 0;
+                onDirtyChange(dirtyKey, valid ? parsed - currentCount : 0);
               }}
             />
             <span title={applyTooltip}>
