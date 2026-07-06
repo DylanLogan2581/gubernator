@@ -34,7 +34,11 @@ export function TradeRouteDetailPanel({
       </div>
       <div className="grid gap-1">
         <span className="text-muted-foreground">Legs</span>
-        <LegsSummary legs={route.legs} viewerSide={side} />
+        <LegsSummary
+          legs={route.legs}
+          status={route.status}
+          viewerSide={side}
+        />
       </div>
       <div className="grid gap-1">
         <span className="text-muted-foreground">Shipments</span>

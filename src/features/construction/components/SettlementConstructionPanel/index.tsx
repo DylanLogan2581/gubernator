@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -83,7 +83,7 @@ export function SettlementConstructionPanel({
               setShowCancelled((v) => !v);
             }}
           >
-            <Trash2 aria-hidden="true" />
+            <Eye aria-hidden="true" />
           </Button>
         </div>
       </div>

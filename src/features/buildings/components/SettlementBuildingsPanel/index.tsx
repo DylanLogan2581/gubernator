@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Eye, Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -115,7 +115,7 @@ export function SettlementBuildingsPanel({
                 setShowTrash((prev) => !prev);
               }}
             >
-              <Trash2 aria-hidden="true" />
+              <Eye aria-hidden="true" />
             </Button>
           </div>
         </div>

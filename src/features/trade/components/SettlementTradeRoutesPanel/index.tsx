@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -132,7 +132,7 @@ export function SettlementTradeRoutesPanel({
                 setShowCancelled((v) => !v);
               }}
             >
-              <Trash2 aria-hidden="true" />
+              <Eye aria-hidden="true" />
             </Button>
           ) : null}
         </div>

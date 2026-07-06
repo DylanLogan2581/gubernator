@@ -103,7 +103,11 @@ export function TradeRouteRow({
           </span>
         </TableCell>
         <TableCell className="py-2 pr-4">
-          <LegsSummary legs={route.legs} viewerSide={side} />
+          <LegsSummary
+            legs={route.legs}
+            status={route.status}
+            viewerSide={side}
+          />
         </TableCell>
         <TableCell className="py-2 pr-4">
           <StatusBadge

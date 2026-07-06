@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -205,7 +205,7 @@ function DepositsPanelHeader({
               variant={showRemoved ? "secondary" : "ghost"}
               onClick={onToggleRemoved}
             >
-              <Trash2 aria-hidden="true" />
+              <Eye aria-hidden="true" />
             </Button>
           ) : null}
         </div>
