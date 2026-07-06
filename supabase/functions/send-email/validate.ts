@@ -26,8 +26,7 @@ const EXPECTED_FIELDS = new Set([
 
 const VALID_KINDS: readonly SendEmailKind[] = ["all", "nation", "specific", "test", "world"];
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function bodyReadErrorMessage(reason: ReadCappedJsonBodyFailureReason): string {
   switch (reason) {

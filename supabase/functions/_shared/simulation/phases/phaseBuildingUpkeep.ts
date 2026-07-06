@@ -62,10 +62,9 @@ export function phaseBuildingUpkeep(
     let upkeepMultiplier = 1.0;
     if (mults !== null && mults !== undefined) {
       const instanceMult = mults.upkeepByBuildingInstanceId.get(building.id);
-      const blueprintMult =
-        typeof blueprintId === "string"
-          ? mults.upkeepByBlueprintId.get(blueprintId)
-          : undefined;
+      const blueprintMult = typeof blueprintId === "string"
+        ? mults.upkeepByBlueprintId.get(blueprintId)
+        : undefined;
       if (instanceMult !== null && instanceMult !== undefined) {
         upkeepMultiplier = instanceMult;
       } else if (blueprintMult !== null && blueprintMult !== undefined) {

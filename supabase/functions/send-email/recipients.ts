@@ -110,7 +110,9 @@ async function fetchWorldMemberUserIds(
 ): Promise<readonly string[]> {
   const rows = await restGet(
     config,
-    `citizens?select=user_id&world_id=eq.${encodeURIComponent(worldId)}&citizen_type=eq.player_character&status=eq.alive&user_id=not.is.null`,
+    `citizens?select=user_id&world_id=eq.${
+      encodeURIComponent(worldId)
+    }&citizen_type=eq.player_character&status=eq.alive&user_id=not.is.null`,
   );
   return [...new Set(toUserIdRows(rows))];
 }
@@ -141,7 +143,9 @@ async function fetchNationMemberUserIds(
   for (const batch of chunk(settlementIds, REST_ID_BATCH_SIZE)) {
     const rows = await restGet(
       config,
-      `citizens?select=user_id&settlement_id=${inFilter(batch)}&citizen_type=eq.player_character&status=eq.alive&user_id=not.is.null`,
+      `citizens?select=user_id&settlement_id=${
+        inFilter(batch)
+      }&citizen_type=eq.player_character&status=eq.alive&user_id=not.is.null`,
     );
     for (const userId of toUserIdRows(rows)) {
       userIds.add(userId);
@@ -170,8 +174,7 @@ export async function resolveRecipients(
         if (result.overflowed) {
           return {
             code: "too_many_recipients",
-            message:
-              `This send would reach more than ${MAX_RECIPIENTS} recipients. Narrow the ` +
+            message: `This send would reach more than ${MAX_RECIPIENTS} recipients. Narrow the ` +
               `recipient scope (e.g. by world or nation) and try again.`,
             ok: false,
           };
@@ -188,7 +191,8 @@ export async function resolveRecipients(
         if (userIds.length > MAX_RECIPIENTS) {
           return {
             code: "too_many_recipients",
-            message: `This world has more than ${MAX_RECIPIENTS} members. Narrow the recipient scope and try again.`,
+            message:
+              `This world has more than ${MAX_RECIPIENTS} members. Narrow the recipient scope and try again.`,
             ok: false,
           };
         }
@@ -200,7 +204,8 @@ export async function resolveRecipients(
         if (userIds.length > MAX_RECIPIENTS) {
           return {
             code: "too_many_recipients",
-            message: `This nation has more than ${MAX_RECIPIENTS} members. Narrow the recipient scope and try again.`,
+            message:
+              `This nation has more than ${MAX_RECIPIENTS} members. Narrow the recipient scope and try again.`,
             ok: false,
           };
         }
@@ -226,7 +231,8 @@ export async function resolveRecipients(
     if (recipients.length > MAX_RECIPIENTS) {
       return {
         code: "too_many_recipients",
-        message: `This send would reach more than ${MAX_RECIPIENTS} recipients. Narrow the recipient scope and try again.`,
+        message:
+          `This send would reach more than ${MAX_RECIPIENTS} recipients. Narrow the recipient scope and try again.`,
         ok: false,
       };
     }

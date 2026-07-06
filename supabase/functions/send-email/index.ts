@@ -258,7 +258,6 @@ export async function handleSendEmailRequest(
   }
 }
 
-
 async function handleSmtpStatusRequest(
   request: Request,
   allowedOrigin: string | null,
@@ -416,7 +415,10 @@ function getSmtpConfig(): SmtpConfigResult {
   const user = getRequiredRuntimeEnv("SEND_EMAIL_SMTP_USER");
   const pass = getRequiredRuntimeEnv("SEND_EMAIL_SMTP_PASS");
 
-  if (host === undefined || portRaw === undefined || adminEmail === undefined || senderName === undefined) {
+  if (
+    host === undefined || portRaw === undefined || adminEmail === undefined ||
+    senderName === undefined
+  ) {
     return { ok: false };
   }
 
