@@ -8,6 +8,14 @@ const UUID_RE =
   /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const MAX_PAGES = 80;
 const SEED_PATHS = ["/", "/worlds", "/notifications", "/superadmin"];
+const MAX_BODY_CHARS = 500;
+
+function truncateBody(body: string): string {
+  const flat = body.replace(/\s+/g, " ").trim();
+  return flat.length > MAX_BODY_CHARS
+    ? `${flat.slice(0, MAX_BODY_CHARS)}…`
+    : flat;
+}
 
 function routePattern(pathname: string): string {
   return pathname.replace(UUID_RE, ":id").replace(/\/\d+(?=\/|$)/g, "/:num");
@@ -33,13 +41,16 @@ type A11yViolation = {
 test("crawl all views and screenshot", async ({ page }, testInfo) => {
   // project names: shots-<role> or shots-<role>-mobile
   const variant = testInfo.project.name.replace(/^shots-/, "");
+  const isMobileVariant = variant.endsWith("-mobile");
   const outDir = path.join("screenshots", "auto", variant);
   fs.mkdirSync(outDir, { recursive: true });
 
   const consoleErrors: Record<string, string[]> = {};
-  const record = (message: string): void => {
-    const key = routePattern(new URL(page.url()).pathname);
+  const push = (key: string, message: string): void => {
     (consoleErrors[key] ??= []).push(message);
+  };
+  const record = (message: string): void => {
+    push(routePattern(new URL(page.url()).pathname), message);
   };
   page.on("console", (msg) => {
     if (msg.type() === "error") record(msg.text());
@@ -48,9 +59,20 @@ test("crawl all views and screenshot", async ({ page }, testInfo) => {
     record(`pageerror: ${err.message}`);
   });
   page.on("response", (response) => {
-    if (response.status() >= 400) {
-      record(`HTTP ${response.status()} ${response.url()}`);
-    }
+    if (response.status() < 400) return;
+    // capture key now: page may navigate before the body promise settles
+    const key = routePattern(new URL(page.url()).pathname);
+    void response
+      .text()
+      .then((body) => {
+        push(
+          key,
+          `HTTP ${response.status()} ${response.url()} ${truncateBody(body)}`,
+        );
+      })
+      .catch(() => {
+        push(key, `HTTP ${response.status()} ${response.url()}`);
+      });
   });
 
   const queue = [...SEED_PATHS];
@@ -103,6 +125,18 @@ test("crawl all views and screenshot", async ({ page }, testInfo) => {
         description: v.description,
         nodes: v.nodes.length,
       }));
+    }
+
+    if (isMobileVariant) {
+      // nav links live in a Sheet that's unmounted until the hamburger opens
+      const trigger = page.locator('[data-slot="sidebar-trigger"]');
+      if ((await trigger.count()) > 0) {
+        await trigger.first().click();
+        await page
+          .getByRole("dialog")
+          .waitFor({ state: "visible", timeout: 2_000 })
+          .catch(() => undefined);
+      }
     }
 
     const hrefs = await page.$$eval("a[href]", (anchors) =>
