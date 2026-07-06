@@ -80,7 +80,7 @@ export function WorldBreadcrumb({
   });
 
   return (
-    <nav aria-label="World navigation breadcrumb">
+    <nav aria-label="World navigation breadcrumb" className="min-w-0 flex-1">
       <ol className="flex min-w-0 items-center gap-1">
         {segments.map((segment, index) => (
           <li
@@ -88,11 +88,14 @@ export function WorldBreadcrumb({
             className={
               index === segments.length - 1
                 ? "flex min-w-0 items-center gap-1"
-                : "flex shrink-0 items-center gap-1"
+                : "hidden shrink-0 items-center gap-1 sm:flex"
             }
           >
             {index > 0 && (
-              <ChevronRight aria-hidden="true" className="size-3 opacity-50" />
+              <ChevronRight
+                aria-hidden="true"
+                className="hidden size-3 shrink-0 opacity-50 sm:block"
+              />
             )}
             {renderSegment(segment)}
           </li>
@@ -139,6 +142,6 @@ function renderSegment(segment: BreadcrumbSegment): JSX.Element {
         </Link>
       );
     case "current":
-      return <span>{segment.label}</span>;
+      return <span className="min-w-0 truncate">{segment.label}</span>;
   }
 }

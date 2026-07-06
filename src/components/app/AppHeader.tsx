@@ -42,13 +42,14 @@ export function AppHeader({
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
       <SidebarTrigger />
-      {worldId !== null && worldName !== null ? (
-        <WorldBreadcrumb worldId={worldId} worldName={worldName} />
-      ) : location.pathname.startsWith("/superadmin") ? (
-        <SuperadminBreadcrumb />
-      ) : null}
-      <div className="flex-1" />
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center">
+        {worldId !== null && worldName !== null ? (
+          <WorldBreadcrumb worldId={worldId} worldName={worldName} />
+        ) : location.pathname.startsWith("/superadmin") ? (
+          <SuperadminBreadcrumb />
+        ) : null}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
         {turnLabel !== null ? (
           <span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">
             {turnLabel}
