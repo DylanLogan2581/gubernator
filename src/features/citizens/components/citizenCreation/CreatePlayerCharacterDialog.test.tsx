@@ -185,16 +185,25 @@ describe("CreatePlayerCharacterDialog", () => {
 
   function renderDialog(
     options: {
+      canAdmin?: boolean;
       citizenRows?: CitizenRow[];
       userRows?: UserRow[];
     } = {},
-  ): void {
-    const { citizenRows = [], userRows = [USER_ROW] } = options;
-    requireSupabaseClient.mockReturnValue(createClient(citizenRows, userRows));
+  ): { readonly rpc: ReturnType<typeof vi.fn> } {
+    const {
+      canAdmin = true,
+      citizenRows = [],
+      userRows = [USER_ROW],
+    } = options;
+    const client = createClient(citizenRows, userRows) as {
+      readonly rpc: ReturnType<typeof vi.fn>;
+    };
+    requireSupabaseClient.mockReturnValue(client);
     const queryClient = createQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
         <CreatePlayerCharacterDialog
+          canAdmin={canAdmin}
           incestPreventionDepth={4}
           onClose={onClose}
           onCreated={onCreated}
@@ -204,7 +213,25 @@ describe("CreatePlayerCharacterDialog", () => {
         />
       </QueryClientProvider>,
     );
+    return client;
   }
+
+  it("does not query available users when canAdmin is false", async () => {
+    const client = renderDialog({ canAdmin: false });
+
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Given name" }),
+      "Newborn",
+    );
+
+    expect(client.rpc).not.toHaveBeenCalledWith(
+      "search_users_for_admin_picker",
+      expect.anything(),
+    );
+    expect(
+      screen.queryByRole("option", { name: "testuser" }),
+    ).not.toBeInTheDocument();
+  });
 
   it("does not call the mutation when the name is blank", async () => {
     renderDialog();

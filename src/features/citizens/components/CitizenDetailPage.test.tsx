@@ -256,17 +256,16 @@ describe("CitizenDetailPage", () => {
   });
 
   it("renders the page for the linked PC viewing themselves without admin or lifecycle controls", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        adminRows: [],
-        citizen: createCitizenRow({
-          citizen_type: "player_character",
-          name: "Brann",
-          user_id: USER_ID,
-        }),
-        worldVisibility: "public",
+    const client = createClient({
+      adminRows: [],
+      citizen: createCitizenRow({
+        citizen_type: "player_character",
+        name: "Brann",
+        user_id: USER_ID,
       }),
-    );
+      worldVisibility: "public",
+    });
+    requireSupabaseClient.mockReturnValue(client);
 
     renderPage();
 
@@ -280,6 +279,14 @@ describe("CitizenDetailPage", () => {
 
     await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
+
+    // Non-admins must never hit the admin-only picker RPC (403 for them).
+    expect(
+      (client as { rpc: ReturnType<typeof vi.fn> }).rpc,
+    ).not.toHaveBeenCalledWith(
+      "search_users_for_admin_picker",
+      expect.anything(),
+    );
   });
 
   it("renders a read-only profile for nation and settlement managers viewing other citizens", async () => {

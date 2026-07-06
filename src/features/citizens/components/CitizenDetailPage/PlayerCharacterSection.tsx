@@ -56,6 +56,7 @@ export function CitizenPlayerCharacterSection({
         </p>
       </div>
       <CitizenLinkedUserControl
+        canAdmin={canAdmin}
         canEdit={canEdit}
         citizen={citizen}
         queryClient={queryClient}
@@ -71,10 +72,12 @@ export function CitizenPlayerCharacterSection({
 }
 
 function CitizenLinkedUserControl({
+  canAdmin,
   canEdit,
   citizen,
   queryClient,
 }: {
+  readonly canAdmin: boolean;
   readonly canEdit: boolean;
   readonly citizen: Citizen;
   readonly queryClient: QueryClient;
@@ -84,7 +87,10 @@ function CitizenLinkedUserControl({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [inputError, setInputError] = useState<string | undefined>(undefined);
 
-  const usersQuery = useQuery(availableUsersQueryOptions());
+  const usersQuery = useQuery({
+    ...availableUsersQueryOptions(),
+    enabled: canAdmin,
+  });
   const linkMutation = useMutation(
     linkUserToCitizenMutationOptions({ queryClient }),
   );
@@ -176,13 +182,14 @@ function CitizenLinkedUserControl({
   const userChoices = usersQuery.data ?? [];
   const linkedUser = userChoices.find((u) => u.id === citizen.userId);
   // Show a skeleton while the lookup is in flight so the raw UUID never appears.
-  const linkedUserPending = citizen.userId !== null && usersQuery.isPending;
+  const linkedUserPending =
+    canAdmin && citizen.userId !== null && usersQuery.isPending;
   const linkedUserLabel: string | null =
     citizen.userId === null
       ? null
       : linkedUser !== undefined
         ? linkedUser.username
-        : usersQuery.isPending || usersQuery.isError
+        : canAdmin && (usersQuery.isPending || usersQuery.isError)
           ? null
           : "Unknown user";
 

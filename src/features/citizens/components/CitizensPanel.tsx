@@ -184,6 +184,7 @@ export function CitizensPanel({
             <>
               {!includeDead ? (
                 <CitizensCreateActions
+                  canAdmin={canAdmin}
                   incestPreventionDepth={incestPreventionDepth}
                   isArchived={isArchived}
                   settlementId={settlementId}
@@ -225,11 +226,13 @@ export function CitizensPanel({
 type CitizensCreateMode = "npc" | "player_character" | null;
 
 function CitizensCreateActions({
+  canAdmin,
   incestPreventionDepth,
   isArchived,
   settlementId,
   worldId,
 }: {
+  readonly canAdmin: boolean;
   readonly incestPreventionDepth: number;
   readonly isArchived: boolean;
   readonly settlementId: string;
@@ -282,6 +285,7 @@ function CitizensCreateActions({
       ) : null}
       {mode === "player_character" ? (
         <CreatePlayerCharacterDialog
+          canAdmin={canAdmin}
           incestPreventionDepth={incestPreventionDepth}
           onClose={() => setMode(null)}
           onCreated={() => undefined}
