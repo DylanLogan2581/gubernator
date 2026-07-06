@@ -44,4 +44,9 @@ describe("PopulationTrendChart", () => {
     expect(screen.getByText("Births and deaths per turn")).toBeInTheDocument();
     expect(screen.queryByText(/no population snapshots/i)).toBeNull();
   });
+
+  it("renders a single-point series without falling back to the empty state", () => {
+    render(<PopulationTrendChart rows={[makeRow(1)]} turnLabel={turnLabel} />);
+    expect(screen.queryByText(/no population snapshots/i)).toBeNull();
+  });
 });

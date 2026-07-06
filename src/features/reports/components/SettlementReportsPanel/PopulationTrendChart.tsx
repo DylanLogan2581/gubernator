@@ -82,6 +82,8 @@ export function PopulationTrendChart({
     turnLabel: turnLabel(r.turn_number),
   }));
 
+  const singlePoint = lineData.length === 1;
+
   const barData = rows.map((r) => ({
     birth_count: r.birth_count,
     death_count: r.death_count,
@@ -121,7 +123,7 @@ export function PopulationTrendChart({
               type="monotone"
               dataKey="population_total"
               stroke="var(--chart-1)"
-              dot={false}
+              dot={singlePoint}
               connectNulls
               strokeWidth={2}
             />
@@ -129,7 +131,7 @@ export function PopulationTrendChart({
               type="monotone"
               dataKey="population_npc"
               stroke="var(--chart-2)"
-              dot={false}
+              dot={singlePoint}
               connectNulls
               strokeWidth={1.5}
             />
@@ -137,7 +139,7 @@ export function PopulationTrendChart({
               type="monotone"
               dataKey="population_player_character"
               stroke="var(--chart-3)"
-              dot={false}
+              dot={singlePoint}
               connectNulls
               strokeWidth={1.5}
             />
@@ -145,7 +147,7 @@ export function PopulationTrendChart({
               type="monotone"
               dataKey="population_cap"
               stroke="var(--chart-4)"
-              dot={false}
+              dot={singlePoint}
               connectNulls
               strokeWidth={1.5}
               strokeDasharray="4 2"

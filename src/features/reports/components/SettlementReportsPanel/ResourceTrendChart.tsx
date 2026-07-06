@@ -80,6 +80,8 @@ export function ResourceTrendChart({
     turnLabel: turnLabel(r.turn_number),
   }));
 
+  const singlePoint = chartData.length === 1;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -147,7 +149,7 @@ export function ResourceTrendChart({
                   fill="var(--chart-5)"
                   fillOpacity={0.18}
                   strokeWidth={2}
-                  dot={false}
+                  dot={singlePoint}
                   connectNulls
                 />
               </AreaChart>
@@ -188,7 +190,7 @@ export function ResourceTrendChart({
                   type="monotone"
                   dataKey="produced_amount"
                   stroke="var(--chart-2)"
-                  dot={false}
+                  dot={singlePoint}
                   connectNulls
                   strokeWidth={1.5}
                 />
@@ -196,7 +198,7 @@ export function ResourceTrendChart({
                   type="monotone"
                   dataKey="consumed_amount"
                   stroke="var(--chart-1)"
-                  dot={false}
+                  dot={singlePoint}
                   connectNulls
                   strokeWidth={1.5}
                 />
@@ -204,7 +206,7 @@ export function ResourceTrendChart({
                   type="monotone"
                   dataKey="trade_in_amount"
                   stroke="var(--chart-3)"
-                  dot={false}
+                  dot={singlePoint}
                   connectNulls
                   strokeWidth={1.5}
                 />
@@ -212,7 +214,7 @@ export function ResourceTrendChart({
                   type="monotone"
                   dataKey="trade_out_amount"
                   stroke="var(--chart-4)"
-                  dot={false}
+                  dot={singlePoint}
                   connectNulls
                   strokeWidth={1.5}
                 />
@@ -220,7 +222,7 @@ export function ResourceTrendChart({
                   type="monotone"
                   dataKey="adjustment_amount"
                   stroke="var(--chart-5)"
-                  dot={false}
+                  dot={singlePoint}
                   connectNulls
                   strokeWidth={1.5}
                   strokeDasharray="4 2"
