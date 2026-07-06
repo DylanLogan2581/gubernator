@@ -13,87 +13,17 @@ import {
   parseBuildingSuspendedPayload,
 } from "@/shared/simulation";
 
-import { tierEffectsToState } from "../../utils/tierEditorUtils";
+import {
+  buildEffectChips,
+  stateBadgeLabel,
+  stateBadgeVariant,
+} from "../../utils/buildingStateFormatting";
 
 import { DeconstructConfirmDialog } from "./DeconstructConfirmDialog";
 import { HardDeleteSettlementBuildingDialog } from "./HardDeleteSettlementBuildingDialog";
 import { RestoreSettlementBuildingDialog } from "./RestoreSettlementBuildingDialog";
 
-import type {
-  SettlementBuilding,
-  SettlementBuildingState,
-} from "../../types/settlementBuildingTypes";
-
-function buildEffectsSummary(
-  building: SettlementBuilding,
-  resourceNames: ReadonlyMap<string, string>,
-  jobNames: ReadonlyMap<string, string>,
-): string {
-  const rows = tierEffectsToState(building.effectsJson);
-  const parts: string[] = [];
-  for (const row of rows) {
-    switch (row.effectType) {
-      case "population_cap_increase":
-        parts.push(`cap +${row.amount}`);
-        break;
-      case "job_capacity_increase":
-        parts.push(
-          `job +${row.amount} for ${jobNames.get(row.jobId) ?? row.jobId}`,
-        );
-        break;
-      case "resource_storage_increase":
-        parts.push(
-          `storage +${row.amount} for ${resourceNames.get(row.resourceId) ?? row.resourceId}`,
-        );
-        break;
-      case "passive_resource_production":
-        parts.push(
-          `passive +${row.amount}/turn of ${resourceNames.get(row.resourceId) ?? row.resourceId}`,
-        );
-        break;
-      case "":
-        break;
-      default: {
-        const _exhaustive: never = row.effectType;
-        throw new Error(`Unknown effect type: ${String(_exhaustive)}`);
-      }
-    }
-  }
-  return parts.length > 0 ? parts.join(", ") : "—";
-}
-
-type StateBadgeVariant =
-  | "default"
-  | "secondary"
-  | "outline"
-  | "destructive"
-  | "warning";
-
-function stateBadgeVariant(state: SettlementBuildingState): StateBadgeVariant {
-  switch (state) {
-    case "active":
-      return "default";
-    case "suspended":
-      return "warning";
-    case "manually_deconstructed":
-      return "secondary";
-    case "auto_deconstructed":
-      return "destructive";
-  }
-}
-
-function stateBadgeLabel(state: SettlementBuildingState): string {
-  switch (state) {
-    case "active":
-      return "active";
-    case "suspended":
-      return "Suspended";
-    case "manually_deconstructed":
-      return "deconstructed";
-    case "auto_deconstructed":
-      return "Auto-deconstructed";
-  }
-}
+import type { SettlementBuilding } from "../../types/settlementBuildingTypes";
 
 function buildStateBadgeTooltip(
   building: SettlementBuilding,
@@ -154,6 +84,7 @@ type BuildingRowProps = {
   readonly queryClient: QueryClient;
   readonly resourceNames: ReadonlyMap<string, string>;
   readonly settlementId: string;
+  readonly showTierColumn: boolean;
   readonly worldId: string;
 };
 
@@ -166,18 +97,20 @@ export function BuildingRow({
   queryClient,
   resourceNames,
   settlementId,
+  showTierColumn,
   worldId,
 }: BuildingRowProps): JSX.Element {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [trashActionOpen, setTrashActionOpen] = useState<
     "restore" | "hard-delete" | null
   >(null);
-  const effectsSummary = buildEffectsSummary(building, resourceNames, jobNames);
+  const effectChips = buildEffectChips(building, resourceNames, jobNames);
   const showDeconstructButton = canDeconstruct && building.state === "active";
   const isDeconstructed =
     building.state === "auto_deconstructed" ||
     building.state === "manually_deconstructed";
   const stateTooltip = buildStateBadgeTooltip(building, latestOutcome);
+  const showStateBadge = building.state !== "active";
 
   return (
     <>
@@ -192,18 +125,34 @@ export function BuildingRow({
             {building.name ?? building.blueprintName}
           </span>
         </TableCell>
-        <TableCell className="py-2 pr-4">Tier {building.tierNumber}</TableCell>
-        <TableCell className="py-2 pr-4 text-muted-foreground">
-          {effectsSummary}
+        {showTierColumn ? (
+          <TableCell className="py-2 pr-4">
+            Tier {building.tierNumber}
+          </TableCell>
+        ) : null}
+        <TableCell className="py-2 pr-4">
+          {effectChips.length > 0 ? (
+            <span className="flex flex-wrap gap-1">
+              {effectChips.map((chip) => (
+                <Badge key={chip.key} variant="outline">
+                  {chip.label}
+                </Badge>
+              ))}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
         </TableCell>
         <TableCell className="w-16 py-2 pr-2">
-          <Badge
-            aria-label={`State: ${stateBadgeLabel(building.state)}`}
-            title={stateTooltip}
-            variant={stateBadgeVariant(building.state)}
-          >
-            {stateBadgeLabel(building.state)}
-          </Badge>
+          {showStateBadge ? (
+            <Badge
+              aria-label={`State: ${stateBadgeLabel(building.state)}`}
+              title={stateTooltip}
+              variant={stateBadgeVariant(building.state)}
+            >
+              {stateBadgeLabel(building.state)}
+            </Badge>
+          ) : null}
         </TableCell>
         {canAdmin ? (
           <TableCell className="w-28 py-2 text-right">
