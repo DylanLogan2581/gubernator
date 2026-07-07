@@ -8,6 +8,7 @@ import {
   NationIdentitySection,
   NationOverviewCharts,
   NationOverviewStatTiles,
+  NationReadinessSection,
   useNationDetailContext,
 } from "@/features/nations";
 
@@ -44,6 +45,14 @@ function NationOverviewRoute(): JSX.Element {
       <NationOverviewCharts
         currentTurnNumber={worldAccess.header.currentTurnNumber}
         nationId={nation.id}
+        worldId={worldId}
+      />
+
+      <NationReadinessSection
+        currentTurnNumber={worldAccess.header.currentTurnNumber}
+        effectiveCanAdmin={effectiveCanAdmin}
+        isArchived={isArchived}
+        nation={nation}
         worldId={worldId}
       />
 

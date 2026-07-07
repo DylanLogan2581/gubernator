@@ -16,3 +16,9 @@ export type NationReadinessListItem = {
   readonly readinessMode: NationReadinessMode;
   readonly trueVoteCount: number;
 };
+
+export type NationReadinessVoter = {
+  readonly citizenId: string;
+  readonly name: string | null;
+  readonly vote: boolean | null;
+};
