@@ -96,3 +96,13 @@ export type NationLatestTaxSnapshot = {
   readonly totalTaxCollected: number;
   readonly turnNumber: number;
 };
+
+// Discovery (#1085): one recorded nation_discoveries row. nationAId is
+// always the lexicographically smaller nation id (the DB's canonical pair
+// order); callers should not assume it matches UI row/column order.
+export type NationDiscoveryPair = {
+  readonly createdByUserId: string | null;
+  readonly metAtTurnNumber: number;
+  readonly nationAId: string;
+  readonly nationBId: string;
+};

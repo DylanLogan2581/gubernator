@@ -1,6 +1,7 @@
 // Nations feature — query and mutation API for world-scoped nations.
 // Implemented in Epic 3.
 export { NationDetailPage } from "./components/NationDetailPage";
+export { NationDiscoveryConfigPanel } from "./components/NationDiscoveryConfigPanel";
 export { useNationDetailContext } from "./components/NationDetailPage/NationDetailContext";
 export { NationSectionRedirect } from "./components/NationDetailPage/NationSectionRedirect";
 export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
@@ -76,7 +77,12 @@ export {
   nationRelationshipsFromNationQueryOptions,
   nationRelationshipsToNationQueryOptions,
 } from "./queries/nationRelationshipQueries";
+export { nationDiscoveriesQueryOptions } from "./queries/nationDiscoveryQueries";
 export { nationsQueryKeys } from "./queries/nationsQueryKeys";
+export {
+  setNationsMetMutationOptions,
+  setNationsUnmetMutationOptions,
+} from "./mutations/nationDiscoveryMutations";
 export {
   createNationInputSchema,
   deleteNationInputSchema,
@@ -169,3 +175,8 @@ export type {
   NationRelationshipStance,
   NationUnilateralStance,
 } from "./types/nationRelationshipTypes";
+export type { NationDiscoveryPair } from "./types/nationTypes";
+export type {
+  SetNationsMetInput,
+  SetNationsUnmetInput,
+} from "./mutations/nationDiscoveryMutations";

@@ -4,6 +4,8 @@ export const nationsQueryKeys = {
   all: authStateQueryCacheKeys.nationsAll,
   detail: (nationId: string) =>
     [...nationsQueryKeys.all, "detail", nationId] as const,
+  discoveries: (worldId: string) =>
+    [...nationsQueryKeys.all, "discoveries", worldId] as const,
   list: (worldId: string) =>
     [...nationsQueryKeys.all, "list", worldId] as const,
   relationshipPair: (fromNationId: string, toNationId: string) =>

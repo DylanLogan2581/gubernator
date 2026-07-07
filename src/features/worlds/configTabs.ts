@@ -10,6 +10,7 @@ import {
   Settings,
   Sparkles,
   Tag,
+  Users,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -26,6 +27,7 @@ export const CONFIG_TABS = [
   { id: "managed-populations", label: "Managed Populations", icon: PawPrint },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "namesets", label: "Namesets", icon: Tag },
+  { id: "discovery", label: "Discovery", icon: Users },
   { id: "npc-flavor", label: "NPC Flavor", icon: Sparkles },
   { id: "population-rules", label: "Population Rules", icon: ScrollText },
   { id: "images", label: "Images", icon: ImageIcon },

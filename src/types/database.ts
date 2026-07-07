@@ -1353,6 +1353,65 @@ export type Database = {
           },
         ];
       };
+      nation_discoveries: {
+        Row: {
+          created_at: string;
+          created_by_user_id: string | null;
+          id: string;
+          met_at_turn_number: number;
+          nation_a_id: string;
+          nation_b_id: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          id?: string;
+          met_at_turn_number: number;
+          nation_a_id: string;
+          nation_b_id: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          id?: string;
+          met_at_turn_number?: number;
+          nation_a_id?: string;
+          nation_b_id?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_discoveries_created_by_user_id_fkey";
+            columns: ["created_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_discoveries_nation_a_id_fkey";
+            columns: ["nation_a_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_discoveries_nation_b_id_fkey";
+            columns: ["nation_b_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_discoveries_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_offices: {
         Row: {
           appointed_turn_number: number;
@@ -3753,6 +3812,10 @@ export type Database = {
         Args: { p_world_id: string };
         Returns: string;
       };
+      current_user_has_player_character_in_nation: {
+        Args: { p_nation_id: string };
+        Returns: boolean;
+      };
       current_user_has_world_access: {
         Args: { p_world_id: string };
         Returns: boolean;
@@ -4280,6 +4343,7 @@ export type Database = {
         Args: { p_nation_id: string };
         Returns: boolean;
       };
+      nations_have_met: { Args: { a: string; b: string }; Returns: boolean };
       no_plan: { Args: never; Returns: boolean[] };
       num_failed: { Args: never; Returns: number };
       os_name: { Args: never; Returns: string };
@@ -4860,6 +4924,28 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      set_nations_met: {
+        Args: { p_a: string; p_b: string };
+        Returns: {
+          created_at: string;
+          created_by_user_id: string | null;
+          id: string;
+          met_at_turn_number: number;
+          nation_a_id: string;
+          nation_b_id: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_discoveries";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      set_nations_unmet: {
+        Args: { p_a: string; p_b: string };
+        Returns: undefined;
       };
       set_per_target_assignment: {
         Args: {

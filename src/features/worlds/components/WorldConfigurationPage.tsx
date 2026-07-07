@@ -13,6 +13,7 @@ import { DepositsConfigPanel } from "@/features/deposits";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
 import { NamesetsConfigPanel } from "@/features/namesets";
+import { NationDiscoveryConfigPanel } from "@/features/nations";
 import {
   AdminSuppressedNotice,
   currentAccessContextQueryOptions,
@@ -260,6 +261,18 @@ function WorldConfigurationContent({
       return (
         <ConfigPanelShell>
           <NamesetsConfigPanel
+            canAdmin={canAdmin}
+            isArchived={header.isArchived}
+            worldId={worldId}
+          />
+        </ConfigPanelShell>
+      );
+    }
+
+    if (activeTab === "discovery") {
+      return (
+        <ConfigPanelShell>
+          <NationDiscoveryConfigPanel
             canAdmin={canAdmin}
             isArchived={header.isArchived}
             worldId={worldId}

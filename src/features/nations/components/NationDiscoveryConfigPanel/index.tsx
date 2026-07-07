@@ -1,0 +1,178 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type JSX } from "react";
+
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { LoadingState } from "@/components/shared/LoadingState";
+import { Input } from "@/components/ui/input";
+import { getErrorDescription } from "@/lib/errorUtils";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+
+import {
+  setNationsMetMutationOptions,
+  setNationsUnmetMutationOptions,
+} from "../../mutations/nationDiscoveryMutations";
+import { nationDiscoveriesQueryOptions } from "../../queries/nationDiscoveryQueries";
+import { nationsListQueryOptions } from "../../queries/nationsQueries";
+
+import { NationDiscoveryGrid } from "./NationDiscoveryGrid";
+import { NationDiscoveryList } from "./NationDiscoveryList";
+import {
+  buildDiscoveryPairMap,
+  discoveryPairKey,
+} from "./NationDiscoveryUtils";
+
+import type { Nation } from "../../types/nationTypes";
+
+type NationDiscoveryConfigPanelProps = {
+  readonly canAdmin: boolean;
+  readonly isArchived: boolean;
+  readonly worldId: string;
+};
+
+export function NationDiscoveryConfigPanel({
+  canAdmin,
+  isArchived,
+  worldId,
+}: NationDiscoveryConfigPanelProps): JSX.Element {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+
+  const nationsQuery = useQuery(nationsListQueryOptions(worldId));
+  const discoveriesQuery = useQuery(nationDiscoveriesQueryOptions(worldId));
+
+  const setMetMutation = useMutation(
+    setNationsMetMutationOptions({ queryClient }),
+  );
+  const setUnmetMutation = useMutation(
+    setNationsUnmetMutationOptions({ queryClient }),
+  );
+
+  const canEdit = canAdmin && !isArchived;
+
+  if (nationsQuery.isPending || discoveriesQuery.isPending) {
+    return <LoadingState label="Loading nation discovery…" />;
+  }
+
+  if (nationsQuery.isError) {
+    return (
+      <ErrorState
+        title="Nations could not be loaded"
+        description={getErrorDescription(nationsQuery.error)}
+      />
+    );
+  }
+
+  if (discoveriesQuery.isError) {
+    return (
+      <ErrorState
+        title="Nation discoveries could not be loaded"
+        description={getErrorDescription(discoveriesQuery.error)}
+      />
+    );
+  }
+
+  const nations = nationsQuery.data;
+  const filteredNations =
+    search.trim().length === 0
+      ? nations
+      : nations.filter((nation) =>
+          nation.name.toLowerCase().includes(search.trim().toLowerCase()),
+        );
+  const pairsByKey = buildDiscoveryPairMap(discoveriesQuery.data);
+
+  function handleToggle(nationA: Nation, nationB: Nation, met: boolean): void {
+    const key = discoveryPairKey(nationA.id, nationB.id);
+    setPendingKey(key);
+
+    const mutation = met ? setMetMutation : setUnmetMutation;
+    mutation.mutate(
+      { nationAId: nationA.id, nationBId: nationB.id, worldId },
+      {
+        onError: (error) => {
+          setPendingKey(null);
+          notifyMutationError(
+            error,
+            met
+              ? "Could not mark nations as met."
+              : "Could not mark nations as unmet.",
+          );
+        },
+        onSuccess: () => {
+          setPendingKey(null);
+          notifyMutationSuccess(
+            met ? "Nations marked as met." : "Nations marked as unmet.",
+          );
+        },
+      },
+    );
+  }
+
+  if (nations.length < 2) {
+    return (
+      <div className="flex flex-col gap-4">
+        <DiscoveryHeader />
+        <EmptyState
+          title="Not enough nations"
+          description="Discovery pairs need at least two nations in this world."
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <DiscoveryHeader />
+
+      <Input
+        aria-label="Search nations"
+        placeholder="Search nations…"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+        }}
+      />
+
+      {filteredNations.length < 2 ? (
+        <EmptyState
+          title="No matching pairs"
+          description="Adjust your search to see nation pairs."
+        />
+      ) : (
+        <>
+          <div className="hidden md:block">
+            <NationDiscoveryGrid
+              canEdit={canEdit}
+              nations={filteredNations}
+              pairsByKey={pairsByKey}
+              pendingKey={pendingKey}
+              onToggle={handleToggle}
+            />
+          </div>
+          <div className="md:hidden">
+            <NationDiscoveryList
+              canEdit={canEdit}
+              nations={filteredNations}
+              pairsByKey={pairsByKey}
+              pendingKey={pendingKey}
+              onToggle={handleToggle}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DiscoveryHeader(): JSX.Element {
+  return (
+    <div>
+      <h2 className="text-base font-medium">Discovery</h2>
+      <p className="text-sm text-muted-foreground">
+        Mark which nations have met. Two nations only interact once they have
+        been marked as having met.
+      </p>
+    </div>
+  );
+}
