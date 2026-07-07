@@ -38,7 +38,10 @@ export function CitizenRoleAssignmentControls({
   if (!canAdminWorld) {
     return null;
   }
-  if (citizen.citizenType !== "player_character") {
+  const isAssignable =
+    citizen.citizenType === "player_character" ||
+    (citizen.citizenType === "npc" && citizen.status === "alive");
+  if (!isAssignable) {
     return null;
   }
 

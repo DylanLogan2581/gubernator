@@ -39,7 +39,8 @@ export function CitizenDetailTabs({
 }): JSX.Element {
   const canEdit = canAdmin && !isArchived;
   const showPlayerCharacterSection =
-    citizen.citizenType === "player_character" &&
+    (citizen.citizenType === "player_character" ||
+      (citizen.citizenType === "npc" && citizen.status === "alive")) &&
     (canAdmin || isOwnLivingCharacter);
   const showNpcTab = canAdmin && citizen.citizenType === "npc";
 

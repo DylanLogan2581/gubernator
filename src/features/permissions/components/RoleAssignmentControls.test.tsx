@@ -97,9 +97,9 @@ describe("RoleAssignmentControls — citizen variant", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("renders nothing when the citizen is not a player character", () => {
+  it("renders the form for an alive NPC (assignable, same as a player character)", async () => {
     requireSupabaseClient.mockReturnValue(createSupabaseClient({}));
-    const { container } = renderControls(
+    renderControls(
       <RoleAssignmentControls
         canAdminWorld={true}
         citizen={toCitizen(
@@ -108,6 +108,31 @@ describe("RoleAssignmentControls — citizen variant", () => {
             id: CITIZEN_NPC_ID,
             role_type: "none",
             settlement_id: SETTLEMENT_ID,
+            status: "alive",
+          }),
+        )}
+        isArchived={false}
+        variant="citizen"
+      />,
+    );
+    expect(
+      await screen.findByRole("button", { name: "Change role" }),
+    ).toBeDefined();
+  });
+
+  it("renders nothing when the citizen is a dead NPC", () => {
+    requireSupabaseClient.mockReturnValue(createSupabaseClient({}));
+    const { container } = renderControls(
+      <RoleAssignmentControls
+        canAdminWorld={true}
+        citizen={toCitizen(
+          createCitizenRow({
+            citizen_type: "npc",
+            death_cause_category: "unknown",
+            id: CITIZEN_NPC_ID,
+            role_type: "none",
+            settlement_id: SETTLEMENT_ID,
+            status: "dead",
           }),
         )}
         isArchived={false}
@@ -494,6 +519,7 @@ function createSupabaseClient(fixtures: SupabaseFixtures): unknown {
   function citizensBuilder(): unknown {
     const filters: Record<string, unknown> = {};
     let inFilter: { column: string; values: readonly string[] } | null = null;
+    let orExpression: string | null = null;
 
     const builder: Record<string, unknown> = {
       eq: vi.fn((column: string, value: unknown) => {
@@ -502,6 +528,10 @@ function createSupabaseClient(fixtures: SupabaseFixtures): unknown {
       }),
       in: vi.fn((column: string, values: readonly string[]) => {
         inFilter = { column, values };
+        return builder;
+      }),
+      or: vi.fn((expression: string) => {
+        orExpression = expression;
         return builder;
       }),
       order: vi.fn(() => builder),
@@ -520,12 +550,66 @@ function createSupabaseClient(fixtures: SupabaseFixtures): unknown {
           ) {
             return false;
           }
+          if (
+            orExpression !== null &&
+            !matchesOrExpression(orExpression, row)
+          ) {
+            return false;
+          }
           return true;
         });
         return Promise.resolve({ data: filtered, error: null });
       }),
     };
     return builder;
+  }
+
+  // Minimal evaluator for the PostgREST `.or()` filter string shape used by
+  // getPlayerCharactersInNation: top-level comma-separated clauses are OR'd,
+  // and(...) groups are AND'd, leaf clauses are "column.eq.value".
+  function matchesOrExpression(
+    expression: string,
+    row: CitizenRowFixture,
+  ): boolean {
+    return splitTopLevel(expression).some((clause) =>
+      matchesClause(clause, row),
+    );
+  }
+
+  function matchesClause(clause: string, row: CitizenRowFixture): boolean {
+    const andMatch = /^and\((.*)\)$/.exec(clause);
+    if (andMatch !== null) {
+      return splitTopLevel(andMatch[1]).every((inner) =>
+        matchesClause(inner, row),
+      );
+    }
+    const [column, operator, value] = clause.split(".");
+    if (operator !== "eq") {
+      throw new Error(`Unsupported operator in test fixture: ${operator}`);
+    }
+    return row[column as keyof CitizenRowFixture] === value;
+  }
+
+  function splitTopLevel(expression: string): string[] {
+    const parts: string[] = [];
+    let depth = 0;
+    let current = "";
+    for (const char of expression) {
+      if (char === "(") {
+        depth += 1;
+      }
+      if (char === ")") {
+        depth -= 1;
+      }
+      if (char === "," && depth === 0) {
+        parts.push(current);
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    parts.push(current);
+    return parts;
   }
 
   function settlementsBuilder(): unknown {

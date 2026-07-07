@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   assignCitizenRoleMutationOptions,
@@ -55,13 +56,13 @@ function NationRoleAssignmentList({
   );
 
   if (playerCharactersQuery.isPending) {
-    return <LoadingState label="Loading player characters…" />;
+    return <LoadingState label="Loading citizens…" />;
   }
 
   if (playerCharactersQuery.isError) {
     return (
       <ErrorState
-        title="Player characters could not be loaded"
+        title="Citizens could not be loaded"
         description={getErrorDescription(playerCharactersQuery.error)}
       />
     );
@@ -74,8 +75,8 @@ function NationRoleAssignmentList({
   if (candidates.length === 0) {
     return (
       <EmptyState
-        title="No assignable player characters"
-        description="Player characters become assignable once created for one of this nation's settlements. Create one from a settlement's Citizens tab."
+        title="No assignable citizens"
+        description="Citizens become assignable once created for one of this nation's settlements. Create one from a settlement's Citizens tab. Only alive NPCs and player characters are assignable."
         action={
           <Button asChild size="sm" variant="outline">
             <Link
@@ -91,7 +92,7 @@ function NationRoleAssignmentList({
   }
 
   return (
-    <ul className="grid gap-2" aria-label="Player characters">
+    <ul className="grid gap-2" aria-label="Citizens">
       {candidates.map((citizen) => (
         <NationRoleAssignmentRow
           key={citizen.id}
@@ -171,7 +172,14 @@ function NationRoleAssignmentRow({
     <li className="grid gap-2 rounded-md border border-border bg-background p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="grid gap-0.5 text-sm">
-          <span className="font-medium">{citizen.name}</span>
+          <span className="flex items-center gap-2 font-medium">
+            {citizen.name}
+            <Badge
+              variant={citizen.citizenType === "npc" ? "secondary" : "outline"}
+            >
+              {citizen.citizenType === "npc" ? "NPC" : "Player character"}
+            </Badge>
+          </span>
           <span className="text-xs text-muted-foreground">
             {isSettlementManager ? "Settlement manager" : "No role"}
           </span>

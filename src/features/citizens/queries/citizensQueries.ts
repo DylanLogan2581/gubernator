@@ -415,11 +415,16 @@ async function getPlayerCharactersInNation(
     return [];
   }
 
+  // Any citizen can hold a manager role (Epic 11): player characters
+  // unconditionally, and NPCs while alive (a dead NPC cannot be assigned a
+  // role, mirroring assign_citizen_role's guard).
   const { data, error } = await client
     .from("citizens")
     .select(CITIZEN_SELECT)
     .in("settlement_id", settlementIds)
-    .eq("citizen_type", "player_character")
+    .or(
+      "citizen_type.eq.player_character,and(citizen_type.eq.npc,status.eq.alive)",
+    )
     .order("name", { ascending: true })
     .order("id", { ascending: true })
     .returns<CitizenRow[]>();

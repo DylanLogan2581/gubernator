@@ -52,15 +52,17 @@ export function CitizenPlayerCharacterSection({
           Role and linked user
         </h2>
         <p className="text-sm text-muted-foreground">
-          Player character role and the user that controls them.
+          Manager role, and (for player characters) the user that controls them.
         </p>
       </div>
-      <CitizenLinkedUserControl
-        canAdmin={canAdmin}
-        canEdit={canEdit}
-        citizen={citizen}
-        queryClient={queryClient}
-      />
+      {citizen.citizenType === "player_character" ? (
+        <CitizenLinkedUserControl
+          canAdmin={canAdmin}
+          canEdit={canEdit}
+          citizen={citizen}
+          queryClient={queryClient}
+        />
+      ) : null}
       <RoleAssignmentControls
         canAdminWorld={canAdmin}
         citizen={citizen}

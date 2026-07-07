@@ -41,8 +41,8 @@ export function NationRoleAssignmentSection({
         </h2>
         <p className="text-sm text-muted-foreground">
           {canAdminWorld
-            ? "Assign or revoke the Settlement Manager role for player characters in this nation."
-            : "Assign or revoke the Settlement Manager role for player characters in your nation."}
+            ? "Assign or revoke the Settlement Manager role for citizens (player characters or alive NPCs) in this nation."
+            : "Assign or revoke the Settlement Manager role for citizens (player characters or alive NPCs) in your nation."}
         </p>
       </div>
       <RoleAssignmentControls
