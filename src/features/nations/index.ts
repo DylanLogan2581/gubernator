@@ -8,6 +8,7 @@ export { NationDetailsSection } from "./components/NationDetailPage/DetailsSecti
 export { NationFlagSection } from "./components/NationDetailPage/FlagSection";
 export { NationHiddenToggleSection } from "./components/NationDetailPage/HiddenToggleSection";
 export { NationIdentitySection } from "./components/NationDetailPage/IdentitySection";
+export { NationOfficesSection } from "./components/NationDetailPage/OfficesSection";
 export { NationReportsSection } from "./components/NationDetailPage/NationReportsSection";
 export { NationReadinessSection } from "./components/NationDetailPage/ReadinessSection";
 export { NationRelationshipsSection } from "./components/NationDetailPage/RelationshipsSection";
@@ -28,6 +29,10 @@ export {
   updateNationDetailsMutationOptions,
 } from "./mutations/nationsMutations";
 export {
+  appointNationOfficeMutationOptions,
+  dismissNationOfficeMutationOptions,
+} from "./mutations/officesMutations";
+export {
   nationFlagPath,
   removeNationFlagMutationOptions,
   uploadNationFlagMutationOptions,
@@ -45,6 +50,8 @@ export {
   nationSettlementsQueryOptions,
   nationsListQueryOptions,
 } from "./queries/nationsQueries";
+export { nationOfficesRosterQueryOptions } from "./queries/officesQueries";
+export { nationOfficesQueryKeys } from "./queries/nationOfficesQueryKeys";
 export { nationReadinessListQueryOptions } from "./queries/nationReadinessQueries";
 export { nationReadinessQueryKeys } from "./queries/nationReadinessQueryKeys";
 export { nationReadinessVotersQueryOptions } from "./queries/nationReadinessVotersQueries";
@@ -99,6 +106,14 @@ export type {
   WithdrawFromBilateralValues,
 } from "./schemas/nationRelationshipSchemas";
 export type { DeleteNationResult } from "./mutations/nationsMutations";
+export type {
+  AppointNationOfficeInput,
+  DismissNationOfficeInput,
+} from "./mutations/officesMutations";
+export {
+  formatNationOfficeType,
+  type NationOfficeRosterEntry,
+} from "./types/nationOfficeTypes";
 export type { NationRelationshipMutationIssue } from "./mutations/nationRelationshipMutations";
 export {
   NATION_GOVERNMENT_TYPES,

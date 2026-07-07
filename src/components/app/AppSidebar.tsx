@@ -220,12 +220,6 @@ export function AppSidebar(): JSX.Element | null {
     isOnNationPage && nationBasePath !== null
       ? nationSectionFromPathname(location.pathname, nationBasePath)
       : null;
-  const isAliveNationManagerHere =
-    activeCharacter !== null &&
-    activeCharacter.roleType === "nation_manager" &&
-    activeCharacter.roleNationId === nationId &&
-    activeCharacter.status === "alive";
-
   const playItems: NavGroupItem[] = [
     {
       key: "dashboard",
@@ -435,16 +429,12 @@ export function AppSidebar(): JSX.Element | null {
             nationId,
             worldId,
           }),
-          ...(effectiveCanAdmin || isAliveNationManagerHere
-            ? [
-                nationSectionItem("government", {
-                  isActive: currentNationSection === "government",
-                  label: "Government",
-                  nationId,
-                  worldId,
-                }),
-              ]
-            : []),
+          nationSectionItem("government", {
+            isActive: currentNationSection === "government",
+            label: "Government",
+            nationId,
+            worldId,
+          }),
           nationSectionItem("reports", {
             isActive: currentNationSection === "reports",
             label: "Reports",

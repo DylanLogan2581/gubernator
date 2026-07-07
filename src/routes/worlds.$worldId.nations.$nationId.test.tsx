@@ -339,6 +339,20 @@ function createClient({
       if (table === "settlements") {
         return { select: vi.fn(() => settlementsBuilder) };
       }
+      if (table === "nation_offices") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        };
+      }
+      if (table === "citizen_directory_view") {
+        return {
+          select: vi.fn(() => ({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        };
+      }
       if (table === "nation_relationships") {
         return {
           select: vi.fn(() => {
@@ -617,7 +631,7 @@ describe("nation detail route", () => {
       ).toBeDefined();
     });
 
-    it("redirects /government to the overview for a viewer with no admin or manager authority", async () => {
+    it("shows a read-only government tab for a viewer with no admin or manager authority", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           nationRows: [createNationRow()],
@@ -633,9 +647,11 @@ describe("nation detail route", () => {
       });
       const router = renderAt(`${BASE_PATH}/government`);
 
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe(BASE_PATH);
-      });
+      expect(await screen.findByText("Government offices")).toBeDefined();
+      expect(router.state.location.pathname).toBe(`${BASE_PATH}/government`);
+      // Role assignment stays hidden for a non-manager, non-admin viewer;
+      // only the read-only offices roster is visible to them.
+      expect(screen.queryByText("Settlement Manager assignments")).toBeNull();
     });
 
     it("renders role assignment at /government for that nation's alive nation manager", async () => {
