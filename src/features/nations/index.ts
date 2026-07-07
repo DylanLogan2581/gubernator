@@ -22,6 +22,7 @@ export {
   deleteNationMutationOptions,
   isNationMutationError,
   setNationCapitalAndFoundedTurnMutationOptions,
+  setNationGovernmentTypeMutationOptions,
   setNationHiddenMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./mutations/nationsMutations";
@@ -57,6 +58,7 @@ export {
   createNationInputSchema,
   deleteNationInputSchema,
   setNationCapitalAndFoundedTurnInputSchema,
+  setNationGovernmentTypeInputSchema,
   setNationHiddenInputSchema,
   updateNationDetailsInputSchema,
 } from "./schemas/nationSchemas";
@@ -74,6 +76,8 @@ export type {
   DeleteNationValues,
   SetNationCapitalAndFoundedTurnInput,
   SetNationCapitalAndFoundedTurnValues,
+  SetNationGovernmentTypeInput,
+  SetNationGovernmentTypeValues,
   SetNationHiddenInput,
   SetNationHiddenValues,
   UpdateNationDetailsInput,
@@ -91,7 +95,15 @@ export type {
 } from "./schemas/nationRelationshipSchemas";
 export type { DeleteNationResult } from "./mutations/nationsMutations";
 export type { NationRelationshipMutationIssue } from "./mutations/nationRelationshipMutations";
-export type { Nation, NationSettlement } from "./types/nationTypes";
+export {
+  NATION_GOVERNMENT_TYPES,
+  formatNationGovernmentType,
+} from "./types/nationTypes";
+export type {
+  Nation,
+  NationGovernmentType,
+  NationSettlement,
+} from "./types/nationTypes";
 export type {
   NationBilateralResponse,
   NationBilateralStance,

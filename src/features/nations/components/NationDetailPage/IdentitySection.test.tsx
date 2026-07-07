@@ -16,6 +16,7 @@ const {
   mockSettlementsQuery,
   mockCalendarConfigQuery,
   mockSetCapitalAndFoundedTurn,
+  mockSetGovernmentType,
   mockNotifyError,
   mockUseActivePlayerCharacter,
 } = vi.hoisted(() => ({
@@ -23,6 +24,7 @@ const {
   mockSettlementsQuery: vi.fn(),
   mockCalendarConfigQuery: vi.fn(),
   mockSetCapitalAndFoundedTurn: vi.fn(),
+  mockSetGovernmentType: vi.fn(),
   mockNotifyError: vi.fn(),
   mockUseActivePlayerCharacter: vi.fn<
     () => {
@@ -70,6 +72,12 @@ vi.mock("../../mutations/nationsMutations", () => ({
         mutationFn: mockSetCapitalAndFoundedTurn,
       }) as never,
   ),
+  setNationGovernmentTypeMutationOptions: vi.fn(
+    () =>
+      ({
+        mutationFn: mockSetGovernmentType,
+      }) as never,
+  ),
 }));
 
 vi.mock("@/lib/notify", () => ({
@@ -110,6 +118,7 @@ function createNation(overrides: Partial<Nation> = {}): Nation {
     description: null,
     flagPath: null,
     foundedTurnNumber: null,
+    governmentType: "monarchy",
     id: NATION_ID,
     isHidden: false,
     name: "Aldoria",
@@ -349,6 +358,65 @@ describe("NationIdentitySection", () => {
         {
           capitalSettlementId: SETTLEMENT_ID,
           foundedTurnNumber: 7,
+          nationId: NATION_ID,
+          worldId: WORLD_ID,
+        },
+        expect.anything(),
+      );
+    });
+  });
+
+  it("shows the government type", async () => {
+    renderSection(createNation({ governmentType: "republic" }));
+
+    expect(await screen.findByText("Republic")).toBeInTheDocument();
+  });
+
+  it("hides the government type edit control for a nation manager", async () => {
+    mockUseActivePlayerCharacter.mockReturnValue({
+      activeCharacter: {
+        id: CITIZEN_ID,
+        roleNationId: NATION_ID,
+        roleType: "nation_manager",
+        status: "alive",
+      },
+    });
+    renderSection(createNation(), { canAdminWorld: false });
+
+    await screen.findByText("Monarchy");
+    expect(
+      screen.queryByRole("button", { name: "Change government type" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the government type edit control for a world admin", async () => {
+    renderSection(createNation(), { canAdminWorld: true });
+
+    expect(
+      await screen.findByRole("button", { name: "Change government type" }),
+    ).toBeInTheDocument();
+  });
+
+  it("submits the government type edit through the mutation", async () => {
+    mockSetGovernmentType.mockResolvedValue(
+      createNation({ governmentType: "republic" }),
+    );
+    renderSection(createNation(), { canAdminWorld: true });
+
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", { name: "Change government type" }),
+    );
+    await user.selectOptions(
+      screen.getByLabelText("Government type"),
+      "republic",
+    );
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mockSetGovernmentType).toHaveBeenCalledWith(
+        {
+          governmentType: "republic",
           nationId: NATION_ID,
           worldId: WORLD_ID,
         },

@@ -44,10 +44,14 @@ import {
   isNationMutationError,
 } from "../mutations/nationsMutations";
 import { nationsListQueryOptions } from "../queries/nationsQueries";
+import {
+  NATION_GOVERNMENT_TYPES,
+  formatNationGovernmentType,
+} from "../types/nationTypes";
 
 import { NationFlagAvatar } from "./NationFlagAvatar";
 
-import type { Nation } from "../types/nationTypes";
+import type { Nation, NationGovernmentType } from "../types/nationTypes";
 
 type NationListPageProps = {
   readonly worldId: string;
@@ -222,6 +226,9 @@ function NationListItem({
         <div className="grid min-w-0 gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h2 className="truncate text-base font-medium">{nation.name}</h2>
+            <span className="inline-flex items-center rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {formatNationGovernmentType(nation.governmentType)}
+            </span>
             {nation.isHidden ? (
               <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                 <LockKeyhole className="size-3" aria-hidden="true" />
@@ -259,6 +266,8 @@ function CreateNationSection({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [foundedTurnNumber, setFoundedTurnNumber] = useState("");
+  const [governmentType, setGovernmentType] =
+    useState<NationGovernmentType>("monarchy");
   const [nameError, setNameError] = useState<string | undefined>(undefined);
   const [foundedTurnError, setFoundedTurnError] = useState<string | undefined>(
     undefined,
@@ -272,6 +281,7 @@ function CreateNationSection({
     setName("");
     setDescription("");
     setFoundedTurnNumber("");
+    setGovernmentType("monarchy");
     setNameError(undefined);
     setFoundedTurnError(undefined);
     createMutation.reset();
@@ -311,6 +321,7 @@ function CreateNationSection({
       {
         description: description.trim().length === 0 ? null : description,
         foundedTurnNumber: parsedFoundedTurn,
+        governmentType,
         name,
         worldId,
       },
@@ -421,6 +432,28 @@ function CreateNationSection({
                   {foundedTurnError}
                 </p>
               )}
+            </Label>
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="nation-create-government-type"
+            >
+              <span className="text-muted-foreground">Government type</span>
+              <select
+                id="nation-create-government-type"
+                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                value={governmentType}
+                onChange={(event) => {
+                  setGovernmentType(
+                    event.currentTarget.value as NationGovernmentType,
+                  );
+                }}
+              >
+                {NATION_GOVERNMENT_TYPES.map((option) => (
+                  <option key={option} value={option}>
+                    {formatNationGovernmentType(option)}
+                  </option>
+                ))}
+              </select>
             </Label>
             <DialogFooter>
               <Button

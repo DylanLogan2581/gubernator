@@ -23,6 +23,7 @@ type NationRow = {
   readonly created_at: string;
   readonly description: string | null;
   readonly founded_turn_number?: number | null;
+  readonly government_type?: string;
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
@@ -541,6 +542,7 @@ function createNationRow(overrides: Partial<NationRow> = {}): NationRow {
   return {
     created_at: "2026-05-01T00:00:00.000Z",
     description: null,
+    government_type: "monarchy",
     id: NATION_ID,
     is_hidden: false,
     name: "Aldoria",

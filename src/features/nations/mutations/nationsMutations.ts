@@ -17,16 +17,18 @@ import {
   createNationInputSchema,
   deleteNationInputSchema,
   setNationCapitalAndFoundedTurnInputSchema,
+  setNationGovernmentTypeInputSchema,
   setNationHiddenInputSchema,
   updateNationDetailsInputSchema,
   type CreateNationInput,
   type DeleteNationInput,
   type SetNationCapitalAndFoundedTurnInput,
+  type SetNationGovernmentTypeInput,
   type SetNationHiddenInput,
   type UpdateNationDetailsInput,
 } from "../schemas/nationSchemas";
 
-import type { Nation } from "../types/nationTypes";
+import type { Nation, NationGovernmentType } from "../types/nationTypes";
 import type { z } from "zod";
 
 type NationMutationErrorCode = "nation_input_invalid" | "nation_not_found";
@@ -45,6 +47,11 @@ type SetNationHiddenMutationOptions = UseMutationOptions<
   AuthUiError | NationMutationError,
   SetNationHiddenInput
 >;
+type SetNationGovernmentTypeMutationOptions = UseMutationOptions<
+  Nation,
+  AuthUiError | NationMutationError,
+  SetNationGovernmentTypeInput
+>;
 type SetNationCapitalAndFoundedTurnMutationOptions = UseMutationOptions<
   Nation,
   AuthUiError | NationMutationError,
@@ -62,6 +69,7 @@ type NationRow = {
   readonly description: string | null;
   readonly flag_path: string | null;
   readonly founded_turn_number: number | null;
+  readonly government_type: string;
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
@@ -76,7 +84,7 @@ export type DeleteNationResult = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,is_hidden,nameset_id,capital_settlement_id,founded_turn_number,flag_path,created_at,updated_at";
+  "id,world_id,name,description,is_hidden,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,created_at,updated_at";
 
 export type NationMutationIssue = MutationIssue;
 
@@ -151,6 +159,30 @@ export function setNationHiddenMutationOptions({
   });
 }
 
+export function setNationGovernmentTypeMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): SetNationGovernmentTypeMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: SetNationGovernmentTypeInput) =>
+      setNationGovernmentType(client, input),
+    mutationKey: [...nationsQueryKeys.all, "set-nation-government-type"],
+    onSuccess: async (nation): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.list(nation.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.detail(nation.id),
+        }),
+      ]);
+    },
+  });
+}
+
 export function setNationCapitalAndFoundedTurnMutationOptions({
   client = requireSupabaseClient(),
   queryClient,
@@ -212,6 +244,9 @@ async function createNation(
     .from("nations")
     .insert({
       description: values.description ?? null,
+      ...(values.governmentType === undefined
+        ? {}
+        : { government_type: values.governmentType }),
       is_hidden: values.isHidden ?? false,
       name: values.name.trim(),
       world_id: values.worldId,
@@ -303,6 +338,34 @@ async function setNationHidden(
     throw new NationMutationError({
       code: "nation_not_found",
       message: "Nation visibility could not be updated.",
+    });
+  }
+
+  return toNation(data);
+}
+
+async function setNationGovernmentType(
+  client: GubernatorSupabaseClient,
+  input: SetNationGovernmentTypeInput,
+): Promise<Nation> {
+  const values = parseInput(setNationGovernmentTypeInputSchema, input);
+
+  const { data, error } = await client
+    .from("nations")
+    .update({ government_type: values.governmentType })
+    .eq("id", values.nationId)
+    .eq("world_id", values.worldId)
+    .select(NATION_SELECT)
+    .maybeSingle<NationRow>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new NationMutationError({
+      code: "nation_not_found",
+      message: "Nation government type could not be updated.",
     });
   }
 
@@ -401,6 +464,7 @@ function toNation(row: NationRow): Nation {
     description: row.description,
     flagPath: row.flag_path,
     foundedTurnNumber: row.founded_turn_number,
+    governmentType: row.government_type as NationGovernmentType,
     id: row.id,
     isHidden: row.is_hidden,
     name: row.name,

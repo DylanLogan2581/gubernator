@@ -26,10 +26,21 @@ import {
   resolveTurnCalendarDate,
 } from "@/shared/turnCalendarPrimitives";
 
-import { setNationCapitalAndFoundedTurnMutationOptions } from "../../mutations/nationsMutations";
+import {
+  setNationCapitalAndFoundedTurnMutationOptions,
+  setNationGovernmentTypeMutationOptions,
+} from "../../mutations/nationsMutations";
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
+import {
+  NATION_GOVERNMENT_TYPES,
+  formatNationGovernmentType,
+} from "../../types/nationTypes";
 
-import type { Nation, NationSettlement } from "../../types/nationTypes";
+import type {
+  Nation,
+  NationGovernmentType,
+  NationSettlement,
+} from "../../types/nationTypes";
 
 /**
  * Identity summary for a nation: current ruler (nation manager), capital
@@ -66,6 +77,9 @@ export function NationIdentitySection({
     activeCharacter.roleNationId === nation.id &&
     activeCharacter.status === "alive";
   const canEdit = (canAdminWorld || isNationManager) && !isArchived;
+  // Government type is admin-arbitrated roleplay: unlike capital/founded
+  // turn, the nation manager never gets an edit control here.
+  const canEditGovernmentType = canAdminWorld && !isArchived;
 
   const ruler =
     citizensQuery.data?.find(
@@ -87,7 +101,7 @@ export function NationIdentitySection({
         </h2>
       </div>
 
-      <dl className="grid gap-2 sm:grid-cols-3">
+      <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <IdentityReadout label="Ruler">
           {citizensQuery.isPending ? (
             <span className="text-sm text-muted-foreground">Loading…</span>
@@ -152,6 +166,19 @@ export function NationIdentitySection({
               nation.foundedTurnNumber,
               calendarConfigQuery.data ?? null,
             )}
+          </span>
+        </IdentityReadout>
+
+        <IdentityReadout
+          label="Government"
+          action={
+            canEditGovernmentType ? (
+              <GovernmentTypeEditor nation={nation} queryClient={queryClient} />
+            ) : null
+          }
+        >
+          <span className="text-sm">
+            {formatNationGovernmentType(nation.governmentType)}
           </span>
         </IdentityReadout>
       </dl>
@@ -310,6 +337,126 @@ function CapitalPickerDialog({
               <Button type="submit" disabled={setCapitalMutation.isPending}>
                 <Save aria-hidden="true" />
                 {setCapitalMutation.isPending ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function GovernmentTypeEditor({
+  nation,
+  queryClient,
+}: {
+  readonly nation: Nation;
+  readonly queryClient: QueryClient;
+}): JSX.Element {
+  const [isOpen, setIsOpen] = useState(false);
+  const [governmentType, setGovernmentType] = useState<NationGovernmentType>(
+    nation.governmentType,
+  );
+
+  const setGovernmentTypeMutation = useMutation(
+    setNationGovernmentTypeMutationOptions({ queryClient }),
+  );
+
+  function openDialog(): void {
+    setGovernmentType(nation.governmentType);
+    setGovernmentTypeMutation.reset();
+    setIsOpen(true);
+  }
+
+  function closeDialog(): void {
+    setIsOpen(false);
+    setGovernmentTypeMutation.reset();
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    setGovernmentTypeMutation.mutate(
+      {
+        governmentType,
+        nationId: nation.id,
+        worldId: nation.worldId,
+      },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to update government type.");
+        },
+        onSuccess: () => {
+          setIsOpen(false);
+        },
+      },
+    );
+  }
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={openDialog}
+        aria-label="Change government type"
+      >
+        <Pencil aria-hidden="true" />
+      </Button>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change government type</DialogTitle>
+          </DialogHeader>
+          <form
+            aria-label="Change government type"
+            className="grid gap-3"
+            noValidate
+            onSubmit={handleSubmit}
+          >
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="nation-government-type-select"
+            >
+              <span className="text-muted-foreground">Government type</span>
+              <select
+                id="nation-government-type-select"
+                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                disabled={setGovernmentTypeMutation.isPending}
+                value={governmentType}
+                onChange={(event) => {
+                  setGovernmentType(
+                    event.currentTarget.value as NationGovernmentType,
+                  );
+                }}
+              >
+                {NATION_GOVERNMENT_TYPES.map((option) => (
+                  <option key={option} value={option}>
+                    {formatNationGovernmentType(option)}
+                  </option>
+                ))}
+              </select>
+            </Label>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeDialog}
+                disabled={setGovernmentTypeMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={setGovernmentTypeMutation.isPending}
+              >
+                <Save aria-hidden="true" />
+                {setGovernmentTypeMutation.isPending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           </form>

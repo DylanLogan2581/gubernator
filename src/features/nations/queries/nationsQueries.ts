@@ -9,7 +9,11 @@ import {
 
 import { nationsQueryKeys } from "./nationsQueryKeys";
 
-import type { Nation, NationSettlement } from "../types/nationTypes";
+import type {
+  Nation,
+  NationGovernmentType,
+  NationSettlement,
+} from "../types/nationTypes";
 
 type NationListQueryKey = ReturnType<typeof nationsQueryKeys.list>;
 type NationDetailQueryKey = ReturnType<typeof nationsQueryKeys.detail>;
@@ -42,6 +46,7 @@ type NationRow = {
   readonly description: string | null;
   readonly flag_path: string | null;
   readonly founded_turn_number: number | null;
+  readonly government_type: string;
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
@@ -63,7 +68,7 @@ type NationSettlementRow = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,is_hidden,nameset_id,capital_settlement_id,founded_turn_number,flag_path,created_at,updated_at";
+  "id,world_id,name,description,is_hidden,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,created_at,updated_at";
 const NATION_SETTLEMENT_SELECT =
   "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner(name)";
 
@@ -180,6 +185,7 @@ function toNation(row: NationRow): Nation {
     description: row.description,
     flagPath: row.flag_path,
     foundedTurnNumber: row.founded_turn_number,
+    governmentType: row.government_type as NationGovernmentType,
     id: row.id,
     isHidden: row.is_hidden,
     name: row.name,

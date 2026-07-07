@@ -398,6 +398,7 @@ function createQueryClient(): QueryClient {
 type TestNationRow = {
   readonly created_at: string;
   readonly description: string | null;
+  readonly government_type?: string;
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
@@ -528,6 +529,7 @@ function createNationRow(
   return {
     created_at: "2026-01-01T00:00:00.000Z",
     description: null,
+    government_type: "monarchy",
     id: "00000000-0000-0000-0000-0000000000aa",
     is_hidden: false,
     name: "Nation",

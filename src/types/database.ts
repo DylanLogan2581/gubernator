@@ -1442,6 +1442,7 @@ export type Database = {
           description: string | null;
           flag_path: string | null;
           founded_turn_number: number | null;
+          government_type: string;
           id: string;
           is_hidden: boolean;
           name: string;
@@ -1455,6 +1456,7 @@ export type Database = {
           description?: string | null;
           flag_path?: string | null;
           founded_turn_number?: number | null;
+          government_type?: string;
           id?: string;
           is_hidden?: boolean;
           name: string;
@@ -1468,6 +1470,7 @@ export type Database = {
           description?: string | null;
           flag_path?: string | null;
           founded_turn_number?: number | null;
+          government_type?: string;
           id?: string;
           is_hidden?: boolean;
           name?: string;
@@ -4437,6 +4440,7 @@ export type Database = {
           description: string | null;
           flag_path: string | null;
           founded_turn_number: number | null;
+          government_type: string;
           id: string;
           is_hidden: boolean;
           name: string;
@@ -4459,6 +4463,7 @@ export type Database = {
           description: string | null;
           flag_path: string | null;
           founded_turn_number: number | null;
+          government_type: string;
           id: string;
           is_hidden: boolean;
           name: string;
