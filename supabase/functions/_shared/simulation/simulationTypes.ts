@@ -53,6 +53,10 @@ export type SimNation = {
   readonly name: string;
 };
 
+export type SimNationOffice = {
+  readonly citizenId: string;
+};
+
 export type SimSettlement = {
   readonly autoReadyEnabled?: boolean;
   readonly id: string;
@@ -398,6 +402,7 @@ export type SimulationInputState = {
   readonly managedPopulations: readonly SimManagedPopulation[];
   readonly fallbackNamesetIdBySettlementId?: Readonly<Record<string, string>>;
   readonly namesetConfigById?: Readonly<Record<string, SimNamingConfig>>;
+  readonly nationOffices: readonly SimNationOffice[];
   readonly nations: readonly SimNation[];
   readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];

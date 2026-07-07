@@ -61,6 +61,10 @@ describe("citizensDirectoryQueryOptions", () => {
       expect.stringContaining("assignment_label"),
       { count: "exact" },
     );
+    expect(select).toHaveBeenCalledWith(
+      expect.stringContaining("office_types"),
+      { count: "exact" },
+    );
   });
 
   it("applies only the filters that are provided", async () => {
@@ -153,6 +157,7 @@ describe("citizensDirectoryQueryOptions", () => {
           name: "Ada",
           nation_id: "nation-1",
           nation_name: "Nation A",
+          office_types: "treasurer",
           settlement_id: "settlement-1",
           settlement_name: "Settlement A",
           sex: "female",
@@ -180,6 +185,7 @@ describe("citizensDirectoryQueryOptions", () => {
           name: "Ada",
           nationId: "nation-1",
           nationName: "Nation A",
+          officeTypes: "treasurer",
           settlementId: "settlement-1",
           settlementName: "Settlement A",
           sex: "female",

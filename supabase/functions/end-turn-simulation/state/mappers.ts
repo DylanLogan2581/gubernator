@@ -12,6 +12,7 @@ import type {
   SupabaseJobRow,
   SupabaseManagedPopRow,
   SupabaseManagedPopTypeRow,
+  SupabaseNationOfficeRow,
   SupabaseNationRow,
   SupabasePartnershipRow,
   SupabaseProjectRow,
@@ -37,6 +38,7 @@ import type {
   SimManagedPopulation,
   SimManagedPopulationType,
   SimNation,
+  SimNationOffice,
   SimPartnership,
   SimPopulationResourceEntry,
   SimSettlement,
@@ -298,6 +300,12 @@ export function toSimNation(row: SupabaseNationRow): SimNation {
     governmentType: row.government_type as SimNation["governmentType"],
     id: row.id,
     name: row.name,
+  };
+}
+
+export function toSimNationOffice(row: SupabaseNationOfficeRow): SimNationOffice {
+  return {
+    citizenId: row.citizen_id,
   };
 }
 

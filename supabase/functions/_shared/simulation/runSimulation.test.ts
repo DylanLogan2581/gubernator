@@ -6,6 +6,8 @@ import type {
   SimBuildingBlueprint,
   SimBuildingTier,
   SimCitizen,
+  SimCitizenAssignment,
+  SimJob,
   SimSettlement,
   SimStockpile,
   SimulationInputState,
@@ -54,6 +56,7 @@ function makeInput(
     jobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nationOffices: [],
     nations: [],
     partnerships: [],
     populationRules: BASE_POPULATION_RULES,
@@ -316,5 +319,60 @@ describe("runSimulation — managed_population_change event delta", () => {
     expect(update).toBeDefined();
     expect(update?.countDelta).toBe(-5);
     expect(update?.toStatus).toBe("extinct");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Officeholder job/deposit/trade exclusion (#1081)
+// ---------------------------------------------------------------------------
+
+describe("runSimulation — officeholders leave the settlement labor pool", () => {
+  it("a citizen holding a nation office contributes zero job production that transition", () => {
+    const job: SimJob = {
+      baseCapacity: null,
+      id: "job1",
+      inputsJson: [],
+      jobType: "standard",
+      linkedDepositTypeId: null,
+      linkedManagedPopulationTypeId: null,
+      name: "Farming",
+      outputsJson: [{ amountPerWorker: 10, resourceId: "food" }],
+      traderCapacityPerWorker: null,
+    };
+    const assignment: SimCitizenAssignment = {
+      assignedOnTurnNumber: 1,
+      assignmentType: "standard_job",
+      citizenId: "c1",
+      constructionProjectId: null,
+      depositInstanceId: null,
+      jobId: "job1",
+      managedPopulationInstanceId: null,
+      tradeRouteEnd: null,
+      tradeRouteId: null,
+    };
+
+    const baseInput = {
+      settlements: [makeSettlement("s1")],
+      citizens: [makeMaleNpc("c1", "s1")],
+      citizenAssignments: [assignment],
+      jobs: [job],
+      stockpiles: [makeStockpile("s1", "food", 0)],
+    };
+
+    const withoutOffice = runSimulation(makeInput(baseInput), "t1");
+    const withOffice = runSimulation(
+      makeInput({ ...baseInput, nationOffices: [{ citizenId: "c1" }] }),
+      "t2",
+    );
+
+    const foodDeltaWithout = withoutOffice.stockpileDeltas
+      .filter((d) => d.resourceId === "food")
+      .reduce((sum, d) => sum + d.delta, 0);
+    const foodDeltaWithOffice = withOffice.stockpileDeltas
+      .filter((d) => d.resourceId === "food")
+      .reduce((sum, d) => sum + d.delta, 0);
+
+    expect(foodDeltaWithout).toBe(10);
+    expect(foodDeltaWithOffice).toBe(0);
   });
 });

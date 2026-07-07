@@ -11,6 +11,7 @@ import type {
   SimCitizen,
   SimCitizenAssignment,
   SimNation,
+  SimNationOffice,
   SimSettlement,
   SimulationContext,
   SimulationInputState,
@@ -67,6 +68,7 @@ export function makeInputState(
     jobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nationOffices: [],
     nations: [],
     partnerships: [],
     populationRules: POPULATION_RULES,
@@ -126,6 +128,14 @@ export function makeNation(
   return {
     governmentType: "monarchy",
     name: "Testland",
+    ...overrides,
+  };
+}
+
+export function makeNationOffice(
+  overrides: Partial<SimNationOffice> & { citizenId: string },
+): SimNationOffice {
+  return {
     ...overrides,
   };
 }

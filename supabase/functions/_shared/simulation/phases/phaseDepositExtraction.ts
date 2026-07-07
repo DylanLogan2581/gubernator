@@ -25,9 +25,10 @@ export type PhaseDepositExtractionOutput = {
 export function phaseDepositExtraction(
   context: SimulationContext,
 ): PhaseDepositExtractionOutput {
-  const { citizenAssignments, depositTypes, deposits, stockpiles } = context.input;
+  const { citizenAssignments, depositTypes, deposits, nationOffices, stockpiles } = context.input;
 
   const depositTypeById = new Map(depositTypes.map((dt) => [dt.id, dt]));
+  const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
 
   const stockpileQty = new Map<string, number>();
   const stockpileCap = new Map<string, number>();
@@ -37,7 +38,10 @@ export function phaseDepositExtraction(
     stockpileCap.set(key, sp.cap);
   }
 
-  // Collect worker counts and citizen IDs per deposit instance.
+  // Collect worker counts and citizen IDs per deposit instance. Officeholders
+  // keep their assignment row (cleared like anyone else on depletion) but do
+  // not count toward extraction — they work for the nation this turn, not
+  // the deposit.
   const workerCountByDeposit = new Map<string, number>();
   const workerIdsByDeposit = new Map<string, string[]>();
   for (const assignment of citizenAssignments) {
@@ -48,7 +52,9 @@ export function phaseDepositExtraction(
       continue;
     }
     const dId = assignment.depositInstanceId;
-    workerCountByDeposit.set(dId, (workerCountByDeposit.get(dId) ?? 0) + 1);
+    if (!officeholderCitizenIds.has(assignment.citizenId)) {
+      workerCountByDeposit.set(dId, (workerCountByDeposit.get(dId) ?? 0) + 1);
+    }
     const existing = workerIdsByDeposit.get(dId);
     if (existing === undefined) {
       workerIdsByDeposit.set(dId, [assignment.citizenId]);

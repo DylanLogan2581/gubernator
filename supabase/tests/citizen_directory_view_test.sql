@@ -11,7 +11,7 @@
 begin;
 
 select
-  plan (8);
+  plan (10);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -196,6 +196,23 @@ values
     1
   );
 
+insert into
+  public.nation_offices (
+    world_id,
+    nation_id,
+    office_type,
+    citizen_id,
+    appointed_turn_number
+  )
+values
+  (
+    'e2000000-0000-0000-0000-000000000001',
+    'e3000000-0000-0000-0000-000000000001',
+    'treasurer',
+    'e5000000-0000-0000-0000-000000000002',
+    1
+  );
+
 -- ===========================================================================
 -- ANONYMOUS: no read access
 -- ===========================================================================
@@ -336,6 +353,34 @@ select
     '42703',
     null,
     'directory view does not expose the NPC-flavor columns at all'
+  );
+
+select
+  is (
+    (
+      select
+        office_types
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000002'
+    ),
+    'treasurer',
+    'directory view resolves office_types for a citizen holding a nation office'
+  );
+
+select
+  is (
+    (
+      select
+        office_types
+      from
+        public.citizen_directory_view
+      where
+        id = 'e5000000-0000-0000-0000-000000000001'
+    ),
+    null,
+    'directory view leaves office_types null for a citizen holding no office'
   );
 
 reset role;

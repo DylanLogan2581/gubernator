@@ -53,6 +53,7 @@ function makeInput(
     jobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nationOffices: [],
     nations: [],
     partnerships: [],
     populationRules: BASE_POPULATION_RULES,

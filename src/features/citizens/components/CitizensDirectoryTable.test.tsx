@@ -3,6 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { CitizensDirectoryTable } from "./CitizensDirectoryTable";
 
 import type { ReactNode } from "react";
@@ -96,7 +98,9 @@ function renderTable(worldId = "world-1"): ReturnType<typeof render> {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <CitizensDirectoryTable worldId={worldId} />
+      <TooltipProvider>
+        <CitizensDirectoryTable worldId={worldId} />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -118,6 +122,7 @@ describe("CitizensDirectoryTable", () => {
             name: "Ada",
             nation_id: "nation-1",
             nation_name: "Nation A",
+            office_types: null,
             settlement_id: "settlement-1",
             settlement_name: "Amberhold",
             sex: "female",
@@ -152,6 +157,7 @@ describe("CitizensDirectoryTable", () => {
             name: "Cora",
             nation_id: null,
             nation_name: null,
+            office_types: null,
             settlement_id: null,
             settlement_name: null,
             sex: null,
@@ -167,6 +173,36 @@ describe("CitizensDirectoryTable", () => {
     expect(await screen.findByText("Cora")).toBeDefined();
     expect(screen.getByText("Player")).toBeDefined();
     expect(screen.getByText("Deceased")).toBeDefined();
+  });
+
+  it("marks an officeholder with an 'In office' badge instead of their assignment label", async () => {
+    requireSupabaseClient.mockReturnValue(
+      buildClient({
+        citizens: [
+          {
+            age_turns: 40,
+            assignment_label: "Blacksmith",
+            citizen_type: "npc",
+            id: "citizen-4",
+            name: "Deka",
+            nation_id: "nation-1",
+            nation_name: "Nation A",
+            office_types: "treasurer",
+            settlement_id: "settlement-1",
+            settlement_name: "Amberhold",
+            sex: "female",
+            status: "alive",
+          },
+        ],
+        totalCount: 1,
+      }),
+    );
+
+    renderTable();
+
+    expect(await screen.findByText("Deka")).toBeDefined();
+    expect(screen.getByText("In office: Treasurer")).toBeDefined();
+    expect(screen.queryByText("Blacksmith")).toBeNull();
   });
 
   it("renders an empty state when no citizens match", async () => {
@@ -191,6 +227,7 @@ describe("CitizensDirectoryTable", () => {
             name: "Bram",
             nation_id: null,
             nation_name: null,
+            office_types: null,
             settlement_id: null,
             settlement_name: null,
             sex: null,
@@ -222,6 +259,7 @@ describe("CitizensDirectoryTable", () => {
             name: "Ada",
             nation_id: null,
             nation_name: null,
+            office_types: null,
             settlement_id: null,
             settlement_name: null,
             sex: null,

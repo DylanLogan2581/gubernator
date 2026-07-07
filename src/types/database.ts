@@ -2840,6 +2840,7 @@ export type Database = {
           name: string | null;
           nation_id: string | null;
           nation_name: string | null;
+          office_types: string | null;
           settlement_id: string | null;
           settlement_name: string | null;
           sex: string | null;

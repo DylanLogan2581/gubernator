@@ -15,6 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { nationsListQueryOptions } from "@/features/nations";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -22,6 +27,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
+import { formatOfficeTypesLabel } from "../utils/officeTypesLabel";
 
 import { CitizenAvatar } from "./CitizenAvatar";
 
@@ -134,11 +140,30 @@ const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
     id: "assignment",
     enableSorting: false,
     header: "Job / assignment",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.assignmentLabel ?? "Unassigned"}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const officeTypes = row.original.officeTypes;
+      if (officeTypes !== null) {
+        const officeLabel = formatOfficeTypesLabel(officeTypes);
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="cursor-default">
+                In office: {officeLabel}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              Works for the nation this turn — no settlement job output while in
+              office.
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+      return (
+        <span className="text-muted-foreground">
+          {row.original.assignmentLabel ?? "Unassigned"}
+        </span>
+      );
+    },
   },
 ];
 

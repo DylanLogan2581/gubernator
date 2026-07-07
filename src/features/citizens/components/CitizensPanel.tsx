@@ -11,12 +11,18 @@ import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { settlementPopulationCapQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { cn } from "@/lib/utils";
 
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
 import { citizenAggregateStatsForSettlementQueryOptions } from "../queries/citizensQueries";
+import { formatOfficeTypesLabel } from "../utils/officeTypesLabel";
 
 import { CreateNpcDialog } from "./citizenCreation/CreateNpcDialog";
 import { CreatePlayerCharacterDialog } from "./citizenCreation/CreatePlayerCharacterDialog";
@@ -96,15 +102,34 @@ const SETTLEMENT_CITIZENS_COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
     id: "assignment",
     enableSorting: false,
     header: "Job / assignment",
-    cell: ({ row }) => (
-      <Badge
-        variant={
-          row.original.assignmentLabel === null ? "outline" : "secondary"
-        }
-      >
-        {row.original.assignmentLabel ?? "Unassigned"}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const officeTypes = row.original.officeTypes;
+      if (officeTypes !== null) {
+        const officeLabel = formatOfficeTypesLabel(officeTypes);
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="cursor-default">
+                In office: {officeLabel}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              Works for the nation this turn — no settlement job output while in
+              office.
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+      return (
+        <Badge
+          variant={
+            row.original.assignmentLabel === null ? "outline" : "secondary"
+          }
+        >
+          {row.original.assignmentLabel ?? "Unassigned"}
+        </Badge>
+      );
+    },
   },
   {
     id: "type",

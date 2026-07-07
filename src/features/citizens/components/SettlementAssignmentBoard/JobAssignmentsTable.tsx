@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 
 import { setBulkStandardJobAssignmentMutationOptions } from "../../mutations/bulkStandardJobAssignmentMutations";
 import { setPerTargetBulkAssignmentMutationOptions } from "../../mutations/perTargetBulkAssignmentMutations";
+import { settlementOfficeholderCountQueryOptions } from "../../queries/citizenDirectoryQueries";
 import { citizenAggregateStatsForSettlementQueryOptions } from "../../queries/citizensQueries";
 import { settlementJobCountsQueryOptions } from "../../queries/settlementJobCountsQueries";
 import { settlementTargetAssignmentsQueryOptions } from "../../queries/settlementTargetAssignmentsQueries";
@@ -118,6 +119,9 @@ export function JobAssignmentsTable({
   );
   const tradeRoutesQuery = useQuery(
     tradeRoutesForSettlementQueryOptions(settlementId),
+  );
+  const officeholderCountQuery = useQuery(
+    settlementOfficeholderCountQueryOptions(settlementId),
   );
 
   const [pendingDeltas, setPendingDeltas] = useState<Record<string, number>>(
@@ -313,6 +317,7 @@ export function JobAssignmentsTable({
   );
   const liveUnassignedCount = stats.unassignedNpcCount - pendingDeltaSum;
   const pendingChangeCount = Object.keys(pendingDeltas).length;
+  const officeholderCount = officeholderCountQuery.data ?? 0;
 
   return (
     <div>
@@ -330,6 +335,14 @@ export function JobAssignmentsTable({
           </span>
         ) : null}
       </div>
+      {officeholderCount > 0 ? (
+        <p className="mb-3 text-sm text-muted-foreground">
+          {officeholderCount} citizen{officeholderCount === 1 ? "" : "s"} in
+          this settlement hold{officeholderCount === 1 ? "s" : ""} nation office
+          and produce{officeholderCount === 1 ? "s" : ""} no job output this
+          turn — their assignment is kept but inactive while in office.
+        </p>
+      ) : null}
       {hasBulkOrPerTarget ? (
         <Table className="w-full text-sm">
           <TableHeader>

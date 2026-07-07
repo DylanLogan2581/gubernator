@@ -440,6 +440,21 @@ export function fetchNations(
   });
 }
 
+export function fetchNationOffices(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "nation_offices",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "citizen_id",
+    },
+  });
+}
+
 export function fetchEvents(
   ctx: FetchContext,
   worldId: string,

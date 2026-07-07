@@ -11,6 +11,7 @@ import { makeAssignment, makeContext, makeSettlement } from "./testFixtures.ts";
 import type {
   SimCitizenAssignment,
   SimJob,
+  SimNationOffice,
   SimSettlement,
   SimStockpile,
   SimTradeRoute,
@@ -101,6 +102,7 @@ const DEFAULT_SETTLEMENTS: SimSettlement[] = [
 function buildContext(params: {
   assignments?: SimCitizenAssignment[];
   jobs?: SimJob[];
+  nationOffices?: SimNationOffice[];
   pendingStockpiles?: Record<string, number>;
   settlements?: SimSettlement[];
   stockpiles?: SimStockpile[];
@@ -109,6 +111,7 @@ function buildContext(params: {
   const ctx = makeContext({
     citizenAssignments: params.assignments ?? [],
     jobs: params.jobs ?? [],
+    nationOffices: params.nationOffices ?? [],
     settlements: params.settlements ?? DEFAULT_SETTLEMENTS,
     stockpiles: params.stockpiles ?? [],
     tradeRoutes: params.tradeRoutes ?? [],
@@ -508,6 +511,36 @@ describe("phaseTradeRoutes — route status filtering & multi-route isolation", 
     expect(result.stockpileDeltas).toEqual([
       { delta: -10, resourceId: "wood", settlementId: "origin" },
       { delta: 10, resourceId: "wood", settlementId: "dest" },
+    ]);
+  });
+});
+
+describe("phaseTradeRoutes — officeholder exclusion", () => {
+  it("does not count an officeholder's trader capacity, pausing the route", () => {
+    const job = makeTraderJob({ id: "trader-job" });
+    const route = makeRoute({ id: "r1" });
+    const ctx = buildContext({
+      assignments: makeTraderAssignments("r1", "trader-job"),
+      jobs: [job],
+      // trader-origin holds a nation office and stops counting toward capacity.
+      nationOffices: [{ citizenId: "trader-origin" }],
+      pendingStockpiles: { "dest:wood": 0, "origin:wood": 100 },
+      stockpiles: [
+        makeStockpile({ resourceId: "wood", settlementId: "origin" }),
+        makeStockpile({ resourceId: "wood", settlementId: "dest" }),
+      ],
+      tradeRoutes: [route],
+    });
+
+    const result = phaseTradeRoutes(ctx);
+
+    expect(result.tradeRouteOutcomes).toEqual([
+      {
+        delivered: false,
+        pauseReason: "insufficient_trader_origin",
+        quantityTransferred: 0,
+        tradeRouteId: "r1",
+      },
     ]);
   });
 });

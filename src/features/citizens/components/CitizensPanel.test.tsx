@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { CitizensPanel } from "./CitizensPanel";
 
 import type { ReactNode } from "react";
@@ -50,6 +52,7 @@ type DirectoryRowFixture = {
   readonly name: string | null;
   readonly nation_id: string | null;
   readonly nation_name: string | null;
+  readonly office_types: string | null;
   readonly settlement_id: string | null;
   readonly settlement_name: string | null;
   readonly sex: string | null;
@@ -146,6 +149,29 @@ describe("CitizensPanel", () => {
     expect(
       screen.queryByRole("button", { name: "Create player character" }),
     ).toBeNull();
+  });
+
+  it("marks an officeholder with an 'In office' badge instead of their assignment label", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        directoryRows: [
+          createDirectoryRow({
+            assignment_label: "Brewer",
+            id: "c-1",
+            name: "Aldra",
+            office_types: "treasurer",
+          }),
+        ],
+        totalCount: 1,
+      }),
+    );
+
+    renderPanel({ canAdmin: true });
+
+    expect(await screen.findByText("Aldra")).toBeDefined();
+    const aldraRow = screen.getByText("Aldra").closest("tr");
+    expect(aldraRow).toHaveTextContent("In office: Treasurer");
+    expect(aldraRow).not.toHaveTextContent("Brewer");
   });
 
   it("exposes Create NPC and Create player character actions for world admins on active worlds", async () => {
@@ -430,14 +456,16 @@ function renderPanel({
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <CitizensPanel
-        canAdmin={canAdmin}
-        incestPreventionDepth={incestPreventionDepth}
-        isArchived={isArchived}
-        nationId="nation-1"
-        settlementId="settlement-1"
-        worldId="world-1"
-      />
+      <TooltipProvider>
+        <CitizensPanel
+          canAdmin={canAdmin}
+          incestPreventionDepth={incestPreventionDepth}
+          isArchived={isArchived}
+          nationId="nation-1"
+          settlementId="settlement-1"
+          worldId="world-1"
+        />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -459,6 +487,7 @@ function createDirectoryRow(
     name: "Citizen",
     nation_id: "nation-1",
     nation_name: "Nation",
+    office_types: null,
     settlement_id: "settlement-1",
     settlement_name: "Settlement",
     sex: null,

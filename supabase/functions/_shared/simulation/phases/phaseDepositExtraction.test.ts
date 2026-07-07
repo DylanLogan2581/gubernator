@@ -417,3 +417,69 @@ describe("phaseDepositExtraction — extraction arithmetic", () => {
     );
   });
 });
+
+describe("phaseDepositExtraction — officeholder exclusion", () => {
+  it("excludes a citizen holding a nation office from extraction worker count", () => {
+    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const deposit = makeDeposit({
+      id: "d1",
+      resources: [
+        makeDepositResource({ depositInstanceId: "d1", remainingQuantity: 1000, resourceId: "iron" }),
+      ],
+      settlementId: "s1",
+    });
+    const baseArgs = {
+      citizenAssignments: [
+        makeDepositAssignment("c1", "d1"),
+        makeDepositAssignment("c2", "d1"),
+      ],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ resourceId: "iron", settlementId: "s1" })],
+    };
+
+    const withoutOffice = phaseDepositExtraction(makeContext(baseArgs));
+    const withOffice = phaseDepositExtraction(
+      makeContext({ ...baseArgs, nationOffices: [{ citizenId: "c2" }] }),
+    );
+
+    const logWithout = withoutOffice.logs.find((l) => l.category === "deposit.processed");
+    const logWith = withOffice.logs.find((l) => l.category === "deposit.processed");
+    expect(logWithout?.payload).toMatchObject({ totalExtraction: 20, workers: 2 });
+    expect(logWith?.payload).toMatchObject({ totalExtraction: 10, workers: 1 });
+  });
+
+  it("still clears an officeholder's assignment row when the deposit depletes from other workers", () => {
+    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const deposit = makeDeposit({
+      id: "d1",
+      resources: [
+        makeDepositResource({ depositInstanceId: "d1", remainingQuantity: 5, resourceId: "iron" }),
+      ],
+      settlementId: "s1",
+    });
+
+    const ctx = makeContext({
+      citizenAssignments: [
+        makeDepositAssignment("c1", "d1"),
+        makeDepositAssignment("c2", "d1"),
+      ],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      nationOffices: [{ citizenId: "c2" }],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ resourceId: "iron", settlementId: "s1" })],
+    });
+
+    const result = phaseDepositExtraction(ctx);
+
+    expect(result.depositUpdates[0]?.toStatus).toBe("depleted");
+    expect(result.assignmentClears).toEqual(
+      expect.arrayContaining([
+        { citizenId: "c1", reason: "deposit_depleted" },
+        { citizenId: "c2", reason: "deposit_depleted" },
+      ]),
+    );
+  });
+});

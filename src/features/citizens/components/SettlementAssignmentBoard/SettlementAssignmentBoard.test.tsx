@@ -375,6 +375,16 @@ function createMaybeSingleBuilder(result: unknown): unknown {
   };
 }
 
+function createOfficeholderCountBuilder(count: number): unknown {
+  const builder = {
+    eq: vi.fn(() => builder),
+    not: vi.fn(() => Promise.resolve({ count, error: null })),
+  };
+  return {
+    select: vi.fn(() => builder),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // createClient
 // ---------------------------------------------------------------------------
@@ -390,6 +400,7 @@ function createClient(config: {
   readonly populationInstanceRows?: readonly PopulationInstanceRowFixture[];
   readonly tradeRouteRows?: readonly TradeRouteRowFixture[];
   readonly perTargetMutationResult?: PerTargetMutationResultFixture;
+  readonly officeholderCount?: number;
 }): unknown {
   const defaultMutationResult: MutationResultFixture = {
     after: 1,
@@ -421,6 +432,9 @@ function createClient(config: {
       }
       if (table === "trade_routes") {
         return createTableBuilder(config.tradeRouteRows ?? []);
+      }
+      if (table === "citizen_directory_view") {
+        return createOfficeholderCountBuilder(config.officeholderCount ?? 0);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -653,6 +667,51 @@ describe("SettlementAssignmentBoard", () => {
     // rows[0] is the header; rows[1] is the first data row (no separate Unassigned row)
     const rows = screen.getAllByRole("row");
     expect(rows[1]).toHaveTextContent("Farmer");
+  });
+
+  it("shows an officeholder banner when the settlement has citizens holding a nation office", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({
+            id: "c-1",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: null,
+          }),
+        ],
+        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
+        officeholderCount: 2,
+      }),
+    );
+
+    renderBoard();
+
+    expect(
+      await screen.findByText(/2 citizens in this settlement/),
+    ).toBeDefined();
+  });
+
+  it("hides the officeholder banner when no citizens in the settlement hold office", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        aggregates: [
+          createAggregateRow({
+            id: "c-1",
+            citizen_type: "npc",
+            status: "alive",
+            citizen_assignments: null,
+          }),
+        ],
+        jobCounts: [createJobCountRow({ job_name: "Farmer" })],
+        officeholderCount: 0,
+      }),
+    );
+
+    renderBoard();
+
+    await screen.findByText("Farmer");
+    expect(screen.queryByText(/hold.*nation office/)).toBeNull();
   });
 
   it("standard job rows sort alphabetically without a pinned Unassigned row", async () => {

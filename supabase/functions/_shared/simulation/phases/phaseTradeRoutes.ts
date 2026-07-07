@@ -22,9 +22,11 @@ export type PhaseTradeRoutesOutput = {
 export function phaseTradeRoutes(
   context: SimulationContext,
 ): PhaseTradeRoutesOutput {
-  const { citizenAssignments, jobs, settlements, stockpiles, tradeRoutes } = context.input;
+  const { citizenAssignments, jobs, nationOffices, settlements, stockpiles, tradeRoutes } =
+    context.input;
 
   const jobById = new Map(jobs.map((j) => [j.id, j]));
+  const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
 
   // Start quantities from running post-prior-phase totals; caps are static.
@@ -41,7 +43,8 @@ export function phaseTradeRoutes(
       assignment.assignmentType !== "trade_route" ||
       assignment.tradeRouteId === null ||
       assignment.tradeRouteEnd === null ||
-      assignment.jobId === null
+      assignment.jobId === null ||
+      officeholderCitizenIds.has(assignment.citizenId)
     ) {
       continue;
     }

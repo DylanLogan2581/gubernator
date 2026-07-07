@@ -10,6 +10,7 @@ import type {
   SimCitizen,
   SimCitizenAssignment,
   SimJob,
+  SimNationOffice,
   SimSettlement,
   SimulationContext,
 } from "../simulationTypes.ts";
@@ -111,6 +112,7 @@ function makeContext(
   jobs: SimJob[],
   citizens: SimCitizen[],
   assignments: SimCitizenAssignment[],
+  nationOffices: SimNationOffice[] = [],
 ): SimulationContext {
   return {
     input: {
@@ -126,6 +128,7 @@ function makeContext(
       jobs,
       managedPopulationTypes: [],
       managedPopulations: [],
+      nationOffices,
       nations: [],
       partnerships: [],
       populationRules: POPULATION_RULES,
@@ -208,5 +211,29 @@ describe("phaseStandardJobs — log entry scope fields", () => {
       expect(entry.settlementId).toBe("s3");
       expect(entry.nationId).toBe("n3");
     }
+  });
+});
+
+describe("phaseStandardJobs — officeholder exclusion", () => {
+  it("excludes a citizen holding a nation office from job output", () => {
+    const settlement: SimSettlement = { id: "s4", name: "Officetown" };
+    const job = makeJob("j4", "wood");
+    const citizen = makeCitizen("c4", "s4");
+    const assignment = makeAssignment("c4", "j4");
+
+    const withoutOffice = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment]),
+    );
+    const withOffice = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment], [{ citizenId: "c4" }]),
+    );
+
+    expect(withoutOffice.logs.some((l) => l.category === "standard_job.processed")).toBe(
+      true,
+    );
+    expect(withOffice.logs.some((l) => l.category === "standard_job.processed")).toBe(
+      false,
+    );
+    expect(withOffice.stockpileDeltas).toHaveLength(0);
   });
 });

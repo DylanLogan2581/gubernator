@@ -404,6 +404,10 @@ function makeAllSuccessResponses(): Record<
       body: [{ id: NATION_ID, name: "Testland", government_type: "monarchy" }],
       status: 200,
     },
+    "/rest/v1/nation_offices": {
+      body: [],
+      status: 200,
+    },
   };
 }
 
@@ -784,6 +788,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/citizen_assignments": { body: [], status: 200 },
       "/rest/v1/partnerships": { body: [], status: 200 },
       "/rest/v1/nations": { body: [], status: 200 },
+      "/rest/v1/nation_offices": { body: [], status: 200 },
     });
 
     const result = await resolveSupabaseEndTurnSimulationInput(
@@ -804,6 +809,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(input.deposits).toHaveLength(0);
     expect(input.events).toHaveLength(0);
     expect(input.managedPopulations).toHaveLength(0);
+    expect(input.nationOffices).toHaveLength(0);
     expect(input.partnerships).toHaveLength(0);
     expect(input.tradeRoutes).toHaveLength(0);
   });

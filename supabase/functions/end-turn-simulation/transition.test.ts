@@ -73,6 +73,7 @@ function makeBaseInput(
     jobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nationOffices: [],
     nations: [],
     npcFlavorConfig: null,
     partnerships: [],
