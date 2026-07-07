@@ -10,6 +10,11 @@ import { useState } from "react";
 
 import { normalizeSignInReturnPath, type AuthUiError } from "@/features/auth";
 import {
+  getBlockingNations,
+  nationReadinessListQueryOptions,
+  type NationReadinessListItem,
+} from "@/features/nations";
+import {
   settlementReadinessSummaryQueryOptions,
   type SettlementReadinessSummary,
 } from "@/features/settlements";
@@ -43,6 +48,7 @@ type UseEndTurnControlInput = {
 };
 
 export type UseEndTurnControlResult = {
+  readonly blockingNations: readonly NationReadinessListItem[];
   readonly closeConfirmation: () => void;
   readonly endTurnMutation: UseMutationResult<
     EndTurnTransitionMutationResult,
@@ -56,18 +62,25 @@ export type UseEndTurnControlResult = {
   >;
   readonly isConfirming: boolean;
   readonly isDisabled: boolean;
+  readonly isNationOverrideAcknowledged: boolean;
   readonly isReadinessUnavailable: boolean;
   readonly isStuckRunning: boolean;
   readonly latestTransitionQuery: UseQueryResult<
     LatestTurnTransitionStatus | null,
     AuthUiError | LatestTurnTransitionStatusError
   >;
+  readonly nationReadinessListQuery: UseQueryResult<
+    readonly NationReadinessListItem[],
+    AuthUiError
+  >;
   readonly openConfirmation: () => void;
   readonly readinessSummaryQuery: UseQueryResult<
     SettlementReadinessSummary,
     AuthUiError
   >;
+  readonly requiresNationOverrideConfirmation: boolean;
   readonly resetStuckTransition: () => void;
+  readonly setIsNationOverrideAcknowledged: (acknowledged: boolean) => void;
   readonly submitEndTurn: () => void;
 };
 
@@ -80,11 +93,16 @@ export function useEndTurnControl({
   worldId,
 }: UseEndTurnControlInput): UseEndTurnControlResult {
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isNationOverrideAcknowledged, setIsNationOverrideAcknowledged] =
+    useState(false);
   const navigate = useNavigate();
   const router = useRouter();
   const queryClient = useQueryClient();
   const readinessSummaryQuery = useQuery(
     settlementReadinessSummaryQueryOptions(worldId),
+  );
+  const nationReadinessListQuery = useQuery(
+    nationReadinessListQueryOptions(worldId),
   );
   const latestTransitionQuery = useQuery(
     latestTurnTransitionStatusQueryOptions(worldId),
@@ -95,9 +113,14 @@ export function useEndTurnControl({
   const failStuckMutation = useMutation(
     failStuckTurnTransitionMutationOptions({ queryClient }),
   );
-  const isReadinessUnavailable = !readinessSummaryQuery.isSuccess;
+  const isReadinessUnavailable =
+    !readinessSummaryQuery.isSuccess || !nationReadinessListQuery.isSuccess;
   const isDisabled =
     isArchived || isReadinessUnavailable || endTurnMutation.isPending;
+  const blockingNations = nationReadinessListQuery.isSuccess
+    ? getBlockingNations(nationReadinessListQuery.data)
+    : [];
+  const requiresNationOverrideConfirmation = blockingNations.length > 0;
 
   // Time-based check to detect stuck transitions — safe since the result depends only on the transition data.
   const isStuckRunning = (() => {
@@ -119,6 +142,7 @@ export function useEndTurnControl({
     }
 
     endTurnMutation.reset();
+    setIsNationOverrideAcknowledged(false);
     setIsConfirming(true);
   }
 
@@ -128,6 +152,10 @@ export function useEndTurnControl({
 
   function submitEndTurn(): void {
     if (isDisabled) {
+      return;
+    }
+
+    if (requiresNationOverrideConfirmation && !isNationOverrideAcknowledged) {
       return;
     }
 
@@ -200,17 +228,22 @@ export function useEndTurnControl({
   }
 
   return {
+    blockingNations,
     closeConfirmation,
     endTurnMutation,
     failStuckMutation,
     isConfirming,
     isDisabled,
+    isNationOverrideAcknowledged,
     isReadinessUnavailable,
     isStuckRunning,
     latestTransitionQuery,
+    nationReadinessListQuery,
     openConfirmation,
     readinessSummaryQuery,
+    requiresNationOverrideConfirmation,
     resetStuckTransition,
+    setIsNationOverrideAcknowledged,
     submitEndTurn,
   };
 }

@@ -221,6 +221,7 @@ function createClientFixture({
       functions: {
         invoke,
       },
+      rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
     },
     invoke,
   };

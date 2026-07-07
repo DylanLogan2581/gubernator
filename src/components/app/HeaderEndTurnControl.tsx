@@ -34,13 +34,17 @@ export function HeaderEndTurnControl({
   worldId,
 }: HeaderEndTurnControlProps): JSX.Element | null {
   const {
+    blockingNations,
     closeConfirmation,
     endTurnMutation,
     isConfirming,
     isDisabled,
+    isNationOverrideAcknowledged,
     isReadinessUnavailable,
     openConfirmation,
     readinessSummaryQuery,
+    requiresNationOverrideConfirmation,
+    setIsNationOverrideAcknowledged,
     submitEndTurn,
   } = useEndTurnControl({ currentTurnNumber, isArchived, worldId });
 
@@ -74,6 +78,7 @@ export function HeaderEndTurnControl({
 
       {isConfirming && readinessSummaryQuery.isSuccess ? (
         <EndTurnConfirmationDialog
+          blockingNations={blockingNations}
           currentDateLabel={currentDateLabel}
           currentTurnNumber={currentTurnNumber}
           errorMessage={
@@ -81,12 +86,17 @@ export function HeaderEndTurnControl({
               ? getEndTurnErrorDescription(endTurnMutation.error)
               : undefined
           }
+          isNationOverrideAcknowledged={isNationOverrideAcknowledged}
           isPending={endTurnMutation.isPending}
           nextDateLabel={nextDateLabel}
           nextTurnNumber={nextTurnNumber}
           onClose={closeConfirmation}
           onConfirm={submitEndTurn}
+          onNationOverrideAcknowledgedChange={setIsNationOverrideAcknowledged}
           readinessSummary={readinessSummaryQuery.data}
+          requiresNationOverrideConfirmation={
+            requiresNationOverrideConfirmation
+          }
         />
       ) : null}
     </>

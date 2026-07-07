@@ -3841,7 +3841,7 @@ export type Database = {
       };
       internal_apply_turn_transition_advance_world_turn: {
         Args: { p_expected_turn_number: number; p_world_id: string };
-        Returns: number;
+        Returns: Record<string, unknown>;
       };
       internal_apply_turn_transition_citizen_partnership_patches: {
         Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
@@ -4057,6 +4057,19 @@ export type Database = {
       nation_readiness_eligible_voter_ids: {
         Args: { p_nation_id: string };
         Returns: string[];
+      };
+      nation_readiness_summary: {
+        Args: { p_world_id: string };
+        Returns: {
+          eligible_voter_count: number;
+          government_type: string;
+          has_settlements: boolean;
+          is_ready: boolean;
+          nation_id: string;
+          nation_name: string;
+          readiness_mode: string;
+          true_vote_count: number;
+        }[];
       };
       nation_visible_to_current_user: {
         Args: { p_nation_id: string };

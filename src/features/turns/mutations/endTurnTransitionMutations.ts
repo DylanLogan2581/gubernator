@@ -10,6 +10,7 @@ import { citizensQueryKeys } from "@/features/citizens";
 import { depositsQueryKeys } from "@/features/deposits";
 import { eventQueryKeys } from "@/features/events";
 import { managedPopulationsQueryKeys } from "@/features/managed-populations";
+import { nationReadinessQueryKeys } from "@/features/nations";
 import { notificationQueryKeys } from "@/features/notifications";
 import {
   settlementSnapshotQueryKeys,
@@ -157,6 +158,9 @@ export function endTurnTransitionMutationOptions({
         }),
         queryClient.invalidateQueries({
           queryKey: settlementReadinessQueryKeys.summary(input.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationReadinessQueryKeys.list(input.worldId),
         }),
         queryClient.invalidateQueries({
           queryKey: turnQueryKeys.latestTransitionStatus(input.worldId),

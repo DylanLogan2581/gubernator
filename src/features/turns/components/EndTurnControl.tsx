@@ -14,6 +14,7 @@ import {
 
 import { EndTurnConfirmationDialog } from "./EndTurnConfirmationDialog";
 import { MetricTile } from "./EndTurnMetric";
+import { NationReadinessList } from "./NationReadinessList";
 
 import type { JSX } from "react";
 
@@ -68,16 +69,21 @@ function EndTurnControlContent({
   readonly worldId: string;
 }): JSX.Element {
   const {
+    blockingNations,
     closeConfirmation,
     endTurnMutation,
     failStuckMutation,
     isConfirming,
     isDisabled,
+    isNationOverrideAcknowledged,
     isReadinessUnavailable,
     isStuckRunning,
+    nationReadinessListQuery,
     openConfirmation,
     readinessSummaryQuery,
+    requiresNationOverrideConfirmation,
     resetStuckTransition,
+    setIsNationOverrideAcknowledged,
     submitEndTurn,
   } = useEndTurnControl({ currentTurnNumber, isArchived, worldId });
 
@@ -126,6 +132,10 @@ function EndTurnControlContent({
         </dl>
       ) : null}
 
+      {nationReadinessListQuery.isSuccess ? (
+        <NationReadinessList items={nationReadinessListQuery.data} />
+      ) : null}
+
       {isStuckRunning ? (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -160,6 +170,7 @@ function EndTurnControlContent({
 
       {isConfirming && readinessSummaryQuery.isSuccess ? (
         <EndTurnConfirmationDialog
+          blockingNations={blockingNations}
           currentDateLabel={currentDateLabel}
           currentTurnNumber={currentTurnNumber}
           errorMessage={
@@ -167,12 +178,17 @@ function EndTurnControlContent({
               ? getEndTurnMutationErrorDescription(endTurnMutation.error)
               : undefined
           }
+          isNationOverrideAcknowledged={isNationOverrideAcknowledged}
           isPending={endTurnMutation.isPending}
           nextDateLabel={nextDateLabel}
           nextTurnNumber={nextTurnNumber}
           onClose={closeConfirmation}
           onConfirm={submitEndTurn}
+          onNationOverrideAcknowledgedChange={setIsNationOverrideAcknowledged}
           readinessSummary={readinessSummaryQuery.data}
+          requiresNationOverrideConfirmation={
+            requiresNationOverrideConfirmation
+          }
         />
       ) : null}
     </section>
