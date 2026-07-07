@@ -1353,6 +1353,68 @@ export type Database = {
           },
         ];
       };
+      nation_offices: {
+        Row: {
+          appointed_turn_number: number;
+          citizen_id: string;
+          created_at: string;
+          id: string;
+          nation_id: string;
+          office_type: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          appointed_turn_number: number;
+          citizen_id: string;
+          created_at?: string;
+          id?: string;
+          nation_id: string;
+          office_type: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          appointed_turn_number?: number;
+          citizen_id?: string;
+          created_at?: string;
+          id?: string;
+          nation_id?: string;
+          office_type?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_offices_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_offices_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_offices_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_offices_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_readiness_votes: {
         Row: {
           cast_by_user_id: string | null;
@@ -3064,6 +3126,29 @@ export type Database = {
         };
         Returns: Json;
       };
+      appoint_nation_office: {
+        Args: {
+          p_citizen_id: string;
+          p_nation_id: string;
+          p_office_type: string;
+        };
+        Returns: {
+          appointed_turn_number: number;
+          citizen_id: string;
+          created_at: string;
+          id: string;
+          nation_id: string;
+          office_type: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_offices";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       approve_trade_route_side: {
         Args: {
           p_approver_citizen_id: string;
@@ -3615,6 +3700,10 @@ export type Database = {
             } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved";
           };
       diag_test_name: { Args: { "": string }; Returns: string };
+      dismiss_nation_office: {
+        Args: { p_office_id: string };
+        Returns: undefined;
+      };
       dissolve_partnership: {
         Args: {
           p_change_reason: string;

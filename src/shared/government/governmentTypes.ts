@@ -59,6 +59,38 @@ export type GovernmentRules = {
   readonly officeTypes: readonly OfficeType[];
 };
 
+/**
+ * Nation office types tracked in public.nation_offices (issue #1079). Distinct
+ * from OfficeType above: those drive readiness/succession derivations
+ * (ruler/settlement_manager included), these are officeholder appointments a
+ * nation manager makes directly. treasurer and bank_governor are economy
+ * roles allowed for every government type (central bank work lands later);
+ * the remaining four are each tied to one government's legislative/religious
+ * body. No government has a per-type max in v1.
+ */
+export const NATION_OFFICE_TYPES = [
+  "senator",
+  "elder",
+  "clergy",
+  "chancellor",
+  "treasurer",
+  "bank_governor",
+  "delegate",
+] as const;
+
+export type NationOfficeType = (typeof NATION_OFFICE_TYPES)[number];
+
+export const ALLOWED_NATION_OFFICE_TYPES: Readonly<
+  Record<GovernmentType, readonly NationOfficeType[]>
+> = {
+  monarchy: ["chancellor", "treasurer", "bank_governor"],
+  republic: ["senator", "treasurer", "bank_governor"],
+  theocracy: ["clergy", "treasurer", "bank_governor"],
+  tribal_council: ["elder", "treasurer", "bank_governor"],
+  confederation: ["delegate", "treasurer", "bank_governor"],
+  despotism: ["chancellor", "treasurer", "bank_governor"],
+};
+
 export const GOVERNMENT_RULES: Readonly<
   Record<GovernmentType, GovernmentRules>
 > = {
