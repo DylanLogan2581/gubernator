@@ -3907,6 +3907,15 @@ export type Database = {
           world_id: string;
         }[];
       };
+      grant_nation_resources: {
+        Args: {
+          p_nation_id: string;
+          p_quantity: number;
+          p_resource_id: string;
+          p_settlement_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
       grant_world_admin: {
         Args: { p_user_id: string; p_world_id: string };
         Returns: undefined;
@@ -5129,6 +5138,14 @@ export type Database = {
         };
         Returns: string;
       };
+      subsidize_construction_project: {
+        Args: { p_nation_id: string; p_project_id: string };
+        Returns: {
+          clamped: boolean;
+          granted_quantity: number;
+          resource_id: string;
+        }[];
+      };
       throws_ok: { Args: { "": string }; Returns: string };
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
@@ -5306,7 +5323,9 @@ export type Database = {
         | "event.expired"
         | "player.died"
         | "player.widowed"
-        | "nation.succession";
+        | "nation.succession"
+        | "nation.grant_received"
+        | "nation.subsidy_received";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -5474,6 +5493,8 @@ export const Constants = {
         "player.died",
         "player.widowed",
         "nation.succession",
+        "nation.grant_received",
+        "nation.subsidy_received",
       ],
     },
   },

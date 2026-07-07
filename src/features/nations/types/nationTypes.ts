@@ -20,6 +20,7 @@ export type Nation = {
   readonly isHidden: boolean;
   readonly name: string;
   readonly namesetId: string | null;
+  readonly taxRate: number;
   readonly updatedAt: string;
   readonly worldId: string;
 };
@@ -56,4 +57,42 @@ export type NationSettlement = {
   readonly nationName: string;
   readonly population: number;
   readonly readySetAt: string | null;
+};
+
+// Treasury (#1084): nation stockpile row, one per resource held by the
+// nation.
+export type NationStockpileEntry = {
+  readonly isSystemResource: boolean;
+  readonly quantity: number;
+  readonly resourceId: string;
+  readonly resourceName: string;
+};
+
+// Treasury (#1084): one required input resource for a construction project,
+// derived from the target tier's construction_costs_json (v1 has no
+// "remaining inputs" tracking, so this is always the tier's full cost).
+export type NationConstructionProjectCost = {
+  readonly amount: number;
+  readonly resourceId: string;
+  readonly resourceName: string;
+};
+
+// Treasury (#1084): an active (queued/in_progress/paused) construction
+// project belonging to one of the nation's settlements, for the Subsidize
+// dialog's project picker.
+export type NationActiveConstructionProject = {
+  readonly blueprintName: string;
+  readonly costs: readonly NationConstructionProjectCost[];
+  readonly id: string;
+  readonly settlementId: string;
+  readonly settlementName: string;
+  readonly tierNumber: number;
+};
+
+// Treasury (#1084): the most recent nation_turn_snapshots row, used to
+// render an "estimated next-turn intake" figure on the tax rate slider.
+// null before the nation's first economy-phase snapshot exists.
+export type NationLatestTaxSnapshot = {
+  readonly totalTaxCollected: number;
+  readonly turnNumber: number;
 };

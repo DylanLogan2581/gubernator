@@ -8,6 +8,7 @@ import {
   Briefcase,
   Building2,
   Clock,
+  Coins,
   FileText,
   Gem,
   Globe2,
@@ -435,6 +436,12 @@ export function AppSidebar(): JSX.Element | null {
             nationId,
             worldId,
           }),
+          nationSectionItem("treasury", {
+            isActive: currentNationSection === "treasury",
+            label: "Treasury",
+            nationId,
+            worldId,
+          }),
           nationSectionItem("reports", {
             isActive: currentNationSection === "reports",
             label: "Reports",
@@ -812,7 +819,14 @@ function settlementSectionItem(
 
 const NATION_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
   Exclude<NationSection, "overview">
->(["government", "relationships", "reports", "settings", "settlements"]);
+>([
+  "government",
+  "relationships",
+  "reports",
+  "settings",
+  "settlements",
+  "treasury",
+]);
 
 function isNationSectionSegment(
   value: string,
@@ -862,6 +876,7 @@ function nationSectionItem(
     reports: <FileText aria-hidden="true" />,
     settings: <Settings aria-hidden="true" />,
     settlements: <Building2 aria-hidden="true" />,
+    treasury: <Coins aria-hidden="true" />,
   };
 
   switch (section) {
@@ -948,6 +963,21 @@ function nationSectionItem(
         link: (
           <Link
             to="/worlds/$worldId/nations/$nationId/settings"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "treasury":
+      return {
+        key: "nation-treasury",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/treasury"
             params={{ nationId, worldId }}
           >
             {icons[section]}

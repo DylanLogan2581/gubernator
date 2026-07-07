@@ -27,6 +27,7 @@ type NationRow = {
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
+  readonly tax_rate?: number;
   readonly updated_at: string;
   readonly world_id: string;
 };
@@ -546,6 +547,7 @@ function createNationRow(overrides: Partial<NationRow> = {}): NationRow {
     id: NATION_ID,
     is_hidden: false,
     name: "Aldoria",
+    tax_rate: 0,
     updated_at: "2026-05-01T00:00:00.000Z",
     world_id: WORLD_ID,
     ...overrides,

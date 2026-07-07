@@ -19,4 +19,10 @@ export const nationsQueryKeys = {
     [...nationsQueryKeys.all, "relationships-to-nation", nationId] as const,
   settlements: (nationId: string) =>
     [...nationsQueryKeys.all, "settlements", nationId] as const,
+  treasuryActiveProjects: (nationId: string) =>
+    [...nationsQueryKeys.all, "treasury-active-projects", nationId] as const,
+  treasuryLatestSnapshot: (nationId: string) =>
+    [...nationsQueryKeys.all, "treasury-latest-snapshot", nationId] as const,
+  treasuryStockpile: (nationId: string) =>
+    [...nationsQueryKeys.all, "treasury-stockpile", nationId] as const,
 } as const;
