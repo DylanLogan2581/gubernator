@@ -53,3 +53,8 @@ Edge/shared changes must preserve explicit `.ts` imports and browser-vs-Deno bou
 - `supabase-edge-shared`: use for Supabase, RLS, auth, migrations, seeded access, `src/shared`, Edge Functions
 - `simulation-turn-engine`: use for turn advancement, simulation phases, transition payloads, snapshots, logs, notifications, deterministic RNG, or end-turn Edge Function work
 - `verification-workflow`: use for test/build/lint/release/finish-check decisions
+- `epic-workflow`: use for epic/milestone status, epic branches, epic PR conventions
+- `schema-change`: use when touching `supabase/migrations` — migration/RLS/test/typegen decisions, seed regen, db reset discipline
+- `edge-functions`: use when touching `supabase/functions` or `src/shared` — Deno lint/fmt, runtime boundaries
+- `test-hygiene`: use for writing tests, coverage thresholds, CI-only test flakes
+- `ci-triage`: use when PR checks fail — reading states, check→fix map, masked-failure layers
