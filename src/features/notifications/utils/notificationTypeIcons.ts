@@ -39,6 +39,7 @@ const NOTIFICATION_TYPE_ICONS: Record<NotificationType, LucideIcon> = {
   "deposit.depleted": Gem,
   "managed_population.declining": PawPrint,
   "managed_population.extinct": PawPrint,
+  "nation.succession": Skull,
   "partnership.formed": Heart,
   "partnership.widowed": HeartCrack,
   "settlement.homelessness_occurred": AlertTriangle,

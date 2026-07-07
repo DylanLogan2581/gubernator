@@ -10,6 +10,7 @@
 import type {
   SimCitizen,
   SimCitizenAssignment,
+  SimNation,
   SimSettlement,
   SimulationContext,
   SimulationInputState,
@@ -66,6 +67,7 @@ export function makeInputState(
     jobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nations: [],
     partnerships: [],
     populationRules: POPULATION_RULES,
     resources: [],
@@ -108,9 +110,22 @@ export function makeCitizen(
     namesetId: null,
     parentACitizenId: null,
     parentBCitizenId: null,
+    roleNationId: null,
+    roleSettlementId: null,
+    roleType: "none",
     sex: "male",
     status: "alive",
     surname: null,
+    ...overrides,
+  };
+}
+
+export function makeNation(
+  overrides: Partial<SimNation> & { id: string },
+): SimNation {
+  return {
+    governmentType: "monarchy",
+    name: "Testland",
     ...overrides,
   };
 }

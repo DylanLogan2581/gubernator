@@ -322,6 +322,9 @@ function makeAllSuccessResponses(): Record<
           id: CITIZEN_ID,
           parent_a_citizen_id: null,
           parent_b_citizen_id: null,
+          role_nation_id: null,
+          role_settlement_id: null,
+          role_type: "none",
           settlement_id: SETTLEMENT_ID,
           sex: "female",
           status: "alive",
@@ -334,6 +337,9 @@ function makeAllSuccessResponses(): Record<
           id: PARTNER_ID,
           parent_a_citizen_id: null,
           parent_b_citizen_id: null,
+          role_nation_id: null,
+          role_settlement_id: null,
+          role_type: "none",
           settlement_id: SETTLEMENT_ID,
           sex: "male",
           status: "alive",
@@ -392,6 +398,10 @@ function makeAllSuccessResponses(): Record<
           status: "active",
         },
       ],
+      status: 200,
+    },
+    "/rest/v1/nations": {
+      body: [{ id: NATION_ID, name: "Testland", government_type: "monarchy" }],
       status: 200,
     },
   };
@@ -773,6 +783,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/event_effects": { body: [], status: 200 },
       "/rest/v1/citizen_assignments": { body: [], status: 200 },
       "/rest/v1/partnerships": { body: [], status: 200 },
+      "/rest/v1/nations": { body: [], status: 200 },
     });
 
     const result = await resolveSupabaseEndTurnSimulationInput(

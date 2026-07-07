@@ -2,6 +2,7 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import type { GovernmentType } from "../government/index.ts";
 import type { TurnCalendarConfig } from "../turnCalendarPrimitives.ts";
 
 // ---------------------------------------------------------------------------
@@ -44,6 +45,12 @@ export type WorldPopulationRules = {
   readonly partnershipSeekChance: number;
   readonly starvationSeverityMultiplier: number;
   readonly waterConsumptionPerCitizen: number;
+};
+
+export type SimNation = {
+  readonly governmentType: GovernmentType;
+  readonly id: string;
+  readonly name: string;
 };
 
 export type SimSettlement = {
@@ -320,6 +327,8 @@ export type SimCitizenType = "npc" | "player_character";
 
 export type SimCitizenStatus = "alive" | "dead";
 
+export type SimCitizenRoleType = "none" | "nation_manager" | "settlement_manager";
+
 export type SimCitizen = {
   readonly bornOnTurnNumber: number | null;
   readonly citizenType: SimCitizenType;
@@ -328,6 +337,9 @@ export type SimCitizen = {
   readonly namesetId: string | null;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
+  readonly roleNationId: string | null;
+  readonly roleSettlementId: string | null;
+  readonly roleType: SimCitizenRoleType;
   readonly settlementId: string | null;
   readonly sex: string | null;
   readonly status: SimCitizenStatus;
@@ -386,6 +398,7 @@ export type SimulationInputState = {
   readonly managedPopulations: readonly SimManagedPopulation[];
   readonly fallbackNamesetIdBySettlementId?: Readonly<Record<string, string>>;
   readonly namesetConfigById?: Readonly<Record<string, SimNamingConfig>>;
+  readonly nations: readonly SimNation[];
   readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];
   readonly populationRules: WorldPopulationRules;

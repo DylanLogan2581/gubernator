@@ -176,6 +176,15 @@ export type SupabaseCitizenRow = {
   readonly born_on_turn_number: number | null;
   readonly parent_a_citizen_id: string | null;
   readonly parent_b_citizen_id: string | null;
+  readonly role_type: string;
+  readonly role_nation_id: string | null;
+  readonly role_settlement_id: string | null;
+};
+
+export type SupabaseNationRow = {
+  readonly id: string;
+  readonly government_type: string;
+  readonly name: string;
 };
 
 export type SupabaseAssignmentRow = {
@@ -455,7 +464,20 @@ export function isCitizenRow(v: unknown): v is SupabaseCitizenRow {
     (v.parent_a_citizen_id === null ||
       typeof v.parent_a_citizen_id === "string") &&
     (v.parent_b_citizen_id === null ||
-      typeof v.parent_b_citizen_id === "string")
+      typeof v.parent_b_citizen_id === "string") &&
+    typeof v.role_type === "string" &&
+    (v.role_nation_id === null || typeof v.role_nation_id === "string") &&
+    (v.role_settlement_id === null ||
+      typeof v.role_settlement_id === "string")
+  );
+}
+
+export function isNationRow(v: unknown): v is SupabaseNationRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.government_type === "string" &&
+    typeof v.name === "string"
   );
 }
 

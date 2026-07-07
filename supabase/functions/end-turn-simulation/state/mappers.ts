@@ -12,6 +12,7 @@ import type {
   SupabaseJobRow,
   SupabaseManagedPopRow,
   SupabaseManagedPopTypeRow,
+  SupabaseNationRow,
   SupabasePartnershipRow,
   SupabaseProjectRow,
   SupabaseSettlementRow,
@@ -35,6 +36,7 @@ import type {
   SimJobIoEntry,
   SimManagedPopulation,
   SimManagedPopulationType,
+  SimNation,
   SimPartnership,
   SimPopulationResourceEntry,
   SimSettlement,
@@ -281,10 +283,21 @@ export function toSimCitizen(row: SupabaseCitizenRow): SimCitizen {
     namesetId: row.nameset_id ?? null,
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
+    roleNationId: row.role_nation_id,
+    roleSettlementId: row.role_settlement_id,
+    roleType: row.role_type as SimCitizen["roleType"],
     settlementId: row.settlement_id,
     sex: row.sex,
     status: row.status as SimCitizen["status"],
     surname: row.surname,
+  };
+}
+
+export function toSimNation(row: SupabaseNationRow): SimNation {
+  return {
+    governmentType: row.government_type as SimNation["governmentType"],
+    id: row.id,
+    name: row.name,
   };
 }
 

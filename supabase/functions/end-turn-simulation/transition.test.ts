@@ -73,6 +73,7 @@ function makeBaseInput(
     jobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nations: [],
     npcFlavorConfig: null,
     partnerships: [],
     populationRules: makeMinimalPopulationRules(),

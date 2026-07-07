@@ -20,6 +20,7 @@ import {
   toSimJob,
   toSimManagedPop,
   toSimManagedPopType,
+  toSimNation,
   toSimPartnership,
   toSimProject,
   toSimSettlement,
@@ -40,6 +41,7 @@ import {
   fetchManagedPops,
   fetchManagedPopTypes,
   fetchNamesets,
+  fetchNations,
   fetchPartnerships,
   fetchProjects,
   fetchResources,
@@ -59,6 +61,7 @@ import {
   isManagedPopRow,
   isManagedPopTypeRow,
   isNamesetRow,
+  isNationRow,
   isPartnershipRow,
   isProjectRow,
   isResourceRow,
@@ -189,6 +192,7 @@ async function resolveEndTurnInputFromCtx(
     assignmentsResult,
     partnershipsResult,
     namesetsResult,
+    nationsResult,
   ] = await Promise.all([
     fetchResources(ctx, worldId),
     fetchStockpiles(ctx, settlementIds),
@@ -207,6 +211,7 @@ async function resolveEndTurnInputFromCtx(
     fetchAssignments(ctx, worldId),
     fetchPartnerships(ctx, worldId),
     fetchNamesets(ctx, worldId),
+    fetchNations(ctx, worldId),
   ]);
 
   const round2Results = [
@@ -227,6 +232,7 @@ async function resolveEndTurnInputFromCtx(
     assignmentsResult,
     partnershipsResult,
     namesetsResult,
+    nationsResult,
   ];
 
   for (const result of round2Results) {
@@ -326,6 +332,9 @@ async function resolveEndTurnInputFromCtx(
       .map(toSimManagedPop),
     fallbackNamesetIdBySettlementId,
     namesetConfigById,
+    nations: (nationsResult as Extract<typeof nationsResult, { ok: true }>).rows
+      .filter(isNationRow)
+      .map(toSimNation),
     npcFlavorConfig,
     partnerships: (
       partnershipsResult as Extract<typeof partnershipsResult, { ok: true }>

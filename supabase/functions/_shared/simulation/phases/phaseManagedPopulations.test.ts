@@ -58,6 +58,7 @@ function makeContext(
       jobs: [],
       managedPopulationTypes: types,
       managedPopulations: pops,
+      nations: [],
       partnerships: [],
       populationRules: {
         fertilityChance: 0,

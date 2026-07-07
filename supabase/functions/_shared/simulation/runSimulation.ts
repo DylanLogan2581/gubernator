@@ -16,6 +16,7 @@ import { phasePassiveEffects } from "./phases/phasePassiveEffects.ts";
 import { phaseResourceDecay } from "./phases/phaseResourceDecay.ts";
 import { phaseStandardJobs } from "./phases/phaseStandardJobs.ts";
 import { phaseStockpileClamp } from "./phases/phaseStockpileClamp.ts";
+import { phaseSuccession } from "./phases/phaseSuccession.ts";
 import { phaseTradeRoutes } from "./phases/phaseTradeRoutes.ts";
 import { SimulationRejectionError } from "./simulationTypes.ts";
 
@@ -340,6 +341,8 @@ export function runSimulation(
 
   const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths, ...p11.citizenDeaths];
 
+  const pSuccession = phaseSuccession(context, allDeaths);
+
   // Phase 10 (homelessness) runs after phase 9 (partnerships), so a citizen
   // can be selected for partnership formation and then die of homelessness in
   // the same turn. apply_turn_transition rejects "active" partnership entries
@@ -455,6 +458,7 @@ export function runSimulation(
     ...p12.logs,
     ...p12dot5.logs,
     ...p13.logs,
+    ...pSuccession.logs,
   ];
 
   const notifications: SimulationNotification[] = [
@@ -466,6 +470,7 @@ export function runSimulation(
     ...filteredP9Notifications,
     ...p10.notifications,
     ...p11.notifications,
+    ...pSuccession.notifications,
   ];
 
   const stockpileDeltas: StockpileDelta[] = [

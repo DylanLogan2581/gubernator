@@ -5083,7 +5083,8 @@ export type Database = {
         | "event.activated"
         | "event.expired"
         | "player.died"
-        | "player.widowed";
+        | "player.widowed"
+        | "nation.succession";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -5250,6 +5251,7 @@ export const Constants = {
         "event.expired",
         "player.died",
         "player.widowed",
+        "nation.succession",
       ],
     },
   },
