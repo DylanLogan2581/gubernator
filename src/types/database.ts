@@ -1556,6 +1556,48 @@ export type Database = {
           },
         ];
       };
+      nation_resource_stockpiles: {
+        Row: {
+          created_at: string;
+          id: string;
+          nation_id: string;
+          quantity: number;
+          resource_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          nation_id: string;
+          quantity?: number;
+          resource_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          nation_id?: string;
+          quantity?: number;
+          resource_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_resource_stockpiles_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_resource_stockpiles_resource_id_fkey";
+            columns: ["resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_turn_readiness: {
         Row: {
           id: string;
@@ -1610,6 +1652,7 @@ export type Database = {
           is_hidden: boolean;
           name: string;
           nameset_id: string | null;
+          tax_rate: number;
           updated_at: string;
           world_id: string;
         };
@@ -1624,6 +1667,7 @@ export type Database = {
           is_hidden?: boolean;
           name: string;
           nameset_id?: string | null;
+          tax_rate?: number;
           updated_at?: string;
           world_id: string;
         };
@@ -1638,6 +1682,7 @@ export type Database = {
           is_hidden?: boolean;
           name?: string;
           nameset_id?: string | null;
+          tax_rate?: number;
           updated_at?: string;
           world_id?: string;
         };
@@ -4679,6 +4724,7 @@ export type Database = {
           is_hidden: boolean;
           name: string;
           nameset_id: string | null;
+          tax_rate: number;
           updated_at: string;
           world_id: string;
         }[];
@@ -4702,6 +4748,7 @@ export type Database = {
           is_hidden: boolean;
           name: string;
           nameset_id: string | null;
+          tax_rate: number;
           updated_at: string;
           world_id: string;
         }[];
@@ -4719,6 +4766,30 @@ export type Database = {
           nameset_id: string;
           world_id: string;
         }[];
+      };
+      set_nation_tax_rate: {
+        Args: { p_nation_id: string; p_rate: number };
+        Returns: {
+          capital_settlement_id: string | null;
+          created_at: string;
+          description: string | null;
+          flag_path: string | null;
+          founded_turn_number: number | null;
+          government_type: string;
+          id: string;
+          is_hidden: boolean;
+          name: string;
+          nameset_id: string | null;
+          tax_rate: number;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "nations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       set_per_target_assignment: {
         Args: {
