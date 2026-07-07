@@ -26,6 +26,8 @@ const GROUP_ID = "22222222-2222-2222-2222-222222222222";
 const EVENT_ID = "33333333-3333-3333-3333-333333333333";
 const RESOURCE_ID = "44444444-4444-4444-4444-444444444444";
 const BUILDING_BLUEPRINT_ID = "55555555-5555-5555-5555-555555555555";
+const BUILDING_INSTANCE_ID_1 = "66666666-6666-6666-6666-666666666666";
+const BUILDING_INSTANCE_ID_2 = "77777777-7777-7777-7777-777777777777";
 
 type SupabaseError = { readonly code?: string; readonly message: string };
 type SupabaseResult<T> =
@@ -98,8 +100,7 @@ function createGroupInput(
     durationType: "instant",
     durationTransitions: null,
     activationTurn: 1,
-    createCitizenMemories: false,
-    memoryText: null,
+    memories: [],
     ...overrides,
   };
 }
@@ -116,8 +117,7 @@ function createEditGroupInput(
     durationType: "instant",
     durationTransitions: null,
     activationTurn: 1,
-    createCitizenMemories: false,
-    memoryText: null,
+    memories: [],
     ...overrides,
   };
 }
@@ -164,11 +164,44 @@ describe("createEventGroupMutationOptions", () => {
       p_activate_on_transition_after_turn_number: 1,
       p_create_citizen_memories: false,
       p_memory_text: null,
+      p_memories: [],
     });
     expect(options.mutationKey).toEqual([
       ...eventQueryKeys.all,
       "create-group",
     ]);
+  });
+
+  it("maps memories to snake_case turn_offset/memory_text pairs", async () => {
+    const { client, rpc } = createRpcClient({
+      data: { group_id: GROUP_ID, event_ids: [EVENT_ID] },
+      error: null,
+    });
+    const queryClient = createQueryClient();
+    const options = createEventGroupMutationOptions({ client, queryClient });
+
+    await executeMutation(
+      queryClient,
+      options,
+      createGroupInput({
+        durationType: "sustained",
+        durationTransitions: 2,
+        memories: [
+          { turnOffset: 0, memoryText: "Turn 1 memory" },
+          { turnOffset: 1, memoryText: "Turn 2 memory" },
+        ],
+      }),
+    );
+
+    expect(rpc).toHaveBeenCalledWith(
+      "create_event_group_with_events",
+      expect.objectContaining({
+        p_memories: [
+          { memory_text: "Turn 1 memory", turn_offset: 0 },
+          { memory_text: "Turn 2 memory", turn_offset: 1 },
+        ],
+      }),
+    );
   });
 
   it("maps managed_population_change mode into extra_data_jsonb", async () => {
@@ -241,6 +274,53 @@ describe("createEventGroupMutationOptions", () => {
             extra_data_jsonb: {
               building_blueprint_mode: "select",
               building_blueprint_ids: [BUILDING_BLUEPRINT_ID],
+            },
+          }),
+        ],
+      }),
+    );
+  });
+
+  it("maps upkeep_multiplier instance-mode building ids into extra_data_jsonb", async () => {
+    const { client, rpc } = createRpcClient({
+      data: { group_id: GROUP_ID, event_ids: [EVENT_ID] },
+      error: null,
+    });
+    const queryClient = createQueryClient();
+    const options = createEventGroupMutationOptions({ client, queryClient });
+
+    await executeMutation(
+      queryClient,
+      options,
+      createGroupInput({
+        effects: [
+          {
+            ...BASE_EFFECT,
+            effectType: "upkeep_multiplier",
+            resourceId: null,
+            multiplierValue: 1.5,
+            buildingBlueprintMode: "instance",
+            buildingInstanceIds: [
+              BUILDING_INSTANCE_ID_1,
+              BUILDING_INSTANCE_ID_2,
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(rpc).toHaveBeenCalledWith(
+      "create_event_group_with_events",
+      expect.objectContaining({
+        p_effects: [
+          expect.objectContaining({
+            effect_type: "upkeep_multiplier",
+            extra_data_jsonb: {
+              building_blueprint_mode: "instance",
+              building_instance_ids: [
+                BUILDING_INSTANCE_ID_1,
+                BUILDING_INSTANCE_ID_2,
+              ],
             },
           }),
         ],
@@ -482,6 +562,7 @@ describe("editEventGroupMutationOptions", () => {
       p_activate_on_transition_after_turn_number: 1,
       p_create_citizen_memories: false,
       p_memory_text: null,
+      p_memories: [],
     });
     expect(options.mutationKey).toEqual([...eventQueryKeys.all, "edit-group"]);
   });

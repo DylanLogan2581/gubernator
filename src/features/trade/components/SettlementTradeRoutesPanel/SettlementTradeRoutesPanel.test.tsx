@@ -312,9 +312,31 @@ function createClient({
     order: vi.fn(() => transitionsSelectBuilder),
     limit: vi.fn(() => transitionsSelectBuilder),
     returns: vi.fn(() => transitionsSelectBuilder),
-    maybeSingle: vi
-      .fn()
-      .mockResolvedValue({ data: resolvedTransition, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data:
+        resolvedTransition === null
+          ? null
+          : {
+              finished_at: resolvedTransition.finished_at,
+              from_turn_number: resolvedTransition.from_turn_number,
+              id: resolvedTransition.id,
+              started_at: resolvedTransition.started_at,
+              status: resolvedTransition.status,
+              to_turn_number: resolvedTransition.to_turn_number,
+              world_id: resolvedTransition.world_id,
+            },
+      error: null,
+    }),
+  };
+
+  const makeTransitionChildBuilder = (
+    data: readonly unknown[],
+  ): Record<string, unknown> => {
+    const builder: Record<string, unknown> = {};
+    builder.select = vi.fn(() => builder);
+    builder.eq = vi.fn(() => builder);
+    builder.returns = vi.fn(() => Promise.resolve({ data, error: null }));
+    return builder;
   };
 
   return {
@@ -333,6 +355,26 @@ function createClient({
       }
       if (table === "turn_transitions") {
         return { select: vi.fn(() => transitionsSelectBuilder) };
+      }
+      if (table === "settlement_turn_snapshots") {
+        return makeTransitionChildBuilder(
+          resolvedTransition?.settlement_turn_snapshots ?? [],
+        );
+      }
+      if (table === "settlement_turn_resource_snapshots") {
+        return makeTransitionChildBuilder(
+          resolvedTransition?.settlement_turn_resource_snapshots ?? [],
+        );
+      }
+      if (table === "turn_log_entries") {
+        return makeTransitionChildBuilder(
+          resolvedTransition?.turn_log_entries ?? [],
+        );
+      }
+      if (table === "notifications") {
+        return makeTransitionChildBuilder(
+          resolvedTransition?.notifications ?? [],
+        );
       }
       throw new Error(`Unexpected table: ${table}`);
     }),

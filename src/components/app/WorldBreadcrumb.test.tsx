@@ -359,4 +359,22 @@ describe("WorldBreadcrumb", () => {
 
     expect(screen.queryByText("Active world")).toBeNull();
   });
+
+  it("truncates the last crumb and hides ancestors below sm (mobile) — #1053", () => {
+    useParams.mockReturnValue({
+      worldId: "world-1",
+      nationId: "nation-1",
+      settlementId: "settlement-1",
+    });
+    renderBreadcrumb("world-1", "Verdant Reach");
+
+    const lastCrumb = screen.getByText("…", { selector: "span" });
+    expect(lastCrumb.className).toContain("truncate");
+    expect(lastCrumb.className).toContain("min-w-0");
+
+    const worldLink = screen.getByRole("link", { name: "Verdant Reach" });
+    const ancestorItem = worldLink.closest("li");
+    expect(ancestorItem?.className).toContain("hidden");
+    expect(ancestorItem?.className).toContain("sm:flex");
+  });
 });

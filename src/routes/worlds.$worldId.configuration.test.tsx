@@ -77,8 +77,9 @@ describe("world configuration route", () => {
       "/worlds/00000000-0000-0000-0000-000000000303/configuration?tab=world-settings",
     );
 
-    const resourcesTab = await screen.findByRole("tab", { name: "Resources" });
-    expect(resourcesTab).toHaveAttribute("aria-selected", "true");
+    expect(
+      await screen.findByRole("combobox", { name: "Configuration section" }),
+    ).toHaveTextContent("Resources");
   });
 
   it("marks the jobs tab as selected when ?tab=jobs is in the URL", async () => {
@@ -100,8 +101,9 @@ describe("world configuration route", () => {
       "/worlds/00000000-0000-0000-0000-000000000202/configuration?tab=jobs",
     );
 
-    const jobsTab = await screen.findByRole("tab", { name: "Jobs" });
-    expect(jobsTab).toHaveAttribute("aria-selected", "true");
+    expect(
+      await screen.findByRole("combobox", { name: "Configuration section" }),
+    ).toHaveTextContent("Jobs");
   });
 });
 

@@ -469,6 +469,10 @@ export type CitizenDeath = {
 };
 
 export type CitizenBirth = {
+  // Set only by event-driven spawns (e.g. population_boost) that need an age
+  // other than newborn; undefined means "born this transition's turn number"
+  // (the historical behavior for partnership births).
+  readonly bornOnTurnNumber?: number;
   readonly givenName: string;
   readonly namesetId: string | null;
   readonly npcFlaw: string | null;
@@ -476,8 +480,10 @@ export type CitizenBirth = {
   readonly npcSecretContradiction: string | null;
   readonly npcTrait1: string | null;
   readonly npcTrait2: string | null;
-  readonly parentACitizenId: string;
-  readonly parentBCitizenId: string;
+  // Null for parentless spawns (e.g. population_boost); partnership births
+  // always set both.
+  readonly parentACitizenId: string | null;
+  readonly parentBCitizenId: string | null;
   readonly sex: string;
   readonly settlementId: string;
   readonly surname: string | null;
@@ -611,6 +617,7 @@ export type SimulationSharedState = {
       consumption: number;
       upkeep: number;
       upkeepByBlueprintId: Map<string, number>;
+      upkeepByBuildingInstanceId: Map<string, number>;
     }
   >;
   // Managed population ID -> population delta from managed_population_change effects.

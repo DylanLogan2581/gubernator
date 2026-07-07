@@ -549,19 +549,35 @@ describe("phaseEvents — population_loss", () => {
 });
 
 describe("phaseEvents — population_boost", () => {
-  it("logs population_boost event (no-op until birth system supports parentless citizens)", () => {
-    const input = makeInput({
-      events: [
-        makeEvent({
-          effectPayloadJsonb: {
-            amount: 5,
-            settlementId: "settlement1",
-          },
-          effectType: "population_boost",
-          id: "boost123",
-        }),
-      ],
+  function boostEvent(overrides: Partial<SimEvent> = {}): SimEvent {
+    return makeEvent({
+      effectPayloadJsonb: {
+        amount: 5,
+        settlementId: "settlement1",
+      },
+      effectType: "population_boost",
+      id: "boost123",
+      ...overrides,
     });
+  }
+
+  it("spawns the requested number of parentless citizen births in the target settlement", () => {
+    const input = makeInput({ events: [boostEvent()] });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    expect(result.citizenBirths).toHaveLength(5);
+    for (const birth of result.citizenBirths) {
+      expect(birth.settlementId).toBe("settlement1");
+      expect(birth.parentACitizenId).toBeNull();
+      expect(birth.parentBCitizenId).toBeNull();
+      expect(["male", "female"]).toContain(birth.sex);
+    }
+  });
+
+  it("logs a typed event.population_boost entry with the settlement id and created citizen count", () => {
+    const input = makeInput({ events: [boostEvent()] });
     const context = makeContext(input);
 
     const result = phaseEvents(context);
@@ -571,13 +587,103 @@ describe("phaseEvents — population_boost", () => {
         category: "event.population_boost",
         payload: expect.objectContaining({
           amount: 5,
+          citizenCount: 5,
           eventId: "boost123",
           settlementId: "settlement1",
         }),
       }),
     );
-    // population_boost is log-only: no births until the birth system supports parentless citizens
-    expect(result.citizenDeaths).toHaveLength(0);
+  });
+
+  it("assigns nameset-based given names and the settlement's fallback nameset when no parent nameset exists", () => {
+    const input = makeInput({
+      events: [boostEvent()],
+      fallbackNamesetIdBySettlementId: { settlement1: "ns1" },
+      namesetConfigById: {
+        ns1: {
+          convention: "pool",
+          female_given_names: ["Alice", "Beth"],
+          male_given_names: ["Adam", "Bob"],
+          surnames: ["Smith", "Jones"],
+        },
+      },
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    for (const birth of result.citizenBirths) {
+      expect(birth.namesetId).toBe("ns1");
+      expect(["Adam", "Bob", "Alice", "Beth"]).toContain(birth.givenName);
+      expect(["Smith", "Jones"]).toContain(birth.surname);
+    }
+  });
+
+  it("assigns a non-negative bornOnTurnNumber no later than the current turn (valid age)", () => {
+    const input = makeInput({
+      events: [boostEvent()],
+      populationRules: {
+        ...BASE_POPULATION_RULES,
+        maximumFertilityAgeTurns: 60,
+        minimumPartnershipAgeTurns: 18,
+      },
+      turnNumber: 30,
+    });
+    const context = makeContext(input);
+
+    const result = phaseEvents(context);
+
+    for (const birth of result.citizenBirths) {
+      expect(birth.bornOnTurnNumber).toBeDefined();
+      const bornOnTurnNumber = birth.bornOnTurnNumber as number;
+      expect(bornOnTurnNumber).toBeGreaterThanOrEqual(0);
+      expect(bornOnTurnNumber).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it("is deterministic across reruns of the same world/turn seed", () => {
+    const input = makeInput({
+      events: [boostEvent()],
+      fallbackNamesetIdBySettlementId: { settlement1: "ns1" },
+      namesetConfigById: {
+        ns1: {
+          convention: "pool",
+          female_given_names: ["Alice", "Beth"],
+          male_given_names: ["Adam", "Bob"],
+          surnames: ["Smith", "Jones"],
+        },
+      },
+    });
+
+    const resultA = phaseEvents(makeContext(input));
+    const resultB = phaseEvents(makeContext(input));
+
+    expect(resultA.citizenBirths).toEqual(resultB.citizenBirths);
+  });
+
+  it("reapplies per turn for a sustained event, creating amount citizens each turn it is active", () => {
+    const sustainedEvent = boostEvent({
+      durationType: "sustained",
+      remainingTransitions: 2,
+      status: "pending",
+    });
+
+    const turn1 = phaseEvents(
+      makeContext(makeInput({ events: [sustainedEvent], turnNumber: 10 })),
+    );
+    expect(turn1.citizenBirths).toHaveLength(5);
+
+    const turn2 = phaseEvents(
+      makeContext(
+        makeInput({
+          events: [{ ...sustainedEvent, remainingTransitions: 1, status: "active" }],
+          turnNumber: 11,
+        }),
+      ),
+    );
+    expect(turn2.citizenBirths).toHaveLength(5);
+
+    expect(turn1.citizenBirths.length + turn2.citizenBirths.length).toBe(10);
   });
 });
 
@@ -1004,6 +1110,36 @@ describe("phaseEvents — upkeep_multiplier blueprint targeting via extraDataJso
 
     const mults = context.shared.pendingEventMultipliers.get("settlement1");
     expect(mults?.upkeep).toBe(2.0);
+    expect(mults?.upkeepByBlueprintId.size).toBe(0);
+  });
+
+  it("applies multiplier to specific building instances when building_blueprint_mode is instance", () => {
+    const input = makeInput({
+      events: [
+        makeEvent({
+          effectType: "upkeep_multiplier",
+          effects: [
+            makeEffect({
+              effectType: "upkeep_multiplier",
+              extraDataJsonb: {
+                building_blueprint_mode: "instance",
+                building_instance_ids: ["building-1", "building-2"],
+              },
+              multiplierValue: 1.5,
+            }),
+          ],
+        }),
+      ],
+    });
+    const context = makeContext(input);
+
+    phaseEvents(context);
+
+    const mults = context.shared.pendingEventMultipliers.get("settlement1");
+    expect(mults?.upkeepByBuildingInstanceId.get("building-1")).toBe(1.5);
+    expect(mults?.upkeepByBuildingInstanceId.get("building-2")).toBe(1.5);
+    // Global and blueprint-scoped multipliers should remain untouched
+    expect(mults?.upkeep).toBe(1);
     expect(mults?.upkeepByBlueprintId.size).toBe(0);
   });
 });

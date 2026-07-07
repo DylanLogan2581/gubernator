@@ -99,7 +99,7 @@ describe("accessibleWorldsQueryOptions", () => {
     ]);
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility",
     );
     expect(eq).toHaveBeenCalledWith("is_trashed", false);
     expect(order).toHaveBeenCalledWith("updated_at", { ascending: false });
@@ -222,6 +222,7 @@ describe("worldRouteAccessQueryOptions", () => {
       archivedAt: null,
       currentTurnNumber: 8,
       inWorldDateLabel: "Secondday, Ember 1, 101 AG",
+      inWorldDateLabelShort: "2/1/101",
       isArchived: false,
       name: "Verdant Reach",
       nextInWorldDateLabel: "Firstday, Ember 2, 101 AG",
@@ -236,7 +237,7 @@ describe("worldRouteAccessQueryOptions", () => {
     expect(routeAccess.world.slug).toBe("verdant-reach-00000000");
     expect(from).toHaveBeenCalledWith("worlds");
     expect(select).toHaveBeenCalledWith(
-      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,updated_at,visibility",
+      "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility",
     );
     expect(eq).toHaveBeenCalledWith(
       "id",
@@ -508,6 +509,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 1, name: "Secondday" },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }
 

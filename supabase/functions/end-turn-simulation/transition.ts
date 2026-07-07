@@ -278,9 +278,11 @@ export function mapSimulationResultToPayload(
     citizenId: cp.citizenId,
   }));
 
-  // §C32a: citizenBirths — add bornOnTurnNumber from the new turn.
+  // §C32a: citizenBirths — default bornOnTurnNumber to the new turn (partnership
+  // births); event-driven spawns (e.g. population_boost) may set their own so
+  // spawned citizens arrive as adults rather than newborns.
   const citizenBirths: CitizenBirthEntry[] = result.citizenBirths.map((b) => ({
-    bornOnTurnNumber: newTurnNumber,
+    bornOnTurnNumber: b.bornOnTurnNumber ?? newTurnNumber,
     givenName: b.givenName,
     namesetId: b.namesetId,
     npcFlaw: b.npcFlaw,

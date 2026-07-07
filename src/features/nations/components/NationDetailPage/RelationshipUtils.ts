@@ -77,3 +77,22 @@ export function getStanceIconConfig(stance: string): {
       };
   }
 }
+
+export function getStanceBadgeClassName(stance: string): string {
+  switch (stance) {
+    case "neutral":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300";
+    case "friendly":
+      return "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300";
+    case "hostile":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300";
+    case "at_war":
+      return "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300";
+    case "allied":
+      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300";
+    case "non_aggression_pact":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+}

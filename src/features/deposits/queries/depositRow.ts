@@ -7,6 +7,7 @@ export type WorkerInputEntryRow = {
 
 export type DepositTypeRow = {
   readonly created_at: string;
+  readonly icon: string | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly job_id: string;
@@ -21,7 +22,7 @@ export type DepositTypeRow = {
 };
 
 export const DEPOSIT_TYPE_SELECT = [
-  "id,world_id,name,slug,job_id,output_units_per_worker,worker_inputs_json,is_trashed,created_at,updated_at",
+  "id,world_id,name,slug,icon,job_id,output_units_per_worker,worker_inputs_json,is_trashed,created_at,updated_at",
   "referencing_jobs:job_definitions!job_definitions_linked_deposit_type_fk(id)",
 ].join(",");
 
@@ -36,6 +37,7 @@ export function toDepositType(row: DepositTypeRow): DepositType {
   return {
     createdAt: row.created_at,
     hasActiveReferences: row.referencing_jobs.length > 0,
+    icon: row.icon,
     id: row.id,
     isTrashed: row.is_trashed,
     jobId: row.job_id,

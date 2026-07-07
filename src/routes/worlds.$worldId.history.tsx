@@ -1,25 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 
 import { LoadingState } from "@/components/shared/LoadingState";
 import { requireAuthenticatedRoute } from "@/features/auth";
-import { TurnLogBrowser } from "@/features/turns";
+import { TurnLogPage } from "@/features/turns";
 
 import type { JSX } from "react";
 
+const historySearchSchema = z.object({
+  nationId: z.string().optional(),
+  turn: z
+    .union([z.literal("all"), z.coerce.number().int().positive()])
+    .optional(),
+});
+
+function parseHistorySearch(search: unknown): {
+  readonly nationId?: string;
+  readonly turn?: number | "all";
+} {
+  const result = historySearchSchema.safeParse(search);
+  return result.success ? result.data : {};
+}
+
 function WorldHistoryRoute(): JSX.Element {
   const { worldId } = Route.useParams();
+  const { nationId, turn } = Route.useSearch();
 
   return (
-    <div className="container max-w-6xl space-y-6 py-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-normal">Turn history</h1>
-        <p className="text-sm text-muted-foreground">
-          Audit log of all simulation events across every turn transition.
-        </p>
-      </header>
-
-      <TurnLogBrowser worldId={worldId} title="All turn log entries" />
-    </div>
+    <TurnLogPage nationId={nationId} selectedTurn={turn} worldId={worldId} />
   );
 }
 
@@ -31,6 +39,7 @@ export const Route = createFileRoute("/worlds/$worldId/history")({
     }),
   component: WorldHistoryRoute,
   pendingComponent: WorldHistoryPendingRoute,
+  validateSearch: parseHistorySearch,
 });
 
 function WorldHistoryPendingRoute(): JSX.Element {

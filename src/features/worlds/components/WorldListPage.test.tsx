@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { WorldCalendarConfig } from "@/features/calendar";
 
+import { writeWorldScopePin } from "../utils/worldScopePin";
+
 import { WorldListPage } from "./WorldListPage";
 
 import type { ReactNode } from "react";
@@ -35,10 +37,21 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({
     children,
     params,
+    to,
   }: {
     readonly children: ReactNode;
-    readonly params: { readonly worldId: string };
-  }) => <a href={`/worlds/${params.worldId}`}>{children}</a>,
+    readonly params?: Record<string, string>;
+    readonly to: string;
+  }) => {
+    const href =
+      params === undefined
+        ? to
+        : Object.entries(params).reduce(
+            (acc, [key, value]) => acc.replace(`$${key}`, value),
+            to,
+          );
+    return <a href={href}>{children}</a>;
+  },
 }));
 
 describe("WorldListPage", () => {
@@ -46,6 +59,7 @@ describe("WorldListPage", () => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
     toastSuccess.mockReset();
+    localStorage.clear();
   });
 
   it("renders the world list loading state", async () => {
@@ -61,6 +75,53 @@ describe("WorldListPage", () => {
     expect(
       await screen.findByRole("status", { name: "Loading worlds…" }),
     ).toBeDefined();
+  });
+
+  it("renders a skeleton while access context is pending", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        getSessionOverride: () => new Promise(() => undefined),
+      }),
+    );
+
+    renderWorldListPage();
+
+    expect(
+      await screen.findByRole("status", { name: "Loading list" }),
+    ).toBeDefined();
+  });
+
+  it("shows a retryable error state when access context fails to load", async () => {
+    const user = userEvent.setup();
+    let getSessionCallCount = 0;
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [],
+        getSessionOverride: () => {
+          getSessionCallCount += 1;
+          if (getSessionCallCount === 1) {
+            return Promise.reject(new Error("network unreachable"));
+          }
+          return Promise.resolve({
+            data: { session: { user: { id: "user-1" } } },
+            error: null,
+          });
+        },
+      }),
+    );
+
+    renderWorldListPage();
+
+    expect(
+      await screen.findByText("World access could not be loaded"),
+    ).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("No accessible worlds")).toBeDefined();
   });
 
   it("renders the no-access empty state", async () => {
@@ -115,6 +176,99 @@ describe("WorldListPage", () => {
       "href",
       "/worlds/00000000-0000-0000-0000-000000000101",
     );
+  });
+
+  it("uses a responsive card grid for the world list", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "Grid World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Grid World");
+    expect(screen.getByRole("list", { name: "Accessible worlds" })).toHaveClass(
+      "sm:grid-cols-2",
+      "lg:grid-cols-3",
+    );
+  });
+
+  it("shows a resume link to the pinned nation when a scope pin is stored", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000501";
+    writeWorldScopePin(worldId, { nationId: "nation-1", settlementId: null });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ id: worldId, name: "Resume World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Resume World");
+    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute(
+      "href",
+      `/worlds/${worldId}/nations/nation-1`,
+    );
+  });
+
+  it("shows a resume link to the pinned settlement when both nation and settlement are stored", async () => {
+    const worldId = "00000000-0000-0000-0000-000000000502";
+    writeWorldScopePin(worldId, {
+      nationId: "nation-1",
+      settlementId: "settlement-1",
+    });
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({ id: worldId, name: "Resume Settlement World" }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("Resume Settlement World");
+    expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute(
+      "href",
+      `/worlds/${worldId}/nations/nation-1/settlements/settlement-1`,
+    );
+  });
+
+  it("does not show a resume link when no scope pin is stored", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [createWorldRow({ name: "No Pin World" })],
+      }),
+    );
+
+    renderWorldListPage();
+
+    await screen.findByText("No Pin World");
+    expect(screen.queryByRole("link", { name: "Resume" })).toBeNull();
+  });
+
+  it("shows a world icon with the first letter of the world name", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        session: { user: { id: "user-1" } },
+        worldRows: [
+          createWorldRow({
+            id: "00000000-0000-0000-0000-000000000101",
+            name: "Calendar World",
+          }),
+        ],
+      }),
+    );
+
+    renderWorldListPage();
+
+    expect(await screen.findByText("Calendar World")).toBeDefined();
+    expect(screen.getByText("C")).toBeDefined();
   });
 
   it("shows a tooltip explaining the Hidden badge on hover", async () => {
@@ -311,7 +465,7 @@ describe("WorldListPage", () => {
     });
   });
 
-  it("shows confirm dialog when delete permanently is clicked on a trashed world", async () => {
+  it("shows a note linking to the superadmin worlds panel and no hard-delete button in the trash view", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -329,74 +483,26 @@ describe("WorldListPage", () => {
     await screen.findByText("No accessible worlds");
     await user.click(screen.getByRole("button", { name: "Show trash" }));
     await screen.findByText("Trashed World");
-    await user.click(
-      screen.getByRole("button", { name: "Delete permanently" }),
-    );
 
     expect(
-      await screen.findByRole("alertdialog", {
-        name: "Permanently delete Trashed World?",
-      }),
+      screen.getByText(/Permanent deletion happens in Superadmin/),
     ).toBeDefined();
+    expect(
+      screen.getByRole("link", { name: "Go to Superadmin → Worlds" }),
+    ).toHaveAttribute("href", "/superadmin/worlds");
+    expect(
+      screen.queryByRole("button", { name: "Delete permanently" }),
+    ).toBeNull();
   });
 
-  it("does not call hard delete rpc when cancel is clicked on the permanent delete dialog", async () => {
-    const user = userEvent.setup();
-    const rpcSpy = vi.fn((fn: string) => {
-      if (fn === "current_user_player_character_world_ids") {
-        return Promise.resolve({ data: [], error: null });
-      }
-      throw new Error(`Unexpected RPC: ${fn}`);
-    });
-
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        isSuperAdmin: true,
-        rpcOverride: rpcSpy,
-        session: { user: { id: "user-1" } },
-        worldRows: [],
-        trashedWorldRows: [
-          createWorldRow({ name: "Trashed World", is_trashed: true }),
-        ],
-      }),
-    );
-
-    renderWorldListPage();
-
-    await screen.findByText("No accessible worlds");
-    await user.click(screen.getByRole("button", { name: "Show trash" }));
-    await screen.findByText("Trashed World");
-    await user.click(
-      screen.getByRole("button", { name: "Delete permanently" }),
-    );
-
-    const dialog = await screen.findByRole("alertdialog", {
-      name: "Permanently delete Trashed World?",
-    });
-    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-
-    await waitFor(() => {
-      expect(
-        screen.queryByRole("alertdialog", {
-          name: "Permanently delete Trashed World?",
-        }),
-      ).toBeNull();
-    });
-
-    expect(rpcSpy).not.toHaveBeenCalledWith(
-      "hard_delete_world",
-      expect.anything(),
-    );
-  });
-
-  it("calls hard delete rpc and shows success toast when the permanent delete dialog is confirmed", async () => {
+  it("restores a trashed world", async () => {
     const user = userEvent.setup();
     const worldId = "00000000-0000-0000-0000-000000000009";
     const rpcSpy = vi.fn((fn: string) => {
       if (fn === "current_user_player_character_world_ids") {
         return Promise.resolve({ data: [], error: null });
       }
-      if (fn === "hard_delete_world") {
+      if (fn === "restore_world") {
         return {
           maybeSingle: vi.fn().mockResolvedValue({
             data: { id: worldId },
@@ -428,28 +534,16 @@ describe("WorldListPage", () => {
     await screen.findByText("No accessible worlds");
     await user.click(screen.getByRole("button", { name: "Show trash" }));
     await screen.findByText("Trashed World");
-    await user.click(
-      screen.getByRole("button", { name: "Delete permanently" }),
-    );
-
-    const dialog = await screen.findByRole("alertdialog", {
-      name: "Permanently delete Trashed World?",
-    });
-    await user.click(
-      within(dialog).getByRole("button", { name: "Delete permanently" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Restore" }));
 
     await waitFor(() => {
-      expect(rpcSpy).toHaveBeenCalledWith("hard_delete_world", {
+      expect(rpcSpy).toHaveBeenCalledWith("restore_world", {
         p_world_id: worldId,
       });
     });
 
     await waitFor(() => {
-      expect(toastSuccess).toHaveBeenCalledWith(
-        "World permanently deleted.",
-        undefined,
-      );
+      expect(toastSuccess).toHaveBeenCalledWith("World restored.", undefined);
     });
   });
 });
@@ -474,6 +568,7 @@ function createQueryClient(): QueryClient {
 
 function createClient({
   adminRows = [],
+  getSessionOverride,
   isSuperAdmin = false,
   rpcOverride,
   session,
@@ -481,6 +576,7 @@ function createClient({
   trashedWorldRows = [],
 }: {
   readonly adminRows?: readonly { readonly world_id: string }[];
+  readonly getSessionOverride?: () => Promise<unknown>;
   readonly isSuperAdmin?: boolean;
   readonly rpcOverride?: (fn: string, args: unknown) => unknown;
   readonly session: {
@@ -493,10 +589,12 @@ function createClient({
 }): unknown {
   return {
     auth: {
-      getSession: vi.fn().mockResolvedValue({
-        data: { session },
-        error: null,
-      }),
+      getSession:
+        getSessionOverride ??
+        vi.fn().mockResolvedValue({
+          data: { session },
+          error: null,
+        }),
     },
     from: vi.fn((table: string) => {
       if (table === "users") {
@@ -599,6 +697,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 1, name: "Secondday" },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }
 

@@ -1,6 +1,8 @@
 // Citizens feature — query and mutation API for NPCs and player characters.
 // Implemented in Epic 3.
+export { CitizenAvatar } from "./components/CitizenAvatar";
 export { CitizenDetailPage } from "./components/CitizenDetailPage";
+export { CitizensDirectoryPage } from "./components/CitizensDirectoryPage";
 export { CitizensPanel } from "./components/CitizensPanel";
 export { SettlementAssignmentBoard } from "./components/SettlementAssignmentBoard";
 export { NpcFlavorLine } from "./components/NpcFlavorLine";
@@ -52,6 +54,7 @@ export {
   assignmentsInSettlementQueryOptions,
   currentAssignmentForCitizenQueryOptions,
 } from "./queries/citizenAssignmentsQueries";
+export { citizensDirectoryQueryOptions } from "./queries/citizenDirectoryQueries";
 export { settlementConstructionProjectCountsQueryOptions } from "./queries/settlementConstructionProjectCountsQueries";
 export { settlementJobCountsQueryOptions } from "./queries/settlementJobCountsQueries";
 export { settlementTargetAssignmentsQueryOptions } from "./queries/settlementTargetAssignmentsQueries";
@@ -72,6 +75,7 @@ export {
   citizenAggregateStatsForNationQueryOptions,
   citizenAggregateStatsForSettlementQueryOptions,
   citizenByIdQueryOptions,
+  citizensByIdsQueryOptions,
   citizensInSettlementQueryOptions,
   citizensInWorldQueryOptions,
   playerCharactersInNationQueryOptions,
@@ -167,6 +171,12 @@ export type {
   SettlementJobCount,
 } from "./types/bulkAssignmentTypes";
 export type { CitizenAssignment } from "./types/citizenAssignmentTypes";
+export type {
+  CitizenDirectoryFilters,
+  CitizenDirectoryPage,
+  CitizenDirectoryPagination,
+  CitizenDirectoryRow,
+} from "./queries/citizenDirectoryQueries";
 export type { NpcFlavor, NpcFlavorConfig } from "./utils/npcFlavor";
 export type {
   Citizen,

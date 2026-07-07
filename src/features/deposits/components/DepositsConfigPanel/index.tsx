@@ -1,22 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type JSX } from "react";
+import { Plus } from "lucide-react";
+import { useState, type JSX } from "react";
 
 import {
-  ConfigCrudPanel,
   handleCrudError,
+  TrashToggleButton,
 } from "@/components/shared/ConfigCrudPanel";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { jobsByTypeQueryOptions } from "@/features/jobs";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
 
 import { createDepositTypeMutationOptions } from "../../mutations/depositsMutations";
-import { depositTypesByWorldQueryOptions } from "../../queries/depositsQueries";
+import {
+  activeDepositTypesByWorldQueryOptions,
+  depositTypesPageQueryOptions,
+} from "../../queries/depositsQueries";
 
 import { CreateDepositTypeForm } from "./CreateDepositTypeForm";
-import { DepositTypeRow } from "./DepositTypeRow";
-import { EditDepositTypeForm } from "./EditDepositTypeForm";
-import { TrashedDepositTypeRow } from "./TrashedDepositTypeRow";
+import { DepositTypesTable } from "./DepositTypesTable";
 
-import type { DepositType } from "../../types/depositTypes";
+import type { CreateDepositTypeInput } from "../../schemas/depositSchemas";
+
+const PAGE_SIZE = 25;
 
 type DepositsConfigPanelProps = {
   readonly canAdmin: boolean;
@@ -30,106 +41,151 @@ export function DepositsConfigPanel({
   worldId,
 }: DepositsConfigPanelProps): JSX.Element {
   const queryClient = useQueryClient();
-  const depositTypesQuery = useQuery(depositTypesByWorldQueryOptions(worldId));
-  const depositJobsQuery = useQuery(jobsByTypeQueryOptions(worldId, "deposit"));
   const canEdit = canAdmin && !isArchived;
+
+  const [search, setSearch] = useState("");
+  const [pageIndex, setPageIndex] = useState(0);
+  const [showTrash, setShowTrash] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const depositTypesPageQuery = useQuery(
+    depositTypesPageQueryOptions(worldId, {
+      page: pageIndex,
+      pageSize: PAGE_SIZE,
+      search: debouncedSearch,
+      trash: showTrash,
+    }),
+  );
+  // Full active list, kept unpaginated (as today) so create/edit forms can
+  // validate slug/job-link conflicts against every active deposit type in
+  // the world, not just the rows visible on the current page.
+  const activeDepositTypesQuery = useQuery(
+    activeDepositTypesByWorldQueryOptions(worldId),
+  );
+  const depositJobsQuery = useQuery(jobsByTypeQueryOptions(worldId, "deposit"));
   const createMutation = useMutation(
     createDepositTypeMutationOptions({ queryClient }),
   );
+
+  const allDepositTypes = activeDepositTypesQuery.data ?? [];
   const depositJobs = depositJobsQuery.data ?? [];
 
-  return (
-    <ConfigCrudPanel<DepositType>
-      addButtonLabel="Add deposit type"
-      allData={depositTypesQuery}
-      canEdit={canEdit}
-      emptyTitle="No deposit types yet"
-      emptyDescription="Add the first deposit type for this world."
-      headerTitle="Deposit Types"
-      isTrashed={(dt) => dt.isTrashed}
-      renderContent={({
-        canEdit: canEditProp,
-        editingId,
-        items,
-        queryClient: qc,
-        setEditingId,
-        setShowForm,
-        showForm,
-        showTrash,
-      }) => (
-        <>
-          {items.length > 0 ? (
-            <ul aria-label="Deposit types" className="grid gap-2">
-              {items.map((depositType) => {
-                if (editingId === depositType.id) {
-                  return (
-                    <li key={depositType.id}>
-                      <EditDepositTypeForm
-                        allDepositTypes={items}
-                        depositJobs={depositJobs}
-                        depositType={depositType}
-                        queryClient={qc}
-                        worldId={worldId}
-                        onClose={() => {
-                          setEditingId(null);
-                        }}
-                      />
-                    </li>
-                  );
-                }
-                if (showTrash) {
-                  return (
-                    <li key={depositType.id}>
-                      <TrashedDepositTypeRow
-                        depositType={depositType}
-                        queryClient={qc}
-                        worldId={worldId}
-                      />
-                    </li>
-                  );
-                }
-                return (
-                  <li key={depositType.id}>
-                    <DepositTypeRow
-                      canEdit={canEditProp}
-                      depositJobs={depositJobs}
-                      depositType={depositType}
-                      queryClient={qc}
-                      worldId={worldId}
-                      onEdit={() => {
-                        setEditingId(depositType.id);
-                      }}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
+  function resetToFirstPage(): void {
+    setPageIndex(0);
+  }
 
-          {canEditProp && showForm && !showTrash ? (
-            <CreateDepositTypeForm
-              allDepositTypes={items}
-              depositJobs={depositJobs}
-              isPending={createMutation.isPending}
-              worldId={worldId}
-              onCancel={() => {
-                setShowForm(false);
+  const items = depositTypesPageQuery.data?.items ?? [];
+  const totalCount = depositTypesPageQuery.data?.totalCount ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold tracking-normal">Deposit Types</h2>
+        <div className="flex items-center gap-2">
+          {canEdit && !showForm && !showTrash ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowForm(true);
               }}
-              onSubmit={(input) => {
-                createMutation.mutate(input, {
-                  onError: (error) => {
-                    handleCrudError(error, "Failed to create deposit type.");
-                  },
-                  onSuccess: () => {
-                    notifyMutationSuccess("Deposit type created.");
-                    setShowForm(false);
-                  },
-                });
-              }}
-            />
+            >
+              <Plus aria-hidden="true" />
+              Add deposit type
+            </Button>
           ) : null}
+          <TrashToggleButton
+            isActive={showTrash}
+            onClick={() => {
+              setShowTrash((v) => !v);
+              resetToFirstPage();
+            }}
+          />
+        </div>
+      </div>
+
+      <Input
+        aria-label="Search deposit types by name"
+        className="sm:w-[280px]"
+        placeholder="Search by name…"
+        value={search}
+        onChange={(event) => {
+          setSearch(event.currentTarget.value);
+          resetToFirstPage();
+        }}
+      />
+
+      {depositTypesPageQuery.isPending ? (
+        <TableSkeleton columnCount={3} rowCount={PAGE_SIZE} />
+      ) : depositTypesPageQuery.isError ? (
+        <ErrorState
+          title="Deposit types could not be loaded"
+          description={getErrorDescription(depositTypesPageQuery.error)}
+        />
+      ) : items.length === 0 ? (
+        showTrash ? (
+          <EmptyState title="No deposit types in trash" />
+        ) : debouncedSearch !== "" ? (
+          <EmptyState
+            title="No matching deposit types"
+            description="Try a different search."
+          />
+        ) : (
+          <EmptyState
+            title="No deposit types yet"
+            description="Add the first deposit type for this world."
+          />
+        )
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground" role="status">
+            {`Showing ${(pageIndex * PAGE_SIZE + 1).toString()}–${(
+              pageIndex * PAGE_SIZE +
+              items.length
+            ).toString()} of ${totalCount.toString()}`}
+          </p>
+          <DepositTypesTable
+            allDepositTypes={allDepositTypes}
+            canEdit={canEdit}
+            depositJobs={depositJobs}
+            depositTypes={items}
+            isPaginationDisabled={depositTypesPageQuery.isFetching}
+            pageCount={pageCount}
+            pageIndex={pageIndex}
+            queryClient={queryClient}
+            showTrash={showTrash}
+            worldId={worldId}
+            onPageChange={setPageIndex}
+          />
         </>
       )}
-    />
+
+      {canEdit && showForm && !showTrash ? (
+        <CreateDepositTypeForm
+          allDepositTypes={allDepositTypes}
+          depositJobs={depositJobs}
+          isPending={createMutation.isPending}
+          worldId={worldId}
+          onCancel={() => {
+            setShowForm(false);
+          }}
+          onSubmit={(input: CreateDepositTypeInput) => {
+            createMutation.mutate(input, {
+              onError: (error) => {
+                handleCrudError(error, "Failed to create deposit type.");
+              },
+              onSuccess: () => {
+                notifyMutationSuccess("Deposit type created.");
+                setShowForm(false);
+              },
+            });
+          }}
+        />
+      ) : null}
+    </div>
   );
 }

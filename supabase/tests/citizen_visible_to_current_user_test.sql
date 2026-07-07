@@ -79,10 +79,10 @@ values
   ),
   (
     'f1000000-0000-0000-0000-000000000006',
-    'cvtcu-unrelated@example.com',
+    'cvtcu-target-pc-owner@example.com',
     'x',
     now(),
-    '{"username":"cvtcu_unrelated"}'::jsonb,
+    '{"username":"cvtcu_target_pc_owner"}'::jsonb,
     now(),
     now()
   ),
@@ -92,6 +92,15 @@ values
     'x',
     now(),
     '{"username":"cvtcu_superadmin"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'f1000000-0000-0000-0000-000000000008',
+    'cvtcu-unrelated@example.com',
+    'x',
+    now(),
+    '{"username":"cvtcu_unrelated"}'::jsonb,
     now(),
     now()
   );
@@ -160,8 +169,8 @@ values
     'CVTCU Settlement B1 (manager PCs)'
   );
 
--- Target NPC in World A, Settlement A1: used to verify NPC is invisible to
--- non-admin callers.
+-- Target NPC in World A, Settlement A1: used to verify NPC visibility mirrors
+-- player_character visibility for non-admin callers.
 insert into
   public.citizens (
     id,
@@ -316,7 +325,7 @@ select
 reset role;
 
 -- ===========================================================================
--- NATION MANAGER: NPC is not visible; PC in their settlement is visible.
+-- NATION MANAGER: NPC and PC in their settlement are both visible.
 -- Manager's PC is in World B; visibility into World A comes solely from the
 -- nation manager path.
 -- ===========================================================================
@@ -329,8 +338,8 @@ set
 select
   is (
     public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000010'::uuid),
-    false,
-    'nation manager cannot see NPC in a settlement within their nation'
+    true,
+    'nation manager can see NPC in a settlement within their nation'
   );
 
 select
@@ -343,7 +352,7 @@ select
 reset role;
 
 -- ===========================================================================
--- SETTLEMENT MANAGER: NPC is not visible; PC in their settlement is visible.
+-- SETTLEMENT MANAGER: NPC and PC in their settlement are both visible.
 -- Manager's PC is in World B, so the PC-holder rule does not broaden
 -- visibility into World A.
 -- ===========================================================================
@@ -356,8 +365,8 @@ set
 select
   is (
     public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000010'::uuid),
-    false,
-    'settlement manager cannot see NPC in their settlement'
+    true,
+    'settlement manager can see NPC in their settlement'
   );
 
 select
@@ -370,7 +379,7 @@ select
 reset role;
 
 -- ===========================================================================
--- PC HOLDER: NPC is not visible; PC in same world is visible.
+-- PC HOLDER: NPC and PC in the same world are both visible.
 -- ===========================================================================
 set
   local role authenticated;
@@ -381,8 +390,8 @@ set
 select
   is (
     public.citizen_visible_to_current_user ('f5000000-0000-0000-0000-000000000010'::uuid),
-    false,
-    'pc holder in the same world cannot see NPC'
+    true,
+    'pc holder in the same world can see NPC'
   );
 
 select
@@ -395,13 +404,16 @@ select
 reset role;
 
 -- ===========================================================================
--- UNRELATED USER: no relationship to the world — must not see the citizen.
+-- UNRELATED USER: no relationship to the world (holds no citizen in it at
+-- all) — must not see the citizen. Distinct from the Target PC's own owner
+-- (f1...0006), who — now that citizen visibility is widened — legitimately
+-- sees every citizen in World A via user_has_player_character_in_world.
 -- ===========================================================================
 set
   local role authenticated;
 
 set
-  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000006","role":"authenticated"}';
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000008","role":"authenticated"}';
 
 select
   is (

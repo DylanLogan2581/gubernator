@@ -498,7 +498,7 @@ set
 
 select
   ok (
-    not exists (
+    exists (
       select
         1
       from
@@ -506,12 +506,12 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000010'
     ),
-    'nation manager cannot read NPC in a settlement within their nation'
+    'nation manager can read NPC in a settlement within their nation'
   );
 
 select
   ok (
-    not exists (
+    exists (
       select
         1
       from
@@ -519,7 +519,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000011'
     ),
-    'nation manager cannot read NPC in another settlement within their nation'
+    'nation manager can read NPC in another settlement within their nation'
   );
 
 select
@@ -591,7 +591,7 @@ set
 
 select
   ok (
-    not exists (
+    exists (
       select
         1
       from
@@ -599,7 +599,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000010'
     ),
-    'settlement manager cannot read NPC in their settlement'
+    'settlement manager can read NPC in their settlement'
   );
 
 select
@@ -664,13 +664,13 @@ select
       where
         world_id = 'c2000000-0000-0000-0000-000000000001'
     ),
-    2,
-    'PC holder can read only player_character citizens in their world (NPCs hidden)'
+    5,
+    'PC holder can read every citizen (including NPCs) in their world'
   );
 
 select
   ok (
-    not exists (
+    exists (
       select
         1
       from
@@ -678,7 +678,7 @@ select
       where
         id = 'c5000000-0000-0000-0000-000000000010'
     ),
-    'PC holder cannot read NPC rows in their world'
+    'PC holder can read NPC rows in their world'
   );
 
 select

@@ -7,7 +7,6 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BuildingsConfigPanel } from "@/features/buildings";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { DepositsConfigPanel } from "@/features/deposits";
@@ -22,34 +21,17 @@ import {
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 
+import { getVisibleConfigTabs } from "../configTabs";
 import { worldRouteAccessQueryOptions } from "../queries/worldQueries";
 
+import { WorldImagesPanel } from "./WorldImagesPanel";
 import { WorldNpcFlavorConfigPanel } from "./WorldNpcFlavorConfigPanel";
 import { WorldPopulationRulesConfigPanel } from "./WorldPopulationRulesConfigPanel";
 import { WorldSettingsPanel } from "./WorldSettingsPanel";
 import { WorldTemplateExportButton } from "./WorldTemplateExportButton";
 
+import type { ConfigTabId } from "../configTabs";
 import type { JSX, ReactNode } from "react";
-
-const BASE_TABS = [
-  { key: "resources", label: "Resources" },
-  { key: "jobs", label: "Jobs" },
-  { key: "buildings", label: "Buildings" },
-  { key: "deposits", label: "Deposits" },
-  { key: "managed-populations", label: "Managed Populations" },
-  { key: "calendar", label: "Calendar" },
-  { key: "namesets", label: "Namesets" },
-  { key: "npc-flavor", label: "NPC Flavor" },
-  { key: "population-rules", label: "Population Rules" },
-] as const;
-
-const SUPER_ADMIN_TABS = [
-  { key: "world-settings", label: "World settings" },
-] as const;
-
-type TabKey =
-  | (typeof BASE_TABS)[number]["key"]
-  | (typeof SUPER_ADMIN_TABS)[number]["key"];
 
 type WorldConfigurationPageProps = {
   readonly activeTab: string;
@@ -70,11 +52,11 @@ export function WorldConfigurationPage({
 
   const isSuperAdmin = accessContextQuery.data?.isSuperAdmin ?? false;
   const visibleTabs = useMemo(
-    () => (isSuperAdmin ? [...BASE_TABS, ...SUPER_ADMIN_TABS] : [...BASE_TABS]),
+    () => getVisibleConfigTabs(isSuperAdmin),
     [isSuperAdmin],
   );
 
-  const isTabVisible = visibleTabs.some((t) => t.key === activeTab);
+  const isTabVisible = visibleTabs.some((t) => t.id === activeTab);
 
   useEffect(() => {
     if (
@@ -85,7 +67,7 @@ export function WorldConfigurationPage({
       void navigate({
         to: "/worlds/$worldId/configuration",
         params: { worldId },
-        search: { tab: visibleTabs[0].key },
+        search: { tab: visibleTabs[0].id },
         replace: true,
       });
     }
@@ -97,16 +79,16 @@ export function WorldConfigurationPage({
     worldId,
   ]);
 
-  function handleTabSelect(key: TabKey): void {
+  function handleTabSelect(id: ConfigTabId): void {
     void navigate({
       to: "/worlds/$worldId/configuration",
       params: { worldId },
-      search: { tab: key },
+      search: { tab: id },
     });
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
+    <div className="flex flex-col gap-4">
       <Button asChild variant="outline" size="sm" className="w-fit">
         <Link to="/worlds/$worldId" params={{ worldId }}>
           <ArrowLeft aria-hidden="true" />
@@ -115,41 +97,24 @@ export function WorldConfigurationPage({
       </Button>
       <h1 className="text-2xl font-semibold tracking-normal">Configuration</h1>
 
-      {/* Mobile select — visible below md breakpoint */}
+      {/* Mobile select — one-tap switching below md breakpoint; desktop
+          navigation lives in the sidebar submenu. */}
       <div className="md:hidden">
         <NativeSelect
           aria-label="Configuration section"
           className="w-full"
           value={activeTab}
-          onChange={(e) => handleTabSelect(e.target.value as TabKey)}
+          onChange={(e) => handleTabSelect(e.target.value as ConfigTabId)}
         >
-          {visibleTabs.map(({ key, label }) => (
-            <option key={key} value={key}>
+          {visibleTabs.map(({ id, label }) => (
+            <option key={id} value={id}>
               {label}
             </option>
           ))}
         </NativeSelect>
       </div>
 
-      {/* Desktop tab strip — scrollable, visible from md up */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(v) => {
-          handleTabSelect(v as TabKey);
-        }}
-      >
-        <TabsList className="hidden overflow-x-auto [scrollbar-width:none] md:flex">
-          {visibleTabs.map(({ key, label }) => (
-            <TabsTrigger key={key} value={key} className="shrink-0">
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-      <section
-        aria-label={`${activeTab} configuration`}
-        className="min-h-[200px]"
-      >
+      <section aria-label={`${activeTab} configuration`}>
         {accessContextQuery.isPending ? (
           <LoadingState label="Loading configuration…" />
         ) : accessContextQuery.isError ? (
@@ -329,6 +294,20 @@ function WorldConfigurationContent({
       );
     }
 
+    if (activeTab === "images") {
+      return (
+        <ConfigPanelShell>
+          <WorldImagesPanel
+            accessContext={accessContext}
+            canAdmin={canAdmin}
+            isArchived={header.isArchived}
+            worldId={worldId}
+            worldName={header.name}
+          />
+        </ConfigPanelShell>
+      );
+    }
+
     if (activeTab === "world-settings") {
       if (!accessContext.isSuperAdmin) {
         return null;
@@ -369,7 +348,7 @@ function ConfigPanelShell({
   readonly children: ReactNode;
 }): JSX.Element {
   return (
-    <section className="rounded-md border border-border bg-card p-5 text-card-foreground">
+    <section className="rounded-md border border-border bg-card p-4 text-card-foreground">
       {children}
     </section>
   );

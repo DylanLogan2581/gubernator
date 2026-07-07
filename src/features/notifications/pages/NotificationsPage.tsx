@@ -1,7 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { type JSX, useState } from "react";
 
+import { ErrorState } from "@/components/shared/ErrorState";
+import { CardListSkeleton } from "@/components/shared/SkeletonLoaders";
+import { TablePagination } from "@/components/shared/TablePagination";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,6 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { currentSessionQueryOptions } from "@/features/auth";
+import {
+  worldCalendarConfigQueryOptions,
+  type WorldCalendarConfig,
+} from "@/features/calendar";
 import { nationsListQueryOptions } from "@/features/nations";
 import {
   allNotificationsQueryOptions,
@@ -20,54 +31,22 @@ import {
   useMarkAllNotificationsRead,
   type AllNotification,
 } from "@/features/notifications";
-import { currentAccessContextQueryOptions } from "@/features/permissions";
+import {
+  currentAccessContextQueryOptions,
+  type AccessContext,
+} from "@/features/permissions";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { accessibleWorldsQueryOptions } from "@/features/worlds";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import { NotificationListItem } from "../components/NotificationListItem";
+import { NotificationPreferencesSheet } from "../components/NotificationPreferencesSheet";
 import { NotificationsPageFrame } from "../components/NotificationsPageFrame";
+import { formatTransitionHeading } from "../utils/formatTransitionHeading";
+import { groupNotificationsByTransition } from "../utils/groupNotificationsByTransition";
+import { NOTIFICATION_TYPE_OPTIONS } from "../utils/notificationTypeLabels";
 
 const PAGE_SIZE = 20;
-const NOTIFICATION_TYPES = [
-  { value: "all", label: "All types" },
-  { value: "turn.completed", label: "Turn completed" },
-  { value: "trade_proposal_received", label: "Trade proposal received" },
-  { value: "trade_proposal_accepted", label: "Trade proposal accepted" },
-  { value: "trade_proposal_rejected", label: "Trade proposal rejected" },
-  { value: "trade_route_cancelled", label: "Trade route cancelled" },
-  {
-    value: "building.auto_deconstructed",
-    label: "Building auto-deconstructed",
-  },
-  { value: "building.suspended", label: "Building suspended" },
-  { value: "building.recovered", label: "Building recovered" },
-  { value: "citizen.born", label: "Citizen born" },
-  { value: "citizen.died", label: "Citizen died" },
-  { value: "construction.completed", label: "Construction completed" },
-  { value: "construction.paused", label: "Construction paused" },
-  { value: "deposit.depleted", label: "Deposit depleted" },
-  {
-    value: "managed_population.declining",
-    label: "Managed population declining",
-  },
-  { value: "managed_population.extinct", label: "Managed population extinct" },
-  { value: "partnership.formed", label: "Partnership formed" },
-  { value: "partnership.widowed", label: "Partnership widowed" },
-  {
-    value: "settlement.homelessness_occurred",
-    label: "Settlement homelessness occurred",
-  },
-  {
-    value: "settlement.starvation_occurred",
-    label: "Settlement starvation occurred",
-  },
-  { value: "trade_route.paused", label: "Trade route paused" },
-  { value: "trade_route.resumed", label: "Trade route resumed" },
-  { value: "event.activated", label: "Event activated" },
-  { value: "event.expired", label: "Event expired" },
-  { value: "player.died", label: "Player died" },
-  { value: "player.widowed", label: "Player widowed" },
-];
 
 const READ_STATUS_OPTIONS = [
   { value: "all", label: "All" },
@@ -87,6 +66,48 @@ export function NotificationsPage(): JSX.Element {
   const accessContextQuery = useQuery(
     currentAccessContextQueryOptions(queryClient),
   );
+
+  if (accessContextQuery.isPending) {
+    return (
+      <NotificationsPageFrame>
+        <CardListSkeleton rowCount={6} />
+      </NotificationsPageFrame>
+    );
+  }
+
+  if (accessContextQuery.isError) {
+    return (
+      <NotificationsPageFrame>
+        <ErrorState
+          title="Notifications could not be loaded"
+          description={getErrorDescription(accessContextQuery.error)}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void accessContextQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          }
+        />
+      </NotificationsPageFrame>
+    );
+  }
+
+  return <NotificationsPageContent accessContext={accessContextQuery.data} />;
+}
+
+type NotificationsPageContentProps = {
+  readonly accessContext: AccessContext;
+};
+
+function NotificationsPageContent({
+  accessContext,
+}: NotificationsPageContentProps): JSX.Element {
+  const queryClient = useQueryClient();
   const currentSessionQuery = useQuery(currentSessionQueryOptions());
   const userId = currentSessionQuery.data?.user.id ?? null;
 
@@ -100,23 +121,7 @@ export function NotificationsPage(): JSX.Element {
     string | null
   >(null);
 
-  const accessContext = accessContextQuery.data ?? null;
-
-  const worldsQuery = useQuery({
-    ...accessibleWorldsQueryOptions(
-      accessContext ?? {
-        canAccessWorld: () => false,
-        canAdminWorld: () => false,
-        isActiveUser: false,
-        isAuthenticated: false,
-        isSuperAdmin: false,
-        userId: null,
-        worldAdminWorldIds: [],
-        playerCharacterWorldIds: [],
-      },
-    ),
-    enabled: accessContext !== null,
-  });
+  const worldsQuery = useQuery(accessibleWorldsQueryOptions(accessContext));
 
   const nationsQuery = useQuery({
     ...nationsListQueryOptions(selectedWorldId ?? ""),
@@ -213,8 +218,30 @@ export function NotificationsPage(): JSX.Element {
   const total = notificationsQuery.data?.total ?? 0;
   const pageCount = Math.ceil(total / PAGE_SIZE);
 
+  const groups = groupNotificationsByTransition(notifications);
+  const calendarWorldIds = Array.from(
+    new Set(
+      groups
+        .map((group) => group.worldId)
+        .filter((worldId): worldId is string => worldId !== null),
+    ),
+  );
+  const calendarQueries = useQueries({
+    queries: calendarWorldIds.map((worldId) =>
+      worldCalendarConfigQueryOptions(worldId),
+    ),
+  });
+  const calendarConfigByWorldId = new Map<string, WorldCalendarConfig | null>(
+    calendarWorldIds.map((worldId, index) => [
+      worldId,
+      calendarQueries[index]?.data ?? null,
+    ]),
+  );
+
   return (
-    <NotificationsPageFrame>
+    <NotificationsPageFrame
+      actions={<NotificationPreferencesSheet userId={userId} />}
+    >
       <div className="flex flex-col gap-4">
         {/* Filters */}
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -224,7 +251,7 @@ export function NotificationsPage(): JSX.Element {
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                {NOTIFICATION_TYPES.map((option) => (
+                {NOTIFICATION_TYPE_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -329,7 +356,7 @@ export function NotificationsPage(): JSX.Element {
         </div>
 
         {/* Notifications List */}
-        <div className="border rounded-lg divide-y">
+        <div className="divide-y rounded-lg border">
           {notificationsQuery.isLoading ? (
             <div className="p-8 text-center text-muted-foreground">
               Loading notifications...
@@ -339,13 +366,29 @@ export function NotificationsPage(): JSX.Element {
               No notifications found
             </div>
           ) : (
-            notifications.map((notification) => (
-              <NotificationListItem
-                key={notification.id}
-                notification={notification}
-                onMarkRead={() => handleMarkRead(notification)}
-                isMarkingRead={markReadMutation.isPending}
-              />
+            groups.map((group) => (
+              <div key={group.key}>
+                <div className="bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                  {formatTransitionHeading(
+                    group,
+                    group.worldId !== null
+                      ? (calendarConfigByWorldId.get(group.worldId) ?? null)
+                      : null,
+                  )}
+                </div>
+                <div className="divide-y">
+                  {group.notifications.map((notification) => (
+                    <NotificationListItem
+                      key={notification.id}
+                      notification={notification}
+                      onMarkRead={() => {
+                        handleMarkRead(notification);
+                      }}
+                      isMarkingRead={markReadMutation.isPending}
+                    />
+                  ))}
+                </div>
+              </div>
             ))
           )}
         </div>
@@ -357,42 +400,14 @@ export function NotificationsPage(): JSX.Element {
               Showing {offset + 1} to {Math.min(offset + PAGE_SIZE, total)} of{" "}
               {total} notifications
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1 || notificationsQuery.isLoading}
-              >
-                <ChevronLeft className="size-4" />
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: pageCount }, (_, i) => i + 1)
-                  .slice(Math.max(0, page - 3), page + 2)
-                  .map((p) => (
-                    <Button
-                      key={p}
-                      variant={p === page ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPage(p)}
-                      disabled={notificationsQuery.isLoading}
-                      className="min-w-9"
-                    >
-                      {p}
-                    </Button>
-                  ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(Math.min(pageCount, page + 1))}
-                disabled={page === pageCount || notificationsQuery.isLoading}
-              >
-                Next
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
+            <TablePagination
+              page={page - 1}
+              pageCount={pageCount}
+              onPageChange={(nextPage) => {
+                setPage(nextPage + 1);
+              }}
+              isDisabled={notificationsQuery.isLoading}
+            />
           </div>
         ) : null}
       </div>

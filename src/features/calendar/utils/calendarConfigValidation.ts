@@ -10,7 +10,32 @@ export type CalendarValidationErrors = {
   startingWeekdayOffset?: string;
   weekdays?: string;
   dateFormatTemplate?: string;
+  shortDateFormatTemplate?: string;
 };
+
+const dateFormatTokenPattern =
+  /\{(?:weekday|month|monthNumber|day|dayNumber|year|yearNumber)\}/;
+const unsupportedDateFormatTokenPattern =
+  /\{(?!weekday\}|month\}|monthNumber\}|day\}|dayNumber\}|year\}|yearNumber\})[^{}]+\}/;
+
+function getDateFormatTemplateError(
+  template: string,
+  label: string,
+): string | undefined {
+  if (template.trim().length < 1) {
+    return `${label} is required.`;
+  }
+
+  if (!dateFormatTokenPattern.test(template)) {
+    return `${label} must include at least one date token.`;
+  }
+
+  if (unsupportedDateFormatTokenPattern.test(template)) {
+    return `${label} contains an unsupported token.`;
+  }
+
+  return undefined;
+}
 
 export const emptyCalendarValidationErrors: CalendarValidationErrors = {};
 
@@ -51,21 +76,14 @@ export function getCalendarValidationErrors(
       "Starting weekday offset must match an existing weekday.";
   }
 
-  if (config.dateFormatTemplate.trim().length < 1) {
-    errors.dateFormatTemplate = "Date format template is required.";
-  } else if (
-    !/\{(?:weekday|month|day|year)\}/.test(config.dateFormatTemplate)
-  ) {
-    errors.dateFormatTemplate =
-      "Date format template must include at least one date token.";
-  } else if (
-    /\{(?!weekday\}|month\}|day\}|year\})[^{}]+\}/.test(
-      config.dateFormatTemplate,
-    )
-  ) {
-    errors.dateFormatTemplate =
-      "Date format template contains an unsupported token.";
-  }
+  errors.dateFormatTemplate = getDateFormatTemplateError(
+    config.dateFormatTemplate,
+    "Date format template",
+  );
+  errors.shortDateFormatTemplate = getDateFormatTemplateError(
+    config.shortDateFormatTemplate,
+    "Short date format template",
+  );
 
   return errors;
 }
@@ -78,7 +96,8 @@ export function hasCalendarValidationErrors(
     errors.startingDayOfMonth !== undefined ||
     errors.startingWeekdayOffset !== undefined ||
     errors.weekdays !== undefined ||
-    errors.dateFormatTemplate !== undefined
+    errors.dateFormatTemplate !== undefined ||
+    errors.shortDateFormatTemplate !== undefined
   );
 }
 

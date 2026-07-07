@@ -10,7 +10,7 @@ export type ScopedNotFoundProps = {
   description: string;
   backTo: string;
   backToLabel: string;
-}
+};
 
 export function ScopedNotFound({
   title,
@@ -19,17 +19,15 @@ export function ScopedNotFound({
   backToLabel,
 }: ScopedNotFoundProps): JSX.Element {
   return (
-    <div className="mx-auto max-w-4xl py-6">
-      <EmptyState
-        icon={MapPinOff}
-        title={title}
-        description={description}
-        action={
-          <Button asChild variant="outline" size="sm">
-            <Link to={backTo}>{backToLabel}</Link>
-          </Button>
-        }
-      />
-    </div>
+    <EmptyState
+      icon={MapPinOff}
+      title={title}
+      description={description}
+      action={
+        <Button asChild variant="outline" size="sm">
+          <Link to={backTo}>{backToLabel}</Link>
+        </Button>
+      }
+    />
   );
 }

@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import {
   flexRender,
   getCoreRowModel,
@@ -6,10 +5,10 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
+import { TablePagination } from "@/components/shared/TablePagination";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -19,18 +18,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { useTurnLogEntityLookup } from "../../hooks/useTurnLogEntityLookup";
 import {
   TURN_LOG_PAGE_SIZE,
   type TurnLogBrowserEntry,
 } from "../../queries/turnLogBrowserQueries";
+import {
+  aggregateJobProcessedRows,
+  summarizeJobBreakdown,
+  type TurnLogRow,
+} from "../../utils/aggregateJobProcessedRows";
+import { formatResourceDeltas } from "../../utils/formatResourceDeltas";
+import { isTurnLogRowExpandable } from "../../utils/isTurnLogRowExpandable";
 import { LOG_CATEGORY_LABELS } from "../../utils/logCategoryLabels";
 
+import { EntityRef } from "./EntityRef";
 import { TurnLogPayloadRenderer } from "./TurnLogPayloadRenderer";
 
+import type { TurnLogEntityLookup } from "../../hooks/useTurnLogEntityLookup";
 import type { JSX } from "react";
-
-// Renders raw JSONB as formatted text for the audit trail detail panel.
-// JSON.stringify is intentional here — this is debug/audit output, not app UI.
 
 // ---------------------------------------------------------------------------
 // Scope cell — links to settlement / nation / citizen pages
@@ -49,55 +55,40 @@ function ScopeCell({
     // Prefer the log entry's own nation_id; fall back to the nation_id carried
     // by the joined settlement row (settlement always has a nation).
     const resolvedNationId = entry.nationId ?? entry.settlementNationId;
-    const settlementLabel = entry.settlementName ?? "Unknown settlement";
 
-    if (resolvedNationId !== null) {
-      parts.push(
-        <Link
-          key="settlement"
-          to="/worlds/$worldId/nations/$nationId/settlements/$settlementId"
-          params={{
-            worldId,
-            nationId: resolvedNationId,
-            settlementId: entry.settlementId,
-          }}
-          className="text-primary underline-offset-2 hover:underline"
-        >
-          {settlementLabel}
-        </Link>,
-      );
-    } else {
-      parts.push(
-        <span key="settlement" className="text-muted-foreground">
-          {settlementLabel}
-        </span>,
-      );
-    }
+    parts.push(
+      <EntityRef
+        key="settlement"
+        name={entry.settlementName}
+        href={
+          resolvedNationId === null
+            ? null
+            : `/worlds/${worldId}/nations/${resolvedNationId}/settlements/${entry.settlementId}`
+        }
+        kindLabel="Settlement"
+      />,
+    );
   }
 
   if (entry.nationId !== null && entry.settlementId === null) {
     parts.push(
-      <Link
+      <EntityRef
         key="nation"
-        to="/worlds/$worldId/nations/$nationId"
-        params={{ worldId, nationId: entry.nationId }}
-        className="text-primary underline-offset-2 hover:underline"
-      >
-        {entry.nationName ?? "Unknown nation"}
-      </Link>,
+        name={entry.nationName}
+        href={`/worlds/${worldId}/nations/${entry.nationId}`}
+        kindLabel="Nation"
+      />,
     );
   }
 
   if (entry.citizenId !== null) {
     parts.push(
-      <Link
+      <EntityRef
         key="citizen"
-        to="/worlds/$worldId/citizens/$citizenId"
-        params={{ worldId, citizenId: entry.citizenId }}
-        className="text-primary underline-offset-2 hover:underline"
-      >
-        {entry.citizenName ?? "Unknown citizen"}
-      </Link>,
+        name={entry.citizenName}
+        href={`/worlds/${worldId}/citizens/${entry.citizenId}`}
+        kindLabel="Citizen"
+      />,
     );
   }
 
@@ -109,30 +100,106 @@ function ScopeCell({
 }
 
 // ---------------------------------------------------------------------------
-// Expanded payload row
+// Job summary — aggregated standard_job.processed rows
 // ---------------------------------------------------------------------------
 
-function PayloadDetailRow({
-  entry,
+function JobSummaryDetail({
+  entries,
+  lookup,
+}: {
+  readonly entries: readonly TurnLogBrowserEntry[];
+  readonly lookup: TurnLogEntityLookup;
+}): JSX.Element {
+  const breakdown = summarizeJobBreakdown(entries);
+
+  return (
+    <ul className="space-y-1 text-sm">
+      {breakdown.map((row) => {
+        const consumed = formatResourceDeltas(row.inputsConsumed, "-", lookup);
+        const produced = formatResourceDeltas(row.outputsProduced, "+", lookup);
+        const deltas = [consumed, produced].filter(Boolean).join(", ");
+        return (
+          <li key={row.jobId}>
+            <strong>{lookup.jobName(row.jobId) ?? "Unknown job"}</strong> —{" "}
+            {row.workerCount} workers
+            {deltas !== "" ? ` — ${deltas}` : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Expanded row
+// ---------------------------------------------------------------------------
+
+function ExpandedDetailRow({
   colSpan,
   isAdmin,
+  lookup,
+  row,
 }: {
-  readonly entry: TurnLogBrowserEntry;
   readonly colSpan: number;
   readonly isAdmin: boolean;
+  readonly lookup: TurnLogEntityLookup;
+  readonly row: TurnLogRow;
 }): JSX.Element {
   return (
     <tr className="bg-muted/30">
       <td colSpan={colSpan} className="px-4 py-2">
         <div className="text-sm">
-          <TurnLogPayloadRenderer
-            logCategory={entry.logCategory}
-            payload={entry.payloadJsonb}
-            isAdmin={isAdmin}
-          />
+          {row.kind === "job-summary" ? (
+            <JobSummaryDetail entries={row.entries} lookup={lookup} />
+          ) : row.kind === "category-summary" ? (
+            <ul className="space-y-1">
+              {row.entries.map((entry) => (
+                <li key={entry.id}>
+                  <TurnLogPayloadRenderer
+                    logCategory={entry.logCategory}
+                    payload={entry.payloadJsonb}
+                    isAdmin={isAdmin}
+                    lookup={lookup}
+                    mode="summary"
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <TurnLogPayloadRenderer
+              logCategory={row.entry.logCategory}
+              payload={row.entry.payloadJsonb}
+              isAdmin={isAdmin}
+              lookup={lookup}
+              mode="expanded"
+            />
+          )}
         </div>
       </td>
     </tr>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Row helpers
+// ---------------------------------------------------------------------------
+
+function rowId(row: TurnLogRow): string {
+  return row.kind === "entry" ? row.entry.id : row.id;
+}
+
+function rowScopeEntry(row: TurnLogRow): TurnLogBrowserEntry {
+  return row.kind === "entry" ? row.entry : row.representativeEntry;
+}
+
+function isRowExpandable(row: TurnLogRow, isAdmin: boolean): boolean {
+  if (row.kind === "job-summary" || row.kind === "category-summary") {
+    return true;
+  }
+  return isTurnLogRowExpandable(
+    row.entry.logCategory,
+    row.entry.payloadJsonb,
+    isAdmin,
   );
 }
 
@@ -143,51 +210,96 @@ function PayloadDetailRow({
 function buildColumns(
   worldId: string,
   isAdmin: boolean,
-): ColumnDef<TurnLogBrowserEntry>[] {
-  return [
+  lookup: TurnLogEntityLookup,
+  hideTurnColumn: boolean,
+): ColumnDef<TurnLogRow>[] {
+  const columns: ColumnDef<TurnLogRow>[] = [
     {
       id: "expand",
       header: "",
       cell: () => null,
       size: 32,
     },
-    {
-      accessorKey: "toTurnNumber",
+  ];
+
+  if (!hideTurnColumn) {
+    columns.push({
+      id: "turn",
       header: "Turn",
       cell: ({ row }) => (
-        <span className="tabular-nums">{row.original.toTurnNumber}</span>
+        <span className="tabular-nums">
+          {rowScopeEntry(row.original).toTurnNumber}
+        </span>
       ),
       size: 64,
-    },
+    });
+  }
+
+  columns.push(
     {
-      accessorKey: "logCategory",
+      id: "category",
       header: "Category",
-      cell: ({ row }) => (
-        <Badge variant="outline" className="font-mono text-xs">
-          {LOG_CATEGORY_LABELS[row.original.logCategory] ??
-            row.original.logCategory}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const original = row.original;
+        const logCategory =
+          original.kind === "entry"
+            ? original.entry.logCategory
+            : original.kind === "category-summary"
+              ? original.logCategory
+              : "standard_job.processed";
+        return (
+          <Badge variant="outline" className="font-mono text-xs">
+            {LOG_CATEGORY_LABELS[logCategory] ?? logCategory}
+          </Badge>
+        );
+      },
       size: 220,
     },
     {
       id: "scope",
       header: "Scope",
-      cell: ({ row }) => <ScopeCell entry={row.original} worldId={worldId} />,
+      cell: ({ row }) => (
+        <ScopeCell entry={rowScopeEntry(row.original)} worldId={worldId} />
+      ),
       size: 140,
     },
     {
       id: "summary",
       header: "Summary",
-      cell: ({ row }) => (
-        <TurnLogPayloadRenderer
-          logCategory={row.original.logCategory}
-          payload={row.original.payloadJsonb}
-          isAdmin={isAdmin}
-        />
-      ),
+      cell: ({ row }) => {
+        const original = row.original;
+        if (original.kind === "job-summary") {
+          return (
+            <span className="text-sm">
+              <strong>{original.count}</strong> jobs processed —{" "}
+              {original.representativeEntry.settlementName ??
+                "Unknown settlement"}
+            </span>
+          );
+        }
+        if (original.kind === "category-summary") {
+          const label =
+            LOG_CATEGORY_LABELS[original.logCategory] ?? original.logCategory;
+          return (
+            <span className="text-sm">
+              <strong>{label}</strong> ×{original.count}
+            </span>
+          );
+        }
+        return (
+          <TurnLogPayloadRenderer
+            logCategory={original.entry.logCategory}
+            payload={original.entry.payloadJsonb}
+            isAdmin={isAdmin}
+            lookup={lookup}
+            mode="summary"
+          />
+        );
+      },
     },
-  ];
+  );
+
+  return columns;
 }
 
 // ---------------------------------------------------------------------------
@@ -196,6 +308,10 @@ function buildColumns(
 
 type TurnLogTableProps = {
   readonly entries: readonly TurnLogBrowserEntry[];
+  // Hides the redundant Turn column when the caller has pinned the log to a
+  // single turn (e.g. the default "latest turn" view) — every row would
+  // otherwise repeat the same value.
+  readonly hideTurnColumn?: boolean;
   readonly isAdmin: boolean;
   readonly isFetching: boolean;
   readonly onPageChange: (page: number) => void;
@@ -206,6 +322,7 @@ type TurnLogTableProps = {
 
 export function TurnLogTable({
   entries,
+  hideTurnColumn = false,
   isAdmin,
   isFetching,
   onPageChange,
@@ -213,18 +330,26 @@ export function TurnLogTable({
   totalCount,
   worldId,
 }: TurnLogTableProps): JSX.Element {
+  // Keyed by the entry/synthetic-row id (stable across pages), not the
+  // table's positional row index.
   const [expandedRows, setExpandedRows] = useState<Set<string>>(
     () => new Set(),
   );
 
-  const columns = buildColumns(worldId, isAdmin);
+  const lookup = useTurnLogEntityLookup(worldId, entries);
+  const rows = useMemo(() => aggregateJobProcessedRows(entries), [entries]);
+  const columns = useMemo(
+    () => buildColumns(worldId, isAdmin, lookup, hideTurnColumn),
+    [worldId, isAdmin, lookup, hideTurnColumn],
+  );
   const pageCount = Math.ceil(totalCount / TURN_LOG_PAGE_SIZE);
 
   // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable is a TanStack Table hook, not a React hook
   const table = useReactTable({
-    data: entries as TurnLogBrowserEntry[],
+    data: rows as TurnLogRow[],
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getRowId: rowId,
     manualPagination: true,
     rowCount: totalCount,
     state: {
@@ -260,6 +385,10 @@ export function TurnLogTable({
   return (
     <div className="space-y-2">
       <div className="relative overflow-x-auto rounded-md border">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent sm:hidden"
+        />
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -294,27 +423,35 @@ export function TurnLogTable({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => {
-                const isExpanded = expandedRows.has(row.id);
+                const expandable = isRowExpandable(row.original, isAdmin);
+                const isExpanded = expandable && expandedRows.has(row.id);
                 return (
                   <Fragment key={row.id}>
                     <TableRow
-                      data-state={isExpanded ? "expanded" : undefined}
-                      className="cursor-pointer"
-                      onClick={() => toggleRow(row.id)}
-                      aria-expanded={isExpanded}
+                      data-state={
+                        expandable
+                          ? isExpanded
+                            ? "expanded"
+                            : "collapsed"
+                          : undefined
+                      }
+                      className={expandable ? "cursor-pointer" : undefined}
+                      onClick={expandable ? () => toggleRow(row.id) : undefined}
                     >
                       <TableCell className="w-8 pr-0">
-                        {isExpanded ? (
-                          <ChevronDown
-                            className="size-4 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <ChevronRight
-                            className="size-4 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        )}
+                        {expandable ? (
+                          isExpanded ? (
+                            <ChevronDown
+                              className="size-4 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <ChevronRight
+                              className="size-4 text-muted-foreground"
+                              aria-hidden="true"
+                            />
+                          )
+                        ) : null}
                       </TableCell>
                       {row
                         .getVisibleCells()
@@ -329,10 +466,11 @@ export function TurnLogTable({
                         ))}
                     </TableRow>
                     {isExpanded ? (
-                      <PayloadDetailRow
-                        entry={row.original}
+                      <ExpandedDetailRow
+                        row={row.original}
                         colSpan={columns.length}
                         isAdmin={isAdmin}
+                        lookup={lookup}
                       />
                     ) : null}
                   </Fragment>
@@ -344,51 +482,16 @@ export function TurnLogTable({
       </div>
 
       {/* Pagination controls */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span>
           {totalCount === 0 ? "No entries" : `${from}–${to} of ${totalCount}`}
         </span>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(0)}
-            disabled={page === 0 || isFetching}
-            aria-label="First page"
-          >
-            «
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(page - 1)}
-            disabled={page === 0 || isFetching}
-            aria-label="Previous page"
-          >
-            ‹
-          </Button>
-          <span className="px-2 tabular-nums">
-            {page + 1} / {Math.max(pageCount, 1)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(page + 1)}
-            disabled={page >= pageCount - 1 || isFetching}
-            aria-label="Next page"
-          >
-            ›
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(pageCount - 1)}
-            disabled={page >= pageCount - 1 || isFetching}
-            aria-label="Last page"
-          >
-            »
-          </Button>
-        </div>
+        <TablePagination
+          page={page}
+          pageCount={pageCount}
+          onPageChange={onPageChange}
+          isDisabled={isFetching}
+        />
       </div>
     </div>
   );

@@ -6,6 +6,8 @@ export const citizensQueryKeys = {
     [...citizensQueryKeys.all, "admin-details", citizenId] as const,
   detail: (citizenId: string) =>
     [...citizensQueryKeys.all, "detail", citizenId] as const,
+  byIds: (ids: readonly string[]) =>
+    [...citizensQueryKeys.all, "by-ids", [...ids].sort().join(",")] as const,
   activePartnershipForCitizen: (citizenId: string) =>
     [
       ...citizensQueryKeys.all,
@@ -23,6 +25,18 @@ export const citizensQueryKeys = {
       ...citizensQueryKeys.all,
       "current-assignment-for-citizen",
       citizenId,
+    ] as const,
+  directory: (
+    worldId: string,
+    filters: Record<string, unknown>,
+    pagination: Record<string, unknown>,
+  ) =>
+    [
+      ...citizensQueryKeys.all,
+      "directory",
+      worldId,
+      JSON.stringify(filters),
+      JSON.stringify(pagination),
     ] as const,
   nationAggregateStats: (nationId: string) =>
     [...citizensQueryKeys.all, "nation-aggregate-stats", nationId] as const,

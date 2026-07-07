@@ -78,6 +78,78 @@ export function managedPopulationTypeByIdQueryOptions(
   });
 }
 
+export type ManagedPopulationTypesPageParams = {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly search?: string;
+  readonly trash: boolean;
+};
+
+export type ManagedPopulationTypesPage = {
+  readonly items: readonly ManagedPopulationType[];
+  readonly totalCount: number;
+};
+
+type ManagedPopulationTypesPageQueryKey = ReturnType<
+  typeof managedPopulationsQueryKeys.page
+>;
+type ManagedPopulationTypesPageQueryOptions = UseQueryOptions<
+  ManagedPopulationTypesPage,
+  AuthUiError,
+  ManagedPopulationTypesPage,
+  ManagedPopulationTypesPageQueryKey
+>;
+
+// Config panel table (#1032): server-side search + pagination + trash
+// filtering so the client only ever holds one page of managed population
+// types, not the whole world's list.
+export function managedPopulationTypesPageQueryOptions(
+  worldId: string,
+  params: ManagedPopulationTypesPageParams,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): ManagedPopulationTypesPageQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return {
+    queryFn: () => getManagedPopulationTypesPage(client, worldId, params),
+    queryKey: managedPopulationsQueryKeys.page(worldId, params),
+  };
+}
+
+async function getManagedPopulationTypesPage(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+  params: ManagedPopulationTypesPageParams,
+): Promise<ManagedPopulationTypesPage> {
+  const pageStart = params.page * params.pageSize;
+  const pageEnd = pageStart + params.pageSize - 1;
+  const search = params.search?.trim() ?? "";
+
+  let query = client
+    .from("managed_population_types")
+    .select(MANAGED_POPULATION_TYPE_SELECT, { count: "exact" })
+    .eq("world_id", worldId)
+    .eq("is_trashed", params.trash);
+
+  if (search !== "") {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data, error, count } = await query
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .range(pageStart, pageEnd)
+    .returns<ManagedPopulationTypeRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return {
+    items: data.map(toManagedPopulationType),
+    totalCount: count ?? 0,
+  };
+}
+
 async function getManagedPopulationTypesByWorld(
   client: GubernatorSupabaseClient,
   worldId: string,

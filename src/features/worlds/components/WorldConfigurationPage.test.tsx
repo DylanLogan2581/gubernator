@@ -46,6 +46,7 @@ vi.mock("@tanstack/react-router", () => ({
     );
   },
   useNavigate: () => vi.fn(),
+  useBlocker: () => ({ status: "idle" }),
 }));
 
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
@@ -127,7 +128,7 @@ describe("WorldConfigurationPage", () => {
     ).toHaveTextContent("Calendar");
   });
 
-  it("marks the active tab with aria-selected in the tab list", async () => {
+  it("does not render a desktop tab strip (sidebar is the sole desktop nav)", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         session: { user: { id: "user-1" } },
@@ -137,10 +138,9 @@ describe("WorldConfigurationPage", () => {
 
     renderPage({ activeTab: "calendar", worldId: WORLD_ID });
 
-    const calendarTab = await screen.findByRole("tab", { name: "Calendar" });
-    const resourcesTab = screen.getByRole("tab", { name: "Resources" });
-    expect(calendarTab).toHaveAttribute("aria-selected", "true");
-    expect(resourcesTab).toHaveAttribute("aria-selected", "false");
+    await screen.findByRole("heading", { name: "Calendar" });
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
   });
 
   it("renders a back navigation link to the world page", async () => {
@@ -377,6 +377,7 @@ function createWorldRow(overrides: Partial<TestWorldRow> = {}): TestWorldRow {
 function createCalendarConfig(): WorldCalendarConfig {
   return {
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
     months: [
       { dayCount: 30, index: 0, name: "Dawn" },
       { dayCount: 30, index: 1, name: "Ember" },

@@ -1,13 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, type JSX, type ReactNode } from "react";
 
-import { WorldContextBar } from "@/components/app/WorldContextBar";
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
 import {
-  ActiveCharacterSwitcher,
-  ActivePlayerCharacterProvider,
   PlayerCharacterChooser,
   activePlayerCharacterRowQueryOptions,
   currentAccessContextQueryOptions,
@@ -21,8 +18,6 @@ import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
 } from "../queries/worldQueries";
-
-import { WorldNav } from "./WorldNav";
 
 import type { WorldRouteAccess } from "../types/worldTypes";
 
@@ -122,19 +117,17 @@ function WorldEntryWorldGate({
     );
   }
 
+  // ActivePlayerCharacterProvider now mounts above the app shell (see
+  // AppShellProviders) so the sidebar's character card shares this exact
+  // context — this gate only consumes it via useActivePlayerCharacter.
   return (
-    <ActivePlayerCharacterProvider
-      userId={accessContext.userId}
+    <WorldEntryDecision
+      accessContext={accessContext}
+      worldAccess={worldQuery.data}
       worldId={worldId}
     >
-      <WorldEntryDecision
-        accessContext={accessContext}
-        worldAccess={worldQuery.data}
-        worldId={worldId}
-      >
-        {children}
-      </WorldEntryDecision>
-    </ActivePlayerCharacterProvider>
+      {children}
+    </WorldEntryDecision>
   );
 }
 
@@ -196,15 +189,7 @@ function WorldEntryDecision({
 
   if (selectableCharacters.length === 0) {
     if (worldAccess.canAdmin) {
-      return (
-        <WorldEntryContent
-          canAdmin
-          worldId={worldId}
-          worldName={worldAccess.world.name}
-        >
-          {children}
-        </WorldEntryContent>
-      );
+      return <>{children}</>;
     }
     return (
       <AccessDeniedState
@@ -215,67 +200,21 @@ function WorldEntryDecision({
   }
 
   if (selectableCharacters.length === 1) {
-    return (
-      <WorldEntryContent
-        canAdmin={worldAccess.canAdmin}
-        worldId={worldId}
-        worldName={worldAccess.world.name}
-      >
-        {children}
-      </WorldEntryContent>
-    );
+    return <>{children}</>;
   }
 
   if (resumedCitizen !== null) {
-    return (
-      <WorldEntryContent
-        canAdmin={worldAccess.canAdmin}
-        worldId={worldId}
-        worldName={worldAccess.world.name}
-      >
-        {children}
-      </WorldEntryContent>
-    );
+    return <>{children}</>;
   }
 
   // No resumed PC — normally that means "pick one," but an admin who
   // deliberately cleared their character to act as admin should re-enter
   // admin mode instead of being forced back into the chooser.
   if (worldAccess.canAdmin && (isExplicitAdminChoice ?? false)) {
-    return (
-      <WorldEntryContent
-        canAdmin={worldAccess.canAdmin}
-        worldId={worldId}
-        worldName={worldAccess.world.name}
-      >
-        {children}
-      </WorldEntryContent>
-    );
+    return <>{children}</>;
   }
 
   return <PlayerCharacterChooser />;
-}
-
-function WorldEntryContent({
-  canAdmin,
-  children,
-  worldId,
-  worldName,
-}: {
-  readonly canAdmin: boolean;
-  readonly children: ReactNode;
-  readonly worldId: string;
-  readonly worldName: string;
-}): JSX.Element {
-  return (
-    <>
-      <WorldContextBar worldId={worldId} worldName={worldName}>
-        <ActiveCharacterSwitcher canAdmin={canAdmin} worldId={worldId} />
-      </WorldContextBar>
-      <WorldNav canAdmin={canAdmin} worldId={worldId} />
-      {children}
-    </>
-  );
 }
 
 type AutoSelectMutate = (input: {

@@ -159,6 +159,7 @@ describe("phaseCitizenConsumption — consumption arithmetic", () => {
       productionByJobId: new Map(),
       upkeep: 1,
       upkeepByBlueprintId: new Map(),
+      upkeepByBuildingInstanceId: new Map(),
     });
     setStock(ctx, "s1", "food", 20);
     setStock(ctx, "s1", "water", 10);

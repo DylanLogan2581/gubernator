@@ -35,11 +35,63 @@ vi.mock("sonner", () => ({
   },
 }));
 
+const { useBlockerMock } = vi.hoisted(() => ({
+  useBlockerMock: vi.fn<
+    (opts: { readonly shouldBlockFn: () => boolean }) => {
+      readonly status: "blocked" | "idle";
+    }
+  >(),
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  useBlocker: useBlockerMock,
+}));
+
 describe("WorldCalendarConfigPanel", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
     toastError.mockReset();
     toastSuccess.mockReset();
+    useBlockerMock.mockReset();
+    useBlockerMock.mockReturnValue({ status: "idle" });
+  });
+
+  it("blocks navigation once a field is edited and unblocks after save", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({ worldRows: [createWorldRow()] }),
+    );
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: ["00000000-0000-0000-0000-000000000001"],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+    expect(useBlockerMock.mock.calls[0][0].shouldBlockFn()).toBe(false);
+
+    await user.type(screen.getByRole("textbox", { name: "Day 1" }), "Edited");
+
+    expect(
+      useBlockerMock.mock.calls[
+        useBlockerMock.mock.calls.length - 1
+      ][0].shouldBlockFn(),
+    ).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Save calendar" }));
+
+    await waitFor(() => {
+      expect(
+        useBlockerMock.mock.calls[
+          useBlockerMock.mock.calls.length - 1
+        ][0].shouldBlockFn(),
+      ).toBe(false);
+    });
   });
 
   it("renders editable calendar controls for world admins", async () => {
@@ -79,6 +131,11 @@ describe("WorldCalendarConfigPanel", () => {
     expect(
       screen.getByRole("textbox", { name: "Date format template" }),
     ).toHaveValue("{weekday}, {month} {day}, {year} AG");
+    expect(
+      screen.getByRole("textbox", { name: "Short date format template" }),
+    ).toHaveValue("{monthNumber}/{dayNumber}/{yearNumber}");
+    expect(screen.getByText(/Long: Firstday, Dawn 1, 100 AG/)).toBeDefined();
+    expect(screen.getByText(/Short: 1\/1\/100/)).toBeDefined();
 
     await user.clear(screen.getByRole("textbox", { name: "Day 1" }));
     await user.type(screen.getByRole("textbox", { name: "Day 1" }), "Moonday");
@@ -89,6 +146,55 @@ describe("WorldCalendarConfigPanel", () => {
     expect(screen.getByRole("button", { name: "Add weekday" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Add month" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Save calendar" })).toBeDefined();
+    expect(screen.getByText(/Tokens:/)).toBeDefined();
+    expect(screen.getByText("{weekday}")).toBeDefined();
+    expect(screen.getByText("{yearNumber}")).toBeDefined();
+  });
+
+  it("appends a typed weekday chip and reorders it with the move buttons", async () => {
+    const user = userEvent.setup();
+    const client = createClient({
+      worldRows: [createWorldRow()],
+    });
+
+    requireSupabaseClient.mockReturnValue(client);
+
+    renderWorldCalendarConfigPanel({
+      accessContext: createAccessContext({
+        isSuperAdmin: false,
+        userId: "user-1",
+        worldAdminWorldIds: [],
+      }),
+      canAdmin: true,
+      isArchived: false,
+    });
+
+    await screen.findByRole("heading", { name: "Calendar" });
+
+    await user.type(
+      screen.getByRole("textbox", { name: "New weekday" }),
+      "Moonday",
+    );
+    await user.click(screen.getByRole("button", { name: "Add weekday" }));
+
+    expect(screen.getByRole("textbox", { name: "Day 3" })).toHaveValue(
+      "Moonday",
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Move weekdays 1 up" }),
+    ).toBeDisabled();
+
+    await user.click(
+      screen.getByRole("button", { name: "Move weekdays 1 down" }),
+    );
+
+    expect(screen.getByRole("textbox", { name: "Day 1" })).toHaveValue(
+      "Secondday",
+    );
+    expect(screen.getByRole("textbox", { name: "Day 2" })).toHaveValue(
+      "Firstday",
+    );
   });
 
   it("blocks save and exposes an accessible error when weekdays are empty", async () => {
@@ -533,6 +639,7 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 1, name: "Secondday" },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }
 

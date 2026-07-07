@@ -73,9 +73,9 @@ describe("JobsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Farming");
-    const listItem = screen.getByRole("listitem");
-    expect(within(listItem).getByText("Standard")).toBeDefined();
-    expect(within(listItem).queryByText("farming")).toBeNull();
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("Standard")).toBeDefined();
+    expect(within(table).queryByText("farming")).toBeNull();
   });
 
   it("shows trashed jobs when trash view is toggled", async () => {
@@ -859,9 +859,8 @@ describe("JobsConfigPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Build Wall");
-    const listItem = screen.getByRole("listitem");
-    expect(within(listItem).queryByText("Inputs")).toBeNull();
-    expect(within(listItem).queryByText("Outputs")).toBeNull();
+    expect(screen.queryByText("Inputs")).toBeNull();
+    expect(screen.queryByText("Outputs")).toBeNull();
   });
 
   it("does not show IO editors when editing a trader job", async () => {
@@ -1040,6 +1039,36 @@ describe("JobsConfigPanel", () => {
     ).toBeNull();
   });
 
+  it("narrows results via the search input", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [
+          createJobRow({ name: "Farming" }),
+          createJobRow({
+            id: "00000000-0000-0000-0000-000000000007",
+            name: "Silk Road",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(screen.getByText("Silk Road")).toBeDefined();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Search jobs by name" }),
+      "Farm",
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Silk Road")).toBeNull();
+      expect(screen.getByText("Farming")).toBeDefined();
+    });
+  });
+
   it("shows inline error for a deleted resource in IO entries", async () => {
     const user = userEvent.setup();
     const jobRow = createJobRow({
@@ -1108,6 +1137,7 @@ type TestJobRow = {
   readonly culling_mpt: ReadonlyArray<{ readonly id: string }>;
   readonly deposit_types: ReadonlyArray<{ readonly id: string }>;
   readonly husbandry_mpt: ReadonlyArray<{ readonly id: string }>;
+  readonly icon: string | null;
   readonly id: string;
   readonly inputs_json: readonly {
     amount_per_worker: number;
@@ -1180,6 +1210,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     culling_mpt: [],
     deposit_types: [],
     husbandry_mpt: [],
+    icon: null,
     id: JOB_ID,
     inputs_json: [],
     is_trashed: false,
@@ -1318,11 +1349,44 @@ function createJobsQueryBuilder(
     readonly error: { readonly message: string } | null;
   },
 ): unknown {
-  const selectBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => selectBuilder),
-    order: vi.fn(() => selectBuilder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-  };
+  // Emulates enough of the real filter/order/range/returns chain that the
+  // panel's server-side search + pagination + trash/type filtering (#1032)
+  // behaves like the real Supabase query would, instead of always returning
+  // every row regardless of the applied filters.
+  function buildSelectBuilder(): Record<string, unknown> {
+    let filtered: TestJobRow[] = [...rows];
+    let range: readonly [number, number] | null = null;
+
+    const selectBuilder: Record<string, unknown> = {
+      eq: vi.fn((column: string, value: unknown) => {
+        filtered = filtered.filter(
+          (row) => row[column as keyof TestJobRow] === value,
+        );
+        return selectBuilder;
+      }),
+      ilike: vi.fn((column: string, pattern: string) => {
+        const needle = pattern.replaceAll("%", "").toLowerCase();
+        filtered = filtered.filter((row) => {
+          const value = row[column as keyof TestJobRow];
+          return (
+            typeof value === "string" && value.toLowerCase().includes(needle)
+          );
+        });
+        return selectBuilder;
+      }),
+      order: vi.fn(() => selectBuilder),
+      range: vi.fn((start: number, end: number) => {
+        range = [start, end];
+        return selectBuilder;
+      }),
+      returns: vi.fn(() => {
+        const data =
+          range === null ? filtered : filtered.slice(range[0], range[1] + 1);
+        return Promise.resolve({ count: filtered.length, data, error: null });
+      }),
+    };
+    return selectBuilder;
+  }
 
   const updateBuilder: Record<string, unknown> = {
     eq: vi.fn(() => updateBuilder),
@@ -1337,7 +1401,7 @@ function createJobsQueryBuilder(
         maybeSingle: vi.fn().mockResolvedValue(insertResult),
       })),
     })),
-    select: vi.fn(() => selectBuilder),
+    select: vi.fn(() => buildSelectBuilder()),
     update: vi.fn(() => updateBuilder),
   };
 }

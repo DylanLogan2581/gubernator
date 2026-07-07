@@ -3,12 +3,13 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Eye, Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -19,6 +20,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -32,6 +34,11 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementBuildingsBySettlementQueryOptions } from "../../queries/settlementBuildingsQueries";
+import {
+  buildEffectChips,
+  stateBadgeLabel,
+  stateBadgeVariant,
+} from "../../utils/buildingStateFormatting";
 
 import { AddBuildingDialog } from "./AddBuildingDialog";
 import { BuildingRow } from "./BuildingRow";
@@ -108,7 +115,7 @@ export function SettlementBuildingsPanel({
                 setShowTrash((prev) => !prev);
               }}
             >
-              <Trash2 aria-hidden="true" />
+              <Eye aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -226,6 +233,39 @@ function BuildingsGroups({
   );
 }
 
+function duplicateGroupKey(building: SettlementBuilding): string {
+  return [
+    building.name ?? building.blueprintName,
+    building.buildingBlueprintId,
+    building.currentTierId,
+    building.state,
+  ].join("|");
+}
+
+type DuplicateBuildingGroup = {
+  readonly key: string;
+  readonly buildings: readonly SettlementBuilding[];
+};
+
+function groupIdenticalBuildings(
+  buildings: readonly SettlementBuilding[],
+): readonly DuplicateBuildingGroup[] {
+  const groups = new Map<string, SettlementBuilding[]>();
+  for (const building of buildings) {
+    const key = duplicateGroupKey(building);
+    const existing = groups.get(key);
+    if (existing !== undefined) {
+      existing.push(building);
+    } else {
+      groups.set(key, [building]);
+    }
+  }
+  return [...groups.entries()].map(([key, groupBuildings]) => ({
+    key,
+    buildings: groupBuildings,
+  }));
+}
+
 function BuildingStateGroup({
   buildings,
   canAdmin,
@@ -249,6 +289,9 @@ function BuildingStateGroup({
   readonly settlementId: string;
   readonly worldId: string;
 }): JSX.Element {
+  const showTierColumn = new Set(buildings.map((b) => b.tierNumber)).size > 1;
+  const duplicateGroups = groupIdenticalBuildings(buildings);
+
   return (
     <Collapsible defaultOpen className="grid gap-1">
       <CollapsibleTrigger className="group flex cursor-pointer items-center gap-1 text-left text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
@@ -263,7 +306,7 @@ function BuildingStateGroup({
           <TableHeader>
             <TableRow className="text-muted-foreground">
               <TableHead scope="col">Building</TableHead>
-              <TableHead scope="col">Tier</TableHead>
+              {showTierColumn ? <TableHead scope="col">Tier</TableHead> : null}
               <TableHead scope="col">Effects</TableHead>
               <TableHead className="w-16" scope="col" aria-label="State" />
               {canAdmin ? (
@@ -272,23 +315,158 @@ function BuildingStateGroup({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {buildings.map((building) => (
-              <BuildingRow
-                key={building.id}
-                building={building}
-                canAdmin={canAdmin}
-                canDeconstruct={canDeconstruct}
-                jobNames={jobNames}
-                latestOutcome={latestOutcome}
-                queryClient={queryClient}
-                resourceNames={resourceNames}
-                settlementId={settlementId}
-                worldId={worldId}
-              />
-            ))}
+            {duplicateGroups.map((group) =>
+              group.buildings.length === 1 ? (
+                <BuildingRow
+                  key={group.buildings[0].id}
+                  building={group.buildings[0]}
+                  canAdmin={canAdmin}
+                  canDeconstruct={canDeconstruct}
+                  jobNames={jobNames}
+                  latestOutcome={latestOutcome}
+                  queryClient={queryClient}
+                  resourceNames={resourceNames}
+                  settlementId={settlementId}
+                  showTierColumn={showTierColumn}
+                  worldId={worldId}
+                />
+              ) : (
+                <DuplicateBuildingGroupRows
+                  key={group.key}
+                  buildings={group.buildings}
+                  canAdmin={canAdmin}
+                  canDeconstruct={canDeconstruct}
+                  jobNames={jobNames}
+                  latestOutcome={latestOutcome}
+                  queryClient={queryClient}
+                  resourceNames={resourceNames}
+                  settlementId={settlementId}
+                  showTierColumn={showTierColumn}
+                  worldId={worldId}
+                />
+              ),
+            )}
           </TableBody>
         </Table>
       </CollapsibleContent>
     </Collapsible>
+  );
+}
+
+function DuplicateBuildingGroupRows({
+  buildings,
+  canAdmin,
+  canDeconstruct,
+  jobNames,
+  latestOutcome,
+  queryClient,
+  resourceNames,
+  settlementId,
+  showTierColumn,
+  worldId,
+}: {
+  readonly buildings: readonly SettlementBuilding[];
+  readonly canAdmin: boolean;
+  readonly canDeconstruct: boolean;
+  readonly jobNames: ReadonlyMap<string, string>;
+  readonly latestOutcome: TurnTransitionOutcome | null;
+  readonly queryClient: QueryClient;
+  readonly resourceNames: ReadonlyMap<string, string>;
+  readonly settlementId: string;
+  readonly showTierColumn: boolean;
+  readonly worldId: string;
+}): JSX.Element {
+  const [expanded, setExpanded] = useState(false);
+  const first = buildings[0];
+  const name = first.name ?? first.blueprintName;
+  const columnCount = 2 + (showTierColumn ? 1 : 0) + (canAdmin ? 1 : 0);
+
+  if (expanded) {
+    return (
+      <>
+        <TableRow className="border-b border-border">
+          <TableCell colSpan={columnCount} className="py-1 pr-4">
+            <Button
+              aria-expanded="true"
+              size="sm"
+              type="button"
+              variant="ghost"
+              className="h-6 gap-1 px-1 text-muted-foreground"
+              onClick={() => {
+                setExpanded(false);
+              }}
+            >
+              <ChevronDown aria-hidden="true" className="h-4 w-4" />
+              {name} ×{buildings.length}
+            </Button>
+          </TableCell>
+        </TableRow>
+        {buildings.map((building) => (
+          <BuildingRow
+            key={building.id}
+            building={building}
+            canAdmin={canAdmin}
+            canDeconstruct={canDeconstruct}
+            jobNames={jobNames}
+            latestOutcome={latestOutcome}
+            queryClient={queryClient}
+            resourceNames={resourceNames}
+            settlementId={settlementId}
+            showTierColumn={showTierColumn}
+            worldId={worldId}
+          />
+        ))}
+      </>
+    );
+  }
+
+  const effectChips = buildEffectChips(first, resourceNames, jobNames);
+  const showStateBadge = first.state !== "active";
+
+  return (
+    <TableRow className="border-b border-border last:border-0">
+      <TableCell className="py-2 pr-4">
+        <Button
+          aria-expanded="false"
+          size="sm"
+          type="button"
+          variant="ghost"
+          className="h-6 gap-1 px-1 -ml-1"
+          onClick={() => {
+            setExpanded(true);
+          }}
+        >
+          <ChevronDown aria-hidden="true" className="h-4 w-4 -rotate-90" />
+          {name} ×{buildings.length}
+        </Button>
+      </TableCell>
+      {showTierColumn ? (
+        <TableCell className="py-2 pr-4">Tier {first.tierNumber}</TableCell>
+      ) : null}
+      <TableCell className="py-2 pr-4">
+        {effectChips.length > 0 ? (
+          <span className="flex flex-wrap gap-1">
+            {effectChips.map((chip) => (
+              <Badge key={chip.key} variant="outline">
+                {chip.label}
+              </Badge>
+            ))}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell className="w-16 py-2 pr-2">
+        {showStateBadge ? (
+          <Badge
+            aria-label={`State: ${stateBadgeLabel(first.state)}`}
+            variant={stateBadgeVariant(first.state)}
+          >
+            {stateBadgeLabel(first.state)}
+          </Badge>
+        ) : null}
+      </TableCell>
+      {canAdmin ? <TableCell className="w-28 py-2" /> : null}
+    </TableRow>
   );
 }

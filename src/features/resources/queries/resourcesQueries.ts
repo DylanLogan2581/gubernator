@@ -70,6 +70,76 @@ export function resourceByIdQueryOptions(
   });
 }
 
+export type ResourcesPageParams = {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly search?: string;
+  readonly trash: boolean;
+};
+
+export type ResourcesPage = {
+  readonly items: readonly Resource[];
+  readonly totalCount: number;
+};
+
+type ResourcesPageQueryKey = ReturnType<typeof resourcesQueryKeys.page>;
+type ResourcesPageQueryOptions = UseQueryOptions<
+  ResourcesPage,
+  AuthUiError,
+  ResourcesPage,
+  ResourcesPageQueryKey
+>;
+
+// Config panel table (#1032): server-side search + pagination + trash
+// filtering so the client only ever holds one page of resources, not the
+// whole world's list.
+export function resourcesPageQueryOptions(
+  worldId: string,
+  params: ResourcesPageParams,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): ResourcesPageQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return {
+    queryFn: () => getResourcesPage(client, worldId, params),
+    queryKey: resourcesQueryKeys.page(worldId, params),
+  };
+}
+
+async function getResourcesPage(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+  params: ResourcesPageParams,
+): Promise<ResourcesPage> {
+  const pageStart = params.page * params.pageSize;
+  const pageEnd = pageStart + params.pageSize - 1;
+  const search = params.search?.trim() ?? "";
+
+  let query = client
+    .from("resources")
+    .select(RESOURCE_SELECT, { count: "exact" })
+    .eq("world_id", worldId)
+    .eq("is_trashed", params.trash);
+
+  if (search !== "") {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data, error, count } = await query
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .range(pageStart, pageEnd)
+    .returns<ResourceRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return {
+    items: data.map(toResource),
+    totalCount: count ?? 0,
+  };
+}
+
 async function getResourcesByWorld(
   client: GubernatorSupabaseClient,
   worldId: string,

@@ -184,6 +184,30 @@ export function citizensInWorldQueryOptions(
   });
 }
 
+type CitizensByIdsQueryKey = ReturnType<typeof citizensQueryKeys.byIds>;
+type CitizensByIdsQueryOptions = UseQueryOptions<
+  readonly Citizen[],
+  AuthUiError,
+  readonly Citizen[],
+  CitizensByIdsQueryKey
+>;
+
+// Batch-resolve a set of citizen ids to names/links in one round trip — for
+// entity references embedded in payload JSON (e.g. partnership log entries)
+// rather than the citizen's own row, which loading every citizen in the
+// world would not scale to.
+export function citizensByIdsQueryOptions(
+  ids: readonly string[],
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CitizensByIdsQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getCitizensByIds(client, ids),
+    queryKey: citizensQueryKeys.byIds(ids),
+    enabled: ids.length > 0,
+  });
+}
+
 async function getCitizensInWorld(
   client: GubernatorSupabaseClient,
   worldId: string,
@@ -194,6 +218,27 @@ async function getCitizensInWorld(
     .eq("world_id", worldId)
     .order("name", { ascending: true })
     .order("id", { ascending: true })
+    .returns<CitizenRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toCitizen);
+}
+
+async function getCitizensByIds(
+  client: GubernatorSupabaseClient,
+  ids: readonly string[],
+): Promise<readonly Citizen[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_SELECT)
+    .in("id", ids)
     .returns<CitizenRow[]>();
 
   if (error !== null) {
@@ -469,8 +514,8 @@ function computeAggregate(
     statusBreakdown[row.status] += 1;
     const assignment = row.citizen_assignments?.[0]?.assignment_type ?? null;
     if (assignment === null) {
-      assignmentTypeBreakdown.unassigned += 1;
       if (row.status === "alive") {
+        assignmentTypeBreakdown.unassigned += 1;
         if (row.citizen_type === "npc") {
           unassignedNpcCount += 1;
         } else {

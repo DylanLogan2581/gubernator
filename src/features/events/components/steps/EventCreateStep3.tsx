@@ -95,7 +95,7 @@ export function EventCreateStep3({
       {durationType === "sustained" && (
         <div className="space-y-2">
           <Label htmlFor="durationTransitions" className="font-medium">
-            Duration (transitions)
+            Duration (turns)
           </Label>
           <Input
             id="durationTransitions"

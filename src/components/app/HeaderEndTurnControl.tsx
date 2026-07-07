@@ -1,0 +1,94 @@
+import { StepForward } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  EndTurnConfirmationDialog,
+  getControlDescription,
+  getEndTurnErrorDescription,
+  useEndTurnControl,
+} from "@/features/turns";
+
+import type { JSX } from "react";
+
+type HeaderEndTurnControlProps = {
+  readonly canAdmin: boolean;
+  readonly currentDateLabel: string;
+  readonly currentTurnNumber: number;
+  readonly isArchived: boolean;
+  readonly nextDateLabel: string;
+  readonly nextTurnNumber: number;
+  readonly worldId: string;
+};
+
+// Compact header replacement for the full EndTurnControl dashboard card
+// (issue #1009) — same mutation/readiness state via useEndTurnControl, a
+// single-row-height button instead of a stat-tile section. The full card
+// still renders on WorldShellPage for effective admins.
+export function HeaderEndTurnControl({
+  canAdmin,
+  currentDateLabel,
+  currentTurnNumber,
+  isArchived,
+  nextDateLabel,
+  nextTurnNumber,
+  worldId,
+}: HeaderEndTurnControlProps): JSX.Element | null {
+  const {
+    closeConfirmation,
+    endTurnMutation,
+    isConfirming,
+    isDisabled,
+    isReadinessUnavailable,
+    openConfirmation,
+    readinessSummaryQuery,
+    submitEndTurn,
+  } = useEndTurnControl({ currentTurnNumber, isArchived, worldId });
+
+  if (!canAdmin) {
+    return null;
+  }
+
+  const readinessLabel = readinessSummaryQuery.isSuccess
+    ? `End Turn · ${readinessSummaryQuery.data.readySettlementCount.toString()}/${readinessSummaryQuery.data.totalSettlementCount.toString()} ready`
+    : "End Turn";
+  const disabledReason = getControlDescription({
+    isArchived,
+    isPending: endTurnMutation.isPending,
+    isReadinessUnavailable,
+  });
+
+  return (
+    <>
+      <Button
+        disabled={isDisabled}
+        onClick={openConfirmation}
+        type="button"
+        size="sm"
+        title={disabledReason === "" ? undefined : disabledReason}
+        // Bridged from the command palette's "End turn" action.
+        data-command-palette-action="end-turn"
+      >
+        <StepForward aria-hidden="true" />
+        {endTurnMutation.isPending ? "Running..." : readinessLabel}
+      </Button>
+
+      {isConfirming && readinessSummaryQuery.isSuccess ? (
+        <EndTurnConfirmationDialog
+          currentDateLabel={currentDateLabel}
+          currentTurnNumber={currentTurnNumber}
+          errorMessage={
+            endTurnMutation.isError
+              ? getEndTurnErrorDescription(endTurnMutation.error)
+              : undefined
+          }
+          isPending={endTurnMutation.isPending}
+          nextDateLabel={nextDateLabel}
+          nextTurnNumber={nextTurnNumber}
+          onClose={closeConfirmation}
+          onConfirm={submitEndTurn}
+          readinessSummary={readinessSummaryQuery.data}
+        />
+      ) : null}
+    </>
+  );
+}

@@ -1,5 +1,6 @@
 import {
   formatCalendarDate,
+  formatCalendarDateShort,
   resolveTurnCalendarDate,
   worldCalendarConfigSchema,
 } from "@/features/calendar";
@@ -26,6 +27,7 @@ type WorldRow = Pick<
   | "visibility"
 > & {
   readonly calendar_config_json?: Tables<"worlds">["calendar_config_json"];
+  readonly thumbnail_path?: Tables<"worlds">["thumbnail_path"];
 };
 
 export function toAccessibleWorld(
@@ -59,6 +61,10 @@ export function toAccessibleWorld(
       world.calendar_config_json,
       planningTurnNumber,
     ),
+    inWorldDateLabelShort: resolveInWorldDateLabelShort(
+      world.calendar_config_json,
+      planningTurnNumber,
+    ),
     isArchived: world.status === "archived",
     isHidden: world.visibility !== "public",
     isTrashed: world.is_trashed,
@@ -71,6 +77,7 @@ export function toAccessibleWorld(
     planningTurnNumber,
     slug: createWorldSlug(world.name, world.id),
     status: world.status,
+    thumbnailPath: world.thumbnail_path ?? null,
     updatedAt: world.updated_at,
     visibility: world.visibility,
   };
@@ -124,6 +131,30 @@ function resolveInWorldDateLabel(
       resolveTurnCalendarDate(calendarConfig, planningTurnNumber),
       {
         dateFormatTemplate: calendarConfig.dateFormatTemplate,
+      },
+    );
+  } catch {
+    return FALLBACK_IN_WORLD_DATE_LABEL;
+  }
+}
+
+function resolveInWorldDateLabelShort(
+  calendarConfigJson: WorldRow["calendar_config_json"] | undefined,
+  planningTurnNumber: number,
+): string {
+  const parseResult = worldCalendarConfigSchema.safeParse(calendarConfigJson);
+
+  if (!parseResult.success) {
+    return FALLBACK_IN_WORLD_DATE_LABEL;
+  }
+
+  const calendarConfig = parseResult.data;
+
+  try {
+    return formatCalendarDateShort(
+      resolveTurnCalendarDate(calendarConfig, planningTurnNumber),
+      {
+        shortDateFormatTemplate: calendarConfig.shortDateFormatTemplate,
       },
     );
   } catch {

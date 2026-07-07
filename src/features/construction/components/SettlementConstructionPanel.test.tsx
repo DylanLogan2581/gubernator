@@ -506,8 +506,8 @@ describe("SettlementConstructionPanel", () => {
 
     await screen.findByText("No active projects");
     expect(
-      screen.getByRole("button", { name: "Start construction" }),
-    ).toBeDefined();
+      screen.getAllByRole("button", { name: "Start construction" }),
+    ).toHaveLength(2);
   });
 
   it("hides Start construction button when world is archived", async () => {
@@ -554,7 +554,7 @@ describe("SettlementConstructionPanel", () => {
 
     await screen.findByText("No active projects");
     await user.click(
-      screen.getByRole("button", { name: "Start construction" }),
+      screen.getAllByRole("button", { name: "Start construction" })[0],
     );
 
     const dialog = await screen.findByRole("dialog", {
@@ -608,7 +608,7 @@ describe("SettlementConstructionPanel", () => {
 
     await screen.findByText("No active projects");
     await user.click(
-      screen.getByRole("button", { name: "Start construction" }),
+      screen.getAllByRole("button", { name: "Start construction" })[0],
     );
 
     const dialog = await screen.findByRole("dialog", {
@@ -648,7 +648,7 @@ describe("SettlementConstructionPanel", () => {
 
     await screen.findByText("No active projects");
     await user.click(
-      screen.getByRole("button", { name: "Start construction" }),
+      screen.getAllByRole("button", { name: "Start construction" })[0],
     );
 
     const dialog = await screen.findByRole("dialog", {

@@ -3,12 +3,14 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   calendarQueryKeys,
   formatCalendarDate,
+  formatCalendarDateShort,
   formatCalendarYear,
   resolveTurnCalendarDate,
   shouldRetryWorldCalendarConfigQuery,
   worldCalendarConfigQueryOptions,
   worldCalendarConfigSchema,
   type CalendarDateFormatOptions,
+  type CalendarDateFormatShortOptions,
   type TurnCalendarDate,
   type WorldCalendarConfig,
 } from "@/features/calendar";
@@ -82,11 +84,15 @@ describe("public feature entrypoints", () => {
     expect(worldCalendarConfigQueryOptions).toEqual(expect.any(Function));
     expect(shouldRetryWorldCalendarConfigQuery).toEqual(expect.any(Function));
     expect(formatCalendarDate).toEqual(expect.any(Function));
+    expect(formatCalendarDateShort).toEqual(expect.any(Function));
     expect(formatCalendarYear).toEqual(expect.any(Function));
     expect(resolveTurnCalendarDate).toEqual(expect.any(Function));
 
     expectTypeOf<CalendarDateFormatOptions>().toMatchTypeOf<{
       readonly dateFormatTemplate: string;
+    }>();
+    expectTypeOf<CalendarDateFormatShortOptions>().toMatchTypeOf<{
+      readonly shortDateFormatTemplate: string;
     }>();
     expectTypeOf<
       Pick<TurnCalendarDate, "dayOfMonth" | "monthName" | "turnNumber" | "year">

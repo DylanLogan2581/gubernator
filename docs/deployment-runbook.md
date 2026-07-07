@@ -252,6 +252,13 @@ App runs at `http://localhost:5173`.
 - [ ] End turn completes without error on a test world
 - [ ] `npm run test:db` passes against the local database
 
+Before a UI review, run `supabase migration list` against the review
+environment and confirm it has no unapplied repo migrations — a stale
+environment silently reproduces already-fixed bugs (e.g. old notification
+text) as phantom reports. Migration filenames use a monotonic
+`YYYYMMDDHHMMSS` sequence id, not the actual authoring date, so a filename
+dated ahead of "today" is expected and does not indicate drift by itself.
+
 ---
 
 ## Local vs production differences

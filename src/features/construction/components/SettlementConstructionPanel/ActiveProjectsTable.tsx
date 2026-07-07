@@ -1,7 +1,9 @@
 import { useQuery, type QueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -24,6 +26,7 @@ export function ActiveProjectsTable({
   allProjects,
   canAct,
   logEntries,
+  onQueueClick,
   queryClient,
   settlementId,
   worldId,
@@ -31,6 +34,7 @@ export function ActiveProjectsTable({
   readonly allProjects: readonly ConstructionProject[];
   readonly canAct: boolean;
   readonly logEntries: readonly TurnTransitionLogEntry[];
+  readonly onQueueClick: () => void;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
   readonly worldId: string;
@@ -50,7 +54,19 @@ export function ActiveProjectsTable({
     return (
       <EmptyState
         title="No active projects"
-        description="No construction projects are currently queued."
+        description={
+          canAct
+            ? "Queue a construction project to get started."
+            : "No construction projects are currently queued."
+        }
+        action={
+          canAct ? (
+            <Button size="sm" variant="outline" onClick={onQueueClick}>
+              <Plus aria-hidden="true" />
+              Start construction
+            </Button>
+          ) : undefined
+        }
       />
     );
   }

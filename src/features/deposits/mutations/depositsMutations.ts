@@ -42,6 +42,7 @@ type DepositTypeMutationErrorCode =
 
 // Explicit typed payloads prevent RejectExcessProperties conflicts in Supabase's strict overloads.
 type DepositTypeInsertPayload = {
+  icon?: string | null;
   job_id: string;
   name: string;
   output_units_per_worker: number;
@@ -51,6 +52,7 @@ type DepositTypeInsertPayload = {
 };
 
 type DepositTypeUpdatePayload = {
+  icon?: string | null;
   job_id?: string;
   name?: string;
   output_units_per_worker?: number;
@@ -122,6 +124,7 @@ async function createDepositType(
   const values = parseInput(createDepositTypeInputSchema, input);
 
   const insertPayload: DepositTypeInsertPayload = {
+    icon: values.icon ?? null,
     job_id: values.jobId,
     name: values.name.trim(),
     output_units_per_worker: values.outputUnitsPerWorker,
@@ -185,6 +188,9 @@ async function updateDepositType(
     updatePayload.worker_inputs_json = toWorkerInputsJson(
       values.workerInputsJson,
     );
+  }
+  if (values.icon !== undefined) {
+    updatePayload.icon = values.icon;
   }
 
   const { data, error } = await client

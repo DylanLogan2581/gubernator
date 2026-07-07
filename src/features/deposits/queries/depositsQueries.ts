@@ -74,6 +74,76 @@ export function depositTypeByIdQueryOptions(
   });
 }
 
+export type DepositTypesPageParams = {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly search?: string;
+  readonly trash: boolean;
+};
+
+export type DepositTypesPage = {
+  readonly items: readonly DepositType[];
+  readonly totalCount: number;
+};
+
+type DepositTypesPageQueryKey = ReturnType<typeof depositsQueryKeys.page>;
+type DepositTypesPageQueryOptions = UseQueryOptions<
+  DepositTypesPage,
+  AuthUiError,
+  DepositTypesPage,
+  DepositTypesPageQueryKey
+>;
+
+// Config panel table (#1032): server-side search + pagination + trash
+// filtering so the client only ever holds one page of deposit types, not
+// the whole world's list.
+export function depositTypesPageQueryOptions(
+  worldId: string,
+  params: DepositTypesPageParams,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): DepositTypesPageQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return {
+    queryFn: () => getDepositTypesPage(client, worldId, params),
+    queryKey: depositsQueryKeys.page(worldId, params),
+  };
+}
+
+async function getDepositTypesPage(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+  params: DepositTypesPageParams,
+): Promise<DepositTypesPage> {
+  const pageStart = params.page * params.pageSize;
+  const pageEnd = pageStart + params.pageSize - 1;
+  const search = params.search?.trim() ?? "";
+
+  let query = client
+    .from("deposit_types")
+    .select(DEPOSIT_TYPE_SELECT, { count: "exact" })
+    .eq("world_id", worldId)
+    .eq("is_trashed", params.trash);
+
+  if (search !== "") {
+    query = query.ilike("name", `%${search}%`);
+  }
+
+  const { data, error, count } = await query
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .range(pageStart, pageEnd)
+    .returns<DepositTypeRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return {
+    items: data.map(toDepositType),
+    totalCount: count ?? 0,
+  };
+}
+
 async function getDepositTypesByWorld(
   client: GubernatorSupabaseClient,
   worldId: string,

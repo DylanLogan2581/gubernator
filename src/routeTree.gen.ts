@@ -17,7 +17,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorldsIndexRouteImport } from './routes/worlds.index'
 import { Route as SuperadminIndexRouteImport } from './routes/superadmin.index'
 import { Route as WorldsWorldIdRouteImport } from './routes/worlds.$worldId'
+import { Route as SuperadminWorldsRouteImport } from './routes/superadmin.worlds'
+import { Route as SuperadminUsersRouteImport } from './routes/superadmin.users'
+import { Route as SuperadminTransitionsRouteImport } from './routes/superadmin.transitions'
 import { Route as SuperadminTemplatesRouteImport } from './routes/superadmin.templates'
+import { Route as SuperadminEmailRouteImport } from './routes/superadmin.email'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth.set-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as WorldsWorldIdIndexRouteImport } from './routes/worlds.$worldId.index'
@@ -27,14 +31,34 @@ import { Route as WorldsWorldIdEventsRouteImport } from './routes/worlds.$worldI
 import { Route as WorldsWorldIdConfigurationRouteImport } from './routes/worlds.$worldId.configuration'
 import { Route as WorldsWorldIdNationsIndexRouteImport } from './routes/worlds.$worldId.nations.index'
 import { Route as WorldsWorldIdEventsIndexRouteImport } from './routes/worlds.$worldId.events.index'
+import { Route as WorldsWorldIdCitizensIndexRouteImport } from './routes/worlds.$worldId.citizens.index'
 import { Route as WorldsWorldIdNationsNationIdRouteImport } from './routes/worlds.$worldId.nations.$nationId'
 import { Route as WorldsWorldIdEventsNewRouteImport } from './routes/worlds.$worldId.events.new'
 import { Route as WorldsWorldIdEventsEventIdRouteImport } from './routes/worlds.$worldId.events.$eventId'
 import { Route as WorldsWorldIdCitizensCitizenIdRouteImport } from './routes/worlds.$worldId.citizens.$citizenId'
-import { Route as WorldsWorldIdNationsNationIdIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId.index'
 import { Route as WorldsWorldIdEventsEventIdIndexRouteImport } from './routes/worlds.$worldId.events.$eventId.index'
+import { Route as WorldsWorldIdNationsNationIdNationRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation'
 import { Route as WorldsWorldIdEventsEventIdEditRouteImport } from './routes/worlds.$worldId.events.$eventId.edit'
+import { Route as WorldsWorldIdNationsNationIdNationIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.index'
 import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId'
+import { Route as WorldsWorldIdNationsNationIdNationSettlementsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.settlements'
+import { Route as WorldsWorldIdNationsNationIdNationSettingsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.settings'
+import { Route as WorldsWorldIdNationsNationIdNationReportsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.reports'
+import { Route as WorldsWorldIdNationsNationIdNationRelationshipsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.relationships'
+import { Route as WorldsWorldIdNationsNationIdNationGovernmentRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.government'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.index'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.trade'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.stockpiles'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.settings'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.reports'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.populations'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.history'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.forecast'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.deposits'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.construction'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.citizens'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.buildings'
+import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.assignments'
 
 const WorldsRoute = WorldsRouteImport.update({
   id: '/worlds',
@@ -76,9 +100,29 @@ const WorldsWorldIdRoute = WorldsWorldIdRouteImport.update({
   path: '/$worldId',
   getParentRoute: () => WorldsRoute,
 } as any)
+const SuperadminWorldsRoute = SuperadminWorldsRouteImport.update({
+  id: '/worlds',
+  path: '/worlds',
+  getParentRoute: () => SuperadminRoute,
+} as any)
+const SuperadminUsersRoute = SuperadminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => SuperadminRoute,
+} as any)
+const SuperadminTransitionsRoute = SuperadminTransitionsRouteImport.update({
+  id: '/transitions',
+  path: '/transitions',
+  getParentRoute: () => SuperadminRoute,
+} as any)
 const SuperadminTemplatesRoute = SuperadminTemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
+  getParentRoute: () => SuperadminRoute,
+} as any)
+const SuperadminEmailRoute = SuperadminEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
   getParentRoute: () => SuperadminRoute,
 } as any)
 const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
@@ -129,6 +173,12 @@ const WorldsWorldIdEventsIndexRoute =
     path: '/',
     getParentRoute: () => WorldsWorldIdEventsRoute,
   } as any)
+const WorldsWorldIdCitizensIndexRoute =
+  WorldsWorldIdCitizensIndexRouteImport.update({
+    id: '/citizens/',
+    path: '/citizens/',
+    getParentRoute: () => WorldsWorldIdRoute,
+  } as any)
 const WorldsWorldIdNationsNationIdRoute =
   WorldsWorldIdNationsNationIdRouteImport.update({
     id: '/$nationId',
@@ -152,17 +202,16 @@ const WorldsWorldIdCitizensCitizenIdRoute =
     path: '/citizens/$citizenId',
     getParentRoute: () => WorldsWorldIdRoute,
   } as any)
-const WorldsWorldIdNationsNationIdIndexRoute =
-  WorldsWorldIdNationsNationIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => WorldsWorldIdNationsNationIdRoute,
-  } as any)
 const WorldsWorldIdEventsEventIdIndexRoute =
   WorldsWorldIdEventsEventIdIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => WorldsWorldIdEventsEventIdRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdNationRoute =
+  WorldsWorldIdNationsNationIdNationRouteImport.update({
+    id: '/_nation',
+    getParentRoute: () => WorldsWorldIdNationsNationIdRoute,
   } as any)
 const WorldsWorldIdEventsEventIdEditRoute =
   WorldsWorldIdEventsEventIdEditRouteImport.update({
@@ -170,12 +219,157 @@ const WorldsWorldIdEventsEventIdEditRoute =
     path: '/edit',
     getParentRoute: () => WorldsWorldIdEventsEventIdRoute,
   } as any)
+const WorldsWorldIdNationsNationIdNationIndexRoute =
+  WorldsWorldIdNationsNationIdNationIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
+  } as any)
 const WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute =
   WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport.update({
     id: '/settlements/$settlementId',
     path: '/settlements/$settlementId',
     getParentRoute: () => WorldsWorldIdNationsNationIdRoute,
   } as any)
+const WorldsWorldIdNationsNationIdNationSettlementsRoute =
+  WorldsWorldIdNationsNationIdNationSettlementsRouteImport.update({
+    id: '/settlements',
+    path: '/settlements',
+    getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdNationSettingsRoute =
+  WorldsWorldIdNationsNationIdNationSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdNationReportsRoute =
+  WorldsWorldIdNationsNationIdNationReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdNationRelationshipsRoute =
+  WorldsWorldIdNationsNationIdNationRelationshipsRouteImport.update({
+    id: '/relationships',
+    path: '/relationships',
+    getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdNationGovernmentRoute =
+  WorldsWorldIdNationsNationIdNationGovernmentRouteImport.update({
+    id: '/government',
+    path: '/government',
+    getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () =>
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRouteImport.update({
+    id: '/trade',
+    path: '/trade',
+    getParentRoute: () =>
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRouteImport.update(
+    {
+      id: '/stockpiles',
+      path: '/stockpiles',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRouteImport.update(
+    {
+      id: '/settings',
+      path: '/settings',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () =>
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRouteImport.update(
+    {
+      id: '/populations',
+      path: '/populations',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () =>
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+  } as any)
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRouteImport.update(
+    {
+      id: '/forecast',
+      path: '/forecast',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRouteImport.update(
+    {
+      id: '/deposits',
+      path: '/deposits',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRouteImport.update(
+    {
+      id: '/construction',
+      path: '/construction',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRouteImport.update(
+    {
+      id: '/citizens',
+      path: '/citizens',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRouteImport.update(
+    {
+      id: '/buildings',
+      path: '/buildings',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRouteImport.update(
+    {
+      id: '/assignments',
+      path: '/assignments',
+      getParentRoute: () =>
+        WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+    } as any,
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -185,7 +379,11 @@ export interface FileRoutesByFullPath {
   '/worlds': typeof WorldsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/email': typeof SuperadminEmailRoute
   '/superadmin/templates': typeof SuperadminTemplatesRoute
+  '/superadmin/transitions': typeof SuperadminTransitionsRoute
+  '/superadmin/users': typeof SuperadminUsersRoute
+  '/superadmin/worlds': typeof SuperadminWorldsRoute
   '/worlds/$worldId': typeof WorldsWorldIdRouteWithChildren
   '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
@@ -197,13 +395,32 @@ export interface FileRoutesByFullPath {
   '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
   '/worlds/$worldId/events/$eventId': typeof WorldsWorldIdEventsEventIdRouteWithChildren
   '/worlds/$worldId/events/new': typeof WorldsWorldIdEventsNewRoute
-  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRouteWithChildren
+  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdNationRouteWithChildren
+  '/worlds/$worldId/citizens/': typeof WorldsWorldIdCitizensIndexRoute
   '/worlds/$worldId/events/': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/events/$eventId/edit': typeof WorldsWorldIdEventsEventIdEditRoute
   '/worlds/$worldId/events/$eventId/': typeof WorldsWorldIdEventsEventIdIndexRoute
-  '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdIndexRoute
-  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+  '/worlds/$worldId/nations/$nationId/government': typeof WorldsWorldIdNationsNationIdNationGovernmentRoute
+  '/worlds/$worldId/nations/$nationId/relationships': typeof WorldsWorldIdNationsNationIdNationRelationshipsRoute
+  '/worlds/$worldId/nations/$nationId/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
+  '/worlds/$worldId/nations/$nationId/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
+  '/worlds/$worldId/nations/$nationId/settlements': typeof WorldsWorldIdNationsNationIdNationSettlementsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteWithChildren
+  '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdNationIndexRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -211,7 +428,11 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/email': typeof SuperadminEmailRoute
   '/superadmin/templates': typeof SuperadminTemplatesRoute
+  '/superadmin/transitions': typeof SuperadminTransitionsRoute
+  '/superadmin/users': typeof SuperadminUsersRoute
+  '/superadmin/worlds': typeof SuperadminWorldsRoute
   '/superadmin': typeof SuperadminIndexRoute
   '/worlds': typeof WorldsIndexRoute
   '/worlds/$worldId/configuration': typeof WorldsWorldIdConfigurationRoute
@@ -219,12 +440,30 @@ export interface FileRoutesByTo {
   '/worlds/$worldId': typeof WorldsWorldIdIndexRoute
   '/worlds/$worldId/citizens/$citizenId': typeof WorldsWorldIdCitizensCitizenIdRoute
   '/worlds/$worldId/events/new': typeof WorldsWorldIdEventsNewRoute
+  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdNationIndexRoute
+  '/worlds/$worldId/citizens': typeof WorldsWorldIdCitizensIndexRoute
   '/worlds/$worldId/events': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/events/$eventId/edit': typeof WorldsWorldIdEventsEventIdEditRoute
   '/worlds/$worldId/events/$eventId': typeof WorldsWorldIdEventsEventIdIndexRoute
-  '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdIndexRoute
-  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+  '/worlds/$worldId/nations/$nationId/government': typeof WorldsWorldIdNationsNationIdNationGovernmentRoute
+  '/worlds/$worldId/nations/$nationId/relationships': typeof WorldsWorldIdNationsNationIdNationRelationshipsRoute
+  '/worlds/$worldId/nations/$nationId/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
+  '/worlds/$worldId/nations/$nationId/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
+  '/worlds/$worldId/nations/$nationId/settlements': typeof WorldsWorldIdNationsNationIdNationSettlementsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -235,7 +474,11 @@ export interface FileRoutesById {
   '/worlds': typeof WorldsRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/superadmin/email': typeof SuperadminEmailRoute
   '/superadmin/templates': typeof SuperadminTemplatesRoute
+  '/superadmin/transitions': typeof SuperadminTransitionsRoute
+  '/superadmin/users': typeof SuperadminUsersRoute
+  '/superadmin/worlds': typeof SuperadminWorldsRoute
   '/worlds/$worldId': typeof WorldsWorldIdRouteWithChildren
   '/superadmin/': typeof SuperadminIndexRoute
   '/worlds/': typeof WorldsIndexRoute
@@ -248,12 +491,32 @@ export interface FileRoutesById {
   '/worlds/$worldId/events/$eventId': typeof WorldsWorldIdEventsEventIdRouteWithChildren
   '/worlds/$worldId/events/new': typeof WorldsWorldIdEventsNewRoute
   '/worlds/$worldId/nations/$nationId': typeof WorldsWorldIdNationsNationIdRouteWithChildren
+  '/worlds/$worldId/citizens/': typeof WorldsWorldIdCitizensIndexRoute
   '/worlds/$worldId/events/': typeof WorldsWorldIdEventsIndexRoute
   '/worlds/$worldId/nations/': typeof WorldsWorldIdNationsIndexRoute
   '/worlds/$worldId/events/$eventId/edit': typeof WorldsWorldIdEventsEventIdEditRoute
+  '/worlds/$worldId/nations/$nationId/_nation': typeof WorldsWorldIdNationsNationIdNationRouteWithChildren
   '/worlds/$worldId/events/$eventId/': typeof WorldsWorldIdEventsEventIdIndexRoute
-  '/worlds/$worldId/nations/$nationId/': typeof WorldsWorldIdNationsNationIdIndexRoute
-  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+  '/worlds/$worldId/nations/$nationId/_nation/government': typeof WorldsWorldIdNationsNationIdNationGovernmentRoute
+  '/worlds/$worldId/nations/$nationId/_nation/relationships': typeof WorldsWorldIdNationsNationIdNationRelationshipsRoute
+  '/worlds/$worldId/nations/$nationId/_nation/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
+  '/worlds/$worldId/nations/$nationId/_nation/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
+  '/worlds/$worldId/nations/$nationId/_nation/settlements': typeof WorldsWorldIdNationsNationIdNationSettlementsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteWithChildren
+  '/worlds/$worldId/nations/$nationId/_nation/': typeof WorldsWorldIdNationsNationIdNationIndexRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRoute
+  '/worlds/$worldId/nations/$nationId/settlements/$settlementId/': typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -265,7 +528,11 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/email'
     | '/superadmin/templates'
+    | '/superadmin/transitions'
+    | '/superadmin/users'
+    | '/superadmin/worlds'
     | '/worlds/$worldId'
     | '/superadmin/'
     | '/worlds/'
@@ -278,12 +545,31 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/events/$eventId'
     | '/worlds/$worldId/events/new'
     | '/worlds/$worldId/nations/$nationId'
+    | '/worlds/$worldId/citizens/'
     | '/worlds/$worldId/events/'
     | '/worlds/$worldId/nations/'
     | '/worlds/$worldId/events/$eventId/edit'
     | '/worlds/$worldId/events/$eventId/'
-    | '/worlds/$worldId/nations/$nationId/'
+    | '/worlds/$worldId/nations/$nationId/government'
+    | '/worlds/$worldId/nations/$nationId/relationships'
+    | '/worlds/$worldId/nations/$nationId/reports'
+    | '/worlds/$worldId/nations/$nationId/settings'
+    | '/worlds/$worldId/nations/$nationId/settlements'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
+    | '/worlds/$worldId/nations/$nationId/'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -291,7 +577,11 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/email'
     | '/superadmin/templates'
+    | '/superadmin/transitions'
+    | '/superadmin/users'
+    | '/superadmin/worlds'
     | '/superadmin'
     | '/worlds'
     | '/worlds/$worldId/configuration'
@@ -299,11 +589,29 @@ export interface FileRouteTypes {
     | '/worlds/$worldId'
     | '/worlds/$worldId/citizens/$citizenId'
     | '/worlds/$worldId/events/new'
+    | '/worlds/$worldId/nations/$nationId'
+    | '/worlds/$worldId/citizens'
     | '/worlds/$worldId/events'
     | '/worlds/$worldId/nations'
     | '/worlds/$worldId/events/$eventId/edit'
     | '/worlds/$worldId/events/$eventId'
-    | '/worlds/$worldId/nations/$nationId'
+    | '/worlds/$worldId/nations/$nationId/government'
+    | '/worlds/$worldId/nations/$nationId/relationships'
+    | '/worlds/$worldId/nations/$nationId/reports'
+    | '/worlds/$worldId/nations/$nationId/settings'
+    | '/worlds/$worldId/nations/$nationId/settlements'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
   id:
     | '__root__'
@@ -314,7 +622,11 @@ export interface FileRouteTypes {
     | '/worlds'
     | '/auth/callback'
     | '/auth/set-password'
+    | '/superadmin/email'
     | '/superadmin/templates'
+    | '/superadmin/transitions'
+    | '/superadmin/users'
+    | '/superadmin/worlds'
     | '/worlds/$worldId'
     | '/superadmin/'
     | '/worlds/'
@@ -327,12 +639,32 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/events/$eventId'
     | '/worlds/$worldId/events/new'
     | '/worlds/$worldId/nations/$nationId'
+    | '/worlds/$worldId/citizens/'
     | '/worlds/$worldId/events/'
     | '/worlds/$worldId/nations/'
     | '/worlds/$worldId/events/$eventId/edit'
+    | '/worlds/$worldId/nations/$nationId/_nation'
     | '/worlds/$worldId/events/$eventId/'
-    | '/worlds/$worldId/nations/$nationId/'
+    | '/worlds/$worldId/nations/$nationId/_nation/government'
+    | '/worlds/$worldId/nations/$nationId/_nation/relationships'
+    | '/worlds/$worldId/nations/$nationId/_nation/reports'
+    | '/worlds/$worldId/nations/$nationId/_nation/settings'
+    | '/worlds/$worldId/nations/$nationId/_nation/settlements'
     | '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
+    | '/worlds/$worldId/nations/$nationId/_nation/'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade'
+    | '/worlds/$worldId/nations/$nationId/settlements/$settlementId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -403,11 +735,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdRouteImport
       parentRoute: typeof WorldsRoute
     }
+    '/superadmin/worlds': {
+      id: '/superadmin/worlds'
+      path: '/worlds'
+      fullPath: '/superadmin/worlds'
+      preLoaderRoute: typeof SuperadminWorldsRouteImport
+      parentRoute: typeof SuperadminRoute
+    }
+    '/superadmin/users': {
+      id: '/superadmin/users'
+      path: '/users'
+      fullPath: '/superadmin/users'
+      preLoaderRoute: typeof SuperadminUsersRouteImport
+      parentRoute: typeof SuperadminRoute
+    }
+    '/superadmin/transitions': {
+      id: '/superadmin/transitions'
+      path: '/transitions'
+      fullPath: '/superadmin/transitions'
+      preLoaderRoute: typeof SuperadminTransitionsRouteImport
+      parentRoute: typeof SuperadminRoute
+    }
     '/superadmin/templates': {
       id: '/superadmin/templates'
       path: '/templates'
       fullPath: '/superadmin/templates'
       preLoaderRoute: typeof SuperadminTemplatesRouteImport
+      parentRoute: typeof SuperadminRoute
+    }
+    '/superadmin/email': {
+      id: '/superadmin/email'
+      path: '/email'
+      fullPath: '/superadmin/email'
+      preLoaderRoute: typeof SuperadminEmailRouteImport
       parentRoute: typeof SuperadminRoute
     }
     '/auth/set-password': {
@@ -473,6 +833,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdEventsIndexRouteImport
       parentRoute: typeof WorldsWorldIdEventsRoute
     }
+    '/worlds/$worldId/citizens/': {
+      id: '/worlds/$worldId/citizens/'
+      path: '/citizens'
+      fullPath: '/worlds/$worldId/citizens/'
+      preLoaderRoute: typeof WorldsWorldIdCitizensIndexRouteImport
+      parentRoute: typeof WorldsWorldIdRoute
+    }
     '/worlds/$worldId/nations/$nationId': {
       id: '/worlds/$worldId/nations/$nationId'
       path: '/$nationId'
@@ -501,19 +868,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdCitizensCitizenIdRouteImport
       parentRoute: typeof WorldsWorldIdRoute
     }
-    '/worlds/$worldId/nations/$nationId/': {
-      id: '/worlds/$worldId/nations/$nationId/'
-      path: '/'
-      fullPath: '/worlds/$worldId/nations/$nationId/'
-      preLoaderRoute: typeof WorldsWorldIdNationsNationIdIndexRouteImport
-      parentRoute: typeof WorldsWorldIdNationsNationIdRoute
-    }
     '/worlds/$worldId/events/$eventId/': {
       id: '/worlds/$worldId/events/$eventId/'
       path: '/'
       fullPath: '/worlds/$worldId/events/$eventId/'
       preLoaderRoute: typeof WorldsWorldIdEventsEventIdIndexRouteImport
       parentRoute: typeof WorldsWorldIdEventsEventIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/_nation': {
+      id: '/worlds/$worldId/nations/$nationId/_nation'
+      path: ''
+      fullPath: '/worlds/$worldId/nations/$nationId'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdRoute
     }
     '/worlds/$worldId/events/$eventId/edit': {
       id: '/worlds/$worldId/events/$eventId/edit'
@@ -522,6 +889,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdEventsEventIdEditRouteImport
       parentRoute: typeof WorldsWorldIdEventsEventIdRoute
     }
+    '/worlds/$worldId/nations/$nationId/_nation/': {
+      id: '/worlds/$worldId/nations/$nationId/_nation/'
+      path: '/'
+      fullPath: '/worlds/$worldId/nations/$nationId/'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationIndexRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
+    }
     '/worlds/$worldId/nations/$nationId/settlements/$settlementId': {
       id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId'
       path: '/settlements/$settlementId'
@@ -529,16 +903,150 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteImport
       parentRoute: typeof WorldsWorldIdNationsNationIdRoute
     }
+    '/worlds/$worldId/nations/$nationId/_nation/settlements': {
+      id: '/worlds/$worldId/nations/$nationId/_nation/settlements'
+      path: '/settlements'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationSettlementsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
+    }
+    '/worlds/$worldId/nations/$nationId/_nation/settings': {
+      id: '/worlds/$worldId/nations/$nationId/_nation/settings'
+      path: '/settings'
+      fullPath: '/worlds/$worldId/nations/$nationId/settings'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationSettingsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
+    }
+    '/worlds/$worldId/nations/$nationId/_nation/reports': {
+      id: '/worlds/$worldId/nations/$nationId/_nation/reports'
+      path: '/reports'
+      fullPath: '/worlds/$worldId/nations/$nationId/reports'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationReportsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
+    }
+    '/worlds/$worldId/nations/$nationId/_nation/relationships': {
+      id: '/worlds/$worldId/nations/$nationId/_nation/relationships'
+      path: '/relationships'
+      fullPath: '/worlds/$worldId/nations/$nationId/relationships'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationRelationshipsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
+    }
+    '/worlds/$worldId/nations/$nationId/_nation/government': {
+      id: '/worlds/$worldId/nations/$nationId/_nation/government'
+      path: '/government'
+      fullPath: '/worlds/$worldId/nations/$nationId/government'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationGovernmentRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/'
+      path: '/'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade'
+      path: '/trade'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/trade'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles'
+      path: '/stockpiles'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/stockpiles'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings'
+      path: '/settings'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/settings'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports'
+      path: '/reports'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations'
+      path: '/populations'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history'
+      path: '/history'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/history'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast'
+      path: '/forecast'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits'
+      path: '/deposits'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction'
+      path: '/construction'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens'
+      path: '/citizens'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/citizens'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings'
+      path: '/buildings'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/buildings'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
+    '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments': {
+      id: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments'
+      path: '/assignments'
+      fullPath: '/worlds/$worldId/nations/$nationId/settlements/$settlementId/assignments'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+    }
   }
 }
 
 interface SuperadminRouteChildren {
+  SuperadminEmailRoute: typeof SuperadminEmailRoute
   SuperadminTemplatesRoute: typeof SuperadminTemplatesRoute
+  SuperadminTransitionsRoute: typeof SuperadminTransitionsRoute
+  SuperadminUsersRoute: typeof SuperadminUsersRoute
+  SuperadminWorldsRoute: typeof SuperadminWorldsRoute
   SuperadminIndexRoute: typeof SuperadminIndexRoute
 }
 
 const SuperadminRouteChildren: SuperadminRouteChildren = {
+  SuperadminEmailRoute: SuperadminEmailRoute,
   SuperadminTemplatesRoute: SuperadminTemplatesRoute,
+  SuperadminTransitionsRoute: SuperadminTransitionsRoute,
+  SuperadminUsersRoute: SuperadminUsersRoute,
+  SuperadminWorldsRoute: SuperadminWorldsRoute,
   SuperadminIndexRoute: SuperadminIndexRoute,
 }
 
@@ -577,17 +1085,98 @@ const WorldsWorldIdEventsRouteChildren: WorldsWorldIdEventsRouteChildren = {
 const WorldsWorldIdEventsRouteWithChildren =
   WorldsWorldIdEventsRoute._addFileChildren(WorldsWorldIdEventsRouteChildren)
 
+interface WorldsWorldIdNationsNationIdNationRouteChildren {
+  WorldsWorldIdNationsNationIdNationGovernmentRoute: typeof WorldsWorldIdNationsNationIdNationGovernmentRoute
+  WorldsWorldIdNationsNationIdNationRelationshipsRoute: typeof WorldsWorldIdNationsNationIdNationRelationshipsRoute
+  WorldsWorldIdNationsNationIdNationReportsRoute: typeof WorldsWorldIdNationsNationIdNationReportsRoute
+  WorldsWorldIdNationsNationIdNationSettingsRoute: typeof WorldsWorldIdNationsNationIdNationSettingsRoute
+  WorldsWorldIdNationsNationIdNationSettlementsRoute: typeof WorldsWorldIdNationsNationIdNationSettlementsRoute
+  WorldsWorldIdNationsNationIdNationIndexRoute: typeof WorldsWorldIdNationsNationIdNationIndexRoute
+}
+
+const WorldsWorldIdNationsNationIdNationRouteChildren: WorldsWorldIdNationsNationIdNationRouteChildren =
+  {
+    WorldsWorldIdNationsNationIdNationGovernmentRoute:
+      WorldsWorldIdNationsNationIdNationGovernmentRoute,
+    WorldsWorldIdNationsNationIdNationRelationshipsRoute:
+      WorldsWorldIdNationsNationIdNationRelationshipsRoute,
+    WorldsWorldIdNationsNationIdNationReportsRoute:
+      WorldsWorldIdNationsNationIdNationReportsRoute,
+    WorldsWorldIdNationsNationIdNationSettingsRoute:
+      WorldsWorldIdNationsNationIdNationSettingsRoute,
+    WorldsWorldIdNationsNationIdNationSettlementsRoute:
+      WorldsWorldIdNationsNationIdNationSettlementsRoute,
+    WorldsWorldIdNationsNationIdNationIndexRoute:
+      WorldsWorldIdNationsNationIdNationIndexRoute,
+  }
+
+const WorldsWorldIdNationsNationIdNationRouteWithChildren =
+  WorldsWorldIdNationsNationIdNationRoute._addFileChildren(
+    WorldsWorldIdNationsNationIdNationRouteChildren,
+  )
+
+interface WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteChildren {
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRoute
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRoute
+}
+
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteChildren: WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteChildren =
+  {
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdAssignmentsRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdBuildingsRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdCitizensRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdConstructionRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdDepositsRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdForecastRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdHistoryRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdPopulationsRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdReportsRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdSettingsRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdStockpilesRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdTradeRoute,
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRoute:
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRoute,
+  }
+
+const WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteWithChildren =
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute._addFileChildren(
+    WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteChildren,
+  )
+
 interface WorldsWorldIdNationsNationIdRouteChildren {
-  WorldsWorldIdNationsNationIdIndexRoute: typeof WorldsWorldIdNationsNationIdIndexRoute
-  WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute
+  WorldsWorldIdNationsNationIdNationRoute: typeof WorldsWorldIdNationsNationIdNationRouteWithChildren
+  WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute: typeof WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteWithChildren
 }
 
 const WorldsWorldIdNationsNationIdRouteChildren: WorldsWorldIdNationsNationIdRouteChildren =
   {
-    WorldsWorldIdNationsNationIdIndexRoute:
-      WorldsWorldIdNationsNationIdIndexRoute,
+    WorldsWorldIdNationsNationIdNationRoute:
+      WorldsWorldIdNationsNationIdNationRouteWithChildren,
     WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute:
-      WorldsWorldIdNationsNationIdSettlementsSettlementIdRoute,
+      WorldsWorldIdNationsNationIdSettlementsSettlementIdRouteWithChildren,
   }
 
 const WorldsWorldIdNationsNationIdRouteWithChildren =
@@ -616,6 +1205,7 @@ interface WorldsWorldIdRouteChildren {
   WorldsWorldIdNationsRoute: typeof WorldsWorldIdNationsRouteWithChildren
   WorldsWorldIdIndexRoute: typeof WorldsWorldIdIndexRoute
   WorldsWorldIdCitizensCitizenIdRoute: typeof WorldsWorldIdCitizensCitizenIdRoute
+  WorldsWorldIdCitizensIndexRoute: typeof WorldsWorldIdCitizensIndexRoute
 }
 
 const WorldsWorldIdRouteChildren: WorldsWorldIdRouteChildren = {
@@ -625,6 +1215,7 @@ const WorldsWorldIdRouteChildren: WorldsWorldIdRouteChildren = {
   WorldsWorldIdNationsRoute: WorldsWorldIdNationsRouteWithChildren,
   WorldsWorldIdIndexRoute: WorldsWorldIdIndexRoute,
   WorldsWorldIdCitizensCitizenIdRoute: WorldsWorldIdCitizensCitizenIdRoute,
+  WorldsWorldIdCitizensIndexRoute: WorldsWorldIdCitizensIndexRoute,
 }
 
 const WorldsWorldIdRouteWithChildren = WorldsWorldIdRoute._addFileChildren(

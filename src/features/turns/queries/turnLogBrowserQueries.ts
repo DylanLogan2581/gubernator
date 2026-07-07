@@ -19,6 +19,9 @@ export type TurnLogBrowserFilter = {
   readonly resourceId?: string;
   readonly settlementId?: string;
   readonly turnFrom?: number;
+  /** Exact completed-turn match (`turn_transitions.to_turn_number`). Used by
+   *  the turn picker; independent of the turnFrom/turnTo range filters. */
+  readonly turnNumber?: number;
   readonly turnTo?: number;
 };
 
@@ -129,16 +132,18 @@ async function getTurnLogPage(
   const from = page * TURN_LOG_PAGE_SIZE;
   const to = from + TURN_LOG_PAGE_SIZE - 1;
 
-  // Supabase v2 supports ordering by an embedded resource column via the
-  // referencedTable option, which generates ?order=turn_transitions.to_turn_number.desc.
+  // The referencedTable order option (?order=turn_transitions.col.desc) only
+  // sorts rows inside the embedded array, not the parent turn_log_entries
+  // result set. Ordering the parent by an embedded column requires the
+  // `resource(column)` syntax below, which PostgREST supports because the
+  // embed in TURN_LOG_SELECT uses `!inner`. `id` is a stable tiebreaker so
+  // pagination doesn't repeat/skip rows that share a turn number.
   let query = client
     .from("turn_log_entries")
     .select(TURN_LOG_SELECT, { count: "exact" })
     .eq("world_id", worldId)
-    .order("to_turn_number", {
-      referencedTable: "turn_transitions",
-      ascending: false,
-    });
+    .order("turn_transitions(to_turn_number)", { ascending: false })
+    .order("id", { ascending: false });
 
   if (filter.logCategory !== undefined) {
     query = query.eq("log_category", filter.logCategory);
@@ -157,7 +162,9 @@ async function getTurnLogPage(
   }
   // Turn range filters operate on the embedded turn_transitions resource.
   // PostgREST translates ?turn_transitions.from_turn_number=gte.N into a
-  // WHERE clause on the joined turn_transitions rows.
+  // WHERE clause on the joined turn_transitions rows; since the embed in
+  // TURN_LOG_SELECT uses `!inner`, that WHERE clause restricts the parent
+  // turn_log_entries rows too, not just the nested embed.
   if (filter.turnFrom !== undefined) {
     query = query.filter(
       "turn_transitions.from_turn_number",
@@ -170,6 +177,13 @@ async function getTurnLogPage(
       "turn_transitions.to_turn_number",
       "lte",
       filter.turnTo,
+    );
+  }
+  if (filter.turnNumber !== undefined) {
+    query = query.filter(
+      "turn_transitions.to_turn_number",
+      "eq",
+      filter.turnNumber,
     );
   }
 

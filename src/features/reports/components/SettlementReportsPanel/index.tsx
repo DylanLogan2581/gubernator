@@ -1,24 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Download } from "lucide-react";
+import { AlertTriangle, Baby, Download, Skull, Users } from "lucide-react";
 import { useState, type JSX } from "react";
 
+import { StatTile } from "@/components/shared/StatTile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
-import {
-  formatCalendarDate,
-  resolveTurnCalendarDate,
-} from "@/shared/turnCalendarPrimitives";
 
 import {
   settlementPopulationSnapshotsQueryOptions,
   settlementResourceSnapshotsQueryOptions,
 } from "../../queries/settlementSnapshotQueries";
+import {
+  createTurnLabelers,
+  defaultReportTurnRange,
+} from "../../utils/reportTurnRange";
 
+import { PopulationByJobDonut } from "./PopulationByJobDonut";
 import { PopulationTrendChart } from "./PopulationTrendChart";
 import { ResourceTrendChart } from "./ResourceTrendChart";
+import { StockpileByResourceDonut } from "./StockpileByResourceDonut";
 import { TurnRangeSelector } from "./TurnRangeSelector";
 
 import type {
@@ -32,26 +35,18 @@ type SettlementReportsPanelProps = {
   readonly worldId: string;
 };
 
-function defaultRange(currentTurnNumber: number): {
-  fromTurn: number;
-  toTurn: number;
-} {
-  const toTurn = Math.max(1, currentTurnNumber);
-  const fromTurn = Math.max(1, toTurn - 19);
-  return { fromTurn, toTurn };
-}
-
 export function SettlementReportsPanel({
   currentTurnNumber,
   settlementId,
   worldId,
 }: SettlementReportsPanelProps): JSX.Element {
-  const initial = defaultRange(currentTurnNumber);
+  const initial = defaultReportTurnRange(currentTurnNumber);
   const [fromTurn, setFromTurn] = useState(initial.fromTurn);
   const [toTurn, setToTurn] = useState(initial.toTurn);
 
   const calendarQuery = useQuery(worldCalendarConfigQueryOptions(worldId));
   const calendarConfig = calendarQuery.isSuccess ? calendarQuery.data : null;
+  const { axisLabel, turnLabel } = createTurnLabelers(calendarConfig);
 
   const populationQuery = useQuery(
     settlementPopulationSnapshotsQueryOptions(settlementId, fromTurn, toTurn),
@@ -59,17 +54,6 @@ export function SettlementReportsPanel({
   const resourceQuery = useQuery(
     settlementResourceSnapshotsQueryOptions(settlementId, fromTurn, toTurn),
   );
-
-  function turnLabel(turn: number): string {
-    if (calendarConfig === null) return `T${String(turn)}`;
-    try {
-      return formatCalendarDate(resolveTurnCalendarDate(calendarConfig, turn), {
-        dateFormatTemplate: calendarConfig.dateFormatTemplate,
-      });
-    } catch {
-      return `T${String(turn)}`;
-    }
-  }
 
   function handleApply(from: number, to: number): void {
     setFromTurn(from);
@@ -91,29 +75,116 @@ export function SettlementReportsPanel({
         </CardContent>
       </Card>
 
-      <PopulationSection
+      <SettlementReportStatTiles
         isLoading={populationQuery.isPending}
-        isError={populationQuery.isError}
         rows={populationQuery.data ?? []}
-        turnLabel={turnLabel}
       />
 
-      <ResourceSection
-        isLoading={resourceQuery.isPending}
-        isError={resourceQuery.isError}
-        rows={resourceQuery.data ?? []}
-        turnLabel={turnLabel}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <PopulationSection
+          axisLabel={axisLabel}
+          isLoading={populationQuery.isPending}
+          isError={populationQuery.isError}
+          rows={populationQuery.data ?? []}
+          turnLabel={turnLabel}
+        />
+
+        <ResourceSection
+          axisLabel={axisLabel}
+          isLoading={resourceQuery.isPending}
+          isError={resourceQuery.isError}
+          rows={resourceQuery.data ?? []}
+          turnLabel={turnLabel}
+        />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Population by job</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PopulationByJobDonut
+              settlementId={settlementId}
+              worldId={worldId}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Stockpile by resource</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StockpileByResourceDonut settlementId={settlementId} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SettlementReportStatTiles — at-a-glance summary derived from the already-
+// fetched population rows, no extra queries.
+// ---------------------------------------------------------------------------
+
+function SettlementReportStatTiles({
+  isLoading,
+  rows,
+}: {
+  readonly isLoading: boolean;
+  readonly rows: readonly PopulationSnapshotRow[];
+}): JSX.Element {
+  const first = rows[0];
+  const latest = rows[rows.length - 1];
+  const netChange =
+    first !== undefined && latest !== undefined
+      ? latest.population_total - first.population_total
+      : 0;
+  const totalBirths = rows.reduce((sum, r) => sum + r.birth_count, 0);
+  const totalDeaths = rows.reduce((sum, r) => sum + r.death_count, 0);
+
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <StatTile
+        icon={Users}
+        label="Latest population"
+        value={(latest?.population_total ?? 0).toLocaleString()}
+        context={`${netChange >= 0 ? "+" : ""}${netChange.toLocaleString()} over range`}
+        isLoading={isLoading}
+      />
+      <StatTile
+        icon={Baby}
+        label="Births"
+        value={totalBirths.toLocaleString()}
+        context="Total in turn range"
+        isLoading={isLoading}
+      />
+      <StatTile
+        icon={Skull}
+        label="Deaths"
+        value={totalDeaths.toLocaleString()}
+        context="Total in turn range"
+        isLoading={isLoading}
+      />
+      <StatTile
+        icon={Users}
+        label="Population cap"
+        value={(latest?.population_cap ?? 0).toLocaleString()}
+        context="At latest snapshot"
+        isLoading={isLoading}
       />
     </div>
   );
 }
 
 function PopulationSection({
+  axisLabel,
   isLoading,
   isError,
   rows,
   turnLabel,
 }: {
+  readonly axisLabel: (turn: number) => string;
   readonly isLoading: boolean;
   readonly isError: boolean;
   readonly rows: readonly PopulationSnapshotRow[];
@@ -155,7 +226,7 @@ function PopulationSection({
             </AlertDescription>
           </Alert>
         ) : (
-          <PopulationTrendChart rows={rows} turnLabel={turnLabel} />
+          <PopulationTrendChart rows={rows} turnLabel={axisLabel} />
         )}
       </CardContent>
     </Card>
@@ -163,11 +234,13 @@ function PopulationSection({
 }
 
 function ResourceSection({
+  axisLabel,
   isLoading,
   isError,
   rows,
   turnLabel,
 }: {
+  readonly axisLabel: (turn: number) => string;
   readonly isLoading: boolean;
   readonly isError: boolean;
   readonly rows: readonly ResourceSnapshotRow[];
@@ -209,7 +282,7 @@ function ResourceSection({
             </AlertDescription>
           </Alert>
         ) : (
-          <ResourceTrendChart rows={rows} turnLabel={turnLabel} />
+          <ResourceTrendChart rows={rows} turnLabel={axisLabel} />
         )}
       </CardContent>
     </Card>

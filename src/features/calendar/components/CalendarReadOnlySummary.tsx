@@ -1,7 +1,6 @@
 import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
 import type { JSX } from "react";
 
-
 export function CalendarReadOnlySummary({
   config,
 }: {
@@ -41,6 +40,14 @@ export function CalendarReadOnlySummary({
         <div>
           <dt className="font-medium text-foreground">Date format template</dt>
           <dd className="text-muted-foreground">{config.dateFormatTemplate}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-foreground">
+            Short date format template
+          </dt>
+          <dd className="text-muted-foreground">
+            {config.shortDateFormatTemplate}
+          </dd>
         </div>
       </dl>
     </div>

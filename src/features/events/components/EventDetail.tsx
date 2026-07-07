@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Edit,
+  ExternalLink,
+  Trash2,
+} from "lucide-react";
 import { useState, type JSX } from "react";
 import { toast } from "sonner";
 
@@ -15,11 +21,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { settlementBuildingByIdQueryOptions } from "@/features/buildings";
-import { depositInstanceByIdQueryOptions } from "@/features/deposits";
+import {
+  depositInstanceByIdQueryOptions,
+  depositTypeByIdQueryOptions,
+} from "@/features/deposits";
 import { jobByIdQueryOptions } from "@/features/jobs";
 import { managedPopulationTypeByIdQueryOptions } from "@/features/managed-populations";
 import { nationByIdQueryOptions } from "@/features/nations";
@@ -36,25 +44,28 @@ import {
   isEventsError,
 } from "../queries/eventQueries";
 
+import { EventScopeBadge, EventStatusBadge } from "./EventBadges";
+
 import type { EventEffect } from "../types/eventTypes";
 
 type EventDetailProps = {
   readonly worldId: string;
   readonly eventId: string;
   readonly canCancel: boolean;
-};
-
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  active: "bg-green-100 text-green-800",
-  expired: "bg-gray-100 text-gray-800",
-  cancelled: "bg-red-100 text-red-800",
+  /** "panel" renders inline in a master-detail panel: no back button/card chrome, and
+   *  cancel/delete call back into the caller instead of navigating away. */
+  readonly variant?: "page" | "panel";
+  readonly onCancelled?: () => void;
+  readonly onDeleted?: () => void;
 };
 
 export function EventDetail({
   worldId,
   eventId,
   canCancel,
+  variant = "page",
+  onCancelled,
+  onDeleted,
 }: EventDetailProps): JSX.Element {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -97,8 +108,12 @@ export function EventDetail({
       });
       toast.success("Event cancelled");
       setShowCancelDialog(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-      await (navigate as any)({ to: `/worlds/${worldId}/events` });
+      if (onCancelled !== undefined) {
+        onCancelled();
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
+        await (navigate as any)({ to: `/worlds/${worldId}/events` });
+      }
     } catch (error) {
       if (isEventMutationError(error)) {
         toast.error(error.message);
@@ -116,8 +131,12 @@ export function EventDetail({
       });
       toast.success("Event deleted");
       setShowDeleteDialog(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-      await (navigate as any)({ to: `/worlds/${worldId}/events` });
+      if (onDeleted !== undefined) {
+        onDeleted();
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
+        await (navigate as any)({ to: `/worlds/${worldId}/events` });
+      }
     } catch (error) {
       if (isEventMutationError(error)) {
         toast.error(error.message);
@@ -139,49 +158,70 @@ export function EventDetail({
         100
       : 0;
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-            return (navigate as any)({
-              to: "/worlds/$worldId/events/",
-              params: { worldId },
-            });
-          }}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="sr-only">Back to events</span>
-        </Button>
-      </div>
+  const isPanel = variant === "panel";
 
-      <div className="rounded-lg border bg-card p-6">
+  return (
+    <div className={isPanel ? "space-y-4" : "space-y-6"}>
+      {!isPanel && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
+              return (navigate as any)({
+                to: "/worlds/$worldId/events/",
+                params: { worldId },
+              });
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="sr-only">Back to events</span>
+          </Button>
+        </div>
+      )}
+
+      <div className={isPanel ? "" : "rounded-lg border bg-card p-6"}>
         <div className="space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold">{event.group?.name}</h1>
-              {event.group?.description !== null ? (
-                <p className="mt-2 text-muted-foreground">
-                  {event.group?.description}
-                </p>
-              ) : null}
+          {isPanel ? (
+            <div className="flex items-center justify-between gap-2">
+              <Link
+                to="/worlds/$worldId/events/$eventId"
+                params={{ worldId, eventId }}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Open full page
+              </Link>
+              <EventStatusBadge status={event.status} />
             </div>
-            <Badge className={statusColors[event.status]}>{event.status}</Badge>
-          </div>
+          ) : (
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-semibold">{event.group?.name}</h1>
+                {event.group?.description !== null ? (
+                  <p className="mt-2 text-muted-foreground">
+                    {event.group?.description}
+                  </p>
+                ) : null}
+              </div>
+              <EventStatusBadge status={event.status} />
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase">
                 Scope
               </p>
-              <ScopeDisplay
-                scopeType={event.scope_type}
-                scopeNationId={event.scope_nation_id}
-                scopeSettlementId={event.scope_settlement_id}
-              />
+              <div className="mt-1 flex items-center gap-2">
+                <EventScopeBadge scopeType={event.scope_type} />
+                <ScopeDisplay
+                  scopeType={event.scope_type}
+                  scopeNationId={event.scope_nation_id}
+                  scopeSettlementId={event.scope_settlement_id}
+                />
+              </div>
             </div>
 
             <div>
@@ -218,14 +258,23 @@ export function EventDetail({
             </div>
           )}
 
-          {event.memory_text !== null ? (
-            <div className="rounded-md bg-muted p-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase mb-2">
-                Memory Text
+          {event.memories.length > 0 && (
+            <div className="space-y-2 rounded-md bg-muted p-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase">
+                Citizen Memories
               </p>
-              <p className="text-sm">{event.memory_text}</p>
+              <div className="space-y-2">
+                {event.memories.map((memory) => (
+                  <div key={memory.id}>
+                    <p className="text-xs text-muted-foreground">
+                      Turn offset {memory.turn_offset}
+                    </p>
+                    <p className="text-sm">{memory.memory_text}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ) : null}
+          )}
 
           {event.effects.length > 0 && (
             <div className="space-y-3 border-t pt-4">
@@ -505,6 +554,18 @@ function EffectTargets({
     );
   }
 
+  if (
+    extraData.deposit_destroyed_mode === "type" &&
+    typeof extraData.deposit_type_id === "string"
+  ) {
+    targets.push(
+      <DepositTypeTarget
+        key="deposit-type"
+        depositTypeId={extraData.deposit_type_id}
+      />,
+    );
+  }
+
   if (typeof extraData.building_blueprint_mode === "string") {
     targets.push(
       <div key="blueprint-mode">
@@ -624,6 +685,39 @@ function ManagedPopulationTypeTarget({
     <div>
       <span className="text-muted-foreground">Population Type: </span>
       <span>{query.data.name}</span>
+    </div>
+  );
+}
+
+function DepositTypeTarget({
+  depositTypeId,
+}: {
+  readonly depositTypeId: string;
+}): JSX.Element {
+  const query = useQuery(depositTypeByIdQueryOptions(depositTypeId));
+
+  if (query.isPending) {
+    return (
+      <div>
+        <span className="text-muted-foreground">Deposit Type: </span>
+        <span className="text-xs">Loading…</span>
+      </div>
+    );
+  }
+
+  if (query.isError || query.data === null) {
+    return (
+      <div>
+        <span className="text-muted-foreground">Deposit Type: </span>
+        <span>unknown</span>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <span className="text-muted-foreground">Deposit Type: </span>
+      <span>All {query.data.name} deposits in scope</span>
     </div>
   );
 }

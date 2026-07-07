@@ -30,6 +30,7 @@ export type BuildingBlueprint = {
   readonly createdAt: string;
   readonly description: string | null;
   readonly gracePeriodTurns: number;
+  readonly icon: string | null;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly maxInstancesPerSettlement: number | null;

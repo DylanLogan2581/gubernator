@@ -8,12 +8,12 @@ import {
 
 import type { WorldCalendarConfig } from "../schemas/calendarConfigSchemas";
 
-
 function createCalendarConfig(
   overrides: Partial<WorldCalendarConfig> = {},
 ): WorldCalendarConfig {
   return {
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
     months: [
       { dayCount: 30, index: 0, name: "January" },
       { dayCount: 28, index: 1, name: "February" },
@@ -94,6 +94,40 @@ describe("getCalendarValidationErrors", () => {
       "Date format template contains an unsupported token.",
     );
   });
+
+  it("returns a shortDateFormatTemplate error when template is blank", () => {
+    const config = createCalendarConfig({ shortDateFormatTemplate: "   " });
+    const errors = getCalendarValidationErrors(config);
+    expect(errors.shortDateFormatTemplate).toBe(
+      "Short date format template is required.",
+    );
+  });
+
+  it("returns a shortDateFormatTemplate error when template has no date tokens", () => {
+    const config = createCalendarConfig({ shortDateFormatTemplate: "Y1" });
+    const errors = getCalendarValidationErrors(config);
+    expect(errors.shortDateFormatTemplate).toBe(
+      "Short date format template must include at least one date token.",
+    );
+  });
+
+  it("returns a shortDateFormatTemplate error when template has an unsupported token", () => {
+    const config = createCalendarConfig({
+      shortDateFormatTemplate: "{monthNumber} {era}",
+    });
+    const errors = getCalendarValidationErrors(config);
+    expect(errors.shortDateFormatTemplate).toBe(
+      "Short date format template contains an unsupported token.",
+    );
+  });
+
+  it("accepts numeric tokens in dateFormatTemplate", () => {
+    const config = createCalendarConfig({
+      dateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
+    });
+    const errors = getCalendarValidationErrors(config);
+    expect(errors.dateFormatTemplate).toBeUndefined();
+  });
 });
 
 describe("hasCalendarValidationErrors", () => {
@@ -136,6 +170,14 @@ describe("hasCalendarValidationErrors", () => {
     expect(
       hasCalendarValidationErrors({
         dateFormatTemplate: "Date format template is required.",
+      }),
+    ).toBe(true);
+  });
+
+  it("returns true when shortDateFormatTemplate has an error", () => {
+    expect(
+      hasCalendarValidationErrors({
+        shortDateFormatTemplate: "Short date format template is required.",
       }),
     ).toBe(true);
   });

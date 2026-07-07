@@ -48,6 +48,7 @@ export type {
   EventGroup,
   EventListFilters,
   EventScopeType,
+  EventsSearchParams,
   EventStatus,
   EventWithGroup,
 } from "./types/eventTypes";

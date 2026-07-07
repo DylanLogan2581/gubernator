@@ -42,7 +42,7 @@ describe("EndTurnControl", () => {
     toastError.mockReset();
   });
 
-  it("shows the current turn and readiness summary for admins", async () => {
+  it("shows the current turn for admins", async () => {
     const clientFixture = createClientFixture({
       settlementRows: [
         createSettlementRow({
@@ -61,32 +61,6 @@ describe("EndTurnControl", () => {
     ).toBeDefined();
     expect(await screen.findByText("Current turn")).toBeDefined();
     expect(screen.getByText("7")).toBeDefined();
-    expect(screen.getByText("Ready")).toBeDefined();
-    expect(screen.getByText("Ready")).toBeDefined();
-    expect(screen.getByText("50%")).toBeDefined();
-  });
-
-  it("floors uneven readiness percentages in summary labels", async () => {
-    const clientFixture = createClientFixture({
-      settlementRows: [
-        createSettlementRow({
-          auto_ready_enabled: true,
-          is_ready_current_turn: true,
-        }),
-        createSettlementRow({
-          id: "settlement-2",
-          is_ready_current_turn: true,
-        }),
-        createSettlementRow({ id: "settlement-3" }),
-      ],
-    });
-    requireSupabaseClient.mockReturnValue(clientFixture.client);
-
-    renderEndTurnControl();
-
-    expect(await screen.findByText("Ready percent")).toBeDefined();
-    expect(screen.getByText("66%")).toBeDefined();
-    expect(screen.queryByText("66.66666666666666%")).toBeNull();
   });
 
   it("floors uneven readiness percentages in confirmation copy", async () => {

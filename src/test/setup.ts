@@ -41,3 +41,7 @@ Object.defineProperty(window, "ResizeObserver", {
   writable: true,
   value: ResizeObserverStub,
 });
+
+// jsdom has no scrollIntoView; cmdk (Command) calls it when moving selection
+// between items, which throws and aborts the test otherwise.
+Element.prototype.scrollIntoView = vi.fn();

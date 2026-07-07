@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { UserCircle2 } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
-import type { Citizen } from "@/features/citizens";
+import { CitizenAvatar, type Citizen } from "@/features/citizens";
 import { settlementByIdQueryOptions } from "@/features/settlements";
 
 import { useActivePlayerCharacter } from "../context/activePlayerCharacterContext";
@@ -101,7 +100,11 @@ function PlayerCharacterChooserRow({
         disabled={disabled}
         onClick={onSelect}
       >
-        <Avatar profilePhotoUrl={citizen.profilePhotoUrl} />
+        <CitizenAvatar
+          id={citizen.id}
+          name={citizen.name}
+          profilePhotoUrl={citizen.profilePhotoUrl}
+        />
         <div className="grid gap-0.5">
           <span className="text-sm font-medium">{citizen.name}</span>
           <span className="text-xs text-muted-foreground">
@@ -123,31 +126,6 @@ function PlayerCharacterChooserRow({
         </Button>
       </button>
     </li>
-  );
-}
-
-function Avatar({
-  profilePhotoUrl,
-}: {
-  readonly profilePhotoUrl: string | null;
-}): JSX.Element {
-  if (profilePhotoUrl !== null && profilePhotoUrl !== "") {
-    return (
-      <img
-        alt=""
-        aria-hidden="true"
-        className="size-10 rounded-full object-cover"
-        src={profilePhotoUrl}
-      />
-    );
-  }
-  return (
-    <span
-      aria-hidden="true"
-      className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground"
-    >
-      <UserCircle2 className="size-6" />
-    </span>
   );
 }
 

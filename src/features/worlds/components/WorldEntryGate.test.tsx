@@ -3,6 +3,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  ActiveCharacterSwitcher,
+  ActivePlayerCharacterProvider,
+} from "@/features/permissions";
+
 import { WorldEntryGate } from "./WorldEntryGate";
 
 import type { ReactNode } from "react";
@@ -286,7 +291,7 @@ describe("WorldEntryGate", () => {
       }),
     );
 
-    const queryClient = renderGate();
+    const queryClient = renderGate({ withSwitcher: true });
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
 
     expect(await screen.findByText("ENTERED")).toBeDefined();
@@ -343,7 +348,7 @@ describe("WorldEntryGate", () => {
       }),
     );
 
-    const queryClient = renderGate();
+    const queryClient = renderGate({ canAdmin: true, withSwitcher: true });
 
     expect(await screen.findByText("ENTERED")).toBeDefined();
     await waitFor(() => {
@@ -389,7 +394,7 @@ describe("WorldEntryGate", () => {
       }),
     );
 
-    const queryClient = renderGate();
+    const queryClient = renderGate({ canAdmin: true, withSwitcher: true });
 
     expect(await screen.findByText("ENTERED")).toBeDefined();
 
@@ -411,7 +416,13 @@ describe("WorldEntryGate", () => {
   });
 });
 
-function renderGate(): QueryClient {
+function renderGate({
+  canAdmin = false,
+  withSwitcher = false,
+}: {
+  readonly canAdmin?: boolean;
+  readonly withSwitcher?: boolean;
+} = {}): QueryClient {
   const queryClient = new QueryClient({
     defaultOptions: {
       mutations: { retry: false },
@@ -420,9 +431,14 @@ function renderGate(): QueryClient {
   });
   render(
     <QueryClientProvider client={queryClient}>
-      <WorldEntryGate worldId={WORLD_ID}>
-        <div>ENTERED</div>
-      </WorldEntryGate>
+      <ActivePlayerCharacterProvider userId={USER_ID} worldId={WORLD_ID}>
+        {withSwitcher ? (
+          <ActiveCharacterSwitcher canAdmin={canAdmin} worldId={WORLD_ID} />
+        ) : null}
+        <WorldEntryGate worldId={WORLD_ID}>
+          <div>ENTERED</div>
+        </WorldEntryGate>
+      </ActivePlayerCharacterProvider>
     </QueryClientProvider>,
   );
   return queryClient;

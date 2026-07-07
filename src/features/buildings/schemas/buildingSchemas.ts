@@ -72,9 +72,16 @@ export const tierEffectSchema = z.discriminatedUnion("type", [
 const tierCostArraySchema = z.array(tierCostEntrySchema);
 const tierEffectArraySchema = z.array(tierEffectSchema);
 
+const blueprintIconSchema = z
+  .string()
+  .max(64, "Icon name is too long.")
+  .optional()
+  .nullable();
+
 export const createBlueprintInputSchema = z.strictObject({
   description: blueprintDescriptionSchema,
   gracePeriodTurns: gracePeriodTurnsSchema,
+  icon: blueprintIconSchema,
   maxInstancesPerSettlement: maxInstancesPerSettlementSchema,
   name: blueprintNameSchema,
   slug: blueprintSlugSchema,
@@ -86,6 +93,7 @@ export const updateBlueprintInputSchema = z
     blueprintId: blueprintIdSchema,
     description: blueprintDescriptionSchema,
     gracePeriodTurns: gracePeriodTurnsSchema,
+    icon: blueprintIconSchema,
     maxInstancesPerSettlement: maxInstancesPerSettlementSchema,
     name: blueprintNameSchema.optional(),
     slug: blueprintSlugSchema.optional(),
@@ -97,7 +105,8 @@ export const updateBlueprintInputSchema = z
       value.slug === undefined &&
       value.description === undefined &&
       value.gracePeriodTurns === undefined &&
-      value.maxInstancesPerSettlement === undefined
+      value.maxInstancesPerSettlement === undefined &&
+      value.icon === undefined
     ) {
       ctx.addIssue({
         code: "custom",

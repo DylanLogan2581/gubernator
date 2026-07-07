@@ -206,6 +206,41 @@ describe("ManagedPopulationsConfigPanel", () => {
     expect(screen.getByRole("button", { name: "Hide trash" })).toBeDefined();
   });
 
+  it("narrows results via the search input", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        husbandryJobRows: [],
+        cullingJobRows: [],
+        populationTypeRows: [
+          createPopulationTypeRow({ name: "Cattle" }),
+          createPopulationTypeRow({
+            id: "00000000-0000-0000-0000-000000000011",
+            name: "Sheep",
+          }),
+        ],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Cattle");
+    expect(screen.getByText("Sheep")).toBeDefined();
+
+    await user.type(
+      screen.getByRole("textbox", {
+        name: "Search population types by name",
+      }),
+      "Cat",
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Sheep")).toBeNull();
+      expect(screen.getByText("Cattle")).toBeDefined();
+    });
+  });
+
   it("emits a success toast after creating a managed population type", async () => {
     const user = userEvent.setup();
     requireSupabaseClient.mockReturnValue(
@@ -1027,11 +1062,44 @@ function createPopulationTypesQueryBuilder(
     readonly error: { readonly message: string } | null;
   },
 ): unknown {
-  const selectBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => selectBuilder),
-    order: vi.fn(() => selectBuilder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-  };
+  // Emulates enough of the real filter/order/range/returns chain that both
+  // the unpaginated active-list query (feeding allPopulationTypes) and the
+  // new paginated page query (#1032, driving the visible table) behave like
+  // the real Supabase query would, instead of always returning every row.
+  function buildSelectBuilder(): Record<string, unknown> {
+    let filtered: TestPopulationTypeRow[] = [...rows];
+    let range: readonly [number, number] | null = null;
+
+    const selectBuilder: Record<string, unknown> = {
+      eq: vi.fn((column: string, value: unknown) => {
+        filtered = filtered.filter(
+          (row) => row[column as keyof TestPopulationTypeRow] === value,
+        );
+        return selectBuilder;
+      }),
+      ilike: vi.fn((column: string, pattern: string) => {
+        const needle = pattern.replaceAll("%", "").toLowerCase();
+        filtered = filtered.filter((row) => {
+          const value = row[column as keyof TestPopulationTypeRow];
+          return (
+            typeof value === "string" && value.toLowerCase().includes(needle)
+          );
+        });
+        return selectBuilder;
+      }),
+      order: vi.fn(() => selectBuilder),
+      range: vi.fn((start: number, end: number) => {
+        range = [start, end];
+        return selectBuilder;
+      }),
+      returns: vi.fn(() => {
+        const data =
+          range === null ? filtered : filtered.slice(range[0], range[1] + 1);
+        return Promise.resolve({ count: filtered.length, data, error: null });
+      }),
+    };
+    return selectBuilder;
+  }
 
   const updateBuilder: Record<string, unknown> = {
     eq: vi.fn(() => updateBuilder),
@@ -1046,7 +1114,7 @@ function createPopulationTypesQueryBuilder(
         maybeSingle: vi.fn().mockResolvedValue(insertResult),
       })),
     })),
-    select: vi.fn(() => selectBuilder),
+    select: vi.fn(() => buildSelectBuilder()),
     update: vi.fn(() => updateBuilder),
   };
 }
@@ -1106,9 +1174,14 @@ function createClientWithInsertSpy({
   const selectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => selectBuilder),
     order: vi.fn(() => selectBuilder),
+    range: vi.fn(() => selectBuilder),
     returns: vi
       .fn()
-      .mockResolvedValue({ data: populationTypeRows, error: null }),
+      .mockResolvedValue({
+        count: populationTypeRows.length,
+        data: populationTypeRows,
+        error: null,
+      }),
   };
 
   return {
@@ -1158,9 +1231,14 @@ function createClientWithUpdateSpy({
   const selectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => selectBuilder),
     order: vi.fn(() => selectBuilder),
+    range: vi.fn(() => selectBuilder),
     returns: vi
       .fn()
-      .mockResolvedValue({ data: populationTypeRows, error: null }),
+      .mockResolvedValue({
+        count: populationTypeRows.length,
+        data: populationTypeRows,
+        error: null,
+      }),
   };
 
   return {

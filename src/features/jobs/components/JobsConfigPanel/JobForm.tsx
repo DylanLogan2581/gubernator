@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
 
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import {
   ResourceAmountListEditor,
   type ResourceAmountEntry,
@@ -58,6 +59,7 @@ export function CreateJobForm({
   const [name, setName] = useState("");
   const [baseCapacity, setBaseCapacity] = useState("0");
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
+  const [icon, setIcon] = useState<string | null>(null);
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>([]);
   const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>([]);
   const { fieldErrors, setFromZod, clear } =
@@ -108,6 +110,7 @@ export function CreateJobForm({
         input = {
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
+          icon,
           inputsJson,
           jobType: "standard",
           name,
@@ -120,6 +123,7 @@ export function CreateJobForm({
         input = {
           baseCapacity:
             baseCapacity !== "" ? parseInt(baseCapacity, 10) : undefined,
+          icon,
           jobType: "construction",
           name,
           slug: derivedSlug,
@@ -128,6 +132,7 @@ export function CreateJobForm({
         break;
       case "trader":
         input = {
+          icon,
           jobType: "trader",
           name,
           slug: derivedSlug,
@@ -140,6 +145,7 @@ export function CreateJobForm({
         break;
       case "deposit":
         input = {
+          icon,
           jobType: "deposit",
           linkedDepositTypeId: undefined,
           name,
@@ -150,6 +156,7 @@ export function CreateJobForm({
       case "husbandry":
       case "culling":
         input = {
+          icon,
           jobType: selectedType,
           linkedManagedPopulationTypeId: undefined,
           name,
@@ -227,6 +234,15 @@ export function CreateJobForm({
                     </p>
                   ) : null}
                   <SlugHint slug={derivedSlug} error={fieldErrors.slug} />
+                </Label>
+
+                <Label className="grid gap-1 text-sm">
+                  <span className="text-muted-foreground">Icon</span>
+                  <IconPicker
+                    disabled={isPending}
+                    value={icon}
+                    onChange={setIcon}
+                  />
                 </Label>
 
                 {selectedType === "standard" ||

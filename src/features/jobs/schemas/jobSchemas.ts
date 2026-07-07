@@ -31,7 +31,14 @@ export const jobIoEntrySchema = z.strictObject({
 
 const jobIoArraySchema = z.array(jobIoEntrySchema);
 
+const jobIconSchema = z
+  .string()
+  .max(64, "Icon name is too long.")
+  .optional()
+  .nullable();
+
 const commonCreateFields = {
+  icon: jobIconSchema,
   name: jobNameSchema,
   slug: jobSlugSchema,
   worldId: worldIdSchema,
@@ -85,6 +92,7 @@ export const createJobInputSchema = z.discriminatedUnion("jobType", [
 export const updateJobInputSchema = z
   .strictObject({
     baseCapacity: baseCapacitySchema.optional(),
+    icon: jobIconSchema,
     inputsJson: jobIoArraySchema.optional(),
     jobId: jobIdSchema,
     linkedDepositTypeId: z.guid().optional().nullable(),
@@ -104,7 +112,8 @@ export const updateJobInputSchema = z
       value.linkedDepositTypeId === undefined &&
       value.linkedManagedPopulationTypeId === undefined &&
       value.inputsJson === undefined &&
-      value.outputsJson === undefined
+      value.outputsJson === undefined &&
+      value.icon === undefined
     ) {
       ctx.addIssue({
         code: "custom",

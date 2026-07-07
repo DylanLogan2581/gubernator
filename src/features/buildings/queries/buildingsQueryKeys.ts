@@ -1,11 +1,19 @@
 import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
 
+import type { BlueprintsPageParams } from "./buildingsQueries";
+
 export const buildingsQueryKeys = {
   all: authStateQueryCacheKeys.buildingsAll,
   blueprintById: (blueprintId: string) =>
     [...buildingsQueryKeys.all, "blueprint-detail", blueprintId] as const,
   blueprintsByWorld: (worldId: string) =>
     [...buildingsQueryKeys.all, "blueprints-by-world", worldId] as const,
+  // Nested under blueprintsByWorld so the existing softDelete/restore/update/
+  // create invalidation (which invalidates blueprintsByWorld(worldId) as a
+  // prefix) also refetches the paginated config-panel view without any
+  // changes there.
+  blueprintsPage: (worldId: string, params: BlueprintsPageParams) =>
+    [...buildingsQueryKeys.blueprintsByWorld(worldId), "page", params] as const,
   constructionProjectsBySettlement: (settlementId: string) =>
     [
       ...buildingsQueryKeys.all,

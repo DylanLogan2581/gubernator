@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, LockKeyhole, Plus, X } from "lucide-react";
+import { ArrowRight, Landmark, LockKeyhole, Plus } from "lucide-react";
 import { useState, type FormEvent, type JSX, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -13,9 +13,18 @@ import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
@@ -50,7 +59,7 @@ export function NationListPage({ worldId }: NationListPageProps): JSX.Element {
 
   if (accessContextQuery.isPending) {
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <LoadingState label="Loading world access…" />
       </NationListFrame>
     );
@@ -58,7 +67,7 @@ export function NationListPage({ worldId }: NationListPageProps): JSX.Element {
 
   if (accessContextQuery.isError) {
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <ErrorState
           title="World access could not be loaded"
           description={getErrorDescription(accessContextQuery.error)}
@@ -88,7 +97,7 @@ function NationListWorldGate({
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <AccessDeniedState
           title="Account access unavailable"
           description="Your Gubernator account is not active. Contact an administrator to restore access."
@@ -99,7 +108,7 @@ function NationListWorldGate({
 
   if (worldQuery.isPending) {
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <LoadingState label="Loading world…" />
       </NationListFrame>
     );
@@ -108,7 +117,7 @@ function NationListWorldGate({
   if (worldQuery.isError) {
     if (isWorldNotFoundError(worldQuery.error)) {
       return (
-        <NationListFrame worldId={worldId}>
+        <NationListFrame>
           <AccessDeniedState
             title="World unavailable"
             description="This world does not exist or your Gubernator account does not have access."
@@ -118,7 +127,7 @@ function NationListWorldGate({
     }
 
     return (
-      <NationListFrame worldId={worldId}>
+      <NationListFrame>
         <ErrorState
           title="World could not be loaded"
           description={getErrorDescription(worldQuery.error)}
@@ -143,20 +152,22 @@ function NationListContent({
   const canCreate = effectiveCanAdmin && !worldAccess.header.isArchived;
 
   return (
-    <NationListFrame worldId={worldId}>
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-normal">Nations</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
+    <NationListFrame>
+      <PageHeader
+        icon={Landmark}
+        title="Nations"
+        description={
+          <>
             Nations within{" "}
             <span className="font-medium">{worldAccess.header.name}</span>.
-          </p>
-        </div>
-      </header>
-
-      {canCreate ? (
-        <CreateNationSection queryClient={queryClient} worldId={worldId} />
-      ) : null}
+          </>
+        }
+        actions={
+          canCreate ? (
+            <CreateNationSection queryClient={queryClient} worldId={worldId} />
+          ) : null
+        }
+      />
 
       {nationsQuery.isPending ? (
         <LoadingState label="Loading nations…" />
@@ -287,111 +298,95 @@ function CreateNationSection({
     );
   }
 
-  if (!isOpen) {
-    return (
-      <div>
-        <Button type="button" onClick={() => setIsOpen(true)}>
-          <Plus aria-hidden="true" />
-          Create nation
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <form
-      aria-label="Create nation"
-      className="grid gap-3 p-4"
-      noValidate
-      onSubmit={handleSubmit}
-    >
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium">New nation</h2>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={closeForm}
-          aria-label="Cancel"
-        >
-          <X aria-hidden="true" />
-        </Button>
-      </div>
-      <Label className="grid gap-1 text-sm" htmlFor="nation-create-name">
-        <span className="text-muted-foreground">Name</span>
-        <Input
-          aria-invalid={nameError === undefined ? undefined : true}
-          aria-describedby={
-            nameError === undefined ? undefined : "nation-name-error"
-          }
-          id="nation-create-name"
-          maxLength={textInputLimits.nationNameMax}
-          required
-          value={name}
-          onChange={(event) => {
-            setName(event.currentTarget.value);
-            if (nameError !== undefined) {
-              setNameError(undefined);
-            }
-          }}
-        />
-        {nameError === undefined ? null : (
-          <p
-            id="nation-name-error"
-            role="alert"
-            className="text-sm text-destructive"
+    <>
+      <Button type="button" onClick={() => setIsOpen(true)}>
+        <Plus aria-hidden="true" />
+        Create nation
+      </Button>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) closeForm();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New nation</DialogTitle>
+          </DialogHeader>
+          <form
+            aria-label="Create nation"
+            className="grid gap-3"
+            noValidate
+            onSubmit={handleSubmit}
           >
-            {nameError}
-          </p>
-        )}
-      </Label>
-      <Label className="grid gap-1 text-sm" htmlFor="nation-create-desc">
-        <span className="text-muted-foreground">Description (optional)</span>
-        <textarea
-          className="min-h-[5rem] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          aria-label="Description"
-          id="nation-create-desc"
-          maxLength={textInputLimits.nationDescriptionMax}
-          value={description}
-          onChange={(event) => setDescription(event.currentTarget.value)}
-        />
-      </Label>
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={createMutation.isPending}>
-          <Plus aria-hidden="true" />
-          Create nation
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={closeForm}
-          disabled={createMutation.isPending}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+            <Label className="grid gap-1 text-sm" htmlFor="nation-create-name">
+              <span className="text-muted-foreground">Name</span>
+              <Input
+                aria-invalid={nameError === undefined ? undefined : true}
+                aria-describedby={
+                  nameError === undefined ? undefined : "nation-name-error"
+                }
+                id="nation-create-name"
+                maxLength={textInputLimits.nationNameMax}
+                required
+                value={name}
+                onChange={(event) => {
+                  setName(event.currentTarget.value);
+                  if (nameError !== undefined) {
+                    setNameError(undefined);
+                  }
+                }}
+              />
+              {nameError === undefined ? null : (
+                <p
+                  id="nation-name-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {nameError}
+                </p>
+              )}
+            </Label>
+            <Label className="grid gap-1 text-sm" htmlFor="nation-create-desc">
+              <span className="text-muted-foreground">
+                Description (optional)
+              </span>
+              <Textarea
+                aria-label="Description"
+                id="nation-create-desc"
+                maxLength={textInputLimits.nationDescriptionMax}
+                value={description}
+                onChange={(event) => setDescription(event.currentTarget.value)}
+              />
+            </Label>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeForm}
+                disabled={createMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                <Plus aria-hidden="true" />
+                Create nation
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
 function NationListFrame({
   children,
-  worldId,
 }: {
   readonly children: ReactNode;
-  readonly worldId: string;
 }): JSX.Element {
-  return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 py-6">
-      <Button asChild variant="outline" size="sm" className="w-fit">
-        <Link to="/worlds/$worldId" params={{ worldId }}>
-          <ArrowLeft aria-hidden="true" />
-          Back to world
-        </Link>
-      </Button>
-      {children}
-    </div>
-  );
+  return <div className="flex flex-col gap-4">{children}</div>;
 }
 
 function getDescriptionPreview(description: string | null): string | null {

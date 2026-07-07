@@ -1,12 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  Baby,
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
+  Clock,
+  Skull,
+  TrendingUp,
+  Users,
 } from "lucide-react";
-import { useState, type JSX } from "react";
+import { type JSX, useState } from "react";
 
+import { StatTile } from "@/components/shared/StatTile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,16 +28,14 @@ import {
 } from "@/components/ui/table";
 import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import {
-  nationPopulationAggregatesQueryOptions,
+  createTurnLabelers,
+  defaultReportTurnRange,
   nationSettlementSnapshotsQueryOptions,
-  PopulationTrendChart,
   TurnRangeSelector,
 } from "@/features/reports";
 import type { NationSettlementSnapshotRow } from "@/features/reports";
-import {
-  formatCalendarDate,
-  resolveTurnCalendarDate,
-} from "@/shared/turnCalendarPrimitives";
+
+import { NationSettlementTrendSmallMultiples } from "./NationSettlementTrendSmallMultiples";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,15 +55,6 @@ type SettlementSummary = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function defaultRange(currentTurnNumber: number): {
-  fromTurn: number;
-  toTurn: number;
-} {
-  const toTurn = Math.max(1, currentTurnNumber);
-  const fromTurn = Math.max(1, toTurn - 19);
-  return { fromTurn, toTurn };
-}
 
 function buildSettlementSummaries(
   rows: readonly NationSettlementSnapshotRow[],
@@ -164,6 +160,15 @@ function SortIcon({
   );
 }
 
+function ariaSortFor(
+  column: SortKey,
+  sortKey: SortKey,
+  sortDir: SortDir,
+): "ascending" | "descending" | undefined {
+  if (column !== sortKey) return undefined;
+  return sortDir === "asc" ? "ascending" : "descending";
+}
+
 // ---------------------------------------------------------------------------
 // ColumnSortButton — module-level component
 // ---------------------------------------------------------------------------
@@ -192,9 +197,6 @@ function ColumnSortButton({
           : "font-medium text-muted-foreground"
       }`}
       onClick={() => onSort(column)}
-      aria-sort={
-        isActive ? (sortDir === "asc" ? "ascending" : "descending") : undefined
-      }
     >
       {label}
       <SortIcon column={column} sortKey={sortKey} sortDir={sortDir} />
@@ -261,7 +263,7 @@ function SettlementComparisonTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>
+          <TableHead aria-sort={ariaSortFor("name", sortKey, sortDir)}>
             <ColumnSortButton
               column="name"
               label="Settlement"
@@ -270,7 +272,10 @@ function SettlementComparisonTable({
               onSort={handleSort}
             />
           </TableHead>
-          <TableHead className="text-right">
+          <TableHead
+            className="text-right"
+            aria-sort={ariaSortFor("population", sortKey, sortDir)}
+          >
             <ColumnSortButton
               column="population"
               label="Latest pop."
@@ -279,7 +284,10 @@ function SettlementComparisonTable({
               onSort={handleSort}
             />
           </TableHead>
-          <TableHead className="text-right">
+          <TableHead
+            className="text-right"
+            aria-sort={ariaSortFor("births", sortKey, sortDir)}
+          >
             <ColumnSortButton
               column="births"
               label="Births"
@@ -288,7 +296,10 @@ function SettlementComparisonTable({
               onSort={handleSort}
             />
           </TableHead>
-          <TableHead className="text-right">
+          <TableHead
+            className="text-right"
+            aria-sort={ariaSortFor("deaths", sortKey, sortDir)}
+          >
             <ColumnSortButton
               column="deaths"
               label="Deaths"
@@ -329,35 +340,77 @@ type NationReportsSectionProps = {
   readonly worldId: string;
 };
 
+// ---------------------------------------------------------------------------
+// NationReportStatTiles — at-a-glance summary derived from the same
+// settlement snapshot rows the small-multiples chart and comparison table
+// use, so no extra query is needed.
+// ---------------------------------------------------------------------------
+
+function NationReportStatTiles({
+  isLoading,
+  rows,
+}: {
+  readonly isLoading: boolean;
+  readonly rows: readonly NationSettlementSnapshotRow[];
+}): JSX.Element {
+  const summaries = buildSettlementSummaries(rows);
+  const totalPopulation = summaries.reduce(
+    (sum, s) => sum + s.latestPopulation,
+    0,
+  );
+  const totalBirths = summaries.reduce((sum, s) => sum + s.totalBirths, 0);
+  const totalDeaths = summaries.reduce((sum, s) => sum + s.totalDeaths, 0);
+
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <StatTile
+        icon={Users}
+        label="Total population"
+        value={totalPopulation.toLocaleString()}
+        context={`Across ${String(summaries.length)} settlement${summaries.length === 1 ? "" : "s"}`}
+        isLoading={isLoading}
+      />
+      <StatTile
+        icon={Baby}
+        label="Births"
+        value={totalBirths.toLocaleString()}
+        context="Total in turn range"
+        isLoading={isLoading}
+      />
+      <StatTile
+        icon={Skull}
+        label="Deaths"
+        value={totalDeaths.toLocaleString()}
+        context="Total in turn range"
+        isLoading={isLoading}
+      />
+      <StatTile
+        icon={TrendingUp}
+        label="Net change"
+        value={`${totalBirths - totalDeaths >= 0 ? "+" : ""}${(totalBirths - totalDeaths).toLocaleString()}`}
+        context="Births minus deaths in range"
+        isLoading={isLoading}
+      />
+    </div>
+  );
+}
+
 export function NationReportsSection({
   currentTurnNumber,
   nationId,
   worldId,
 }: NationReportsSectionProps): JSX.Element {
-  const initial = defaultRange(currentTurnNumber);
+  const initial = defaultReportTurnRange(currentTurnNumber);
   const [fromTurn, setFromTurn] = useState(initial.fromTurn);
   const [toTurn, setToTurn] = useState(initial.toTurn);
 
   const calendarQuery = useQuery(worldCalendarConfigQueryOptions(worldId));
   const calendarConfig = calendarQuery.isSuccess ? calendarQuery.data : null;
+  const { axisLabel } = createTurnLabelers(calendarConfig);
 
-  const populationQuery = useQuery(
-    nationPopulationAggregatesQueryOptions(nationId, fromTurn, toTurn),
-  );
   const settlementQuery = useQuery(
     nationSettlementSnapshotsQueryOptions(nationId, fromTurn, toTurn),
   );
-
-  function turnLabel(turn: number): string {
-    if (calendarConfig === null) return `T${String(turn)}`;
-    try {
-      return formatCalendarDate(resolveTurnCalendarDate(calendarConfig, turn), {
-        dateFormatTemplate: calendarConfig.dateFormatTemplate,
-      });
-    } catch {
-      return `T${String(turn)}`;
-    }
-  }
 
   function handleApply(from: number, to: number): void {
     setFromTurn(from);
@@ -366,12 +419,24 @@ export function NationReportsSection({
 
   return (
     <section aria-labelledby="nation-reports-heading" className="space-y-4">
-      <h2
-        id="nation-reports-heading"
-        className="text-lg font-semibold tracking-tight"
-      >
-        Reports
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2
+          id="nation-reports-heading"
+          className="text-lg font-semibold tracking-tight"
+        >
+          Reports
+        </h2>
+        <Button asChild variant="outline" size="sm">
+          <Link
+            to="/worlds/$worldId/history"
+            params={{ worldId }}
+            search={{ nationId }}
+          >
+            <Clock className="mr-1.5 h-3.5 w-3.5" />
+            View nation turn log
+          </Link>
+        </Button>
+      </div>
 
       <Card>
         <CardHeader>
@@ -386,45 +451,51 @@ export function NationReportsSection({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Nation population history</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {populationQuery.isPending ? (
-            <div className="space-y-3">
-              <Skeleton className="h-56 w-full" />
-              <Skeleton className="h-48 w-full" />
-            </div>
-          ) : populationQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                Population data could not be loaded.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <PopulationTrendChart
-              rows={populationQuery.data}
-              turnLabel={turnLabel}
-            />
-          )}
-        </CardContent>
-      </Card>
+      <NationReportStatTiles
+        isLoading={settlementQuery.isPending}
+        rows={settlementQuery.data ?? []}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Settlement comparison</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SettlementComparisonTable
-            isLoading={settlementQuery.isPending}
-            isError={settlementQuery.isError}
-            rows={settlementQuery.data ?? []}
-          />
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Population trend by settlement
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {settlementQuery.isPending ? (
+              <Skeleton className="h-56 w-full" />
+            ) : settlementQuery.isError ? (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  Settlement data could not be loaded.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <NationSettlementTrendSmallMultiples
+                rows={settlementQuery.data ?? []}
+                turnLabel={axisLabel}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Settlement comparison</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SettlementComparisonTable
+              isLoading={settlementQuery.isPending}
+              isError={settlementQuery.isError}
+              rows={settlementQuery.data ?? []}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </section>
   );
 }

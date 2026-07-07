@@ -48,6 +48,7 @@ type ManagedPopulationTypeInsertPayload = {
   growth_rate: number;
   husbandry_job_id: string;
   husbandry_workers_per_n_animals: number;
+  icon?: string | null;
   maintenance_rules_json?: Json;
   name: string;
   slug: string;
@@ -60,6 +61,7 @@ type ManagedPopulationTypeUpdatePayload = {
   growth_rate?: number;
   husbandry_job_id?: string;
   husbandry_workers_per_n_animals?: number;
+  icon?: string | null;
   maintenance_rules_json?: Json;
   name?: string;
   slug?: string;
@@ -136,6 +138,7 @@ async function createManagedPopulationType(
     growth_rate: values.growthRate,
     husbandry_job_id: values.husbandryJobId,
     husbandry_workers_per_n_animals: values.husbandryWorkersPerNAnimals,
+    icon: values.icon ?? null,
     name: values.name.trim(),
     slug: values.slug.trim(),
     world_id: values.worldId,
@@ -223,6 +226,9 @@ async function updateManagedPopulationType(
     updatePayload.culling_outputs_json = toPopulationResourceJson(
       values.cullingOutputsJson,
     );
+  }
+  if (values.icon !== undefined) {
+    updatePayload.icon = values.icon;
   }
 
   const { data, error } = await client

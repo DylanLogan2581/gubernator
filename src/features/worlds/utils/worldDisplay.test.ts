@@ -38,6 +38,7 @@ describe("toAccessibleWorld", () => {
       canManage: true,
       currentTurnNumber: 3,
       inWorldDateLabel: "Firstday, Ember 1, 100 AG",
+      inWorldDateLabelShort: "2/1/100",
       isArchived: false,
       isHidden: true,
       nextInWorldDateLabel: "Secondday, Ember 2, 100 AG",
@@ -62,6 +63,7 @@ describe("toAccessibleWorld", () => {
     expect(world).toMatchObject({
       currentTurnNumber: 0,
       inWorldDateLabel: "Firstday, Dawn 1, 100 AG",
+      inWorldDateLabelShort: "1/1/100",
       nextInWorldDateLabel: "Secondday, Dawn 2, 100 AG",
       nextTurnNumber: 1,
       planningTurnNumber: 1,
@@ -177,5 +179,6 @@ function createCalendarConfig(): WorldCalendarConfig {
       { index: 1, name: "Secondday" },
     ],
     dateFormatTemplate: "{weekday}, {month} {day}, {year} AG",
+    shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
   };
 }

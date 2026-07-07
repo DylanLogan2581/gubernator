@@ -23,6 +23,7 @@ const calendarConfig = {
   startingYear: 12,
   startingWeekdayOffset: 1,
   dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
+  shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
 } satisfies WorldCalendarConfig;
 
 describe("resolveTurnCalendarDate", () => {

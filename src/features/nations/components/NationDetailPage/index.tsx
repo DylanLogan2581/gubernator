@@ -1,19 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { LockKeyhole } from "lucide-react";
-import { useEffect, type JSX } from "react";
+import { useEffect, type JSX, type ReactNode } from "react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { ActiveEventsCard } from "@/features/events";
-import { NationNamesetCard } from "@/features/namesets";
 import {
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
   type AccessContext,
 } from "@/features/permissions";
-import { TurnLogBrowser } from "@/features/turns";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -23,23 +20,19 @@ import { getErrorDescription } from "@/lib/errorUtils";
 
 import { nationByIdQueryOptions } from "../../queries/nationsQueries";
 
-import { NationDeleteSection } from "./DeleteSection";
-import { NationDetailsSection } from "./DetailsSection";
-import { NationHiddenToggleSection } from "./HiddenToggleSection";
+import { NationDetailContext } from "./NationDetailContext";
 import { NationDetailFrame } from "./NationDetailFrame";
-import { NationReportsSection } from "./NationReportsSection";
-import { NationRelationshipsSection } from "./RelationshipsSection";
-import { NationRoleAssignmentSection } from "./RoleAssignmentSection";
-import { NationSettlementsSection } from "./SettlementsSection";
 
 import type { Nation } from "../../types/nationTypes";
 
 type NationDetailPageProps = {
+  readonly children: ReactNode;
   readonly nationId: string;
   readonly worldId: string;
 };
 
 export function NationDetailPage({
+  children,
   nationId,
   worldId,
 }: NationDetailPageProps): JSX.Element {
@@ -72,16 +65,20 @@ export function NationDetailPage({
       accessContext={accessContextQuery.data}
       nationId={nationId}
       worldId={worldId}
-    />
+    >
+      {children}
+    </NationDetailWorldGate>
   );
 }
 
 function NationDetailWorldGate({
   accessContext,
+  children,
   nationId,
   worldId,
 }: {
   readonly accessContext: AccessContext;
+  readonly children: ReactNode;
   readonly nationId: string;
   readonly worldId: string;
 }): JSX.Element {
@@ -132,18 +129,25 @@ function NationDetailWorldGate({
 
   return (
     <NationDetailContent
+      accessContext={accessContext}
       nationId={nationId}
       worldAccess={worldQuery.data}
       worldId={worldId}
-    />
+    >
+      {children}
+    </NationDetailContent>
   );
 }
 
 function NationDetailContent({
+  accessContext,
+  children,
   nationId,
   worldAccess,
   worldId,
 }: {
+  readonly accessContext: AccessContext;
+  readonly children: ReactNode;
   readonly nationId: string;
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
@@ -189,10 +193,13 @@ function NationDetailContent({
 
   return (
     <NationDetailLoaded
+      accessContext={accessContext}
       nation={nation}
       worldAccess={worldAccess}
       worldId={worldId}
-    />
+    >
+      {children}
+    </NationDetailLoaded>
   );
 }
 
@@ -219,15 +226,18 @@ function HiddenNationRedirect({
 }
 
 function NationDetailLoaded({
+  accessContext,
+  children,
   nation,
   worldAccess,
   worldId,
 }: {
+  readonly accessContext: AccessContext;
+  readonly children: ReactNode;
   readonly nation: Nation;
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
 }): JSX.Element {
-  const queryClient = useQueryClient();
   const isArchived = worldAccess.header.isArchived;
   const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
   const canEditDetails = effectiveCanAdmin && !isArchived;
@@ -256,64 +266,21 @@ function NationDetailLoaded({
         </div>
       </header>
 
-      <NationDetailsSection
-        canEdit={canEditDetails}
-        nation={nation}
-        queryClient={queryClient}
-      />
-
-      <ActiveEventsCard scope="nation" scopeId={nation.id} worldId={worldId} />
-
-      {canToggleHidden ? (
-        <NationHiddenToggleSection nation={nation} queryClient={queryClient} />
-      ) : null}
-
-      {effectiveCanAdmin ? (
-        <NationNamesetCard
-          canAdmin={effectiveCanAdmin}
-          currentNamesetId={nation.namesetId}
-          isArchived={isArchived}
-          nationId={nation.id}
-          worldId={worldId}
-        />
-      ) : null}
-
-      <NationSettlementsSection
-        canAdmin={effectiveCanAdmin}
-        isArchived={isArchived}
-        nationId={nation.id}
-        userId={null}
-        worldId={worldId}
-      />
-
-      <NationReportsSection
-        currentTurnNumber={worldAccess.header.currentTurnNumber}
-        nationId={nation.id}
-        worldId={worldId}
-      />
-
-      <TurnLogBrowser
-        fixedFilter={{ nationId: nation.id }}
-        title="Nation turn log"
-        worldId={worldId}
-      />
-
-      <NationRoleAssignmentSection
-        canAdminWorld={effectiveCanAdmin}
-        isArchived={isArchived}
-        nation={nation}
-      />
-
-      <NationRelationshipsSection
-        canAdminWorld={effectiveCanAdmin && !isArchived}
-        isArchived={isArchived}
-        nation={nation}
-        queryClient={queryClient}
-      />
-
-      {canDelete ? (
-        <NationDeleteSection nation={nation} queryClient={queryClient} />
-      ) : null}
+      <NationDetailContext
+        value={{
+          accessContext,
+          canDelete,
+          canEditDetails,
+          canToggleHidden,
+          effectiveCanAdmin,
+          isArchived,
+          nation,
+          worldAccess,
+          worldId,
+        }}
+      >
+        {children}
+      </NationDetailContext>
     </NationDetailFrame>
   );
 }

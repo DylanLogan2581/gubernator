@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type JSX } from "react";
 
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +45,7 @@ export function CreateResourceForm({
   const [name, setName] = useState("");
   const [baseStockpileCap, setBaseStockpileCap] = useState("");
   const [decayRate, setDecayRate] = useState("");
+  const [icon, setIcon] = useState<string | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof CreateResourceFieldErrors>();
 
@@ -58,6 +60,7 @@ export function CreateResourceForm({
     const input: CreateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
       decayRate: decayRate !== "" ? decayRate : undefined,
+      icon,
       name,
       slug: derivedSlug,
       worldId,
@@ -149,6 +152,14 @@ export function CreateResourceForm({
                   {fieldErrors.decayRate}
                 </p>
               ) : null}
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon</span>
+              <IconPicker
+                disabled={isPending}
+                value={icon}
+                onChange={setIcon}
+              />
             </Label>
           </div>
           <DialogFooter>

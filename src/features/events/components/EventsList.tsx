@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
-import { useState, type JSX } from "react";
+import { Plus, Search, Zap } from "lucide-react";
+import { useEffect, useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { IconChip } from "@/components/shared/IconChip";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { Badge } from "@/components/ui/badge";
+import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
+import { TablePagination } from "@/components/shared/TablePagination";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +16,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -29,12 +32,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { nationsListQueryOptions } from "@/features/nations";
-import { settlementsByWorldQueryOptions } from "@/features/settlements";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { DOMAIN_ICON_CHIPS } from "@/lib/domainIconography";
 
 import { eventsListQueryOptions, isEventsError } from "../queries/eventQueries";
 
-import { EventsPagination } from "./EventsPagination";
+import { EventScopeBadge, EventStatusBadge } from "./EventBadges";
+import { EventDetail } from "./EventDetail";
 
 type PaginationState = {
   readonly pageIndex: number;
@@ -57,29 +61,27 @@ type EventDisplayItem =
 
 import type {
   EventListFilters,
-  EventStatus,
+  EventScopeType,
+  EventSortBy,
+  EventsSearchParams,
   EventWithGroup,
 } from "../types/eventTypes";
 
 type EventsListProps = {
   readonly worldId: string;
   readonly canCreate: boolean;
+  readonly canManage: boolean;
   readonly onCreateClick: () => void;
+  readonly search: EventsSearchParams;
 };
 
-const EVENT_STATUSES: EventStatus[] = [
-  "pending",
-  "active",
-  "expired",
-  "cancelled",
+const EVENT_STATUSES = ["pending", "active", "expired", "cancelled"] as const;
+
+const EVENT_SCOPES: readonly EventScopeType[] = [
+  "world",
+  "nation",
+  "settlement",
 ];
-
-const statusColors: Record<EventStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  active: "bg-green-100 text-green-800",
-  expired: "bg-gray-100 text-gray-800",
-  cancelled: "bg-red-100 text-red-800",
-};
 
 /**
  * Group events by event_group_id. Events without a group stay as individual display items.
@@ -119,26 +121,48 @@ function groupEvents(events: readonly EventWithGroup[]): EventDisplayItem[] {
 export function EventsList({
   worldId,
   canCreate,
+  canManage,
   onCreateClick,
+  search,
 }: EventsListProps): JSX.Element {
-  const [statusFilter, setStatusFilter] = useState<EventStatus[]>([]);
-  const [sortBy, setSortBy] = useState<"status" | "created_at">("created_at");
-  const [scopeEntityFilter, setScopeEntityFilter] = useState<
-    { readonly type: "nation" | "settlement"; readonly id: string } | undefined
-  >(undefined);
+  const navigate = useNavigate();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState(search.q);
+  const debouncedSearchInput = useDebouncedValue(searchInput, 300);
+  const statusKey = search.status.join(",");
+  const filterKey = `${statusKey}|${search.scope ?? ""}|${search.q}`;
 
-  // Fetch nations and settlements for scope filter dropdowns
-  const nationsQuery = useQuery(nationsListQueryOptions(worldId));
-  const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
+  // Keep the input in sync when the URL changes from elsewhere (back/forward
+  // nav), and reset to page one whenever the applied filters change. Adjusted
+  // during render (not an effect) per https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  const [syncedFilterKey, setSyncedFilterKey] = useState(filterKey);
+  if (filterKey !== syncedFilterKey) {
+    setSyncedFilterKey(filterKey);
+    setSearchInput(search.q);
+    setPagination((p) => ({ ...p, pageIndex: 0 }));
+  }
+
+  // Push debounced text changes to the URL so filters stay shareable/bookmarkable.
+  useEffect(() => {
+    if (debouncedSearchInput === search.q) return;
+    void navigate({
+      to: "/worlds/$worldId/events",
+      params: { worldId },
+      search: (prev) => ({
+        ...prev,
+        q: debouncedSearchInput === "" ? undefined : debouncedSearchInput,
+      }),
+      replace: true,
+    });
+  }, [debouncedSearchInput, navigate, search.q, worldId]);
 
   const filters: EventListFilters = {
-    statusFilter: statusFilter.length > 0 ? statusFilter : undefined,
-    sortBy,
-    scopeEntityFilter,
+    statusFilter: search.status.length > 0 ? [...search.status] : undefined,
+    sortBy: search.sort,
   };
 
   const eventsQuery = useQuery(eventsListQueryOptions(worldId, filters));
@@ -165,26 +189,79 @@ export function EventsList({
   }
 
   const events = eventsQuery.data ?? [];
-  const displayItems = groupEvents(events);
+
+  if (events.length === 0) {
+    return (
+      <EmptyState
+        icon={Zap}
+        title="No events yet"
+        description={
+          canCreate
+            ? "Create your first event to get started."
+            : "Events will appear here once a world admin creates one."
+        }
+        action={
+          canCreate ? (
+            <Button onClick={onCreateClick} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create event
+            </Button>
+          ) : undefined
+        }
+      />
+    );
+  }
+
+  const scopeFiltered =
+    search.scope === undefined
+      ? events
+      : events.filter((event) => event.scope_type === search.scope);
+  const searchLower = search.q.trim().toLowerCase();
+  const filteredEvents =
+    searchLower === ""
+      ? scopeFiltered
+      : scopeFiltered.filter((event) =>
+          (event.group?.name ?? event.name).toLowerCase().includes(searchLower),
+        );
+
+  const displayItems = groupEvents(filteredEvents);
   const paginatedItems = displayItems.slice(
     pagination.pageIndex * pagination.pageSize,
     (pagination.pageIndex + 1) * pagination.pageSize,
   );
   const pageCount = Math.ceil(displayItems.length / pagination.pageSize);
+  const selectedEvent =
+    events.find((event) => event.id === selectedEventId) ?? null;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <div className="relative w-full sm:w-[200px]">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              aria-label="Search events by name"
+              className="pl-8"
+              placeholder="Search events…"
+              value={searchInput}
+              onChange={(e) => {
+                setSearchInput(e.currentTarget.value);
+              }}
+            />
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-[180px] justify-between">
-                {statusFilter.length === 0
+                {search.status.length === 0
                   ? "All statuses"
-                  : statusFilter.length === 1
-                    ? (statusFilter[0]?.charAt(0).toUpperCase() ?? "") +
-                      (statusFilter[0]?.slice(1) ?? "")
-                    : `${statusFilter.length.toString()} statuses`}
+                  : search.status.length === 1
+                    ? (search.status[0]?.charAt(0).toUpperCase() ?? "") +
+                      (search.status[0]?.slice(1) ?? "")
+                    : `${search.status.length.toString()} statuses`}
                 <span className="ml-2 opacity-50">▾</span>
               </Button>
             </DropdownMenuTrigger>
@@ -192,14 +269,19 @@ export function EventsList({
               {EVENT_STATUSES.map((status) => (
                 <DropdownMenuCheckboxItem
                   key={status}
-                  checked={statusFilter.includes(status)}
+                  checked={search.status.includes(status)}
                   onCheckedChange={(checked) => {
-                    setStatusFilter((prev) =>
-                      checked
-                        ? [...prev, status]
-                        : prev.filter((s) => s !== status),
-                    );
-                    setPagination({ pageIndex: 0, pageSize: 10 });
+                    const nextStatus = checked
+                      ? [...search.status, status]
+                      : search.status.filter((s) => s !== status);
+                    void navigate({
+                      to: "/worlds/$worldId/events",
+                      params: { worldId },
+                      search: (prev) => ({
+                        ...prev,
+                        status: nextStatus.length > 0 ? nextStatus : undefined,
+                      }),
+                    });
                   }}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -209,13 +291,20 @@ export function EventsList({
           </DropdownMenu>
 
           <Select
-            value={sortBy}
+            value={search.sort}
             onValueChange={(value) => {
-              setSortBy(value as "status" | "created_at");
-              setPagination({ pageIndex: 0, pageSize: 10 });
+              void navigate({
+                to: "/worlds/$worldId/events",
+                params: { worldId },
+                search: (prev) => ({
+                  ...prev,
+                  sort:
+                    value === "created_at" ? undefined : (value as EventSortBy),
+                }),
+              });
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger aria-label="Sort events" className="w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -225,55 +314,29 @@ export function EventsList({
           </Select>
 
           <Select
-            value={
-              scopeEntityFilter !== undefined
-                ? `${scopeEntityFilter.type}:${scopeEntityFilter.id}`
-                : "all"
-            }
+            value={search.scope ?? "all"}
             onValueChange={(value) => {
-              if (value === "all") {
-                setScopeEntityFilter(undefined);
-              } else {
-                const [type, id] = value.split(":");
-                setScopeEntityFilter({
-                  type: type as "nation" | "settlement",
-                  id,
-                });
-              }
-              setPagination({ pageIndex: 0, pageSize: 10 });
+              void navigate({
+                to: "/worlds/$worldId/events",
+                params: { worldId },
+                search: (prev) => ({
+                  ...prev,
+                  scope:
+                    value === "all" ? undefined : (value as EventScopeType),
+                }),
+              });
             }}
           >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by scope entity" />
+            <SelectTrigger aria-label="Filter by scope" className="w-[160px]">
+              <SelectValue placeholder="All scopes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All entities</SelectItem>
-              {nationsQuery.data !== undefined &&
-                nationsQuery.data.length > 0 && (
-                  <>
-                    {nationsQuery.data.map((nation) => (
-                      <SelectItem
-                        key={`nation:${nation.id}`}
-                        value={`nation:${nation.id}`}
-                      >
-                        {nation.name}
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-              {settlementsQuery.data !== undefined &&
-                settlementsQuery.data.length > 0 && (
-                  <>
-                    {settlementsQuery.data.map((settlement) => (
-                      <SelectItem
-                        key={`settlement:${settlement.id}`}
-                        value={`settlement:${settlement.id}`}
-                      >
-                        {settlement.name} ({settlement.nationName})
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
+              <SelectItem value="all">All scopes</SelectItem>
+              {EVENT_SCOPES.map((scope) => (
+                <SelectItem key={scope} value={scope}>
+                  {scope.charAt(0).toUpperCase() + scope.slice(1)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -286,93 +349,152 @@ export function EventsList({
         )}
       </div>
 
-      {events.length === 0 ? (
-        <EmptyState
-          title="No events yet"
-          description={
-            canCreate
-              ? "Create your first event to get started."
-              : "No events exist in this world."
-          }
-        />
-      ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Scope</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedItems.map((item) =>
-                item.type === "single" ? (
-                  <EventRow
-                    key={item.event.id}
-                    event={item.event}
-                    worldId={worldId}
-                  />
-                ) : (
-                  <GroupedEventRow
-                    key={item.groupId}
-                    groupId={item.groupId}
-                    events={item.events}
-                    worldId={worldId}
-                  />
-                ),
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <MasterDetailLayout
+        list={
+          <div className="space-y-4">
+            {filteredEvents.length === 0 ? (
+              <EmptyState
+                title="No events match your filters"
+                description="Try adjusting the status, scope, or search filters."
+              />
+            ) : (
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Scope</TableHead>
+                      <TableHead>Duration</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedItems.map((item) =>
+                      item.type === "single" ? (
+                        <EventRow
+                          key={item.event.id}
+                          event={item.event}
+                          isSelected={item.event.id === selectedEventId}
+                          onSelect={() => {
+                            setSelectedEventId(item.event.id);
+                          }}
+                        />
+                      ) : (
+                        <GroupedEventRow
+                          key={item.groupId}
+                          events={item.events}
+                          isSelected={item.events.some(
+                            (e) => e.id === selectedEventId,
+                          )}
+                          onSelect={() => {
+                            const firstEvent = item.events[0];
+                            if (firstEvent !== undefined) {
+                              setSelectedEventId(firstEvent.id);
+                            }
+                          }}
+                        />
+                      ),
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
 
-      {pageCount > 1 && (
-        <EventsPagination
-          pageIndex={pagination.pageIndex}
-          pageCount={pageCount}
-          onPageChange={(pageIndex) =>
-            setPagination((p) => ({ ...p, pageIndex }))
-          }
-        />
-      )}
+            {pageCount > 1 && (
+              <TablePagination
+                page={pagination.pageIndex}
+                pageCount={pageCount}
+                onPageChange={(pageIndex) =>
+                  setPagination((p) => ({ ...p, pageIndex }))
+                }
+              />
+            )}
+          </div>
+        }
+        detail={
+          selectedEvent === null ? null : (
+            <EventDetail
+              worldId={worldId}
+              eventId={selectedEvent.id}
+              canCancel={canManage}
+              variant="panel"
+              onDeleted={() => {
+                setSelectedEventId(null);
+              }}
+            />
+          )
+        }
+        detailTitle={selectedEvent?.group?.name ?? selectedEvent?.name ?? ""}
+        onCloseDetail={() => {
+          setSelectedEventId(null);
+        }}
+        emptyState={
+          displayItems.length === 0 ? undefined : (
+            <EmptyState
+              icon={Zap}
+              title="Select an event to see its details"
+              action={
+                canCreate ? (
+                  <Button onClick={onCreateClick} size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create event
+                  </Button>
+                ) : undefined
+              }
+            />
+          )
+        }
+      />
     </div>
   );
 }
 
 function EventRow({
   event,
-  worldId,
+  isSelected,
+  onSelect,
 }: {
   readonly event: EventWithGroup;
-  readonly worldId: string;
+  readonly isSelected: boolean;
+  readonly onSelect: () => void;
 }): JSX.Element {
-  const navigate = useNavigate();
   const displayName = event.group?.name ?? event.name;
 
   return (
     <TableRow
-      className="cursor-pointer hover:bg-muted"
-      onClick={() => {
-        void navigate({
-          to: "/worlds/$worldId/events/$eventId",
-          params: { worldId, eventId: event.id },
-        });
+      aria-selected={isSelected}
+      className="cursor-pointer"
+      data-state={isSelected ? "selected" : undefined}
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
       }}
     >
-      <TableCell className="font-medium">{displayName}</TableCell>
-      <TableCell>
-        <Badge className={statusColors[event.status]}>{event.status}</Badge>
+      <TableCell className="font-medium">
+        <span className="flex items-center gap-2">
+          <IconChip
+            icon={DOMAIN_ICON_CHIPS.events.icon}
+            tone={DOMAIN_ICON_CHIPS.events.tone}
+            size="sm"
+          />
+          {displayName}
+        </span>
       </TableCell>
-      <TableCell className="capitalize">{event.scope_type}</TableCell>
+      <TableCell>
+        <EventStatusBadge status={event.status} />
+      </TableCell>
+      <TableCell>
+        <EventScopeBadge scopeType={event.scope_type} />
+      </TableCell>
       <TableCell>
         {event.duration_type === "sustained"
           ? `${event.remaining_transitions}/${event.duration_transitions} turns`
           : "Instant"}
       </TableCell>
-      <TableCell onClick={(e) => e.stopPropagation()}></TableCell>
     </TableRow>
   );
 }
@@ -380,17 +502,17 @@ function EventRow({
 /**
  * Render an event group as a single table row.
  * Displays the group name, status, scope, and target count.
- * Clicking navigates to the first event in the group.
+ * Selecting shows the first event in the group in the detail panel.
  */
 function GroupedEventRow({
   events,
-  worldId,
+  isSelected,
+  onSelect,
 }: {
-  readonly groupId?: string;
   readonly events: readonly EventWithGroup[];
-  readonly worldId: string;
+  readonly isSelected: boolean;
+  readonly onSelect: () => void;
 }): JSX.Element | null {
-  const navigate = useNavigate();
   // Use first event as representative for name, status, effect type, duration
   const firstEvent = events[0];
 
@@ -409,27 +531,42 @@ function GroupedEventRow({
 
   return (
     <TableRow
-      className="cursor-pointer hover:bg-muted"
-      onClick={() => {
-        void navigate({
-          to: "/worlds/$worldId/events/$eventId",
-          params: { worldId, eventId: firstEvent.id },
-        });
+      aria-selected={isSelected}
+      className="cursor-pointer"
+      data-state={isSelected ? "selected" : undefined}
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
       }}
     >
-      <TableCell className="font-medium">{displayName}</TableCell>
-      <TableCell>
-        <Badge className={statusColors[firstEvent.status]}>
-          {firstEvent.status}
-        </Badge>
+      <TableCell className="font-medium">
+        <span className="flex items-center gap-2">
+          <IconChip
+            icon={DOMAIN_ICON_CHIPS.events.icon}
+            tone={DOMAIN_ICON_CHIPS.events.tone}
+            size="sm"
+          />
+          {displayName}
+        </span>
       </TableCell>
-      <TableCell className="capitalize">{scopeLabel}</TableCell>
+      <TableCell>
+        <EventStatusBadge status={firstEvent.status} />
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <EventScopeBadge scopeType={firstEvent.scope_type} />
+          <span className="text-xs text-muted-foreground">{scopeLabel}</span>
+        </div>
+      </TableCell>
       <TableCell>
         {firstEvent.duration_type === "sustained"
           ? `${firstEvent.remaining_transitions}/${firstEvent.duration_transitions} turns`
           : "Instant"}
       </TableCell>
-      <TableCell onClick={(e) => e.stopPropagation()}></TableCell>
     </TableRow>
   );
 }

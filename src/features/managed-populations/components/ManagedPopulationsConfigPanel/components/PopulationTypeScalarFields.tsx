@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { PercentInput } from "@/components/shared/PercentInput";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ type PopulationTypeScalarFieldsProps = {
   readonly husbandryJobLinkError: string | undefined;
   readonly husbandryJobs: readonly JobDefinition[];
   readonly husbandryWorkersPerNAnimals: string;
+  readonly icon: string | null;
   readonly isPending: boolean;
   readonly jobCollisionError: string | undefined;
   readonly name: string;
@@ -33,6 +35,7 @@ type PopulationTypeScalarFieldsProps = {
   readonly onGrowthRateChange: (value: number) => void;
   readonly onHusbandryJobChange: (value: string) => void;
   readonly onHusbandryWorkersPerNAnimalsChange: (value: string) => void;
+  readonly onIconChange: (value: string | null) => void;
   readonly onNameChange: (value: string) => void;
 };
 
@@ -46,6 +49,7 @@ export function PopulationTypeScalarFields({
   husbandryJobLinkError,
   husbandryJobs,
   husbandryWorkersPerNAnimals,
+  icon,
   isPending,
   jobCollisionError,
   name,
@@ -55,6 +59,7 @@ export function PopulationTypeScalarFields({
   onGrowthRateChange,
   onHusbandryJobChange,
   onHusbandryWorkersPerNAnimalsChange,
+  onIconChange,
   onNameChange,
 }: PopulationTypeScalarFieldsProps): JSX.Element {
   return (
@@ -77,6 +82,10 @@ export function PopulationTypeScalarFields({
         ) : null}
         <SlugHint slug={slug} error={fieldErrors.slug} />
       </Label>
+      <div className="grid gap-1 text-sm">
+        <span className="text-muted-foreground">Icon</span>
+        <IconPicker disabled={isPending} value={icon} onChange={onIconChange} />
+      </div>
       {husbandryJobs.length === 0 ? (
         <div className="grid gap-1 text-sm">
           <span className="text-muted-foreground">Husbandry job</span>

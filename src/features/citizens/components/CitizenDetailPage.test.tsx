@@ -66,6 +66,10 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("@/features/partnerships", () => ({
+  activePartnershipForCitizenQueryOptions: (citizenId: string) => ({
+    queryFn: () => Promise.resolve(null),
+    queryKey: ["test", "active-partnership", citizenId],
+  }),
   PartnershipHistoryPanel: () => (
     <div data-testid="partnership-history-panel" />
   ),
@@ -134,11 +138,17 @@ describe("CitizenDetailPage", () => {
       await screen.findByRole("heading", { level: 1, name: "Aldra" }),
     ).toBeDefined();
     expect(screen.getByText("Player character.")).toBeDefined();
+    expect(screen.getByTestId("role-assignment-controls")).toBeDefined();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Core edit" }));
     expect(
       screen.getAllByRole("button", { name: /Edit/ }).length,
     ).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByRole("tab", { name: "Lifecycle" }));
     expect(screen.getByRole("button", { name: "Mark dead" })).toBeDefined();
-    expect(screen.getByTestId("role-assignment-controls")).toBeDefined();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
   });
 
@@ -160,9 +170,11 @@ describe("CitizenDetailPage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Cael" }),
     ).toBeDefined();
-    expect(screen.getAllByText("Deceased").length).toBeGreaterThan(0);
+    expect(screen.getByText("Deceased")).toBeDefined();
     expect(screen.getByText("Admin")).toBeDefined();
     expect(screen.getByText("fever")).toBeDefined();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Lifecycle" }));
     expect(
       screen.getByRole("button", { name: "Revive citizen" }),
     ).toBeDefined();
@@ -244,17 +256,16 @@ describe("CitizenDetailPage", () => {
   });
 
   it("renders the page for the linked PC viewing themselves without admin or lifecycle controls", async () => {
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        adminRows: [],
-        citizen: createCitizenRow({
-          citizen_type: "player_character",
-          name: "Brann",
-          user_id: USER_ID,
-        }),
-        worldVisibility: "public",
+    const client = createClient({
+      adminRows: [],
+      citizen: createCitizenRow({
+        citizen_type: "player_character",
+        name: "Brann",
+        user_id: USER_ID,
       }),
-    );
+      worldVisibility: "public",
+    });
+    requireSupabaseClient.mockReturnValue(client);
 
     renderPage();
 
@@ -265,10 +276,20 @@ describe("CitizenDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Mark dead" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Revive citizen" })).toBeNull();
     expect(screen.queryByTestId("role-assignment-controls")).toBeNull();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
+
+    // Non-admins must never hit the admin-only picker RPC (403 for them).
+    expect(
+      (client as { rpc: ReturnType<typeof vi.fn> }).rpc,
+    ).not.toHaveBeenCalledWith(
+      "search_users_for_admin_picker",
+      expect.anything(),
+    );
   });
 
-  it("redirects nation and settlement managers to their settlement detail screen", async () => {
+  it("renders a read-only profile for nation and settlement managers viewing other citizens", async () => {
     useActivePlayerCharacterMock.mockReturnValue({
       activeCharacter: { roleType: "nation_manager" } as Citizen,
       clear: vi.fn(),
@@ -291,24 +312,17 @@ describe("CitizenDetailPage", () => {
     renderPage();
 
     expect(
-      await screen.findByText(/Nation and settlement managers/i),
+      await screen.findByRole("heading", { level: 1, name: "Cael" }),
     ).toBeDefined();
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith({
-        params: {
-          nationId: NATION_ID,
-          settlementId: SETTLEMENT_ID,
-          worldId: WORLD_ID,
-        },
-        replace: true,
-        search: {},
-        to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
-      });
-    });
-    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /Edit/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mark dead" })).toBeNull();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
+    expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
   });
 
-  it("redirects plain player characters with a tailored message", async () => {
+  it("renders a read-only profile for a plain player viewing another player character, without linked-user or role info", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         adminRows: [],
@@ -324,26 +338,18 @@ describe("CitizenDetailPage", () => {
     renderPage();
 
     expect(
-      await screen.findByText(
-        /Citizen detail is only available for your own living character/i,
-      ),
+      await screen.findByRole("heading", { level: 1, name: "Renn" }),
     ).toBeDefined();
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith({
-        params: {
-          nationId: NATION_ID,
-          settlementId: SETTLEMENT_ID,
-          worldId: WORLD_ID,
-        },
-        replace: true,
-        search: {},
-        to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
-      });
-    });
-    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /Edit/ })).toBeNull();
+    expect(screen.queryByTestId("role-assignment-controls")).toBeNull();
+    expect(screen.queryByText("Role and linked user")).toBeNull();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
+    expect(screen.getByTestId("partnership-history-panel")).toBeDefined();
   });
 
-  it("renders an informational state for citizens without a settlement", async () => {
+  it("renders normally with a 'Back to world' fallback for citizens without a settlement, without redirecting", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         adminRows: [],
@@ -360,11 +366,10 @@ describe("CitizenDetailPage", () => {
     renderPage();
 
     expect(
-      await screen.findByText(
-        /This citizen has not been assigned to a settlement yet/i,
-      ),
+      await screen.findByRole("heading", { level: 1, name: "Drifter" }),
     ).toBeDefined();
     expect(navigateMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: /Back to world/i })).toBeDefined();
   });
 
   describe("CitizenLinkedUserControl", () => {
@@ -686,6 +691,7 @@ describe("CitizenDetailPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { level: 1, name: "Child" });
+    await userEvent.click(screen.getByRole("tab", { name: "Family" }));
     const link = await screen.findByRole("link", { name: "Elder A" });
     expect((link as HTMLAnchorElement).href).toContain(PARENT_A_ID);
     expect(screen.getByText("—")).toBeDefined();
@@ -1033,6 +1039,12 @@ function createCitizensBuilder(
             ? citizenRowsById[lastQueriedId]
             : mainCitizen;
         return Promise.resolve({ data: row, error: null });
+      });
+      // Sibling navigation (citizensInSettlementQueryOptions) always sees just
+      // the main citizen here — multi-sibling cycling has its own focused test.
+      detailBuilder.returns = vi.fn().mockResolvedValue({
+        data: [mainCitizen],
+        error: null,
       });
       return detailBuilder;
     }),

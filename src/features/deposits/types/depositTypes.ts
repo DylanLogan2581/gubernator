@@ -6,6 +6,7 @@ export type WorkerInputEntry = {
 export type DepositType = {
   readonly createdAt: string;
   readonly hasActiveReferences: boolean;
+  readonly icon: string | null;
   readonly id: string;
   readonly isTrashed: boolean;
   readonly jobId: string;

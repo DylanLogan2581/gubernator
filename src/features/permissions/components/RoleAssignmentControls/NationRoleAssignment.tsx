@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { type JSX } from "react";
 import { toast } from "sonner";
 
@@ -74,7 +75,17 @@ function NationRoleAssignmentList({
     return (
       <EmptyState
         title="No assignable player characters"
-        description="This nation has no player characters available to assign as Settlement Manager."
+        description="Player characters become assignable once created for one of this nation's settlements. Create one from a settlement's Citizens tab."
+        action={
+          <Button asChild size="sm" variant="outline">
+            <Link
+              to="/worlds/$worldId/nations/$nationId/settlements"
+              params={{ worldId: nation.worldId, nationId: nation.id }}
+            >
+              View settlements
+            </Link>
+          </Button>
+        }
       />
     );
   }

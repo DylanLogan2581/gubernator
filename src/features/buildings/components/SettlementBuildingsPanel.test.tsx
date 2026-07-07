@@ -404,6 +404,106 @@ describe("SettlementBuildingsPanel", () => {
     expect(screen.getByText("Suspended (1)")).toBeDefined();
   });
 
+  it("hides the redundant active status badge", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Barracks" },
+            state: "active",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    expect(screen.queryByRole("generic", { name: "State: active" })).toBeNull();
+  });
+
+  it("hides the Tier column when every building shares one tier", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Barracks" },
+            state: "active",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    expect(screen.queryByText("Tier 1")).toBeNull();
+    expect(screen.queryByRole("columnheader", { name: "Tier" })).toBeNull();
+  });
+
+  it("shows the Tier column when buildings span multiple tiers", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: [
+          createBuildingRow({
+            building_blueprints: { name: "Barracks" },
+            state: "active",
+          }),
+          createBuildingRow({
+            building_blueprints: { name: "Granary" },
+            building_blueprint_tiers: {
+              effects_json: [{ amount: 5, type: "population_cap_increase" }],
+              tier_number: 2,
+            },
+            id: BUILDING_ID_2,
+            state: "active",
+          }),
+        ],
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Barracks");
+    expect(screen.getByRole("columnheader", { name: "Tier" })).toBeDefined();
+    expect(screen.getByText("Tier 1")).toBeDefined();
+    expect(screen.getByText("Tier 2")).toBeDefined();
+  });
+
+  it("groups identical duplicate buildings with a count, expandable to individual rows", async () => {
+    const user = userEvent.setup();
+    const duplicateIds = [
+      BUILDING_ID_1,
+      BUILDING_ID_2,
+      "00000000-0000-0000-0000-000000000012",
+      "00000000-0000-0000-0000-000000000013",
+    ];
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        buildingRows: duplicateIds.map((id) =>
+          createBuildingRow({
+            building_blueprints: { name: "Longhouse" },
+            id,
+            state: "active",
+          }),
+        ),
+        populationCap: 5,
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    expect(await screen.findByText("Longhouse ×4")).toBeDefined();
+    expect(screen.queryAllByText("Longhouse")).toHaveLength(0);
+
+    await user.click(screen.getByText("Longhouse ×4"));
+
+    expect(await screen.findAllByText("Longhouse")).toHaveLength(4);
+  });
+
   it("renders amber Suspended badge for suspended buildings", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
@@ -511,7 +611,7 @@ describe("SettlementBuildingsPanel", () => {
     expect(badge.getAttribute("title")).toBe("Turn 4 · missed upkeep 2×");
   });
 
-  it("shows effects summary using tierEffectsToState formatting", async () => {
+  it("shows effects as a discrete chip using tierEffectsToState formatting", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         buildingRows: [
@@ -529,10 +629,10 @@ describe("SettlementBuildingsPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Barracks");
-    expect(screen.getByText("cap +10")).toBeDefined();
+    expect(screen.getByText("+10 pop cap")).toBeDefined();
   });
 
-  it("resolves resource and job names in effects column", async () => {
+  it("resolves resource and job names into separate effect chips, no comma run-ons", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         buildingRows: [
@@ -601,11 +701,14 @@ describe("SettlementBuildingsPanel", () => {
     renderPanel({ canAdmin: false, isArchived: false });
 
     await screen.findByText("Barracks");
+    expect(screen.getByText("+2 Miner jobs")).toBeDefined();
+    expect(screen.getByText("50 Iron Ore cap")).toBeDefined();
+    expect(screen.getByText("+3 Iron Ore/turn")).toBeDefined();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "job +2 for Miner, storage +50 for Iron Ore, passive +3/turn of Iron Ore",
       ),
-    ).toBeDefined();
+    ).toBeNull();
   });
 
   it("shows the deconstruct button for active buildings when admin", async () => {

@@ -292,6 +292,7 @@ describe("phaseBuildingUpkeep — event multipliers", () => {
       productionByJobId: new Map(),
       upkeep: 1,
       upkeepByBlueprintId: new Map([["blueprint-1", 2]]),
+      upkeepByBuildingInstanceId: new Map(),
     });
 
     const result = phaseBuildingUpkeep(ctx);
@@ -316,6 +317,7 @@ describe("phaseBuildingUpkeep — event multipliers", () => {
       productionByJobId: new Map(),
       upkeep: 0.5,
       upkeepByBlueprintId: new Map(),
+      upkeepByBuildingInstanceId: new Map(),
     });
 
     const result = phaseBuildingUpkeep(ctx);
@@ -324,6 +326,66 @@ describe("phaseBuildingUpkeep — event multipliers", () => {
     expect(result.stockpileDeltas).toEqual([
       { delta: -5, resourceId: "wood", settlementId: "s1" },
     ]);
+    expect(result.buildingStateChanges).toHaveLength(0);
+  });
+
+  it("applies an instance-specific upkeep multiplier over the blueprint-specific one", () => {
+    const ctx = makeUpkeepContext({
+      buildingBlueprints: [makeBlueprint()],
+      buildingTiers: [makeTier({ upkeepCostsJson: [{ amount: 10, resourceId: "wood" }] })],
+      settlementBuildings: [makeBuilding({ id: "b1" }), makeBuilding({ id: "b2" })],
+      pendingStockpiles: { "s1:wood": 100 },
+    });
+    ctx.shared.pendingEventMultipliers.set("s1", {
+      consumption: 1,
+      productionByBuildingId: new Map(),
+      productionByJobId: new Map(),
+      upkeep: 1,
+      upkeepByBlueprintId: new Map([["blueprint-1", 2]]),
+      upkeepByBuildingInstanceId: new Map([["b1", 3]]),
+    });
+
+    const result = phaseBuildingUpkeep(ctx);
+
+    // b1: adjustedCost = 10 * 3 (instance override wins over blueprint's 2).
+    // b2: adjustedCost = 10 * 2 (blueprint-specific, no instance override).
+    expect(result.stockpileDeltas).toEqual(
+      expect.arrayContaining([
+        { delta: -30, resourceId: "wood", settlementId: "s1" },
+        { delta: -20, resourceId: "wood", settlementId: "s1" },
+      ]),
+    );
+    expect(result.stockpileDeltas).toHaveLength(2);
+    expect(result.buildingStateChanges).toHaveLength(0);
+  });
+
+  it("targets only the listed instances, leaving other buildings at the blueprint/global multiplier", () => {
+    const ctx = makeUpkeepContext({
+      buildingBlueprints: [makeBlueprint()],
+      buildingTiers: [makeTier({ upkeepCostsJson: [{ amount: 10, resourceId: "wood" }] })],
+      settlementBuildings: [makeBuilding({ id: "b1" }), makeBuilding({ id: "b2" })],
+      pendingStockpiles: { "s1:wood": 100 },
+    });
+    ctx.shared.pendingEventMultipliers.set("s1", {
+      consumption: 1,
+      productionByBuildingId: new Map(),
+      productionByJobId: new Map(),
+      upkeep: 1,
+      upkeepByBlueprintId: new Map(),
+      upkeepByBuildingInstanceId: new Map([["b1", 5]]),
+    });
+
+    const result = phaseBuildingUpkeep(ctx);
+
+    // b1: adjustedCost = 10 * 5 = 50 (targeted instance).
+    // b2: adjustedCost = 10 * 1 = 10 (untouched — falls back to global multiplier).
+    expect(result.stockpileDeltas).toEqual(
+      expect.arrayContaining([
+        { delta: -50, resourceId: "wood", settlementId: "s1" },
+        { delta: -10, resourceId: "wood", settlementId: "s1" },
+      ]),
+    );
+    expect(result.stockpileDeltas).toHaveLength(2);
     expect(result.buildingStateChanges).toHaveLength(0);
   });
 });

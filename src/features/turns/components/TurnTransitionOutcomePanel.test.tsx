@@ -456,18 +456,54 @@ function createTransitionRow(): TestTransitionRow {
 }
 
 function createWorldClient(row: TestTransitionRow | null): unknown {
-  const builder: Record<string, unknown> = {};
-  builder.select = vi.fn(() => builder);
-  builder.eq = vi.fn(() => builder);
-  builder.order = vi.fn(() => builder);
-  builder.limit = vi.fn(() => builder);
-  builder.returns = vi.fn(() => builder);
-  builder.maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null });
+  const transitionBuilder: Record<string, unknown> = {};
+  transitionBuilder.select = vi.fn(() => transitionBuilder);
+  transitionBuilder.eq = vi.fn(() => transitionBuilder);
+  transitionBuilder.order = vi.fn(() => transitionBuilder);
+  transitionBuilder.limit = vi.fn(() => transitionBuilder);
+  transitionBuilder.returns = vi.fn(() => transitionBuilder);
+  transitionBuilder.maybeSingle = vi.fn().mockResolvedValue({
+    data:
+      row === null
+        ? null
+        : {
+            finished_at: row.finished_at,
+            from_turn_number: row.from_turn_number,
+            id: row.id,
+            started_at: row.started_at,
+            status: row.status,
+            to_turn_number: row.to_turn_number,
+            world_id: row.world_id,
+          },
+    error: null,
+  });
+
+  const makeChildBuilder = (
+    data: readonly unknown[],
+  ): Record<string, unknown> => {
+    const builder: Record<string, unknown> = {};
+    builder.select = vi.fn(() => builder);
+    builder.eq = vi.fn(() => builder);
+    builder.returns = vi.fn(() => Promise.resolve({ data, error: null }));
+    return builder;
+  };
 
   return {
     from: vi.fn((table: string) => {
       if (table === "turn_transitions") {
-        return builder;
+        return transitionBuilder;
+      }
+      if (table === "settlement_turn_snapshots") {
+        return makeChildBuilder(row?.settlement_turn_snapshots ?? []);
+      }
+      if (table === "settlement_turn_resource_snapshots") {
+        return makeChildBuilder(row?.settlement_turn_resource_snapshots ?? []);
+      }
+      if (table === "turn_log_entries") {
+        return makeChildBuilder(row?.turn_log_entries ?? []);
+      }
+      if (table === "notifications") {
+        return makeChildBuilder(row?.notifications ?? []);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -679,6 +715,7 @@ function createPendingWorldClient(): unknown {
   builder.eq = vi.fn(() => builder);
   builder.order = vi.fn(() => builder);
   builder.limit = vi.fn(() => builder);
+  builder.returns = vi.fn(() => builder);
   builder.maybeSingle = vi.fn(
     () =>
       new Promise(() => {

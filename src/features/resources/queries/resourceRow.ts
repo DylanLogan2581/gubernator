@@ -6,6 +6,7 @@ export type ResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
   readonly decay_rate: number;
+  readonly icon: string | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
@@ -17,13 +18,14 @@ export type ResourceRow = {
 };
 
 export const RESOURCE_SELECT =
-  "id,world_id,name,slug,base_stockpile_cap,decay_rate,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at";
+  "id,world_id,name,slug,icon,base_stockpile_cap,decay_rate,is_system_resource,is_trashed,last_cleanup_summary_json,created_at,updated_at";
 
 export function toResource(row: ResourceRow): Resource {
   return {
     baseStockpileCap: row.base_stockpile_cap,
     createdAt: row.created_at,
     decayRate: row.decay_rate,
+    icon: row.icon,
     id: row.id,
     isTrashed: row.is_trashed,
     isSystemResource: row.is_system_resource,

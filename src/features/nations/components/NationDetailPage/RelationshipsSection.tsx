@@ -5,6 +5,7 @@ import { type JSX } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,7 +21,11 @@ import {
 import { nationsListQueryOptions } from "../../queries/nationsQueries";
 
 import { NationRelationshipRow } from "./RelationshipRow";
-import { getStanceIconConfig } from "./RelationshipUtils";
+import {
+  formatRelationshipStance,
+  getStanceBadgeClassName,
+  getStanceIconConfig,
+} from "./RelationshipUtils";
 
 import type { NationRelationship } from "../../types/nationRelationshipTypes";
 import type { Nation } from "../../types/nationTypes";
@@ -177,14 +182,36 @@ function NationRelationshipAccordionRow({
   readonly queryClient: QueryClient;
 }): JSX.Element {
   const currentStance = outgoing?.currentStance ?? "neutral";
-  const { Icon, colorClass, label } = getStanceIconConfig(currentStance);
+  const { Icon, colorClass } = getStanceIconConfig(currentStance);
+  const stanceLabel = formatRelationshipStance(currentStance);
+  const badgeClassName = getStanceBadgeClassName(currentStance);
+  const pendingCount =
+    (outgoing?.pendingStance !== null && outgoing?.pendingStance !== undefined
+      ? outgoing.pendingStatus === "proposed"
+        ? 1
+        : 0
+      : 0) +
+    (incoming?.pendingStance !== null && incoming?.pendingStance !== undefined
+      ? incoming.pendingStatus === "proposed"
+        ? 1
+        : 0
+      : 0);
 
   return (
     <Collapsible className="group">
       <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors">
         <span className="font-medium">{other.name}</span>
         <div className="flex items-center gap-2 shrink-0">
-          <Icon className={`h-4 w-4 ${colorClass}`} aria-label={label} />
+          {pendingCount > 0 ? (
+            <Badge variant="outline">
+              {pendingCount} pending{" "}
+              {pendingCount === 1 ? "proposal" : "proposals"}
+            </Badge>
+          ) : null}
+          <Badge className={badgeClassName}>
+            <Icon className={`h-3 w-3 ${colorClass}`} aria-hidden="true" />
+            {stanceLabel}
+          </Badge>
           <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
         </div>
       </CollapsibleTrigger>

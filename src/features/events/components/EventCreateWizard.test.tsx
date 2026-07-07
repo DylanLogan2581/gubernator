@@ -65,6 +65,25 @@ vi.mock("@/features/resources", () => ({
   }),
 }));
 
+const { nationsListMock, settlementsListMock } = vi.hoisted(() => ({
+  nationsListMock: vi.fn(),
+  settlementsListMock: vi.fn(),
+}));
+
+vi.mock("@/features/nations", () => ({
+  nationsListQueryOptions: () => ({
+    queryKey: ["nations-test"],
+    queryFn: nationsListMock,
+  }),
+}));
+
+vi.mock("@/features/settlements", () => ({
+  settlementsByWorldQueryOptions: () => ({
+    queryKey: ["settlements-test"],
+    queryFn: settlementsListMock,
+  }),
+}));
+
 vi.mock("@/features/worlds", () => ({
   worldRouteAccessQueryOptions: () => ({
     queryKey: ["world-route-access-test"],
@@ -139,11 +158,15 @@ type EffectRow = {
   readonly multiplierValue: number | null;
   readonly resourceId: string | null;
   readonly jobId: string | null;
+  readonly jobMode?: "all" | "select";
+  readonly jobIds?: string[];
   readonly managedPopulationInstanceId: string | null;
   readonly managedPopulationTypeId: string | null;
   readonly managedPopulationMode: "all" | "type" | "instance" | null;
   readonly depositInstanceId: string | null;
   readonly settlementBuildingId: string | null;
+  readonly buildingBlueprintMode?: "all" | "select";
+  readonly buildingBlueprintIds?: string[];
 };
 
 const NEW_EFFECT_ROW: EffectRow = {
@@ -153,6 +176,38 @@ const NEW_EFFECT_ROW: EffectRow = {
   multiplierValue: null,
   resourceId: null,
   jobId: null,
+  managedPopulationInstanceId: null,
+  managedPopulationTypeId: null,
+  managedPopulationMode: null,
+  depositInstanceId: null,
+  settlementBuildingId: null,
+};
+
+const BLUEPRINT_EFFECT_ROW: EffectRow = {
+  effectType: "upkeep_multiplier",
+  isPercent: false,
+  amountValue: null,
+  multiplierValue: 1.5,
+  resourceId: null,
+  jobId: null,
+  managedPopulationInstanceId: null,
+  managedPopulationTypeId: null,
+  managedPopulationMode: null,
+  depositInstanceId: null,
+  settlementBuildingId: null,
+  buildingBlueprintMode: "select",
+  buildingBlueprintIds: ["blueprint-1"],
+};
+
+const INVALID_JOB_EFFECT_ROW: EffectRow = {
+  effectType: "production_multiplier",
+  isPercent: false,
+  amountValue: null,
+  multiplierValue: 1.2,
+  resourceId: null,
+  jobId: null,
+  jobMode: "select",
+  jobIds: [],
   managedPopulationInstanceId: null,
   managedPopulationTypeId: null,
   managedPopulationMode: null,
@@ -173,6 +228,16 @@ vi.mock("./steps/EventCreateEffectsStep", () => ({
     <div data-testid="step-effects">
       <button onClick={() => onEffectsChange([...effects, NEW_EFFECT_ROW])}>
         Add effect
+      </button>
+      <button
+        onClick={() => onEffectsChange([...effects, BLUEPRINT_EFFECT_ROW])}
+      >
+        Add blueprint effect
+      </button>
+      <button
+        onClick={() => onEffectsChange([...effects, INVALID_JOB_EFFECT_ROW])}
+      >
+        Add invalid job effect
       </button>
       <button onClick={() => onEffectsChange(effects.slice(0, -1))}>
         Remove effect
@@ -199,36 +264,32 @@ vi.mock("./steps/EventCreateStep3", () => ({
   ),
 }));
 
-type Step4MockProps = {
-  readonly createCitizenMemories: boolean;
-  readonly groupDescription: string;
-  readonly memoryText: string;
-  readonly onCreateCitizenMemoriesChange: (create: boolean) => void;
-  readonly onMemoryTextChange: (text: string) => void;
-  readonly isAlreadyActivated?: boolean;
+type ForecastMockMemory = {
+  readonly turnOffset: number;
+  readonly text: string;
 };
 
-vi.mock("./steps/EventCreateStep4", () => ({
-  EventCreateStep4: ({
-    memoryText,
-    onCreateCitizenMemoriesChange,
-    onMemoryTextChange,
-  }: Step4MockProps) => (
-    <div data-testid="step-memory">
-      <button onClick={() => onCreateCitizenMemoriesChange(true)}>
-        Record memories
+type ForecastMockProps = {
+  readonly memories: readonly ForecastMockMemory[];
+  readonly onMemoriesChange: (memories: readonly ForecastMockMemory[]) => void;
+};
+
+vi.mock("./steps/EventCreateForecastStep", () => ({
+  EventCreateForecastStep: ({
+    memories,
+    onMemoriesChange,
+  }: ForecastMockProps) => (
+    <div data-testid="step-forecast">
+      <button
+        onClick={() =>
+          onMemoriesChange([...memories, { turnOffset: 0, text: "A memory" }])
+        }
+      >
+        Add memory
       </button>
-      <input
-        aria-label="Memory text"
-        value={memoryText}
-        onChange={(e) => onMemoryTextChange(e.target.value)}
-      />
+      <span data-testid="memory-count">{memories.length}</span>
     </div>
   ),
-}));
-
-vi.mock("./steps/EventCreateStep5", () => ({
-  EventCreateStep5: () => <div data-testid="step-review" />,
 }));
 
 function createAccessContext(
@@ -300,6 +361,11 @@ describe("EventCreateWizard", () => {
       .mockResolvedValue({ event_ids: ["event-1"], group_id: "group-1" });
     editMutationFn = vi.fn().mockResolvedValue({ group_id: "group-1" });
 
+    nationsListMock.mockReset();
+    nationsListMock.mockResolvedValue([]);
+    settlementsListMock.mockReset();
+    settlementsListMock.mockResolvedValue([]);
+
     createEventGroupMutationOptionsMock.mockReset();
     createEventGroupMutationOptionsMock.mockReturnValue({
       mutationFn: createMutationFn,
@@ -314,27 +380,32 @@ describe("EventCreateWizard", () => {
   });
 
   describe("step validation", () => {
-    it("disables Next on the name step until a group name is provided", async () => {
+    it("disables Next on the Basics step until a group name and scope are provided", async () => {
       const user = userEvent.setup();
       renderWizard();
+
+      // Basics (step 1) shows name, scope, and duration together now.
+      expect(screen.getByTestId("step-scope-type")).toBeInTheDocument();
+      expect(screen.getByTestId("step-duration")).toBeInTheDocument();
 
       const nextButton = screen.getByRole("button", { name: "Next" });
       expect(nextButton).toBeDisabled();
 
       await user.type(screen.getByLabelText("Group name"), "Solar Flare");
+      expect(nextButton).toBeDisabled();
+
+      await user.click(screen.getByRole("button", { name: "Scope: World" }));
       expect(nextButton).toBeEnabled();
 
       await user.click(nextButton);
-      expect(screen.getByTestId("step-scope-type")).toBeInTheDocument();
+      expect(screen.getByTestId("step-effects")).toBeInTheDocument();
     });
 
-    it("requires a target selection on the scope step unless scope is world", async () => {
+    it("requires a target selection on Basics unless scope is world", async () => {
       const user = userEvent.setup();
       renderWizard();
 
       await user.type(screen.getByLabelText("Group name"), "Solar Flare");
-      await user.click(screen.getByRole("button", { name: "Next" }));
-
       await user.click(screen.getByRole("button", { name: "Scope: Nation" }));
       expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
@@ -347,32 +418,8 @@ describe("EventCreateWizard", () => {
       renderWizard();
 
       await user.type(screen.getByLabelText("Group name"), "Solar Flare");
-      await user.click(screen.getByRole("button", { name: "Next" }));
-
       await user.click(screen.getByRole("button", { name: "Scope: World" }));
       expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
-    });
-
-    it("requires memory text on the memory step once recording memories is enabled", async () => {
-      const user = userEvent.setup();
-      renderWizard();
-
-      await user.type(screen.getByLabelText("Group name"), "Solar Flare");
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> scope
-      await user.click(screen.getByRole("button", { name: "Scope: World" }));
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> effects
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> duration
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> memory
-
-      expect(screen.getByTestId("step-memory")).toBeInTheDocument();
-      const nextButton = screen.getByRole("button", { name: "Next" });
-      expect(nextButton).toBeEnabled();
-
-      await user.click(screen.getByRole("button", { name: "Record memories" }));
-      expect(nextButton).toBeDisabled();
-
-      await user.type(screen.getByLabelText("Memory text"), "They remember.");
-      expect(nextButton).toBeEnabled();
     });
   });
 
@@ -381,7 +428,6 @@ describe("EventCreateWizard", () => {
       user: ReturnType<typeof userEvent.setup>,
     ): Promise<void> {
       await user.type(screen.getByLabelText("Group name"), "Solar Flare");
-      await user.click(screen.getByRole("button", { name: "Next" }));
       await user.click(screen.getByRole("button", { name: "Scope: World" }));
       await user.click(screen.getByRole("button", { name: "Next" }));
     }
@@ -411,9 +457,7 @@ describe("EventCreateWizard", () => {
       await user.click(screen.getByRole("button", { name: "Add effect" }));
       await user.click(screen.getByRole("button", { name: "Add effect" }));
 
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> duration
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> memory
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> review
+      await user.click(screen.getByRole("button", { name: "Next" })); // -> forecast
       await user.click(screen.getByRole("button", { name: "Create Event" }));
 
       await waitFor(() => expect(createMutationFn).toHaveBeenCalledTimes(1));
@@ -434,6 +478,160 @@ describe("EventCreateWizard", () => {
           ],
         }),
       );
+    });
+
+    it("includes building blueprint targeting fields in the submitted effect payload", async () => {
+      const user = userEvent.setup();
+      renderWizard();
+      await advanceToEffectsStep(user);
+
+      await user.click(
+        screen.getByRole("button", { name: "Add blueprint effect" }),
+      );
+
+      await user.click(screen.getByRole("button", { name: "Next" })); // -> forecast
+      await user.click(screen.getByRole("button", { name: "Create Event" }));
+
+      await waitFor(() => expect(createMutationFn).toHaveBeenCalledTimes(1));
+      expect(createMutationFn.mock.calls[0]?.[0]).toEqual(
+        expect.objectContaining({
+          effects: [
+            expect.objectContaining({
+              effectType: "upkeep_multiplier",
+              buildingBlueprintMode: "select",
+              buildingBlueprintIds: ["blueprint-1"],
+            }),
+          ],
+        }),
+      );
+    });
+
+    it("blocks Next when a production multiplier is in Select Jobs mode with zero jobs chosen", async () => {
+      const user = userEvent.setup();
+      renderWizard();
+      await advanceToEffectsStep(user);
+
+      await user.click(
+        screen.getByRole("button", { name: "Add invalid job effect" }),
+      );
+
+      expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+      await user.click(screen.getByRole("button", { name: "Remove effect" }));
+      expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+    });
+  });
+
+  describe("forecast & memories", () => {
+    it("submits memories drafted on the forecast step, mapped to turnOffset/memoryText", async () => {
+      const user = userEvent.setup();
+      renderWizard();
+
+      await user.type(screen.getByLabelText("Group name"), "Solar Flare");
+      await user.click(screen.getByRole("button", { name: "Scope: World" }));
+      await user.click(screen.getByRole("button", { name: "Next" })); // -> effects
+      await user.click(screen.getByRole("button", { name: "Next" })); // -> forecast
+
+      await user.click(screen.getByRole("button", { name: "Add memory" }));
+      expect(screen.getByTestId("memory-count")).toHaveTextContent("1");
+
+      await user.click(screen.getByRole("button", { name: "Create Event" }));
+
+      await waitFor(() => expect(createMutationFn).toHaveBeenCalledTimes(1));
+      expect(createMutationFn.mock.calls[0]?.[0]).toEqual(
+        expect.objectContaining({
+          memories: [{ turnOffset: 0, memoryText: "A memory" }],
+        }),
+      );
+    });
+  });
+
+  describe("scope name resolution", () => {
+    it("resolves scope_name to the real nation display name instead of a raw id", async () => {
+      const user = userEvent.setup();
+      nationsListMock.mockResolvedValue([
+        { id: "nation-1", name: "Kingdom of Foo" },
+      ]);
+      renderWizard();
+
+      await user.type(screen.getByLabelText("Group name"), "Solar Flare");
+      await user.click(screen.getByRole("button", { name: "Scope: Nation" }));
+      await user.click(screen.getByRole("button", { name: "Select nation-1" }));
+      await user.click(screen.getByRole("button", { name: "Next" })); // -> effects
+      await user.click(screen.getByRole("button", { name: "Next" })); // -> forecast
+      await user.click(screen.getByRole("button", { name: "Create Event" }));
+
+      await waitFor(() => expect(createMutationFn).toHaveBeenCalledTimes(1));
+      expect(createMutationFn.mock.calls[0]?.[0]).toEqual(
+        expect.objectContaining({
+          targets: [
+            expect.objectContaining({
+              scope_id: "nation-1",
+              scope_name: "Kingdom of Foo",
+            }),
+          ],
+        }),
+      );
+    });
+  });
+
+  describe("edit mode", () => {
+    function renderEditWizard(): {
+      readonly onClose: ReturnType<typeof vi.fn>;
+    } {
+      const onClose = vi.fn();
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          mutations: { retry: false },
+          queries: { retry: false },
+        },
+      });
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <EventCreateWizard
+            accessContext={createAccessContext()}
+            worldId={WORLD_ID}
+            onClose={onClose}
+            isEditMode
+            editGroupId="group-1"
+            editEventData={{
+              groupId: "group-1",
+              groupName: "Original Name",
+              groupDescription: "Original description",
+              scopeType: "world",
+              durationType: "instant",
+              durationTransitions: null,
+              activationTurn: 5,
+              memories: [],
+              effects: [],
+            }}
+          />
+        </QueryClientProvider>,
+      );
+
+      return { onClose };
+    }
+
+    it("allows navigating back to the Basics step to edit the name", async () => {
+      const user = userEvent.setup();
+      renderEditWizard();
+
+      expect(screen.getByTestId("step-effects")).toBeInTheDocument();
+      const prevButton = screen.getByRole("button", { name: "Previous" });
+      expect(prevButton).toBeEnabled();
+
+      await user.click(prevButton);
+
+      expect(screen.getByTestId("step-name")).toBeInTheDocument();
+      // Scope selection stays locked in edit mode.
+      expect(screen.queryByTestId("step-scope-type")).not.toBeInTheDocument();
+      const nameInput = screen.getByLabelText("Group name");
+      expect(nameInput).toHaveValue("Original Name");
+
+      await user.clear(nameInput);
+      await user.type(nameInput, "Updated Name");
+      expect(nameInput).toHaveValue("Updated Name");
     });
   });
 
@@ -469,12 +667,9 @@ describe("EventCreateWizard", () => {
       renderWizard();
 
       await user.type(screen.getByLabelText("Group name"), "Solar Flare");
-      await user.click(screen.getByRole("button", { name: "Next" }));
       await user.click(screen.getByRole("button", { name: "Scope: World" }));
       await user.click(screen.getByRole("button", { name: "Next" })); // -> effects
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> duration
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> memory
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> review
+      await user.click(screen.getByRole("button", { name: "Next" })); // -> forecast
       await user.click(screen.getByRole("button", { name: "Create Event" }));
 
       await waitFor(() =>
@@ -522,12 +717,9 @@ describe("EventCreateWizard", () => {
       renderWizard();
 
       await user.type(screen.getByLabelText("Group name"), "Solar Flare");
-      await user.click(screen.getByRole("button", { name: "Next" }));
       await user.click(screen.getByRole("button", { name: "Scope: World" }));
       await user.click(screen.getByRole("button", { name: "Next" })); // -> effects
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> duration
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> memory
-      await user.click(screen.getByRole("button", { name: "Next" })); // -> review
+      await user.click(screen.getByRole("button", { name: "Next" })); // -> forecast
       await user.click(screen.getByRole("button", { name: "Create Event" }));
 
       await waitFor(() =>

@@ -1,15 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import {
-  Check,
-  ChevronDown,
-  ShieldAlert,
-  ShieldCheck,
-  UserCircle2,
-} from "lucide-react";
+import { Check, ChevronDown, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useId, type JSX } from "react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -20,11 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Citizen } from "@/features/citizens";
-import { settlementByIdQueryOptions } from "@/features/settlements";
+import { CitizenAvatar, type Citizen } from "@/features/citizens";
 import { cn } from "@/lib/utils";
 
 import { useActivePlayerCharacter } from "../context/activePlayerCharacterContext";
+
+import { CharacterRoleLabel } from "./CharacterRoleLabel";
 
 export type ActiveCharacterSwitcherProps = {
   readonly canAdmin: boolean;
@@ -250,48 +243,12 @@ function CharacterAvatar({
   readonly citizen: Citizen;
   readonly size: "sm" | "default";
 }): JSX.Element {
-  const initial = citizen.name.charAt(0).toUpperCase();
   return (
-    <Avatar size={size}>
-      {citizen.profilePhotoUrl !== null && citizen.profilePhotoUrl !== "" ? (
-        <AvatarImage src={citizen.profilePhotoUrl} alt="" />
-      ) : null}
-      <AvatarFallback>
-        {initial === "" ? (
-          <UserCircle2 className="size-4" aria-hidden />
-        ) : (
-          initial
-        )}
-      </AvatarFallback>
-    </Avatar>
+    <CitizenAvatar
+      id={citizen.id}
+      name={citizen.name}
+      profilePhotoUrl={citizen.profilePhotoUrl}
+      size={size}
+    />
   );
-}
-
-function CharacterRoleLabel({
-  citizen,
-}: {
-  readonly citizen: Citizen;
-}): JSX.Element {
-  const settlementId =
-    citizen.roleType === "settlement_manager" ? citizen.roleSettlementId : null;
-  const settlementQuery = useQuery({
-    ...settlementByIdQueryOptions(settlementId ?? ""),
-    enabled: settlementId !== null,
-  });
-
-  switch (citizen.roleType) {
-    case "none":
-      return <>None</>;
-    case "nation_manager":
-      return <>Nation manager</>;
-    case "settlement_manager": {
-      const settlementName = settlementQuery.data?.name ?? null;
-      return (
-        <>
-          Settlement manager
-          {settlementName === null ? "" : ` — ${settlementName}`}
-        </>
-      );
-    }
-  }
 }

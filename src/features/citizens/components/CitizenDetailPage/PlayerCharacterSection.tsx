@@ -56,6 +56,7 @@ export function CitizenPlayerCharacterSection({
         </p>
       </div>
       <CitizenLinkedUserControl
+        canAdmin={canAdmin}
         canEdit={canEdit}
         citizen={citizen}
         queryClient={queryClient}
@@ -70,11 +71,21 @@ export function CitizenPlayerCharacterSection({
   );
 }
 
+type LinkedUserState =
+  | { kind: "unlinked" }
+  | { kind: "hidden" }
+  | { kind: "pending" }
+  | { kind: "error" }
+  | { kind: "linked"; name: string }
+  | { kind: "unknown" };
+
 function CitizenLinkedUserControl({
+  canAdmin,
   canEdit,
   citizen,
   queryClient,
 }: {
+  readonly canAdmin: boolean;
   readonly canEdit: boolean;
   readonly citizen: Citizen;
   readonly queryClient: QueryClient;
@@ -84,7 +95,10 @@ function CitizenLinkedUserControl({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [inputError, setInputError] = useState<string | undefined>(undefined);
 
-  const usersQuery = useQuery(availableUsersQueryOptions());
+  const usersQuery = useQuery({
+    ...availableUsersQueryOptions(),
+    enabled: canAdmin,
+  });
   const linkMutation = useMutation(
     linkUserToCitizenMutationOptions({ queryClient }),
   );
@@ -175,16 +189,20 @@ function CitizenLinkedUserControl({
 
   const userChoices = usersQuery.data ?? [];
   const linkedUser = userChoices.find((u) => u.id === citizen.userId);
-  // Show a skeleton while the lookup is in flight so the raw UUID never appears.
-  const linkedUserPending = citizen.userId !== null && usersQuery.isPending;
-  const linkedUserLabel: string | null =
+  // Distinct states so a genuinely unlinked citizen ("Not set") is never
+  // confused with a hidden (non-admin) or failed-to-load lookup.
+  const linkedUserState: LinkedUserState =
     citizen.userId === null
-      ? null
-      : linkedUser !== undefined
-        ? linkedUser.username
-        : usersQuery.isPending || usersQuery.isError
-          ? null
-          : "Unknown user";
+      ? { kind: "unlinked" }
+      : !canAdmin
+        ? { kind: "hidden" }
+        : usersQuery.isPending
+          ? { kind: "pending" }
+          : usersQuery.isError
+            ? { kind: "error" }
+            : linkedUser !== undefined
+              ? { kind: "linked", name: linkedUser.username }
+              : { kind: "unknown" };
 
   function unlinkRoleDescription(): string {
     if (roleScope === "nation") {
@@ -205,15 +223,47 @@ function CitizenLinkedUserControl({
   return (
     <div className="grid gap-2">
       <dl>
-        {linkedUserPending ? (
+        {linkedUserState.kind === "pending" ? (
           <div className="rounded-md border border-border bg-background px-3 py-2">
             <dt className="text-xs text-muted-foreground">Linked user</dt>
             <dd className="mt-1">
               <Skeleton className="h-4 w-32" />
             </dd>
           </div>
+        ) : linkedUserState.kind === "hidden" ? (
+          <div className="rounded-md border border-border bg-background px-3 py-2">
+            <dt className="text-xs text-muted-foreground">Linked user</dt>
+            <dd className="mt-1 text-sm italic text-muted-foreground">
+              Linked user hidden
+            </dd>
+          </div>
+        ) : linkedUserState.kind === "error" ? (
+          <div className="rounded-md border border-border bg-background px-3 py-2">
+            <dt className="text-xs text-muted-foreground">Linked user</dt>
+            <dd className="mt-1 flex items-center gap-2 text-sm text-destructive">
+              <span>Couldn't load linked user.</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void usersQuery.refetch()}
+              >
+                Retry
+              </Button>
+            </dd>
+          </div>
         ) : (
-          <Readout label="Linked user" value={linkedUserLabel} mono={false} />
+          <Readout
+            label="Linked user"
+            mono={false}
+            value={
+              linkedUserState.kind === "linked"
+                ? linkedUserState.name
+                : linkedUserState.kind === "unknown"
+                  ? "Unknown user"
+                  : null
+            }
+          />
         )}
       </dl>
       {canEdit && !isEditing ? (

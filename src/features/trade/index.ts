@@ -1,6 +1,7 @@
 // Trade feature — trade routes for inter-settlement resource exchange (Epic 5).
 
 export { SettlementTradeRoutesPanel } from "./components/SettlementTradeRoutesPanel";
+export { PAUSE_REASON_LABELS } from "./components/SettlementTradeRoutesPanel/TradeRouteHelpers";
 
 export {
   ApproveTradeRouteSideMutationError,

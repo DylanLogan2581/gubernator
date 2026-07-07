@@ -248,9 +248,7 @@ describe("worlds route list", () => {
     expect(
       await screen.findByRole("heading", { name: "Public World" }),
     ).toBeDefined();
-    const planningTurnLabel = screen.getByText("Planning turn");
-
-    expect(planningTurnLabel.nextElementSibling).toHaveTextContent("1");
+    expect(await screen.findByText("private")).toBeDefined();
   });
 });
 
@@ -286,11 +284,9 @@ describe("world shell route", () => {
     expect(
       await screen.findByRole("heading", { name: "Eastern Marches" }),
     ).toBeDefined();
-    expect(screen.getByText("Planning turn")).toBeDefined();
-    expect(screen.getByText("12")).toBeDefined();
+    expect(screen.getByText("active")).toBeDefined();
     expect(await screen.findByText("Readiness Summary")).toBeDefined();
     expect(screen.getByText("Nation A")).toBeDefined();
-    expect(screen.queryByText(/citizen/i)).toBeNull();
   });
 
   it("renders a safe not-found state for missing or inaccessible worlds", async () => {
@@ -450,6 +446,32 @@ function createClient({
         return createNotificationsQueryBuilder();
       }
 
+      if (table === "turn_transitions") {
+        return createTurnTransitionsQueryBuilder();
+      }
+
+      if (table === "citizens") {
+        const builder: Record<string, unknown> = {};
+        builder.eq = vi.fn(() => builder);
+        builder.order = vi.fn(() => builder);
+        builder.returns = vi.fn().mockResolvedValue({ data: [], error: null });
+        return { select: vi.fn(() => builder) };
+      }
+
+      if (table === "user_active_player_characters") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi
+                  .fn()
+                  .mockResolvedValue({ data: null, error: null }),
+              })),
+            })),
+          })),
+        };
+      }
+
       throw new Error(`Unexpected table ${table}`);
     }),
     channel: vi.fn().mockReturnValue({
@@ -465,6 +487,18 @@ function createClient({
       throw new Error(`Unexpected RPC: ${fn}`);
     }),
   };
+}
+
+function createTurnTransitionsQueryBuilder(): unknown {
+  const builder = {
+    eq: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
+    maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    order: vi.fn(() => builder),
+    select: vi.fn(() => builder),
+  };
+
+  return builder;
 }
 
 function createNotificationsQueryBuilder(): unknown {

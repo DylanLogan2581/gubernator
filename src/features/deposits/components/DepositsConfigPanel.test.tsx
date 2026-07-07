@@ -409,6 +409,203 @@ describe("DepositsConfigPanel", () => {
       screen.queryByRole("button", { name: "Move Iron Ore to trash" }),
     ).toBeNull();
   });
+
+  it("narrows results via the search input", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [
+          createDepositTypeRow({ name: "Iron Ore" }),
+          createDepositTypeRow({
+            id: "00000000-0000-0000-0000-000000000011",
+            name: "Coal Seam",
+          }),
+        ],
+        jobRows: [],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByText("Iron Ore");
+    expect(screen.getByText("Coal Seam")).toBeDefined();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Search deposit types by name" }),
+      "Iron",
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Coal Seam")).toBeNull();
+      expect(screen.getByText("Iron Ore")).toBeDefined();
+    });
+  });
+
+  it("opens a confirm dialog naming the deposit type when delete permanently is clicked", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [
+          createDepositTypeRow({ is_trashed: true, name: "Iron Vein" }),
+        ],
+        jobRows: [],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Deposit Types" });
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await screen.findByText("Iron Vein");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Permanently delete Iron Vein?",
+    });
+    expect(dialog).toHaveTextContent(/cannot be undone/i);
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("does not call the hard-delete mutation when the confirm dialog is cancelled", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [
+          createDepositTypeRow({ is_trashed: true, name: "Iron Vein" }),
+        ],
+        jobRows: [],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Deposit Types" });
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await screen.findByText("Iron Vein");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Permanently delete Iron Vein?",
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("alertdialog", {
+          name: "Permanently delete Iron Vein?",
+        }),
+      ).toBeNull();
+    });
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("permanently deletes a deposit type only after the confirm dialog is accepted", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [
+          createDepositTypeRow({ is_trashed: true, name: "Iron Vein" }),
+        ],
+        jobRows: [],
+        resourceRows: [],
+        rpcResult: {
+          data: { id: DEPOSIT_TYPE_ID, world_id: WORLD_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Deposit Types" });
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await screen.findByText("Iron Vein");
+    await user.click(
+      screen.getByRole("button", { name: "Delete permanently" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Permanently delete Iron Vein?",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Delete permanently" }),
+    );
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Deposit type permanently deleted.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("restores a trashed deposit type", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [
+          createDepositTypeRow({ is_trashed: true, name: "Iron Vein" }),
+        ],
+        jobRows: [],
+        resourceRows: [],
+        rpcResult: {
+          data: { id: DEPOSIT_TYPE_ID, world_id: WORLD_ID },
+          error: null,
+        },
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Deposit Types" });
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await screen.findByText("Iron Vein");
+    await user.click(screen.getByRole("button", { name: "Restore" }));
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledExactlyOnceWith(
+        "Deposit type restored.",
+        undefined,
+      );
+    });
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("disables the delete permanently button when the deposit type has active references", async () => {
+    const user = userEvent.setup();
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        depositTypeRows: [
+          createDepositTypeRow({
+            is_trashed: true,
+            name: "Iron Vein",
+            referencing_jobs: [{ id: JOB_ID }],
+          }),
+        ],
+        jobRows: [],
+        resourceRows: [],
+      }),
+    );
+
+    renderPanel({ canAdmin: true, isArchived: false });
+
+    await screen.findByRole("heading", { name: "Deposit Types" });
+    await user.click(screen.getByRole("button", { name: "Show trash" }));
+    await screen.findByText("Iron Vein");
+
+    const deleteBtn = screen.getByRole("button", {
+      name: "Delete permanently",
+    });
+    expect((deleteBtn as HTMLButtonElement).disabled).toBe(true);
+  });
 });
 
 function renderPanel({
@@ -439,6 +636,7 @@ function createQueryClient(): QueryClient {
 
 type TestDepositTypeRow = {
   readonly created_at: string;
+  readonly icon: string | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly job_id: string;
@@ -489,6 +687,7 @@ function createDepositTypeRow(
 ): TestDepositTypeRow {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
+    icon: null,
     id: DEPOSIT_TYPE_ID,
     is_trashed: false,
     job_id: JOB_ID,
@@ -605,11 +804,46 @@ function createDepositTypesQueryBuilder(
     readonly error: { readonly message: string } | null;
   },
 ): unknown {
-  const selectBuilder: Record<string, unknown> = {
-    eq: vi.fn(() => selectBuilder),
-    order: vi.fn(() => selectBuilder),
-    returns: vi.fn().mockResolvedValue({ data: rows, error: null }),
-  };
+  // Emulates enough of the real filter/order/range/returns chain that the
+  // panel's server-side search + pagination + trash filtering (#1032)
+  // behaves like the real Supabase query would, instead of always
+  // returning every row regardless of the applied filters. This builder
+  // backs both the paginated page query and the unpaginated active-list
+  // query (used to feed `allDepositTypes` into the create/edit forms) —
+  // the latter simply never calls `.range()`.
+  function buildSelectBuilder(): Record<string, unknown> {
+    let filtered: TestDepositTypeRow[] = [...rows];
+    let range: readonly [number, number] | null = null;
+
+    const selectBuilder: Record<string, unknown> = {
+      eq: vi.fn((column: string, value: unknown) => {
+        filtered = filtered.filter(
+          (row) => row[column as keyof TestDepositTypeRow] === value,
+        );
+        return selectBuilder;
+      }),
+      ilike: vi.fn((column: string, pattern: string) => {
+        const needle = pattern.replaceAll("%", "").toLowerCase();
+        filtered = filtered.filter((row) =>
+          String(row[column as keyof TestDepositTypeRow] as string)
+            .toLowerCase()
+            .includes(needle),
+        );
+        return selectBuilder;
+      }),
+      order: vi.fn(() => selectBuilder),
+      range: vi.fn((start: number, end: number) => {
+        range = [start, end];
+        return selectBuilder;
+      }),
+      returns: vi.fn(() => {
+        const data =
+          range === null ? filtered : filtered.slice(range[0], range[1] + 1);
+        return Promise.resolve({ count: filtered.length, data, error: null });
+      }),
+    };
+    return selectBuilder;
+  }
 
   const updateBuilder: Record<string, unknown> = {
     eq: vi.fn(() => updateBuilder),
@@ -624,7 +858,7 @@ function createDepositTypesQueryBuilder(
         maybeSingle: vi.fn().mockResolvedValue(insertResult),
       })),
     })),
-    select: vi.fn(() => selectBuilder),
+    select: vi.fn(() => buildSelectBuilder()),
     update: vi.fn(() => updateBuilder),
   };
 }

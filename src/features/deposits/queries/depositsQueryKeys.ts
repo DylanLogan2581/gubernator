@@ -1,5 +1,7 @@
 import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
 
+import type { DepositTypesPageParams } from "./depositsQueries";
+
 export const depositsQueryKeys = {
   all: authStateQueryCacheKeys.depositsAll,
   activeByWorld: (worldId: string) =>
@@ -8,6 +10,11 @@ export const depositsQueryKeys = {
     [...depositsQueryKeys.all, "by-world", worldId] as const,
   detail: (depositTypeId: string) =>
     [...depositsQueryKeys.all, "detail", depositTypeId] as const,
+  // Nested under byWorld so the existing softDelete/restore/update/create
+  // invalidation (which invalidates byWorld(worldId) as a prefix) also
+  // refetches the paginated config-panel view without any changes there.
+  page: (worldId: string, params: DepositTypesPageParams) =>
+    [...depositsQueryKeys.byWorld(worldId), "page", params] as const,
   instanceById: (instanceId: string) =>
     [...depositsQueryKeys.all, "instance-detail", instanceId] as const,
   instancesBySettlement: (settlementId: string) =>

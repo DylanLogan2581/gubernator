@@ -85,6 +85,44 @@ values
     '{"username":"brammel_reeve"}'::jsonb,
     now(),
     now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000004',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'worldadmin@gubernator.local',
+    crypt ('password123', gen_salt ('bf')),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"username":"aldermoor_castellan"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000005',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'player@gubernator.local',
+    crypt ('password123', gen_salt ('bf')),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"username":"aldercross_yeoman"}'::jsonb,
+    now(),
+    now()
   )
 on conflict (id) do update
 set
@@ -144,6 +182,26 @@ values
     now(),
     now(),
     now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000004',
+    '00000000-0000-0000-0000-000000000004',
+    '00000000-0000-0000-0000-000000000004',
+    '{"sub":"00000000-0000-0000-0000-000000000004","email":"worldadmin@gubernator.local","email_verified":true,"phone_verified":false}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000005',
+    '00000000-0000-0000-0000-000000000005',
+    '00000000-0000-0000-0000-000000000005',
+    '{"sub":"00000000-0000-0000-0000-000000000005","email":"player@gubernator.local","email_verified":true,"phone_verified":false}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now()
   )
 on conflict (provider, provider_id) do update
 set
@@ -175,3 +233,19 @@ set
   is_super_admin = false
 where
   id = '00000000-0000-0000-0000-000000000003';
+
+update public.users
+set
+  username = 'aldermoor_castellan',
+  status = 'active',
+  is_super_admin = false
+where
+  id = '00000000-0000-0000-0000-000000000004';
+
+update public.users
+set
+  username = 'aldercross_yeoman',
+  status = 'active',
+  is_super_admin = false
+where
+  id = '00000000-0000-0000-0000-000000000005';

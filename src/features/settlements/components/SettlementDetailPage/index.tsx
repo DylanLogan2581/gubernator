@@ -1,30 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { NativeSelect } from "@/components/ui/native-select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SettlementBuildingsPanel } from "@/features/buildings";
-import { CitizensPanel, SettlementAssignmentBoard } from "@/features/citizens";
-import { SettlementConstructionPanel } from "@/features/construction";
-import { SettlementDepositsPanel } from "@/features/deposits";
-import { ActiveEventsCard } from "@/features/events";
-import { SettlementManagedPopulationsPanel } from "@/features/managed-populations";
-import { SettlementNamesetCard } from "@/features/namesets";
 import {
-  AdminSuppressedNotice,
   currentAccessContextQueryOptions,
   useActivePlayerCharacter,
   useEffectiveCanAdmin,
   useSettlementManageAuthority,
   type AccessContext,
 } from "@/features/permissions";
-import { SettlementReportsPanel } from "@/features/reports";
-import { SettlementStockpilesPanel } from "@/features/resources";
-import { SettlementTradeRoutesPanel } from "@/features/trade";
-import { TurnLogBrowser, TurnTransitionOutcomePanel } from "@/features/turns";
 import {
   isWorldNotFoundError,
   worldRouteAccessQueryOptions,
@@ -34,35 +19,22 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { settlementByIdQueryOptions } from "../../queries/settlementsQueries";
-import { ForecastPanel } from "../ForecastPanel";
 
-import { SettlementCoordinatesSection } from "./CoordinatesSection";
-import { SettlementDeleteSection } from "./DeleteSection";
-import { SettlementDetailsSection } from "./DetailsSection";
-import { SettlementReadinessSection } from "./ReadinessSection";
+import { SettlementDetailContext } from "./SettlementDetailContext";
 import { SettlementDetailFrame } from "./SettlementDetailFrame";
 
 import type { SettlementWithNation } from "../../types/settlementTypes";
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 type SettlementDetailPageProps = {
-  readonly activeSection:
-    | "overview"
-    | "population"
-    | "economy"
-    | "admin"
-    | "forecast"
-    | "history"
-    | "reports";
-  readonly assignmentTab: "bulk" | "per-target";
+  readonly children: ReactNode;
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
 };
 
 export function SettlementDetailPage({
-  activeSection,
-  assignmentTab,
+  children,
   nationId,
   settlementId,
   worldId,
@@ -94,33 +66,24 @@ export function SettlementDetailPage({
   return (
     <SettlementDetailWorldGate
       accessContext={accessContextQuery.data}
-      activeSection={activeSection}
-      assignmentTab={assignmentTab}
       nationId={nationId}
       settlementId={settlementId}
       worldId={worldId}
-    />
+    >
+      {children}
+    </SettlementDetailWorldGate>
   );
 }
 
 function SettlementDetailWorldGate({
   accessContext,
-  activeSection,
-  assignmentTab,
+  children,
   nationId,
   settlementId,
   worldId,
 }: {
   readonly accessContext: AccessContext;
-  readonly activeSection:
-    | "overview"
-    | "population"
-    | "economy"
-    | "forecast"
-    | "history"
-    | "reports"
-    | "admin";
-  readonly assignmentTab: "bulk" | "per-target";
+  readonly children: ReactNode;
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldId: string;
@@ -173,35 +136,26 @@ function SettlementDetailWorldGate({
   return (
     <SettlementDetailContent
       accessContext={accessContext}
-      activeSection={activeSection}
-      assignmentTab={assignmentTab}
       nationId={nationId}
       settlementId={settlementId}
       worldAccess={worldQuery.data}
       worldId={worldId}
-    />
+    >
+      {children}
+    </SettlementDetailContent>
   );
 }
 
 function SettlementDetailContent({
   accessContext,
-  activeSection,
-  assignmentTab,
+  children,
   nationId,
   settlementId,
   worldAccess,
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
-  readonly activeSection:
-    | "overview"
-    | "population"
-    | "economy"
-    | "forecast"
-    | "history"
-    | "reports"
-    | "admin";
-  readonly assignmentTab: "bulk" | "per-target";
+  readonly children: ReactNode;
   readonly nationId: string;
   readonly settlementId: string;
   readonly worldAccess: WorldRouteAccess;
@@ -247,38 +201,28 @@ function SettlementDetailContent({
   return (
     <SettlementDetailLoaded
       accessContext={accessContext}
-      activeSection={activeSection}
-      assignmentTab={assignmentTab}
       settlement={settlement}
       worldAccess={worldAccess}
       worldId={worldId}
-    />
+    >
+      {children}
+    </SettlementDetailLoaded>
   );
 }
 
 function SettlementDetailLoaded({
   accessContext,
-  activeSection,
-  assignmentTab,
+  children,
   settlement,
   worldAccess,
   worldId,
 }: {
   readonly accessContext: WorldPermissionContext;
-  readonly activeSection:
-    | "overview"
-    | "population"
-    | "economy"
-    | "forecast"
-    | "history"
-    | "reports"
-    | "admin";
-  readonly assignmentTab: "bulk" | "per-target";
+  readonly children: ReactNode;
   readonly settlement: SettlementWithNation;
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
 }): JSX.Element {
-  const queryClient = useQueryClient();
   const { activeCharacter } = useActivePlayerCharacter();
   const isArchived = worldAccess.header.isArchived;
   const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
@@ -303,45 +247,6 @@ function SettlementDetailLoaded({
   const canEditCoordinates = effectiveCanAdmin && !isArchived;
   const canDelete = effectiveCanAdmin && !isArchived;
 
-  const navigate = useNavigate();
-
-  function handleSectionSelect(
-    section:
-      | "overview"
-      | "population"
-      | "economy"
-      | "forecast"
-      | "history"
-      | "reports"
-      | "admin",
-  ): void {
-    void navigate({
-      to: "/worlds/$worldId/nations/$nationId/settlements/$settlementId",
-      params: {
-        worldId,
-        nationId: settlement.nationId,
-        settlementId: settlement.id,
-      },
-      search: { section },
-      resetScroll: false,
-    });
-  }
-
-  const BASE_SECTIONS = [
-    { key: "overview", label: "Overview" },
-    { key: "population", label: "Population" },
-    { key: "economy", label: "Economy" },
-    { key: "forecast", label: "Forecast" },
-    { key: "reports", label: "Reports" },
-    { key: "history", label: "History" },
-  ] as const;
-
-  // Only offer the Admin tab to accounts that could ever have admin
-  // authority here — never shown-but-empty for viewers who lack it outright.
-  const SECTIONS = worldAccess.canAdmin
-    ? [...BASE_SECTIONS, { key: "admin", label: "Admin" } as const]
-    : BASE_SECTIONS;
-
   return (
     <SettlementDetailFrame
       nationId={settlement.nationId}
@@ -361,211 +266,22 @@ function SettlementDetailLoaded({
         </div>
       </header>
 
-      {/* Mobile select — visible below md breakpoint */}
-      <div className="sticky top-24 z-10 bg-background py-1 md:hidden">
-        <NativeSelect
-          aria-label="Settlement section"
-          className="w-full"
-          value={activeSection}
-          onChange={(e) =>
-            handleSectionSelect(
-              e.target.value as
-                | "overview"
-                | "population"
-                | "economy"
-                | "forecast"
-                | "history"
-                | "reports"
-                | "admin",
-            )
-          }
-        >
-          {SECTIONS.map(({ key, label }) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </NativeSelect>
-      </div>
-
-      {/* Desktop tab strip — visible from md up */}
-      <Tabs
-        className="sticky top-24 z-10 bg-background py-1"
-        value={activeSection}
-        onValueChange={(v) => {
-          handleSectionSelect(
-            v as
-              | "overview"
-              | "population"
-              | "economy"
-              | "forecast"
-              | "history"
-              | "reports"
-              | "admin",
-          );
+      <SettlementDetailContext
+        value={{
+          accessContext,
+          canDelete,
+          canEditCoordinates,
+          canEditDetails,
+          canManageSettlement,
+          effectiveCanAdmin,
+          isArchived,
+          settlement,
+          worldAccess,
+          worldId,
         }}
       >
-        <TabsList className="hidden overflow-x-auto [scrollbar-width:none] md:flex">
-          {SECTIONS.map(({ key, label }) => (
-            <TabsTrigger key={key} value={key} className="shrink-0">
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
-      {/* Overview Section */}
-      {activeSection === "overview" ? (
-        <>
-          <TurnTransitionOutcomePanel scope="settlement" id={settlement.id} />
-
-          <SettlementReadinessSection
-            accessContext={accessContext}
-            canAdmin={effectiveCanAdmin}
-            canManage={canManageSettlement}
-            isArchived={isArchived}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-
-          <ActiveEventsCard
-            scope="settlement"
-            scopeId={settlement.id}
-            worldId={worldId}
-          />
-
-          <SettlementDetailsSection
-            canEdit={canEditDetails}
-            queryClient={queryClient}
-            settlement={settlement}
-          />
-
-          <SettlementCoordinatesSection
-            canEdit={canEditCoordinates}
-            queryClient={queryClient}
-            settlement={settlement}
-          />
-        </>
-      ) : null}
-
-      {/* Population Section */}
-      {activeSection === "population" ? (
-        <>
-          <CitizensPanel
-            canAdmin={effectiveCanAdmin}
-            incestPreventionDepth={worldAccess.world.incestPreventionDepth}
-            isArchived={isArchived}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-
-          <SettlementAssignmentBoard
-            activeTab={assignmentTab}
-            canManageSettlement={canManageSettlement}
-            isArchived={isArchived}
-            nationId={settlement.nationId}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-
-          <SettlementManagedPopulationsPanel
-            canAdmin={effectiveCanAdmin}
-            canManage={canManageSettlement}
-            isArchived={isArchived}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-        </>
-      ) : null}
-
-      {/* Economy Section */}
-      {activeSection === "economy" ? (
-        <>
-          <SettlementBuildingsPanel
-            canAdmin={effectiveCanAdmin}
-            isArchived={isArchived}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-
-          <SettlementConstructionPanel
-            canManageSettlement={canManageSettlement}
-            isArchived={isArchived}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-
-          <SettlementStockpilesPanel
-            canAdmin={effectiveCanAdmin}
-            isArchived={isArchived}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-
-          <SettlementDepositsPanel
-            canAdmin={effectiveCanAdmin}
-            canManage={canManageSettlement}
-            isArchived={isArchived}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-
-          <SettlementTradeRoutesPanel
-            canManage={canManageSettlement}
-            isArchived={isArchived}
-            settlementId={settlement.id}
-            worldId={worldId}
-          />
-        </>
-      ) : null}
-
-      {/* Forecast Section */}
-      {activeSection === "forecast" ? (
-        <ForecastPanel settlementId={settlement.id} worldId={worldId} />
-      ) : null}
-
-      {/* Reports Section */}
-      {activeSection === "reports" ? (
-        <SettlementReportsPanel
-          currentTurnNumber={worldAccess.header.currentTurnNumber}
-          settlementId={settlement.id}
-          worldId={worldId}
-        />
-      ) : null}
-
-      {/* History Section */}
-      {activeSection === "history" ? (
-        <TurnLogBrowser
-          fixedFilter={{ settlementId: settlement.id }}
-          title="Settlement turn log"
-          worldId={worldId}
-        />
-      ) : null}
-
-      {/* Admin Section */}
-      {activeSection === "admin" && worldAccess.canAdmin ? (
-        effectiveCanAdmin ? (
-          <>
-            <SettlementNamesetCard
-              canAdmin={effectiveCanAdmin}
-              currentNamesetId={settlement.namesetId}
-              isArchived={isArchived}
-              settlementId={settlement.id}
-              worldId={worldId}
-            />
-
-            {canDelete ? (
-              <SettlementDeleteSection
-                queryClient={queryClient}
-                settlement={settlement}
-                worldId={worldId}
-              />
-            ) : null}
-          </>
-        ) : (
-          <AdminSuppressedNotice />
-        )
-      ) : null}
+        {children}
+      </SettlementDetailContext>
     </SettlementDetailFrame>
   );
 }

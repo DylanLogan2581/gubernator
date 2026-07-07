@@ -22,6 +22,7 @@ const calendarConfig = {
   startingYear: 1,
   startingWeekdayOffset: 0,
   dateFormatTemplate: "{weekday}, {month} {day}, Year {year}",
+  shortDateFormatTemplate: "{monthNumber}/{dayNumber}/{yearNumber}",
 } satisfies WorldCalendarConfig;
 
 const computedDate = {

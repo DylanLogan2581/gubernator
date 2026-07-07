@@ -1,17 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Download, Library, Upload } from "lucide-react";
-import { useRef, useState, type JSX, type ReactNode } from "react";
+import { BookOpen, Download, Upload } from "lucide-react";
+import { useRef, useState, type JSX } from "react";
 import { toast } from "sonner";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,18 +26,6 @@ import {
   ImportConfirmDialog,
   ImportErrorDialog,
 } from "./WorldTemplateImportButton";
-
-// ---------------------------------------------------------------------------
-// Frame
-// ---------------------------------------------------------------------------
-
-function TemplateLibraryFrame({
-  children,
-}: {
-  readonly children: ReactNode;
-}): JSX.Element {
-  return <div className="mx-auto max-w-5xl py-6">{children}</div>;
-}
 
 // ---------------------------------------------------------------------------
 // Bundled scenario card
@@ -168,6 +148,7 @@ function UploadSection({
         type="file"
         accept=".json,application/json"
         aria-hidden="true"
+        tabIndex={-1}
         className="sr-only"
         onChange={handleFileChange}
       />
@@ -205,44 +186,21 @@ export function TemplateLibraryPage(): JSX.Element {
   );
 
   return (
-    <TemplateLibraryFrame>
+    <>
       <div className="space-y-6">
-        {/* Breadcrumb */}
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to="/superadmin">Superadmin</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Template Library</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
         {/* Page header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <Library
-              className="size-5 text-muted-foreground"
-              aria-hidden="true"
+        <PageHeader
+          icon={BookOpen}
+          title="Template Library"
+          description="Browse bundled scenarios, import uploaded templates, or create worlds directly from any template."
+          actions={
+            <UploadSection
+              onTemplate={(t) => {
+                setPendingTemplate(t);
+              }}
             />
-            <div>
-              <h1 className="text-xl font-semibold">Template Library</h1>
-              <p className="text-sm text-muted-foreground">
-                Browse bundled scenarios, import uploaded templates, or create
-                worlds directly from any template.
-              </p>
-            </div>
-          </div>
-          <UploadSection
-            onTemplate={(t) => {
-              setPendingTemplate(t);
-            }}
-          />
-        </div>
+          }
+        />
 
         {/* Bundled scenarios */}
         <section aria-label="Bundled scenarios">
@@ -273,6 +231,6 @@ export function TemplateLibraryPage(): JSX.Element {
           }}
         />
       ) : null}
-    </TemplateLibraryFrame>
+    </>
   );
 }

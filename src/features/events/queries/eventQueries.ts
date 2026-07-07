@@ -11,6 +11,7 @@ import { eventQueryKeys } from "./eventQueryKeys";
 import type {
   EventEffect,
   EventListFilters,
+  EventMemory,
   EventWithGroup,
   EventWithGroupAndEffects,
 } from "../types/eventTypes";
@@ -166,9 +167,22 @@ export function eventDetailQueryOptions(
         throw normalizeSupabaseError(effectsError);
       }
 
+      // Fetch per-turn memories
+      const { data: memories, error: memoriesError } = await client
+        .from("event_memories")
+        .select("*")
+        .eq("event_id", eventId)
+        .order("turn_offset", { ascending: true })
+        .returns<EventMemory[]>();
+
+      if (memoriesError !== null) {
+        throw normalizeSupabaseError(memoriesError);
+      }
+
       return {
         ...data,
         effects: effects ?? [],
+        memories: memories ?? [],
       };
     },
   });

@@ -13,14 +13,24 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import { createSeededRng } from "../seededRng.ts";
+
+import { pickChildNamesetId } from "./phasePartnerships/childNameset.ts";
+import { pickFromPool, pickNpcFlavor } from "./phasePartnerships/fertility.ts";
+
+import type { SeededRng } from "../seededRng.ts";
 import type {
   BuildingStateChange,
+  CitizenBirth,
   CitizenDeath,
   DepositUpdate,
   EventEffectType,
   EventStatusPatch,
+  NpcFlavorConfig,
+  SimDeposit,
   SimEffect,
   SimEvent,
+  SimNamingConfig,
   SimSettlement,
   SimulationContext,
   SimulationLogEntry,
@@ -71,12 +81,62 @@ function resolveTargetSettlementIds(
 
 export type PhaseEventsOutput = {
   readonly buildingStateChanges: readonly BuildingStateChange[];
+  readonly citizenBirths: readonly CitizenBirth[];
   readonly citizenDeaths: readonly CitizenDeath[];
   readonly depositUpdates: readonly DepositUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logs: readonly SimulationLogEntry[];
   readonly notifications: readonly SimulationNotification[];
 };
+
+// Bundled inputs population_boost needs to spawn parentless citizens — kept as
+// a single object so applyEffect's already-long positional parameter list
+// doesn't grow further.
+type BoostCitizenContext = {
+  readonly citizenBirths: CitizenBirth[];
+  readonly fallbackNamesetIdBySettlementId: Readonly<Record<string, string>> | undefined;
+  readonly maximumFertilityAgeTurns: number | null;
+  readonly minimumPartnershipAgeTurns: number;
+  readonly namesetConfigById: Readonly<Record<string, SimNamingConfig>>;
+  readonly npcFlavorConfig: NpcFlavorConfig | null | undefined;
+  readonly rng: SeededRng;
+  readonly turnNumber: number;
+};
+
+// population_boost citizens have no parents to draw a name from, so every
+// naming convention (patronymic/matronymic/family-name) falls back to the
+// nameset's surname pool instead.
+function generateBoostCitizenName(
+  rng: SeededRng,
+  namingConfig: SimNamingConfig | null | undefined,
+  sex: string,
+): { givenName: string; surname: string | null } {
+  if (namingConfig === null || namingConfig === undefined) {
+    return { givenName: "", surname: null };
+  }
+
+  const pool = sex === "male" ? namingConfig.male_given_names : namingConfig.female_given_names;
+  if (pool.length === 0) return { givenName: "", surname: null };
+
+  const givenName = pool[Math.floor(rng() * pool.length)] ?? "";
+  const surname = pickFromPool(rng, namingConfig.surnames);
+  return { givenName, surname };
+}
+
+// Spawned citizens arrive as working-age adults rather than newborns, bounded
+// between the world's adult age and its fertility ceiling (doubling the adult
+// age when uncapped). Mirrors applyBornOnTurnNumberBackfill's use of
+// minimumPartnershipAgeTurns as the "unknown age" default for citizens without
+// natural birth history.
+function pickBoostCitizenAgeTurns(
+  rng: SeededRng,
+  minimumPartnershipAgeTurns: number,
+  maximumFertilityAgeTurns: number | null,
+): number {
+  const maxAge = maximumFertilityAgeTurns ?? minimumPartnershipAgeTurns * 2;
+  const span = Math.max(1, maxAge - minimumPartnershipAgeTurns);
+  return minimumPartnershipAgeTurns + Math.floor(rng() * span);
+}
 
 // Helper: apply single effect to shared state
 function applyEffect(
@@ -92,14 +152,18 @@ function applyEffect(
       consumption: number;
       upkeep: number;
       upkeepByBlueprintId: Map<string, number>;
+      upkeepByBuildingInstanceId: Map<string, number>;
     }
   >,
   pendingManagedPopulationDeltas: Map<string, number>,
   pendingStockpiles: Map<string, number>,
   pendingDepositDestroys: Set<string>,
+  deposits: readonly SimDeposit[],
+  targetSettlementIds: readonly string[],
   pendingEventCitizenDeaths: Set<string>,
   livingCitizenIdsBySettlement: Map<string, string[]>,
   logs: SimulationLogEntry[],
+  boost: BoostCitizenContext,
 ): void {
   const effectType = effect.effectType;
 
@@ -134,6 +198,7 @@ function applyEffect(
               productionByJobId: new Map(),
               upkeep: 1,
               upkeepByBlueprintId: new Map(),
+              upkeepByBuildingInstanceId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
@@ -157,14 +222,39 @@ function applyEffect(
       }
 
       case "deposit_destroyed": {
-        const depositInstanceId = effect.depositInstanceId ?? payload.depositInstanceId;
-        if (typeof depositInstanceId === "string") {
-          pendingDepositDestroys.add(depositInstanceId);
+        const extraData = effect.extraDataJsonb ?? {};
+        const depositDestroyedMode = extraData.deposit_destroyed_mode as string | undefined;
+        const depositTypeId = extraData.deposit_type_id as string | undefined;
+
+        if (depositDestroyedMode === "type" && typeof depositTypeId === "string") {
+          // Resolve type -> all matching deposit instances within the event's
+          // scope at application time, so deposits created after event
+          // creation but before activation are included.
+          const scopedSettlementIds = new Set(targetSettlementIds);
+          const matches = deposits.filter(
+            (deposit) =>
+              deposit.depositTypeId === depositTypeId &&
+              deposit.status !== "removed" &&
+              scopedSettlementIds.has(deposit.settlementId),
+          );
+          for (const deposit of matches) {
+            pendingDepositDestroys.add(deposit.id);
+          }
           logs.push({
             category: "event.deposit_destroyed",
-            payload: { depositInstanceId, eventId },
+            payload: { depositTypeId, destroyedCount: matches.length, eventId },
             phase: "events",
           });
+        } else {
+          const depositInstanceId = effect.depositInstanceId ?? payload.depositInstanceId;
+          if (typeof depositInstanceId === "string") {
+            pendingDepositDestroys.add(depositInstanceId);
+            logs.push({
+              category: "event.deposit_destroyed",
+              payload: { depositInstanceId, eventId },
+              phase: "events",
+            });
+          }
         }
         break;
       }
@@ -190,9 +280,55 @@ function applyEffect(
         const settlementId = payload.settlementId;
         const amount = effect.amountValue ?? payload.amount;
         if (typeof settlementId === "string" && typeof amount === "number") {
+          const count = Math.max(0, Math.floor(amount));
+          const {
+            citizenBirths,
+            fallbackNamesetIdBySettlementId,
+            maximumFertilityAgeTurns,
+            minimumPartnershipAgeTurns,
+            namesetConfigById,
+            npcFlavorConfig,
+            rng,
+            turnNumber,
+          } = boost;
+          const fallbackNamesetId = fallbackNamesetIdBySettlementId?.[settlementId] ?? null;
+
+          for (let i = 0; i < count; i++) {
+            const sex = rng() < 0.5 ? "male" : "female";
+            const flavor = pickNpcFlavor(rng, npcFlavorConfig);
+            // No parents to inherit a nameset from — falls straight to the
+            // settlement's fallback nameset, same as childNameset's no-valid-parent branch.
+            const namesetId = pickChildNamesetId(
+              rng,
+              null,
+              null,
+              (id) => namesetConfigById[id] !== undefined,
+              fallbackNamesetId,
+            );
+            const namingConfig = namesetId !== null ? namesetConfigById[namesetId] : null;
+            const { givenName, surname } = generateBoostCitizenName(rng, namingConfig, sex);
+            const ageTurns = pickBoostCitizenAgeTurns(
+              rng,
+              minimumPartnershipAgeTurns,
+              maximumFertilityAgeTurns,
+            );
+
+            citizenBirths.push({
+              ...flavor,
+              bornOnTurnNumber: Math.max(0, turnNumber - ageTurns),
+              givenName,
+              namesetId,
+              parentACitizenId: null,
+              parentBCitizenId: null,
+              sex,
+              settlementId,
+              surname,
+            });
+          }
+
           logs.push({
             category: "event.population_boost",
-            payload: { amount, eventId, settlementId },
+            payload: { amount, citizenCount: count, eventId, settlementId },
             phase: "events",
           });
         }
@@ -240,6 +376,7 @@ function applyEffect(
               productionByJobId: new Map(),
               upkeep: 1,
               upkeepByBlueprintId: new Map(),
+              upkeepByBuildingInstanceId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
@@ -335,16 +472,26 @@ function applyEffect(
               productionByJobId: new Map(),
               upkeep: 1,
               upkeepByBlueprintId: new Map(),
+              upkeepByBuildingInstanceId: new Map(),
             };
             pendingEventMultipliers.set(settlementId, mults);
           }
 
-          // Check if building blueprint targeting is specified
+          // Check if building blueprint or instance targeting is specified
           const extraData = effect.extraDataJsonb ?? {};
           const buildingBlueprintMode = extraData.building_blueprint_mode as string | undefined;
           const buildingBlueprintIds = extraData.building_blueprint_ids as string[] | undefined;
+          const buildingInstanceIds = extraData.building_instance_ids as string[] | undefined;
 
-          if (buildingBlueprintMode === "select" && Array.isArray(buildingBlueprintIds)) {
+          if (buildingBlueprintMode === "instance" && Array.isArray(buildingInstanceIds)) {
+            // Apply multiplier to specific building instances
+            for (const buildingId of buildingInstanceIds) {
+              mults.upkeepByBuildingInstanceId.set(
+                buildingId,
+                (mults.upkeepByBuildingInstanceId.get(buildingId) ?? 1) * multiplier,
+              );
+            }
+          } else if (buildingBlueprintMode === "select" && Array.isArray(buildingBlueprintIds)) {
             // Apply multiplier to specific blueprints
             for (const blueprintId of buildingBlueprintIds) {
               mults.upkeepByBlueprintId.set(
@@ -385,7 +532,17 @@ function applyEffect(
 }
 
 export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
-  const { events, settlements, turnNumber } = context.input;
+  const {
+    deposits,
+    events,
+    fallbackNamesetIdBySettlementId,
+    namesetConfigById,
+    npcFlavorConfig,
+    populationRules,
+    settlements,
+    turnNumber,
+    worldId,
+  } = context.input;
   const {
     pendingDeaths,
     pendingEventMultipliers,
@@ -398,6 +555,18 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
   const eventStatusPatches: EventStatusPatch[] = [];
   const logs: SimulationLogEntry[] = [];
   const notifications: SimulationNotification[] = [];
+  const citizenBirths: CitizenBirth[] = [];
+
+  const boost: BoostCitizenContext = {
+    citizenBirths,
+    fallbackNamesetIdBySettlementId,
+    maximumFertilityAgeTurns: populationRules.maximumFertilityAgeTurns,
+    minimumPartnershipAgeTurns: populationRules.minimumPartnershipAgeTurns,
+    namesetConfigById: namesetConfigById ?? {},
+    npcFlavorConfig,
+    rng: createSeededRng(`${worldId}:${turnNumber}:events`),
+    turnNumber,
+  };
 
   // Build living-citizen index for population_loss effects.
   // Exclude citizens already dead (status="dead") or marked for death this turn (pendingDeaths).
@@ -456,9 +625,12 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
             pendingManagedPopulationDeltas,
             pendingStockpiles,
             pendingDepositDestroys,
+            deposits,
+            targetSettlementIds,
             pendingEventCitizenDeaths,
             livingCitizenIdsBySettlement,
             logs,
+            boost,
           );
         }
       } else {
@@ -474,9 +646,12 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
           pendingManagedPopulationDeltas,
           pendingStockpiles,
           pendingDepositDestroys,
+          deposits,
+          targetSettlementIds,
           pendingEventCitizenDeaths,
           livingCitizenIdsBySettlement,
           logs,
+          boost,
         );
       }
     }
@@ -541,6 +716,7 @@ export function phaseEvents(context: SimulationContext): PhaseEventsOutput {
 
   return {
     buildingStateChanges,
+    citizenBirths,
     citizenDeaths,
     depositUpdates,
     eventStatusPatches,

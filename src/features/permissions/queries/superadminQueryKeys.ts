@@ -11,4 +11,5 @@ export const superadminQueryKeys = {
   runningTransitions: () =>
     [...superadminQueryKeys.all, "running-transitions"] as const,
   trashedWorlds: () => [...superadminQueryKeys.all, "trashed-worlds"] as const,
+  smtpStatus: () => [...superadminQueryKeys.all, "smtp-status"] as const,
 } as const;

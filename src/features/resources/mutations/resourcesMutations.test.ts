@@ -19,6 +19,7 @@ const WORLD_ID = "22222222-2222-2222-2222-222222222222";
 type ResourceRow = {
   readonly base_stockpile_cap: number;
   readonly created_at: string;
+  readonly icon: string | null;
   readonly id: string;
   readonly is_trashed: boolean;
   readonly is_system_resource: boolean;
@@ -94,6 +95,7 @@ describe("createResourceMutationOptions", () => {
     expect(calls.insert).toHaveBeenCalledWith({
       base_stockpile_cap: 100.5,
       decay_rate: 0,
+      icon: null,
       name: "Iron Ore",
       slug: "iron-ore",
       world_id: WORLD_ID,
@@ -473,6 +475,7 @@ function createResourceRow(overrides: Partial<ResourceRow> = {}): ResourceRow {
   return {
     base_stockpile_cap: 0,
     created_at: "2026-05-01T00:00:00.000Z",
+    icon: null,
     id: RESOURCE_ID,
     is_trashed: false,
     is_system_resource: false,

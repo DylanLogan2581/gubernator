@@ -79,9 +79,15 @@ export function formatCalendarDate(
     .join(calendarDate.weekdayName)
     .split("{month}")
     .join(calendarDate.monthName)
+    .split("{monthNumber}")
+    .join(String(calendarDate.monthIndex + 1))
     .split("{day}")
     .join(String(calendarDate.dayOfMonth))
+    .split("{dayNumber}")
+    .join(String(calendarDate.dayOfMonth))
     .split("{year}")
+    .join(String(calendarDate.year))
+    .split("{yearNumber}")
     .join(String(calendarDate.year));
 }
 

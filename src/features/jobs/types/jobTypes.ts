@@ -16,6 +16,7 @@ export type JobDefinition = {
   readonly baseCapacity: number | null;
   readonly createdAt: string;
   readonly hasActiveReferences: boolean;
+  readonly icon: string | null;
   readonly id: string;
   readonly inputsJson: readonly JobIoEntry[];
   readonly isTrashed: boolean;

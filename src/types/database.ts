@@ -88,6 +88,7 @@ export type Database = {
           created_at: string;
           description: string | null;
           grace_period_turns: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string;
           description?: string | null;
           grace_period_turns?: number;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           max_instances_per_settlement?: number | null;
@@ -112,6 +114,7 @@ export type Database = {
           created_at?: string;
           description?: string | null;
           grace_period_turns?: number;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           max_instances_per_settlement?: number | null;
@@ -175,6 +178,13 @@ export type Database = {
             foreignKeyName: "citizen_assignments_citizen_id_fkey";
             columns: ["citizen_id"];
             isOneToOne: true;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_assignments_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: true;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -221,6 +231,7 @@ export type Database = {
           created_at: string;
           created_by_user_id: string | null;
           event_id: string | null;
+          event_memory_id: string | null;
           id: string;
           memory_text: string;
           occurred_on_turn_number: number;
@@ -232,6 +243,7 @@ export type Database = {
           created_at?: string;
           created_by_user_id?: string | null;
           event_id?: string | null;
+          event_memory_id?: string | null;
           id?: string;
           memory_text: string;
           occurred_on_turn_number: number;
@@ -243,6 +255,7 @@ export type Database = {
           created_at?: string;
           created_by_user_id?: string | null;
           event_id?: string | null;
+          event_memory_id?: string | null;
           id?: string;
           memory_text?: string;
           occurred_on_turn_number?: number;
@@ -250,6 +263,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "citizen_memories_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "citizen_memories_citizen_id_fkey";
             columns: ["citizen_id"];
@@ -269,6 +289,13 @@ export type Database = {
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizen_memories_event_memory_id_fkey";
+            columns: ["event_memory_id"];
+            isOneToOne: false;
+            referencedRelation: "event_memories";
             referencedColumns: ["id"];
           },
           {
@@ -392,8 +419,22 @@ export type Database = {
             foreignKeyName: "citizens_parent_a_citizen_id_fkey";
             columns: ["parent_a_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_a_citizen_id_fkey";
+            columns: ["parent_a_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_a_world_fkey";
+            columns: ["parent_a_citizen_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id", "world_id"];
           },
           {
             foreignKeyName: "citizens_parent_a_world_fkey";
@@ -406,8 +447,22 @@ export type Database = {
             foreignKeyName: "citizens_parent_b_citizen_id_fkey";
             columns: ["parent_b_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_b_citizen_id_fkey";
+            columns: ["parent_b_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_parent_b_world_fkey";
+            columns: ["parent_b_citizen_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id", "world_id"];
           },
           {
             foreignKeyName: "citizens_parent_b_world_fkey";
@@ -633,6 +688,7 @@ export type Database = {
       deposit_types: {
         Row: {
           created_at: string;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -645,6 +701,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           job_id: string;
@@ -657,6 +714,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           job_id?: string;
@@ -704,6 +762,41 @@ export type Database = {
           window_minute?: string;
         };
         Relationships: [];
+      };
+      email_send_log: {
+        Row: {
+          created_at: string;
+          id: string;
+          recipient_count: number;
+          recipient_spec: Json;
+          sender_user_id: string | null;
+          subject: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          recipient_count: number;
+          recipient_spec: Json;
+          sender_user_id?: string | null;
+          subject: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          recipient_count?: number;
+          recipient_spec?: Json;
+          sender_user_id?: string | null;
+          subject?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "email_send_log_sender_user_id_fkey";
+            columns: ["sender_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       event_effects: {
         Row: {
@@ -860,12 +953,46 @@ export type Database = {
           },
         ];
       };
+      event_memories: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          id: string;
+          memory_text: string;
+          turn_offset: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          memory_text: string;
+          turn_offset?: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          memory_text?: string;
+          turn_offset?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_memories_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       events: {
         Row: {
           activate_on_transition_after_turn_number: number;
           amount_value: number | null;
           building_blueprint_id: string | null;
-          create_citizen_memories: boolean;
           created_at: string;
           description: string | null;
           duration_transitions: number | null;
@@ -877,7 +1004,6 @@ export type Database = {
           id: string;
           job_id: number | null;
           managed_population_type_id: string | null;
-          memory_text: string | null;
           multiplier_value: number | null;
           name: string;
           remaining_transitions: number | null;
@@ -892,7 +1018,6 @@ export type Database = {
           activate_on_transition_after_turn_number: number;
           amount_value?: number | null;
           building_blueprint_id?: string | null;
-          create_citizen_memories?: boolean;
           created_at?: string;
           description?: string | null;
           duration_transitions?: number | null;
@@ -904,7 +1029,6 @@ export type Database = {
           id?: string;
           job_id?: number | null;
           managed_population_type_id?: string | null;
-          memory_text?: string | null;
           multiplier_value?: number | null;
           name: string;
           remaining_transitions?: number | null;
@@ -919,7 +1043,6 @@ export type Database = {
           activate_on_transition_after_turn_number?: number;
           amount_value?: number | null;
           building_blueprint_id?: string | null;
-          create_citizen_memories?: boolean;
           created_at?: string;
           description?: string | null;
           duration_transitions?: number | null;
@@ -931,7 +1054,6 @@ export type Database = {
           id?: string;
           job_id?: number | null;
           managed_population_type_id?: string | null;
-          memory_text?: string | null;
           multiplier_value?: number | null;
           name?: string;
           remaining_transitions?: number | null;
@@ -991,6 +1113,7 @@ export type Database = {
         Row: {
           base_capacity: number | null;
           created_at: string;
+          icon: string | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -1007,6 +1130,7 @@ export type Database = {
         Insert: {
           base_capacity?: number | null;
           created_at?: string;
+          icon?: string | null;
           id?: string;
           inputs_json?: Json;
           is_trashed?: boolean;
@@ -1023,6 +1147,7 @@ export type Database = {
         Update: {
           base_capacity?: number | null;
           created_at?: string;
+          icon?: string | null;
           id?: string;
           inputs_json?: Json;
           is_trashed?: boolean;
@@ -1119,6 +1244,7 @@ export type Database = {
           growth_rate: number;
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -1135,6 +1261,7 @@ export type Database = {
           growth_rate?: number;
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
@@ -1151,6 +1278,7 @@ export type Database = {
           growth_rate?: number;
           husbandry_job_id?: string;
           husbandry_workers_per_n_animals?: number;
+          icon?: string | null;
           id?: string;
           is_trashed?: boolean;
           maintenance_rules_json?: Json;
@@ -1281,6 +1409,13 @@ export type Database = {
             foreignKeyName: "nation_relationships_pending_changed_by_citizen_id_fkey";
             columns: ["pending_changed_by_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_relationships_pending_changed_by_citizen_id_fkey";
+            columns: ["pending_changed_by_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -1348,6 +1483,35 @@ export type Database = {
           },
         ];
       };
+      notification_preferences: {
+        Row: {
+          enabled: boolean;
+          notification_type: Database["public"]["Enums"]["notification_type"];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          enabled?: boolean;
+          notification_type: Database["public"]["Enums"]["notification_type"];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          enabled?: boolean;
+          notification_type?: Database["public"]["Enums"]["notification_type"];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           citizen_id: string | null;
@@ -1398,6 +1562,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "notifications_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "notifications_citizen_id_fkey";
             columns: ["citizen_id"];
@@ -1505,7 +1676,21 @@ export type Database = {
             foreignKeyName: "partnerships_citizen_a_id_fkey";
             columns: ["citizen_a_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partnerships_citizen_a_id_fkey";
+            columns: ["citizen_a_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "partnerships_citizen_b_id_fkey";
+            columns: ["citizen_b_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
             referencedColumns: ["id"];
           },
           {
@@ -1522,6 +1707,7 @@ export type Database = {
           base_stockpile_cap: number;
           created_at: string;
           decay_rate: number;
+          icon: string | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -1535,6 +1721,7 @@ export type Database = {
           base_stockpile_cap?: number;
           created_at?: string;
           decay_rate?: number;
+          icon?: string | null;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1548,6 +1735,7 @@ export type Database = {
           base_stockpile_cap?: number;
           created_at?: string;
           decay_rate?: number;
+          icon?: string | null;
           id?: string;
           is_system_resource?: boolean;
           is_trashed?: boolean;
@@ -1926,6 +2114,13 @@ export type Database = {
             foreignKeyName: "settlements_ready_set_by_citizen_id_fkey";
             columns: ["ready_set_by_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_ready_set_by_citizen_id_fkey";
+            columns: ["ready_set_by_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -2027,6 +2222,13 @@ export type Database = {
             foreignKeyName: "trade_routes_destination_approved_by_citizen_id_fkey";
             columns: ["destination_approved_by_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_destination_approved_by_citizen_id_fkey";
+            columns: ["destination_approved_by_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -2041,6 +2243,13 @@ export type Database = {
             foreignKeyName: "trade_routes_origin_approved_by_citizen_id_fkey";
             columns: ["origin_approved_by_citizen_id"];
             isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_origin_approved_by_citizen_id_fkey";
+            columns: ["origin_approved_by_citizen_id"];
+            isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id"];
           },
@@ -2049,6 +2258,13 @@ export type Database = {
             columns: ["origin_settlement_id"];
             isOneToOne: false;
             referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "trade_routes_proposed_by_citizen_id_fkey";
+            columns: ["proposed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
             referencedColumns: ["id"];
           },
           {
@@ -2102,6 +2318,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "turn_log_entries_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "turn_log_entries_citizen_id_fkey";
             columns: ["citizen_id"];
@@ -2213,6 +2436,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "user_active_player_characters_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "user_active_player_characters_citizen_id_fkey";
             columns: ["citizen_id"];
@@ -2342,6 +2572,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -2355,6 +2586,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -2366,6 +2598,7 @@ export type Database = {
           current_turn_number?: number;
           fertility_chance?: number;
           food_consumption_per_citizen?: number;
+          hero_path?: string | null;
           homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
@@ -2379,6 +2612,7 @@ export type Database = {
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
+          thumbnail_path?: string | null;
           updated_at?: string;
           visibility?: string;
           water_consumption_per_citizen?: number;
@@ -2390,6 +2624,7 @@ export type Database = {
           current_turn_number?: number;
           fertility_chance?: number;
           food_consumption_per_citizen?: number;
+          hero_path?: string | null;
           homelessness_decline_rate?: number;
           id?: string;
           incest_prevention_depth?: number;
@@ -2403,6 +2638,7 @@ export type Database = {
           partnership_seek_chance?: number;
           starvation_severity_multiplier?: number;
           status?: string;
+          thumbnail_path?: string | null;
           updated_at?: string;
           visibility?: string;
           water_consumption_per_citizen?: number;
@@ -2411,6 +2647,47 @@ export type Database = {
       };
     };
     Views: {
+      citizen_directory_view: {
+        Row: {
+          age_turns: number | null;
+          assignment_label: string | null;
+          assignment_type: string | null;
+          born_on_turn_number: number | null;
+          citizen_type: string | null;
+          id: string | null;
+          name: string | null;
+          nation_id: string | null;
+          nation_name: string | null;
+          settlement_id: string | null;
+          settlement_name: string | null;
+          sex: string | null;
+          status: string | null;
+          world_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "citizens_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_turn_population_aggregates: {
         Row: {
           birth_count: number | null;
@@ -2506,6 +2783,7 @@ export type Database = {
           effective_cap: number | null;
           is_system_resource: boolean | null;
           quantity: number | null;
+          resource_icon: string | null;
           resource_id: string | null;
           resource_name: string | null;
           settlement_id: string | null;
@@ -2931,6 +3209,7 @@ export type Database = {
           p_effects: Json;
           p_group_description: string;
           p_group_name: string;
+          p_memories?: Json;
           p_memory_text: string;
           p_scope_type: string;
           p_targets: Json;
@@ -3118,6 +3397,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -3131,6 +3411,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -3381,6 +3662,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -3394,6 +3676,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -3729,6 +4012,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -3742,6 +4026,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -3803,6 +4088,7 @@ export type Database = {
           created_at: string;
           description: string | null;
           grace_period_turns: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -3829,6 +4115,7 @@ export type Database = {
         Args: { p_deposit_type_id: string; p_world_id: string };
         Returns: {
           created_at: string;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -3851,6 +4138,7 @@ export type Database = {
         Returns: {
           base_capacity: number | null;
           created_at: string;
+          icon: string | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -3880,6 +4168,7 @@ export type Database = {
           growth_rate: number;
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -3909,6 +4198,7 @@ export type Database = {
           base_stockpile_cap: number;
           created_at: string;
           decay_rate: number;
+          icon: string | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -3957,6 +4247,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -3970,6 +4261,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -4207,6 +4499,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -4220,6 +4513,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -4271,6 +4565,7 @@ export type Database = {
           created_at: string;
           description: string | null;
           grace_period_turns: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           max_instances_per_settlement: number | null;
@@ -4290,6 +4585,7 @@ export type Database = {
         Args: { p_deposit_type_id: string; p_world_id: string };
         Returns: {
           created_at: string;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           job_id: string;
@@ -4312,6 +4608,7 @@ export type Database = {
         Returns: {
           base_capacity: number | null;
           created_at: string;
+          icon: string | null;
           id: string;
           inputs_json: Json;
           is_trashed: boolean;
@@ -4341,6 +4638,7 @@ export type Database = {
           growth_rate: number;
           husbandry_job_id: string;
           husbandry_workers_per_n_animals: number;
+          icon: string | null;
           id: string;
           is_trashed: boolean;
           maintenance_rules_json: Json;
@@ -4370,6 +4668,7 @@ export type Database = {
           base_stockpile_cap: number;
           created_at: string;
           decay_rate: number;
+          icon: string | null;
           id: string;
           is_system_resource: boolean;
           is_trashed: boolean;
@@ -4413,6 +4712,7 @@ export type Database = {
           current_turn_number: number;
           fertility_chance: number;
           food_consumption_per_citizen: number;
+          hero_path: string | null;
           homelessness_decline_rate: number;
           id: string;
           incest_prevention_depth: number;
@@ -4426,6 +4726,7 @@ export type Database = {
           partnership_seek_chance: number;
           starvation_severity_multiplier: number;
           status: string;
+          thumbnail_path: string | null;
           updated_at: string;
           visibility: string;
           water_consumption_per_citizen: number;
@@ -4499,6 +4800,7 @@ export type Database = {
           p_group_description: string;
           p_group_id: string;
           p_group_name: string;
+          p_memories?: Json;
           p_memory_text: string;
         };
         Returns: Json;
@@ -4531,6 +4833,7 @@ export type Database = {
         Args: { p_effect: Json; p_world_id: string };
         Returns: undefined;
       };
+      world_images_path_world_id: { Args: { name: string }; Returns: string };
       world_is_archived: { Args: { p_world_id: string }; Returns: boolean };
     };
     Enums: {

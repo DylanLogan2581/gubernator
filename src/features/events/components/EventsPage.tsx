@@ -1,9 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { Zap } from "lucide-react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import {
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
@@ -19,13 +21,15 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { EventsList } from "./EventsList";
 import { EventsPageFrame } from "./EventsPageFrame";
 
+import type { EventsSearchParams } from "../types/eventTypes";
 import type { JSX } from "react";
 
 type EventsPageProps = {
   readonly worldId: string;
+  readonly search: EventsSearchParams;
 };
 
-export function EventsPage({ worldId }: EventsPageProps): JSX.Element {
+export function EventsPage({ worldId, search }: EventsPageProps): JSX.Element {
   const queryClient = useQueryClient();
   const accessContextQuery = useQuery(
     currentAccessContextQueryOptions(queryClient),
@@ -33,7 +37,7 @@ export function EventsPage({ worldId }: EventsPageProps): JSX.Element {
 
   if (accessContextQuery.isPending) {
     return (
-      <EventsPageFrame worldId={worldId}>
+      <EventsPageFrame>
         <LoadingState label="Loading world access…" />
       </EventsPageFrame>
     );
@@ -41,7 +45,7 @@ export function EventsPage({ worldId }: EventsPageProps): JSX.Element {
 
   if (accessContextQuery.isError) {
     return (
-      <EventsPageFrame worldId={worldId}>
+      <EventsPageFrame>
         <ErrorState
           title="World access could not be loaded"
           description={getErrorDescription(accessContextQuery.error)}
@@ -51,16 +55,22 @@ export function EventsPage({ worldId }: EventsPageProps): JSX.Element {
   }
 
   return (
-    <EventsPageGate accessContext={accessContextQuery.data} worldId={worldId} />
+    <EventsPageGate
+      accessContext={accessContextQuery.data}
+      worldId={worldId}
+      search={search}
+    />
   );
 }
 
 function EventsPageGate({
   accessContext,
   worldId,
+  search,
 }: {
   readonly accessContext: AccessContext;
   readonly worldId: string;
+  readonly search: EventsSearchParams;
 }): JSX.Element {
   const worldQuery = useQuery(
     worldRouteAccessQueryOptions(worldId, accessContext),
@@ -68,7 +78,7 @@ function EventsPageGate({
 
   if (accessContext.isAuthenticated && !accessContext.isActiveUser) {
     return (
-      <EventsPageFrame worldId={worldId}>
+      <EventsPageFrame>
         <AccessDeniedState
           title="Account access unavailable"
           description="Your Gubernator account is not active. Contact an administrator to restore access."
@@ -79,7 +89,7 @@ function EventsPageGate({
 
   if (worldQuery.isPending) {
     return (
-      <EventsPageFrame worldId={worldId}>
+      <EventsPageFrame>
         <LoadingState label="Loading world…" />
       </EventsPageFrame>
     );
@@ -88,7 +98,7 @@ function EventsPageGate({
   if (worldQuery.isError) {
     if (isWorldNotFoundError(worldQuery.error)) {
       return (
-        <EventsPageFrame worldId={worldId}>
+        <EventsPageFrame>
           <AccessDeniedState
             title="World unavailable"
             description="This world does not exist or your Gubernator account does not have access."
@@ -98,7 +108,7 @@ function EventsPageGate({
     }
 
     return (
-      <EventsPageFrame worldId={worldId}>
+      <EventsPageFrame>
         <ErrorState
           title="World could not be loaded"
           description={getErrorDescription(worldQuery.error)}
@@ -112,6 +122,7 @@ function EventsPageGate({
       accessContext={accessContext}
       worldAccess={worldQuery.data}
       worldId={worldId}
+      search={search}
     />
   );
 }
@@ -120,30 +131,36 @@ function EventsPageContent({
   accessContext: _accessContext,
   worldAccess,
   worldId,
+  search,
 }: {
   readonly accessContext: AccessContext;
   readonly worldAccess: WorldRouteAccess;
   readonly worldId: string;
+  readonly search: EventsSearchParams;
 }): JSX.Element {
   const navigate = useNavigate();
   const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
+  const canManage = effectiveCanAdmin && !worldAccess.header.isArchived;
 
   return (
-    <EventsPageFrame worldId={worldId}>
+    <EventsPageFrame>
       <div className="space-y-6">
-        <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-normal">Events</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
+        <PageHeader
+          icon={Zap}
+          title="Events"
+          description={
+            <>
               World events for{" "}
               <span className="font-medium">{worldAccess.header.name}</span>.
-            </p>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         <EventsList
           worldId={worldId}
-          canCreate={effectiveCanAdmin && !worldAccess.header.isArchived}
+          canCreate={canManage}
+          canManage={canManage}
+          search={search}
           onCreateClick={() => {
             void navigate({
               to: "/worlds/$worldId/events/new",

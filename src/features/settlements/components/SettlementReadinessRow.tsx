@@ -37,9 +37,7 @@ export function SettlementReadinessRow({
 }: SettlementReadinessRowProps): JSX.Element {
   const state = deriveSettlementReadinessState(item);
   const isReady = state.isReadyForCurrentTurn;
-  const bgColor = isReady
-    ? "bg-green-50 dark:bg-green-950/30"
-    : "bg-red-50 dark:bg-red-950/30";
+  const bgColor = isReady ? "bg-success/10" : "bg-destructive/5";
 
   return (
     <TableRow className={bgColor}>
@@ -47,9 +45,9 @@ export function SettlementReadinessRow({
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 shrink-0 flex items-center justify-center text-sm">
             {isReady ? (
-              <Check className="w-4 h-4 text-green-600 dark:text-green-500" />
+              <Check className="w-4 h-4 text-success-foreground" />
             ) : (
-              <X className="w-4 h-4 text-red-600 dark:text-red-500" />
+              <X className="w-4 h-4 text-destructive" />
             )}
           </div>
           <Link

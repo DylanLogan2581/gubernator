@@ -22,6 +22,17 @@ export const eventTargetSchema = z.strictObject({
 
 export type EventTargetSchema = z.input<typeof eventTargetSchema>;
 
+// Single per-turn citizen memory in the create/edit wizard's forecast step.
+export const eventMemorySchema = z.strictObject({
+  turnOffset: z.number().int().min(0, "Turn offset must be non-negative."),
+  memoryText: z
+    .string()
+    .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
+    .refine((v): boolean => v.trim().length > 0, "Memory text is required."),
+});
+
+export type EventMemorySchema = z.input<typeof eventMemorySchema>;
+
 /**
  * Input for creating an event group with multiple events atomically.
  */
@@ -66,9 +77,15 @@ const eventEffectBaseSchema = z.strictObject({
     .optional()
     .nullable(),
   depositInstanceId: z.guid().optional().nullable(),
+  depositTypeId: z.guid().optional().nullable(),
+  depositDestroyedMode: z.enum(["instance", "type"]).optional().nullable(),
   settlementBuildingId: z.guid().optional().nullable(),
-  buildingBlueprintMode: z.enum(["all", "select"]).optional().nullable(),
+  buildingBlueprintMode: z
+    .enum(["all", "select", "instance"])
+    .optional()
+    .nullable(),
   buildingBlueprintIds: z.array(z.guid()).optional().nullable(),
+  buildingInstanceIds: z.array(z.guid()).optional().nullable(),
 });
 
 export const eventEffectSchema = eventEffectBaseSchema.superRefine(
@@ -126,7 +143,19 @@ export const eventEffectSchema = eventEffectBaseSchema.superRefine(
     }
 
     if (effect.effectType === "deposit_destroyed") {
-      if (
+      if (effect.depositDestroyedMode === "type") {
+        if (
+          effect.depositTypeId === null ||
+          effect.depositTypeId === undefined
+        ) {
+          ctx.addIssue({
+            code: "custom",
+            message:
+              "Effect type deposit_destroyed requires a deposit type selection.",
+            path: ["depositTypeId"],
+          });
+        }
+      } else if (
         effect.depositInstanceId === null ||
         effect.depositInstanceId === undefined
       ) {
@@ -162,8 +191,8 @@ export const createEventGroupInputSchema = z
     worldId: worldIdSchema,
     groupName: z
       .string()
-      .max(eventInputLimits.eventGroupNameMax, "Group name is too long.")
-      .refine((v): boolean => v.trim().length > 0, "Group name is required."),
+      .max(eventInputLimits.eventGroupNameMax, "Event name is too long.")
+      .refine((v): boolean => v.trim().length > 0, "Event name is required."),
     groupDescription: z
       .string()
       .max(
@@ -181,28 +210,38 @@ export const createEventGroupInputSchema = z
     durationTransitions: z
       .number()
       .int()
-      .min(1, "Duration must be at least 1 transition.")
+      .min(1, "Duration must be at least 1 turn.")
       .optional()
       .nullable(),
     activationTurn: z
       .number()
       .int()
       .min(0, "Activation turn must be non-negative."),
-    createCitizenMemories: z.boolean().default(false),
-    memoryText: z
-      .string()
-      .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
-      .optional()
-      .nullable(),
+    memories: z.array(eventMemorySchema).default([]),
   })
-  .refine(
-    (data) =>
-      !data.createCitizenMemories || (data.memoryText?.trim().length ?? 0) > 0,
-    {
-      message: "Memory text is required when recording citizen memories.",
-      path: ["memoryText"],
-    },
-  );
+  .superRefine((data, ctx): void => {
+    const maxTurnOffset =
+      data.durationType === "sustained" ? (data.durationTransitions ?? 1) : 1;
+    const seenOffsets = new Set<number>();
+    data.memories.forEach((memory, index) => {
+      if (memory.turnOffset >= maxTurnOffset) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Memory turn offset is out of range for this event's duration.",
+          path: ["memories", index, "turnOffset"],
+        });
+      }
+      if (seenOffsets.has(memory.turnOffset)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Only one memory is allowed per turn.",
+          path: ["memories", index, "turnOffset"],
+        });
+      }
+      seenOffsets.add(memory.turnOffset);
+    });
+  });
 
 export type CreateEventGroupInput = z.input<typeof createEventGroupInputSchema>;
 
@@ -236,8 +275,8 @@ export const editEventGroupInputSchema = z
     worldId: worldIdSchema,
     groupName: z
       .string()
-      .max(eventInputLimits.eventGroupNameMax, "Group name is too long.")
-      .refine((v): boolean => v.trim().length > 0, "Group name is required."),
+      .max(eventInputLimits.eventGroupNameMax, "Event name is too long.")
+      .refine((v): boolean => v.trim().length > 0, "Event name is required."),
     groupDescription: z
       .string()
       .max(
@@ -251,28 +290,38 @@ export const editEventGroupInputSchema = z
     durationTransitions: z
       .number()
       .int()
-      .min(1, "Duration must be at least 1 transition.")
+      .min(1, "Duration must be at least 1 turn.")
       .optional()
       .nullable(),
     activationTurn: z
       .number()
       .int()
       .min(0, "Activation turn must be non-negative."),
-    createCitizenMemories: z.boolean().default(false),
-    memoryText: z
-      .string()
-      .max(eventInputLimits.eventMemoryTextMax, "Memory text is too long.")
-      .optional()
-      .nullable(),
+    memories: z.array(eventMemorySchema).default([]),
   })
-  .refine(
-    (data) =>
-      !data.createCitizenMemories || (data.memoryText?.trim().length ?? 0) > 0,
-    {
-      message: "Memory text is required when recording citizen memories.",
-      path: ["memoryText"],
-    },
-  );
+  .superRefine((data, ctx): void => {
+    const maxTurnOffset =
+      data.durationType === "sustained" ? (data.durationTransitions ?? 1) : 1;
+    const seenOffsets = new Set<number>();
+    data.memories.forEach((memory, index) => {
+      if (memory.turnOffset >= maxTurnOffset) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Memory turn offset is out of range for this event's duration.",
+          path: ["memories", index, "turnOffset"],
+        });
+      }
+      if (seenOffsets.has(memory.turnOffset)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Only one memory is allowed per turn.",
+          path: ["memories", index, "turnOffset"],
+        });
+      }
+      seenOffsets.add(memory.turnOffset);
+    });
+  });
 
 export type EditEventGroupInput = z.input<typeof editEventGroupInputSchema>;
 

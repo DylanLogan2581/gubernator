@@ -88,6 +88,7 @@ type DeleteTierMutationOptions = UseMutationOptions<
 type BlueprintInsertPayload = {
   description?: string;
   grace_period_turns?: number;
+  icon?: string | null;
   max_instances_per_settlement?: number;
   name: string;
   slug: string;
@@ -97,6 +98,7 @@ type BlueprintInsertPayload = {
 type BlueprintUpdatePayload = {
   description?: string | null;
   grace_period_turns?: number;
+  icon?: string | null;
   max_instances_per_settlement?: number | null;
   name?: string;
   slug?: string;
@@ -246,6 +248,9 @@ async function createBlueprint(
     insertPayload.max_instances_per_settlement =
       values.maxInstancesPerSettlement;
   }
+  if (values.icon !== undefined) {
+    insertPayload.icon = values.icon;
+  }
 
   const { data, error } = await client
     .from("building_blueprints")
@@ -291,6 +296,9 @@ async function updateBlueprint(
   if (values.maxInstancesPerSettlement !== undefined) {
     updatePayload.max_instances_per_settlement =
       values.maxInstancesPerSettlement;
+  }
+  if (values.icon !== undefined) {
+    updatePayload.icon = values.icon;
   }
 
   const { data, error } = await client

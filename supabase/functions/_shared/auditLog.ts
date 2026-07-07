@@ -95,3 +95,31 @@ export function logAuthenticationFailure(reason: string): void {
   // eslint-disable-next-line no-restricted-syntax
   console.log(JSON.stringify(entry));
 }
+
+/**
+ * Log a completed send-email operation (test send or manual notification).
+ * @param actingUserId - The super-admin user ID who triggered the send
+ * @param kind - The recipient scope ("test", "all", "specific", "world", "nation")
+ * @param recipientCount - Number of recipients resolved for this send
+ * @param sentCount - Number of recipients the SMTP send succeeded for
+ * @param failedCount - Number of recipients the SMTP send failed for
+ */
+export function logSendEmailSuccess(
+  actingUserId: string,
+  kind: string,
+  recipientCount: number,
+  sentCount: number,
+  failedCount: number,
+): void {
+  const entry: AuditLogEntry = {
+    actingUserId,
+    event: "send_email_success",
+    failedCount,
+    kind,
+    recipientCount,
+    sentCount,
+    timestamp: new Date().toISOString(),
+  };
+  // eslint-disable-next-line no-restricted-syntax
+  console.log(JSON.stringify(entry));
+}

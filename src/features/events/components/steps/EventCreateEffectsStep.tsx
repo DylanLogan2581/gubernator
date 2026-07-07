@@ -1,8 +1,9 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { SearchableResourcePicker } from "@/components/shared/SearchableResourcePicker";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,25 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type {
-  SettlementBuilding,
-  SettlementBuildingWithLocation,
-} from "@/features/buildings";
-import {
-  blueprintsByWorldQueryOptions,
-  settlementBuildingsBySettlementQueryOptions,
-  settlementBuildingsByNationsQueryOptions,
-  settlementBuildingsByWorldQueryOptions,
-} from "@/features/buildings";
-import type {
-  DepositInstance,
-  DepositInstanceWithLocation,
-} from "@/features/deposits";
-import {
-  depositInstancesBySettlementQueryOptions,
-  depositInstancesByNationsQueryOptions,
-  depositInstancesByWorldQueryOptions,
-} from "@/features/deposits";
+import { blueprintsByWorldQueryOptions } from "@/features/buildings";
+import { activeDepositTypesByWorldQueryOptions } from "@/features/deposits";
+import type { DepositType } from "@/features/deposits";
 import { jobsByWorldQueryOptions, type JobDefinition } from "@/features/jobs";
 import type {
   ManagedPopulationInstance,
@@ -44,6 +29,18 @@ import {
   managedPopulationInstancesBySettlementQueryOptions,
 } from "@/features/managed-populations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
+import { generateLocalId } from "@/lib/uid";
+
+import {
+  useBuildingsInScope,
+  type BuildingWithLocationInfo,
+} from "../../hooks/useBuildingsInScope";
+import {
+  useDepositsInScope,
+  type DepositWithLocationInfo,
+} from "../../hooks/useDepositsInScope";
+import { computeEffectImpact } from "../../utils/effectImpact";
 
 type EventEffectType =
   | "building_destroyed"
@@ -75,10 +72,13 @@ type EffectData = {
   managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
   depositInstanceIds?: string[];
+  depositTypeId?: string | null;
+  depositDestroyedMode?: "instance" | "type";
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
-  buildingBlueprintMode?: "all" | "select";
+  buildingBlueprintMode?: "all" | "select" | "instance";
   buildingBlueprintIds?: string[];
+  buildingInstanceIds?: string[];
   _id?: string;
 };
 
@@ -112,6 +112,12 @@ const EFFECT_TYPE_OPTIONS: Array<{
     label: "Population Loss",
     description:
       "Kill a number of citizens (flat count or percent of living population)",
+  },
+  {
+    value: "population_boost",
+    label: "Population Gain",
+    description:
+      "Add citizens to targeted settlements each turn the event is active",
   },
   {
     value: "managed_population_change",
@@ -175,6 +181,7 @@ const ALL_EFFECT_TYPES: Record<string, { label: string; description: string }> =
 
 function EffectEditor({
   effect,
+  index,
   onUpdate,
   onRemove,
   worldId,
@@ -182,6 +189,7 @@ function EffectEditor({
   scopeType,
 }: {
   readonly effect: EffectData;
+  readonly index: number;
   readonly onUpdate: (updated: EffectData) => void;
   readonly onRemove: () => void;
   readonly worldId: string;
@@ -194,79 +202,20 @@ function EffectEditor({
   // Query for jobs if this is a production_multiplier effect
   const jobsQuery = useQuery(jobsByWorldQueryOptions(worldId));
 
-  // Query for deposits if this is a deposit_destroyed effect
-  // For settlement scope: fetch individually per settlement
-  const settlementDepositQueries = useQueries({
-    queries:
-      scopeType === "settlement" && selectedIds.length > 0
-        ? selectedIds.map((settlementId) =>
-            depositInstancesBySettlementQueryOptions(settlementId),
-          )
-        : [],
-  });
+  // Query for deposits if this is a deposit_destroyed effect (instance picker,
+  // and "all of a type" live-count/type-count resolution).
+  const { deposits: allDeposits, isLoading: depositsLoading } =
+    useDepositsInScope({ worldId, scopeType, selectedIds });
 
-  // For nation/world scope: fetch in bulk
-  const nationDepositQueryOptions =
-    scopeType === "nation" && selectedIds.length > 0
-      ? depositInstancesByNationsQueryOptions(selectedIds)
-      : null;
-  const nationDepositQuery = useQuery(
-    (nationDepositQueryOptions ?? {
-      queryKey: ["deposits", "nations-disabled"] as const,
-      queryFn: () =>
-        Promise.resolve([] as readonly DepositInstanceWithLocation[]),
-      enabled: false,
-    }) as never,
+  // Query for deposit types for the "all of a deposit type in scope" mode
+  const depositTypesQuery = useQuery(
+    activeDepositTypesByWorldQueryOptions(worldId),
   );
 
-  const worldDepositQueryOptions =
-    scopeType === "world" ? depositInstancesByWorldQueryOptions(worldId) : null;
-  const worldDepositQuery = useQuery(
-    (worldDepositQueryOptions ?? {
-      queryKey: ["deposits", "world-disabled"] as const,
-      queryFn: () =>
-        Promise.resolve([] as readonly DepositInstanceWithLocation[]),
-      enabled: false,
-    }) as never,
-  );
-
-  // Query for buildings if this is a building_destroyed effect
-  // For settlement scope: fetch individually per settlement
-  const settlementBuildingQueries = useQueries({
-    queries:
-      scopeType === "settlement" && selectedIds.length > 0
-        ? selectedIds.map((settlementId) =>
-            settlementBuildingsBySettlementQueryOptions(settlementId),
-          )
-        : [],
-  });
-
-  // For nation/world scope: fetch in bulk
-  const nationBuildingQueryOptions =
-    scopeType === "nation" && selectedIds.length > 0
-      ? settlementBuildingsByNationsQueryOptions(selectedIds)
-      : null;
-  const nationBuildingQuery = useQuery(
-    (nationBuildingQueryOptions ?? {
-      queryKey: ["buildings", "nations-disabled"] as const,
-      queryFn: () =>
-        Promise.resolve([] as readonly SettlementBuildingWithLocation[]),
-      enabled: false,
-    }) as never,
-  );
-
-  const worldBuildingQueryOptions =
-    scopeType === "world"
-      ? settlementBuildingsByWorldQueryOptions(worldId)
-      : null;
-  const worldBuildingQuery = useQuery(
-    (worldBuildingQueryOptions ?? {
-      queryKey: ["buildings", "world-disabled"] as const,
-      queryFn: () =>
-        Promise.resolve([] as readonly SettlementBuildingWithLocation[]),
-      enabled: false,
-    }) as never,
-  );
+  // Query for building instances in scope (building_destroyed target picker,
+  // upkeep_multiplier "Specific Buildings" target picker).
+  const { buildings: allBuildings, isLoading: buildingsLoading } =
+    useBuildingsInScope({ worldId, scopeType, selectedIds });
 
   // Query for managed population types for type-targeted effects
   const typesQuery = useQuery(
@@ -275,6 +224,12 @@ function EffectEditor({
 
   // Query for building blueprints for blueprint-targeted upkeep effects
   const blueprintsQuery = useQuery(blueprintsByWorldQueryOptions(worldId));
+
+  // Query for settlement names to resolve settlement-scope labels (avoids raw UUIDs)
+  const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
+  const settlementNameById = new Map(
+    (settlementsQuery.data ?? []).map((s) => [s.id, s.name]),
+  );
 
   // Query for managed population instances if this is a managed_population_change effect
   const instanceQueries = useQueries({
@@ -287,138 +242,6 @@ function EffectEditor({
           )
         : [],
   });
-
-  // Pool all deposits from selected settlements with settlement and nation labels
-  type DepositWithLocation = {
-    readonly id: string;
-    readonly settlementId: string;
-    readonly settlementName: string;
-    readonly nationName: string;
-    readonly name: string;
-    readonly label: string;
-    readonly groupLabel: string;
-  };
-  const allDeposits: DepositWithLocation[] = [];
-
-  if (scopeType === "settlement") {
-    settlementDepositQueries.forEach((query, index) => {
-      const settlementId = selectedIds[index];
-      const deposits = query.data as DepositInstance[] | undefined;
-      if (deposits !== undefined && Array.isArray(deposits)) {
-        deposits.forEach((deposit) => {
-          allDeposits.push({
-            id: deposit.id,
-            settlementId,
-            settlementName: settlementId,
-            nationName: "",
-            name: deposit.name,
-            label: `${deposit.name} (Settlement: ${settlementId.slice(0, 8)})`,
-            groupLabel: `Settlement: ${settlementId.slice(0, 8)}`,
-          });
-        });
-      }
-    });
-  } else if (scopeType === "nation") {
-    const deposits = nationDepositQuery.data as
-      | DepositInstanceWithLocation[]
-      | undefined;
-    if (deposits !== undefined && Array.isArray(deposits)) {
-      deposits.forEach((deposit) => {
-        allDeposits.push({
-          id: deposit.id,
-          settlementId: deposit.settlementId,
-          settlementName: deposit.settlementName,
-          nationName: deposit.nationName,
-          name: deposit.name,
-          label: `${deposit.name} - ${deposit.settlementName} - ${deposit.nationName}`,
-          groupLabel: `${deposit.settlementName}`,
-        });
-      });
-    }
-  } else if (scopeType === "world") {
-    const deposits = worldDepositQuery.data as
-      | DepositInstanceWithLocation[]
-      | undefined;
-    if (deposits !== undefined && Array.isArray(deposits)) {
-      deposits.forEach((deposit) => {
-        allDeposits.push({
-          id: deposit.id,
-          settlementId: deposit.settlementId,
-          settlementName: deposit.settlementName,
-          nationName: deposit.nationName,
-          name: deposit.name,
-          label: `${deposit.name} - ${deposit.settlementName} - ${deposit.nationName}`,
-          groupLabel: `${deposit.settlementName}`,
-        });
-      });
-    }
-  }
-
-  // Pool all buildings from selected settlements, grouped by nation/settlement
-  type BuildingWithLocationInfo = {
-    readonly id: string;
-    readonly settlementId: string;
-    readonly settlementName: string;
-    readonly nationName: string;
-    readonly blueprintName: string;
-    readonly label: string;
-    readonly groupLabel: string;
-  };
-  const allBuildings: BuildingWithLocationInfo[] = [];
-
-  if (scopeType === "settlement") {
-    settlementBuildingQueries.forEach((query, index) => {
-      const settlementId = selectedIds[index];
-      const buildings = query.data as SettlementBuilding[] | undefined;
-      if (buildings !== undefined && Array.isArray(buildings)) {
-        buildings.forEach((building) => {
-          allBuildings.push({
-            id: building.id,
-            settlementId,
-            settlementName: settlementId,
-            nationName: "",
-            blueprintName: building.blueprintName,
-            label: `${building.blueprintName} (Settlement: ${settlementId.slice(0, 8)})`,
-            groupLabel: `Settlement: ${settlementId.slice(0, 8)}`,
-          });
-        });
-      }
-    });
-  } else if (scopeType === "nation") {
-    const buildings = nationBuildingQuery.data as
-      | SettlementBuildingWithLocation[]
-      | undefined;
-    if (buildings !== undefined && Array.isArray(buildings)) {
-      buildings.forEach((building) => {
-        allBuildings.push({
-          id: building.id,
-          settlementId: building.settlementId,
-          settlementName: building.settlementName,
-          nationName: building.nationName,
-          blueprintName: building.blueprintName,
-          label: `${building.blueprintName} - ${building.settlementName} - ${building.nationName}`,
-          groupLabel: `${building.settlementName}`,
-        });
-      });
-    }
-  } else if (scopeType === "world") {
-    const buildings = worldBuildingQuery.data as
-      | SettlementBuildingWithLocation[]
-      | undefined;
-    if (buildings !== undefined && Array.isArray(buildings)) {
-      buildings.forEach((building) => {
-        allBuildings.push({
-          id: building.id,
-          settlementId: building.settlementId,
-          settlementName: building.settlementName,
-          nationName: building.nationName,
-          blueprintName: building.blueprintName,
-          label: `${building.blueprintName} - ${building.settlementName} - ${building.nationName}`,
-          groupLabel: `${building.settlementName}`,
-        });
-      });
-    }
-  }
 
   // Pool all managed population instances from selected settlements
   type InstanceWithLocation = {
@@ -436,13 +259,15 @@ function EffectEditor({
         const settlementId = selectedIds[index];
         const instances = query.data as ManagedPopulationInstance[] | undefined;
         if (instances !== undefined && Array.isArray(instances)) {
+          const settlementName =
+            settlementNameById.get(settlementId) ?? settlementId;
           instances.forEach((instance) => {
             allInstances.push({
               id: instance.id,
               settlementId,
               name: instance.name,
               typeName: instance.managedPopulationTypeName,
-              label: `${instance.name} [${instance.managedPopulationTypeName}] (Settlement: ${settlementId.slice(0, 8)})`,
+              label: `${instance.name} [${instance.managedPopulationTypeName}] (${settlementName})`,
             });
           });
         }
@@ -474,6 +299,30 @@ function EffectEditor({
     "consumption_multiplier",
     "upkeep_multiplier",
   ].includes(effect.effectType);
+
+  // Live count of deposits currently matching the selected type in scope,
+  // used both for the zero-target warning and the "All <type> deposits"
+  // picker summary.
+  const matchingDepositCount =
+    effect.effectType === "deposit_destroyed" &&
+    effect.depositDestroyedMode === "type" &&
+    effect.depositTypeId !== null &&
+    effect.depositTypeId !== undefined
+      ? allDeposits.filter((d) => d.depositTypeId === effect.depositTypeId)
+          .length
+      : undefined;
+
+  // Zero-target check: warn inline as soon as the effect resolves to 0 targets
+  const effectImpact =
+    scopeType !== null
+      ? computeEffectImpact(
+          { ...effect, matchingDepositCount },
+          scopeType,
+          selectedIds,
+          settlementsQuery.data ?? [],
+        )
+      : null;
+  const hasZeroTargets = effectImpact !== null && effectImpact.count === 0;
 
   // Get label from options or mapping
   let displayLabel = "";
@@ -509,6 +358,17 @@ function EffectEditor({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {hasZeroTargets && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Zero targets</AlertTitle>
+            <AlertDescription>
+              This effect currently resolves to 0 targets and will have no
+              effect. Review scope and effect configuration.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {isModifyResource && (
           <>
             <div className="space-y-2">
@@ -534,12 +394,12 @@ function EffectEditor({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`amount-${effect.effectType}`}>
+              <Label htmlFor={`amount-${index}-${effect.effectType}`}>
                 {effect.isPercent ? "Percent" : "Amount"} (positive = grant,
                 negative = drain)
               </Label>
               <Input
-                id={`amount-${effect.effectType}`}
+                id={`amount-${index}-${effect.effectType}`}
                 type="number"
                 placeholder={
                   effect.isPercent ? "e.g., 10 for 10%" : "e.g., 100 or -50"
@@ -632,40 +492,45 @@ function EffectEditor({
 
         {isModifyPopulation && (
           <>
-            <div className="space-y-2">
-              <Label>Mode</Label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={!effect.isPercent}
-                    onChange={() => onUpdate({ ...effect, isPercent: false })}
-                  />
-                  <span className="text-sm">Flat amount</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={effect.isPercent}
-                    onChange={() => onUpdate({ ...effect, isPercent: true })}
-                  />
-                  <span className="text-sm">Percent of current</span>
-                </label>
+            {effect.effectType === "population_loss" && (
+              <div className="space-y-2">
+                <Label>Mode</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={!effect.isPercent}
+                      onChange={() => onUpdate({ ...effect, isPercent: false })}
+                    />
+                    <span className="text-sm">Flat amount</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={effect.isPercent}
+                      onChange={() => onUpdate({ ...effect, isPercent: true })}
+                    />
+                    <span className="text-sm">Percent of current</span>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="space-y-2">
-              <Label htmlFor={`amount-${effect.effectType}`}>
-                {effect.isPercent ? "Percent" : "Amount"}{" "}
+              <Label htmlFor={`amount-${index}-${effect.effectType}`}>
                 {effect.effectType === "population_loss"
-                  ? "(citizens to kill)"
-                  : "(positive = boost, negative = loss)"}
+                  ? "Citizens to kill"
+                  : "Citizens to add"}
               </Label>
               <Input
-                id={`amount-${effect.effectType}`}
+                id={`amount-${index}-${effect.effectType}`}
                 type="number"
                 placeholder={
-                  effect.isPercent ? "e.g., 10 for 10%" : "e.g., 100 or -50"
+                  effect.effectType === "population_loss"
+                    ? "e.g., 100"
+                    : effect.isPercent
+                      ? "e.g., 10 for 10%"
+                      : "e.g., 5"
                 }
                 value={effect.amountValue ?? ""}
                 onChange={(e) =>
@@ -676,6 +541,17 @@ function EffectEditor({
                   })
                 }
               />
+              {effect.effectType === "population_loss" && (
+                <p className="text-xs text-muted-foreground">
+                  Positive number. For population gain use the Population Gain
+                  effect.
+                </p>
+              )}
+              {effect.effectType === "population_boost" && (
+                <p className="text-xs text-muted-foreground">
+                  Positive number, applied each turn the event is active.
+                </p>
+              )}
             </div>
           </>
         )}
@@ -705,11 +581,11 @@ function EffectEditor({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`amount-${effect.effectType}`}>
+              <Label htmlFor={`amount-${index}-${effect.effectType}`}>
                 {effect.isPercent ? "Percent" : "Amount"}
               </Label>
               <Input
-                id={`amount-${effect.effectType}`}
+                id={`amount-${index}-${effect.effectType}`}
                 type="number"
                 placeholder={
                   effect.isPercent ? "e.g., 10 for 10%" : "e.g., 100"
@@ -723,6 +599,9 @@ function EffectEditor({
                   })
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Positive adds, negative removes.
+              </p>
             </div>
           </>
         )}
@@ -785,7 +664,9 @@ function EffectEditor({
 
             {effect.managedPopulationMode === "type" && (
               <div className="space-y-2">
-                <Label htmlFor="population-type-select">Select Type</Label>
+                <Label htmlFor={`population-type-select-${index}`}>
+                  Select Type
+                </Label>
                 {typesQuery.isLoading ? (
                   <p className="text-sm text-muted-foreground">
                     Loading population types...
@@ -805,7 +686,7 @@ function EffectEditor({
                       })
                     }
                   >
-                    <SelectTrigger id="population-type-select">
+                    <SelectTrigger id={`population-type-select-${index}`}>
                       <SelectValue placeholder="Choose a type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -847,17 +728,18 @@ function EffectEditor({
                         key={instance.id}
                         className="flex items-center gap-2"
                       >
-                        <Checkbox
+                        <input
+                          type="radio"
+                          name={`managed-population-instance-${index}`}
                           checked={
                             effect.managedPopulationInstanceId === instance.id
                           }
-                          onCheckedChange={(checked) => {
+                          onChange={() =>
                             onUpdate({
                               ...effect,
-                              managedPopulationInstanceId:
-                                checked === true ? instance.id : null,
-                            });
-                          }}
+                              managedPopulationInstanceId: instance.id,
+                            })
+                          }
                         />
                         <span className="text-sm">{instance.label}</span>
                       </label>
@@ -871,11 +753,11 @@ function EffectEditor({
 
         {isMultiplierEffect && (
           <div className="space-y-2">
-            <Label htmlFor={`multiplier-${effect.effectType}`}>
+            <Label htmlFor={`multiplier-${index}-${effect.effectType}`}>
               Multiplier (e.g., 1.2 for 20% increase, 0.8 for 20% decrease)
             </Label>
             <Input
-              id={`multiplier-${effect.effectType}`}
+              id={`multiplier-${index}-${effect.effectType}`}
               type="number"
               placeholder="1.0"
               step="0.1"
@@ -959,6 +841,14 @@ function EffectEditor({
                         No jobs available
                       </p>
                     )}
+
+                    {effect.jobMode === "select" &&
+                      (effect.jobIds === undefined ||
+                        effect.jobIds.length === 0) && (
+                        <p className="text-sm text-destructive">
+                          Select at least one job, or choose All Jobs.
+                        </p>
+                      )}
                   </div>
                 )}
 
@@ -988,12 +878,16 @@ function EffectEditor({
                       <label className="flex items-center gap-2">
                         <input
                           type="radio"
-                          checked={effect.buildingBlueprintMode !== "select"}
+                          checked={
+                            effect.buildingBlueprintMode !== "select" &&
+                            effect.buildingBlueprintMode !== "instance"
+                          }
                           onChange={() =>
                             onUpdate({
                               ...effect,
                               buildingBlueprintMode: "all",
                               buildingBlueprintIds: undefined,
+                              buildingInstanceIds: undefined,
                             })
                           }
                         />
@@ -1009,21 +903,40 @@ function EffectEditor({
                               buildingBlueprintMode: "select",
                               buildingBlueprintIds:
                                 effect.buildingBlueprintIds ?? [],
+                              buildingInstanceIds: undefined,
                             })
                           }
                         />
                         <span className="text-sm">Specific Building Types</span>
                       </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={effect.buildingBlueprintMode === "instance"}
+                          onChange={() =>
+                            onUpdate({
+                              ...effect,
+                              buildingBlueprintMode: "instance",
+                              buildingInstanceIds:
+                                effect.buildingInstanceIds ?? [],
+                              buildingBlueprintIds: undefined,
+                            })
+                          }
+                        />
+                        <span className="text-sm">Specific Buildings</span>
+                      </label>
                     </div>
 
-                    {effect.buildingBlueprintMode === "all" ? (
+                    {effect.buildingBlueprintMode === "all" ||
+                    effect.buildingBlueprintMode === undefined ||
+                    effect.buildingBlueprintMode === null ? (
                       <div className="rounded-md border border-dashed border-muted-foreground bg-muted/20 p-3">
                         <p className="text-sm font-medium">
                           ✓ All {blueprintsQuery.data.length} building types
                           selected
                         </p>
                       </div>
-                    ) : (
+                    ) : effect.buildingBlueprintMode === "select" ? (
                       blueprintsQuery.data.length > 0 && (
                         <SearchableResourcePicker
                           resources={blueprintsQuery.data.map((b) => ({
@@ -1039,13 +952,88 @@ function EffectEditor({
                           }
                         />
                       )
+                    ) : scopeType === null ? (
+                      <p className="text-sm text-muted-foreground">
+                        Select a scope in step 1 to target buildings
+                      </p>
+                    ) : selectedIds.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {scopeType === "settlement"
+                          ? "No settlements selected"
+                          : scopeType === "nation"
+                            ? "No nations selected"
+                            : "No world selected"}
+                      </p>
+                    ) : allBuildings.length === 0 && buildingsLoading ? (
+                      <p className="text-sm text-muted-foreground">
+                        Loading buildings...
+                      </p>
+                    ) : allBuildings.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No buildings available in selected {scopeType}
+                      </p>
+                    ) : (
+                      <div className="space-y-2 rounded-md border p-3 max-h-64 overflow-y-auto">
+                        {/* Group buildings by settlement for clarity at scale */}
+                        {Object.entries(
+                          allBuildings.reduce(
+                            (acc, building) => {
+                              const group = building.groupLabel;
+                              if (!(group in acc)) acc[group] = [];
+                              acc[group].push(building);
+                              return acc;
+                            },
+                            {} as Record<string, BuildingWithLocationInfo[]>,
+                          ),
+                        ).map(([group, groupBuildings]) => (
+                          <div key={group}>
+                            <p className="text-xs font-semibold text-muted-foreground mb-2">
+                              {group}
+                            </p>
+                            <div className="space-y-2 ml-2">
+                              {groupBuildings.map((building) => (
+                                <label
+                                  key={building.id}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Checkbox
+                                    checked={
+                                      effect.buildingInstanceIds?.includes(
+                                        building.id,
+                                      ) ?? false
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      const currentIds =
+                                        effect.buildingInstanceIds ?? [];
+                                      const newIds = new Set(currentIds);
+                                      if (checked === true) {
+                                        newIds.add(building.id);
+                                      } else if (checked === false) {
+                                        newIds.delete(building.id);
+                                      }
+                                      onUpdate({
+                                        ...effect,
+                                        buildingInstanceIds: Array.from(newIds),
+                                      });
+                                    }}
+                                  />
+                                  <span className="text-sm">
+                                    {building.label}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
 
-                    {blueprintsQuery.data.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No building types available
-                      </p>
-                    )}
+                    {effect.buildingBlueprintMode === "select" &&
+                      blueprintsQuery.data.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No building types available
+                        </p>
+                      )}
                   </div>
                 )}
 
@@ -1062,7 +1050,88 @@ function EffectEditor({
         {effect.effectType === "deposit_destroyed" && (
           <div className="space-y-2">
             <Label>Deposits to Destroy</Label>
-            {scopeType === null ? (
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={effect.depositDestroyedMode !== "type"}
+                  onChange={() =>
+                    onUpdate({
+                      ...effect,
+                      depositDestroyedMode: "instance",
+                      depositTypeId: null,
+                    })
+                  }
+                />
+                <span className="text-sm">Specific deposits</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={effect.depositDestroyedMode === "type"}
+                  onChange={() =>
+                    onUpdate({
+                      ...effect,
+                      depositDestroyedMode: "type",
+                      depositInstanceId: null,
+                      depositInstanceIds: undefined,
+                    })
+                  }
+                />
+                <span className="text-sm">All of a deposit type in scope</span>
+              </label>
+            </div>
+
+            {effect.depositDestroyedMode === "type" ? (
+              <div className="space-y-2">
+                <Label htmlFor={`deposit-type-select-${index}`}>
+                  Select Deposit Type
+                </Label>
+                {depositTypesQuery.isLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading deposit types...
+                  </p>
+                ) : depositTypesQuery.data === undefined ||
+                  depositTypesQuery.data.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No deposit types available
+                  </p>
+                ) : (
+                  <Select
+                    value={effect.depositTypeId ?? ""}
+                    onValueChange={(value) =>
+                      onUpdate({
+                        ...effect,
+                        depositTypeId: value !== "" ? value : null,
+                      })
+                    }
+                  >
+                    <SelectTrigger id={`deposit-type-select-${index}`}>
+                      <SelectValue placeholder="Choose a deposit type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {depositTypesQuery.data.map((type: DepositType) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {effect.depositTypeId !== null &&
+                  effect.depositTypeId !== undefined &&
+                  scopeType !== null && (
+                    <p className="text-sm text-muted-foreground">
+                      {depositsLoading
+                        ? "Loading matching deposits..."
+                        : `Currently ${matchingDepositCount ?? 0} matching deposit${
+                            (matchingDepositCount ?? 0) === 1 ? "" : "s"
+                          } in scope`}
+                    </p>
+                  )}
+              </div>
+            ) : scopeType === null ? (
               <p className="text-sm text-muted-foreground">
                 Select a scope in step 1 to target deposits
               </p>
@@ -1074,14 +1143,7 @@ function EffectEditor({
                     ? "No nations selected"
                     : "No world selected"}
               </p>
-            ) : allDeposits.length === 0 &&
-              (scopeType === "settlement"
-                ? settlementDepositQueries.some((q) => q.isLoading)
-                : scopeType === "nation"
-                  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/strict-boolean-expressions
-                    !!(nationDepositQuery as any).isLoading
-                  : // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/strict-boolean-expressions
-                    !!(worldDepositQuery as any).isLoading) ? (
+            ) : allDeposits.length === 0 && depositsLoading ? (
               <p className="text-sm text-muted-foreground">
                 Loading deposits...
               </p>
@@ -1100,7 +1162,7 @@ function EffectEditor({
                       acc[group].push(deposit);
                       return acc;
                     },
-                    {} as Record<string, DepositWithLocation[]>,
+                    {} as Record<string, DepositWithLocationInfo[]>,
                   ),
                 ).map(([group, groupDeposits]) => (
                   <div key={group}>
@@ -1162,12 +1224,7 @@ function EffectEditor({
                     ? "No nations selected"
                     : "No world selected"}
               </p>
-            ) : allBuildings.length === 0 &&
-              (scopeType === "settlement"
-                ? settlementBuildingQueries.some((q) => q.isLoading)
-                : scopeType === "nation"
-                  ? nationBuildingQuery.isLoading
-                  : worldBuildingQuery.isLoading) ? (
+            ) : allBuildings.length === 0 && buildingsLoading ? (
               <p className="text-sm text-muted-foreground">
                 Loading buildings...
               </p>
@@ -1262,8 +1319,12 @@ export function EventCreateEffectsStep({
       managedPopulationMode: undefined,
       depositInstanceId: null,
       depositInstanceIds: undefined,
+      depositTypeId: null,
+      depositDestroyedMode: undefined,
       settlementBuildingId: null,
       buildingBlueprintMode: undefined,
+      buildingInstanceIds: undefined,
+      _id: generateLocalId(),
     };
     onEffectsChange([...effects, newEffect]);
     setSelectedType("");
@@ -1318,6 +1379,7 @@ export function EventCreateEffectsStep({
               <EffectEditor
                 key={effect._id ?? idx}
                 effect={effect}
+                index={idx}
                 onUpdate={(updated) => updateEffect(idx, updated)}
                 onRemove={() => removeEffect(idx)}
                 worldId={worldId}

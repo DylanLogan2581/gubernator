@@ -3,7 +3,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -83,7 +83,7 @@ export function SettlementConstructionPanel({
               setShowCancelled((v) => !v);
             }}
           >
-            <Trash2 aria-hidden="true" />
+            <Eye aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -101,6 +101,9 @@ export function SettlementConstructionPanel({
             allProjects={projectsQuery.data}
             canAct={canAct}
             logEntries={latestOutcome?.logEntries ?? []}
+            onQueueClick={() => {
+              setCreateOpen(true);
+            }}
             queryClient={queryClient}
             settlementId={settlementId}
             showCancelled={showCancelled}
@@ -127,6 +130,7 @@ function QueueContent({
   allProjects,
   canAct,
   logEntries,
+  onQueueClick,
   queryClient,
   settlementId,
   showCancelled,
@@ -135,6 +139,7 @@ function QueueContent({
   readonly allProjects: readonly ConstructionProject[];
   readonly canAct: boolean;
   readonly logEntries: readonly TurnTransitionLogEntry[];
+  readonly onQueueClick: () => void;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
   readonly showCancelled: boolean;
@@ -157,6 +162,7 @@ function QueueContent({
       allProjects={allProjects}
       canAct={canAct}
       logEntries={logEntries}
+      onQueueClick={onQueueClick}
       queryClient={queryClient}
       settlementId={settlementId}
       worldId={worldId}

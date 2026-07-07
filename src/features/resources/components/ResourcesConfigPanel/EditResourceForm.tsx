@@ -3,8 +3,16 @@ import { Trash2 } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
 import { handleCrudError } from "@/components/shared/ConfigCrudPanel";
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resourceInputLimits } from "@/lib/inputLimits";
@@ -57,6 +65,7 @@ export function EditResourceForm({
     String(resource.baseStockpileCap),
   );
   const [decayRate, setDecayRate] = useState(String(resource.decayRate));
+  const [icon, setIcon] = useState<string | null>(resource.icon);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof ResourceFieldErrors>();
 
@@ -76,6 +85,7 @@ export function EditResourceForm({
     const input: UpdateResourceInput = {
       baseStockpileCap: baseStockpileCap !== "" ? baseStockpileCap : undefined,
       decayRate: decayRate !== "" ? decayRate : undefined,
+      icon,
       name,
       resourceId: resource.id,
       slug,
@@ -115,108 +125,129 @@ export function EditResourceForm({
   }
 
   return (
-    <form
-      aria-label="Edit resource"
-      className="grid gap-4 rounded-md border border-border bg-background p-4"
-      noValidate
-      onSubmit={(e) => {
-        void handleSubmit(e);
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <h3 className="text-sm font-medium">Edit resource</h3>
-      <div className="grid gap-3">
-        <Label className="grid gap-1 text-sm" htmlFor="edit-resource-name">
-          <span className="text-muted-foreground">Name</span>
-          <Input
-            aria-invalid={fieldErrors.name !== undefined}
-            aria-label="Name"
-            disabled={isPending}
-            id="edit-resource-name"
-            maxLength={resourceInputLimits.resourceNameMax}
-            value={name}
-            onChange={(e) => {
-              handleNameChange(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.name !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.name}</p>
-          ) : null}
-          <SlugHint slug={slug} error={fieldErrors.slug} />
-        </Label>
-        <Label className="grid gap-1 text-sm" htmlFor="edit-resource-cap">
-          <span className="text-muted-foreground">Base stockpile cap</span>
-          <Input
-            aria-invalid={fieldErrors.baseStockpileCap !== undefined}
-            disabled={isPending}
-            id="edit-resource-cap"
-            inputMode="decimal"
-            placeholder="0"
-            value={baseStockpileCap}
-            onChange={(e) => {
-              setBaseStockpileCap(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.baseStockpileCap !== undefined ? (
-            <p className="text-xs text-destructive">
-              {fieldErrors.baseStockpileCap}
-            </p>
-          ) : null}
-        </Label>
-        <Label className="grid gap-1 text-sm" htmlFor="edit-resource-decay">
-          <span className="text-muted-foreground">Decay rate (%)</span>
-          <Input
-            aria-invalid={fieldErrors.decayRate !== undefined}
-            disabled={isPending}
-            id="edit-resource-decay"
-            inputMode="decimal"
-            placeholder="0"
-            value={decayRate}
-            onChange={(e) => {
-              setDecayRate(e.currentTarget.value);
-            }}
-          />
-          {fieldErrors.decayRate !== undefined ? (
-            <p className="text-xs text-destructive">{fieldErrors.decayRate}</p>
-          ) : null}
-        </Label>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2">
-          <Button type="submit" size="sm" disabled={isPending}>
-            Save
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={resource.isSystemResource || isPending}
-          title={
-            resource.isSystemResource
-              ? "System resources cannot be deleted"
-              : undefined
-          }
-          onClick={
-            resource.isSystemResource
-              ? undefined
-              : () => {
-                  void handleTrash();
-                }
-          }
+      <DialogContent className="max-w-lg">
+        <form
+          aria-label="Edit resource"
+          className="contents"
+          noValidate
+          onSubmit={(e) => {
+            void handleSubmit(e);
+          }}
         >
-          <Trash2 aria-hidden="true" />
-          Move to trash
-        </Button>
-      </div>
-    </form>
+          <DialogHeader>
+            <DialogTitle>Edit resource</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-name">
+              <span className="text-muted-foreground">Name</span>
+              <Input
+                aria-invalid={fieldErrors.name !== undefined}
+                aria-label="Name"
+                disabled={isPending}
+                id="edit-resource-name"
+                maxLength={resourceInputLimits.resourceNameMax}
+                value={name}
+                onChange={(e) => {
+                  handleNameChange(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.name !== undefined ? (
+                <p className="text-xs text-destructive">{fieldErrors.name}</p>
+              ) : null}
+              <SlugHint slug={slug} error={fieldErrors.slug} />
+            </Label>
+            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-cap">
+              <span className="text-muted-foreground">Base stockpile cap</span>
+              <Input
+                aria-invalid={fieldErrors.baseStockpileCap !== undefined}
+                disabled={isPending}
+                id="edit-resource-cap"
+                inputMode="decimal"
+                placeholder="0"
+                value={baseStockpileCap}
+                onChange={(e) => {
+                  setBaseStockpileCap(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.baseStockpileCap !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.baseStockpileCap}
+                </p>
+              ) : null}
+            </Label>
+            <Label className="grid gap-1 text-sm" htmlFor="edit-resource-decay">
+              <span className="text-muted-foreground">Decay rate (%)</span>
+              <Input
+                aria-invalid={fieldErrors.decayRate !== undefined}
+                disabled={isPending}
+                id="edit-resource-decay"
+                inputMode="decimal"
+                placeholder="0"
+                value={decayRate}
+                onChange={(e) => {
+                  setDecayRate(e.currentTarget.value);
+                }}
+              />
+              {fieldErrors.decayRate !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.decayRate}
+                </p>
+              ) : null}
+            </Label>
+            <Label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Icon</span>
+              <IconPicker
+                disabled={isPending}
+                value={icon}
+                onChange={setIcon}
+              />
+            </Label>
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={resource.isSystemResource || isPending}
+              title={
+                resource.isSystemResource
+                  ? "System resources cannot be deleted"
+                  : undefined
+              }
+              onClick={
+                resource.isSystemResource
+                  ? undefined
+                  : () => {
+                      void handleTrash();
+                    }
+              }
+            >
+              <Trash2 aria-hidden="true" />
+              Move to trash
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={isPending}>
+                Save
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -17,15 +17,27 @@ export function useHardDeleteRow<TData, TError, TVariables>(
 ): UseMutationResult<TData, TError, TVariables> {
   return useMutation({
     ...mutationOptions,
-    onError: (error) => {
+    onError: (error, variables, onMutateResult, context) => {
       toast.error(
         error instanceof Error
           ? error.message
           : "Failed to permanently delete.",
       );
+      return mutationOptions.onError?.(
+        error,
+        variables,
+        onMutateResult,
+        context,
+      );
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       notifyMutationSuccess(successMessage);
+      return mutationOptions.onSuccess?.(
+        data,
+        variables,
+        onMutateResult,
+        context,
+      );
     },
   });
 }

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
 import { useState, type FormEvent, type JSX } from "react";
 
+import { IconPicker } from "@/components/shared/iconPicker/IconPicker";
 import { SlugHint } from "@/components/shared/SlugHint";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +57,7 @@ export function CreateBlueprintForm({
   const [description, setDescription] = useState("");
   const [gracePeriodTurns, setGracePeriodTurns] = useState("0");
   const [maxInstances, setMaxInstances] = useState("");
+  const [icon, setIcon] = useState<string | null>(null);
   const { fieldErrors, setFromZod, clear } =
     useFieldErrors<keyof BlueprintFieldErrors>();
   const [pendingTiers, setPendingTiers] = useState<PendingTierDraft[]>([]);
@@ -77,6 +79,7 @@ export function CreateBlueprintForm({
       description: description.length > 0 ? description : undefined,
       gracePeriodTurns:
         gracePeriodTurns !== "" ? parseInt(gracePeriodTurns, 10) : undefined,
+      icon,
       maxInstancesPerSettlement:
         maxInstances !== "" ? parseInt(maxInstances, 10) : undefined,
       name,
@@ -190,6 +193,14 @@ export function CreateBlueprintForm({
                   {fieldErrors.maxInstancesPerSettlement}
                 </p>
               ) : null}
+            </div>
+            <div className="grid gap-1">
+              <Label>Icon</Label>
+              <IconPicker
+                disabled={isCreating}
+                value={icon}
+                onChange={setIcon}
+              />
             </div>
           </div>
 

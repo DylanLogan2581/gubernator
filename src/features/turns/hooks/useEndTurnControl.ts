@@ -1,0 +1,216 @@
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
+
+import { normalizeSignInReturnPath, type AuthUiError } from "@/features/auth";
+import {
+  settlementReadinessSummaryQueryOptions,
+  type SettlementReadinessSummary,
+} from "@/features/settlements";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+
+import {
+  endTurnTransitionMutationOptions,
+  isEndTurnTransitionError,
+  type EndTurnTransitionError,
+  type EndTurnTransitionInput,
+  type EndTurnTransitionMutationResult,
+} from "../mutations/endTurnTransitionMutations";
+import {
+  failStuckTurnTransitionMutationOptions,
+  isFailStuckTurnTransitionError,
+  type FailStuckTurnTransitionError,
+  type FailStuckTurnTransitionInput,
+  type FailStuckTurnTransitionMutationResult,
+} from "../mutations/failStuckTurnTransitionMutations";
+import {
+  latestTurnTransitionStatusQueryOptions,
+  type LatestTurnTransitionStatusError,
+} from "../queries/latestTurnTransitionStatusQueries";
+
+import type { LatestTurnTransitionStatus } from "../types/turnTransitionStatusTypes";
+
+type UseEndTurnControlInput = {
+  readonly currentTurnNumber: number;
+  readonly isArchived: boolean;
+  readonly worldId: string;
+};
+
+export type UseEndTurnControlResult = {
+  readonly closeConfirmation: () => void;
+  readonly endTurnMutation: UseMutationResult<
+    EndTurnTransitionMutationResult,
+    EndTurnTransitionError,
+    EndTurnTransitionInput
+  >;
+  readonly failStuckMutation: UseMutationResult<
+    FailStuckTurnTransitionMutationResult,
+    FailStuckTurnTransitionError,
+    FailStuckTurnTransitionInput
+  >;
+  readonly isConfirming: boolean;
+  readonly isDisabled: boolean;
+  readonly isReadinessUnavailable: boolean;
+  readonly isStuckRunning: boolean;
+  readonly latestTransitionQuery: UseQueryResult<
+    LatestTurnTransitionStatus | null,
+    AuthUiError | LatestTurnTransitionStatusError
+  >;
+  readonly openConfirmation: () => void;
+  readonly readinessSummaryQuery: UseQueryResult<
+    SettlementReadinessSummary,
+    AuthUiError
+  >;
+  readonly resetStuckTransition: () => void;
+  readonly submitEndTurn: () => void;
+};
+
+// Shared by the full EndTurnControl dashboard card (WorldShellPage) and the
+// compact HeaderEndTurnControl chip (AppHeader) — one mutation/readiness
+// state, two presentations (issue #1009).
+export function useEndTurnControl({
+  currentTurnNumber,
+  isArchived,
+  worldId,
+}: UseEndTurnControlInput): UseEndTurnControlResult {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const navigate = useNavigate();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const readinessSummaryQuery = useQuery(
+    settlementReadinessSummaryQueryOptions(worldId),
+  );
+  const latestTransitionQuery = useQuery(
+    latestTurnTransitionStatusQueryOptions(worldId),
+  );
+  const endTurnMutation = useMutation(
+    endTurnTransitionMutationOptions({ queryClient }),
+  );
+  const failStuckMutation = useMutation(
+    failStuckTurnTransitionMutationOptions({ queryClient }),
+  );
+  const isReadinessUnavailable = !readinessSummaryQuery.isSuccess;
+  const isDisabled =
+    isArchived || isReadinessUnavailable || endTurnMutation.isPending;
+
+  // Time-based check to detect stuck transitions — safe since the result depends only on the transition data.
+  const isStuckRunning = (() => {
+    const data = latestTransitionQuery.data;
+    if (data?.isRunning !== true || data?.startedAt === undefined) {
+      return false;
+    }
+
+    // eslint-disable-next-line no-restricted-syntax
+    const startedTime = new Date(data.startedAt).getTime();
+    // eslint-disable-next-line react-hooks/purity, no-restricted-syntax
+    const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
+    return startedTime < thirtyMinutesAgo;
+  })();
+
+  function openConfirmation(): void {
+    if (isDisabled) {
+      return;
+    }
+
+    endTurnMutation.reset();
+    setIsConfirming(true);
+  }
+
+  function closeConfirmation(): void {
+    setIsConfirming(false);
+  }
+
+  function submitEndTurn(): void {
+    if (isDisabled) {
+      return;
+    }
+
+    endTurnMutation.mutate(
+      {
+        expectedTurnNumber: currentTurnNumber,
+        worldId,
+      },
+      {
+        onError: (error) => {
+          if (
+            isEndTurnTransitionError(error) &&
+            error.code === "end_turn_session_expired"
+          ) {
+            const returnTo = normalizeSignInReturnPath(
+              router.state.location.href,
+            );
+            void navigate({ to: "/sign-in", search: { returnTo } });
+            return;
+          }
+          // Error shown in dialog banner instead of toast for high-stakes flow.
+        },
+        onSuccess: (result) => {
+          setIsConfirming(false);
+          const { patchCounts, toTurnNumber } = result.summary;
+          const deaths = patchCounts.citizenDeaths;
+          const births = patchCounts.citizenBirths;
+          const buildingChanges = patchCounts.buildingStateChanges;
+          const depositUpdates = patchCounts.depositUpdates;
+          notifyMutationSuccess(`Advanced to turn ${toTurnNumber.toString()}`, {
+            description: `${deaths.toString()} deaths, ${births.toString()} births, ${buildingChanges.toString()} building changes, ${depositUpdates.toString()} deposit updates.`,
+          });
+        },
+      },
+    );
+  }
+
+  function resetStuckTransition(): void {
+    if (
+      latestTransitionQuery.data?.id === undefined ||
+      failStuckMutation.isPending
+    ) {
+      return;
+    }
+
+    failStuckMutation.mutate(
+      {
+        transitionId: latestTransitionQuery.data.id,
+        worldId,
+      },
+      {
+        onError: (error) => {
+          if (isFailStuckTurnTransitionError(error)) {
+            notifyMutationError(
+              error,
+              "Could not reset stuck transition. Check permissions and try again.",
+            );
+            return;
+          }
+          notifyMutationError(error, "Reset failed.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Stuck transition marked as failed", {
+            description:
+              "You can now try running the turn transition again with fresh state.",
+          });
+        },
+      },
+    );
+  }
+
+  return {
+    closeConfirmation,
+    endTurnMutation,
+    failStuckMutation,
+    isConfirming,
+    isDisabled,
+    isReadinessUnavailable,
+    isStuckRunning,
+    latestTransitionQuery,
+    openConfirmation,
+    readinessSummaryQuery,
+    resetStuckTransition,
+    submitEndTurn,
+  };
+}

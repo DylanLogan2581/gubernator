@@ -3,11 +3,12 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, Plus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { MasterDetailLayout } from "@/components/shared/MasterDetailLayout";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +53,9 @@ export function SettlementDepositsPanel({
 }: SettlementDepositsPanelProps): JSX.Element {
   const queryClient = useQueryClient();
   const [showRemoved, setShowRemoved] = useState(false);
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(
+    null,
+  );
   const instancesQuery = useQuery(
     depositInstancesBySettlementQueryOptions(settlementId),
   );
@@ -77,6 +81,9 @@ export function SettlementDepositsPanel({
     instancesQuery.data?.filter(
       (instance) => showRemoved || instance.status !== "removed",
     ) ?? [];
+
+  const selectedInstance =
+    instancesQuery.data?.find((i) => i.id === selectedInstanceId) ?? null;
 
   return (
     <Card aria-labelledby="settlement-deposits-heading" className="grid gap-3">
@@ -113,15 +120,35 @@ export function SettlementDepositsPanel({
             title="No visible deposits"
           />
         ) : (
-          <DepositsGroups
-            assignedCountByInstance={assignedCountByInstance}
-            canAdmin={canAdmin && !isArchived}
-            canManage={(canManage || canAdmin) && !isArchived}
-            instances={instancesQuery.data}
-            latestOutcome={latestOutcome}
-            queryClient={queryClient}
-            settlementId={settlementId}
-            showRemoved={showRemoved}
+          <MasterDetailLayout
+            list={
+              <DepositsGroups
+                assignedCountByInstance={assignedCountByInstance}
+                canAdmin={canAdmin && !isArchived}
+                canManage={(canManage || canAdmin) && !isArchived}
+                instances={instancesQuery.data}
+                latestOutcome={latestOutcome}
+                queryClient={queryClient}
+                selectedInstanceId={selectedInstanceId}
+                settlementId={settlementId}
+                showRemoved={showRemoved}
+                onSelectInstance={setSelectedInstanceId}
+              />
+            }
+            detail={
+              selectedInstance === null ? null : (
+                <DepositDetailPanel
+                  assignedCount={
+                    assignedCountByInstance.get(selectedInstance.id) ?? 0
+                  }
+                  instance={selectedInstance}
+                />
+              )
+            }
+            detailTitle={selectedInstance?.name ?? ""}
+            onCloseDetail={() => {
+              setSelectedInstanceId(null);
+            }}
           />
         )}
       </CardContent>
@@ -178,7 +205,7 @@ function DepositsPanelHeader({
               variant={showRemoved ? "secondary" : "ghost"}
               onClick={onToggleRemoved}
             >
-              <Trash2 aria-hidden="true" />
+              <Eye aria-hidden="true" />
             </Button>
           ) : null}
         </div>
@@ -215,8 +242,10 @@ function DepositsGroups({
   instances,
   latestOutcome,
   queryClient,
+  selectedInstanceId,
   settlementId,
   showRemoved,
+  onSelectInstance,
 }: {
   readonly assignedCountByInstance: ReadonlyMap<string, number>;
   readonly canAdmin: boolean;
@@ -224,8 +253,10 @@ function DepositsGroups({
   readonly instances: readonly DepositInstance[];
   readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
+  readonly selectedInstanceId: string | null;
   readonly settlementId: string;
   readonly showRemoved: boolean;
+  readonly onSelectInstance: (instanceId: string) => void;
 }): JSX.Element {
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -271,7 +302,9 @@ function DepositsGroups({
             latestOutcome={latestOutcome}
             panelId={panelId}
             queryClient={queryClient}
+            selectedInstanceId={selectedInstanceId}
             settlementId={settlementId}
+            onSelectInstance={onSelectInstance}
             onToggle={() => {
               toggleGroup(group.label);
             }}
@@ -290,9 +323,11 @@ function DepositsStatusGroup({
   isCollapsed,
   label,
   latestOutcome,
+  onSelectInstance,
   onToggle,
   panelId,
   queryClient,
+  selectedInstanceId,
   settlementId,
 }: {
   readonly assignedCountByInstance: ReadonlyMap<string, number>;
@@ -302,9 +337,11 @@ function DepositsStatusGroup({
   readonly isCollapsed: boolean;
   readonly label: string;
   readonly latestOutcome: TurnTransitionOutcome | null;
+  readonly onSelectInstance: (instanceId: string) => void;
   readonly onToggle: () => void;
   readonly panelId: string;
   readonly queryClient: QueryClient;
+  readonly selectedInstanceId: string | null;
   readonly settlementId: string;
 }): JSX.Element {
   return (
@@ -349,15 +386,63 @@ function DepositsStatusGroup({
                   canAdmin={canAdmin}
                   canManage={canManage}
                   instance={instance}
+                  isSelected={instance.id === selectedInstanceId}
                   latestOutcome={latestOutcome}
                   queryClient={queryClient}
                   settlementId={settlementId}
+                  onSelect={() => {
+                    onSelectInstance(instance.id);
+                  }}
                 />
               ))}
             </TableBody>
           </Table>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function DepositDetailPanel({
+  assignedCount,
+  instance,
+}: {
+  readonly assignedCount: number;
+  readonly instance: DepositInstance;
+}): JSX.Element {
+  const workersDisplay =
+    instance.maxWorkers === null
+      ? `${assignedCount.toString()} assigned`
+      : `${assignedCount.toString()}/${instance.maxWorkers.toString()}`;
+
+  return (
+    <div className="grid gap-3 text-sm">
+      <div className="grid grid-cols-2 gap-y-2">
+        <span className="text-muted-foreground">Type</span>
+        <span>{instance.depositTypeName}</span>
+        <span className="text-muted-foreground">Status</span>
+        <span className="capitalize">{instance.status}</span>
+        <span className="text-muted-foreground">Workers</span>
+        <span>{workersDisplay}</span>
+      </div>
+      <div className="grid gap-1">
+        <span className="text-muted-foreground">Yield</span>
+        {instance.resources.length === 0 ? (
+          <span className="text-muted-foreground">—</span>
+        ) : (
+          <ul className="grid gap-0.5">
+            {instance.resources.map((r) => (
+              <li key={r.id} className="flex justify-between tabular-nums">
+                <span>{r.resourceName}</span>
+                <span>
+                  {r.remainingQuantity.toLocaleString()}/
+                  {r.initialQuantity.toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

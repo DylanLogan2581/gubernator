@@ -1,5 +1,7 @@
 import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
 
+import type { ManagedPopulationTypesPageParams } from "./managedPopulationsQueries";
+
 export const managedPopulationsQueryKeys = {
   all: authStateQueryCacheKeys.managedPopulationsAll,
   activeByWorld: (worldId: string) =>
@@ -12,6 +14,11 @@ export const managedPopulationsQueryKeys = {
       "detail",
       managedPopulationTypeId,
     ] as const,
+  // Nested under byWorld so the existing softDelete/restore/update/create
+  // invalidation (which invalidates byWorld(worldId) as a prefix) also
+  // refetches the paginated config-panel view without any changes there.
+  page: (worldId: string, params: ManagedPopulationTypesPageParams) =>
+    [...managedPopulationsQueryKeys.byWorld(worldId), "page", params] as const,
   instancesBySettlement: (settlementId: string) =>
     [
       ...managedPopulationsQueryKeys.all,

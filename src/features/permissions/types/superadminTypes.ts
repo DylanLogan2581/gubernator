@@ -89,3 +89,29 @@ export type CreateUserInput = {
   readonly sendMagicLink?: boolean;
   readonly username: string;
 };
+
+export type SendEmailKind = "all" | "nation" | "specific" | "test" | "world";
+
+export type SendEmailInput = {
+  readonly kind: SendEmailKind;
+  readonly subject?: string;
+  readonly message?: string;
+  readonly userIds?: readonly string[];
+  readonly worldId?: string;
+  readonly nationId?: string;
+  readonly dryRun?: boolean;
+};
+
+export type SendEmailResult = {
+  readonly recipientCount: number;
+  readonly sentCount: number;
+  readonly failedCount: number;
+  readonly subject: string;
+  readonly renderedHtml?: string;
+};
+
+export type SmtpStatus = {
+  readonly host: string;
+  readonly senderName: string;
+  readonly adminEmail: string;
+};

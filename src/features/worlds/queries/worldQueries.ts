@@ -41,9 +41,9 @@ type WorldRouteAccessQueryOptions = UseQueryOptions<
 >;
 
 const WORLD_HEADER_SELECT =
-  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,updated_at,visibility";
+  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility";
 const ACCESSIBLE_WORLDS_SELECT =
-  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,updated_at,visibility";
+  "archived_at,calendar_config_json,created_at,current_turn_number,id,incest_prevention_depth,is_trashed,name,status,thumbnail_path,updated_at,visibility";
 
 export class WorldNotFoundError extends Error {
   readonly worldId: string;
@@ -177,6 +177,7 @@ async function getWorldRouteAccess(
       archivedAt: world.archivedAt,
       currentTurnNumber: world.currentTurnNumber,
       inWorldDateLabel: world.inWorldDateLabel,
+      inWorldDateLabelShort: world.inWorldDateLabelShort,
       isArchived: world.isArchived,
       name: world.name,
       nextInWorldDateLabel: world.nextInWorldDateLabel,

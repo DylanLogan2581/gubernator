@@ -1,15 +1,27 @@
 // Worlds feature — create, list, and manage simulation worlds.
 // Implemented in Epic 2.
+export {
+  CONFIG_TABS,
+  CONFIG_TAB_IDS,
+  DEFAULT_CONFIG_TAB,
+  getVisibleConfigTabs,
+} from "./configTabs";
+export type { ConfigTab, ConfigTabId } from "./configTabs";
 export { TemplateLibraryPage } from "./components/TemplateLibraryPage";
+export { WorldAvatar } from "./components/WorldAvatar";
+export { WorldDashboardHeroBanner } from "./components/WorldDashboardHeroBanner";
 export { WorldConfigurationPage } from "./components/WorldConfigurationPage";
 export { WorldEntryGate } from "./components/WorldEntryGate";
-export { WorldNav } from "./components/WorldNav";
+export { WorldHeroImage } from "./components/WorldHeroImage";
+export { WorldImagesPanel } from "./components/WorldImagesPanel";
 export { WorldListPage } from "./components/WorldListPage";
 export { WorldNamingConfigPanel } from "./components/WorldNamingConfigPanel";
 export { WorldNpcFlavorConfigPanel } from "./components/WorldNpcFlavorConfigPanel";
 export { WorldPopulationRulesConfigPanel } from "./components/WorldPopulationRulesConfigPanel";
 export { WorldSettingsPanel } from "./components/WorldSettingsPanel";
 export { WorldShellPage } from "./components/WorldShellPage";
+export { WorldSwitcher } from "./components/WorldSwitcher";
+export type { WorldSwitcherProps } from "./components/WorldSwitcher";
 export {
   currentUserAdminWorldIdsQueryOptions,
   currentUserPlayerCharacterWorldIdsQueryOptions,
@@ -39,10 +51,27 @@ export {
   worldPopulationRulesQueryOptions,
 } from "./queries/worldPopulationRulesQueries";
 export {
+  useWorldImageSignedUrl,
+  worldImagesQueryOptions,
+} from "./queries/worldImageQueries";
+export type { WorldImagePaths } from "./queries/worldImageQueries";
+export {
   SaveWorldNamingConfigError,
   isSaveWorldNamingConfigError,
   saveWorldNamingConfigMutationOptions,
 } from "./mutations/worldNamingConfigMutations";
+export {
+  WorldImageError,
+  isWorldImageError,
+  removeWorldImageMutationOptions,
+  uploadWorldImageMutationOptions,
+  worldImagePath,
+} from "./mutations/worldImageMutations";
+export type {
+  RemoveWorldImageInput,
+  UploadWorldImageInput,
+  WorldImageKind,
+} from "./mutations/worldImageMutations";
 export {
   SaveWorldNpcFlavorConfigError,
   isSaveWorldNpcFlavorConfigError,
@@ -84,3 +113,14 @@ export type {
   WorldPermissionContext,
   WorldRouteAccess,
 } from "./types/worldTypes";
+export { resolveWorldScope } from "./utils/resolveWorldScope";
+export type {
+  ResolveWorldScopeInput,
+  WorldScopePin,
+} from "./utils/resolveWorldScope";
+export { readWorldScopePin, writeWorldScopePin } from "./utils/worldScopePin";
+export {
+  clearLastWorldPin,
+  readLastWorldPin,
+  writeLastWorldPin,
+} from "./utils/lastWorldPin";

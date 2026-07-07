@@ -313,8 +313,8 @@ select
         world_id = '00000000-0000-0000-0000-000000000101'
         and citizen_type = 'player_character'
     ),
-    3,
-    'Exactly three player characters'
+    4,
+    'Exactly four player characters'
   );
 
 select
@@ -870,8 +870,8 @@ select
       where
         world_id = '00000000-0000-0000-0000-000000000101'
     ),
-    3,
-    'All three seeded users administer Aldermoor'
+    1,
+    'Only the dedicated world-admin demo user administers Aldermoor'
   );
 
 select

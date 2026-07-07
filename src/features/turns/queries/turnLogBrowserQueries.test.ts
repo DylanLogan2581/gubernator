@@ -152,6 +152,93 @@ describe("turnLogBrowserQueryOptions", () => {
     expect(page.totalCount).toBe(42);
     expect(page.entries).toHaveLength(1);
   });
+
+  it("orders the parent rows by the embedded turn number with a stable id tiebreaker", async () => {
+    const queryClient = createQueryClient();
+    const client = createClient({
+      rows: [createRow({ id: "entry-5" })],
+      count: 1,
+    });
+    requireSupabaseClient.mockReturnValue(client);
+
+    await queryClient.fetchQuery(
+      turnLogBrowserQueryOptions({ filter: {}, page: 0, worldId: "world-1" }),
+    );
+
+    const builder = client.from("turn_log_entries") as unknown as MockBuilder;
+    expect(builder.order).toHaveBeenNthCalledWith(
+      1,
+      "turn_transitions(to_turn_number)",
+      {
+        ascending: false,
+      },
+    );
+    expect(builder.order).toHaveBeenNthCalledWith(2, "id", {
+      ascending: false,
+    });
+    expect(builder.order).not.toHaveBeenCalledWith(
+      "to_turn_number",
+      expect.objectContaining({ referencedTable: "turn_transitions" }),
+    );
+  });
+
+  it("filters turn-range bounds on the parent-restricting embedded resource", async () => {
+    const queryClient = createQueryClient();
+    const client = createClient({
+      rows: [createRow({ id: "entry-6" })],
+      count: 1,
+    });
+    requireSupabaseClient.mockReturnValue(client);
+
+    await queryClient.fetchQuery(
+      turnLogBrowserQueryOptions({
+        filter: { turnFrom: 5, turnTo: 10 },
+        page: 0,
+        worldId: "world-1",
+      }),
+    );
+
+    const builder = client.from("turn_log_entries") as unknown as MockBuilder;
+    expect(builder.filter).toHaveBeenCalledWith(
+      "turn_transitions.from_turn_number",
+      "gte",
+      5,
+    );
+    expect(builder.filter).toHaveBeenCalledWith(
+      "turn_transitions.to_turn_number",
+      "lte",
+      10,
+    );
+  });
+
+  it("filters to an exact completed turn via turnNumber, independent of the range filters", async () => {
+    const queryClient = createQueryClient();
+    const client = createClient({
+      rows: [createRow({ id: "entry-7" })],
+      count: 1,
+    });
+    requireSupabaseClient.mockReturnValue(client);
+
+    await queryClient.fetchQuery(
+      turnLogBrowserQueryOptions({
+        filter: { turnNumber: 32 },
+        page: 0,
+        worldId: "world-1",
+      }),
+    );
+
+    const builder = client.from("turn_log_entries") as unknown as MockBuilder;
+    expect(builder.filter).toHaveBeenCalledWith(
+      "turn_transitions.to_turn_number",
+      "eq",
+      32,
+    );
+    expect(builder.filter).not.toHaveBeenCalledWith(
+      "turn_transitions.from_turn_number",
+      "gte",
+      expect.anything(),
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -198,6 +285,15 @@ function createRow(overrides: Partial<TestRow> = {}): TestRow {
     ...overrides,
   };
 }
+
+type MockBuilder = {
+  readonly eq: ReturnType<typeof vi.fn>;
+  readonly filter: ReturnType<typeof vi.fn>;
+  readonly order: ReturnType<typeof vi.fn>;
+  readonly range: ReturnType<typeof vi.fn>;
+  readonly returns: ReturnType<typeof vi.fn>;
+  readonly select: ReturnType<typeof vi.fn>;
+};
 
 function createClient({
   rows,

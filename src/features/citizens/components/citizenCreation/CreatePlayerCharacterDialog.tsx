@@ -34,6 +34,7 @@ import {
 import type { Citizen } from "../../types/citizenTypes";
 
 type CreatePlayerCharacterDialogProps = {
+  readonly canAdmin: boolean;
   readonly incestPreventionDepth: number;
   readonly onClose: () => void;
   readonly onCreated: (citizen: Citizen) => void;
@@ -43,6 +44,7 @@ type CreatePlayerCharacterDialogProps = {
 };
 
 export function CreatePlayerCharacterDialog({
+  canAdmin,
   incestPreventionDepth,
   onClose,
   onCreated,
@@ -62,7 +64,10 @@ export function CreatePlayerCharacterDialog({
   const citizensQuery = useQuery(
     citizensInSettlementQueryOptions(settlementId),
   );
-  const usersQuery = useQuery(availableUsersQueryOptions());
+  const usersQuery = useQuery({
+    ...availableUsersQueryOptions(),
+    enabled: canAdmin,
+  });
   const mutation = useMutation(
     createPlayerCharacterMutationOptions({ queryClient }),
   );

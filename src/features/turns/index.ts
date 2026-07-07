@@ -1,6 +1,7 @@
 // Turns feature — advance and track turns within a world.
 // Implemented in Epic 2.
 export { TurnLogBrowser } from "./components/TurnLogBrowser";
+export { TurnLogPage } from "./components/TurnLogPage";
 export {
   turnLogBrowserQueryOptions,
   type TurnLogBrowserEntry,
@@ -28,6 +29,15 @@ export {
   type FailStuckTurnTransitionMutationResult,
 } from "./mutations/failStuckTurnTransitionMutations";
 export { EndTurnControl } from "./components/EndTurnControl";
+export { EndTurnConfirmationDialog } from "./components/EndTurnConfirmationDialog";
+export {
+  useEndTurnControl,
+  type UseEndTurnControlResult,
+} from "./hooks/useEndTurnControl";
+export {
+  getControlDescription,
+  getErrorDescription as getEndTurnErrorDescription,
+} from "./utils/endTurnDescriptions";
 export {
   TurnTransitionOutcomeContent,
   TurnTransitionOutcomeEmptyState,
@@ -55,6 +65,7 @@ export {
   type TurnTransitionSettlementSnapshot,
 } from "./queries/turnTransitionOutcomeQueries";
 export { turnQueryKeys } from "./queries/turnQueryKeys";
+export { LOG_CATEGORY_LABELS } from "./utils/logCategoryLabels";
 export type {
   CurrentTurnDateDisplay,
   CurrentTurnDateDisplayLabels,

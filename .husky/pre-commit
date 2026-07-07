@@ -1,30 +1,40 @@
 npx lint-staged
 
-# Typecheck the app project. Failure-only output: capture everything, stay
-# quiet on success, dump the full log only when tsc reports errors.
-echo "🔍 Typechecking..."
-tsc_out=$(npx tsc -b 2>&1)
-tsc_code=$?
-if [ "$tsc_code" -ne 0 ]; then
-  printf '%s\n' "$tsc_out"
-  exit "$tsc_code"
-fi
+# Pre-commit runs TARGETED checks only — scoped to what is being committed.
+# The full vitest suite and the full pgTAP suite are CI gates, not local ones,
+# so a commit never pays for the whole test matrix. Every step below is
+# failure-only: capture output, stay quiet on success, dump the log on failure.
+staged() {
+  git diff --cached --name-only --diff-filter=ACMR
+}
 
-# Run the unit/component suite. Same failure-only contract: suppress the
-# passing-test noise, print the report only when something fails.
-echo "🔍 Running tests..."
-test_out=$(npm run test 2>&1)
-test_code=$?
-if [ "$test_code" -ne 0 ]; then
-  printf '%s\n' "$test_out"
-  exit "$test_code"
+# App typecheck + affected unit tests — only when app TypeScript is staged.
+# `tsc -b` is incremental (project references + .tsbuildinfo), so it only
+# rebuilds changed projects. `vitest --changed` runs just the tests whose
+# module graph touches the working-tree changes; forks are capped in
+# vitest.config.ts so this cannot oversubscribe the machine.
+if staged | grep -qE '\.(ts|tsx)$'; then
+  echo "🔍 Typechecking..."
+  tsc_out=$(npx tsc -b 2>&1)
+  tsc_code=$?
+  if [ "$tsc_code" -ne 0 ]; then
+    printf '%s\n' "$tsc_out"
+    exit "$tsc_code"
+  fi
+
+  echo "🔍 Running affected tests..."
+  test_out=$(npx vitest run --changed HEAD --passWithNoTests 2>&1)
+  test_code=$?
+  if [ "$test_code" -ne 0 ]; then
+    printf '%s\n' "$test_out"
+    exit "$test_code"
+  fi
 fi
 
 # When the ESLint config changes, a rule change can introduce or expose
 # violations anywhere in the repo that lint-staged (staged files only) would
 # miss. Run the full eslint suite over the whole repo. Failure-only output.
-if git diff --cached --name-only --diff-filter=ACMR | \
-     grep -qE '^eslint\.config\.(ts|js|mjs|cjs)$'; then
+if staged | grep -qE '^eslint\.config\.(ts|js|mjs|cjs)$'; then
   echo "🔍 ESLint config changed. Running full eslint over the repo..."
   lint_out=$(npm run lint:eslint 2>&1)
   lint_code=$?
@@ -35,9 +45,10 @@ if git diff --cached --name-only --diff-filter=ACMR | \
 fi
 
 # Typecheck the edge functions when any are staged. They use a separate
-# Deno-targeted tsconfig that `tsc -b` does not cover. Failure-only output.
-if git diff --cached --name-only --diff-filter=ACMR | \
-     grep -qE '^supabase/functions/'; then
+# Deno-targeted tsconfig that `tsc -b` does not cover. The functions share
+# `_shared/`, so the whole edge tree is checked together; the surface is small
+# (skipLibCheck, a handful of functions). Failure-only output.
+if staged | grep -qE '^supabase/functions/'; then
   echo "🔍 Edge functions staged. Typechecking edge functions..."
   edge_out=$(npx tsc -p tsconfig.edge-functions.json 2>&1)
   edge_code=$?
@@ -47,15 +58,14 @@ if git diff --cached --name-only --diff-filter=ACMR | \
   fi
 fi
 
-# Run database tests when schema/test files are staged. Pre-commit (not
-# pre-push) so the failure lands while an agent/author is still in-session and
-# can fix it, instead of after the commit during push.
-if git diff --cached --name-only --diff-filter=ACMR | \
-     grep -qE '^supabase/(migrations|tests)/'; then
-  echo "🔍 Schema or test files staged. Running database tests..."
-  # Failure-only output: suppress pgTAP's per-test "ok" lines on success,
-  # dump the full log only when something fails.
-  db_out=$(npx --no-install supabase test db 2>&1)
+# Targeted database tests: run only the pgTAP files being committed. A staged
+# migration with no accompanying test file runs nothing here — the full pgTAP
+# suite is a CI gate. Failure-only output.
+staged_db_tests=$(staged | grep -E '^supabase/tests/.*test\.sql$' || true)
+if [ -n "$staged_db_tests" ]; then
+  echo "🔍 Running staged database tests..."
+  # shellcheck disable=SC2086 # word-split intentional: one arg per test file.
+  db_out=$(npx --no-install supabase test db $staged_db_tests 2>&1)
   db_code=$?
   if [ "$db_code" -ne 0 ]; then
     printf '%s\n' "$db_out"

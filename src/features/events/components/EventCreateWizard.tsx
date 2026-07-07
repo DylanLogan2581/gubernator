@@ -6,17 +6,13 @@ import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import { jobsByWorldQueryOptions } from "@/features/jobs";
+import { nationsListQueryOptions } from "@/features/nations";
 import type { AccessContext } from "@/features/permissions";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { worldRouteAccessQueryOptions } from "@/features/worlds";
-import {
-  formatCalendarDate,
-  formatRelativeTurnDifference,
-  getRelativeTurnDifference,
-  resolveTurnCalendarDate,
-} from "@/shared/turnCalendarPrimitives";
+import { generateLocalId } from "@/lib/uid";
 
 import {
   createEventGroupMutationOptions,
@@ -26,14 +22,14 @@ import {
 import { eventQueryKeys } from "../queries/eventQueryKeys";
 
 import { EventCreateEffectsStep } from "./steps/EventCreateEffectsStep";
+import { EventCreateForecastStep } from "./steps/EventCreateForecastStep";
 import { EventCreateNameDescriptionStep } from "./steps/EventCreateNameDescriptionStep";
 import { EventCreateStep1 } from "./steps/EventCreateStep1";
 import { EventCreateStep2 } from "./steps/EventCreateStep2";
 import { EventCreateStep3 } from "./steps/EventCreateStep3";
-import { EventCreateStep4 } from "./steps/EventCreateStep4";
-import { EventCreateStep5 } from "./steps/EventCreateStep5";
 
 import type { CreateEventGroupInput } from "../schemas/eventSchemas";
+import type { EventMemoryDraft } from "./steps/EventCreateForecastStep";
 
 // Import EffectData type for expandMultiResourceEffects
 type EffectData = {
@@ -49,12 +45,17 @@ type EffectData = {
   jobIds?: string[];
   jobMode?: "all" | "select";
   managedPopulationInstanceId: string | null;
-  managedPopulationTypeId?: string | null;
+  managedPopulationTypeId: string | null;
   managedPopulationMode?: "all" | "type" | "instance";
   depositInstanceId: string | null;
   depositInstanceIds?: string[];
+  depositTypeId?: string | null;
+  depositDestroyedMode?: "instance" | "type";
   settlementBuildingId: string | null;
   settlementBuildingIds?: string[];
+  buildingBlueprintMode?: "all" | "select" | "instance";
+  buildingBlueprintIds?: string[];
+  buildingInstanceIds?: string[];
   _id?: string;
 };
 
@@ -66,8 +67,10 @@ type EditEventData = {
   readonly durationType: string;
   readonly durationTransitions: number | null;
   readonly activationTurn: number;
-  readonly createCitizenMemories: boolean;
-  readonly memoryText: string | null;
+  readonly memories: Array<{
+    readonly turnOffset: number;
+    readonly memoryText: string;
+  }>;
   readonly effects: Array<{
     readonly effectType: string;
     readonly isPercent: boolean;
@@ -94,28 +97,72 @@ type EventCreateWizardProps = {
 };
 
 export type EventCreateWizardState = {
-  step: 1 | 2 | 3 | 4 | 5 | 6;
+  step: 1 | 2 | 3;
   scopeType: "world" | "nation" | "settlement" | null;
   selectedIds: string[]; // nation or settlement IDs
-  effects: Array<{
-    effectType: string;
-    isPercent: boolean;
-    amountValue: number | null;
-    multiplierValue: number | null;
-    resourceId: string | null;
-    jobId: string | null;
-    managedPopulationInstanceId: string | null;
-    managedPopulationTypeId: string | null;
-    managedPopulationMode?: "all" | "type" | "instance";
-    depositInstanceId: string | null;
-    settlementBuildingId: string | null;
-  }>;
+  effects: EffectData[];
   durationType: "instant" | "sustained";
   durationTransitions: number | null;
   activationTurn: number;
-  createCitizenMemories: boolean;
-  memoryText: string;
+  memories: EventMemoryDraft[];
 };
+
+/** Extracts wizard-only targeting fields persisted in an effect's extra_data_jsonb column. */
+function extractEffectExtraData(extraDataJsonb: unknown): {
+  managedPopulationMode?: "all" | "type" | "instance";
+  buildingBlueprintMode?: "all" | "select" | "instance";
+  buildingBlueprintIds?: string[];
+  buildingInstanceIds?: string[];
+  depositDestroyedMode?: "instance" | "type";
+  depositTypeId?: string;
+} {
+  if (typeof extraDataJsonb !== "object" || extraDataJsonb === null) return {};
+  const data = extraDataJsonb as Record<string, unknown>;
+
+  const managedPopulationMode =
+    data.managed_population_mode === "all" ||
+    data.managed_population_mode === "type" ||
+    data.managed_population_mode === "instance"
+      ? data.managed_population_mode
+      : undefined;
+
+  const buildingBlueprintMode =
+    data.building_blueprint_mode === "all" ||
+    data.building_blueprint_mode === "select" ||
+    data.building_blueprint_mode === "instance"
+      ? data.building_blueprint_mode
+      : undefined;
+
+  const buildingBlueprintIds = Array.isArray(data.building_blueprint_ids)
+    ? data.building_blueprint_ids.filter(
+        (id): id is string => typeof id === "string",
+      )
+    : undefined;
+
+  const buildingInstanceIds = Array.isArray(data.building_instance_ids)
+    ? data.building_instance_ids.filter(
+        (id): id is string => typeof id === "string",
+      )
+    : undefined;
+
+  const depositDestroyedMode =
+    data.deposit_destroyed_mode === "instance" ||
+    data.deposit_destroyed_mode === "type"
+      ? data.deposit_destroyed_mode
+      : undefined;
+
+  const depositTypeId =
+    typeof data.deposit_type_id === "string" ? data.deposit_type_id : undefined;
+
+  return {
+    managedPopulationMode,
+    buildingBlueprintMode,
+    buildingBlueprintIds,
+    buildingInstanceIds,
+    depositDestroyedMode,
+    depositTypeId,
+  };
+}
 
 const createInitialState = (
   nextTurnNumber: number = 1,
@@ -127,8 +174,7 @@ const createInitialState = (
   durationType: "instant",
   durationTransitions: null,
   activationTurn: nextTurnNumber,
-  createCitizenMemories: false,
-  memoryText: "",
+  memories: [],
 });
 
 export function EventCreateWizard({
@@ -144,41 +190,50 @@ export function EventCreateWizard({
   const worldQuery = useQuery(
     worldRouteAccessQueryOptions(worldId, accessContext),
   );
-  const calendarConfigQuery = useQuery(
-    worldCalendarConfigQueryOptions(worldId),
-  );
 
   const nextTurnNumber = worldQuery.data?.world.nextTurnNumber ?? 1;
-  const currentTurnNumber = worldQuery.data?.world.currentTurnNumber ?? 1;
 
   // Initialize state based on mode
   const [state, setState] = useState<EventCreateWizardState>(() => {
     if (isEditMode && editEventData !== undefined) {
-      // In edit mode, skip scope/targets steps and go to effects
+      // In edit mode, scope/targets are locked, so open directly on the
+      // effects step; Basics (name/description/duration) is one Previous away.
       return {
-        step: 3, // Start at effects step (scope is locked)
+        step: 2,
         scopeType:
           (editEventData.scopeType as "world" | "nation" | "settlement") ??
           null,
         selectedIds: [], // Locked in edit mode
-        effects: editEventData.effects.map((e) => ({
-          effectType: e.effectType,
-          isPercent: e.isPercent,
-          amountValue: e.amountValue,
-          multiplierValue: e.multiplierValue,
-          resourceId: e.resourceId,
-          jobId: e.jobId,
-          managedPopulationInstanceId: e.managedPopulationInstanceId,
-          managedPopulationTypeId: e.managedPopulationTypeId,
-          depositInstanceId: e.depositInstanceId,
-          settlementBuildingId: e.settlementBuildingId,
-        })),
+        effects: editEventData.effects.map((e) => {
+          const extra = extractEffectExtraData(e.extraDataJsonb);
+          return {
+            effectType: e.effectType,
+            isPercent: e.isPercent,
+            amountValue: e.amountValue,
+            multiplierValue: e.multiplierValue,
+            resourceId: e.resourceId,
+            jobId: e.jobId,
+            managedPopulationInstanceId: e.managedPopulationInstanceId,
+            managedPopulationTypeId: e.managedPopulationTypeId,
+            managedPopulationMode: extra.managedPopulationMode,
+            depositInstanceId: e.depositInstanceId,
+            depositTypeId: extra.depositTypeId,
+            depositDestroyedMode: extra.depositDestroyedMode,
+            settlementBuildingId: e.settlementBuildingId,
+            buildingBlueprintMode: extra.buildingBlueprintMode,
+            buildingBlueprintIds: extra.buildingBlueprintIds,
+            buildingInstanceIds: extra.buildingInstanceIds,
+            _id: generateLocalId(),
+          };
+        }),
         durationType:
           (editEventData.durationType as "instant" | "sustained") ?? "instant",
         durationTransitions: editEventData.durationTransitions,
         activationTurn: editEventData.activationTurn,
-        createCitizenMemories: editEventData.createCitizenMemories,
-        memoryText: editEventData.memoryText ?? "",
+        memories: editEventData.memories.map((m) => ({
+          turnOffset: m.turnOffset,
+          text: m.memoryText,
+        })),
       };
     }
     return createInitialState(nextTurnNumber);
@@ -188,32 +243,6 @@ export function EventCreateWizard({
   const [groupDescription, setGroupDescription] = useState(
     editEventData?.groupDescription ?? "",
   );
-
-  // Compute calendar date and relative time for activation turn
-  let activationTurnCalendarDate: string | undefined;
-  let activationTurnRelativeTime: string | undefined;
-  if (
-    calendarConfigQuery.data !== undefined &&
-    calendarConfigQuery.data !== null
-  ) {
-    try {
-      const resolved = resolveTurnCalendarDate(
-        calendarConfigQuery.data,
-        state.activationTurn,
-      );
-      activationTurnCalendarDate = formatCalendarDate(resolved, {
-        dateFormatTemplate: calendarConfigQuery.data.dateFormatTemplate,
-      });
-      const relativeDiff = getRelativeTurnDifference(
-        calendarConfigQuery.data,
-        currentTurnNumber,
-        state.activationTurn,
-      );
-      activationTurnRelativeTime = formatRelativeTurnDifference(relativeDiff);
-    } catch {
-      // Silently fail if turn number is invalid
-    }
-  }
 
   // Update activation turn when world data changes and state hasn't been customized
   useEffect(() => {
@@ -252,31 +281,17 @@ export function EventCreateWizard({
   });
 
   const handleNext = (): void => {
-    setState((prev) => {
-      let nextStep = Math.min(6, prev.step + 1) as 1 | 2 | 3 | 4 | 5 | 6;
-      // Skip step 2 in edit mode (scope selection is locked)
-      if (isEditMode && nextStep === 2) {
-        nextStep = 3;
-      }
-      return {
-        ...prev,
-        step: nextStep,
-      };
-    });
+    setState((prev) => ({
+      ...prev,
+      step: Math.min(3, prev.step + 1) as 1 | 2 | 3,
+    }));
   };
 
   const handlePrev = (): void => {
-    setState((prev) => {
-      let prevStep = Math.max(1, prev.step - 1) as 1 | 2 | 3 | 4 | 5 | 6;
-      // Skip step 2 in edit mode (scope selection is locked)
-      if (isEditMode && prevStep === 2) {
-        prevStep = 1;
-      }
-      return {
-        ...prev,
-        step: prevStep,
-      };
-    });
+    setState((prev) => ({
+      ...prev,
+      step: Math.max(1, prev.step - 1) as 1 | 2 | 3,
+    }));
   };
 
   const expandMultiResourceEffects = (
@@ -387,6 +402,14 @@ export function EventCreateWizard({
     return expanded;
   };
 
+  const hasInvalidJobSelection = (effects: EffectData[]): boolean =>
+    effects.some(
+      (e) =>
+        e.effectType === "production_multiplier" &&
+        e.jobMode === "select" &&
+        (e.jobIds === undefined || e.jobIds.length === 0),
+    );
+
   const handleSubmit = async (): Promise<void> => {
     if (state.scopeType === null) return;
     if (
@@ -394,6 +417,12 @@ export function EventCreateWizard({
       (editGroupId === undefined || editEventData === undefined)
     )
       return;
+    if (hasInvalidJobSelection(state.effects)) {
+      toast.error(
+        "Select at least one job for the production multiplier, or choose All Jobs.",
+      );
+      return;
+    }
 
     try {
       // Fetch all resources to expand "all" mode if needed
@@ -426,8 +455,20 @@ export function EventCreateWizard({
         managedPopulationTypeId: e.managedPopulationTypeId,
         managedPopulationMode: e.managedPopulationMode,
         depositInstanceId: e.depositInstanceId,
+        depositTypeId: e.depositTypeId,
+        depositDestroyedMode: e.depositDestroyedMode,
         settlementBuildingId: e.settlementBuildingId,
+        buildingBlueprintMode: e.buildingBlueprintMode,
+        buildingBlueprintIds: e.buildingBlueprintIds,
+        buildingInstanceIds: e.buildingInstanceIds,
       }));
+
+      const memories = state.memories
+        .filter((m) => m.text.trim().length > 0)
+        .map((m) => ({
+          turnOffset: m.turnOffset,
+          memoryText: m.text,
+        }));
 
       if (isEditMode) {
         // Edit mode: use EditEventGroupInput
@@ -443,8 +484,7 @@ export function EventCreateWizard({
               ? state.durationTransitions
               : null,
           activationTurn: state.activationTurn,
-          createCitizenMemories: state.createCitizenMemories,
-          memoryText: state.createCitizenMemories ? state.memoryText : null,
+          memories,
         };
 
         await editMutation.mutateAsync(input);
@@ -457,6 +497,19 @@ export function EventCreateWizard({
         onClose();
       } else {
         // Create mode: use CreateEventGroupInput
+        let scopeNameById = new Map<string, string>();
+        if (state.scopeType === "nation") {
+          const nations = await queryClient.ensureQueryData(
+            nationsListQueryOptions(worldId),
+          );
+          scopeNameById = new Map(nations.map((n) => [n.id, n.name]));
+        } else if (state.scopeType === "settlement") {
+          const settlements = await queryClient.ensureQueryData(
+            settlementsByWorldQueryOptions(worldId),
+          );
+          scopeNameById = new Map(settlements.map((s) => [s.id, s.name]));
+        }
+
         const targets =
           state.scopeType === "world"
             ? [
@@ -475,9 +528,10 @@ export function EventCreateWizard({
                 nation_id: state.scopeType === "nation" ? id : null,
                 settlement_id: state.scopeType === "settlement" ? id : null,
                 scope_name:
-                  state.scopeType === "nation"
+                  scopeNameById.get(id) ??
+                  (state.scopeType === "nation"
                     ? `Nation ${id}`
-                    : `Settlement ${id}`,
+                    : `Settlement ${id}`),
                 job_id: null,
                 building_blueprint_id: null,
                 managed_population_type_id: null,
@@ -496,8 +550,7 @@ export function EventCreateWizard({
               ? state.durationTransitions
               : null,
           activationTurn: state.activationTurn,
-          createCitizenMemories: state.createCitizenMemories,
-          memoryText: state.createCitizenMemories ? state.memoryText : null,
+          memories,
         };
 
         await createMutationCreate.mutateAsync(input);
@@ -523,9 +576,7 @@ export function EventCreateWizard({
     }
   };
 
-  // In edit mode, calculate effective step number (skip 1-2, map 3-6 to 1-4)
-  const effectiveStep = isEditMode ? state.step - 2 : state.step;
-  const totalSteps = isEditMode ? 4 : 6;
+  const totalSteps = 3;
 
   return (
     <>
@@ -535,58 +586,91 @@ export function EventCreateWizard({
             {isEditMode ? "Edit Event" : "Create Event"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Step {effectiveStep} of {totalSteps}
+            Step {state.step} of {totalSteps}
           </p>
         </div>
 
         <div className="space-y-6">
           {state.step === 1 && (
-            <EventCreateNameDescriptionStep
-              groupName={groupName}
-              groupDescription={groupDescription}
-              onGroupNameChange={(val) => {
-                setGroupName(val);
-                markDirty();
-              }}
-              onGroupDescriptionChange={(val) => {
-                setGroupDescription(val);
-                markDirty();
-              }}
-            />
-          )}
-
-          {state.step === 2 && !isEditMode && (
             <div className="space-y-6">
-              <EventCreateStep1
-                scopeType={state.scopeType}
-                onScopeTypeChange={(scopeType) => {
-                  setState((prev) => ({
-                    ...prev,
-                    scopeType,
-                    selectedIds: [],
-                  }));
+              <EventCreateNameDescriptionStep
+                groupName={groupName}
+                groupDescription={groupDescription}
+                onGroupNameChange={(val) => {
+                  setGroupName(val);
+                  markDirty();
+                }}
+                onGroupDescriptionChange={(val) => {
+                  setGroupDescription(val);
                   markDirty();
                 }}
               />
 
-              {state.scopeType !== null && (
-                <EventCreateStep2
-                  worldId={worldId}
-                  scopeType={state.scopeType}
-                  selectedIds={state.selectedIds}
-                  onSelectedIdsChange={(ids) => {
-                    setState((prev) => ({
-                      ...prev,
-                      selectedIds: ids,
-                    }));
-                    markDirty();
-                  }}
-                />
+              {!isEditMode && (
+                <>
+                  <EventCreateStep1
+                    scopeType={state.scopeType}
+                    onScopeTypeChange={(scopeType) => {
+                      setState((prev) => ({
+                        ...prev,
+                        scopeType,
+                        selectedIds: [],
+                      }));
+                      markDirty();
+                    }}
+                  />
+
+                  {state.scopeType !== null && (
+                    <EventCreateStep2
+                      worldId={worldId}
+                      scopeType={state.scopeType}
+                      selectedIds={state.selectedIds}
+                      onSelectedIdsChange={(ids) => {
+                        setState((prev) => ({
+                          ...prev,
+                          selectedIds: ids,
+                        }));
+                        markDirty();
+                      }}
+                    />
+                  )}
+                </>
               )}
+
+              <EventCreateStep3
+                worldId={worldId}
+                currentTurnNumber={
+                  worldQuery.data?.world.currentTurnNumber ?? 0
+                }
+                durationType={state.durationType}
+                durationTransitions={state.durationTransitions}
+                activationTurn={state.activationTurn}
+                onDurationTypeChange={(type) => {
+                  setState((prev) => ({
+                    ...prev,
+                    durationType: type,
+                  }));
+                  markDirty();
+                }}
+                onDurationTransitionsChange={(trans) => {
+                  setState((prev) => ({
+                    ...prev,
+                    durationTransitions: trans,
+                  }));
+                  markDirty();
+                }}
+                onActivationTurnChange={(turn) => {
+                  setState((prev) => ({
+                    ...prev,
+                    activationTurn: turn,
+                  }));
+                  markDirty();
+                }}
+              />
             </div>
           )}
 
-          {state.step === 3 && (
+          {state.step === 2 && (
             <EventCreateEffectsStep
               effects={state.effects}
               onEffectsChange={(effects) => {
@@ -602,62 +686,8 @@ export function EventCreateWizard({
             />
           )}
 
-          {state.step === 4 && (
-            <EventCreateStep3
-              worldId={worldId}
-              currentTurnNumber={worldQuery.data?.world.currentTurnNumber ?? 0}
-              durationType={state.durationType}
-              durationTransitions={state.durationTransitions}
-              activationTurn={state.activationTurn}
-              onDurationTypeChange={(type) => {
-                setState((prev) => ({
-                  ...prev,
-                  durationType: type,
-                }));
-                markDirty();
-              }}
-              onDurationTransitionsChange={(trans) => {
-                setState((prev) => ({
-                  ...prev,
-                  durationTransitions: trans,
-                }));
-                markDirty();
-              }}
-              onActivationTurnChange={(turn) => {
-                setState((prev) => ({
-                  ...prev,
-                  activationTurn: turn,
-                }));
-                markDirty();
-              }}
-            />
-          )}
-
-          {state.step === 5 && (
-            <EventCreateStep4
-              createCitizenMemories={state.createCitizenMemories}
-              memoryText={state.memoryText}
-              groupDescription={groupDescription}
-              isAlreadyActivated={isAlreadyActivated}
-              onCreateCitizenMemoriesChange={(create) => {
-                setState((prev) => ({
-                  ...prev,
-                  createCitizenMemories: create,
-                }));
-                markDirty();
-              }}
-              onMemoryTextChange={(text) => {
-                setState((prev) => ({
-                  ...prev,
-                  memoryText: text,
-                }));
-                markDirty();
-              }}
-            />
-          )}
-
-          {state.step === 6 && (
-            <EventCreateStep5
+          {state.step === 3 && (
+            <EventCreateForecastStep
               groupName={groupName}
               groupDescription={groupDescription}
               scopeType={state.scopeType ?? "world"}
@@ -666,10 +696,16 @@ export function EventCreateWizard({
               durationType={state.durationType}
               durationTransitions={state.durationTransitions}
               activationTurn={state.activationTurn}
-              activationTurnCalendarDate={activationTurnCalendarDate}
-              activationTurnRelativeTime={activationTurnRelativeTime}
-              createCitizenMemories={state.createCitizenMemories}
               worldId={worldId}
+              memories={state.memories}
+              onMemoriesChange={(memories) => {
+                setState((prev) => ({
+                  ...prev,
+                  memories: [...memories],
+                }));
+                markDirty();
+              }}
+              isAlreadyActivated={isAlreadyActivated}
             />
           )}
         </div>
@@ -680,37 +716,31 @@ export function EventCreateWizard({
           </Button>
 
           {state.step !== 1 && (
-            <Button
-              variant="outline"
-              onClick={handlePrev}
-              disabled={isEditMode && state.step === 3}
-            >
+            <Button variant="outline" onClick={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
               Previous
             </Button>
           )}
 
-          {state.step < 6 && (
+          {state.step < 3 && (
             <Button
               onClick={handleNext}
               className="ml-auto"
               disabled={
                 (state.step === 1 && groupName.trim().length === 0) ||
-                (!isEditMode && state.step === 2 && state.scopeType === null) ||
+                (!isEditMode && state.step === 1 && state.scopeType === null) ||
                 (!isEditMode &&
-                  state.step === 2 &&
+                  state.step === 1 &&
                   state.scopeType !== "world" &&
                   state.selectedIds.length === 0) ||
-                (state.step === 5 &&
-                  state.createCitizenMemories &&
-                  state.memoryText.trim().length === 0)
+                (state.step === 2 && hasInvalidJobSelection(state.effects))
               }
             >
               Next
               <ChevronRight className="h-4 w-4" />
             </Button>
           )}
-          {state.step >= 6 && (
+          {state.step >= 3 && (
             <Button
               onClick={() => {
                 void handleSubmit();
@@ -723,8 +753,7 @@ export function EventCreateWizard({
                   (state.scopeType === null ||
                     (state.scopeType !== "world" &&
                       state.selectedIds.length === 0))) ||
-                (state.createCitizenMemories &&
-                  state.memoryText.trim().length === 0)
+                hasInvalidJobSelection(state.effects)
               }
               className="ml-auto"
             >

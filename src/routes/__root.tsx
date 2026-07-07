@@ -15,7 +15,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthNavigationControl } from "@/features/auth";
+import { UserMenu } from "@/features/auth";
 import { scheduleAuthStateQueryCacheSync } from "@/lib/authStateQueryCache";
 import { type AppRouterContext } from "@/lib/queryClient";
 import { subscribeToSupabaseAuthStateChanges } from "@/lib/supabaseAuthState";
@@ -24,7 +24,8 @@ import {
   supabaseConfig,
 } from "@/lib/supabaseConfig";
 
-const isDev = import.meta.env.DEV;
+const isDev =
+  import.meta.env.DEV && import.meta.env.VITE_DISABLE_DEVTOOLS !== "true";
 
 const TanStackRouterDevtools = isDev
   ? lazy(() =>
@@ -59,7 +60,7 @@ function RootLayout(): JSX.Element {
   return (
     <TooltipProvider>
       <QueryClientProvider client={queryClient}>
-        <AppLayout headerAction={<AuthNavigationControl />}>
+        <AppLayout headerAction={<UserMenu />}>
           {shouldBlockForConfig ? <SupabaseConfigErrorPage /> : <Outlet />}
         </AppLayout>
         <Toaster
@@ -105,55 +106,49 @@ function RootErrorBoundary({ error }: ErrorComponentProps): JSX.Element | null {
   }
 
   return (
-    <div className="mx-auto max-w-4xl py-6">
-      <ErrorState
-        title="Something went wrong"
-        description="An unexpected error occurred. Try again or return to the home page."
-        action={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                void router.invalidate();
-              }}
-            >
-              Try again
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/">Go to home</Link>
-            </Button>
-          </div>
-        }
-      />
-    </div>
+    <ErrorState
+      title="Something went wrong"
+      description="An unexpected error occurred. Try again or return to the home page."
+      action={
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void router.invalidate();
+            }}
+          >
+            Try again
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/">Go to home</Link>
+          </Button>
+        </div>
+      }
+    />
   );
 }
 
 function NotFoundPage(): JSX.Element {
   return (
-    <div className="mx-auto max-w-4xl py-6">
-      <EmptyState
-        icon={MapPinOff}
-        title="Page not found"
-        description="The page you're looking for doesn't exist or may have moved."
-        action={
-          <Button asChild variant="outline" size="sm">
-            <Link to="/">Go to home</Link>
-          </Button>
-        }
-      />
-    </div>
+    <EmptyState
+      icon={MapPinOff}
+      title="Page not found"
+      description="The page you're looking for doesn't exist or may have moved."
+      action={
+        <Button asChild variant="outline" size="sm">
+          <Link to="/">Go to home</Link>
+        </Button>
+      }
+    />
   );
 }
 
 function SupabaseConfigErrorPage(): JSX.Element {
   return (
-    <div className="mx-auto max-w-4xl py-6">
-      <ErrorState
-        title="Application configuration required"
-        description="Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY before running this production build."
-      />
-    </div>
+    <ErrorState
+      title="Application configuration required"
+      description="Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY before running this production build."
+    />
   );
 }

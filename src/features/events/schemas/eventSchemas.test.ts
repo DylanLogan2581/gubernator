@@ -143,6 +143,28 @@ describe("eventEffectSchema", () => {
       });
       expect(result.success).toBe(true);
     });
+
+    it("type mode: rejects missing depositTypeId", () => {
+      const result = eventEffectSchema.safeParse({
+        effectType: "deposit_destroyed",
+        depositDestroyedMode: "type",
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(
+          result.error.issues.some((i) => i.path.includes("depositTypeId")),
+        ).toBe(true);
+      }
+    });
+
+    it("type mode: accepts valid depositTypeId without a depositInstanceId", () => {
+      const result = eventEffectSchema.safeParse({
+        effectType: "deposit_destroyed",
+        depositDestroyedMode: "type",
+        depositTypeId: TEST_UUID,
+      });
+      expect(result.success).toBe(true);
+    });
   });
 
   describe("building_destroyed", () => {
@@ -169,6 +191,27 @@ describe("eventEffectSchema", () => {
     });
   });
 
+  describe("upkeep_multiplier building targeting", () => {
+    it("accepts instance mode with buildingInstanceIds", () => {
+      const result = eventEffectSchema.safeParse({
+        effectType: "upkeep_multiplier",
+        multiplierValue: 1.5,
+        buildingBlueprintMode: "instance",
+        buildingInstanceIds: [TEST_UUID],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects an unknown buildingBlueprintMode value", () => {
+      const result = eventEffectSchema.safeParse({
+        effectType: "upkeep_multiplier",
+        multiplierValue: 1.5,
+        buildingBlueprintMode: "bogus",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe("deposit_discovered (no extra required fields)", () => {
     it("accepts without any optional fields", () => {
       const result = eventEffectSchema.safeParse({
@@ -191,7 +234,6 @@ describe("createEventGroupInputSchema", () => {
     targets: [{ scope_name: "World" }],
     durationType: "instant" as const,
     activationTurn: 1,
-    createCitizenMemories: false,
   };
 
   it("accepts empty effects array (narrative-only event)", () => {
@@ -216,5 +258,67 @@ describe("createEventGroupInputSchema", () => {
         ),
       ).toBe(true);
     }
+  });
+
+  describe("memories", () => {
+    it("accepts a memory within an instant event's single-turn bound", () => {
+      const result = createEventGroupInputSchema.safeParse({
+        ...baseInput,
+        memories: [{ turnOffset: 0, memoryText: "They remember." }],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects a memory offset beyond an instant event's single turn", () => {
+      const result = createEventGroupInputSchema.safeParse({
+        ...baseInput,
+        memories: [{ turnOffset: 1, memoryText: "Too late." }],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts memories at every valid offset for a sustained event", () => {
+      const result = createEventGroupInputSchema.safeParse({
+        ...baseInput,
+        durationType: "sustained" as const,
+        durationTransitions: 2,
+        memories: [
+          { turnOffset: 0, memoryText: "Turn 1 memory" },
+          { turnOffset: 1, memoryText: "Turn 2 memory" },
+        ],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects a memory offset at or beyond a sustained event's duration", () => {
+      const result = createEventGroupInputSchema.safeParse({
+        ...baseInput,
+        durationType: "sustained" as const,
+        durationTransitions: 2,
+        memories: [{ turnOffset: 2, memoryText: "Out of range." }],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects two memories sharing the same turn offset", () => {
+      const result = createEventGroupInputSchema.safeParse({
+        ...baseInput,
+        durationType: "sustained" as const,
+        durationTransitions: 2,
+        memories: [
+          { turnOffset: 0, memoryText: "First" },
+          { turnOffset: 0, memoryText: "Second" },
+        ],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects blank memory text", () => {
+      const result = createEventGroupInputSchema.safeParse({
+        ...baseInput,
+        memories: [{ turnOffset: 0, memoryText: "   " }],
+      });
+      expect(result.success).toBe(false);
+    });
   });
 });

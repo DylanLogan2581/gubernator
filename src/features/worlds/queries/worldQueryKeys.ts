@@ -38,4 +38,6 @@ export const worldQueryKeys = {
     [...worldQueryKeys.all, "npc-flavor-config", worldId] as const,
   populationRules: (worldId: string) =>
     [...worldQueryKeys.all, "population-rules", worldId] as const,
+  images: (worldId: string) =>
+    [...worldQueryKeys.all, "images", worldId] as const,
 } as const;

@@ -153,7 +153,11 @@ export type TurnTransitionOutcome = {
 
 // -- Select columns --
 
-const TRANSITION_OUTCOME_SELECT = [
+// Base transition columns only — no embedded collections. Each collection is
+// fetched via its own scoped, indexed query (see the fetchers below) instead
+// of a single multi-embed select, to keep per-request RLS evaluation flat
+// under parallel load (issue #1045).
+const TRANSITION_BASE_SELECT = [
   "id",
   "world_id",
   "from_turn_number",
@@ -162,11 +166,18 @@ const TRANSITION_OUTCOME_SELECT = [
   "started_at",
   "finished_at",
   "forecast_snapshot_jsonb",
-  "settlement_turn_snapshots(id,settlement_id,world_id,turn_number,birth_count,death_count,homeless_deaths_count,starvation_deaths_count,population_cap,population_npc,population_player_character,population_total)",
-  "settlement_turn_resource_snapshots(id,settlement_id,world_id,resource_id,turn_number,consumed_amount,produced_amount,quantity_after,quantity_before,trade_in_amount,trade_out_amount)",
-  "turn_log_entries(id,settlement_id,world_id,citizen_id,nation_id,resource_id,log_category,payload_jsonb)",
-  "notifications(id,settlement_id,world_id,citizen_id,nation_id,generated_at,generated_in_transition_id,is_read,message_text,notification_type,recipient_user_id)",
 ].join(",");
+
+type TransitionBaseRow = {
+  readonly finished_at: string | null;
+  readonly forecast_snapshot_jsonb: Record<string, unknown> | null;
+  readonly from_turn_number: number;
+  readonly id: string;
+  readonly started_at: string;
+  readonly status: string;
+  readonly to_turn_number: number;
+  readonly world_id: string;
+};
 
 // -- Query option types --
 
@@ -217,24 +228,97 @@ async function getLatestWorldTransitionOutcome(
   client: GubernatorSupabaseClient,
   worldId: string,
 ): Promise<TurnTransitionOutcome | null> {
-  const { data, error } = await client
+  // Fetch the base transition row without embedded collections. A single
+  // multi-embed select (settlement_turn_snapshots + resource snapshots +
+  // turn_log_entries + notifications all joined in one PostgREST request)
+  // intermittently returned HTTP 500 under parallel load (issue #1045):
+  // per-row RLS evaluation across four embedded joins on top of the large
+  // forecast_snapshot_jsonb payload pushed non-superadmin requests past the
+  // PostgREST statement timeout. Splitting into scoped, indexed, non-embedded
+  // queries (mirroring getLatestSettlementTransitionOutcome below) keeps each
+  // query cheap and RLS evaluation flat.
+  const { data: transition, error: transitionError } = await client
     .from("turn_transitions")
-    .select(TRANSITION_OUTCOME_SELECT)
+    .select(TRANSITION_BASE_SELECT)
     .eq("world_id", worldId)
     .order("started_at", { ascending: false })
     .limit(1)
-    .returns<TransitionOutcomeRow[]>()
+    .returns<TransitionBaseRow[]>()
     .maybeSingle();
 
-  if (error !== null) {
-    throw normalizeSupabaseError(error);
+  if (transitionError !== null) {
+    throw normalizeSupabaseError(transitionError);
   }
 
-  if (data === null) {
+  if (transition === null) {
     return null;
   }
 
-  return toTurnTransitionOutcome(data);
+  const transitionId = transition.id;
+
+  const [
+    { data: snapshots, error: snapshotsError },
+    { data: resourceSnapshots, error: resourceSnapshotsError },
+    { data: logEntries, error: logEntriesError },
+    { data: notifications, error: notificationsError },
+  ] = await Promise.all([
+    client
+      .from("settlement_turn_snapshots")
+      .select(
+        "id,settlement_id,world_id,turn_number,birth_count,death_count,homeless_deaths_count,starvation_deaths_count,population_cap,population_npc,population_player_character,population_total",
+      )
+      .eq("world_id", worldId)
+      .eq("turn_transition_id", transitionId)
+      .returns<SettlementSnapshotRow[]>(),
+    client
+      .from("settlement_turn_resource_snapshots")
+      .select(
+        "id,settlement_id,world_id,resource_id,turn_number,consumed_amount,produced_amount,quantity_after,quantity_before,trade_in_amount,trade_out_amount",
+      )
+      .eq("world_id", worldId)
+      .eq("turn_transition_id", transitionId)
+      .returns<ResourceSnapshotRow[]>(),
+    client
+      .from("turn_log_entries")
+      .select(
+        "id,settlement_id,world_id,citizen_id,nation_id,resource_id,log_category,payload_jsonb",
+      )
+      .eq("world_id", worldId)
+      .eq("turn_transition_id", transitionId)
+      .returns<LogEntryRow[]>(),
+    client
+      .from("notifications")
+      .select(
+        "id,settlement_id,world_id,citizen_id,nation_id,generated_at,generated_in_transition_id,is_read,message_text,notification_type,recipient_user_id",
+      )
+      .eq("world_id", worldId)
+      .eq("generated_in_transition_id", transitionId)
+      .returns<NotificationRow[]>(),
+  ]);
+
+  if (
+    snapshotsError !== null ||
+    resourceSnapshotsError !== null ||
+    logEntriesError !== null ||
+    notificationsError !== null
+  ) {
+    throw normalizeSupabaseError(
+      snapshotsError ??
+        resourceSnapshotsError ??
+        logEntriesError ??
+        notificationsError,
+    );
+  }
+
+  const row: TransitionOutcomeRow = {
+    ...transition,
+    notifications: notifications ?? [],
+    settlement_turn_resource_snapshots: resourceSnapshots ?? [],
+    settlement_turn_snapshots: snapshots ?? [],
+    turn_log_entries: logEntries ?? [],
+  };
+
+  return toTurnTransitionOutcome(row);
 }
 
 async function getLatestSettlementTransitionOutcome(
@@ -263,31 +347,11 @@ async function getLatestSettlementTransitionOutcome(
   const transitionId = latestSnapshot.turn_transition_id;
 
   // Fetch base transition data without embedded collections
-  const baseSelect = [
-    "id",
-    "world_id",
-    "from_turn_number",
-    "to_turn_number",
-    "status",
-    "started_at",
-    "finished_at",
-    "forecast_snapshot_jsonb",
-  ].join(",");
-
   const { data: transition, error: transitionError } = await client
     .from("turn_transitions")
-    .select(baseSelect)
+    .select(TRANSITION_BASE_SELECT)
     .eq("id", transitionId)
-    .returns<{
-      finished_at: string | null;
-      forecast_snapshot_jsonb: Record<string, unknown> | null;
-      from_turn_number: number;
-      id: string;
-      started_at: string;
-      status: string;
-      to_turn_number: number;
-      world_id: string;
-    }>()
+    .returns<TransitionBaseRow[]>()
     .maybeSingle();
 
   if (transitionError !== null) {
@@ -354,16 +418,7 @@ async function getLatestSettlementTransitionOutcome(
   }
 
   const row: TransitionOutcomeRow = {
-    ...(transition as {
-      finished_at: string | null;
-      forecast_snapshot_jsonb: Record<string, unknown> | null;
-      from_turn_number: number;
-      id: string;
-      started_at: string;
-      status: string;
-      to_turn_number: number;
-      world_id: string;
-    }),
+    ...transition,
     notifications: notifications ?? [],
     settlement_turn_resource_snapshots: resourceSnapshots ?? [],
     settlement_turn_snapshots: snapshots ?? [],

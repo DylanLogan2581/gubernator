@@ -79,7 +79,7 @@ export function createEventGroupMutationOptions({
       ) {
         throw new EventMutationError({
           code: "event_input_invalid",
-          message: "Duration transitions required for sustained events",
+          message: "Duration in turns is required for sustained events",
         });
       }
 
@@ -111,6 +111,21 @@ export function createEventGroupMutationOptions({
               ) {
                 extraData.building_blueprint_ids = e.buildingBlueprintIds;
               }
+              if (
+                e.buildingBlueprintMode === "instance" &&
+                Array.isArray(e.buildingInstanceIds)
+              ) {
+                extraData.building_instance_ids = e.buildingInstanceIds;
+              }
+            }
+
+            if (
+              e.effectType === "deposit_destroyed" &&
+              e.depositDestroyedMode === "type" &&
+              typeof e.depositTypeId === "string"
+            ) {
+              extraData.deposit_destroyed_mode = e.depositDestroyedMode;
+              extraData.deposit_type_id = e.depositTypeId;
             }
 
             return {
@@ -136,8 +151,12 @@ export function createEventGroupMutationOptions({
               ? values.durationTransitions
               : null,
           p_activate_on_transition_after_turn_number: values.activationTurn,
-          p_create_citizen_memories: values.createCitizenMemories,
-          p_memory_text: values.memoryText ?? null,
+          p_create_citizen_memories: false,
+          p_memory_text: null,
+          p_memories: values.memories.map((m) => ({
+            memory_text: m.memoryText,
+            turn_offset: m.turnOffset,
+          })),
         },
       );
 
@@ -275,7 +294,7 @@ export function editEventGroupMutationOptions({
       ) {
         throw new EventMutationError({
           code: "event_input_invalid",
-          message: "Duration transitions required for sustained events",
+          message: "Duration in turns is required for sustained events",
         });
       }
 
@@ -307,6 +326,21 @@ export function editEventGroupMutationOptions({
               ) {
                 extraData.building_blueprint_ids = e.buildingBlueprintIds;
               }
+              if (
+                e.buildingBlueprintMode === "instance" &&
+                Array.isArray(e.buildingInstanceIds)
+              ) {
+                extraData.building_instance_ids = e.buildingInstanceIds;
+              }
+            }
+
+            if (
+              e.effectType === "deposit_destroyed" &&
+              e.depositDestroyedMode === "type" &&
+              typeof e.depositTypeId === "string"
+            ) {
+              extraData.deposit_destroyed_mode = e.depositDestroyedMode;
+              extraData.deposit_type_id = e.depositTypeId;
             }
 
             return {
@@ -329,8 +363,12 @@ export function editEventGroupMutationOptions({
               ? values.durationTransitions
               : null,
           p_activate_on_transition_after_turn_number: values.activationTurn,
-          p_create_citizen_memories: values.createCitizenMemories,
-          p_memory_text: values.memoryText ?? null,
+          p_create_citizen_memories: false,
+          p_memory_text: null,
+          p_memories: values.memories.map((m) => ({
+            memory_text: m.memoryText,
+            turn_offset: m.turnOffset,
+          })),
         },
       );
 

@@ -1,13 +1,13 @@
--- pgTAP tests for the events_freeze_memory_after_activation trigger.
--- Once an event leaves 'pending', its create_citizen_memories flag and
--- memory_text are immutable; status/remaining_transitions and other columns
--- stay editable.
+-- pgTAP tests for the event_memories_freeze_after_activation trigger.
+-- Once an event leaves 'pending', its event_memories rows are immutable:
+-- no insert, update, or delete is allowed against them. status/
+-- remaining_transitions and other event columns stay editable.
 --
 -- Runs inside a transaction that is rolled back; leaves no permanent data.
 begin;
 
 select
-  plan (5);
+  plan (6);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Fixtures
@@ -62,7 +62,7 @@ values
     5
   );
 
--- Pending event (memory config still editable)
+-- Pending event (memory rows still editable)
 insert into
   public.events (
     id,
@@ -73,9 +73,7 @@ insert into
     effect_type,
     activate_on_transition_after_turn_number,
     scope_type,
-    duration_type,
-    create_citizen_memories,
-    memory_text
+    duration_type
   )
 values
   (
@@ -87,12 +85,10 @@ values
     'deposit_discovered',
     4,
     'world',
-    'instant',
-    true,
-    'Original pending text'
+    'instant'
   );
 
--- Active event (memory config frozen)
+-- Active event (memory rows frozen)
 insert into
   public.events (
     id,
@@ -105,9 +101,7 @@ insert into
     scope_type,
     duration_type,
     duration_transitions,
-    remaining_transitions,
-    create_citizen_memories,
-    memory_text
+    remaining_transitions
   )
 values
   (
@@ -115,62 +109,112 @@ values
     'fb200000-0000-0000-0000-000000000001',
     'fb600000-0000-0000-0000-000000000001',
     'Active Event',
-    'active',
+    'pending',
     'deposit_discovered',
     4,
     'world',
     'sustained',
     3,
-    2,
-    true,
-    'Active frozen text'
+    3
   );
 
+-- Both parent events are still 'pending' here, so the event_memories freeze
+-- trigger allows these inserts; event ...002 is advanced to 'active' below.
+insert into
+  public.event_memories (id, event_id, memory_text, turn_offset)
+values
+  (
+    'fb800000-0000-0000-0000-000000000001',
+    'fb700000-0000-0000-0000-000000000001',
+    'Original pending text',
+    0
+  ),
+  (
+    'fb800000-0000-0000-0000-000000000002',
+    'fb700000-0000-0000-0000-000000000002',
+    'Active frozen text',
+    1
+  );
+
+update public.events
+set
+  status = 'active',
+  remaining_transitions = 2
+where
+  id = 'fb700000-0000-0000-0000-000000000002';
+
 -- ─────────────────────────────────────────────────────────────────────────────
--- Test 1: memory_text editable while pending
+-- Test 1: memory_text editable while the parent event is pending
 -- ─────────────────────────────────────────────────────────────────────────────
 select
   lives_ok (
     $$
-    update public.events
+    update public.event_memories
     set memory_text = 'Edited pending text'
-    where id = 'fb700000-0000-0000-0000-000000000001'
+    where id = 'fb800000-0000-0000-0000-000000000001'
     $$,
-    'memory_text is editable while the event is pending'
+    'memory_text is editable while the parent event is pending'
   );
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Test 2: memory_text frozen once active
+-- Test 2: a new memory row can be inserted for a pending event
+-- ─────────────────────────────────────────────────────────────────────────────
+select
+  lives_ok (
+    $$
+    insert into public.event_memories (event_id, memory_text, turn_offset)
+    values ('fb700000-0000-0000-0000-000000000001', 'Second pending memory', 0)
+    on conflict (event_id, turn_offset) do nothing
+    $$,
+    'a new memory row can be inserted while the parent event is pending'
+  );
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Test 3: memory_text frozen once the parent event is active
 -- ─────────────────────────────────────────────────────────────────────────────
 select
   throws_ok (
     $$
-    update public.events
+    update public.event_memories
     set memory_text = 'Tampered text'
-    where id = 'fb700000-0000-0000-0000-000000000002'
+    where id = 'fb800000-0000-0000-0000-000000000002'
     $$,
     'P0001',
     'Cannot change citizen-memory settings once an event has activated',
-    'changing memory_text on an active event is rejected'
+    'changing memory_text on an active event''s memory is rejected'
   );
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Test 3: create_citizen_memories frozen once active
+-- Test 4: inserting a new memory row for an active event is rejected
 -- ─────────────────────────────────────────────────────────────────────────────
 select
   throws_ok (
     $$
-    update public.events
-    set create_citizen_memories = false
-    where id = 'fb700000-0000-0000-0000-000000000002'
+    insert into public.event_memories (event_id, memory_text, turn_offset)
+    values ('fb700000-0000-0000-0000-000000000002', 'New memory after activation', 2)
     $$,
     'P0001',
     'Cannot change citizen-memory settings once an event has activated',
-    'toggling create_citizen_memories on an active event is rejected'
+    'inserting a memory row for an already-active event is rejected'
   );
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Test 4: status / remaining_transitions still editable (turn-transition path)
+-- Test 5: deleting a memory row for an active event is rejected
+-- ─────────────────────────────────────────────────────────────────────────────
+select
+  throws_ok (
+    $$
+    delete from public.event_memories
+    where id = 'fb800000-0000-0000-0000-000000000002'
+    $$,
+    'P0001',
+    'Cannot change citizen-memory settings once an event has activated',
+    'deleting an active event''s memory row is rejected'
+  );
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Test 6: unrelated event columns (status/remaining_transitions) still
+-- editable, and don't trip the event_memories freeze trigger
 -- ─────────────────────────────────────────────────────────────────────────────
 select
   lives_ok (
@@ -180,19 +224,6 @@ select
     where id = 'fb700000-0000-0000-0000-000000000002'
     $$,
     'status and remaining_transitions remain editable on an active event'
-  );
-
--- ─────────────────────────────────────────────────────────────────────────────
--- Test 5: unrelated columns (name) still editable on an active event
--- ─────────────────────────────────────────────────────────────────────────────
-select
-  lives_ok (
-    $$
-    update public.events
-    set name = 'Renamed Active Event'
-    where id = 'fb700000-0000-0000-0000-000000000002'
-    $$,
-    'unrelated columns remain editable on an active event'
   );
 
 select

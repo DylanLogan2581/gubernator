@@ -13,12 +13,12 @@ import type {
   SimulationLogEntry,
 } from "../../simulationTypes.ts";
 
-function pickFromPool(rng: SeededRng, pool: readonly string[]): string | null {
+export function pickFromPool(rng: SeededRng, pool: readonly string[]): string | null {
   if (pool.length === 0) return null;
   return pool[Math.floor(rng() * pool.length)] ?? null;
 }
 
-function pickNpcFlavor(
+export function pickNpcFlavor(
   rng: SeededRng,
   config: NpcFlavorConfig | null | undefined,
 ): {

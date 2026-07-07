@@ -3,7 +3,7 @@ import {
   type QueryClient,
   type UseQueryResult,
 } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Plus } from "lucide-react";
 import { useState, type JSX, type ReactNode } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -88,13 +88,18 @@ export function ConfigCrudPanel<T>({
             <Button
               type="button"
               variant={showTrash ? "secondary" : "ghost"}
-              size="icon-sm"
+              size="sm"
               aria-label={showTrash ? "Hide trash" : "Show trash"}
               aria-pressed={showTrash}
               title={showTrash ? "Hide trash" : "Show trash"}
               onClick={() => setShowTrash((v) => !v)}
             >
-              <Trash2 aria-hidden="true" />
+              {showTrash ? (
+                <ArchiveRestore aria-hidden="true" />
+              ) : (
+                <Archive aria-hidden="true" />
+              )}
+              Trash
             </Button>
           ) : null}
         </div>

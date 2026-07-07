@@ -34,8 +34,19 @@ export type Event = {
   readonly amount_value: string | null;
   readonly multiplier_value: string | null;
   readonly extra_data_jsonb: unknown;
-  readonly create_citizen_memories: boolean;
-  readonly memory_text: string | null;
+  readonly created_at: string;
+  readonly updated_at: string;
+};
+
+/**
+ * Single per-turn citizen memory attached to an event. Fires exactly once, on
+ * the turn `turn_offset` transitions elapsed after the event's activation.
+ */
+export type EventMemory = {
+  readonly id: string;
+  readonly event_id: string;
+  readonly memory_text: string;
+  readonly turn_offset: number;
   readonly created_at: string;
   readonly updated_at: string;
 };
@@ -73,6 +84,7 @@ export type EventWithEffects = Event & {
  */
 export type EventWithGroupAndEffects = EventWithGroup & {
   readonly effects: readonly EventEffect[];
+  readonly memories: readonly EventMemory[];
 };
 
 /**
@@ -112,14 +124,26 @@ export type EventEffect = {
   readonly updated_at: string;
 };
 
+export type EventSortBy = "status" | "created_at";
+
 /**
  * Filter state for events list.
  */
 export type EventListFilters = {
   readonly statusFilter?: EventStatus[];
-  readonly sortBy?: "status" | "created_at";
+  readonly sortBy?: EventSortBy;
   readonly scopeEntityFilter?: {
     readonly type: "nation" | "settlement";
     readonly id: string;
   };
+};
+
+/**
+ * URL-backed filter state for the events list page (see EventsList).
+ */
+export type EventsSearchParams = {
+  readonly status: readonly EventStatus[];
+  readonly scope?: EventScopeType;
+  readonly q: string;
+  readonly sort: EventSortBy;
 };

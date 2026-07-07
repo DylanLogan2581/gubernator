@@ -27,6 +27,8 @@ export {
 } from "./utils/turnCalendarDates";
 export {
   formatCalendarDate,
+  formatCalendarDateShort,
   formatCalendarYear,
   type CalendarDateFormatOptions,
+  type CalendarDateFormatShortOptions,
 } from "./utils/calendarDateFormatting";

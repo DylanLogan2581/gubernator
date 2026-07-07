@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { WorldPermissionContext } from "@/features/worlds";
 
 import { NationSettlementsSection } from "./SettlementsSection";
 
@@ -9,12 +11,18 @@ import type { ReactNode } from "react";
 
 const {
   mockNationSettlementsQuery,
+  mockPlayerCharactersQuery,
   mockCreateSettlement,
+  mockDeleteSettlement,
+  mockSetReadiness,
   mockNotifySuccess,
   mockNotifyError,
 } = vi.hoisted(() => ({
   mockNationSettlementsQuery: vi.fn(),
+  mockPlayerCharactersQuery: vi.fn(),
   mockCreateSettlement: vi.fn(),
+  mockDeleteSettlement: vi.fn(),
+  mockSetReadiness: vi.fn(),
   mockNotifySuccess: vi.fn(),
   mockNotifyError: vi.fn(),
 }));
@@ -26,11 +34,24 @@ vi.mock("../../queries/nationsQueries", () => ({
   }),
 }));
 
+vi.mock("@/features/citizens/queries/citizensQueries", () => ({
+  playerCharactersInNationQueryOptions: (nationId: string) => ({
+    queryKey: ["player-characters-in-nation", nationId],
+    queryFn: () => mockPlayerCharactersQuery() as Promise<unknown>,
+  }),
+}));
+
 vi.mock("@/features/settlements/mutations/settlementsMutations", () => ({
   createSettlementMutationOptions: vi.fn(
     () =>
       ({
         mutationFn: mockCreateSettlement,
+      }) as never,
+  ),
+  deleteSettlementMutationOptions: vi.fn(
+    () =>
+      ({
+        mutationFn: mockDeleteSettlement,
       }) as never,
   ),
 }));
@@ -41,7 +62,7 @@ vi.mock(
     setSettlementReadinessMutationOptions: vi.fn(
       () =>
         ({
-          mutationFn: vi.fn().mockResolvedValue({}),
+          mutationFn: mockSetReadiness,
         }) as never,
     ),
   }),
@@ -75,22 +96,35 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
 }));
 
+const accessContext: WorldPermissionContext = {
+  canAccessWorld: () => true,
+  canAdminWorld: () => true,
+  isActiveUser: true,
+  isAuthenticated: true,
+  isSuperAdmin: false,
+  playerCharacterWorldIds: [],
+  userId: "user-1",
+  worldAdminWorldIds: [],
+};
+
 describe("NationSettlementsSection", () => {
   const worldId = "00000000-0000-0000-0000-000000000101";
   const nationId = "11111111-1111-1111-1111-111111111111";
-  const queryClient = new QueryClient();
+  let queryClient: QueryClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPlayerCharactersQuery.mockResolvedValue([]);
+    queryClient = new QueryClient();
   });
 
   function renderSection(canAdmin = false): ReturnType<typeof render> {
     return render(
       <QueryClientProvider client={queryClient}>
         <NationSettlementsSection
+          accessContext={accessContext}
           canAdmin={canAdmin}
           nationId={nationId}
-          userId={null}
           worldId={worldId}
         />
       </QueryClientProvider>,
@@ -172,37 +206,37 @@ describe("NationSettlementsSection", () => {
   });
 
   describe("settlements list", () => {
+    const stonehold = {
+      autoReadyEnabled: false,
+      id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      isReadyCurrentTurn: false,
+      isReadyForCurrentTurn: false,
+      lastReadyAt: null,
+      name: "Stonehold",
+      nationId,
+      nationName: "Highmark",
+      population: 1250,
+      readySetAt: null,
+    };
+    const rivertown = {
+      autoReadyEnabled: false,
+      id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      isReadyCurrentTurn: true,
+      isReadyForCurrentTurn: true,
+      lastReadyAt: "2024-01-01T00:00:00Z",
+      name: "Rivertown",
+      nationId,
+      nationName: "Highmark",
+      population: 2500,
+      readySetAt: "2024-01-01T00:00:00Z",
+    };
+
     it("displays settlements with links to detail page", async () => {
-      mockNationSettlementsQuery.mockResolvedValue([
-        {
-          autoReadyEnabled: false,
-          id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-          isReadyCurrentTurn: false,
-          isReadyForCurrentTurn: false,
-          lastReadyAt: null,
-          name: "Stonehold",
-          nationId,
-          nationName: "Highmark",
-          population: 1250,
-          readySetAt: null,
-        },
-        {
-          autoReadyEnabled: false,
-          id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-          isReadyCurrentTurn: true,
-          isReadyForCurrentTurn: true,
-          lastReadyAt: "2024-01-01T00:00:00Z",
-          name: "Rivertown",
-          nationId,
-          nationName: "Highmark",
-          population: 2500,
-          readySetAt: "2024-01-01T00:00:00Z",
-        },
-      ]);
+      mockNationSettlementsQuery.mockResolvedValue([stonehold, rivertown]);
 
       renderSection(true);
 
-      // Collapsible trigger shows settlement names as links
+      // Settlement names are links
       const stoneholdTrigger = await screen.findByText("Stonehold");
       expect(stoneholdTrigger.tagName).toBe("A");
       expect(stoneholdTrigger).toHaveAttribute(
@@ -228,6 +262,94 @@ describe("NationSettlementsSection", () => {
         expect(
           screen.getByText("This nation has no settlements yet."),
         ).toBeInTheDocument();
+      });
+    });
+
+    it("shows the manager for a settlement, linked to the citizen", async () => {
+      mockNationSettlementsQuery.mockResolvedValue([stonehold]);
+      mockPlayerCharactersQuery.mockResolvedValue([
+        {
+          id: "citizen-1",
+          name: "Alex Manager",
+          profilePhotoUrl: null,
+          roleSettlementId: stonehold.id,
+          roleType: "settlement_manager",
+        },
+      ]);
+
+      renderSection(true);
+
+      const managerLink = await screen.findByText("Alex Manager");
+      expect(managerLink.closest("a")).toHaveAttribute(
+        "href",
+        `/worlds/${worldId}/citizens/citizen-1`,
+      );
+    });
+
+    it("shows Unassigned when a settlement has no manager", async () => {
+      mockNationSettlementsQuery.mockResolvedValue([stonehold]);
+      mockPlayerCharactersQuery.mockResolvedValue([]);
+
+      renderSection(true);
+
+      await screen.findByText("Stonehold");
+      expect(screen.getByText("Unassigned")).toBeInTheDocument();
+    });
+
+    it("shows an inline readiness switch for users with authority", async () => {
+      mockNationSettlementsQuery.mockResolvedValue([stonehold]);
+
+      renderSection(true);
+
+      await screen.findByText("Stonehold");
+      expect(screen.getByRole("switch")).toBeInTheDocument();
+    });
+
+    it("shows a read-only readiness state for users without authority", async () => {
+      mockNationSettlementsQuery.mockResolvedValue([stonehold]);
+
+      renderSection(false);
+
+      await screen.findByText("Stonehold");
+      expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    });
+
+    it("deletes a settlement only via the row menu, after confirming", async () => {
+      const user = userEvent.setup();
+      mockNationSettlementsQuery.mockResolvedValue([stonehold]);
+      mockDeleteSettlement.mockResolvedValue({
+        nationId,
+        settlementId: stonehold.id,
+      });
+
+      renderSection(true);
+
+      await screen.findByText("Stonehold");
+      expect(
+        screen.queryByRole("button", { name: /delete/i }),
+      ).not.toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole("button", { name: `Actions for ${stonehold.name}` }),
+      );
+      await user.click(
+        await screen.findByRole("menuitem", { name: "Delete settlement" }),
+      );
+
+      const confirmDialog = await screen.findByRole("alertdialog");
+      await user.click(
+        within(confirmDialog).getByRole("button", {
+          name: "Delete settlement",
+        }),
+      );
+
+      await waitFor(() => {
+        expect(mockDeleteSettlement).toHaveBeenCalled();
+      });
+      expect(mockDeleteSettlement.mock.calls[0]?.[0]).toEqual({
+        nationId,
+        settlementId: stonehold.id,
+        worldId,
       });
     });
   });
