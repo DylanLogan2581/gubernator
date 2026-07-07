@@ -248,7 +248,7 @@ describe("worlds route list", () => {
     expect(
       await screen.findByRole("heading", { name: "Public World" }),
     ).toBeDefined();
-    expect(screen.getByText("private")).toBeDefined();
+    expect(await screen.findByText("private")).toBeDefined();
   });
 });
 
