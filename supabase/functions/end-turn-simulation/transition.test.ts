@@ -103,6 +103,8 @@ function makeEmptyResult(): SimulationResult {
     eventStatusPatches: [],
     logEntries: [],
     managedPopulationUpdates: [],
+    nationStockpileDeltas: [],
+    nationTurnSnapshots: [],
     notifications: [],
     partnershipChanges: [],
     readinessSummary: {

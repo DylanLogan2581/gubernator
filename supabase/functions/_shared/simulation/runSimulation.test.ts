@@ -376,3 +376,109 @@ describe("runSimulation — officeholders leave the settlement labor pool", () =
     expect(foodDeltaWithOffice).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// National economy tax collection (#1083)
+// ---------------------------------------------------------------------------
+
+describe("runSimulation — national economy tax collection", () => {
+  it("citizen consumption sees the post-tax stockpile", () => {
+    const job: SimJob = {
+      baseCapacity: null,
+      id: "job1",
+      inputsJson: [],
+      jobType: "standard",
+      linkedDepositTypeId: null,
+      linkedManagedPopulationTypeId: null,
+      name: "Farming",
+      outputsJson: [{ amountPerWorker: 10, resourceId: "food" }],
+      traderCapacityPerWorker: null,
+    };
+    const assignment: SimCitizenAssignment = {
+      assignedOnTurnNumber: 1,
+      assignmentType: "standard_job",
+      citizenId: "worker",
+      constructionProjectId: null,
+      depositInstanceId: null,
+      jobId: "job1",
+      managedPopulationInstanceId: null,
+      tradeRouteEnd: null,
+      tradeRouteId: null,
+    };
+
+    const baseInput = {
+      citizenAssignments: [assignment],
+      citizens: [makeMaleNpc("worker", "s1")],
+      jobs: [job],
+      nations: [
+        { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 1.0 },
+      ],
+      populationRules: { ...BASE_POPULATION_RULES, foodConsumptionPerCitizen: 10 },
+      settlements: [{ id: "s1", name: "s1", nationId: "n1" }],
+      stockpiles: [makeStockpile("s1", "food", 0)],
+    };
+
+    const taxedResult = runSimulation(makeInput(baseInput), "t-tax");
+    const taxedLog = taxedResult.logEntries.find(
+      (l) => l.category === "citizen.consumed_food_water",
+    );
+    expect(taxedLog).toMatchObject({ payload: { foodStock: 0 } });
+
+    const untaxedResult = runSimulation(
+      makeInput({
+        ...baseInput,
+        nations: [
+          { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 0 },
+        ],
+      }),
+      "t-notax",
+    );
+    const untaxedLog = untaxedResult.logEntries.find(
+      (l) => l.category === "citizen.consumed_food_water",
+    );
+    expect(untaxedLog).toMatchObject({ payload: { foodStock: 10 } });
+  });
+
+  it("does nothing when tax_rate is 0 (regression-safe default)", () => {
+    const job: SimJob = {
+      baseCapacity: null,
+      id: "job1",
+      inputsJson: [],
+      jobType: "standard",
+      linkedDepositTypeId: null,
+      linkedManagedPopulationTypeId: null,
+      name: "Farming",
+      outputsJson: [{ amountPerWorker: 10, resourceId: "food" }],
+      traderCapacityPerWorker: null,
+    };
+    const assignment: SimCitizenAssignment = {
+      assignedOnTurnNumber: 1,
+      assignmentType: "standard_job",
+      citizenId: "worker",
+      constructionProjectId: null,
+      depositInstanceId: null,
+      jobId: "job1",
+      managedPopulationInstanceId: null,
+      tradeRouteEnd: null,
+      tradeRouteId: null,
+    };
+
+    const result = runSimulation(
+      makeInput({
+        citizenAssignments: [assignment],
+        citizens: [makeMaleNpc("worker", "s1")],
+        jobs: [job],
+        nations: [
+          { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 0 },
+        ],
+        settlements: [{ id: "s1", name: "s1", nationId: "n1" }],
+        stockpiles: [makeStockpile("s1", "food", 0)],
+      }),
+      "t-notax-default",
+    );
+
+    expect(result.nationStockpileDeltas).toHaveLength(0);
+    expect(result.nationTurnSnapshots).toHaveLength(0);
+    expect(result.logEntries.filter((l) => l.category === "economy")).toHaveLength(0);
+  });
+});

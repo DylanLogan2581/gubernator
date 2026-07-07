@@ -44,6 +44,8 @@ describe("forecast computation", () => {
       eventStatusPatches: [],
       logEntries: [],
       managedPopulationUpdates: [],
+      nationStockpileDeltas: [],
+      nationTurnSnapshots: [],
       notifications: [],
       partnershipChanges: [],
       readinessSummary: {
@@ -106,6 +108,8 @@ describe("forecast computation", () => {
       eventStatusPatches: [],
       logEntries: [],
       managedPopulationUpdates: [],
+      nationStockpileDeltas: [],
+      nationTurnSnapshots: [],
       notifications: [],
       partnershipChanges: [],
       readinessSummary: {

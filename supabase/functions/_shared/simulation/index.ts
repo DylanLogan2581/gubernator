@@ -14,6 +14,8 @@ export type {
   DepositResourceDelta,
   DepositUpdate,
   ManagedPopulationUpdate,
+  NationStockpileDelta,
+  NationTurnSnapshot,
   NpcFlavorConfig,
   PartnershipChange,
   ReadinessSummary,
@@ -114,6 +116,9 @@ export type { PhaseTradeRoutesOutput } from "./phases/phaseTradeRoutes.ts";
 
 export { phaseManagedPopulations } from "./phases/phaseManagedPopulations.ts";
 export type { PhaseManagedPopulationsOutput } from "./phases/phaseManagedPopulations.ts";
+
+export { phaseNationalEconomy } from "./phases/phaseNationalEconomy.ts";
+export type { PhaseNationalEconomyOutput } from "./phases/phaseNationalEconomy.ts";
 
 export { phaseCitizenConsumption } from "./phases/phaseCitizenConsumption.ts";
 export type { PhaseCitizenConsumptionOutput } from "./phases/phaseCitizenConsumption.ts";

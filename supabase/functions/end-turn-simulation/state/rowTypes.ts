@@ -185,6 +185,7 @@ export type SupabaseNationRow = {
   readonly id: string;
   readonly government_type: string;
   readonly name: string;
+  readonly tax_rate: number;
 };
 
 export type SupabaseNationOfficeRow = {
@@ -481,7 +482,8 @@ export function isNationRow(v: unknown): v is SupabaseNationRow {
     isRecord(v) &&
     typeof v.id === "string" &&
     typeof v.government_type === "string" &&
-    typeof v.name === "string"
+    typeof v.name === "string" &&
+    typeof v.tax_rate === "number"
   );
 }
 

@@ -10,6 +10,8 @@ import type {
   DepositUpdate,
   EventStatusPatch,
   ManagedPopulationUpdate,
+  NationStockpileDelta,
+  NationTurnSnapshot,
   ReadinessSummary,
   SettlementSnapshot,
   SimConstructionStatus,
@@ -109,6 +111,8 @@ export type ApplyTurnTransitionPayload = {
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
+  readonly nationStockpileDeltas: readonly NationStockpileDelta[];
+  readonly nationTurnSnapshots: readonly NationTurnSnapshot[];
   readonly notifications: readonly SimulationNotification[];
   readonly partnershipChanges: readonly PartnershipChangeEntry[];
   readonly readinessSummary: ReadinessSummary;
@@ -342,6 +346,8 @@ export function mapSimulationResultToPayload(
     eventStatusPatches: result.eventStatusPatches,
     logEntries: result.logEntries,
     managedPopulationUpdates: result.managedPopulationUpdates,
+    nationStockpileDeltas: result.nationStockpileDeltas,
+    nationTurnSnapshots: result.nationTurnSnapshots,
     notifications: result.notifications,
     partnershipChanges,
     readinessSummary: result.readinessSummary,

@@ -125,3 +125,20 @@ export const GOVERNMENT_RULES: Readonly<
     officeTypes: ["ruler"],
   },
 };
+
+/**
+ * National economy phase (#1083): multiplier applied to tax collection in
+ * kind (production x tax_rate x efficiency). Reflects how effectively each
+ * government structure administers tax collection; independent of
+ * readiness/succession rules above.
+ */
+export const GOVERNMENT_TAX_EFFICIENCY: Readonly<
+  Record<GovernmentType, number>
+> = {
+  monarchy: 1.0,
+  republic: 1.1,
+  theocracy: 0.9,
+  tribal_council: 0.8,
+  confederation: 0.85,
+  despotism: 1.05,
+};

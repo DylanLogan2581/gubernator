@@ -11,6 +11,7 @@ import { phaseEvents } from "./phases/phaseEvents.ts";
 import { phaseHomelessness } from "./phases/phaseHomelessness.ts";
 import { phaseLogsAndSnapshots } from "./phases/phaseLogsAndSnapshots.ts";
 import { phaseManagedPopulations } from "./phases/phaseManagedPopulations.ts";
+import { phaseNationalEconomy } from "./phases/phaseNationalEconomy.ts";
 import { phasePartnerships } from "./phases/phasePartnerships/index.ts";
 import { phasePassiveEffects } from "./phases/phasePassiveEffects.ts";
 import { phaseResourceDecay } from "./phases/phaseResourceDecay.ts";
@@ -208,6 +209,20 @@ export function runSimulation(
 
   const p6 = phaseTradeRoutes(context);
   applyDeltas(p6.stockpileDeltas);
+
+  // -------------------------------------------------------------------------
+  // Phase 6.5 — National Economy (tax collection in kind)
+  // -------------------------------------------------------------------------
+  // Tax base is gross production from jobs (p1) and deposits (p2) only, per
+  // the spec — not passive effects or managed populations. Runs before
+  // citizen consumption so consumption sees post-tax stockpiles.
+
+  const nationalEconomyProductionDeltas: StockpileDelta[] = [
+    ...p1.stockpileDeltas.filter((d) => d.delta > 0),
+    ...p2.stockpileDeltas.filter((d) => d.delta > 0),
+  ];
+  const p6dot5 = phaseNationalEconomy(context, nationalEconomyProductionDeltas);
+  applyDeltas(p6dot5.stockpileDeltas);
 
   // -------------------------------------------------------------------------
   // Phase 7 — Managed Populations
@@ -417,6 +432,7 @@ export function runSimulation(
     ...p2.stockpileDeltas.filter((d) => d.delta < 0),
     ...p3.stockpileDeltas,
     ...p4.stockpileDeltas,
+    ...p6dot5.stockpileDeltas,
     ...p7.stockpileDeltas.filter((d) => d.delta < 0),
     ...p8.stockpileDeltas,
     ...p12.stockpileDeltas.filter((d) => d.delta < 0),
@@ -450,6 +466,7 @@ export function runSimulation(
     ...p4.logs,
     ...p5.logs,
     ...p6.logs,
+    ...p6dot5.logs,
     ...p7.logs,
     ...p8.logs,
     ...filteredP9Logs,
@@ -480,6 +497,7 @@ export function runSimulation(
     ...p4.stockpileDeltas,
     ...p5.stockpileDeltas,
     ...p6.stockpileDeltas,
+    ...p6dot5.stockpileDeltas,
     ...p7.stockpileDeltas,
     ...p8.stockpileDeltas,
     ...p12.stockpileDeltas,
@@ -509,6 +527,8 @@ export function runSimulation(
     eventStatusPatches: p11.eventStatusPatches,
     logEntries,
     managedPopulationUpdates,
+    nationStockpileDeltas: p6dot5.nationStockpileDeltas,
+    nationTurnSnapshots: p6dot5.nationTurnSnapshots,
     notifications,
     partnershipChanges,
     readinessSummary: computeReadinessSummary(input),

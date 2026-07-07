@@ -128,6 +128,7 @@ export function makeNation(
   return {
     governmentType: "monarchy",
     name: "Testland",
+    taxRate: 0,
     ...overrides,
   };
 }

@@ -9,6 +9,7 @@ export const SIMULATION_PHASES = [
   "buildingUpkeep",
   "passiveEffects",
   "tradeRoutes",
+  "nationalEconomy",
   "managedPopulations",
   "citizenConsumption",
   "partnerships",
@@ -23,6 +24,7 @@ export type SimulationPhase = (typeof SIMULATION_PHASES)[number];
 export const LOG_CATEGORIES = {
   CONSTRUCTION: "construction",
   DEPOSIT_EXTRACTION: "depositExtraction",
+  ECONOMY: "economy",
   HOMELESSNESS: "homelessness",
   JOBS: "jobs",
   MANAGED_POPULATIONS: "managedPopulations",

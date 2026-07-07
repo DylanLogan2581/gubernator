@@ -1640,6 +1640,58 @@ export type Database = {
           },
         ];
       };
+      nation_turn_snapshots: {
+        Row: {
+          created_at: string;
+          id: string;
+          nation_id: string;
+          tax_collected_by_resource_json: Json;
+          turn_number: number;
+          turn_transition_id: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          nation_id: string;
+          tax_collected_by_resource_json?: Json;
+          turn_number: number;
+          turn_transition_id: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          nation_id?: string;
+          tax_collected_by_resource_json?: Json;
+          turn_number?: number;
+          turn_transition_id?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_turn_snapshots_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_turn_snapshots_transition_world_fkey";
+            columns: ["turn_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "nation_turn_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nations: {
         Row: {
           capital_settlement_id: string | null;
@@ -4005,6 +4057,15 @@ export type Database = {
       };
       internal_apply_turn_transition_log_entries_and_notifications: {
         Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
+        Returns: Record<string, unknown>;
+      };
+      internal_apply_turn_transition_nation_economy: {
+        Args: {
+          p_expected_turn_number: number;
+          p_payload: Json;
+          p_transition_id: string;
+          p_world_id: string;
+        };
         Returns: Record<string, unknown>;
       };
       internal_apply_turn_transition_settlement_snapshots: {

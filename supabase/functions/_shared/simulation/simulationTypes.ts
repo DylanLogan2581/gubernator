@@ -51,6 +51,7 @@ export type SimNation = {
   readonly governmentType: GovernmentType;
   readonly id: string;
   readonly name: string;
+  readonly taxRate: number;
 };
 
 export type SimNationOffice = {
@@ -583,6 +584,17 @@ export type ResourceSnapshot = {
   readonly turnNumber: number;
 };
 
+export type NationStockpileDelta = {
+  readonly delta: number;
+  readonly nationId: string;
+  readonly resourceId: string;
+};
+
+export type NationTurnSnapshot = {
+  readonly nationId: string;
+  readonly taxCollectedByResource: Readonly<Record<string, number>>;
+};
+
 export type ReadinessSummary = {
   readonly notReadySettlementCount: number;
   readonly readyPercentage: number;
@@ -602,6 +614,8 @@ export type SimulationResult = {
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
+  readonly nationStockpileDeltas: readonly NationStockpileDelta[];
+  readonly nationTurnSnapshots: readonly NationTurnSnapshot[];
   readonly notifications: readonly SimulationNotification[];
   readonly partnershipChanges: readonly PartnershipChange[];
   readonly readinessSummary: ReadinessSummary;

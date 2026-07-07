@@ -300,6 +300,7 @@ export function toSimNation(row: SupabaseNationRow): SimNation {
     governmentType: row.government_type as SimNation["governmentType"],
     id: row.id,
     name: row.name,
+    taxRate: row.tax_rate,
   };
 }
 
