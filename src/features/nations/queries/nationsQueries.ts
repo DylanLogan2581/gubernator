@@ -48,7 +48,6 @@ type NationRow = {
   readonly founded_turn_number: number | null;
   readonly government_type: string;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
   readonly nameset_id: string | null;
   readonly tax_rate: number;
@@ -69,7 +68,7 @@ type NationSettlementRow = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,is_hidden,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,created_at,updated_at";
+  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,created_at,updated_at";
 const NATION_SETTLEMENT_SELECT =
   "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner(name)";
 
@@ -188,7 +187,6 @@ function toNation(row: NationRow): Nation {
     foundedTurnNumber: row.founded_turn_number,
     governmentType: row.government_type as NationGovernmentType,
     id: row.id,
-    isHidden: row.is_hidden,
     name: row.name,
     namesetId: row.nameset_id,
     taxRate: row.tax_rate,

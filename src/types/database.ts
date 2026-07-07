@@ -1760,7 +1760,6 @@ export type Database = {
           founded_turn_number: number | null;
           government_type: string;
           id: string;
-          is_hidden: boolean;
           name: string;
           nameset_id: string | null;
           tax_rate: number;
@@ -1775,7 +1774,6 @@ export type Database = {
           founded_turn_number?: number | null;
           government_type?: string;
           id?: string;
-          is_hidden?: boolean;
           name: string;
           nameset_id?: string | null;
           tax_rate?: number;
@@ -1790,7 +1788,6 @@ export type Database = {
           founded_turn_number?: number | null;
           government_type?: string;
           id?: string;
-          is_hidden?: boolean;
           name?: string;
           nameset_id?: string | null;
           tax_rate?: number;
@@ -4343,6 +4340,7 @@ export type Database = {
         Args: { p_nation_id: string };
         Returns: boolean;
       };
+      nation_world_id: { Args: { p_nation_id: string }; Returns: string };
       nations_have_met: { Args: { a: string; b: string }; Returns: boolean };
       no_plan: { Args: never; Returns: boolean[] };
       num_failed: { Args: never; Returns: number };
@@ -4855,7 +4853,6 @@ export type Database = {
           founded_turn_number: number | null;
           government_type: string;
           id: string;
-          is_hidden: boolean;
           name: string;
           nameset_id: string | null;
           tax_rate: number;
@@ -4879,7 +4876,6 @@ export type Database = {
           founded_turn_number: number | null;
           government_type: string;
           id: string;
-          is_hidden: boolean;
           name: string;
           nameset_id: string | null;
           tax_rate: number;
@@ -4911,7 +4907,6 @@ export type Database = {
           founded_turn_number: number | null;
           government_type: string;
           id: string;
-          is_hidden: boolean;
           name: string;
           nameset_id: string | null;
           tax_rate: number;

@@ -89,14 +89,13 @@ from tmp_pools p;
 -- ---------------------------------------------------------------------------
 -- 3. Nations (3), each wired to its culture nameset.
 -- ---------------------------------------------------------------------------
-insert into public.nations (id, world_id, name, description, is_hidden, nameset_id)
+insert into public.nations (id, world_id, name, description, nameset_id)
 values
   (
     '00000000-0000-0000-0000-000000000201',
     '00000000-0000-0000-0000-000000000101',
     'Kingdom of Brammel',
     'Inland farming kingdom whose ledger-halls at Aldercross coordinate the grain rotation across the vale.',
-    false,
     '00000000-0000-0000-0000-000000000701'
   ),
   (
@@ -104,7 +103,6 @@ values
     '00000000-0000-0000-0000-000000000101',
     'Saltmarsh League of Caldhaven',
     'A league of coastal harbour-towns whose moots bargain over fishing rights, salt, and the long peace with Brammel.',
-    false,
     '00000000-0000-0000-0000-000000000702'
   ),
   (
@@ -112,9 +110,16 @@ values
     '00000000-0000-0000-0000-000000000101',
     'Highland Clans of Carrowmoor',
     'Highland clans of miners and herders whose old pacts with Brammel outlived their last reigning thane.',
-    false,
     '00000000-0000-0000-0000-000000000703'
   );
+
+-- All three nations already know each other at turn 0 (they hold standing
+-- alliances/agreements below), so every pair is pre-discovered.
+insert into public.nation_discoveries (id, world_id, nation_a_id, nation_b_id, met_at_turn_number)
+values
+  ('00000000-0000-0000-0004-000000000001','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000201','00000000-0000-0000-0000-000000000202',0),
+  ('00000000-0000-0000-0004-000000000002','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000201','00000000-0000-0000-0000-000000000203',0),
+  ('00000000-0000-0000-0004-000000000003','00000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000202','00000000-0000-0000-0000-000000000203',0);
 
 -- ---------------------------------------------------------------------------
 -- 4. Settlements (6). Readiness matrix: 301 manual-ready, 303 auto-ready,

@@ -17,7 +17,6 @@ export type Nation = {
   readonly foundedTurnNumber: number | null;
   readonly governmentType: NationGovernmentType;
   readonly id: string;
-  readonly isHidden: boolean;
   readonly name: string;
   readonly namesetId: string | null;
   readonly taxRate: number;

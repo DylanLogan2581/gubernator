@@ -285,7 +285,6 @@ function createNation(governmentType: NationGovernmentType): Nation {
     foundedTurnNumber: null,
     governmentType,
     id: "nation-1",
-    isHidden: false,
     name: "Ironhaven",
     namesetId: null,
     taxRate: 0,

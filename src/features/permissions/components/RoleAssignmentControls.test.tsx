@@ -425,7 +425,6 @@ function createNation(): Nation {
     foundedTurnNumber: null,
     governmentType: "monarchy",
     id: NATION_ID,
-    isHidden: false,
     name: "Aurelia",
     namesetId: null,
     taxRate: 0,

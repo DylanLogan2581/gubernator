@@ -108,6 +108,22 @@ values
     'PTR Nation C (World 2)'
   );
 
+-- propose_trade_route (#1086) rejects endpoints whose nations have not met.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'fc200000-0000-0000-0000-000000000001',
+    'fc300000-0000-0000-0000-000000000001',
+    'fc300000-0000-0000-0000-000000000002',
+    1
+  );
+
 insert into
   public.settlements (id, nation_id, name)
 values

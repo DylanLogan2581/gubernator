@@ -7,7 +7,6 @@ export { NationSectionRedirect } from "./components/NationDetailPage/NationSecti
 export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
 export { NationDetailsSection } from "./components/NationDetailPage/DetailsSection";
 export { NationFlagSection } from "./components/NationDetailPage/FlagSection";
-export { NationHiddenToggleSection } from "./components/NationDetailPage/HiddenToggleSection";
 export { NationIdentitySection } from "./components/NationDetailPage/IdentitySection";
 export { NationOfficesSection } from "./components/NationDetailPage/OfficesSection";
 export { NationReportsSection } from "./components/NationDetailPage/NationReportsSection";
@@ -27,7 +26,6 @@ export {
   isNationMutationError,
   setNationCapitalAndFoundedTurnMutationOptions,
   setNationGovernmentTypeMutationOptions,
-  setNationHiddenMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./mutations/nationsMutations";
 export {
@@ -88,7 +86,6 @@ export {
   deleteNationInputSchema,
   setNationCapitalAndFoundedTurnInputSchema,
   setNationGovernmentTypeInputSchema,
-  setNationHiddenInputSchema,
   updateNationDetailsInputSchema,
 } from "./schemas/nationSchemas";
 export {
@@ -107,8 +104,6 @@ export type {
   SetNationCapitalAndFoundedTurnValues,
   SetNationGovernmentTypeInput,
   SetNationGovernmentTypeValues,
-  SetNationHiddenInput,
-  SetNationHiddenValues,
   UpdateNationDetailsInput,
   UpdateNationDetailsValues,
 } from "./schemas/nationSchemas";

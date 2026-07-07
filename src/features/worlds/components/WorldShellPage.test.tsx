@@ -480,7 +480,6 @@ type TestNationRow = {
   readonly created_at: string;
   readonly description: string | null;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
   readonly nameset_id: string | null;
   readonly updated_at: string;
@@ -586,7 +585,6 @@ function createNationRow(
     created_at: "2026-01-01T00:00:00.000Z",
     description: null,
     id: "nation-1",
-    is_hidden: false,
     name: "Nation A",
     nameset_id: null,
     updated_at: "2026-01-01T00:00:00.000Z",

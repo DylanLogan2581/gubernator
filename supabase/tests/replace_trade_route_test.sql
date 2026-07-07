@@ -93,6 +93,22 @@ values
     'DD Destination Nation'
   );
 
+-- replace_trade_route (#1086) rejects endpoints whose nations have not met.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'dd200000-0000-0000-0000-000000000001',
+    'dd300000-0000-0000-0000-000000000001',
+    'dd300000-0000-0000-0000-000000000002',
+    1
+  );
+
 insert into
   public.settlements (id, nation_id, name)
 values

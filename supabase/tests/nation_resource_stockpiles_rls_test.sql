@@ -67,13 +67,12 @@ values
   );
 
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'd3000000-0000-0000-0000-000000000001',
     'd2000000-0000-0000-0000-000000000001',
-    'Stockpile Nation',
-    false
+    'Stockpile Nation'
   );
 
 insert into
@@ -140,13 +139,12 @@ select
 -- New nation inserted after the resource exists: nations_seed_stockpiles
 -- should seed a row for it too.
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'd3000000-0000-0000-0000-000000000002',
     'd2000000-0000-0000-0000-000000000001',
-    'Second Stockpile Nation',
-    false
+    'Second Stockpile Nation'
   );
 
 select

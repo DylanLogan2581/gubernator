@@ -103,20 +103,18 @@ describe("NationListPage", () => {
     expect(await screen.findByText("No nations yet")).toBeDefined();
   });
 
-  it("renders nation rows with a hidden badge when applicable", async () => {
+  it("renders nation rows", async () => {
     requireSupabaseClient.mockReturnValue(
       createClient({
         nationRows: [
           createNationRow({
             description: "A mountain realm.",
             id: "11111111-1111-1111-1111-111111111111",
-            is_hidden: false,
             name: "Highmark",
           }),
           createNationRow({
             description: null,
             id: "22222222-2222-2222-2222-222222222222",
-            is_hidden: true,
             name: "Veilreach",
           }),
         ],
@@ -133,7 +131,6 @@ describe("NationListPage", () => {
     ).toBeDefined();
     expect(screen.getByText("A mountain realm.")).toBeDefined();
     expect(screen.getByRole("heading", { name: "Veilreach" })).toBeDefined();
-    expect(screen.getByText("Hidden")).toBeDefined();
     expect(screen.getByText("No description.")).toBeDefined();
   });
 
@@ -144,7 +141,6 @@ describe("NationListPage", () => {
         nationRows: [
           createNationRow({
             id: nationId,
-            is_hidden: false,
             name: "Highmark",
           }),
         ],
@@ -161,33 +157,6 @@ describe("NationListPage", () => {
       "href",
       `/worlds/${worldId}/nations/${nationId}`,
     );
-  });
-
-  it("links hidden nations to the nation detail page", async () => {
-    const nationId = "22222222-2222-2222-2222-222222222222";
-    requireSupabaseClient.mockReturnValue(
-      createClient({
-        nationRows: [
-          createNationRow({
-            id: nationId,
-            is_hidden: true,
-            name: "Veilreach",
-          }),
-        ],
-        session: { user: { id: "user-1" } },
-        adminRows: [{ world_id: worldId }],
-        worldRows: [createWorldRow({ id: worldId })],
-      }),
-    );
-
-    renderPage();
-
-    const link = await screen.findByRole("link", { name: /Veilreach/ });
-    expect(link).toHaveAttribute(
-      "href",
-      `/worlds/${worldId}/nations/${nationId}`,
-    );
-    expect(screen.getByText("Hidden")).toBeDefined();
   });
 
   it("shows the Create nation control for world admins", async () => {
@@ -400,7 +369,6 @@ type TestNationRow = {
   readonly description: string | null;
   readonly government_type?: string;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
   readonly updated_at: string;
   readonly world_id: string;
@@ -531,7 +499,6 @@ function createNationRow(
     description: null,
     government_type: "monarchy",
     id: "00000000-0000-0000-0000-0000000000aa",
-    is_hidden: false,
     name: "Nation",
     updated_at: "2026-01-02T00:00:00.000Z",
     world_id: worldId,

@@ -120,7 +120,6 @@ function createNation(overrides: Partial<Nation> = {}): Nation {
     foundedTurnNumber: null,
     governmentType: "monarchy",
     id: NATION_ID,
-    isHidden: false,
     name: "Aldoria",
     namesetId: null,
     taxRate: 0,

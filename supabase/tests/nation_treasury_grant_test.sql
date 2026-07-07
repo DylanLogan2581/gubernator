@@ -79,25 +79,22 @@ values
   );
 
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'f3000000-0000-0000-0000-000000000001',
     'f2000000-0000-0000-0000-000000000001',
-    'Treasury Nation',
-    false
+    'Treasury Nation'
   ),
   (
     'f3000000-0000-0000-0000-000000000002',
     'f2000000-0000-0000-0000-000000000002',
-    'Archived Treasury Nation',
-    false
+    'Archived Treasury Nation'
   ),
   (
     'f3000000-0000-0000-0000-000000000003',
     'f2000000-0000-0000-0000-000000000001',
-    'Other Treasury Nation',
-    false
+    'Other Treasury Nation'
   );
 
 insert into

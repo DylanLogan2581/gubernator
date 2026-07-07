@@ -10,7 +10,6 @@ import {
   isNationMutationError,
   NationMutationError,
   setNationCapitalAndFoundedTurnMutationOptions,
-  setNationHiddenMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./nationsMutations";
 
@@ -25,7 +24,6 @@ type NationRow = {
   readonly founded_turn_number?: number | null;
   readonly government_type?: string;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
   readonly tax_rate?: number;
   readonly updated_at: string;
@@ -64,7 +62,6 @@ describe("createNationMutationOptions", () => {
 
     const result = await executeMutation(queryClient, options, {
       description: "  desc  ",
-      isHidden: false,
       name: "  Aldoria  ",
       worldId: WORLD_ID,
     });
@@ -73,7 +70,6 @@ describe("createNationMutationOptions", () => {
     expect(calls.from).toHaveBeenCalledWith("nations");
     expect(calls.insert).toHaveBeenCalledWith({
       description: "desc",
-      is_hidden: false,
       name: "Aldoria",
       world_id: WORLD_ID,
     });
@@ -254,75 +250,6 @@ describe("updateNationDetailsMutationOptions", () => {
     await expect(
       executeMutation(queryClient, options, {
         name: "Aldoria",
-        nationId: NATION_ID,
-        worldId: WORLD_ID,
-      }),
-    ).rejects.toBeInstanceOf(AuthUiError);
-  });
-});
-
-describe("setNationHiddenMutationOptions", () => {
-  it("rejects missing isHidden before touching the Supabase client", async () => {
-    const from = vi.fn();
-    const client = { from } as unknown as GubernatorSupabaseClient;
-    const queryClient = createQueryClient();
-    const options = setNationHiddenMutationOptions({ client, queryClient });
-
-    await expect(
-      executeMutation(queryClient, options, {
-        isHidden: "yes",
-        nationId: NATION_ID,
-        worldId: WORLD_ID,
-      }),
-    ).rejects.toMatchObject({ code: "nation_input_invalid" });
-    expect(from).not.toHaveBeenCalled();
-  });
-
-  it("updates is_hidden, scoped by id and world", async () => {
-    const row = createNationRow({ is_hidden: true });
-    const { client, calls } = createUpdateClient({ data: row, error: null });
-    const queryClient = createQueryClient();
-    const options = setNationHiddenMutationOptions({ client, queryClient });
-
-    const result = await executeMutation(queryClient, options, {
-      isHidden: true,
-      nationId: NATION_ID,
-      worldId: WORLD_ID,
-    });
-
-    expect(result).toMatchObject({ id: NATION_ID, isHidden: true });
-    expect(calls.from).toHaveBeenCalledWith("nations");
-    expect(calls.update).toHaveBeenCalledWith({ is_hidden: true });
-    expect(calls.eqId).toHaveBeenCalledWith("id", NATION_ID);
-    expect(calls.eqWorld).toHaveBeenCalledWith("world_id", WORLD_ID);
-    expect(options.mutationKey).toEqual(["nations", "set-nation-hidden"]);
-  });
-
-  it("raises nation_not_found when update returns no row", async () => {
-    const { client } = createUpdateClient({ data: null, error: null });
-    const queryClient = createQueryClient();
-    const options = setNationHiddenMutationOptions({ client, queryClient });
-
-    await expect(
-      executeMutation(queryClient, options, {
-        isHidden: false,
-        nationId: NATION_ID,
-        worldId: WORLD_ID,
-      }),
-    ).rejects.toMatchObject({ code: "nation_not_found" });
-  });
-
-  it("normalizes Supabase errors", async () => {
-    const { client } = createUpdateClient({
-      data: null,
-      error: { code: "42501", message: "permission denied" },
-    });
-    const queryClient = createQueryClient();
-    const options = setNationHiddenMutationOptions({ client, queryClient });
-
-    await expect(
-      executeMutation(queryClient, options, {
-        isHidden: false,
         nationId: NATION_ID,
         worldId: WORLD_ID,
       }),
@@ -545,7 +472,6 @@ function createNationRow(overrides: Partial<NationRow> = {}): NationRow {
     description: null,
     government_type: "monarchy",
     id: NATION_ID,
-    is_hidden: false,
     name: "Aldoria",
     tax_rate: 0,
     updated_at: "2026-05-01T00:00:00.000Z",

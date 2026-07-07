@@ -80,25 +80,22 @@ values
   );
 
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     '66000000-0000-0000-0000-000000000001',
     '65000000-0000-0000-0000-000000000001',
-    'Nation A',
-    false
+    'Nation A'
   ),
   (
     '66000000-0000-0000-0000-000000000002',
     '65000000-0000-0000-0000-000000000001',
-    'Nation B',
-    false
+    'Nation B'
   ),
   (
     '66000000-0000-0000-0000-000000000003',
     '65000000-0000-0000-0000-000000000002',
-    'Archived Nation',
-    false
+    'Archived Nation'
   );
 
 insert into

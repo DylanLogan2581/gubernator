@@ -36,7 +36,6 @@ export const createNationInputSchema = z.strictObject({
   description: optionalNationDescriptionSchema,
   foundedTurnNumber: optionalFoundedTurnNumberSchema,
   governmentType: nationGovernmentTypeSchema.optional(),
-  isHidden: z.boolean().optional(),
   name: nationNameSchema,
   worldId: worldIdSchema,
 });
@@ -44,12 +43,6 @@ export const createNationInputSchema = z.strictObject({
 export const updateNationDetailsInputSchema = z.strictObject({
   description: optionalNationDescriptionSchema,
   name: nationNameSchema,
-  nationId: nationIdSchema,
-  worldId: worldIdSchema,
-});
-
-export const setNationHiddenInputSchema = z.strictObject({
-  isHidden: z.boolean(),
   nationId: nationIdSchema,
   worldId: worldIdSchema,
 });
@@ -80,8 +73,6 @@ export type UpdateNationDetailsInput = z.input<
 export type UpdateNationDetailsValues = z.output<
   typeof updateNationDetailsInputSchema
 >;
-export type SetNationHiddenInput = z.input<typeof setNationHiddenInputSchema>;
-export type SetNationHiddenValues = z.output<typeof setNationHiddenInputSchema>;
 export type SetNationGovernmentTypeInput = z.input<
   typeof setNationGovernmentTypeInputSchema
 >;

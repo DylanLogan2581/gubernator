@@ -5,7 +5,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Landmark, LockKeyhole, Plus } from "lucide-react";
+import { ArrowRight, Landmark, Plus } from "lucide-react";
 import { useState, type FormEvent, type JSX, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -229,12 +229,6 @@ function NationListItem({
             <span className="inline-flex items-center rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {formatNationGovernmentType(nation.governmentType)}
             </span>
-            {nation.isHidden ? (
-              <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                <LockKeyhole className="size-3" aria-hidden="true" />
-                Hidden
-              </span>
-            ) : null}
           </div>
           {descriptionPreview === null ? (
             <p className="text-sm italic text-muted-foreground">

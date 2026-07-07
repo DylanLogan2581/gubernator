@@ -122,23 +122,22 @@ values
     'b1000000-0000-0000-0000-000000000003'
   );
 
--- Two nations in W1: N1 (visible) and N2 (hidden). N1 hosts settlement S1
--- where the Nation Manager and Settlement Manager PCs live; N2 has no
--- player_character so the manager users cannot see it via the PC path.
+-- Two nations in W1: N1 and N2. N1 hosts settlement S1 where the Nation
+-- Manager and Settlement Manager PCs live; N2 has no player_character and no
+-- nation_discoveries row with N1, so the manager users cannot see it via
+-- either the PC path or the have-met path (#1086).
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'b3000000-0000-0000-0000-00000000000a',
     'b2000000-0000-0000-0000-000000000001',
-    'Nation N1',
-    false
+    'Nation N1'
   ),
   (
     'b3000000-0000-0000-0000-00000000000b',
     'b2000000-0000-0000-0000-000000000001',
-    'Nation N2 (hidden)',
-    true
+    'Nation N2 (unmet)'
   );
 
 insert into
@@ -625,7 +624,7 @@ reset role;
 -- ===========================================================================
 -- nation_visible_to_current_user(nation_id)
 -- ===========================================================================
--- Exercises the hidden nation N2: the Nation Manager and Settlement Manager
+-- Exercises the unmet nation N2: the Nation Manager and Settlement Manager
 -- PCs live in N1, so the player-character branch of the helper does not
 -- admit them to N2. Only super admin and world admin pass.
 set
@@ -638,7 +637,7 @@ select
   is (
     public.nation_visible_to_current_user ('b3000000-0000-0000-0000-00000000000b'),
     true,
-    'nation_visible_to_current_user: super admin sees hidden nations'
+    'nation_visible_to_current_user: super admin sees unmet nations'
   );
 
 reset role;
@@ -653,7 +652,7 @@ select
   is (
     public.nation_visible_to_current_user ('b3000000-0000-0000-0000-00000000000b'),
     true,
-    'nation_visible_to_current_user: world admin sees hidden nations in their world'
+    'nation_visible_to_current_user: world admin sees unmet nations in their world'
   );
 
 reset role;
@@ -668,7 +667,7 @@ select
   is (
     public.nation_visible_to_current_user ('b3000000-0000-0000-0000-00000000000b'),
     false,
-    'nation_visible_to_current_user: Nation Manager cannot see a hidden nation outside their PC settlement'
+    'nation_visible_to_current_user: Nation Manager cannot see an unmet nation outside their PC settlement'
   );
 
 reset role;
@@ -683,7 +682,7 @@ select
   is (
     public.nation_visible_to_current_user ('b3000000-0000-0000-0000-00000000000b'),
     false,
-    'nation_visible_to_current_user: Settlement Manager cannot see a hidden nation outside their PC settlement'
+    'nation_visible_to_current_user: Settlement Manager cannot see an unmet nation outside their PC settlement'
   );
 
 reset role;
@@ -698,7 +697,7 @@ select
   is (
     public.nation_visible_to_current_user ('b3000000-0000-0000-0000-00000000000b'),
     false,
-    'nation_visible_to_current_user: unrelated user cannot see hidden nations'
+    'nation_visible_to_current_user: unrelated user cannot see unmet nations'
   );
 
 reset role;

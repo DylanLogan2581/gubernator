@@ -154,7 +154,6 @@ function createNationsBuilder(
     world_id: "world-1",
     name: row.name,
     description: null,
-    is_hidden: false,
     nameset_id: null,
     capital_settlement_id: null,
     founded_turn_number: null,

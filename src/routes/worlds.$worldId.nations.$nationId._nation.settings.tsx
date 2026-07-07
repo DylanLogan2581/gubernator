@@ -4,7 +4,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { NationNamesetCard } from "@/features/namesets";
 import {
   NationDeleteSection,
-  NationHiddenToggleSection,
   NationSectionRedirect,
   useNationDetailContext,
 } from "@/features/nations";
@@ -14,14 +13,8 @@ import type { JSX } from "react";
 
 function NationSettingsRoute(): JSX.Element {
   const queryClient = useQueryClient();
-  const {
-    canDelete,
-    canToggleHidden,
-    effectiveCanAdmin,
-    nation,
-    worldAccess,
-    worldId,
-  } = useNationDetailContext();
+  const { canDelete, effectiveCanAdmin, nation, worldAccess, worldId } =
+    useNationDetailContext();
 
   // A true non-admin has no authority here at all — send them back to the
   // overview rather than an empty/error page.
@@ -38,10 +31,6 @@ function NationSettingsRoute(): JSX.Element {
 
   return (
     <>
-      {canToggleHidden ? (
-        <NationHiddenToggleSection nation={nation} queryClient={queryClient} />
-      ) : null}
-
       <NationNamesetCard
         canAdmin={effectiveCanAdmin}
         currentNamesetId={nation.namesetId}

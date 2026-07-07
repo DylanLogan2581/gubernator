@@ -2,9 +2,10 @@
 -- Run with: npx supabase test db
 --
 -- Read visibility chains through settlements → nations: a route is visible
--- when either endpoint settlement's nation is visible to the caller. Hidden
--- nations stay private to super admins, world admins, and users whose player
--- character settlement belongs to that nation.
+-- only when BOTH endpoint settlements' nations are visible to the caller
+-- (nation_visible_to_current_user: super admin, world admin, own-PC-in-nation,
+-- or the caller's nation having met the endpoint nation via nation_discoveries,
+-- #1086).
 --
 -- Writes: INSERT (propose) is open to world admins and nation managers on
 -- either side. Direct UPDATE of approval columns, status, and
@@ -122,34 +123,46 @@ values
     'c1000000-0000-0000-0000-000000000002'
   );
 
--- Two visible nations for the main route, two hidden nations for the
--- hidden-pair visibility test.
+-- Origin and Destination nations have met (nation_discoveries below), so a
+-- route between them is visible. TR Unmet Nation A/B have met neither each
+-- other nor Origin/Destination, exercising the unmet-pair visibility test.
 insert into
-  public.nations (id, world_id, name, is_hidden)
+  public.nations (id, world_id, name)
 values
   (
     'c3000000-0000-0000-0000-000000000001',
     'c2000000-0000-0000-0000-000000000001',
-    'TR Origin Nation',
-    false
+    'TR Origin Nation'
   ),
   (
     'c3000000-0000-0000-0000-000000000002',
     'c2000000-0000-0000-0000-000000000001',
-    'TR Destination Nation',
-    false
+    'TR Destination Nation'
   ),
   (
     'c3000000-0000-0000-0000-000000000003',
     'c2000000-0000-0000-0000-000000000001',
-    'TR Hidden Nation A',
-    true
+    'TR Unmet Nation A'
   ),
   (
     'c3000000-0000-0000-0000-000000000004',
     'c2000000-0000-0000-0000-000000000001',
-    'TR Hidden Nation B',
-    true
+    'TR Unmet Nation B'
+  );
+
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'c2000000-0000-0000-0000-000000000001',
+    'c3000000-0000-0000-0000-000000000001',
+    'c3000000-0000-0000-0000-000000000002',
+    1
   );
 
 insert into
@@ -234,7 +247,25 @@ values
     'c3000000-0000-0000-0000-000000000002'
   );
 
--- Seed a visible route and a hidden-pair route as postgres (bypasses RLS and
+-- nation_visible_to_current_user's have-met arm (#1086) resolves the
+-- caller's own nation via their ACTIVE player_character, so both managers
+-- need an active selection for the destination/origin nation (respectively)
+-- to become visible to them via the met-pair discovery below.
+insert into
+  public.user_active_player_characters (user_id, world_id, citizen_id)
+values
+  (
+    'c1000000-0000-0000-0000-000000000003',
+    'c2000000-0000-0000-0000-000000000001',
+    'c6000000-0000-0000-0000-000000000001'
+  ),
+  (
+    'c1000000-0000-0000-0000-000000000004',
+    'c2000000-0000-0000-0000-000000000001',
+    'c6000000-0000-0000-0000-000000000002'
+  );
+
+-- Seed a met-pair route and an unmet-pair route as postgres (bypasses RLS and
 -- column grants) so read tests have rows to target.
 insert into
   public.trade_routes (
@@ -256,7 +287,7 @@ values
     'pending',
     'pending'
   ),
-  -- Route between the two hidden nations: invisible to anyone without
+  -- Route between the two unmet nations: invisible to anyone without
   -- privileged access to both nations.
   (
     'c7000000-0000-0000-0000-000000000002',
@@ -382,10 +413,10 @@ select
 reset role;
 
 -- ===========================================================================
--- HIDDEN PAIR: the origin nation manager cannot read a route when both
--- endpoint nations are hidden. The manager has world access via their PC in
--- the visible origin nation but holds no privileged path into the two hidden
--- nations, so neither arm of the SELECT policy matches.
+-- UNMET PAIR: the origin nation manager cannot read a route when both
+-- endpoint nations are unmet by their own nation. The manager has a PC in the
+-- origin nation but that nation has not met either endpoint nation of this
+-- route, so neither arm of the SELECT policy matches.
 -- ===========================================================================
 set
   local role authenticated;
@@ -403,7 +434,7 @@ select
       where
         id = 'c7000000-0000-0000-0000-000000000002'
     ),
-    'origin nation manager cannot read a route when both endpoint nations are hidden'
+    'origin nation manager cannot read a route when both endpoint nations are unmet'
   );
 
 reset role;

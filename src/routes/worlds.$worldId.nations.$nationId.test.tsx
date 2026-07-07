@@ -115,7 +115,6 @@ type TestNationRow = {
   readonly created_at: string;
   readonly description: string | null;
   readonly id: string;
-  readonly is_hidden: boolean;
   readonly name: string;
   readonly nameset_id: string | null;
   readonly updated_at: string;
@@ -182,7 +181,6 @@ function createNationRow(
     created_at: "2026-01-01T00:00:00.000Z",
     description: null,
     id: NATION_ID,
-    is_hidden: false,
     name: "Highmark",
     nameset_id: null,
     updated_at: "2026-01-02T00:00:00.000Z",
@@ -682,7 +680,7 @@ describe("nation detail route", () => {
       ).toBeDefined();
     });
 
-    it("renders the hidden toggle, nameset card, and delete section for admins at /settings", async () => {
+    it("renders the nameset card and delete section for admins at /settings", async () => {
       requireSupabaseClient.mockReturnValue(
         createClient({
           adminRows: [{ world_id: WORLD_ID }],
@@ -692,7 +690,6 @@ describe("nation detail route", () => {
       renderAt(`${BASE_PATH}/settings`);
       await screen.findByRole("heading", { level: 1, name: "Highmark" });
 
-      expect(screen.getByRole("button", { name: /Hide nation/ })).toBeDefined();
       expect(screen.getByTestId("nameset-card")).toBeDefined();
       expect(
         screen.getByRole("button", { name: "Delete nation" }),
