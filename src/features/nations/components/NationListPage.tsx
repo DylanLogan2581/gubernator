@@ -45,6 +45,8 @@ import {
 } from "../mutations/nationsMutations";
 import { nationsListQueryOptions } from "../queries/nationsQueries";
 
+import { NationFlagAvatar } from "./NationFlagAvatar";
+
 import type { Nation } from "../types/nationTypes";
 
 type NationListPageProps = {
@@ -210,8 +212,13 @@ function NationListItem({
       <Link
         to="/worlds/$worldId/nations/$nationId"
         params={{ nationId: nation.id, worldId }}
-        className="grid grid-cols-[1fr_auto] items-center gap-4 p-4 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="grid grid-cols-[auto_1fr_auto] items-center gap-4 p-4 transition-colors hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
+        <NationFlagAvatar
+          className="size-10 shrink-0"
+          flagPath={nation.flagPath}
+          nationId={nation.id}
+        />
         <div className="grid min-w-0 gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h2 className="truncate text-base font-medium">{nation.name}</h2>

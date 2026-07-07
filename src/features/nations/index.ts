@@ -5,12 +5,14 @@ export { useNationDetailContext } from "./components/NationDetailPage/NationDeta
 export { NationSectionRedirect } from "./components/NationDetailPage/NationSectionRedirect";
 export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
 export { NationDetailsSection } from "./components/NationDetailPage/DetailsSection";
+export { NationFlagSection } from "./components/NationDetailPage/FlagSection";
 export { NationHiddenToggleSection } from "./components/NationDetailPage/HiddenToggleSection";
 export { NationIdentitySection } from "./components/NationDetailPage/IdentitySection";
 export { NationReportsSection } from "./components/NationDetailPage/NationReportsSection";
 export { NationRelationshipsSection } from "./components/NationDetailPage/RelationshipsSection";
 export { NationRoleAssignmentSection } from "./components/NationDetailPage/RoleAssignmentSection";
 export { NationSettlementsSection } from "./components/NationDetailPage/SettlementsSection";
+export { NationFlagAvatar } from "./components/NationFlagAvatar";
 export { NationListPage } from "./components/NationListPage";
 export { NationOverviewCharts } from "./components/NationOverviewCharts";
 export { NationOverviewStatTiles } from "./components/NationOverviewStatTiles";
@@ -24,6 +26,11 @@ export {
   updateNationDetailsMutationOptions,
 } from "./mutations/nationsMutations";
 export {
+  nationFlagPath,
+  removeNationFlagMutationOptions,
+  uploadNationFlagMutationOptions,
+} from "./mutations/nationImageMutations";
+export {
   NationRelationshipMutationError,
   isNationRelationshipMutationError,
   proposeBilateralMutationOptions,
@@ -36,6 +43,10 @@ export {
   nationSettlementsQueryOptions,
   nationsListQueryOptions,
 } from "./queries/nationsQueries";
+export {
+  NATION_IMAGES_BUCKET,
+  useNationImageSignedUrl,
+} from "./queries/nationImageQueries";
 export {
   nationRelationshipPairQueryOptions,
   nationRelationshipsFromNationQueryOptions,

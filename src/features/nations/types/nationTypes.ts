@@ -2,6 +2,7 @@ export type Nation = {
   readonly capitalSettlementId: string | null;
   readonly createdAt: string;
   readonly description: string | null;
+  readonly flagPath: string | null;
   readonly foundedTurnNumber: number | null;
   readonly id: string;
   readonly isHidden: boolean;

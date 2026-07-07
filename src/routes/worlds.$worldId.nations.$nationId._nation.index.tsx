@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ActiveEventsCard } from "@/features/events";
 import {
   NationDetailsSection,
+  NationFlagSection,
   NationIdentitySection,
   NationOverviewCharts,
   NationOverviewStatTiles,
@@ -32,6 +33,12 @@ function NationOverviewRoute(): JSX.Element {
         isArchived={isArchived}
         nation={nation}
         queryClient={queryClient}
+      />
+
+      <NationFlagSection
+        canAdminWorld={effectiveCanAdmin}
+        isArchived={isArchived}
+        nation={nation}
       />
 
       <NationOverviewCharts

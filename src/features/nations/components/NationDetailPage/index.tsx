@@ -19,6 +19,7 @@ import {
 import { getErrorDescription } from "@/lib/errorUtils";
 
 import { nationByIdQueryOptions } from "../../queries/nationsQueries";
+import { NationFlagAvatar } from "../NationFlagAvatar";
 
 import { NationDetailContext } from "./NationDetailContext";
 import { NationDetailFrame } from "./NationDetailFrame";
@@ -247,22 +248,29 @@ function NationDetailLoaded({
   return (
     <NationDetailFrame worldId={worldId}>
       <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-normal">
-              {nation.name}
-            </h1>
-            {nation.isHidden ? (
-              <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                <LockKeyhole className="size-3" aria-hidden="true" />
-                Hidden
-              </span>
-            ) : null}
+        <div className="flex min-w-0 items-start gap-3">
+          <NationFlagAvatar
+            className="size-12 shrink-0"
+            flagPath={nation.flagPath}
+            nationId={nation.id}
+          />
+          <div className="min-w-0 space-y-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-normal">
+                {nation.name}
+              </h1>
+              {nation.isHidden ? (
+                <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  <LockKeyhole className="size-3" aria-hidden="true" />
+                  Hidden
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Nation in{" "}
+              <span className="font-medium">{worldAccess.header.name}</span>.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Nation in{" "}
-            <span className="font-medium">{worldAccess.header.name}</span>.
-          </p>
         </div>
       </header>
 

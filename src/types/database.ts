@@ -1440,6 +1440,7 @@ export type Database = {
           capital_settlement_id: string | null;
           created_at: string;
           description: string | null;
+          flag_path: string | null;
           founded_turn_number: number | null;
           id: string;
           is_hidden: boolean;
@@ -1452,6 +1453,7 @@ export type Database = {
           capital_settlement_id?: string | null;
           created_at?: string;
           description?: string | null;
+          flag_path?: string | null;
           founded_turn_number?: number | null;
           id?: string;
           is_hidden?: boolean;
@@ -1464,6 +1466,7 @@ export type Database = {
           capital_settlement_id?: string | null;
           created_at?: string;
           description?: string | null;
+          flag_path?: string | null;
           founded_turn_number?: number | null;
           id?: string;
           is_hidden?: boolean;
@@ -3924,6 +3927,7 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      nation_images_path_nation_id: { Args: { name: string }; Returns: string };
       nation_visible_to_current_user: {
         Args: { p_nation_id: string };
         Returns: boolean;
@@ -4431,6 +4435,29 @@ export type Database = {
           capital_settlement_id: string | null;
           created_at: string;
           description: string | null;
+          flag_path: string | null;
+          founded_turn_number: number | null;
+          id: string;
+          is_hidden: boolean;
+          name: string;
+          nameset_id: string | null;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "nations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      set_nation_flag_path: {
+        Args: { p_flag_path: string; p_nation_id: string };
+        Returns: {
+          capital_settlement_id: string | null;
+          created_at: string;
+          description: string | null;
+          flag_path: string | null;
           founded_turn_number: number | null;
           id: string;
           is_hidden: boolean;
