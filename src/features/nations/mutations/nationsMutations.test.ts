@@ -122,6 +122,50 @@ describe("createNationMutationOptions", () => {
       }),
     ).rejects.toBeInstanceOf(AuthUiError);
   });
+
+  it("sets the founded turn via RPC after insert when foundedTurnNumber is provided", async () => {
+    const insertedRow = createNationRow();
+    const rpcRow = createNationRow({ founded_turn_number: 3 });
+    const { client, calls } = createInsertAndRpcClient({
+      insertResult: { data: insertedRow, error: null },
+      rpcResult: { data: rpcRow, error: null },
+    });
+    const queryClient = createQueryClient();
+    const options = createNationMutationOptions({ client, queryClient });
+
+    const result = await executeMutation(queryClient, options, {
+      foundedTurnNumber: 3,
+      name: "Aldoria",
+      worldId: WORLD_ID,
+    });
+
+    expect(result).toMatchObject({ foundedTurnNumber: 3, id: NATION_ID });
+    expect(calls.rpc).toHaveBeenCalledWith(
+      "set_nation_capital_and_founded_turn",
+      {
+        p_capital_settlement_id: null,
+        p_founded_turn_number: 3,
+        p_nation_id: NATION_ID,
+      },
+    );
+  });
+
+  it("does not call the RPC when foundedTurnNumber is omitted", async () => {
+    const row = createNationRow();
+    const { client, calls } = createInsertAndRpcClient({
+      insertResult: { data: row, error: null },
+      rpcResult: { data: row, error: null },
+    });
+    const queryClient = createQueryClient();
+    const options = createNationMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      name: "Aldoria",
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.rpc).not.toHaveBeenCalled();
+  });
 });
 
 describe("updateNationDetailsMutationOptions", () => {
@@ -525,6 +569,32 @@ function createInsertClient(result: SupabaseResult<NationRow>): {
   return {
     client: { from } as unknown as GubernatorSupabaseClient,
     calls: { from, insert },
+  };
+}
+
+function createInsertAndRpcClient({
+  insertResult,
+  rpcResult,
+}: {
+  readonly insertResult: SupabaseResult<NationRow>;
+  readonly rpcResult: SupabaseResult<NationRow>;
+}): {
+  readonly client: GubernatorSupabaseClient;
+  readonly calls: {
+    readonly from: ReturnType<typeof vi.fn>;
+    readonly insert: ReturnType<typeof vi.fn>;
+    readonly rpc: ReturnType<typeof vi.fn>;
+  };
+} {
+  const insertMaybeSingle = vi.fn().mockResolvedValue(insertResult);
+  const select = vi.fn(() => ({ maybeSingle: insertMaybeSingle }));
+  const insert = vi.fn(() => ({ select }));
+  const from = vi.fn(() => ({ insert }));
+  const rpcMaybeSingle = vi.fn().mockResolvedValue(rpcResult);
+  const rpc = vi.fn(() => ({ maybeSingle: rpcMaybeSingle }));
+  return {
+    client: { from, rpc } as unknown as GubernatorSupabaseClient,
+    calls: { from, insert, rpc },
   };
 }
 

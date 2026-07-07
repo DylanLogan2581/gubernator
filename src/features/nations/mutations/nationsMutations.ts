@@ -229,6 +229,23 @@ async function createNation(
     });
   }
 
+  // founded_turn_number is not directly insertable (grant insert list omits
+  // it, mirroring capital_settlement_id — see
+  // restrict_child_domain_writes/add_nation_capital_and_founded_turn), so it
+  // is set via the same RPC the Identity card edit control uses, right after
+  // the row exists.
+  if (
+    values.foundedTurnNumber !== undefined &&
+    values.foundedTurnNumber !== null
+  ) {
+    return setNationCapitalAndFoundedTurn(client, {
+      capitalSettlementId: null,
+      foundedTurnNumber: values.foundedTurnNumber,
+      nationId: data.id,
+      worldId: data.world_id,
+    });
+  }
+
   return toNation(data);
 }
 

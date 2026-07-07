@@ -251,7 +251,11 @@ function CreateNationSection({
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [foundedTurnNumber, setFoundedTurnNumber] = useState("");
   const [nameError, setNameError] = useState<string | undefined>(undefined);
+  const [foundedTurnError, setFoundedTurnError] = useState<string | undefined>(
+    undefined,
+  );
 
   const createMutation = useMutation(
     createNationMutationOptions({ queryClient }),
@@ -260,7 +264,9 @@ function CreateNationSection({
   function resetForm(): void {
     setName("");
     setDescription("");
+    setFoundedTurnNumber("");
     setNameError(undefined);
+    setFoundedTurnError(undefined);
     createMutation.reset();
   }
 
@@ -272,6 +278,7 @@ function CreateNationSection({
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     setNameError(undefined);
+    setFoundedTurnError(undefined);
     createMutation.reset();
 
     const trimmedName = name.trim();
@@ -280,9 +287,23 @@ function CreateNationSection({
       return;
     }
 
+    const trimmedFoundedTurn = foundedTurnNumber.trim();
+    let parsedFoundedTurn: number | null = null;
+    if (trimmedFoundedTurn.length > 0) {
+      const parsed = Number(trimmedFoundedTurn);
+      if (!Number.isInteger(parsed) || parsed < 0) {
+        setFoundedTurnError(
+          "Founded turn must be a whole number, 0 or greater.",
+        );
+        return;
+      }
+      parsedFoundedTurn = parsed;
+    }
+
     createMutation.mutate(
       {
         description: description.trim().length === 0 ? null : description,
+        foundedTurnNumber: parsedFoundedTurn,
         name,
         worldId,
       },
@@ -359,6 +380,40 @@ function CreateNationSection({
                 value={description}
                 onChange={(event) => setDescription(event.currentTarget.value)}
               />
+            </Label>
+            <Label
+              className="grid gap-1 text-sm"
+              htmlFor="nation-create-founded-turn"
+            >
+              <span className="text-muted-foreground">
+                Founded turn (optional)
+              </span>
+              <Input
+                aria-invalid={foundedTurnError === undefined ? undefined : true}
+                aria-describedby={
+                  foundedTurnError === undefined
+                    ? undefined
+                    : "nation-founded-turn-error"
+                }
+                id="nation-create-founded-turn"
+                inputMode="numeric"
+                value={foundedTurnNumber}
+                onChange={(event) => {
+                  setFoundedTurnNumber(event.currentTarget.value);
+                  if (foundedTurnError !== undefined) {
+                    setFoundedTurnError(undefined);
+                  }
+                }}
+              />
+              {foundedTurnError === undefined ? null : (
+                <p
+                  id="nation-founded-turn-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {foundedTurnError}
+                </p>
+              )}
             </Label>
             <DialogFooter>
               <Button

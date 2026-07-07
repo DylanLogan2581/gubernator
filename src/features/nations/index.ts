@@ -6,6 +6,7 @@ export { NationSectionRedirect } from "./components/NationDetailPage/NationSecti
 export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
 export { NationDetailsSection } from "./components/NationDetailPage/DetailsSection";
 export { NationHiddenToggleSection } from "./components/NationDetailPage/HiddenToggleSection";
+export { NationIdentitySection } from "./components/NationDetailPage/IdentitySection";
 export { NationReportsSection } from "./components/NationDetailPage/NationReportsSection";
 export { NationRelationshipsSection } from "./components/NationDetailPage/RelationshipsSection";
 export { NationRoleAssignmentSection } from "./components/NationDetailPage/RoleAssignmentSection";

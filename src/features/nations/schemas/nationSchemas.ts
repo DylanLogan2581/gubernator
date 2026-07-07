@@ -25,8 +25,12 @@ const optionalNationDescriptionSchema = z
   .union([nationDescriptionSchema, z.null()])
   .optional();
 
+const foundedTurnNumberSchema = z.union([z.int().min(0), z.null()]);
+const optionalFoundedTurnNumberSchema = foundedTurnNumberSchema.optional();
+
 export const createNationInputSchema = z.strictObject({
   description: optionalNationDescriptionSchema,
+  foundedTurnNumber: optionalFoundedTurnNumberSchema,
   isHidden: z.boolean().optional(),
   name: nationNameSchema,
   worldId: worldIdSchema,
@@ -47,7 +51,7 @@ export const setNationHiddenInputSchema = z.strictObject({
 
 export const setNationCapitalAndFoundedTurnInputSchema = z.strictObject({
   capitalSettlementId: z.union([z.guid(), z.null()]),
-  foundedTurnNumber: z.union([z.int().min(0), z.null()]),
+  foundedTurnNumber: foundedTurnNumberSchema,
   nationId: nationIdSchema,
   worldId: worldIdSchema,
 });
