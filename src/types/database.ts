@@ -1437,8 +1437,10 @@ export type Database = {
       };
       nations: {
         Row: {
+          capital_settlement_id: string | null;
           created_at: string;
           description: string | null;
+          founded_turn_number: number | null;
           id: string;
           is_hidden: boolean;
           name: string;
@@ -1447,8 +1449,10 @@ export type Database = {
           world_id: string;
         };
         Insert: {
+          capital_settlement_id?: string | null;
           created_at?: string;
           description?: string | null;
+          founded_turn_number?: number | null;
           id?: string;
           is_hidden?: boolean;
           name: string;
@@ -1457,8 +1461,10 @@ export type Database = {
           world_id: string;
         };
         Update: {
+          capital_settlement_id?: string | null;
           created_at?: string;
           description?: string | null;
+          founded_turn_number?: number | null;
           id?: string;
           is_hidden?: boolean;
           name?: string;
@@ -1467,6 +1473,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "nations_capital_settlement_id_fkey";
+            columns: ["capital_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "nations_nameset_id_fkey";
             columns: ["nameset_id"];
@@ -4407,6 +4420,31 @@ export type Database = {
           remaining_quantity: number;
           settlement_id: string;
         }[];
+      };
+      set_nation_capital_and_founded_turn: {
+        Args: {
+          p_capital_settlement_id: string;
+          p_founded_turn_number: number;
+          p_nation_id: string;
+        };
+        Returns: {
+          capital_settlement_id: string | null;
+          created_at: string;
+          description: string | null;
+          founded_turn_number: number | null;
+          id: string;
+          is_hidden: boolean;
+          name: string;
+          nameset_id: string | null;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "nations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       set_nation_nameset: {
         Args: { p_nameset_id: string; p_nation_id: string; p_world_id: string };

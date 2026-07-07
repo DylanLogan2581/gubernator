@@ -418,8 +418,10 @@ function renderControls(node: ReactNode): ReturnType<typeof render> {
 
 function createNation(): Nation {
   return {
+    capitalSettlementId: null,
     createdAt: "2026-05-01T00:00:00.000Z",
     description: null,
+    foundedTurnNumber: null,
     id: NATION_ID,
     isHidden: false,
     name: "Aurelia",

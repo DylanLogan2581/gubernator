@@ -16,10 +16,12 @@ import { nationsQueryKeys } from "../queries/nationsQueryKeys";
 import {
   createNationInputSchema,
   deleteNationInputSchema,
+  setNationCapitalAndFoundedTurnInputSchema,
   setNationHiddenInputSchema,
   updateNationDetailsInputSchema,
   type CreateNationInput,
   type DeleteNationInput,
+  type SetNationCapitalAndFoundedTurnInput,
   type SetNationHiddenInput,
   type UpdateNationDetailsInput,
 } from "../schemas/nationSchemas";
@@ -43,6 +45,11 @@ type SetNationHiddenMutationOptions = UseMutationOptions<
   AuthUiError | NationMutationError,
   SetNationHiddenInput
 >;
+type SetNationCapitalAndFoundedTurnMutationOptions = UseMutationOptions<
+  Nation,
+  AuthUiError | NationMutationError,
+  SetNationCapitalAndFoundedTurnInput
+>;
 type DeleteNationMutationOptions = UseMutationOptions<
   DeleteNationResult,
   AuthUiError | NationMutationError,
@@ -50,8 +57,10 @@ type DeleteNationMutationOptions = UseMutationOptions<
 >;
 
 type NationRow = {
+  readonly capital_settlement_id: string | null;
   readonly created_at: string;
   readonly description: string | null;
+  readonly founded_turn_number: number | null;
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
@@ -66,7 +75,7 @@ export type DeleteNationResult = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,is_hidden,nameset_id,created_at,updated_at";
+  "id,world_id,name,description,is_hidden,nameset_id,capital_settlement_id,founded_turn_number,created_at,updated_at";
 
 export type NationMutationIssue = MutationIssue;
 
@@ -128,6 +137,33 @@ export function setNationHiddenMutationOptions({
   return mutationOptions({
     mutationFn: (input: SetNationHiddenInput) => setNationHidden(client, input),
     mutationKey: [...nationsQueryKeys.all, "set-nation-hidden"],
+    onSuccess: async (nation): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.list(nation.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.detail(nation.id),
+        }),
+      ]);
+    },
+  });
+}
+
+export function setNationCapitalAndFoundedTurnMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): SetNationCapitalAndFoundedTurnMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: SetNationCapitalAndFoundedTurnInput) =>
+      setNationCapitalAndFoundedTurn(client, input),
+    mutationKey: [
+      ...nationsQueryKeys.all,
+      "set-nation-capital-and-founded-turn",
+    ],
     onSuccess: async (nation): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -255,6 +291,47 @@ async function setNationHidden(
   return toNation(data);
 }
 
+async function setNationCapitalAndFoundedTurn(
+  client: GubernatorSupabaseClient,
+  input: SetNationCapitalAndFoundedTurnInput,
+): Promise<Nation> {
+  const values = parseInput(setNationCapitalAndFoundedTurnInputSchema, input);
+
+  // The RPC function accepts a nullable capital settlement id and founded
+  // turn number; TypeScript's generated types don't reflect this, so we call
+  // the RPC directly on the client object (mirrors updateSettlementCoordinates
+  // in src/features/settlements/mutations/settlementsMutations.ts).
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): {
+      maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+
+  const { data, error } = await clientAsRpcCapable
+    .rpc("set_nation_capital_and_founded_turn", {
+      p_capital_settlement_id: values.capitalSettlementId,
+      p_founded_turn_number: values.foundedTurnNumber,
+      p_nation_id: values.nationId,
+    })
+    .maybeSingle();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new NationMutationError({
+      code: "nation_not_found",
+      message: "Nation capital and founded turn could not be updated.",
+    });
+  }
+
+  return toNation(data as NationRow);
+}
+
 async function deleteNation(
   client: GubernatorSupabaseClient,
   input: DeleteNationInput,
@@ -301,8 +378,10 @@ function parseInput<TSchema extends z.ZodTypeAny>(
 
 function toNation(row: NationRow): Nation {
   return {
+    capitalSettlementId: row.capital_settlement_id,
     createdAt: row.created_at,
     description: row.description,
+    foundedTurnNumber: row.founded_turn_number,
     id: row.id,
     isHidden: row.is_hidden,
     name: row.name,

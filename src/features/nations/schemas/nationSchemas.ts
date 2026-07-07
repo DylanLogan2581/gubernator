@@ -45,6 +45,13 @@ export const setNationHiddenInputSchema = z.strictObject({
   worldId: worldIdSchema,
 });
 
+export const setNationCapitalAndFoundedTurnInputSchema = z.strictObject({
+  capitalSettlementId: z.union([z.guid(), z.null()]),
+  foundedTurnNumber: z.union([z.int().min(0), z.null()]),
+  nationId: nationIdSchema,
+  worldId: worldIdSchema,
+});
+
 export const deleteNationInputSchema = z.strictObject({
   nationId: nationIdSchema,
   worldId: worldIdSchema,
@@ -60,5 +67,11 @@ export type UpdateNationDetailsValues = z.output<
 >;
 export type SetNationHiddenInput = z.input<typeof setNationHiddenInputSchema>;
 export type SetNationHiddenValues = z.output<typeof setNationHiddenInputSchema>;
+export type SetNationCapitalAndFoundedTurnInput = z.input<
+  typeof setNationCapitalAndFoundedTurnInputSchema
+>;
+export type SetNationCapitalAndFoundedTurnValues = z.output<
+  typeof setNationCapitalAndFoundedTurnInputSchema
+>;
 export type DeleteNationInput = z.input<typeof deleteNationInputSchema>;
 export type DeleteNationValues = z.output<typeof deleteNationInputSchema>;

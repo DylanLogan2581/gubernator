@@ -9,16 +9,20 @@ import {
   deleteNationMutationOptions,
   isNationMutationError,
   NationMutationError,
+  setNationCapitalAndFoundedTurnMutationOptions,
   setNationHiddenMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./nationsMutations";
 
 const NATION_ID = "11111111-1111-1111-1111-111111111111";
 const WORLD_ID = "22222222-2222-2222-2222-222222222222";
+const SETTLEMENT_ID = "33333333-3333-3333-3333-333333333333";
 
 type NationRow = {
+  readonly capital_settlement_id?: string | null;
   readonly created_at: string;
   readonly description: string | null;
+  readonly founded_turn_number?: number | null;
   readonly id: string;
   readonly is_hidden: boolean;
   readonly name: string;
@@ -280,6 +284,137 @@ describe("setNationHiddenMutationOptions", () => {
   });
 });
 
+describe("setNationCapitalAndFoundedTurnMutationOptions", () => {
+  it("rejects an invalid capitalSettlementId before touching the Supabase client", async () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        capitalSettlementId: "not-a-uuid",
+        foundedTurnNumber: null,
+        nationId: NATION_ID,
+        worldId: WORLD_ID,
+      }),
+    ).rejects.toMatchObject({ code: "nation_input_invalid" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("calls the RPC with the nation id, capital settlement id, and founded turn", async () => {
+    const row = createNationRow({
+      capital_settlement_id: SETTLEMENT_ID,
+      founded_turn_number: 3,
+    });
+    const { client, calls } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
+
+    const result = await executeMutation(queryClient, options, {
+      capitalSettlementId: SETTLEMENT_ID,
+      foundedTurnNumber: 3,
+      nationId: NATION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result).toMatchObject({
+      capitalSettlementId: SETTLEMENT_ID,
+      foundedTurnNumber: 3,
+      id: NATION_ID,
+    });
+    expect(calls.rpc).toHaveBeenCalledWith(
+      "set_nation_capital_and_founded_turn",
+      {
+        p_capital_settlement_id: SETTLEMENT_ID,
+        p_founded_turn_number: 3,
+        p_nation_id: NATION_ID,
+      },
+    );
+    expect(options.mutationKey).toEqual([
+      "nations",
+      "set-nation-capital-and-founded-turn",
+    ]);
+  });
+
+  it("clears the capital and founded turn when both are null", async () => {
+    const row = createNationRow({
+      capital_settlement_id: null,
+      founded_turn_number: null,
+    });
+    const { client, calls } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, {
+      capitalSettlementId: null,
+      foundedTurnNumber: null,
+      nationId: NATION_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(calls.rpc).toHaveBeenCalledWith(
+      "set_nation_capital_and_founded_turn",
+      {
+        p_capital_settlement_id: null,
+        p_founded_turn_number: null,
+        p_nation_id: NATION_ID,
+      },
+    );
+  });
+
+  it("raises nation_not_found when the RPC returns no row", async () => {
+    const { client } = createRpcClient({ data: null, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        capitalSettlementId: null,
+        foundedTurnNumber: null,
+        nationId: NATION_ID,
+        worldId: WORLD_ID,
+      }),
+    ).rejects.toMatchObject({ code: "nation_not_found" });
+  });
+
+  it("normalizes Supabase errors, e.g. an out-of-nation capital settlement", async () => {
+    const { client } = createRpcClient({
+      data: null,
+      error: {
+        code: "23514",
+        message: "Capital settlement must belong to this nation.",
+      },
+    });
+    const queryClient = createQueryClient();
+    const options = setNationCapitalAndFoundedTurnMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        capitalSettlementId: SETTLEMENT_ID,
+        foundedTurnNumber: null,
+        nationId: NATION_ID,
+        worldId: WORLD_ID,
+      }),
+    ).rejects.toBeInstanceOf(AuthUiError);
+  });
+});
+
 describe("deleteNationMutationOptions", () => {
   it("rejects an invalid nationId before touching the Supabase client", async () => {
     const from = vi.fn();
@@ -411,6 +546,20 @@ function createUpdateClient(result: SupabaseResult<NationRow>): {
   return {
     client: { from } as unknown as GubernatorSupabaseClient,
     calls: { from, update, eqId, eqWorld },
+  };
+}
+
+function createRpcClient(result: SupabaseResult<NationRow>): {
+  readonly client: GubernatorSupabaseClient;
+  readonly calls: {
+    readonly rpc: ReturnType<typeof vi.fn>;
+  };
+} {
+  const maybeSingle = vi.fn().mockResolvedValue(result);
+  const rpc = vi.fn(() => ({ maybeSingle }));
+  return {
+    client: { rpc } as unknown as GubernatorSupabaseClient,
+    calls: { rpc },
   };
 }
 

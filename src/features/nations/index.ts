@@ -18,6 +18,7 @@ export {
   createNationMutationOptions,
   deleteNationMutationOptions,
   isNationMutationError,
+  setNationCapitalAndFoundedTurnMutationOptions,
   setNationHiddenMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./mutations/nationsMutations";
@@ -43,6 +44,7 @@ export { nationsQueryKeys } from "./queries/nationsQueryKeys";
 export {
   createNationInputSchema,
   deleteNationInputSchema,
+  setNationCapitalAndFoundedTurnInputSchema,
   setNationHiddenInputSchema,
   updateNationDetailsInputSchema,
 } from "./schemas/nationSchemas";
@@ -58,6 +60,8 @@ export type {
   CreateNationValues,
   DeleteNationInput,
   DeleteNationValues,
+  SetNationCapitalAndFoundedTurnInput,
+  SetNationCapitalAndFoundedTurnValues,
   SetNationHiddenInput,
   SetNationHiddenValues,
   UpdateNationDetailsInput,

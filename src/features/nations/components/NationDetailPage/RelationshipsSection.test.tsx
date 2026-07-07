@@ -37,8 +37,10 @@ vi.mock("@/features/permissions", () => ({
 }));
 
 const nation: Nation = {
+  capitalSettlementId: null,
   createdAt: "2024-01-01T00:00:00Z",
   description: null,
+  foundedTurnNumber: null,
   id: "11111111-1111-1111-1111-111111111111",
   isHidden: false,
   name: "Highmark",
@@ -48,8 +50,10 @@ const nation: Nation = {
 };
 
 const other: Nation = {
+  capitalSettlementId: null,
   createdAt: "2024-01-01T00:00:00Z",
   description: null,
+  foundedTurnNumber: null,
   id: "22222222-2222-2222-2222-222222222222",
   isHidden: false,
   name: "Rivenhold",
