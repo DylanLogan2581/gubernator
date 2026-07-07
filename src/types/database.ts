@@ -1353,6 +1353,65 @@ export type Database = {
           },
         ];
       };
+      nation_readiness_votes: {
+        Row: {
+          cast_by_user_id: string | null;
+          created_at: string;
+          id: string;
+          nation_id: string;
+          turn_number: number;
+          vote: boolean;
+          voter_citizen_id: string;
+        };
+        Insert: {
+          cast_by_user_id?: string | null;
+          created_at?: string;
+          id?: string;
+          nation_id: string;
+          turn_number: number;
+          vote: boolean;
+          voter_citizen_id: string;
+        };
+        Update: {
+          cast_by_user_id?: string | null;
+          created_at?: string;
+          id?: string;
+          nation_id?: string;
+          turn_number?: number;
+          vote?: boolean;
+          voter_citizen_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_readiness_votes_cast_by_user_id_fkey";
+            columns: ["cast_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_readiness_votes_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_readiness_votes_voter_citizen_id_fkey";
+            columns: ["voter_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_readiness_votes_voter_citizen_id_fkey";
+            columns: ["voter_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_relationships: {
         Row: {
           created_at: string;
@@ -1432,6 +1491,48 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "nations";
             referencedColumns: ["id", "world_id"];
+          },
+        ];
+      };
+      nation_turn_readiness: {
+        Row: {
+          id: string;
+          is_ready: boolean;
+          nation_id: string;
+          turn_number: number;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          id?: string;
+          is_ready?: boolean;
+          nation_id: string;
+          turn_number: number;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          id?: string;
+          is_ready?: boolean;
+          nation_id?: string;
+          turn_number?: number;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_turn_readiness_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_turn_readiness_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -3047,6 +3148,28 @@ export type Database = {
           status: string;
         }[];
       };
+      cast_nation_readiness_vote: {
+        Args: {
+          p_nation_id: string;
+          p_vote: boolean;
+          p_voter_citizen_id: string;
+        };
+        Returns: {
+          cast_by_user_id: string | null;
+          created_at: string;
+          id: string;
+          nation_id: string;
+          turn_number: number;
+          vote: boolean;
+          voter_citizen_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_readiness_votes";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       citizen_role_scope_matches: {
         Args: {
           p_citizen_settlement_id: string;
@@ -3931,6 +4054,10 @@ export type Database = {
         };
       };
       nation_images_path_nation_id: { Args: { name: string }; Returns: string };
+      nation_readiness_eligible_voter_ids: {
+        Args: { p_nation_id: string };
+        Returns: string[];
+      };
       nation_visible_to_current_user: {
         Args: { p_nation_id: string };
         Returns: boolean;
@@ -3995,6 +4122,10 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      recompute_nation_readiness: {
+        Args: { p_nation_id: string; p_turn_number: number };
+        Returns: undefined;
       };
       reject_trade_route_side: {
         Args: {
