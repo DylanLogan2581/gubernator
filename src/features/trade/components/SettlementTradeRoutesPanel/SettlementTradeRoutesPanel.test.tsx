@@ -300,6 +300,12 @@ function createClient({
     returns: vi.fn().mockResolvedValue({ data: settlementRows, error: null }),
   };
 
+  const nationsSelectBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => nationsSelectBuilder),
+    order: vi.fn(() => nationsSelectBuilder),
+    returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+  };
+
   const resourcesSelectBuilder: Record<string, unknown> = {
     eq: vi.fn(() => resourcesSelectBuilder),
     order: vi.fn(() => resourcesSelectBuilder),
@@ -350,6 +356,9 @@ function createClient({
       if (table === "settlements") {
         return { select: vi.fn(() => settlementsSelectBuilder) };
       }
+      if (table === "nations") {
+        return { select: vi.fn(() => nationsSelectBuilder) };
+      }
       if (table === "resources") {
         return { select: vi.fn(() => resourcesSelectBuilder) };
       }
@@ -385,6 +394,7 @@ function createClient({
 function renderPanel(
   props: Partial<{
     canManage: boolean;
+    canManageNation: boolean;
     isArchived: boolean;
     settlementId: string;
     worldId: string;
@@ -398,6 +408,7 @@ function renderPanel(
     <QueryClientProvider client={queryClient}>
       <SettlementTradeRoutesPanel
         canManage={props.canManage ?? false}
+        canManageNation={props.canManageNation ?? false}
         isArchived={props.isArchived ?? false}
         settlementId={props.settlementId ?? SETTLEMENT_ID}
         worldId={props.worldId ?? WORLD_ID}

@@ -1763,6 +1763,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           tax_rate: number;
+          trade_policy: string;
           updated_at: string;
           world_id: string;
         };
@@ -1777,6 +1778,7 @@ export type Database = {
           name: string;
           nameset_id?: string | null;
           tax_rate?: number;
+          trade_policy?: string;
           updated_at?: string;
           world_id: string;
         };
@@ -1791,6 +1793,7 @@ export type Database = {
           name?: string;
           nameset_id?: string | null;
           tax_rate?: number;
+          trade_policy?: string;
           updated_at?: string;
           world_id?: string;
         };
@@ -4856,6 +4859,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           tax_rate: number;
+          trade_policy: string;
           updated_at: string;
           world_id: string;
         }[];
@@ -4879,6 +4883,7 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           tax_rate: number;
+          trade_policy: string;
           updated_at: string;
           world_id: string;
         }[];
@@ -4910,6 +4915,31 @@ export type Database = {
           name: string;
           nameset_id: string | null;
           tax_rate: number;
+          trade_policy: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "nations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      set_nation_trade_policy: {
+        Args: { p_nation_id: string; p_trade_policy: string };
+        Returns: {
+          capital_settlement_id: string | null;
+          created_at: string;
+          description: string | null;
+          flag_path: string | null;
+          founded_turn_number: number | null;
+          government_type: string;
+          id: string;
+          name: string;
+          nameset_id: string | null;
+          tax_rate: number;
+          trade_policy: string;
           updated_at: string;
           world_id: string;
         }[];

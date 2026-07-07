@@ -18,15 +18,21 @@ import {
   deleteNationInputSchema,
   setNationCapitalAndFoundedTurnInputSchema,
   setNationGovernmentTypeInputSchema,
+  setNationTradePolicyInputSchema,
   updateNationDetailsInputSchema,
   type CreateNationInput,
   type DeleteNationInput,
   type SetNationCapitalAndFoundedTurnInput,
   type SetNationGovernmentTypeInput,
+  type SetNationTradePolicyInput,
   type UpdateNationDetailsInput,
 } from "../schemas/nationSchemas";
 
-import type { Nation, NationGovernmentType } from "../types/nationTypes";
+import type {
+  Nation,
+  NationGovernmentType,
+  NationTradePolicy,
+} from "../types/nationTypes";
 import type { z } from "zod";
 
 type NationMutationErrorCode = "nation_input_invalid" | "nation_not_found";
@@ -44,6 +50,11 @@ type SetNationGovernmentTypeMutationOptions = UseMutationOptions<
   Nation,
   AuthUiError | NationMutationError,
   SetNationGovernmentTypeInput
+>;
+type SetNationTradePolicyMutationOptions = UseMutationOptions<
+  Nation,
+  AuthUiError | NationMutationError,
+  SetNationTradePolicyInput
 >;
 type SetNationCapitalAndFoundedTurnMutationOptions = UseMutationOptions<
   Nation,
@@ -67,6 +78,7 @@ type NationRow = {
   readonly name: string;
   readonly nameset_id: string | null;
   readonly tax_rate: number;
+  readonly trade_policy: string;
   readonly updated_at: string;
   readonly world_id: string;
 };
@@ -77,7 +89,7 @@ export type DeleteNationResult = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,created_at,updated_at";
+  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,trade_policy,created_at,updated_at";
 
 export type NationMutationIssue = MutationIssue;
 
@@ -140,6 +152,30 @@ export function setNationGovernmentTypeMutationOptions({
     mutationFn: (input: SetNationGovernmentTypeInput) =>
       setNationGovernmentType(client, input),
     mutationKey: [...nationsQueryKeys.all, "set-nation-government-type"],
+    onSuccess: async (nation): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.list(nation.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.detail(nation.id),
+        }),
+      ]);
+    },
+  });
+}
+
+export function setNationTradePolicyMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): SetNationTradePolicyMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: SetNationTradePolicyInput) =>
+      setNationTradePolicy(client, input),
+    mutationKey: [...nationsQueryKeys.all, "set-nation-trade-policy"],
     onSuccess: async (nation): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -313,6 +349,46 @@ async function setNationGovernmentType(
   return toNation(data);
 }
 
+async function setNationTradePolicy(
+  client: GubernatorSupabaseClient,
+  input: SetNationTradePolicyInput,
+): Promise<Nation> {
+  const values = parseInput(setNationTradePolicyInputSchema, input);
+
+  // set_nation_trade_policy is a SECURITY DEFINER RPC (nation managers can't
+  // write the nations table directly — see
+  // 20260912000000_add_nation_trade_policy). Called via the same untyped-rpc
+  // cast as setNationCapitalAndFoundedTurn above.
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): {
+      maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+
+  const { data, error } = await clientAsRpcCapable
+    .rpc("set_nation_trade_policy", {
+      p_nation_id: values.nationId,
+      p_trade_policy: values.tradePolicy,
+    })
+    .maybeSingle();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new NationMutationError({
+      code: "nation_not_found",
+      message: "Nation trade policy could not be updated.",
+    });
+  }
+
+  return toNation(data as NationRow);
+}
+
 async function setNationCapitalAndFoundedTurn(
   client: GubernatorSupabaseClient,
   input: SetNationCapitalAndFoundedTurnInput,
@@ -410,6 +486,7 @@ function toNation(row: NationRow): Nation {
     name: row.name,
     namesetId: row.nameset_id,
     taxRate: row.tax_rate,
+    tradePolicy: row.trade_policy as NationTradePolicy,
     updatedAt: row.updated_at,
     worldId: row.world_id,
   };

@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { nationsListQueryOptions } from "@/features/nations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -21,6 +22,8 @@ import { sortByName } from "@/lib/sortUtils";
 import { generateLocalId } from "@/lib/uid";
 
 import { proposeTradeRouteMutationOptions } from "../../mutations/proposeTradeRouteMutations";
+
+import { describeForeignTradeBlock } from "./TradeRouteHelpers";
 
 type LegDraft = {
   direction: "send" | "receive";
@@ -42,6 +45,7 @@ type FormErrors = {
 
 type ProposeTradeRouteDialogProps = {
   readonly activeCharacterId: string;
+  readonly canManageNation: boolean;
   readonly onClose: () => void;
   readonly queryClient: QueryClient;
   readonly settlementId: string;
@@ -62,6 +66,7 @@ function createLegDraft(
 
 export function ProposeTradeRouteDialog({
   activeCharacterId,
+  canManageNation,
   onClose,
   queryClient,
   settlementId,
@@ -69,6 +74,7 @@ export function ProposeTradeRouteDialog({
 }: ProposeTradeRouteDialogProps): JSX.Element {
   const settlementsQuery = useQuery(settlementsByWorldQueryOptions(worldId));
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
+  const nationsQuery = useQuery(nationsListQueryOptions(worldId));
   const mutation = useMutation(
     proposeTradeRouteMutationOptions({ queryClient, worldId }),
   );
@@ -77,10 +83,38 @@ export function ProposeTradeRouteDialog({
   const [legs, setLegs] = useState<LegDraft[]>(() => [createLegDraft()]);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  const settlements = (settlementsQuery.data ?? []).filter(
-    (s) => s.id !== settlementId,
-  );
+  const allSettlements = settlementsQuery.data ?? [];
+  const settlements = allSettlements.filter((s) => s.id !== settlementId);
   const resources = resourcesQuery.data ?? [];
+  const nations = nationsQuery.data ?? [];
+
+  // Trade policy (#1087): preview the propose_trade_route policy gate for
+  // the selected destination so the proposer sees why submission is blocked
+  // (and can't waste a round-trip) instead of only finding out from the RPC
+  // error after clicking Propose. Internal (same-nation) routes are never
+  // blocked, per describeForeignTradeBlock's contract.
+  const originSettlement = allSettlements.find((s) => s.id === settlementId);
+  const destinationSettlement = settlements.find(
+    (s) => s.id === destinationSettlementId,
+  );
+  const originNation = nations.find((n) => n.id === originSettlement?.nationId);
+  const destinationNation = nations.find(
+    (n) => n.id === destinationSettlement?.nationId,
+  );
+  const isInternational =
+    destinationSettlement !== undefined &&
+    originSettlement !== undefined &&
+    destinationSettlement.nationId !== originSettlement.nationId;
+  const foreignTradeBlockReason =
+    isInternational &&
+    originNation !== undefined &&
+    destinationNation !== undefined
+      ? describeForeignTradeBlock({
+          canManageOriginNation: canManageNation,
+          destinationNation,
+          originNation,
+        })
+      : null;
 
   function addLeg(): void {
     setLegs((prev) => [...prev, createLegDraft()]);
@@ -102,6 +136,8 @@ export function ProposeTradeRouteDialog({
 
     if (destinationSettlementId === "") {
       newErrors.destinationSettlementId = "Select a destination settlement.";
+    } else if (foreignTradeBlockReason !== null) {
+      newErrors.destinationSettlementId = foreignTradeBlockReason;
     }
 
     const legErrors: LegErrors[] = legs.map((leg) => {
@@ -198,6 +234,10 @@ export function ProposeTradeRouteDialog({
                 <p className="text-xs text-destructive">
                   {errors.destinationSettlementId}
                 </p>
+              ) : foreignTradeBlockReason !== null ? (
+                <p className="text-xs text-destructive">
+                  {foreignTradeBlockReason}
+                </p>
               ) : null}
             </Label>
 
@@ -241,7 +281,10 @@ export function ProposeTradeRouteDialog({
             >
               Cancel
             </Button>
-            <Button disabled={mutation.isPending} type="submit">
+            <Button
+              disabled={mutation.isPending || foreignTradeBlockReason !== null}
+              type="submit"
+            >
               Propose
             </Button>
           </DialogFooter>

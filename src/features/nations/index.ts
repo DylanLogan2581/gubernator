@@ -14,6 +14,7 @@ export { NationReadinessSection } from "./components/NationDetailPage/ReadinessS
 export { NationRelationshipsSection } from "./components/NationDetailPage/RelationshipsSection";
 export { NationRoleAssignmentSection } from "./components/NationDetailPage/RoleAssignmentSection";
 export { NationSettlementsSection } from "./components/NationDetailPage/SettlementsSection";
+export { NationTradePolicySection } from "./components/NationDetailPage/TradePolicySection";
 export { NationTreasurySection } from "./components/NationDetailPage/TreasurySection";
 export { NationFlagAvatar } from "./components/NationFlagAvatar";
 export { NationListPage } from "./components/NationListPage";
@@ -26,6 +27,7 @@ export {
   isNationMutationError,
   setNationCapitalAndFoundedTurnMutationOptions,
   setNationGovernmentTypeMutationOptions,
+  setNationTradePolicyMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./mutations/nationsMutations";
 export {
@@ -86,6 +88,7 @@ export {
   deleteNationInputSchema,
   setNationCapitalAndFoundedTurnInputSchema,
   setNationGovernmentTypeInputSchema,
+  setNationTradePolicyInputSchema,
   updateNationDetailsInputSchema,
 } from "./schemas/nationSchemas";
 export {
@@ -104,6 +107,8 @@ export type {
   SetNationCapitalAndFoundedTurnValues,
   SetNationGovernmentTypeInput,
   SetNationGovernmentTypeValues,
+  SetNationTradePolicyInput,
+  SetNationTradePolicyValues,
   UpdateNationDetailsInput,
   UpdateNationDetailsValues,
 } from "./schemas/nationSchemas";
@@ -129,7 +134,10 @@ export {
 export type { NationRelationshipMutationIssue } from "./mutations/nationRelationshipMutations";
 export {
   NATION_GOVERNMENT_TYPES,
+  NATION_TRADE_POLICIES,
+  describeNationTradePolicy,
   formatNationGovernmentType,
+  formatNationTradePolicy,
 } from "./types/nationTypes";
 export type {
   Nation,
@@ -139,6 +147,7 @@ export type {
   NationLatestTaxSnapshot,
   NationSettlement,
   NationStockpileEntry,
+  NationTradePolicy,
 } from "./types/nationTypes";
 export type {
   GrantNationResourcesInput,

@@ -33,12 +33,42 @@ const ROUTE_ID = "00000000-0000-0000-0000-000000000010";
 const RESOURCE_ID = "00000000-0000-0000-0000-000000000030";
 const CITIZEN_ID = "00000000-0000-0000-0000-000000000040";
 
+const OWN_NATION_ID = "00000000-0000-0000-0000-000000000098";
+const FAR_NATION_ID = "00000000-0000-0000-0000-000000000099";
+
 const FAR_SETTLEMENT_ROW = {
   id: DEST_SETTLEMENT_ID,
   name: "Far Settlement",
-  nation_id: "00000000-0000-0000-0000-000000000099",
+  nation_id: FAR_NATION_ID,
   nations: { name: "Far Nation" },
 };
+
+const OWN_SETTLEMENT_ROW = {
+  id: SETTLEMENT_ID,
+  name: "Home Settlement",
+  nation_id: OWN_NATION_ID,
+  nations: { name: "Home Nation" },
+};
+
+function createNationRow(overrides: {
+  readonly id: string;
+  readonly name: string;
+  readonly trade_policy: string;
+}): Record<string, unknown> {
+  return {
+    capital_settlement_id: null,
+    created_at: "2026-06-01T00:00:00.000Z",
+    description: null,
+    flag_path: null,
+    founded_turn_number: null,
+    government_type: "monarchy",
+    nameset_id: null,
+    tax_rate: 0,
+    updated_at: "2026-06-01T00:00:00.000Z",
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
 
 const GRAIN_RESOURCE_ROW = {
   id: RESOURCE_ID,
@@ -55,10 +85,12 @@ const GRAIN_RESOURCE_ROW = {
 function createClient({
   settlementRows = [] as readonly unknown[],
   resourceRows = [] as readonly unknown[],
+  nationRows = [] as readonly unknown[],
   rpcMock = vi.fn(),
 }: {
   readonly settlementRows?: readonly unknown[];
   readonly resourceRows?: readonly unknown[];
+  readonly nationRows?: readonly unknown[];
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
   const settlementsBuilder: Record<string, unknown> = {
@@ -71,12 +103,18 @@ function createClient({
     order: vi.fn(() => resourcesBuilder),
     returns: vi.fn().mockResolvedValue({ data: resourceRows, error: null }),
   };
+  const nationsBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => nationsBuilder),
+    order: vi.fn(() => nationsBuilder),
+    returns: vi.fn().mockResolvedValue({ data: nationRows, error: null }),
+  };
   return {
     from: vi.fn((table: string) => {
       if (table === "settlements")
         return { select: vi.fn(() => settlementsBuilder) };
       if (table === "resources")
         return { select: vi.fn(() => resourcesBuilder) };
+      if (table === "nations") return { select: vi.fn(() => nationsBuilder) };
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: rpcMock,
@@ -84,9 +122,11 @@ function createClient({
 }
 
 function renderDialog({
+  canManageNation = false,
   onClose = vi.fn<() => void>(),
   client = createClient(),
 }: {
+  readonly canManageNation?: boolean;
   readonly onClose?: () => void;
   readonly client?: unknown;
 } = {}): { readonly onClose: () => void } {
@@ -98,6 +138,7 @@ function renderDialog({
     <QueryClientProvider client={queryClient}>
       <ProposeTradeRouteDialog
         activeCharacterId={CITIZEN_ID}
+        canManageNation={canManageNation}
         onClose={onClose}
         queryClient={queryClient}
         settlementId={SETTLEMENT_ID}
@@ -243,5 +284,121 @@ describe("ProposeTradeRouteDialog", () => {
       expect(toastError).toHaveBeenCalled();
     });
     expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("trade policy (#1087) — blocks and explains a closed destination nation", async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      client: createClient({
+        settlementRows: [OWN_SETTLEMENT_ROW, FAR_SETTLEMENT_ROW],
+        resourceRows: [GRAIN_RESOURCE_ROW],
+        nationRows: [
+          createNationRow({
+            id: OWN_NATION_ID,
+            name: "Home Nation",
+            trade_policy: "free",
+          }),
+          createNationRow({
+            id: FAR_NATION_ID,
+            name: "Far Nation",
+            trade_policy: "closed",
+          }),
+        ],
+      }),
+    });
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Propose trade route",
+    });
+    const destSelect = await within(dialog).findByRole("combobox", {
+      name: "Destination settlement",
+    });
+    await user.selectOptions(destSelect, DEST_SETTLEMENT_ID);
+
+    expect(
+      await within(dialog).findByText(
+        "Far Nation has closed its borders to trade.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Propose" }),
+    ).toBeDisabled();
+  });
+
+  it("trade policy (#1087) — blocks a settlement manager from an external route when the home nation is state-controlled", async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      canManageNation: false,
+      client: createClient({
+        settlementRows: [OWN_SETTLEMENT_ROW, FAR_SETTLEMENT_ROW],
+        resourceRows: [GRAIN_RESOURCE_ROW],
+        nationRows: [
+          createNationRow({
+            id: OWN_NATION_ID,
+            name: "Home Nation",
+            trade_policy: "state_controlled",
+          }),
+          createNationRow({
+            id: FAR_NATION_ID,
+            name: "Far Nation",
+            trade_policy: "free",
+          }),
+        ],
+      }),
+    });
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Propose trade route",
+    });
+    const destSelect = await within(dialog).findByRole("combobox", {
+      name: "Destination settlement",
+    });
+    await user.selectOptions(destSelect, DEST_SETTLEMENT_ID);
+
+    expect(
+      await within(dialog).findByText(
+        "Home Nation's trade is state-controlled — only a nation manager can propose external trade routes.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Propose" }),
+    ).toBeDisabled();
+  });
+
+  it("trade policy (#1087) — allows a nation manager to propose despite state-controlled policy", async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      canManageNation: true,
+      client: createClient({
+        settlementRows: [OWN_SETTLEMENT_ROW, FAR_SETTLEMENT_ROW],
+        resourceRows: [GRAIN_RESOURCE_ROW],
+        nationRows: [
+          createNationRow({
+            id: OWN_NATION_ID,
+            name: "Home Nation",
+            trade_policy: "state_controlled",
+          }),
+          createNationRow({
+            id: FAR_NATION_ID,
+            name: "Far Nation",
+            trade_policy: "free",
+          }),
+        ],
+      }),
+    });
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Propose trade route",
+    });
+    const destSelect = await within(dialog).findByRole("combobox", {
+      name: "Destination settlement",
+    });
+    await user.selectOptions(destSelect, DEST_SETTLEMENT_ID);
+
+    await waitFor(() => {
+      expect(
+        within(dialog).getByRole("button", { name: "Propose" }),
+      ).toBeEnabled();
+    });
   });
 });

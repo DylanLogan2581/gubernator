@@ -226,11 +226,13 @@ function SettlementDetailLoaded({
   const { activeCharacter } = useActivePlayerCharacter();
   const isArchived = worldAccess.header.isArchived;
   const effectiveCanAdmin = useEffectiveCanAdmin(worldAccess.canAdmin);
-  const { canManageSettlement } = useSettlementManageAuthority({
-    canAdmin: effectiveCanAdmin,
-    nationId: settlement.nationId,
-    settlementId: settlement.id,
-  });
+  const { canManageNation, canManageSettlement } = useSettlementManageAuthority(
+    {
+      canAdmin: effectiveCanAdmin,
+      nationId: settlement.nationId,
+      settlementId: settlement.id,
+    },
+  );
   const isNationManager =
     activeCharacter !== null &&
     activeCharacter.roleType === "nation_manager" &&
@@ -272,6 +274,7 @@ function SettlementDetailLoaded({
           canDelete,
           canEditCoordinates,
           canEditDetails,
+          canManageNation,
           canManageSettlement,
           effectiveCanAdmin,
           isArchived,

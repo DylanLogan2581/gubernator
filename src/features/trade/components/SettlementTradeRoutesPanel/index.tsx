@@ -23,6 +23,7 @@ import { TradeRoutesDirection } from "./TradeRouteTable";
 
 type SettlementTradeRoutesPanelProps = {
   readonly canManage: boolean;
+  readonly canManageNation: boolean;
   readonly isArchived: boolean;
   readonly settlementId: string;
   readonly worldId: string;
@@ -30,6 +31,7 @@ type SettlementTradeRoutesPanelProps = {
 
 export function SettlementTradeRoutesPanel({
   canManage,
+  canManageNation,
   isArchived,
   settlementId,
   worldId,
@@ -141,6 +143,7 @@ export function SettlementTradeRoutesPanel({
         <div className="px-4">
           <ProposeTradeRouteDialog
             activeCharacterId={activeCharacter?.id ?? ""}
+            canManageNation={canManageNation}
             queryClient={queryClient}
             settlementId={settlementId}
             worldId={worldId}

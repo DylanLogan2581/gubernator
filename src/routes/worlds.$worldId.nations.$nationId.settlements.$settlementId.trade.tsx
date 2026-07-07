@@ -6,12 +6,18 @@ import { SettlementTradeRoutesPanel } from "@/features/trade";
 import type { JSX } from "react";
 
 function SettlementTradeRoute(): JSX.Element {
-  const { canManageSettlement, isArchived, settlement, worldId } =
-    useSettlementDetailContext();
+  const {
+    canManageNation,
+    canManageSettlement,
+    isArchived,
+    settlement,
+    worldId,
+  } = useSettlementDetailContext();
 
   return (
     <SettlementTradeRoutesPanel
       canManage={canManageSettlement}
+      canManageNation={canManageNation}
       isArchived={isArchived}
       settlementId={settlement.id}
       worldId={worldId}

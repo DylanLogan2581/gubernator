@@ -123,6 +123,7 @@ function createNation(overrides: Partial<Nation> = {}): Nation {
     name: "Aldoria",
     namesetId: null,
     taxRate: 0,
+    tradePolicy: "free",
     updatedAt: "2026-05-01T00:00:00.000Z",
     worldId: WORLD_ID,
     ...overrides,

@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (18);
+  plan (22);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -640,6 +640,155 @@ select
     2,
     'multi-leg proposal creates route with legs intact (2 total routes: first single-leg + this multi-leg)'
   );
+
+-- ===========================================================================
+-- TRADE POLICY (#1087)
+-- ===========================================================================
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'fc400000-0000-0000-0000-000000000004',
+    'fc300000-0000-0000-0000-000000000001',
+    'PTR Settlement A2 (internal)'
+  );
+
+-- CLOSED: destination nation closed blocks international propose, even for a
+-- manager who would otherwise have full authority.
+update public.nations
+set
+  trade_policy = 'closed'
+where
+  id = 'fc300000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'P0001',
+    null,
+    'closed destination nation blocks international propose even for a manager'
+  );
+
+reset role;
+
+update public.nations
+set
+  trade_policy = 'free'
+where
+  id = 'fc300000-0000-0000-0000-000000000002';
+
+-- STATE_CONTROLLED: origin nation state_controlled blocks a settlement
+-- manager (settlement-only authority) from proposing an external route.
+update public.nations
+set
+  trade_policy = 'state_controlled'
+where
+  id = 'fc300000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    '42501',
+    null,
+    'state_controlled origin nation blocks settlement manager from proposing an external route'
+  );
+
+reset role;
+
+-- STATE_CONTROLLED: the same policy allows the nation manager (manage-NATION
+-- authority) to propose the external route.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'nation manager authority satisfies a state_controlled origin policy for an external propose'
+  );
+
+reset role;
+
+-- INTERNAL ROUTES UNAFFECTED: Nation A is still state_controlled from above,
+-- but the settlement A1 manager (settlement-only authority) can still
+-- propose an internal route to A2 (same nation).
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000004',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'internal (same-nation) propose is unaffected by state_controlled policy'
+  );
+
+reset role;
+
+update public.nations
+set
+  trade_policy = 'free'
+where
+  id = 'fc300000-0000-0000-0000-000000000001';
 
 -- ===========================================================================
 -- SECURITY DEFINER check

@@ -10,6 +10,7 @@ import {
   isNationMutationError,
   NationMutationError,
   setNationCapitalAndFoundedTurnMutationOptions,
+  setNationTradePolicyMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./nationsMutations";
 
@@ -26,6 +27,7 @@ type NationRow = {
   readonly id: string;
   readonly name: string;
   readonly tax_rate?: number;
+  readonly trade_policy?: string;
   readonly updated_at: string;
   readonly world_id: string;
 };
@@ -383,6 +385,89 @@ describe("setNationCapitalAndFoundedTurnMutationOptions", () => {
         foundedTurnNumber: null,
         nationId: NATION_ID,
         worldId: WORLD_ID,
+      }),
+    ).rejects.toBeInstanceOf(AuthUiError);
+  });
+});
+
+describe("setNationTradePolicyMutationOptions", () => {
+  it("rejects an invalid tradePolicy before touching the Supabase client", async () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+    const options = setNationTradePolicyMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        tradePolicy: "occupied",
+      }),
+    ).rejects.toMatchObject({ code: "nation_input_invalid" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("calls the RPC with the nation id and trade policy", async () => {
+    const row = createNationRow({ trade_policy: "state_controlled" });
+    const { client, calls } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationTradePolicyMutationOptions({
+      client,
+      queryClient,
+    });
+
+    const result = await executeMutation(queryClient, options, {
+      nationId: NATION_ID,
+      tradePolicy: "state_controlled",
+    });
+
+    expect(result).toMatchObject({
+      id: NATION_ID,
+      tradePolicy: "state_controlled",
+    });
+    expect(calls.rpc).toHaveBeenCalledWith("set_nation_trade_policy", {
+      p_nation_id: NATION_ID,
+      p_trade_policy: "state_controlled",
+    });
+    expect(options.mutationKey).toEqual(["nations", "set-nation-trade-policy"]);
+  });
+
+  it("raises nation_not_found when the RPC returns no row", async () => {
+    const { client } = createRpcClient({ data: null, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationTradePolicyMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        tradePolicy: "closed",
+      }),
+    ).rejects.toMatchObject({ code: "nation_not_found" });
+  });
+
+  it("normalizes Supabase errors, e.g. an unauthorized manager", async () => {
+    const { client } = createRpcClient({
+      data: null,
+      error: {
+        code: "42501",
+        message: "You do not have permission to manage this nation.",
+      },
+    });
+    const queryClient = createQueryClient();
+    const options = setNationTradePolicyMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        tradePolicy: "closed",
       }),
     ).rejects.toBeInstanceOf(AuthUiError);
   });

@@ -1,3 +1,5 @@
+import type { Nation } from "@/features/nations";
+
 import type {
   TradeRoute,
   TradeRouteApprovalStatus,
@@ -46,4 +48,34 @@ export function combinedApprovalStatus(
     return "pending";
   }
   return "approved";
+}
+
+// Trade policy (#1087): a client-side preview of the propose_trade_route
+// gate in 20260912000000_add_nation_trade_policy, so the propose dialog can
+// disable submission and explain why *before* round-tripping to the RPC.
+// Internal (same-nation) routes are never blocked, regardless of policy —
+// callers should only invoke this once origin/destination nations differ.
+// Returns null when the route would be allowed.
+export function describeForeignTradeBlock({
+  canManageOriginNation,
+  destinationNation,
+  originNation,
+}: {
+  readonly canManageOriginNation: boolean;
+  readonly destinationNation: Nation;
+  readonly originNation: Nation;
+}): string | null {
+  if (originNation.tradePolicy === "closed") {
+    return `${originNation.name} has closed its borders to trade.`;
+  }
+  if (destinationNation.tradePolicy === "closed") {
+    return `${destinationNation.name} has closed its borders to trade.`;
+  }
+  if (
+    originNation.tradePolicy === "state_controlled" &&
+    !canManageOriginNation
+  ) {
+    return `${originNation.name}'s trade is state-controlled — only a nation manager can propose external trade routes.`;
+  }
+  return null;
 }

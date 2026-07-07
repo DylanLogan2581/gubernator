@@ -2,12 +2,16 @@ import { z } from "zod";
 
 import { textInputLimits } from "@/lib/inputLimits";
 
-import { NATION_GOVERNMENT_TYPES } from "../types/nationTypes";
+import {
+  NATION_GOVERNMENT_TYPES,
+  NATION_TRADE_POLICIES,
+} from "../types/nationTypes";
 
 const nationIdSchema = z.guid("Select a nation.");
 const worldIdSchema = z.guid("Select a world.");
 
 const nationGovernmentTypeSchema = z.enum(NATION_GOVERNMENT_TYPES);
+const nationTradePolicySchema = z.enum(NATION_TRADE_POLICIES);
 
 const nationNameSchema = z
   .string()
@@ -53,6 +57,11 @@ export const setNationGovernmentTypeInputSchema = z.strictObject({
   worldId: worldIdSchema,
 });
 
+export const setNationTradePolicyInputSchema = z.strictObject({
+  nationId: nationIdSchema,
+  tradePolicy: nationTradePolicySchema,
+});
+
 export const setNationCapitalAndFoundedTurnInputSchema = z.strictObject({
   capitalSettlementId: z.union([z.guid(), z.null()]),
   foundedTurnNumber: foundedTurnNumberSchema,
@@ -78,6 +87,12 @@ export type SetNationGovernmentTypeInput = z.input<
 >;
 export type SetNationGovernmentTypeValues = z.output<
   typeof setNationGovernmentTypeInputSchema
+>;
+export type SetNationTradePolicyInput = z.input<
+  typeof setNationTradePolicyInputSchema
+>;
+export type SetNationTradePolicyValues = z.output<
+  typeof setNationTradePolicyInputSchema
 >;
 export type SetNationCapitalAndFoundedTurnInput = z.input<
   typeof setNationCapitalAndFoundedTurnInputSchema

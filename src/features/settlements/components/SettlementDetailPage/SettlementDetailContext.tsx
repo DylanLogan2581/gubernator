@@ -12,6 +12,7 @@ export type SettlementDetailContextValue = {
   readonly canDelete: boolean;
   readonly canEditCoordinates: boolean;
   readonly canEditDetails: boolean;
+  readonly canManageNation: boolean;
   readonly canManageSettlement: boolean;
   readonly effectiveCanAdmin: boolean;
   readonly isArchived: boolean;

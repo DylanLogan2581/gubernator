@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (13);
+  plan (20);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -577,6 +577,276 @@ select
   );
 
 reset role;
+
+-- ===========================================================================
+-- TRADE POLICY (#1087)
+-- A second Origin Nation settlement + a settlement-only manager (dd1...004,
+-- previously the no-role user) to test internal routes under a
+-- state_controlled policy, alongside CLOSED/state_controlled on the NEW
+-- (international) endpoints.
+-- ===========================================================================
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'dd400000-0000-0000-0000-000000000003',
+    'dd300000-0000-0000-0000-000000000001',
+    'DD Origin Settlement 2 (internal)'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id,
+    role_settlement_id,
+    settlement_id
+  )
+values
+  (
+    'dd600000-0000-0000-0000-000000000004',
+    'dd200000-0000-0000-0000-000000000001',
+    'player_character',
+    'DD Origin Settlement-Only Mgr PC',
+    'alive',
+    'dd100000-0000-0000-0000-000000000004',
+    'settlement_manager',
+    null,
+    'dd400000-0000-0000-0000-000000000001',
+    'dd400000-0000-0000-0000-000000000001'
+  );
+
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'dd700000-0000-0000-0000-000000000007',
+    'dd400000-0000-0000-0000-000000000001',
+    'dd400000-0000-0000-0000-000000000002',
+    'active',
+    'dd600000-0000-0000-0000-000000000003',
+    'approved',
+    'approved'
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000008',
+    'dd400000-0000-0000-0000-000000000001',
+    'dd400000-0000-0000-0000-000000000002',
+    'active',
+    'dd600000-0000-0000-0000-000000000003',
+    'approved',
+    'approved'
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000009',
+    'dd400000-0000-0000-0000-000000000001',
+    'dd400000-0000-0000-0000-000000000003',
+    'active',
+    'dd600000-0000-0000-0000-000000000003',
+    'approved',
+    'approved'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'dd700000-0000-0000-0000-000000000007',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    6
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000008',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    6
+  ),
+  (
+    'dd700000-0000-0000-0000-000000000009',
+    'send',
+    'dd500000-0000-0000-0000-000000000001',
+    6
+  );
+
+-- CLOSED: blocks replace onto international endpoints outright, even for the
+-- world admin (reuses the still-active dd700...006, unconsumed by the
+-- earlier trashed-resource rejection above).
+update public.nations
+set
+  trade_policy = 'closed'
+where
+  id = 'dd300000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd100000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.replace_trade_route(
+      'dd700000-0000-0000-0000-000000000006',
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":6}]}'::jsonb,
+      'dd600000-0000-0000-0000-000000000001'
+    )
+    $test$,
+    'P0001',
+    null,
+    'closed destination nation blocks replace onto international endpoints'
+  );
+
+reset role;
+
+update public.nations
+set
+  trade_policy = 'free'
+where
+  id = 'dd300000-0000-0000-0000-000000000002';
+
+-- STATE_CONTROLLED: a settlement-only manager may still invoke replace (the
+-- old-route authority check is unaffected by policy), but the new route's
+-- origin side is NOT auto-approved because state_controlled requires
+-- manage-NATION authority for that side.
+update public.nations
+set
+  trade_policy = 'state_controlled'
+where
+  id = 'dd300000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd100000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.replace_trade_route(
+      'dd700000-0000-0000-0000-000000000007',
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":6}]}'::jsonb,
+      'dd600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'settlement-only manager can still invoke replace under a state_controlled origin policy'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        tr.origin_approval_status
+      from
+        public.trade_routes tr
+      where
+        tr.replacement_for_trade_route_id = 'dd700000-0000-0000-0000-000000000007'
+    ),
+    'pending',
+    'state_controlled origin policy leaves the new origin side pending for a settlement-only manager'
+  );
+
+-- STATE_CONTROLLED: the nation manager (manage-NATION authority) replacing
+-- the same way auto-approves the new origin side.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.replace_trade_route(
+      'dd700000-0000-0000-0000-000000000008',
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000002","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":6}]}'::jsonb,
+      'dd600000-0000-0000-0000-000000000001'
+    )
+    $test$,
+    'nation manager can replace under a state_controlled origin policy'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        tr.origin_approval_status
+      from
+        public.trade_routes tr
+      where
+        tr.replacement_for_trade_route_id = 'dd700000-0000-0000-0000-000000000008'
+    ),
+    'approved',
+    'nation manager authority satisfies a state_controlled origin policy and auto-approves the new origin side'
+  );
+
+-- INTERNAL ROUTES UNAFFECTED: Origin Nation is still state_controlled, but a
+-- settlement-only manager replacing an internal route (both endpoints in
+-- Origin Nation) still auto-approves the origin side via settlement
+-- authority.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"dd100000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.replace_trade_route(
+      'dd700000-0000-0000-0000-000000000009',
+      '{"origin_settlement_id":"dd400000-0000-0000-0000-000000000001","destination_settlement_id":"dd400000-0000-0000-0000-000000000003","legs":[{"direction":"send","resource_id":"dd500000-0000-0000-0000-000000000001","quantity":6}]}'::jsonb,
+      'dd600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'internal (same-nation) replace is unaffected by state_controlled policy'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        tr.origin_approval_status
+      from
+        public.trade_routes tr
+      where
+        tr.replacement_for_trade_route_id = 'dd700000-0000-0000-0000-000000000009'
+    ),
+    'approved',
+    'internal replace auto-approves the origin side via settlement authority despite state_controlled policy'
+  );
+
+update public.nations
+set
+  trade_policy = 'free'
+where
+  id = 'dd300000-0000-0000-0000-000000000001';
 
 -- ===========================================================================
 -- SECURITY DEFINER check

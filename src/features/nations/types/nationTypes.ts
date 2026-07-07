@@ -9,6 +9,18 @@ export const NATION_GOVERNMENT_TYPES = [
 
 export type NationGovernmentType = (typeof NATION_GOVERNMENT_TYPES)[number];
 
+// Trade policy (#1087): controls this nation's posture toward international
+// (cross-nation) trade routes. Internal (same-nation) routes are never
+// affected — see propose_trade_route/replace_trade_route/
+// approve_trade_route_side in 20260912000000_add_nation_trade_policy.
+export const NATION_TRADE_POLICIES = [
+  "free",
+  "state_controlled",
+  "closed",
+] as const;
+
+export type NationTradePolicy = (typeof NATION_TRADE_POLICIES)[number];
+
 export type Nation = {
   readonly capitalSettlementId: string | null;
   readonly createdAt: string;
@@ -20,6 +32,7 @@ export type Nation = {
   readonly name: string;
   readonly namesetId: string | null;
   readonly taxRate: number;
+  readonly tradePolicy: NationTradePolicy;
   readonly updatedAt: string;
   readonly worldId: string;
 };
@@ -42,6 +55,36 @@ export function formatNationGovernmentType(
       return "Despotism";
     default:
       return governmentType;
+  }
+}
+
+export function formatNationTradePolicy(
+  tradePolicy: NationTradePolicy,
+): string {
+  switch (tradePolicy) {
+    case "free":
+      return "Free";
+    case "state_controlled":
+      return "State-controlled";
+    case "closed":
+      return "Closed";
+    default:
+      return tradePolicy;
+  }
+}
+
+export function describeNationTradePolicy(
+  tradePolicy: NationTradePolicy,
+): string {
+  switch (tradePolicy) {
+    case "free":
+      return "External trade routes may be proposed and approved by any settlement manager.";
+    case "state_controlled":
+      return "External trade routes require nation-manager authority on this nation's side to propose or approve.";
+    case "closed":
+      return "External trade routes to or from this nation are rejected outright.";
+    default:
+      return tradePolicy;
   }
 }
 
