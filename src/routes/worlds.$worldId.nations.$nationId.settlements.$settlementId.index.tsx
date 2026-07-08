@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { SettlementEducationSummaryCard } from "@/features/education";
 import { ActiveEventsCard } from "@/features/events";
 import {
   SettlementCoordinatesSection,
@@ -65,6 +66,12 @@ function SettlementOverviewRoute(): JSX.Element {
         />
 
         <SettlementDemographicsCard
+          settlementId={settlement.id}
+          worldId={worldId}
+        />
+
+        <SettlementEducationSummaryCard
+          nationId={settlement.nationId}
           settlementId={settlement.id}
           worldId={worldId}
         />

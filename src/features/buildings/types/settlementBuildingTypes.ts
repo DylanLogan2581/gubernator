@@ -1,3 +1,5 @@
+import type { TierEducationConfig } from "@/shared/education/tierEducationConfig";
+
 import type { TierEffect } from "./buildingTypes";
 
 export type SettlementBuildingState =
@@ -30,6 +32,7 @@ export type SettlementBuilding = {
   readonly createdAt: string;
   readonly currentTierId: string;
   readonly deactivatedInTransitionId: string | null;
+  readonly educationConfig: TierEducationConfig | null;
   readonly effectsDigest: EffectsDigest;
   readonly effectsJson: readonly TierEffect[];
   readonly id: string;

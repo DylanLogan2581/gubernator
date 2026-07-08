@@ -1081,15 +1081,18 @@ describe("SettlementBuildingsPanel", () => {
 
 function renderPanel({
   canAdmin,
+  canManageSettlement = canAdmin,
   isArchived,
 }: {
   readonly canAdmin: boolean;
+  readonly canManageSettlement?: boolean;
   readonly isArchived: boolean;
 }): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
       <SettlementBuildingsPanel
         canAdmin={canAdmin}
+        canManageSettlement={canManageSettlement}
         isArchived={isArchived}
         settlementId={SETTLEMENT_ID}
         worldId={WORLD_ID}

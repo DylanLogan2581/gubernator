@@ -50,6 +50,7 @@ import type {
 
 type SettlementBuildingsPanelProps = {
   readonly canAdmin: boolean;
+  readonly canManageSettlement: boolean;
   readonly isArchived: boolean;
   readonly settlementId: string;
   readonly worldId: string;
@@ -57,6 +58,7 @@ type SettlementBuildingsPanelProps = {
 
 export function SettlementBuildingsPanel({
   canAdmin,
+  canManageSettlement,
   isArchived,
   settlementId,
   worldId,
@@ -138,6 +140,7 @@ export function SettlementBuildingsPanel({
           <BuildingsGroups
             buildings={buildingsQuery.data}
             canAdmin={canAdmin}
+            canManageSettlement={canManageSettlement}
             isArchived={isArchived}
             jobNames={jobNames}
             latestOutcome={latestOutcome}
@@ -181,6 +184,7 @@ const STATE_GROUPS: readonly StateGroup[] = [
 function BuildingsGroups({
   buildings,
   canAdmin,
+  canManageSettlement,
   isArchived,
   jobNames,
   latestOutcome,
@@ -192,6 +196,7 @@ function BuildingsGroups({
 }: {
   readonly buildings: readonly SettlementBuilding[];
   readonly canAdmin: boolean;
+  readonly canManageSettlement: boolean;
   readonly isArchived: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly latestOutcome: TurnTransitionOutcome | null;
@@ -218,7 +223,9 @@ function BuildingsGroups({
             key={group.label}
             canAdmin={canAdmin && !isArchived}
             canDeconstruct={canDeconstruct && group.states.includes("active")}
+            canManageSettlement={canManageSettlement}
             buildings={groupBuildings}
+            isArchived={isArchived}
             jobNames={jobNames}
             label={group.label}
             latestOutcome={latestOutcome}
@@ -270,6 +277,8 @@ function BuildingStateGroup({
   buildings,
   canAdmin,
   canDeconstruct,
+  canManageSettlement,
+  isArchived,
   jobNames,
   label,
   latestOutcome,
@@ -281,6 +290,8 @@ function BuildingStateGroup({
   readonly buildings: readonly SettlementBuilding[];
   readonly canAdmin: boolean;
   readonly canDeconstruct: boolean;
+  readonly canManageSettlement: boolean;
+  readonly isArchived: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly label: string;
   readonly latestOutcome: TurnTransitionOutcome | null;
@@ -322,6 +333,8 @@ function BuildingStateGroup({
                   building={group.buildings[0]}
                   canAdmin={canAdmin}
                   canDeconstruct={canDeconstruct}
+                  canManageSettlement={canManageSettlement}
+                  isArchived={isArchived}
                   jobNames={jobNames}
                   latestOutcome={latestOutcome}
                   queryClient={queryClient}
@@ -336,6 +349,8 @@ function BuildingStateGroup({
                   buildings={group.buildings}
                   canAdmin={canAdmin}
                   canDeconstruct={canDeconstruct}
+                  canManageSettlement={canManageSettlement}
+                  isArchived={isArchived}
                   jobNames={jobNames}
                   latestOutcome={latestOutcome}
                   queryClient={queryClient}
@@ -357,6 +372,8 @@ function DuplicateBuildingGroupRows({
   buildings,
   canAdmin,
   canDeconstruct,
+  canManageSettlement,
+  isArchived,
   jobNames,
   latestOutcome,
   queryClient,
@@ -368,6 +385,8 @@ function DuplicateBuildingGroupRows({
   readonly buildings: readonly SettlementBuilding[];
   readonly canAdmin: boolean;
   readonly canDeconstruct: boolean;
+  readonly canManageSettlement: boolean;
+  readonly isArchived: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
@@ -407,6 +426,8 @@ function DuplicateBuildingGroupRows({
             building={building}
             canAdmin={canAdmin}
             canDeconstruct={canDeconstruct}
+            canManageSettlement={canManageSettlement}
+            isArchived={isArchived}
             jobNames={jobNames}
             latestOutcome={latestOutcome}
             queryClient={queryClient}

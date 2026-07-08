@@ -6,6 +6,7 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 import { worldScopedQueryOptions } from "@/lib/worldScopedQueryOptions";
+import { parseTierEducationConfig } from "@/shared/education/tierEducationConfig";
 
 import {
   computeEffectsDigest,
@@ -20,6 +21,7 @@ type SettlementBuildingRow = {
   readonly activated_on_turn_number: number;
   readonly building_blueprint_id: string;
   readonly building_blueprint_tiers: {
+    readonly education_config_json: unknown;
     readonly effects_json: readonly TierEffectRow[];
     readonly tier_number: number;
   };
@@ -43,6 +45,7 @@ type SettlementBuildingWithLocationRow = {
   readonly activated_on_turn_number: number;
   readonly building_blueprint_id: string;
   readonly building_blueprint_tiers: {
+    readonly education_config_json: unknown;
     readonly effects_json: readonly TierEffectRow[];
     readonly tier_number: number;
   };
@@ -73,10 +76,10 @@ export type SettlementBuildingWithLocation = SettlementBuilding & {
 };
 
 const SETTLEMENT_BUILDING_SELECT =
-  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json)";
+  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json,education_config_json)";
 
 const SETTLEMENT_BUILDING_WITH_LOCATION_SELECT =
-  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json),settlements(id,name,nations!inner(name))";
+  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json,education_config_json),settlements(id,name,nations!inner(name))";
 
 type SettlementBuildingDetailQueryKey = ReturnType<
   typeof buildingsQueryKeys.settlementBuildingById
@@ -250,6 +253,9 @@ function toSettlementBuilding(row: SettlementBuildingRow): SettlementBuilding {
     createdAt: row.created_at,
     currentTierId: row.current_tier_id,
     deactivatedInTransitionId: row.deactivated_in_transition_id,
+    educationConfig: parseTierEducationConfig(
+      row.building_blueprint_tiers.education_config_json,
+    ),
     effectsDigest: computeEffectsDigest(effectsJson),
     effectsJson,
     id: row.id,
@@ -276,6 +282,9 @@ function toSettlementBuildingWithLocation(
     createdAt: row.created_at,
     currentTierId: row.current_tier_id,
     deactivatedInTransitionId: row.deactivated_in_transition_id,
+    educationConfig: parseTierEducationConfig(
+      row.building_blueprint_tiers.education_config_json,
+    ),
     effectsDigest: computeEffectsDigest(effectsJson),
     effectsJson,
     id: row.id,

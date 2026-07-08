@@ -1,4 +1,5 @@
 import { type QueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { IconChip } from "@/components/shared/IconChip";
@@ -6,6 +7,7 @@ import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { SchoolEducationSection } from "@/features/education";
 import { type TurnTransitionOutcome } from "@/features/turns";
 import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 import {
@@ -79,6 +81,8 @@ type BuildingRowProps = {
   readonly building: SettlementBuilding;
   readonly canDeconstruct: boolean;
   readonly canAdmin: boolean;
+  readonly canManageSettlement: boolean;
+  readonly isArchived: boolean;
   readonly jobNames: ReadonlyMap<string, string>;
   readonly latestOutcome: TurnTransitionOutcome | null;
   readonly queryClient: QueryClient;
@@ -92,6 +96,8 @@ export function BuildingRow({
   building,
   canAdmin,
   canDeconstruct,
+  canManageSettlement,
+  isArchived,
   jobNames,
   latestOutcome,
   queryClient,
@@ -104,6 +110,7 @@ export function BuildingRow({
   const [trashActionOpen, setTrashActionOpen] = useState<
     "restore" | "hard-delete" | null
   >(null);
+  const [educationOpen, setEducationOpen] = useState(false);
   const effectChips = buildEffectChips(building, resourceNames, jobNames);
   const showDeconstructButton = canDeconstruct && building.state === "active";
   const isDeconstructed =
@@ -111,12 +118,36 @@ export function BuildingRow({
     building.state === "manually_deconstructed";
   const stateTooltip = buildStateBadgeTooltip(building, latestOutcome);
   const showStateBadge = building.state !== "active";
+  const isSchool = building.educationConfig !== null;
+  const columnCount = 2 + (showTierColumn ? 1 : 0) + (canAdmin ? 1 : 0);
 
   return (
     <>
       <TableRow className="border-b border-border last:border-0">
         <TableCell className="py-2 pr-4">
           <span className="flex items-center gap-2">
+            {isSchool ? (
+              <Button
+                aria-expanded={educationOpen}
+                aria-label={
+                  educationOpen
+                    ? "Hide education section"
+                    : "Show education section"
+                }
+                className="h-6 w-6 p-0 -ml-1"
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setEducationOpen((prev) => !prev);
+                }}
+              >
+                <ChevronDown
+                  aria-hidden="true"
+                  className={educationOpen ? "h-4 w-4" : "h-4 w-4 -rotate-90"}
+                />
+              </Button>
+            ) : null}
             <IconChip
               icon={resolveEntityIcon(building.blueprintIcon)}
               tone={hashToCategoricalSlot(building.buildingBlueprintId)}
@@ -198,6 +229,22 @@ export function BuildingRow({
           </TableCell>
         ) : null}
       </TableRow>
+      {isSchool && educationOpen && building.educationConfig !== null ? (
+        <TableRow className="border-b border-border last:border-0">
+          <TableCell className="py-0 pr-4" colSpan={columnCount}>
+            <SchoolEducationSection
+              canManageSettlement={canManageSettlement}
+              educationConfig={building.educationConfig}
+              isArchived={isArchived}
+              queryClient={queryClient}
+              settlementBuildingId={building.id}
+              settlementBuildingName={building.name ?? building.blueprintName}
+              settlementId={settlementId}
+              worldId={worldId}
+            />
+          </TableCell>
+        </TableRow>
+      ) : null}
       {confirmOpen ? (
         <DeconstructConfirmDialog
           building={building}
