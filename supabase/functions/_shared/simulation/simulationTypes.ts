@@ -396,11 +396,13 @@ export type SimCitizenRoleType = "none" | "nation_manager" | "settlement_manager
 export type SimCitizen = {
   readonly bornOnTurnNumber: number | null;
   readonly citizenType: SimCitizenType;
+  readonly cultureId: string | null;
   readonly givenName: string;
   readonly id: string;
   readonly namesetId: string | null;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
+  readonly religionId: string | null;
   readonly roleNationId: string | null;
   readonly roleSettlementId: string | null;
   readonly roleType: SimCitizenRoleType;
@@ -556,6 +558,10 @@ export type CitizenBirth = {
   // other than newborn; undefined means "born this transition's turn number"
   // (the historical behavior for partnership births).
   readonly bornOnTurnNumber?: number;
+  // Null for parentless spawns (no parent to inherit from); partnership
+  // births roll 50/50 between parentA/parentB culture, independently for
+  // religion (see pickInheritedFieldId).
+  readonly cultureId: string | null;
   readonly givenName: string;
   readonly namesetId: string | null;
   readonly npcFlaw: string | null;
@@ -567,6 +573,7 @@ export type CitizenBirth = {
   // always set both.
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
+  readonly religionId: string | null;
   readonly sex: string;
   readonly settlementId: string;
   readonly surname: string | null;

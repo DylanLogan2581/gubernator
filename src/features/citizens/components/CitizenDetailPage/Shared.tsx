@@ -108,3 +108,22 @@ export function DeathCategoryChip({
     </span>
   );
 }
+
+export function CultureReligionChip({
+  color,
+  name,
+}: {
+  readonly color: string;
+  readonly name: string;
+}): JSX.Element {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+      <span
+        aria-hidden="true"
+        className="size-2.5 shrink-0 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+      {name}
+    </span>
+  );
+}

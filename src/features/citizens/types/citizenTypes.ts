@@ -19,6 +19,7 @@ export type Citizen = {
   readonly bornOnTurnNumber: number | null;
   readonly citizenType: CitizenType;
   readonly createdAt: string;
+  readonly cultureId: string | null;
   readonly deathCause: string | null;
   readonly deathCauseCategory: DeathCauseCategory | null;
   readonly givenName: string;
@@ -28,6 +29,7 @@ export type Citizen = {
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
   readonly profilePhotoUrl: string | null;
+  readonly religionId: string | null;
   readonly roleNationId: string | null;
   readonly roleSettlementId: string | null;
   readonly roleType: CitizenRoleType;

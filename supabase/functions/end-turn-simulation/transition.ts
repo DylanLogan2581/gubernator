@@ -67,6 +67,7 @@ type TradeRouteOutcomeEntry = {
 
 type CitizenBirthEntry = {
   readonly bornOnTurnNumber: number;
+  readonly cultureId: string | null;
   readonly givenName: string;
   readonly namesetId: string | null;
   readonly npcFlaw: string | null;
@@ -76,6 +77,7 @@ type CitizenBirthEntry = {
   readonly npcTrait2: string | null;
   readonly parentACitizenId: string | null;
   readonly parentBCitizenId: string | null;
+  readonly religionId: string | null;
   readonly sex: string;
   readonly settlementId: string;
   readonly surname: string | null;
@@ -293,6 +295,7 @@ export function mapSimulationResultToPayload(
   // spawned citizens arrive as adults rather than newborns.
   const citizenBirths: CitizenBirthEntry[] = result.citizenBirths.map((b) => ({
     bornOnTurnNumber: b.bornOnTurnNumber ?? newTurnNumber,
+    cultureId: b.cultureId,
     givenName: b.givenName,
     namesetId: b.namesetId,
     npcFlaw: b.npcFlaw,
@@ -302,6 +305,7 @@ export function mapSimulationResultToPayload(
     npcTrait2: b.npcTrait2,
     parentACitizenId: b.parentACitizenId ?? null,
     parentBCitizenId: b.parentBCitizenId ?? null,
+    religionId: b.religionId,
     sex: b.sex,
     settlementId: b.settlementId,
     surname: b.surname,

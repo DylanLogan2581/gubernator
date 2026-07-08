@@ -312,6 +312,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -329,6 +330,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;
@@ -345,6 +347,7 @@ export type Database = {
           born_on_turn_number?: number | null;
           citizen_type: string;
           created_at?: string;
+          culture_id?: string | null;
           death_cause?: string | null;
           death_cause_category?:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -362,6 +365,7 @@ export type Database = {
           parent_b_citizen_id?: string | null;
           personality_text?: string | null;
           profile_photo_url?: string | null;
+          religion_id?: string | null;
           role_nation_id?: string | null;
           role_settlement_id?: string | null;
           role_type?: string;
@@ -378,6 +382,7 @@ export type Database = {
           born_on_turn_number?: number | null;
           citizen_type?: string;
           created_at?: string;
+          culture_id?: string | null;
           death_cause?: string | null;
           death_cause_category?:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -395,6 +400,7 @@ export type Database = {
           parent_b_citizen_id?: string | null;
           personality_text?: string | null;
           profile_photo_url?: string | null;
+          religion_id?: string | null;
           role_nation_id?: string | null;
           role_settlement_id?: string | null;
           role_type?: string;
@@ -408,6 +414,13 @@ export type Database = {
           world_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "citizens_culture_id_fkey";
+            columns: ["culture_id"];
+            isOneToOne: false;
+            referencedRelation: "cultures";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "citizens_nameset_id_fkey";
             columns: ["nameset_id"];
@@ -470,6 +483,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "citizens";
             referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "citizens_religion_id_fkey";
+            columns: ["religion_id"];
+            isOneToOne: false;
+            referencedRelation: "religions";
+            referencedColumns: ["id"];
           },
           {
             foreignKeyName: "citizens_role_nation_id_fkey";
@@ -3739,6 +3759,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -3756,6 +3777,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;
@@ -3797,6 +3819,54 @@ export type Database = {
           to: "nation_treaties";
           isOneToOne: true;
           isSetofReturn: false;
+        };
+      };
+      bulk_set_citizen_culture_religion: {
+        Args: {
+          p_culture_id: string;
+          p_religion_id: string;
+          p_settlement_id: string;
+        };
+        Returns: {
+          born_on_turn_number: number | null;
+          citizen_type: string;
+          created_at: string;
+          culture_id: string | null;
+          death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
+          id: string;
+          name: string | null;
+          nameset_id: string | null;
+          npc_flaw: string | null;
+          npc_goal: string | null;
+          npc_secret_contradiction: string | null;
+          npc_trait_1: string | null;
+          npc_trait_2: string | null;
+          parent_a_citizen_id: string | null;
+          parent_b_citizen_id: string | null;
+          personality_text: string | null;
+          profile_photo_url: string | null;
+          religion_id: string | null;
+          role_nation_id: string | null;
+          role_settlement_id: string | null;
+          role_type: string;
+          settlement_id: string | null;
+          sex: string | null;
+          skills_text: string | null;
+          status: string;
+          surname: string | null;
+          updated_at: string;
+          user_id: string | null;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
         };
       };
       burn_currency: {
@@ -3927,6 +3997,7 @@ export type Database = {
         Args: {
           p_born_on_turn_number?: number;
           p_citizen_type: string;
+          p_culture_id?: string;
           p_given_name: string;
           p_nameset_id?: string;
           p_npc_flaw?: string;
@@ -3938,6 +4009,7 @@ export type Database = {
           p_parent_b_citizen_id?: string;
           p_personality_text?: string;
           p_profile_photo_url?: string;
+          p_religion_id?: string;
           p_settlement_id: string;
           p_sex?: string;
           p_skills_text?: string;
@@ -3949,6 +4021,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -3966,6 +4039,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;
@@ -4105,6 +4179,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -4122,6 +4197,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;
@@ -4190,6 +4266,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -4207,6 +4284,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;
@@ -4729,6 +4807,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -4746,6 +4825,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;
@@ -4784,6 +4864,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -4801,6 +4882,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;
@@ -5360,6 +5442,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -5377,6 +5460,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;
@@ -5440,6 +5524,54 @@ export type Database = {
           before: number;
           removed_citizen_ids: string[];
         }[];
+      };
+      set_citizen_culture_religion: {
+        Args: {
+          p_citizen_id: string;
+          p_culture_id: string;
+          p_religion_id: string;
+        };
+        Returns: {
+          born_on_turn_number: number | null;
+          citizen_type: string;
+          created_at: string;
+          culture_id: string | null;
+          death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          given_name: string;
+          id: string;
+          name: string | null;
+          nameset_id: string | null;
+          npc_flaw: string | null;
+          npc_goal: string | null;
+          npc_secret_contradiction: string | null;
+          npc_trait_1: string | null;
+          npc_trait_2: string | null;
+          parent_a_citizen_id: string | null;
+          parent_b_citizen_id: string | null;
+          personality_text: string | null;
+          profile_photo_url: string | null;
+          religion_id: string | null;
+          role_nation_id: string | null;
+          role_settlement_id: string | null;
+          role_type: string;
+          settlement_id: string | null;
+          sex: string | null;
+          skills_text: string | null;
+          status: string;
+          surname: string | null;
+          updated_at: string;
+          user_id: string | null;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       set_configured_cull_quantity: {
         Args: { p_instance_id: string; p_quantity: number };
@@ -5991,6 +6123,7 @@ export type Database = {
           born_on_turn_number: number | null;
           citizen_type: string;
           created_at: string;
+          culture_id: string | null;
           death_cause: string | null;
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
@@ -6008,6 +6141,7 @@ export type Database = {
           parent_b_citizen_id: string | null;
           personality_text: string | null;
           profile_photo_url: string | null;
+          religion_id: string | null;
           role_nation_id: string | null;
           role_settlement_id: string | null;
           role_type: string;

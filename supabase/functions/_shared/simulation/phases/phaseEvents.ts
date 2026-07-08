@@ -316,10 +316,12 @@ function applyEffect(
             citizenBirths.push({
               ...flavor,
               bornOnTurnNumber: Math.max(0, turnNumber - ageTurns),
+              cultureId: null,
               givenName,
               namesetId,
               parentACitizenId: null,
               parentBCitizenId: null,
+              religionId: null,
               sex,
               settlementId,
               surname,

@@ -420,7 +420,7 @@ export function fetchCitizens(
       status: "eq.alive",
       order: "id.asc",
       select:
-        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,nameset_id,role_type,role_nation_id,role_settlement_id",
+        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,nameset_id,culture_id,religion_id,role_type,role_nation_id,role_settlement_id",
     },
   });
 }
@@ -474,7 +474,6 @@ export function fetchNationRelationships(
     },
   });
 }
-
 
 export function fetchNationResourceStockpiles(
   ctx: FetchContext,

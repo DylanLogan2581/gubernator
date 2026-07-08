@@ -357,6 +357,99 @@ describe("applyFertilityForSettlement — pop cap and resource gating", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Culture / religion inheritance
+// ---------------------------------------------------------------------------
+
+describe("applyFertilityForSettlement — culture/religion inheritance", () => {
+  it("is deterministic for a fixed seed (50/50 roll between both non-null parents)", () => {
+    const buildArgs = (rng: SeededRng): FertilityArgs => {
+      const args = makeDefaultArgs(rng);
+      args.citizenById = new Map([
+        [
+          "cA",
+          makeCitizen({
+            bornOnTurnNumber: 0,
+            cultureId: "culture-a",
+            id: "cA",
+            religionId: "religion-a",
+            settlementId: "s1",
+            sex: "male",
+          }),
+        ],
+        [
+          "cB",
+          makeCitizen({
+            bornOnTurnNumber: 0,
+            cultureId: "culture-b",
+            id: "cB",
+            religionId: "religion-b",
+            settlementId: "s1",
+            sex: "female",
+          }),
+        ],
+      ]);
+      return args;
+    };
+
+    const result1 = callFertility(buildArgs(createSeededRng("culture-seed")));
+    const result2 = callFertility(buildArgs(createSeededRng("culture-seed")));
+
+    expect(result1.citizenBirths).toHaveLength(1);
+    expect(result1).toStrictEqual(result2);
+    expect(["culture-a", "culture-b"]).toContain(
+      result1.citizenBirths[0]?.cultureId,
+    );
+    expect(["religion-a", "religion-b"]).toContain(
+      result1.citizenBirths[0]?.religionId,
+    );
+  });
+
+  it("inherits the non-null parent's culture/religion when the other parent is null", () => {
+    const args = makeDefaultArgs(createSeededRng("null-parent-seed"));
+    args.citizenById = new Map([
+      [
+        "cA",
+        makeCitizen({
+          bornOnTurnNumber: 0,
+          cultureId: "culture-a",
+          id: "cA",
+          religionId: null,
+          settlementId: "s1",
+          sex: "male",
+        }),
+      ],
+      [
+        "cB",
+        makeCitizen({
+          bornOnTurnNumber: 0,
+          cultureId: null,
+          id: "cB",
+          religionId: "religion-b",
+          settlementId: "s1",
+          sex: "female",
+        }),
+      ],
+    ]);
+
+    const result = callFertility(args);
+
+    expect(result.citizenBirths).toHaveLength(1);
+    expect(result.citizenBirths[0]?.cultureId).toBe("culture-a");
+    expect(result.citizenBirths[0]?.religionId).toBe("religion-b");
+  });
+
+  it("is null when both parents are null for that field", () => {
+    const args = makeDefaultArgs(createSeededRng("both-null-seed"));
+
+    const result = callFertility(args);
+
+    expect(result.citizenBirths).toHaveLength(1);
+    expect(result.citizenBirths[0]?.cultureId).toBeNull();
+    expect(result.citizenBirths[0]?.religionId).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Partnership / citizen filtering
 // ---------------------------------------------------------------------------
 

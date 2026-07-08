@@ -449,6 +449,7 @@ describe("mapSimulationResultToPayload", () => {
       ...makeEmptyResult(),
       citizenBirths: [
         {
+          cultureId: null,
           givenName: "Newborn",
           namesetId: null,
           npcFlaw: "cowardly",
@@ -458,6 +459,7 @@ describe("mapSimulationResultToPayload", () => {
           npcTrait2: null,
           parentACitizenId: CITIZEN_A_ID,
           parentBCitizenId: CITIZEN_B_ID,
+          religionId: null,
           sex: "male",
           settlementId: SETTLEMENT_ID,
           surname: null,
@@ -661,6 +663,7 @@ describe("numeric precision through JSON", () => {
       ...makeEmptyResult(),
       citizenBirths: [
         {
+          cultureId: null,
           givenName: "Newborn",
           namesetId: null,
           npcFlaw: null,
@@ -670,6 +673,7 @@ describe("numeric precision through JSON", () => {
           npcTrait2: null,
           parentACitizenId: CITIZEN_A_ID,
           parentBCitizenId: CITIZEN_B_ID,
+          religionId: null,
           sex: "female",
           settlementId: SETTLEMENT_ID,
           surname: null,

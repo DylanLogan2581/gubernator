@@ -25,12 +25,14 @@ export {
   setPerTargetAssignmentMutationOptions,
 } from "./mutations/perTargetAssignmentMutations";
 export {
+  bulkSetCitizenCultureReligionMutationOptions,
   CitizenMutationError,
   createNpcMutationOptions,
   createPlayerCharacterMutationOptions,
   isCitizenMutationError,
   markCitizenDeadMutationOptions,
   reviveCitizenMutationOptions,
+  setCitizenCultureReligionMutationOptions,
   updateCitizenCoreMutationOptions,
   updateCitizenNpcFieldsMutationOptions,
 } from "./mutations/citizensMutations";
@@ -92,6 +94,7 @@ export { setBulkStandardJobAssignmentInputSchema } from "./schemas/setBulkStanda
 export { setPerTargetAssignmentInputSchema } from "./schemas/setPerTargetAssignmentSchemas";
 export {
   assignCitizenRoleInputSchema,
+  bulkSetCitizenCultureReligionInputSchema,
   citizenRoleAssignmentSchema,
   createNpcInputSchema,
   createPlayerCharacterInputSchema,
@@ -99,6 +102,7 @@ export {
   markCitizenDeadInputSchema,
   revokeCitizenRoleInputSchema,
   reviveCitizenInputSchema,
+  setCitizenCultureReligionInputSchema,
   unlinkUserFromCitizenInputSchema,
   updateCitizenCoreInputSchema,
   updateCitizenNpcFieldsInputSchema,
@@ -131,6 +135,8 @@ export type {
 export type {
   AssignCitizenRoleInput,
   AssignCitizenRoleValues,
+  BulkSetCitizenCultureReligionInput,
+  BulkSetCitizenCultureReligionValues,
   CitizenRoleAssignmentInput,
   CitizenRoleAssignmentValues,
   CreateNpcInput,
@@ -145,6 +151,8 @@ export type {
   RevokeCitizenRoleValues,
   ReviveCitizenInput,
   ReviveCitizenValues,
+  SetCitizenCultureReligionInput,
+  SetCitizenCultureReligionValues,
   UnlinkUserFromCitizenInput,
   UnlinkUserFromCitizenValues,
   UpdateCitizenCoreInput,

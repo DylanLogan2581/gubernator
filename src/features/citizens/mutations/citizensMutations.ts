@@ -15,16 +15,20 @@ import {
 import { toCitizen, type CitizenRow } from "../queries/citizensQueries";
 import { citizensQueryKeys } from "../queries/citizensQueryKeys";
 import {
+  bulkSetCitizenCultureReligionInputSchema,
   createNpcInputSchema,
   createPlayerCharacterInputSchema,
   markCitizenDeadInputSchema,
   reviveCitizenInputSchema,
+  setCitizenCultureReligionInputSchema,
   updateCitizenCoreInputSchema,
   updateCitizenNpcFieldsInputSchema,
+  type BulkSetCitizenCultureReligionInput,
   type CreateNpcInput,
   type CreatePlayerCharacterInput,
   type MarkCitizenDeadInput,
   type ReviveCitizenInput,
+  type SetCitizenCultureReligionInput,
   type UpdateCitizenCoreInput,
   type UpdateCitizenNpcFieldsInput,
 } from "../schemas/citizenSchemas";
@@ -67,6 +71,16 @@ type ReviveCitizenMutationOptions = UseMutationOptions<
   AuthUiError | CitizenMutationError,
   ReviveCitizenInput
 >;
+type SetCitizenCultureReligionMutationOptions = UseMutationOptions<
+  Citizen,
+  AuthUiError | CitizenMutationError,
+  SetCitizenCultureReligionInput
+>;
+type BulkSetCitizenCultureReligionMutationOptions = UseMutationOptions<
+  readonly Citizen[],
+  AuthUiError | CitizenMutationError,
+  BulkSetCitizenCultureReligionInput
+>;
 
 export type CitizenMutationIssue = MutationIssue;
 
@@ -77,7 +91,7 @@ export const {
 export type CitizenMutationError = InstanceType<typeof CitizenMutationError>;
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,culture_id,religion_id,created_at,updated_at";
 
 export function createNpcMutationOptions({
   client = requireSupabaseClient(),
@@ -172,6 +186,50 @@ export function reviveCitizenMutationOptions({
     mutationFn: (input: ReviveCitizenInput) => reviveCitizen(client, input),
     mutationKey: [...citizensQueryKeys.all, "revive-citizen"],
     onSuccess: (citizen) => invalidateAfterCitizenChange(queryClient, citizen),
+  });
+}
+
+export function setCitizenCultureReligionMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): SetCitizenCultureReligionMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: SetCitizenCultureReligionInput) =>
+      setCitizenCultureReligion(client, input),
+    mutationKey: [...citizensQueryKeys.all, "set-citizen-culture-religion"],
+    onSuccess: (citizen) => invalidateAfterCitizenChange(queryClient, citizen),
+  });
+}
+
+export function bulkSetCitizenCultureReligionMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): BulkSetCitizenCultureReligionMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: BulkSetCitizenCultureReligionInput) =>
+      bulkSetCitizenCultureReligion(client, input),
+    mutationKey: [
+      ...citizensQueryKeys.all,
+      "bulk-set-citizen-culture-religion",
+    ],
+    onSuccess: async (_citizens, input): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementList(input.settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementAggregateStats(
+            input.settlementId,
+          ),
+        }),
+      ]);
+    },
   });
 }
 
@@ -403,6 +461,83 @@ async function reviveCitizen(
   }
 
   return toCitizen(data);
+}
+
+async function setCitizenCultureReligion(
+  client: GubernatorSupabaseClient,
+  input: SetCitizenCultureReligionInput,
+): Promise<Citizen> {
+  const values = parseInput(setCitizenCultureReligionInputSchema, input);
+
+  // set_citizen_culture_religion is a SECURITY DEFINER RPC (column-level
+  // grants block direct writes to culture_id/religion_id — see
+  // 20260920000000_add_citizen_culture_religion). Its p_culture_id /
+  // p_religion_id args are non-nullable in the generated types even though
+  // the RPC accepts null to clear, so this is called via the same
+  // untyped-rpc cast as setNationCultureReligion in nationsMutations.ts.
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): {
+      maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+
+  const { data, error } = await clientAsRpcCapable
+    .rpc("set_citizen_culture_religion", {
+      p_citizen_id: values.citizenId,
+      p_culture_id: values.cultureId,
+      p_religion_id: values.religionId,
+    })
+    .maybeSingle();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new CitizenMutationError({
+      code: "citizen_not_found",
+      message: "Citizen culture and religion could not be updated.",
+    });
+  }
+
+  return toCitizen(data as CitizenRow);
+}
+
+async function bulkSetCitizenCultureReligion(
+  client: GubernatorSupabaseClient,
+  input: BulkSetCitizenCultureReligionInput,
+): Promise<readonly Citizen[]> {
+  const values = parseInput(bulkSetCitizenCultureReligionInputSchema, input);
+
+  // bulk_set_citizen_culture_religion is a SECURITY DEFINER RPC; same
+  // untyped-rpc cast as setCitizenCultureReligion above (null args are valid
+  // here too — null means "leave this field untouched" for the bulk RPC).
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): Promise<{ data: unknown; error: unknown }>;
+  };
+
+  const { data, error } = await clientAsRpcCapable.rpc(
+    "bulk_set_citizen_culture_religion",
+    {
+      p_culture_id: values.cultureId,
+      p_religion_id: values.religionId,
+      p_settlement_id: values.settlementId,
+    },
+  );
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return Array.isArray(data)
+    ? data.map((row) => toCitizen(row as CitizenRow))
+    : [];
 }
 
 function creationBlockedError(subject: string): CitizenMutationError {

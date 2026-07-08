@@ -1,6 +1,7 @@
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
 import { pickChildNamesetId } from "./childNameset.ts";
+import { pickInheritedFieldId } from "./inheritedField.ts";
 
 import type { SeededRng } from "../../seededRng.ts";
 import type {
@@ -195,12 +196,25 @@ export function applyFertilityForSettlement(
       citizenB,
     );
 
+    const cultureId = pickInheritedFieldId(
+      rng,
+      citizenA.cultureId,
+      citizenB.cultureId,
+    );
+    const religionId = pickInheritedFieldId(
+      rng,
+      citizenA.religionId,
+      citizenB.religionId,
+    );
+
     citizenBirths.push({
       ...flavor,
+      cultureId,
       givenName,
       namesetId: childNamesetId,
       parentACitizenId: partnership.citizenAId,
       parentBCitizenId: partnership.citizenBId,
+      religionId,
       sex,
       settlementId: sid,
       surname,

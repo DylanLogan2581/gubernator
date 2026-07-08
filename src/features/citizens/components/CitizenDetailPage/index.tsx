@@ -233,7 +233,12 @@ function CitizenDetailLoaded({
       <CitizenSiblingNav citizen={citizen} worldId={worldId} />
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr] lg:items-start">
-        <CitizenIdentityCard citizen={citizen} settlement={settlement} />
+        <CitizenIdentityCard
+          canAdmin={canAdmin}
+          citizen={citizen}
+          queryClient={queryClient}
+          settlement={settlement}
+        />
 
         <CitizenDetailTabs
           canAdmin={canAdmin}

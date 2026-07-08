@@ -1,6 +1,6 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Skull, UserPlus } from "lucide-react";
+import { Landmark, Skull, UserPlus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { DataTable } from "@/components/shared/DataTable";
@@ -12,14 +12,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { culturesByWorldQueryOptions } from "@/features/cultures";
+import { religionsByWorldQueryOptions } from "@/features/religions";
 import { settlementPopulationCapQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 
+import { bulkSetCitizenCultureReligionMutationOptions } from "../mutations/citizensMutations";
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
 import { citizenAggregateStatsForSettlementQueryOptions } from "../queries/citizensQueries";
 import { formatOfficeTypesLabel } from "../utils/officeTypesLabel";
@@ -38,6 +52,7 @@ import type {
   CitizenStatus,
   CitizenType,
 } from "../types/citizenTypes";
+import type { QueryClient } from "@tanstack/react-query";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 
 type CitizensPanelProps = {
@@ -269,6 +284,8 @@ function CitizensCreateActions({
 }): JSX.Element {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<CitizensCreateMode>(null);
+  const [isBulkCultureReligionOpen, setIsBulkCultureReligionOpen] =
+    useState(false);
 
   const disabledReason = isArchived
     ? "Creating citizens is disabled because this world is archived."
@@ -301,7 +318,27 @@ function CitizensCreateActions({
           <UserPlus aria-hidden="true" />
           Create player character
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isArchived}
+          title={disabledReason}
+          aria-label="Assign culture/religion to all citizens here"
+          onClick={() => setIsBulkCultureReligionOpen(true)}
+        >
+          <Landmark aria-hidden="true" />
+          Assign culture/religion to all
+        </Button>
       </div>
+      {isBulkCultureReligionOpen ? (
+        <BulkAssignCultureReligionDialog
+          onClose={() => setIsBulkCultureReligionOpen(false)}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+        />
+      ) : null}
       {mode === "npc" ? (
         <CreateNpcDialog
           incestPreventionDepth={incestPreventionDepth}
@@ -324,6 +361,118 @@ function CitizensCreateActions({
         />
       ) : null}
     </>
+  );
+}
+
+function BulkAssignCultureReligionDialog({
+  onClose,
+  queryClient,
+  settlementId,
+  worldId,
+}: {
+  readonly onClose: () => void;
+  readonly queryClient: QueryClient;
+  readonly settlementId: string;
+  readonly worldId: string;
+}): JSX.Element {
+  const culturesQuery = useQuery(culturesByWorldQueryOptions(worldId));
+  const religionsQuery = useQuery(religionsByWorldQueryOptions(worldId));
+  const [cultureId, setCultureId] = useState<string | null>(null);
+  const [religionId, setReligionId] = useState<string | null>(null);
+
+  const bulkMutation = useMutation(
+    bulkSetCitizenCultureReligionMutationOptions({ queryClient }),
+  );
+
+  function handleSubmit(): void {
+    bulkMutation.mutate(
+      { cultureId, religionId, settlementId },
+      {
+        onError: (error) => {
+          notifyMutationError(
+            error,
+            "Failed to assign culture/religion to citizens.",
+          );
+        },
+        onSuccess: (citizens) => {
+          notifyMutationSuccess(
+            `Updated ${citizens.length.toString()} citizen(s).`,
+          );
+          onClose();
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Assign culture/religion to all citizens here
+          </DialogTitle>
+          <DialogDescription>
+            Applies to every alive citizen in this settlement. Leaving a field
+            unset leaves that field untouched on each citizen.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <Label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Culture</span>
+            <NativeSelect
+              aria-label="Culture"
+              disabled={bulkMutation.isPending}
+              value={cultureId ?? ""}
+              onChange={(event) => {
+                const next = event.currentTarget.value;
+                setCultureId(next === "" ? null : next);
+              }}
+            >
+              <option value="">Leave untouched</option>
+              {culturesQuery.data?.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </Label>
+          <Label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Religion</span>
+            <NativeSelect
+              aria-label="Religion"
+              disabled={bulkMutation.isPending}
+              value={religionId ?? ""}
+              onChange={(event) => {
+                const next = event.currentTarget.value;
+                setReligionId(next === "" ? null : next);
+              }}
+            >
+              <option value="">Leave untouched</option>
+              {religionsQuery.data?.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </Label>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={
+              bulkMutation.isPending ||
+              (cultureId === null && religionId === null)
+            }
+            onClick={handleSubmit}
+          >
+            {bulkMutation.isPending ? "Assigning…" : "Assign"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -76,11 +76,13 @@ function makeCitizen(id: string, settlementId: string): SimCitizen {
   return {
     bornOnTurnNumber: 1,
     citizenType: "npc",
+    cultureId: null,
     givenName: id,
     id,
     namesetId: null,
     parentACitizenId: null,
     parentBCitizenId: null,
+    religionId: null,
     roleNationId: null,
     roleSettlementId: null,
     roleType: "none",

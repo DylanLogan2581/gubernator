@@ -117,10 +117,12 @@ export function makeCitizen(
   return {
     bornOnTurnNumber: 1,
     citizenType: "npc",
+    cultureId: null,
     givenName: overrides.id,
     namesetId: null,
     parentACitizenId: null,
     parentBCitizenId: null,
+    religionId: null,
     roleNationId: null,
     roleSettlementId: null,
     roleType: "none",
@@ -175,9 +177,12 @@ export function makeNationOffice(
   };
 }
 
-
 export function makeTreaty(
-  overrides: Partial<SimTreaty> & { id: string; proposerNationId: string; responderNationId: string },
+  overrides: Partial<SimTreaty> & {
+    id: string;
+    proposerNationId: string;
+    responderNationId: string;
+  },
 ): SimTreaty {
   return {
     endsTurnNumber: null,

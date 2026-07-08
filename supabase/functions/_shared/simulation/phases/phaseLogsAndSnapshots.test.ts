@@ -58,6 +58,7 @@ function makeBirth(
   overrides: Partial<CitizenBirth> & { settlementId: string },
 ): CitizenBirth {
   return {
+    cultureId: null,
     givenName: "Newborn",
     namesetId: null,
     npcFlaw: null,
@@ -67,6 +68,7 @@ function makeBirth(
     npcTrait2: null,
     parentACitizenId: "parent-a",
     parentBCitizenId: "parent-b",
+    religionId: null,
     sex: "female",
     surname: null,
     ...overrides,

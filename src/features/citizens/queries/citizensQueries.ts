@@ -91,6 +91,7 @@ type CitizenRow = {
   readonly born_on_turn_number: number | null;
   readonly citizen_type: CitizenType;
   readonly created_at: string;
+  readonly culture_id: string | null;
   readonly death_cause: string | null;
   readonly death_cause_category: DeathCauseCategory | null;
   readonly given_name: string;
@@ -100,6 +101,7 @@ type CitizenRow = {
   readonly parent_a_citizen_id: string | null;
   readonly parent_b_citizen_id: string | null;
   readonly profile_photo_url: string | null;
+  readonly religion_id: string | null;
   readonly role_nation_id: string | null;
   readonly role_settlement_id: string | null;
   readonly role_type: CitizenRoleType;
@@ -135,7 +137,7 @@ type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
 };
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,culture_id,religion_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
 
 const CITIZEN_AGGREGATE_SELECT =
   "id,citizen_type,status,citizen_assignments(assignment_type)";
@@ -593,6 +595,7 @@ export function toCitizen(row: CitizenRow): Citizen {
     bornOnTurnNumber: row.born_on_turn_number,
     citizenType: row.citizen_type,
     createdAt: row.created_at,
+    cultureId: row.culture_id,
     deathCause: row.death_cause,
     deathCauseCategory: row.death_cause_category,
     givenName: row.given_name,
@@ -602,6 +605,7 @@ export function toCitizen(row: CitizenRow): Citizen {
     parentACitizenId: row.parent_a_citizen_id,
     parentBCitizenId: row.parent_b_citizen_id,
     profilePhotoUrl: row.profile_photo_url,
+    religionId: row.religion_id,
     roleNationId: row.role_nation_id,
     roleSettlementId: row.role_settlement_id,
     roleType: row.role_type,

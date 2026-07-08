@@ -166,7 +166,9 @@ export type SupabaseTradeRouteRow = {
 
 export type SupabaseCitizenRow = {
   readonly id: string;
+  readonly culture_id: string | null;
   readonly nameset_id: string | null;
+  readonly religion_id: string | null;
   readonly settlement_id: string | null;
   readonly citizen_type: string;
   readonly given_name: string;
@@ -497,6 +499,8 @@ export function isCitizenRow(v: unknown): v is SupabaseCitizenRow {
   return (
     isRecord(v) &&
     typeof v.id === "string" &&
+    (v.culture_id === null || typeof v.culture_id === "string") &&
+    (v.religion_id === null || typeof v.religion_id === "string") &&
     (v.settlement_id === null || typeof v.settlement_id === "string") &&
     typeof v.citizen_type === "string" &&
     typeof v.given_name === "string" &&
