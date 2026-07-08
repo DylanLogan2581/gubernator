@@ -75,6 +75,11 @@ export const cultureReligionInputLimits = {
   descriptionMax: 1000,
 } as const;
 
+export const educationLevelInputLimits = {
+  nameMax: 64,
+  descriptionMax: 1000,
+} as const;
+
 export const eventInputLimits = {
   eventGroupNameMax: 128,
   eventGroupDescriptionMax: 1000,

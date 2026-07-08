@@ -821,6 +821,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      education_levels: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          rank: number;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          rank: number;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          rank?: number;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "education_levels_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       email_send_log: {
         Row: {
           created_at: string;
@@ -4112,6 +4150,24 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      create_education_level: {
+        Args: { p_description: string; p_name: string; p_world_id: string };
+        Returns: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          rank: number;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "education_levels";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       create_event_group_with_events: {
         Args: {
           p_activate_on_transition_after_turn_number: number;
@@ -5171,6 +5227,24 @@ export type Database = {
         Returns: {
           updated_count: number;
         }[];
+      };
+      reorder_education_level: {
+        Args: { p_direction: string; p_level_id: string };
+        Returns: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          rank: number;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "education_levels";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       replace_trade_route: {
         Args: {

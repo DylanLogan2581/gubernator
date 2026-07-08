@@ -11,6 +11,7 @@ import { BuildingsConfigPanel } from "@/features/buildings";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
 import { CulturesConfigPanel } from "@/features/cultures";
 import { DepositsConfigPanel } from "@/features/deposits";
+import { EducationConfigPanel } from "@/features/education";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
 import { NamesetsConfigPanel } from "@/features/namesets";
@@ -264,6 +265,18 @@ function WorldConfigurationContent({
             />
           </ConfigPanelShell>
         </div>
+      );
+    }
+
+    if (activeTab === "education") {
+      return (
+        <ConfigPanelShell>
+          <EducationConfigPanel
+            canAdmin={canAdmin}
+            isArchived={header.isArchived}
+            worldId={worldId}
+          />
+        </ConfigPanelShell>
       );
     }
 
