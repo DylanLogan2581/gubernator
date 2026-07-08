@@ -8,6 +8,7 @@ import { IconChip } from "@/components/shared/IconChip";
 import { resolveEntityIcon } from "@/components/shared/iconPicker/CuratedIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { EducationLevel } from "@/features/education";
 import { hashToCategoricalSlot } from "@/lib/categoricalPalette";
 import { notifyMutationSuccess } from "@/lib/notify";
 
@@ -40,6 +41,7 @@ type PendingAction = {
 
 type JobsTableProps = {
   readonly canEdit: boolean;
+  readonly educationLevels: readonly EducationLevel[];
   readonly isPaginationDisabled: boolean;
   readonly jobs: readonly JobDefinition[];
   readonly onPageChange: (page: number) => void;
@@ -77,6 +79,7 @@ function JobCapacityDisplay({
 
 function buildColumns({
   canEdit,
+  educationLevelNameById,
   hardDeletePendingId,
   onEdit,
   onHardDelete,
@@ -87,6 +90,7 @@ function buildColumns({
   trashPendingId,
 }: {
   readonly canEdit: boolean;
+  readonly educationLevelNameById: ReadonlyMap<string, string>;
   readonly hardDeletePendingId: string | null;
   readonly onEdit: (job: JobDefinition) => void;
   readonly onHardDelete: (job: JobDefinition) => void;
@@ -112,6 +116,14 @@ function buildColumns({
             />
             <span className="font-medium">{job.name}</span>
             <Badge variant="secondary">{JOB_TYPE_LABELS[job.jobType]}</Badge>
+            {job.requiredEducationLevelId !== null ? (
+              <Badge variant="outline">
+                {`Requires ${
+                  educationLevelNameById.get(job.requiredEducationLevelId) ??
+                  "education level"
+                }`}
+              </Badge>
+            ) : null}
           </div>
         );
       },
@@ -217,6 +229,7 @@ function buildColumns({
 // doesn't mount hundreds of mutation hooks.
 export function JobsTable({
   canEdit,
+  educationLevels,
   isPaginationDisabled,
   jobs,
   onPageChange,
@@ -292,8 +305,13 @@ export function JobsTable({
     );
   }
 
+  const educationLevelNameById = new Map(
+    educationLevels.map((level) => [level.id, level.name]),
+  );
+
   const columns = buildColumns({
     canEdit,
+    educationLevelNameById,
     hardDeletePendingId:
       pendingAction?.action === "hardDelete" ? pendingAction.id : null,
     onEdit: setEditingJob,

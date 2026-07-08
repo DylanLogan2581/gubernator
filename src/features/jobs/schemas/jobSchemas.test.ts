@@ -14,6 +14,7 @@ const WORLD_ID = "22222222-2222-2222-2222-222222222222";
 const RESOURCE_ID = "33333333-3333-3333-3333-333333333333";
 const DEPOSIT_TYPE_ID = "44444444-4444-4444-4444-444444444444";
 const MANAGED_POP_TYPE_ID = "55555555-5555-5555-5555-555555555555";
+const EDUCATION_LEVEL_ID = "66666666-6666-6666-6666-666666666666";
 
 describe("jobIoEntrySchema", () => {
   it("accepts a valid entry with all fields", () => {
@@ -506,6 +507,44 @@ describe("createJobInputSchema — common field validation", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts a job without requiredEducationLevelId (no requirement)", () => {
+    const result = createJobInputSchema.safeParse({
+      baseCapacity: 10,
+      jobType: "standard",
+      name: "Farm Worker",
+      slug: "farm-worker",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a job with a valid requiredEducationLevelId", () => {
+    const result = createJobInputSchema.safeParse({
+      baseCapacity: 10,
+      jobType: "standard",
+      name: "Farm Worker",
+      requiredEducationLevelId: EDUCATION_LEVEL_ID,
+      slug: "farm-worker",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid requiredEducationLevelId", () => {
+    const result = createJobInputSchema.safeParse({
+      baseCapacity: 10,
+      jobType: "standard",
+      name: "Farm Worker",
+      requiredEducationLevelId: "not-a-uuid",
+      slug: "farm-worker",
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("updateJobInputSchema", () => {
@@ -543,6 +582,26 @@ describe("updateJobInputSchema", () => {
     const result = updateJobInputSchema.safeParse({
       jobId: JOB_ID,
       linkedDepositTypeId: null,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts setting requiredEducationLevelId to a valid id", () => {
+    const result = updateJobInputSchema.safeParse({
+      jobId: JOB_ID,
+      requiredEducationLevelId: EDUCATION_LEVEL_ID,
+      worldId: WORLD_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts clearing requiredEducationLevelId to null", () => {
+    const result = updateJobInputSchema.safeParse({
+      jobId: JOB_ID,
+      requiredEducationLevelId: null,
       worldId: WORLD_ID,
     });
 

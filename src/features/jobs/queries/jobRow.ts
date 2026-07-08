@@ -23,6 +23,7 @@ export type JobRow = {
   readonly linked_managed_population_type_id: string | null;
   readonly name: string;
   readonly outputs_json: readonly JobIoEntryRow[];
+  readonly required_education_level_id: string | null;
   readonly slug: string;
   readonly trader_capacity_per_worker: number | null;
   readonly updated_at: string;
@@ -31,7 +32,7 @@ export type JobRow = {
 
 export const JOB_SELECT = [
   "id,world_id,name,slug,icon,job_type,base_capacity,trader_capacity_per_worker",
-  "linked_deposit_type_id,linked_managed_population_type_id",
+  "linked_deposit_type_id,linked_managed_population_type_id,required_education_level_id",
   "inputs_json,outputs_json,is_trashed,created_at,updated_at",
   "deposit_types!deposit_types_job_id_fk(id)",
   "husbandry_mpt:managed_population_types!managed_population_types_husbandry_job_fk(id)",
@@ -67,6 +68,7 @@ export function toJob(row: JobRow): JobDefinition {
     linkedManagedPopulationTypeId: row.linked_managed_population_type_id,
     name: row.name,
     outputsJson: row.outputs_json.map(toJobIoEntry),
+    requiredEducationLevelId: row.required_education_level_id,
     slug: row.slug,
     traderCapacityPerWorker: row.trader_capacity_per_worker,
     updatedAt: row.updated_at,

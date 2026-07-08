@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { activeDepositTypesByWorldQueryOptions } from "@/features/deposits";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import {
   activeManagedPopulationTypesByWorldQueryOptions,
   type ManagedPopulationType,
@@ -67,6 +68,9 @@ export function EditJobForm({
   const managedPopTypesQuery = useQuery(
     activeManagedPopulationTypesByWorldQueryOptions(worldId),
   );
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
 
   const [name, setName] = useState(job.name);
   const [slug, setSlug] = useState(job.slug);
@@ -89,6 +93,9 @@ export function EditJobForm({
   );
   const [linkedManagedPopulationTypeId, setLinkedManagedPopulationTypeId] =
     useState(job.linkedManagedPopulationTypeId ?? "");
+  const [requiredEducationLevelId, setRequiredEducationLevelId] = useState(
+    job.requiredEducationLevelId ?? "",
+  );
   const [icon, setIcon] = useState<string | null>(job.icon);
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>(() =>
     job.inputsJson.map(entryToRow),
@@ -103,6 +110,7 @@ export function EditJobForm({
   const resources = resourcesQuery.data ?? [];
   const activeDepositTypes = depositTypesQuery.data ?? [];
   const allManagedPopTypes = managedPopTypesQuery.data ?? [];
+  const educationLevels = educationLevelsQuery.data ?? [];
 
   // Scope managed pop type options to types that designate this job in the
   // corresponding slot (husbandry_job_id or culling_job_id).
@@ -179,6 +187,8 @@ export function EditJobForm({
           : undefined,
       name,
       outputsJson,
+      requiredEducationLevelId:
+        requiredEducationLevelId !== "" ? requiredEducationLevelId : null,
       slug,
       traderCapacityPerWorker:
         job.jobType === "trader"
@@ -260,6 +270,36 @@ export function EditJobForm({
                 value={icon}
                 onChange={setIcon}
               />
+            </Label>
+
+            <Label
+              htmlFor="edit-job-required-education"
+              className="grid gap-1 text-sm"
+            >
+              <span className="text-muted-foreground">
+                Required education level
+              </span>
+              <NativeSelect
+                id="edit-job-required-education"
+                className="w-full"
+                disabled={isPending}
+                value={requiredEducationLevelId}
+                onChange={(e) => {
+                  setRequiredEducationLevelId(e.currentTarget.value);
+                }}
+              >
+                <option value="">No requirement</option>
+                {educationLevels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.name}
+                  </option>
+                ))}
+              </NativeSelect>
+              {fieldErrors.requiredEducationLevelId !== undefined ? (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.requiredEducationLevelId}
+                </p>
+              ) : null}
             </Label>
 
             {job.jobType === "standard" || job.jobType === "construction" ? (

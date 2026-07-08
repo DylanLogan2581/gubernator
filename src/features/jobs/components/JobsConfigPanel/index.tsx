@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationSuccess } from "@/lib/notify";
@@ -68,6 +69,10 @@ export function JobsConfigPanel({
     }),
   );
   const createMutation = useMutation(createJobMutationOptions({ queryClient }));
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const educationLevels = educationLevelsQuery.data ?? [];
 
   function resetToFirstPage(): void {
     setPageIndex(0);
@@ -191,6 +196,7 @@ export function JobsConfigPanel({
           </p>
           <JobsTable
             canEdit={canEdit}
+            educationLevels={educationLevels}
             isPaginationDisabled={jobsQuery.isFetching}
             jobs={items}
             pageCount={pageCount}

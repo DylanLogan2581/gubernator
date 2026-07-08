@@ -1231,6 +1231,7 @@ export type Database = {
           linked_managed_population_type_id: string | null;
           name: string;
           outputs_json: Json;
+          required_education_level_id: string | null;
           slug: string;
           trader_capacity_per_worker: number | null;
           updated_at: string;
@@ -1248,6 +1249,7 @@ export type Database = {
           linked_managed_population_type_id?: string | null;
           name: string;
           outputs_json?: Json;
+          required_education_level_id?: string | null;
           slug: string;
           trader_capacity_per_worker?: number | null;
           updated_at?: string;
@@ -1265,6 +1267,7 @@ export type Database = {
           linked_managed_population_type_id?: string | null;
           name?: string;
           outputs_json?: Json;
+          required_education_level_id?: string | null;
           slug?: string;
           trader_capacity_per_worker?: number | null;
           updated_at?: string;
@@ -1283,6 +1286,13 @@ export type Database = {
             columns: ["linked_managed_population_type_id"];
             isOneToOne: false;
             referencedRelation: "managed_population_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_definitions_required_education_level_fk";
+            columns: ["required_education_level_id"];
+            isOneToOne: false;
+            referencedRelation: "education_levels";
             referencedColumns: ["id"];
           },
           {
@@ -5443,6 +5453,7 @@ export type Database = {
           linked_managed_population_type_id: string | null;
           name: string;
           outputs_json: Json;
+          required_education_level_id: string | null;
           slug: string;
           trader_capacity_per_worker: number | null;
           updated_at: string;
@@ -6175,6 +6186,7 @@ export type Database = {
           linked_managed_population_type_id: string | null;
           name: string;
           outputs_json: Json;
+          required_education_level_id: string | null;
           slug: string;
           trader_capacity_per_worker: number | null;
           updated_at: string;

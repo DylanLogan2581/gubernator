@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { jobInputLimits } from "@/lib/inputLimits";
 import { toSlug } from "@/lib/slugify";
@@ -55,10 +57,15 @@ export function CreateJobForm({
 }): JSX.Element {
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const resources = resourcesQuery.data ?? [];
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const educationLevels = educationLevelsQuery.data ?? [];
   const [selectedType, setSelectedType] = useState<JobType | null>(null);
   const [name, setName] = useState("");
   const [baseCapacity, setBaseCapacity] = useState("0");
   const [traderCapacityPerWorker, setTraderCapacityPerWorker] = useState("");
+  const [requiredEducationLevelId, setRequiredEducationLevelId] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
   const [inputRows, setInputRows] = useState<ResourceAmountEntry[]>([]);
   const [outputRows, setOutputRows] = useState<ResourceAmountEntry[]>([]);
@@ -105,6 +112,9 @@ export function CreateJobForm({
 
     let input: CreateJobInput;
 
+    const requiredEducationLevelIdValue =
+      requiredEducationLevelId !== "" ? requiredEducationLevelId : undefined;
+
     switch (selectedType) {
       case "standard":
         input = {
@@ -115,6 +125,7 @@ export function CreateJobForm({
           jobType: "standard",
           name,
           outputsJson,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           worldId,
         };
@@ -126,6 +137,7 @@ export function CreateJobForm({
           icon,
           jobType: "construction",
           name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           worldId,
         };
@@ -135,6 +147,7 @@ export function CreateJobForm({
           icon,
           jobType: "trader",
           name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           traderCapacityPerWorker:
             traderCapacityPerWorker !== ""
@@ -149,6 +162,7 @@ export function CreateJobForm({
           jobType: "deposit",
           linkedDepositTypeId: undefined,
           name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           worldId,
         };
@@ -160,6 +174,7 @@ export function CreateJobForm({
           jobType: selectedType,
           linkedManagedPopulationTypeId: undefined,
           name,
+          requiredEducationLevelId: requiredEducationLevelIdValue,
           slug: derivedSlug,
           worldId,
         };
@@ -243,6 +258,36 @@ export function CreateJobForm({
                     value={icon}
                     onChange={setIcon}
                   />
+                </Label>
+
+                <Label
+                  htmlFor="create-job-required-education"
+                  className="grid gap-1 text-sm"
+                >
+                  <span className="text-muted-foreground">
+                    Required education level
+                  </span>
+                  <NativeSelect
+                    id="create-job-required-education"
+                    className="w-full"
+                    disabled={isPending}
+                    value={requiredEducationLevelId}
+                    onChange={(e) => {
+                      setRequiredEducationLevelId(e.currentTarget.value);
+                    }}
+                  >
+                    <option value="">No requirement</option>
+                    {educationLevels.map((level) => (
+                      <option key={level.id} value={level.id}>
+                        {level.name}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                  {fieldErrors.requiredEducationLevelId !== undefined ? (
+                    <p className="text-xs text-destructive">
+                      {fieldErrors.requiredEducationLevelId}
+                    </p>
+                  ) : null}
                 </Label>
 
                 {selectedType === "standard" ||

@@ -32,6 +32,7 @@ const RESOURCE_ID = "00000000-0000-0000-0000-000000000003";
 const DEPOSIT_TYPE_ID = "00000000-0000-0000-0000-000000000004";
 const MANAGED_POP_TYPE_ID = "00000000-0000-0000-0000-000000000005";
 const CULLING_JOB_ID = "00000000-0000-0000-0000-000000000006";
+const EDUCATION_LEVEL_ID = "00000000-0000-0000-0000-000000000007";
 
 describe("JobsConfigPanel", () => {
   beforeEach(() => {
@@ -76,6 +77,39 @@ describe("JobsConfigPanel", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByText("Standard")).toBeDefined();
     expect(within(table).queryByText("farming")).toBeNull();
+  });
+
+  it("shows a required education level badge on the job row", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        educationLevelRows: [createEducationLevelRow({ name: "Literate" })],
+        jobRows: [
+          createJobRow({
+            name: "Scribe",
+            required_education_level_id: EDUCATION_LEVEL_ID,
+            slug: "scribe",
+          }),
+        ],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Scribe");
+    expect(await screen.findByText("Requires Literate")).toBeDefined();
+  });
+
+  it("does not show a required education level badge when there is no requirement", async () => {
+    requireSupabaseClient.mockReturnValue(
+      createClient({
+        jobRows: [createJobRow({ name: "Farming", slug: "farming" })],
+      }),
+    );
+
+    renderPanel({ canAdmin: false, isArchived: false });
+
+    await screen.findByText("Farming");
+    expect(screen.queryByText(/Requires/)).toBeNull();
   });
 
   it("shows trashed jobs when trash view is toggled", async () => {
@@ -1152,8 +1186,19 @@ type TestJobRow = {
     amount_per_worker: number;
     resource_id: string;
   }[];
+  readonly required_education_level_id: string | null;
   readonly slug: string;
   readonly trader_capacity_per_worker: number | null;
+  readonly updated_at: string;
+  readonly world_id: string;
+};
+
+type TestEducationLevelRow = {
+  readonly created_at: string;
+  readonly description: string | null;
+  readonly id: string;
+  readonly name: string;
+  readonly rank: number;
   readonly updated_at: string;
   readonly world_id: string;
 };
@@ -1219,6 +1264,7 @@ function createJobRow(overrides: Partial<TestJobRow> = {}): TestJobRow {
     linked_managed_population_type_id: null,
     name: "Test Job",
     outputs_json: [],
+    required_education_level_id: null,
     slug: "test-job",
     trader_capacity_per_worker: null,
     updated_at: "2026-01-01T00:00:00.000Z",
@@ -1287,8 +1333,24 @@ function createResourceRow(
   };
 }
 
+function createEducationLevelRow(
+  overrides: Partial<TestEducationLevelRow> = {},
+): TestEducationLevelRow {
+  return {
+    created_at: "2026-01-01T00:00:00.000Z",
+    description: null,
+    id: EDUCATION_LEVEL_ID,
+    name: "Literate",
+    rank: 1,
+    updated_at: "2026-01-01T00:00:00.000Z",
+    world_id: WORLD_ID,
+    ...overrides,
+  };
+}
+
 function createClient({
   depositTypeRows = [],
+  educationLevelRows = [],
   insertResult = { data: createJobRow(), error: null },
   jobRows,
   managedPopulationTypeRows = [],
@@ -1297,6 +1359,7 @@ function createClient({
   updateResult = { data: createJobRow(), error: null },
 }: {
   readonly depositTypeRows?: readonly TestDepositTypeRow[];
+  readonly educationLevelRows?: readonly TestEducationLevelRow[];
   readonly insertResult?: {
     readonly data: TestJobRow | null;
     readonly error: { readonly message: string } | null;
@@ -1329,6 +1392,9 @@ function createClient({
       }
       if (table === "managed_population_types") {
         return createSimpleQueryBuilder(managedPopulationTypeRows);
+      }
+      if (table === "education_levels") {
+        return createSimpleQueryBuilder(educationLevelRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),

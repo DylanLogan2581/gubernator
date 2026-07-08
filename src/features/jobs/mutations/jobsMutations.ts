@@ -46,6 +46,7 @@ type JobInsertPayload = {
   linked_managed_population_type_id?: string | null;
   name: string;
   outputs_json?: Json;
+  required_education_level_id?: string | null;
   slug: string;
   trader_capacity_per_worker?: number | null;
   world_id: string;
@@ -59,6 +60,7 @@ type JobUpdatePayload = {
   linked_managed_population_type_id?: string | null;
   name?: string;
   outputs_json?: Json;
+  required_education_level_id?: string | null;
   slug?: string;
   trader_capacity_per_worker?: number | null;
 };
@@ -140,6 +142,7 @@ async function createJob(
     outputs_json: toIoJson(
       values.jobType === "standard" ? (values.outputsJson ?? []) : [],
     ),
+    required_education_level_id: values.requiredEducationLevelId ?? null,
     slug: values.slug.trim(),
     world_id: values.worldId,
   };
@@ -214,6 +217,9 @@ async function updateJob(
   }
   if (values.outputsJson !== undefined) {
     updatePayload.outputs_json = toIoJson(values.outputsJson);
+  }
+  if (values.requiredEducationLevelId !== undefined) {
+    updatePayload.required_education_level_id = values.requiredEducationLevelId;
   }
   if (values.icon !== undefined) {
     updatePayload.icon = values.icon;

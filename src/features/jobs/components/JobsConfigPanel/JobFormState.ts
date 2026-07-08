@@ -33,6 +33,7 @@ export type FieldErrors = {
   readonly inputsJson?: string;
   readonly name?: string;
   readonly outputsJson?: string;
+  readonly requiredEducationLevelId?: string;
   readonly slug?: string;
   readonly traderCapacityPerWorker?: string;
 };

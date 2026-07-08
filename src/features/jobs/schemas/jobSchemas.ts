@@ -37,9 +37,14 @@ const jobIconSchema = z
   .optional()
   .nullable();
 
+const requiredEducationLevelIdSchema = z
+  .guid("Select an education level.")
+  .nullish();
+
 const commonCreateFields = {
   icon: jobIconSchema,
   name: jobNameSchema,
+  requiredEducationLevelId: requiredEducationLevelIdSchema,
   slug: jobSlugSchema,
   worldId: worldIdSchema,
 };
@@ -99,6 +104,7 @@ export const updateJobInputSchema = z
     linkedManagedPopulationTypeId: z.guid().optional().nullable(),
     name: jobNameSchema.optional(),
     outputsJson: jobIoArraySchema.optional(),
+    requiredEducationLevelId: z.guid().optional().nullable(),
     slug: jobSlugSchema.optional(),
     traderCapacityPerWorker: traderCapacityPerWorkerSchema.optional(),
     worldId: worldIdSchema,
@@ -111,6 +117,7 @@ export const updateJobInputSchema = z
       value.traderCapacityPerWorker === undefined &&
       value.linkedDepositTypeId === undefined &&
       value.linkedManagedPopulationTypeId === undefined &&
+      value.requiredEducationLevelId === undefined &&
       value.inputsJson === undefined &&
       value.outputsJson === undefined &&
       value.icon === undefined
