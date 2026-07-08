@@ -23,6 +23,7 @@ import {
   PawPrint,
   Settings,
   ShieldCheck,
+  Swords,
   TrendingUp,
   UserCircle2,
   Users,
@@ -437,6 +438,12 @@ export function AppSidebar(): JSX.Element | null {
             nationId,
             worldId,
           }),
+          nationSectionItem("military", {
+            isActive: currentNationSection === "military",
+            label: "Military",
+            nationId,
+            worldId,
+          }),
           nationSectionItem("treasury", {
             isActive: currentNationSection === "treasury",
             label: "Treasury",
@@ -829,6 +836,7 @@ const NATION_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
 >([
   "bank",
   "government",
+  "military",
   "relationships",
   "reports",
   "settings",
@@ -880,6 +888,7 @@ function nationSectionItem(
   const icons: Record<NationSection, JSX.Element> = {
     bank: <Banknote aria-hidden="true" />,
     government: <ShieldCheck aria-hidden="true" />,
+    military: <Swords aria-hidden="true" />,
     overview: <LayoutDashboard aria-hidden="true" />,
     relationships: <Handshake aria-hidden="true" />,
     reports: <FileText aria-hidden="true" />,
@@ -942,6 +951,21 @@ function nationSectionItem(
         link: (
           <Link
             to="/worlds/$worldId/nations/$nationId/government"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "military":
+      return {
+        key: "nation-military",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/military"
             params={{ nationId, worldId }}
           >
             {icons[section]}

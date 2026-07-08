@@ -13,6 +13,7 @@ import type { JSX } from "react";
 export type NationSection =
   | "bank"
   | "government"
+  | "military"
   | "overview"
   | "relationships"
   | "reports"
@@ -30,6 +31,7 @@ type NationSectionRouteId =
   | "/worlds/$worldId/nations/$nationId"
   | "/worlds/$worldId/nations/$nationId/bank"
   | "/worlds/$worldId/nations/$nationId/government"
+  | "/worlds/$worldId/nations/$nationId/military"
   | "/worlds/$worldId/nations/$nationId/relationships"
   | "/worlds/$worldId/nations/$nationId/reports"
   | "/worlds/$worldId/nations/$nationId/settings"
@@ -42,6 +44,8 @@ function sectionRouteId(section: NationSection | null): NationSectionRouteId {
       return "/worlds/$worldId/nations/$nationId/bank";
     case "government":
       return "/worlds/$worldId/nations/$nationId/government";
+    case "military":
+      return "/worlds/$worldId/nations/$nationId/military";
     case "relationships":
       return "/worlds/$worldId/nations/$nationId/relationships";
     case "reports":

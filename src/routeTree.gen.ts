@@ -46,6 +46,7 @@ import { Route as WorldsWorldIdNationsNationIdNationSettlementsRouteImport } fro
 import { Route as WorldsWorldIdNationsNationIdNationSettingsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.settings'
 import { Route as WorldsWorldIdNationsNationIdNationReportsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.reports'
 import { Route as WorldsWorldIdNationsNationIdNationRelationshipsRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.relationships'
+import { Route as WorldsWorldIdNationsNationIdNationMilitaryRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.military'
 import { Route as WorldsWorldIdNationsNationIdNationGovernmentRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.government'
 import { Route as WorldsWorldIdNationsNationIdNationBankRouteImport } from './routes/worlds.$worldId.nations.$nationId._nation.bank'
 import { Route as WorldsWorldIdNationsNationIdSettlementsSettlementIdIndexRouteImport } from './routes/worlds.$worldId.nations.$nationId.settlements.$settlementId.index'
@@ -263,6 +264,12 @@ const WorldsWorldIdNationsNationIdNationRelationshipsRoute =
     path: '/relationships',
     getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
   } as any)
+const WorldsWorldIdNationsNationIdNationMilitaryRoute =
+  WorldsWorldIdNationsNationIdNationMilitaryRouteImport.update({
+    id: '/military',
+    path: '/military',
+    getParentRoute: () => WorldsWorldIdNationsNationIdNationRoute,
+  } as any)
 const WorldsWorldIdNationsNationIdNationGovernmentRoute =
   WorldsWorldIdNationsNationIdNationGovernmentRouteImport.update({
     id: '/government',
@@ -417,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/worlds/$worldId/events/$eventId/': typeof WorldsWorldIdEventsEventIdIndexRoute
   '/worlds/$worldId/nations/$nationId/bank': typeof WorldsWorldIdNationsNationIdNationBankRoute
   '/worlds/$worldId/nations/$nationId/government': typeof WorldsWorldIdNationsNationIdNationGovernmentRoute
+  '/worlds/$worldId/nations/$nationId/military': typeof WorldsWorldIdNationsNationIdNationMilitaryRoute
   '/worlds/$worldId/nations/$nationId/relationships': typeof WorldsWorldIdNationsNationIdNationRelationshipsRoute
   '/worlds/$worldId/nations/$nationId/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
   '/worlds/$worldId/nations/$nationId/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
@@ -464,6 +472,7 @@ export interface FileRoutesByTo {
   '/worlds/$worldId/events/$eventId': typeof WorldsWorldIdEventsEventIdIndexRoute
   '/worlds/$worldId/nations/$nationId/bank': typeof WorldsWorldIdNationsNationIdNationBankRoute
   '/worlds/$worldId/nations/$nationId/government': typeof WorldsWorldIdNationsNationIdNationGovernmentRoute
+  '/worlds/$worldId/nations/$nationId/military': typeof WorldsWorldIdNationsNationIdNationMilitaryRoute
   '/worlds/$worldId/nations/$nationId/relationships': typeof WorldsWorldIdNationsNationIdNationRelationshipsRoute
   '/worlds/$worldId/nations/$nationId/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
   '/worlds/$worldId/nations/$nationId/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
@@ -517,6 +526,7 @@ export interface FileRoutesById {
   '/worlds/$worldId/events/$eventId/': typeof WorldsWorldIdEventsEventIdIndexRoute
   '/worlds/$worldId/nations/$nationId/_nation/bank': typeof WorldsWorldIdNationsNationIdNationBankRoute
   '/worlds/$worldId/nations/$nationId/_nation/government': typeof WorldsWorldIdNationsNationIdNationGovernmentRoute
+  '/worlds/$worldId/nations/$nationId/_nation/military': typeof WorldsWorldIdNationsNationIdNationMilitaryRoute
   '/worlds/$worldId/nations/$nationId/_nation/relationships': typeof WorldsWorldIdNationsNationIdNationRelationshipsRoute
   '/worlds/$worldId/nations/$nationId/_nation/reports': typeof WorldsWorldIdNationsNationIdNationReportsRoute
   '/worlds/$worldId/nations/$nationId/_nation/settings': typeof WorldsWorldIdNationsNationIdNationSettingsRoute
@@ -572,6 +582,7 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/events/$eventId/'
     | '/worlds/$worldId/nations/$nationId/bank'
     | '/worlds/$worldId/nations/$nationId/government'
+    | '/worlds/$worldId/nations/$nationId/military'
     | '/worlds/$worldId/nations/$nationId/relationships'
     | '/worlds/$worldId/nations/$nationId/reports'
     | '/worlds/$worldId/nations/$nationId/settings'
@@ -619,6 +630,7 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/events/$eventId'
     | '/worlds/$worldId/nations/$nationId/bank'
     | '/worlds/$worldId/nations/$nationId/government'
+    | '/worlds/$worldId/nations/$nationId/military'
     | '/worlds/$worldId/nations/$nationId/relationships'
     | '/worlds/$worldId/nations/$nationId/reports'
     | '/worlds/$worldId/nations/$nationId/settings'
@@ -671,6 +683,7 @@ export interface FileRouteTypes {
     | '/worlds/$worldId/events/$eventId/'
     | '/worlds/$worldId/nations/$nationId/_nation/bank'
     | '/worlds/$worldId/nations/$nationId/_nation/government'
+    | '/worlds/$worldId/nations/$nationId/_nation/military'
     | '/worlds/$worldId/nations/$nationId/_nation/relationships'
     | '/worlds/$worldId/nations/$nationId/_nation/reports'
     | '/worlds/$worldId/nations/$nationId/_nation/settings'
@@ -964,6 +977,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationRelationshipsRouteImport
       parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
     }
+    '/worlds/$worldId/nations/$nationId/_nation/military': {
+      id: '/worlds/$worldId/nations/$nationId/_nation/military'
+      path: '/military'
+      fullPath: '/worlds/$worldId/nations/$nationId/military'
+      preLoaderRoute: typeof WorldsWorldIdNationsNationIdNationMilitaryRouteImport
+      parentRoute: typeof WorldsWorldIdNationsNationIdNationRoute
+    }
     '/worlds/$worldId/nations/$nationId/_nation/government': {
       id: '/worlds/$worldId/nations/$nationId/_nation/government'
       path: '/government'
@@ -1128,6 +1148,7 @@ const WorldsWorldIdEventsRouteWithChildren =
 interface WorldsWorldIdNationsNationIdNationRouteChildren {
   WorldsWorldIdNationsNationIdNationBankRoute: typeof WorldsWorldIdNationsNationIdNationBankRoute
   WorldsWorldIdNationsNationIdNationGovernmentRoute: typeof WorldsWorldIdNationsNationIdNationGovernmentRoute
+  WorldsWorldIdNationsNationIdNationMilitaryRoute: typeof WorldsWorldIdNationsNationIdNationMilitaryRoute
   WorldsWorldIdNationsNationIdNationRelationshipsRoute: typeof WorldsWorldIdNationsNationIdNationRelationshipsRoute
   WorldsWorldIdNationsNationIdNationReportsRoute: typeof WorldsWorldIdNationsNationIdNationReportsRoute
   WorldsWorldIdNationsNationIdNationSettingsRoute: typeof WorldsWorldIdNationsNationIdNationSettingsRoute
@@ -1142,6 +1163,8 @@ const WorldsWorldIdNationsNationIdNationRouteChildren: WorldsWorldIdNationsNatio
       WorldsWorldIdNationsNationIdNationBankRoute,
     WorldsWorldIdNationsNationIdNationGovernmentRoute:
       WorldsWorldIdNationsNationIdNationGovernmentRoute,
+    WorldsWorldIdNationsNationIdNationMilitaryRoute:
+      WorldsWorldIdNationsNationIdNationMilitaryRoute,
     WorldsWorldIdNationsNationIdNationRelationshipsRoute:
       WorldsWorldIdNationsNationIdNationRelationshipsRoute,
     WorldsWorldIdNationsNationIdNationReportsRoute:

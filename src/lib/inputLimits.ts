@@ -85,6 +85,10 @@ export const unitTypeInputLimits = {
   descriptionMax: 1000,
 } as const;
 
+export const armyInputLimits = {
+  nameMax: 64,
+} as const;
+
 export const eventInputLimits = {
   eventGroupNameMax: 128,
   eventGroupDescriptionMax: 1000,
