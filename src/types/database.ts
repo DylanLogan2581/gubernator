@@ -1426,6 +1426,61 @@ export type Database = {
           },
         ];
       };
+      nation_currency_ledger: {
+        Row: {
+          action: string;
+          actor_citizen_id: string | null;
+          amount: number | null;
+          created_at: string;
+          currency_id: string;
+          id: string;
+          resource_amount: number | null;
+          turn_number: number;
+        };
+        Insert: {
+          action: string;
+          actor_citizen_id?: string | null;
+          amount?: number | null;
+          created_at?: string;
+          currency_id: string;
+          id?: string;
+          resource_amount?: number | null;
+          turn_number: number;
+        };
+        Update: {
+          action?: string;
+          actor_citizen_id?: string | null;
+          amount?: number | null;
+          created_at?: string;
+          currency_id?: string;
+          id?: string;
+          resource_amount?: number | null;
+          turn_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_currency_ledger_actor_citizen_id_fkey";
+            columns: ["actor_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_currency_ledger_actor_citizen_id_fkey";
+            columns: ["actor_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_currency_ledger_currency_id_fkey";
+            columns: ["currency_id"];
+            isOneToOne: false;
+            referencedRelation: "nation_currencies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_discoveries: {
         Row: {
           created_at: string;
@@ -3574,6 +3629,31 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      burn_currency: {
+        Args: { p_amount: number; p_currency_id: string };
+        Returns: {
+          backing_ratio: number | null;
+          backing_resource_id: string | null;
+          confidence: number;
+          created_at: string;
+          currency_type: string;
+          established_turn_number: number;
+          id: string;
+          money_supply: number;
+          name: string;
+          nation_id: string;
+          reserve_quantity: number;
+          symbol: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_currencies";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       cancel_construction_project: {
         Args: { p_project_id: string };
         Returns: {
@@ -4036,6 +4116,10 @@ export type Database = {
         Args: { p_settlement_id: string };
         Returns: boolean;
       };
+      current_user_nation_currency_actor_citizen_id: {
+        Args: { p_nation_id: string };
+        Returns: string;
+      };
       current_user_player_character_ids: {
         Args: { p_world_id: string };
         Returns: string[];
@@ -4054,6 +4138,31 @@ export type Database = {
       delete_event_or_group: {
         Args: { p_event_id: string; p_group_id: string };
         Returns: Json;
+      };
+      deposit_reserves: {
+        Args: { p_currency_id: string; p_quantity: number };
+        Returns: {
+          backing_ratio: number | null;
+          backing_resource_id: string | null;
+          confidence: number;
+          created_at: string;
+          currency_type: string;
+          established_turn_number: number;
+          id: string;
+          money_supply: number;
+          name: string;
+          nation_id: string;
+          reserve_quantity: number;
+          symbol: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_currencies";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       diag:
         | {
@@ -4565,6 +4674,31 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      mint_currency: {
+        Args: { p_amount: number; p_currency_id: string };
+        Returns: {
+          backing_ratio: number | null;
+          backing_resource_id: string | null;
+          confidence: number;
+          created_at: string;
+          currency_type: string;
+          established_turn_number: number;
+          id: string;
+          money_supply: number;
+          name: string;
+          nation_id: string;
+          reserve_quantity: number;
+          symbol: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_currencies";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       nation_images_path_nation_id: { Args: { name: string }; Returns: string };
       nation_readiness_eligible_voter_ids: {
         Args: { p_nation_id: string };
@@ -4683,6 +4817,31 @@ export type Database = {
       recompute_nation_readiness: {
         Args: { p_nation_id: string; p_turn_number: number };
         Returns: undefined;
+      };
+      redeem_reserves: {
+        Args: { p_currency_id: string; p_quantity: number };
+        Returns: {
+          backing_ratio: number | null;
+          backing_resource_id: string | null;
+          confidence: number;
+          created_at: string;
+          currency_type: string;
+          established_turn_number: number;
+          id: string;
+          money_supply: number;
+          name: string;
+          nation_id: string;
+          reserve_quantity: number;
+          symbol: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_currencies";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       reject_trade_route_side: {
         Args: {
