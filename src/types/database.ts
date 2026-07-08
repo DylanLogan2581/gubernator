@@ -3315,6 +3315,86 @@ export type Database = {
           },
         ];
       };
+      unit_types: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          desertion_rate: number;
+          id: string;
+          name: string;
+          recruitment_costs_json: Json;
+          required_building_blueprint_id: string | null;
+          required_building_tier_number: number | null;
+          required_education_level_id: string | null;
+          soldiers_per_unit: number;
+          updated_at: string;
+          upkeep_costs_json: Json;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          desertion_rate: number;
+          id?: string;
+          name: string;
+          recruitment_costs_json?: Json;
+          required_building_blueprint_id?: string | null;
+          required_building_tier_number?: number | null;
+          required_education_level_id?: string | null;
+          soldiers_per_unit: number;
+          updated_at?: string;
+          upkeep_costs_json?: Json;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          desertion_rate?: number;
+          id?: string;
+          name?: string;
+          recruitment_costs_json?: Json;
+          required_building_blueprint_id?: string | null;
+          required_building_tier_number?: number | null;
+          required_education_level_id?: string | null;
+          soldiers_per_unit?: number;
+          updated_at?: string;
+          upkeep_costs_json?: Json;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "unit_types_required_building_blueprint_id_fkey";
+            columns: ["required_building_blueprint_id"];
+            isOneToOne: false;
+            referencedRelation: "building_blueprints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "unit_types_required_building_tier_fk";
+            columns: [
+              "required_building_blueprint_id",
+              "required_building_tier_number",
+            ];
+            isOneToOne: false;
+            referencedRelation: "building_blueprint_tiers";
+            referencedColumns: ["building_blueprint_id", "tier_number"];
+          },
+          {
+            foreignKeyName: "unit_types_required_education_level_id_fkey";
+            columns: ["required_education_level_id"];
+            isOneToOne: false;
+            referencedRelation: "education_levels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "unit_types_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       user_active_player_characters: {
         Row: {
           citizen_id: string;

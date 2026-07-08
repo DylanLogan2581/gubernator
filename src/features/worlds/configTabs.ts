@@ -11,6 +11,7 @@ import {
   ScrollText,
   Settings,
   Sparkles,
+  Swords,
   Tag,
   Users,
 } from "lucide-react";
@@ -29,6 +30,7 @@ export const CONFIG_TABS = [
   { id: "managed-populations", label: "Managed Populations", icon: PawPrint },
   { id: "cultures-religions", label: "Cultures & Religions", icon: Landmark },
   { id: "education", label: "Education", icon: GraduationCap },
+  { id: "military", label: "Military", icon: Swords },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "namesets", label: "Namesets", icon: Tag },
   { id: "discovery", label: "Discovery", icon: Users },

@@ -14,6 +14,7 @@ import { DepositsConfigPanel } from "@/features/deposits";
 import { EducationConfigPanel } from "@/features/education";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
+import { MilitaryConfigPanel } from "@/features/military";
 import { NamesetsConfigPanel } from "@/features/namesets";
 import { NationDiscoveryConfigPanel } from "@/features/nations";
 import {
@@ -272,6 +273,18 @@ function WorldConfigurationContent({
       return (
         <ConfigPanelShell>
           <EducationConfigPanel
+            canAdmin={canAdmin}
+            isArchived={header.isArchived}
+            worldId={worldId}
+          />
+        </ConfigPanelShell>
+      );
+    }
+
+    if (activeTab === "military") {
+      return (
+        <ConfigPanelShell>
+          <MilitaryConfigPanel
             canAdmin={canAdmin}
             isArchived={header.isArchived}
             worldId={worldId}
