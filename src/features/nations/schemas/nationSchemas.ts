@@ -62,6 +62,12 @@ export const setNationTradePolicyInputSchema = z.strictObject({
   tradePolicy: nationTradePolicySchema,
 });
 
+export const setNationCultureReligionInputSchema = z.strictObject({
+  nationId: nationIdSchema,
+  primaryCultureId: z.union([z.guid(), z.null()]),
+  stateReligionId: z.union([z.guid(), z.null()]),
+});
+
 export const setNationCapitalAndFoundedTurnInputSchema = z.strictObject({
   capitalSettlementId: z.union([z.guid(), z.null()]),
   foundedTurnNumber: foundedTurnNumberSchema,
@@ -93,6 +99,12 @@ export type SetNationTradePolicyInput = z.input<
 >;
 export type SetNationTradePolicyValues = z.output<
   typeof setNationTradePolicyInputSchema
+>;
+export type SetNationCultureReligionInput = z.input<
+  typeof setNationCultureReligionInputSchema
+>;
+export type SetNationCultureReligionValues = z.output<
+  typeof setNationCultureReligionInputSchema
 >;
 export type SetNationCapitalAndFoundedTurnInput = z.input<
   typeof setNationCapitalAndFoundedTurnInputSchema

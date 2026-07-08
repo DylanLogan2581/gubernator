@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { BuildingsConfigPanel } from "@/features/buildings";
 import { WorldCalendarConfigPanel } from "@/features/calendar";
+import { CulturesConfigPanel } from "@/features/cultures";
 import { DepositsConfigPanel } from "@/features/deposits";
 import { JobsConfigPanel } from "@/features/jobs";
 import { ManagedPopulationsConfigPanel } from "@/features/managed-populations";
@@ -19,6 +20,7 @@ import {
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
 } from "@/features/permissions";
+import { ReligionsConfigPanel } from "@/features/religions";
 import { ResourcesConfigPanel } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
 
@@ -241,6 +243,27 @@ function WorldConfigurationContent({
             worldId={worldId}
           />
         </ConfigPanelShell>
+      );
+    }
+
+    if (activeTab === "cultures-religions") {
+      return (
+        <div className="grid gap-6">
+          <ConfigPanelShell>
+            <CulturesConfigPanel
+              canAdmin={canAdmin}
+              isArchived={header.isArchived}
+              worldId={worldId}
+            />
+          </ConfigPanelShell>
+          <ConfigPanelShell>
+            <ReligionsConfigPanel
+              canAdmin={canAdmin}
+              isArchived={header.isArchived}
+              worldId={worldId}
+            />
+          </ConfigPanelShell>
+        </div>
       );
     }
 

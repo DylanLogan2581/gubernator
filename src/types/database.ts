@@ -582,6 +582,44 @@ export type Database = {
           },
         ];
       };
+      cultures: {
+        Row: {
+          color: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          color?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          color?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cultures_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deposit_instance_resources: {
         Row: {
           created_at: string;
@@ -2068,6 +2106,8 @@ export type Database = {
           id: string;
           name: string;
           nameset_id: string | null;
+          primary_culture_id: string | null;
+          state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
           treasury_currency: number;
@@ -2084,6 +2124,8 @@ export type Database = {
           id?: string;
           name: string;
           nameset_id?: string | null;
+          primary_culture_id?: string | null;
+          state_religion_id?: string | null;
           tax_rate?: number;
           trade_policy?: string;
           treasury_currency?: number;
@@ -2100,6 +2142,8 @@ export type Database = {
           id?: string;
           name?: string;
           nameset_id?: string | null;
+          primary_culture_id?: string | null;
+          state_religion_id?: string | null;
           tax_rate?: number;
           trade_policy?: string;
           treasury_currency?: number;
@@ -2119,6 +2163,20 @@ export type Database = {
             columns: ["nameset_id"];
             isOneToOne: false;
             referencedRelation: "namesets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nations_primary_culture_id_fkey";
+            columns: ["primary_culture_id"];
+            isOneToOne: false;
+            referencedRelation: "cultures";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nations_state_religion_id_fkey";
+            columns: ["state_religion_id"];
+            isOneToOne: false;
+            referencedRelation: "religions";
             referencedColumns: ["id"];
           },
           {
@@ -2345,6 +2403,44 @@ export type Database = {
             columns: ["citizen_b_id"];
             isOneToOne: false;
             referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      religions: {
+        Row: {
+          color: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          color?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          color?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "religions_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
             referencedColumns: ["id"];
           },
         ];
@@ -5402,6 +5498,39 @@ export type Database = {
           id: string;
           name: string;
           nameset_id: string | null;
+          primary_culture_id: string | null;
+          state_religion_id: string | null;
+          tax_rate: number;
+          trade_policy: string;
+          treasury_currency: number;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "nations";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      set_nation_culture_religion: {
+        Args: {
+          p_nation_id: string;
+          p_primary_culture_id: string;
+          p_state_religion_id: string;
+        };
+        Returns: {
+          capital_settlement_id: string | null;
+          created_at: string;
+          description: string | null;
+          flag_path: string | null;
+          founded_turn_number: number | null;
+          government_type: string;
+          id: string;
+          name: string;
+          nameset_id: string | null;
+          primary_culture_id: string | null;
+          state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
           treasury_currency: number;
@@ -5427,6 +5556,8 @@ export type Database = {
           id: string;
           name: string;
           nameset_id: string | null;
+          primary_culture_id: string | null;
+          state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
           treasury_currency: number;
@@ -5460,6 +5591,8 @@ export type Database = {
           id: string;
           name: string;
           nameset_id: string | null;
+          primary_culture_id: string | null;
+          state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
           treasury_currency: number;
@@ -5485,6 +5618,8 @@ export type Database = {
           id: string;
           name: string;
           nameset_id: string | null;
+          primary_culture_id: string | null;
+          state_religion_id: string | null;
           tax_rate: number;
           trade_policy: string;
           treasury_currency: number;

@@ -10,6 +10,7 @@ import {
   isNationMutationError,
   NationMutationError,
   setNationCapitalAndFoundedTurnMutationOptions,
+  setNationCultureReligionMutationOptions,
   setNationTradePolicyMutationOptions,
   updateNationDetailsMutationOptions,
 } from "./nationsMutations";
@@ -26,6 +27,8 @@ type NationRow = {
   readonly government_type?: string;
   readonly id: string;
   readonly name: string;
+  readonly primary_culture_id?: string | null;
+  readonly state_religion_id?: string | null;
   readonly tax_rate?: number;
   readonly trade_policy?: string;
   readonly updated_at: string;
@@ -468,6 +471,128 @@ describe("setNationTradePolicyMutationOptions", () => {
       executeMutation(queryClient, options, {
         nationId: NATION_ID,
         tradePolicy: "closed",
+      }),
+    ).rejects.toBeInstanceOf(AuthUiError);
+  });
+});
+
+describe("setNationCultureReligionMutationOptions", () => {
+  it("rejects an invalid primaryCultureId before touching the Supabase client", async () => {
+    const rpc = vi.fn();
+    const client = { rpc } as unknown as GubernatorSupabaseClient;
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        primaryCultureId: "not-a-uuid",
+        stateReligionId: null,
+      }),
+    ).rejects.toMatchObject({ code: "nation_input_invalid" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("calls the RPC with the nation id, culture id, and religion id", async () => {
+    const cultureId = "44444444-4444-4444-4444-444444444444";
+    const religionId = "55555555-5555-5555-5555-555555555555";
+    const row = createNationRow({
+      primary_culture_id: cultureId,
+      state_religion_id: religionId,
+    });
+    const { client, calls } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    const result = await executeMutation(queryClient, options, {
+      nationId: NATION_ID,
+      primaryCultureId: cultureId,
+      stateReligionId: religionId,
+    });
+
+    expect(result).toMatchObject({
+      id: NATION_ID,
+      primaryCultureId: cultureId,
+      stateReligionId: religionId,
+    });
+    expect(calls.rpc).toHaveBeenCalledWith("set_nation_culture_religion", {
+      p_nation_id: NATION_ID,
+      p_primary_culture_id: cultureId,
+      p_state_religion_id: religionId,
+    });
+    expect(options.mutationKey).toEqual([
+      "nations",
+      "set-nation-culture-religion",
+    ]);
+  });
+
+  it("accepts null culture and religion ids to clear both fields", async () => {
+    const row = createNationRow({
+      primary_culture_id: null,
+      state_religion_id: null,
+    });
+    const { client, calls } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await executeMutation(queryClient, options, {
+      nationId: NATION_ID,
+      primaryCultureId: null,
+      stateReligionId: null,
+    });
+
+    expect(calls.rpc).toHaveBeenCalledWith("set_nation_culture_religion", {
+      p_nation_id: NATION_ID,
+      p_primary_culture_id: null,
+      p_state_religion_id: null,
+    });
+  });
+
+  it("raises nation_not_found when the RPC returns no row", async () => {
+    const { client } = createRpcClient({ data: null, error: null });
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        primaryCultureId: null,
+        stateReligionId: null,
+      }),
+    ).rejects.toMatchObject({ code: "nation_not_found" });
+  });
+
+  it("normalizes Supabase errors, e.g. an unauthorized manager", async () => {
+    const { client } = createRpcClient({
+      data: null,
+      error: {
+        code: "42501",
+        message: "You do not have permission to manage this nation.",
+      },
+    });
+    const queryClient = createQueryClient();
+    const options = setNationCultureReligionMutationOptions({
+      client,
+      queryClient,
+    });
+
+    await expect(
+      executeMutation(queryClient, options, {
+        nationId: NATION_ID,
+        primaryCultureId: null,
+        stateReligionId: null,
       }),
     ).rejects.toBeInstanceOf(AuthUiError);
   });

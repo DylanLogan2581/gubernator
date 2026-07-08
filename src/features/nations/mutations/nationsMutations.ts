@@ -17,12 +17,14 @@ import {
   createNationInputSchema,
   deleteNationInputSchema,
   setNationCapitalAndFoundedTurnInputSchema,
+  setNationCultureReligionInputSchema,
   setNationGovernmentTypeInputSchema,
   setNationTradePolicyInputSchema,
   updateNationDetailsInputSchema,
   type CreateNationInput,
   type DeleteNationInput,
   type SetNationCapitalAndFoundedTurnInput,
+  type SetNationCultureReligionInput,
   type SetNationGovernmentTypeInput,
   type SetNationTradePolicyInput,
   type UpdateNationDetailsInput,
@@ -61,6 +63,11 @@ type SetNationCapitalAndFoundedTurnMutationOptions = UseMutationOptions<
   AuthUiError | NationMutationError,
   SetNationCapitalAndFoundedTurnInput
 >;
+type SetNationCultureReligionMutationOptions = UseMutationOptions<
+  Nation,
+  AuthUiError | NationMutationError,
+  SetNationCultureReligionInput
+>;
 type DeleteNationMutationOptions = UseMutationOptions<
   DeleteNationResult,
   AuthUiError | NationMutationError,
@@ -77,6 +84,8 @@ type NationRow = {
   readonly id: string;
   readonly name: string;
   readonly nameset_id: string | null;
+  readonly primary_culture_id: string | null;
+  readonly state_religion_id: string | null;
   readonly tax_rate: number;
   readonly trade_policy: string;
   readonly updated_at: string;
@@ -89,7 +98,7 @@ export type DeleteNationResult = {
 };
 
 const NATION_SELECT =
-  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,trade_policy,created_at,updated_at";
+  "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,trade_policy,primary_culture_id,state_religion_id,created_at,updated_at";
 
 export type NationMutationIssue = MutationIssue;
 
@@ -176,6 +185,30 @@ export function setNationTradePolicyMutationOptions({
     mutationFn: (input: SetNationTradePolicyInput) =>
       setNationTradePolicy(client, input),
     mutationKey: [...nationsQueryKeys.all, "set-nation-trade-policy"],
+    onSuccess: async (nation): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.list(nation.worldId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: nationsQueryKeys.detail(nation.id),
+        }),
+      ]);
+    },
+  });
+}
+
+export function setNationCultureReligionMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): SetNationCultureReligionMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: SetNationCultureReligionInput) =>
+      setNationCultureReligion(client, input),
+    mutationKey: [...nationsQueryKeys.all, "set-nation-culture-religion"],
     onSuccess: async (nation): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -389,6 +422,47 @@ async function setNationTradePolicy(
   return toNation(data as NationRow);
 }
 
+async function setNationCultureReligion(
+  client: GubernatorSupabaseClient,
+  input: SetNationCultureReligionInput,
+): Promise<Nation> {
+  const values = parseInput(setNationCultureReligionInputSchema, input);
+
+  // set_nation_culture_religion is a SECURITY DEFINER RPC (same authority
+  // model as set_nation_trade_policy — see
+  // 20260919000000_add_cultures_and_religions). Called via the same
+  // untyped-rpc cast as setNationTradePolicy above.
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): {
+      maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+
+  const { data, error } = await clientAsRpcCapable
+    .rpc("set_nation_culture_religion", {
+      p_nation_id: values.nationId,
+      p_primary_culture_id: values.primaryCultureId,
+      p_state_religion_id: values.stateReligionId,
+    })
+    .maybeSingle();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new NationMutationError({
+      code: "nation_not_found",
+      message: "Nation culture and religion could not be updated.",
+    });
+  }
+
+  return toNation(data as NationRow);
+}
+
 async function setNationCapitalAndFoundedTurn(
   client: GubernatorSupabaseClient,
   input: SetNationCapitalAndFoundedTurnInput,
@@ -485,6 +559,8 @@ function toNation(row: NationRow): Nation {
     id: row.id,
     name: row.name,
     namesetId: row.nameset_id,
+    primaryCultureId: row.primary_culture_id,
+    stateReligionId: row.state_religion_id,
     taxRate: row.tax_rate,
     tradePolicy: row.trade_policy as NationTradePolicy,
     updatedAt: row.updated_at,

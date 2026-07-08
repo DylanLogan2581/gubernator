@@ -6,6 +6,8 @@ export const authStateQueryCacheKeys = {
   buildingsAll: ["buildings"] as const,
   calendarAll: ["calendar"] as const,
   citizensAll: ["citizens"] as const,
+  culturesAll: ["cultures"] as const,
+  religionsAll: ["religions"] as const,
   currentAppUser: () =>
     [...authStateQueryCacheKeys.authAll, "current-app-user"] as const,
   currentSession: () =>
@@ -29,6 +31,8 @@ const authDependentQueryKeys = [
   authStateQueryCacheKeys.buildingsAll,
   authStateQueryCacheKeys.calendarAll,
   authStateQueryCacheKeys.citizensAll,
+  authStateQueryCacheKeys.culturesAll,
+  authStateQueryCacheKeys.religionsAll,
   authStateQueryCacheKeys.depositsAll,
   authStateQueryCacheKeys.jobsAll,
   authStateQueryCacheKeys.managedPopulationsAll,

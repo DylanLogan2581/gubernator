@@ -427,6 +427,8 @@ function createNation(): Nation {
     id: NATION_ID,
     name: "Aurelia",
     namesetId: null,
+    primaryCultureId: null,
+    stateReligionId: null,
     taxRate: 0,
     tradePolicy: "free",
     updatedAt: "2026-05-01T00:00:00.000Z",

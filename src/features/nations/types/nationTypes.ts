@@ -31,6 +31,8 @@ export type Nation = {
   readonly id: string;
   readonly name: string;
   readonly namesetId: string | null;
+  readonly primaryCultureId: string | null;
+  readonly stateReligionId: string | null;
   readonly taxRate: number;
   readonly tradePolicy: NationTradePolicy;
   readonly updatedAt: string;

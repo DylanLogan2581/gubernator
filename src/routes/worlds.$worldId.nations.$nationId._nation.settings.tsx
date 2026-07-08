@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { NationNamesetCard } from "@/features/namesets";
 import {
+  NationCultureReligionSection,
   NationDeleteSection,
   NationSectionRedirect,
   NationTradePolicySection,
@@ -44,6 +45,12 @@ function NationSettingsRoute(): JSX.Element {
   return (
     <>
       <NationTradePolicySection
+        canAdminWorld={effectiveCanAdmin}
+        isArchived={worldAccess.header.isArchived}
+        nation={nation}
+      />
+
+      <NationCultureReligionSection
         canAdminWorld={effectiveCanAdmin}
         isArchived={worldAccess.header.isArchived}
         nation={nation}

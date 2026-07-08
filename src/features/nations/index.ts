@@ -8,6 +8,7 @@ export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection
 export { NationDetailsSection } from "./components/NationDetailPage/DetailsSection";
 export { NationFlagSection } from "./components/NationDetailPage/FlagSection";
 export { NationIdentitySection } from "./components/NationDetailPage/IdentitySection";
+export { NationCultureReligionSection } from "./components/NationDetailPage/CultureReligionSection";
 export { NationBankSection } from "./components/NationDetailPage/BankSection";
 export { NationOfficesSection } from "./components/NationDetailPage/OfficesSection";
 export { NationReportsSection } from "./components/NationDetailPage/NationReportsSection";
@@ -27,6 +28,7 @@ export {
   deleteNationMutationOptions,
   isNationMutationError,
   setNationCapitalAndFoundedTurnMutationOptions,
+  setNationCultureReligionMutationOptions,
   setNationGovernmentTypeMutationOptions,
   setNationTradePolicyMutationOptions,
   updateNationDetailsMutationOptions,
@@ -111,6 +113,7 @@ export {
   createNationInputSchema,
   deleteNationInputSchema,
   setNationCapitalAndFoundedTurnInputSchema,
+  setNationCultureReligionInputSchema,
   setNationGovernmentTypeInputSchema,
   setNationTradePolicyInputSchema,
   updateNationDetailsInputSchema,
@@ -135,6 +138,8 @@ export type {
   DeleteNationValues,
   SetNationCapitalAndFoundedTurnInput,
   SetNationCapitalAndFoundedTurnValues,
+  SetNationCultureReligionInput,
+  SetNationCultureReligionValues,
   SetNationGovernmentTypeInput,
   SetNationGovernmentTypeValues,
   SetNationTradePolicyInput,

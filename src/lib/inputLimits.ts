@@ -70,6 +70,11 @@ export const namingInputLimits = {
   namePoolEntryMax: 64,
 } as const;
 
+export const cultureReligionInputLimits = {
+  nameMax: 64,
+  descriptionMax: 1000,
+} as const;
+
 export const eventInputLimits = {
   eventGroupNameMax: 128,
   eventGroupDescriptionMax: 1000,

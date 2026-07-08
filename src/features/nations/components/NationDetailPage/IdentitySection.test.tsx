@@ -122,6 +122,8 @@ function createNation(overrides: Partial<Nation> = {}): Nation {
     id: NATION_ID,
     name: "Aldoria",
     namesetId: null,
+    primaryCultureId: null,
+    stateReligionId: null,
     taxRate: 0,
     tradePolicy: "free",
     updatedAt: "2026-05-01T00:00:00.000Z",

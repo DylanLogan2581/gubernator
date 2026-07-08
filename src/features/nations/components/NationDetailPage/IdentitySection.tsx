@@ -19,7 +19,9 @@ import {
   managerScopeLabel,
   playerCharactersInNationQueryOptions,
 } from "@/features/citizens";
+import { culturesByWorldQueryOptions } from "@/features/cultures";
 import { useActivePlayerCharacter } from "@/features/permissions";
+import { religionsByWorldQueryOptions } from "@/features/religions";
 import { notifyMutationError } from "@/lib/notify";
 import {
   formatCalendarDate,
@@ -66,6 +68,8 @@ export function NationIdentitySection({
   const calendarConfigQuery = useQuery(
     worldCalendarConfigQueryOptions(nation.worldId),
   );
+  const culturesQuery = useQuery(culturesByWorldQueryOptions(nation.worldId));
+  const religionsQuery = useQuery(religionsByWorldQueryOptions(nation.worldId));
 
   // Mirrors the visibility check in NationRoleAssignmentSection/
   // NationGovernmentRoute — capital and founded turn are editable by world
@@ -91,6 +95,10 @@ export function NationIdentitySection({
     settlementsQuery.data?.find(
       (settlement) => settlement.id === nation.capitalSettlementId,
     ) ?? null;
+  const culture =
+    culturesQuery.data?.find((c) => c.id === nation.primaryCultureId) ?? null;
+  const religion =
+    religionsQuery.data?.find((r) => r.id === nation.stateReligionId) ?? null;
 
   return (
     <Card aria-labelledby="nation-identity-heading" className="grid gap-4 p-4">
@@ -181,8 +189,47 @@ export function NationIdentitySection({
             {formatNationGovernmentType(nation.governmentType)}
           </span>
         </IdentityReadout>
+
+        <IdentityReadout label="Culture">
+          {culturesQuery.isPending ? (
+            <span className="text-sm text-muted-foreground">Loading…</span>
+          ) : culture === null ? (
+            <span className="text-sm italic text-muted-foreground">None</span>
+          ) : (
+            <IdentityChip color={culture.color} name={culture.name} />
+          )}
+        </IdentityReadout>
+
+        <IdentityReadout label="Religion">
+          {religionsQuery.isPending ? (
+            <span className="text-sm text-muted-foreground">Loading…</span>
+          ) : religion === null ? (
+            <span className="text-sm italic text-muted-foreground">None</span>
+          ) : (
+            <IdentityChip color={religion.color} name={religion.name} />
+          )}
+        </IdentityReadout>
       </dl>
     </Card>
+  );
+}
+
+function IdentityChip({
+  color,
+  name,
+}: {
+  readonly color: string;
+  readonly name: string;
+}): JSX.Element {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+      <span
+        aria-hidden="true"
+        className="size-2 shrink-0 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+      {name}
+    </span>
   );
 }
 
