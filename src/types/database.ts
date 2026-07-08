@@ -1657,6 +1657,104 @@ export type Database = {
           },
         ];
       };
+      nation_treaties: {
+        Row: {
+          created_at: string;
+          ends_turn_number: number | null;
+          id: string;
+          proposed_by_citizen_id: string | null;
+          proposer_nation_id: string;
+          responded_by_citizen_id: string | null;
+          responder_nation_id: string;
+          starts_turn_number: number | null;
+          status: string;
+          terms: Json;
+          treaty_type: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          ends_turn_number?: number | null;
+          id?: string;
+          proposed_by_citizen_id?: string | null;
+          proposer_nation_id: string;
+          responded_by_citizen_id?: string | null;
+          responder_nation_id: string;
+          starts_turn_number?: number | null;
+          status?: string;
+          terms?: Json;
+          treaty_type: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          ends_turn_number?: number | null;
+          id?: string;
+          proposed_by_citizen_id?: string | null;
+          proposer_nation_id?: string;
+          responded_by_citizen_id?: string | null;
+          responder_nation_id?: string;
+          starts_turn_number?: number | null;
+          status?: string;
+          terms?: Json;
+          treaty_type?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_treaties_proposed_by_citizen_id_fkey";
+            columns: ["proposed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_treaties_proposed_by_citizen_id_fkey";
+            columns: ["proposed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_treaties_proposer_nation_id_fkey";
+            columns: ["proposer_nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_treaties_responded_by_citizen_id_fkey";
+            columns: ["responded_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_treaties_responded_by_citizen_id_fkey";
+            columns: ["responded_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_treaties_responder_nation_id_fkey";
+            columns: ["responder_nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_treaties_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_turn_readiness: {
         Row: {
           id: string;
@@ -3370,6 +3468,30 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      break_nation_treaty: {
+        Args: { p_broken_by_citizen_id: string; p_treaty_id: string };
+        Returns: {
+          created_at: string;
+          ends_turn_number: number | null;
+          id: string;
+          proposed_by_citizen_id: string | null;
+          proposer_nation_id: string;
+          responded_by_citizen_id: string | null;
+          responder_nation_id: string;
+          starts_turn_number: number | null;
+          status: string;
+          terms: Json;
+          treaty_type: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_treaties";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       cancel_construction_project: {
         Args: { p_project_id: string };
         Returns: {
@@ -4355,6 +4477,36 @@ export type Database = {
       pg_version_num: { Args: never; Returns: number };
       pgtap_version: { Args: never; Returns: number };
       preview_world_delete: { Args: { p_world_id: string }; Returns: Json };
+      propose_nation_treaty: {
+        Args: {
+          p_proposed_by_citizen_id: string;
+          p_proposer_nation_id: string;
+          p_responder_nation_id: string;
+          p_terms: Json;
+          p_treaty_type: string;
+        };
+        Returns: {
+          created_at: string;
+          ends_turn_number: number | null;
+          id: string;
+          proposed_by_citizen_id: string | null;
+          proposer_nation_id: string;
+          responded_by_citizen_id: string | null;
+          responder_nation_id: string;
+          starts_turn_number: number | null;
+          status: string;
+          terms: Json;
+          treaty_type: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_treaties";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       propose_trade_route: {
         Args: {
           p_destination: string;
@@ -4514,6 +4666,34 @@ export type Database = {
           to: "nation_relationships";
           isOneToOne: false;
           isSetofReturn: true;
+        };
+      };
+      respond_to_nation_treaty: {
+        Args: {
+          p_responded_by_citizen_id: string;
+          p_response: string;
+          p_treaty_id: string;
+        };
+        Returns: {
+          created_at: string;
+          ends_turn_number: number | null;
+          id: string;
+          proposed_by_citizen_id: string | null;
+          proposer_nation_id: string;
+          responded_by_citizen_id: string | null;
+          responder_nation_id: string;
+          starts_turn_number: number | null;
+          status: string;
+          terms: Json;
+          treaty_type: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_treaties";
+          isOneToOne: true;
+          isSetofReturn: false;
         };
       };
       restore_building_blueprint: {
@@ -5397,6 +5577,30 @@ export type Database = {
         Args: { p_effect: Json; p_world_id: string };
         Returns: undefined;
       };
+      withdraw_nation_treaty: {
+        Args: { p_treaty_id: string };
+        Returns: {
+          created_at: string;
+          ends_turn_number: number | null;
+          id: string;
+          proposed_by_citizen_id: string | null;
+          proposer_nation_id: string;
+          responded_by_citizen_id: string | null;
+          responder_nation_id: string;
+          starts_turn_number: number | null;
+          status: string;
+          terms: Json;
+          treaty_type: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_treaties";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       world_images_path_world_id: { Args: { name: string }; Returns: string };
       world_is_archived: { Args: { p_world_id: string }; Returns: boolean };
     };
@@ -5436,7 +5640,8 @@ export type Database = {
         | "player.widowed"
         | "nation.succession"
         | "nation.grant_received"
-        | "nation.subsidy_received";
+        | "nation.subsidy_received"
+        | "nation.treaty_broken";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -5606,6 +5811,7 @@ export const Constants = {
         "nation.succession",
         "nation.grant_received",
         "nation.subsidy_received",
+        "nation.treaty_broken",
       ],
     },
   },
