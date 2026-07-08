@@ -1,18 +1,30 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NationRelationshipsSection } from "./RelationshipsSection";
 
 import type { NationRelationship } from "../../types/nationRelationshipTypes";
+import type { NationTreaty } from "../../types/nationTreatyTypes";
 import type { Nation } from "../../types/nationTypes";
 
-const { mockNationsListQuery, mockOutgoingQuery, mockIncomingQuery } =
-  vi.hoisted(() => ({
-    mockNationsListQuery: vi.fn(),
-    mockOutgoingQuery: vi.fn(),
-    mockIncomingQuery: vi.fn(),
-  }));
+const {
+  mockNationsListQuery,
+  mockOutgoingQuery,
+  mockIncomingQuery,
+  mockTreatiesQuery,
+  mockResourcesQuery,
+  mockCalendarQuery,
+  mockCitizensByIdsQuery,
+} = vi.hoisted(() => ({
+  mockNationsListQuery: vi.fn(),
+  mockOutgoingQuery: vi.fn(),
+  mockIncomingQuery: vi.fn(),
+  mockTreatiesQuery: vi.fn(),
+  mockResourcesQuery: vi.fn(),
+  mockCalendarQuery: vi.fn(),
+  mockCitizensByIdsQuery: vi.fn(),
+}));
 
 vi.mock("../../queries/nationsQueries", () => ({
   nationsListQueryOptions: () => ({
@@ -29,6 +41,35 @@ vi.mock("../../queries/nationRelationshipQueries", () => ({
   nationRelationshipsToNationQueryOptions: () => ({
     queryFn: () => mockIncomingQuery() as Promise<unknown>,
     queryKey: ["nation-relationships-to"],
+  }),
+}));
+
+vi.mock("../../queries/treatiesQueries", () => ({
+  nationTreatiesQueryOptions: () => ({
+    queryFn: () => mockTreatiesQuery() as Promise<unknown>,
+    queryKey: ["nation-treaties"],
+  }),
+}));
+
+vi.mock("@/features/resources", () => ({
+  activeResourcesByWorldQueryOptions: () => ({
+    queryFn: () => mockResourcesQuery() as Promise<unknown>,
+    queryKey: ["active-resources"],
+  }),
+}));
+
+vi.mock("@/features/calendar", () => ({
+  worldCalendarConfigQueryOptions: () => ({
+    queryFn: () => mockCalendarQuery() as Promise<unknown>,
+    queryKey: ["world-calendar-config"],
+  }),
+}));
+
+vi.mock("@/features/citizens", () => ({
+  citizensByIdsQueryOptions: (ids: readonly string[]) => ({
+    enabled: ids.length > 0,
+    queryFn: () => mockCitizensByIdsQuery() as Promise<unknown>,
+    queryKey: ["citizens-by-ids", ids],
   }),
 }));
 
@@ -83,6 +124,13 @@ function renderSection(): ReturnType<typeof render> {
 }
 
 describe("NationRelationshipAccordionRow", () => {
+  beforeEach(() => {
+    mockTreatiesQuery.mockResolvedValue([]);
+    mockResourcesQuery.mockResolvedValue([]);
+    mockCalendarQuery.mockResolvedValue(null);
+    mockCitizensByIdsQuery.mockResolvedValue([]);
+  });
+
   it("shows the stance as text without expanding the row", async () => {
     mockNationsListQuery.mockResolvedValue([nation, other]);
     mockOutgoingQuery.mockResolvedValue([
@@ -159,5 +207,65 @@ describe("NationRelationshipAccordionRow", () => {
 
     await screen.findByText("Neutral");
     expect(screen.queryByText(/pending proposal/)).not.toBeInTheDocument();
+  });
+
+  it("folds a pending treaty proposal into the collapsed pending count", async () => {
+    mockNationsListQuery.mockResolvedValue([nation, other]);
+    mockOutgoingQuery.mockResolvedValue([]);
+    mockIncomingQuery.mockResolvedValue([]);
+    mockTreatiesQuery.mockResolvedValue([
+      {
+        createdAt: "2024-01-01T00:00:00Z",
+        endsTurnNumber: null,
+        id: "treaty-1",
+        proposedByCitizenId: "citizen-1",
+        proposerNationId: other.id,
+        respondedByCitizenId: null,
+        responderNationId: nation.id,
+        startsTurnNumber: null,
+        status: "proposed",
+        terms: {},
+        treatyType: "trade_agreement",
+        updatedAt: "2024-01-01T00:00:00Z",
+        worldId: nation.worldId,
+      } satisfies NationTreaty,
+    ]);
+
+    renderSection();
+
+    expect(await screen.findByText(/1 pending proposal/)).toBeInTheDocument();
+  });
+
+  it("renders treaty terms once the row is expanded", async () => {
+    mockNationsListQuery.mockResolvedValue([nation, other]);
+    mockOutgoingQuery.mockResolvedValue([]);
+    mockIncomingQuery.mockResolvedValue([]);
+    mockTreatiesQuery.mockResolvedValue([
+      {
+        createdAt: "2024-01-01T00:00:00Z",
+        endsTurnNumber: null,
+        id: "treaty-1",
+        proposedByCitizenId: "citizen-1",
+        proposerNationId: nation.id,
+        respondedByCitizenId: null,
+        responderNationId: other.id,
+        startsTurnNumber: null,
+        status: "active",
+        terms: {},
+        treatyType: "trade_agreement",
+        updatedAt: "2024-01-01T00:00:00Z",
+        worldId: nation.worldId,
+      } satisfies NationTreaty,
+    ]);
+
+    renderSection();
+
+    fireEvent.click(await screen.findByText(other.name));
+
+    expect(
+      await screen.findByText(
+        `Trade agreement between ${nation.name} and ${other.name}`,
+      ),
+    ).toBeInTheDocument();
   });
 });

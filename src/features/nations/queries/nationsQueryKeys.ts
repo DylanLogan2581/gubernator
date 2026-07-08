@@ -21,6 +21,8 @@ export const nationsQueryKeys = {
     [...nationsQueryKeys.all, "relationships-to-nation", nationId] as const,
   settlements: (nationId: string) =>
     [...nationsQueryKeys.all, "settlements", nationId] as const,
+  treaties: (nationId: string) =>
+    [...nationsQueryKeys.all, "treaties", nationId] as const,
   treasuryActiveProjects: (nationId: string) =>
     [...nationsQueryKeys.all, "treasury-active-projects", nationId] as const,
   treasuryLatestSnapshot: (nationId: string) =>

@@ -351,6 +351,31 @@ function createClient({
           })),
         };
       }
+      if (table === "resources") {
+        return {
+          select: vi.fn(() => {
+            const builder = {
+              eq: vi.fn(() => builder),
+              order: vi.fn(() => builder),
+              returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+            };
+            return builder;
+          }),
+        };
+      }
+      if (table === "nation_treaties") {
+        return {
+          select: vi.fn(() => {
+            const builder = {
+              eq: vi.fn(() => builder),
+              or: vi.fn(() => builder),
+              order: vi.fn(() => builder),
+              returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+            };
+            return builder;
+          }),
+        };
+      }
       if (table === "nation_relationships") {
         return {
           select: vi.fn(() => {

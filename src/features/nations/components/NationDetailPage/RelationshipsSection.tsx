@@ -11,14 +11,19 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { worldCalendarConfigQueryOptions } from "@/features/calendar";
 import { useActivePlayerCharacter } from "@/features/permissions";
+import { activeResourcesByWorldQueryOptions } from "@/features/resources";
+import type { Resource } from "@/features/resources";
 import { getErrorDescription } from "@/lib/errorUtils";
+import { type resolveTurnCalendarDate } from "@/shared/turnCalendarPrimitives";
 
 import {
   nationRelationshipsFromNationQueryOptions,
   nationRelationshipsToNationQueryOptions,
 } from "../../queries/nationRelationshipQueries";
 import { nationsListQueryOptions } from "../../queries/nationsQueries";
+import { nationTreatiesQueryOptions } from "../../queries/treatiesQueries";
 
 import { NationRelationshipRow } from "./RelationshipRow";
 import {
@@ -26,8 +31,10 @@ import {
   getStanceBadgeClassName,
   getStanceIconConfig,
 } from "./RelationshipUtils";
+import { NationTreatiesPanel } from "./TreatiesList";
 
 import type { NationRelationship } from "../../types/nationRelationshipTypes";
+import type { NationTreaty } from "../../types/nationTreatyTypes";
 import type { Nation } from "../../types/nationTypes";
 
 export function NationRelationshipsSection({
@@ -56,6 +63,13 @@ export function NationRelationshipsSection({
   const incomingQuery = useQuery(
     nationRelationshipsToNationQueryOptions(nation.id),
   );
+  const treatiesQuery = useQuery(nationTreatiesQueryOptions(nation.id));
+  const resourcesQuery = useQuery(
+    activeResourcesByWorldQueryOptions(nation.worldId),
+  );
+  const calendarQuery = useQuery(
+    worldCalendarConfigQueryOptions(nation.worldId),
+  );
 
   return (
     <section
@@ -74,7 +88,9 @@ export function NationRelationshipsSection({
       <div className="border-t border-border">
         {nationsQuery.isPending ||
         outgoingQuery.isPending ||
-        incomingQuery.isPending ? (
+        incomingQuery.isPending ||
+        treatiesQuery.isPending ||
+        resourcesQuery.isPending ? (
           <div className="px-4 pb-4 pt-2">
             <LoadingState label="Loading relationships…" />
           </div>
@@ -99,8 +115,24 @@ export function NationRelationshipsSection({
               description={getErrorDescription(incomingQuery.error)}
             />
           </div>
+        ) : treatiesQuery.isError ? (
+          <div className="px-4 pb-4 pt-2">
+            <ErrorState
+              title="Treaties could not be loaded"
+              description={getErrorDescription(treatiesQuery.error)}
+            />
+          </div>
+        ) : resourcesQuery.isError ? (
+          <div className="px-4 pb-4 pt-2">
+            <ErrorState
+              title="Resources could not be loaded"
+              description={getErrorDescription(resourcesQuery.error)}
+            />
+          </div>
         ) : (
           <NationRelationshipsList
+            activeCharacterId={activeCharacter?.id ?? null}
+            calendarConfig={calendarQuery.data ?? null}
             canControl={canControl}
             incoming={incomingQuery.data}
             nation={nation}
@@ -109,6 +141,8 @@ export function NationRelationshipsSection({
             )}
             outgoing={outgoingQuery.data}
             queryClient={queryClient}
+            resources={resourcesQuery.data}
+            treaties={treatiesQuery.data}
           />
         )}
       </div>
@@ -117,19 +151,27 @@ export function NationRelationshipsSection({
 }
 
 function NationRelationshipsList({
+  activeCharacterId,
+  calendarConfig,
   canControl,
   incoming,
   nation,
   otherNations,
   outgoing,
   queryClient,
+  resources,
+  treaties,
 }: {
+  readonly activeCharacterId: string | null;
+  readonly calendarConfig: Parameters<typeof resolveTurnCalendarDate>[0] | null;
   readonly canControl: boolean;
   readonly incoming: readonly NationRelationship[];
   readonly nation: Nation;
   readonly otherNations: readonly Nation[];
   readonly outgoing: readonly NationRelationship[];
   readonly queryClient: QueryClient;
+  readonly resources: readonly Resource[];
+  readonly treaties: readonly NationTreaty[];
 }): JSX.Element {
   if (otherNations.length === 0) {
     return (
@@ -154,12 +196,20 @@ function NationRelationshipsList({
       {otherNations.map((other) => (
         <NationRelationshipAccordionRow
           key={other.id}
+          activeCharacterId={activeCharacterId}
+          calendarConfig={calendarConfig}
           canControl={canControl}
           incoming={incomingByFrom.get(other.id) ?? null}
           nation={nation}
           other={other}
           outgoing={outgoingByTo.get(other.id) ?? null}
           queryClient={queryClient}
+          resources={resources}
+          treaties={treaties.filter(
+            (treaty) =>
+              treaty.proposerNationId === other.id ||
+              treaty.responderNationId === other.id,
+          )}
         />
       ))}
     </div>
@@ -167,24 +217,35 @@ function NationRelationshipsList({
 }
 
 function NationRelationshipAccordionRow({
+  activeCharacterId,
+  calendarConfig,
   canControl,
   incoming,
   nation,
   other,
   outgoing,
   queryClient,
+  resources,
+  treaties,
 }: {
+  readonly activeCharacterId: string | null;
+  readonly calendarConfig: Parameters<typeof resolveTurnCalendarDate>[0] | null;
   readonly canControl: boolean;
   readonly incoming: NationRelationship | null;
   readonly nation: Nation;
   readonly other: Nation;
   readonly outgoing: NationRelationship | null;
   readonly queryClient: QueryClient;
+  readonly resources: readonly Resource[];
+  readonly treaties: readonly NationTreaty[];
 }): JSX.Element {
   const currentStance = outgoing?.currentStance ?? "neutral";
   const { Icon, colorClass } = getStanceIconConfig(currentStance);
   const stanceLabel = formatRelationshipStance(currentStance);
   const badgeClassName = getStanceBadgeClassName(currentStance);
+  const pendingTreatyCount = treaties.filter(
+    (treaty) => treaty.status === "proposed",
+  ).length;
   const pendingCount =
     (outgoing?.pendingStance !== null && outgoing?.pendingStance !== undefined
       ? outgoing.pendingStatus === "proposed"
@@ -195,7 +256,8 @@ function NationRelationshipAccordionRow({
       ? incoming.pendingStatus === "proposed"
         ? 1
         : 0
-      : 0);
+      : 0) +
+    pendingTreatyCount;
 
   return (
     <Collapsible className="group">
@@ -215,7 +277,7 @@ function NationRelationshipAccordionRow({
           <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent className="border-t border-border px-4 pb-4 pt-2">
+      <CollapsibleContent className="grid gap-3 border-t border-border px-4 pb-4 pt-2">
         <NationRelationshipRow
           canControl={canControl}
           incoming={incoming}
@@ -223,6 +285,16 @@ function NationRelationshipAccordionRow({
           other={other}
           outgoing={outgoing}
           queryClient={queryClient}
+        />
+        <NationTreatiesPanel
+          activeCharacterId={activeCharacterId}
+          calendarConfig={calendarConfig}
+          canControl={canControl}
+          nation={nation}
+          other={other}
+          queryClient={queryClient}
+          resources={resources}
+          treaties={treaties}
         />
       </CollapsibleContent>
     </Collapsible>
