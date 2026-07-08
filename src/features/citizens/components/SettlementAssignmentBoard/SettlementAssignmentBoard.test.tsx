@@ -76,6 +76,9 @@ type JobCountRowFixture = {
   readonly job_id: string;
   readonly job_name: string;
   readonly job_slug: string;
+  readonly qualified_citizen_count: number;
+  readonly required_education_level_id: string | null;
+  readonly required_education_level_name: string | null;
   readonly world_id: string;
 };
 
@@ -221,6 +224,9 @@ function createJobCountRow(
     job_id: "job-1",
     job_name: "Farmer",
     job_slug: "farmer",
+    qualified_citizen_count: 10,
+    required_education_level_id: null,
+    required_education_level_name: null,
     world_id: "world-1",
     ...overrides,
   };

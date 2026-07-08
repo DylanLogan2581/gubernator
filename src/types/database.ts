@@ -4789,6 +4789,9 @@ export type Database = {
           job_id: string;
           job_name: string;
           job_slug: string;
+          qualified_citizen_count: number;
+          required_education_level_id: string;
+          required_education_level_name: string;
           world_id: string;
         }[];
       };

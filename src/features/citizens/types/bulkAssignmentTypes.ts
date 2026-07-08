@@ -4,6 +4,9 @@ export type SettlementJobCount = {
   readonly jobId: string;
   readonly jobName: string;
   readonly jobSlug: string;
+  readonly qualifiedCitizenCount: number;
+  readonly requiredEducationLevelId: string | null;
+  readonly requiredEducationLevelName: string | null;
   readonly worldId: string;
 };
 

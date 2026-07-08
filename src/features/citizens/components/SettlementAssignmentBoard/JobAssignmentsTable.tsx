@@ -5,6 +5,7 @@ import { useCallback, useState, type JSX, type ReactNode } from "react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { TableSkeleton } from "@/components/shared/SkeletonLoaders";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -627,13 +628,26 @@ function BulkJobRow({
   );
 
   const dirtyKey = `bulk-${job.jobId}`;
+  const hasRequirement = job.requiredEducationLevelId !== null;
 
   const parsedCount = parseInt(localCount, 10);
   const isValid = !Number.isNaN(parsedCount) && parsedCount >= 0;
   const isDirty = isValid && parsedCount !== job.currentCount;
   const isRaising = isValid && parsedCount > job.currentCount;
+  const noNpcs = isRaising && unassignedNpcCount === 0;
+  const exceedsQualified =
+    hasRequirement && isValid && parsedCount > job.qualifiedCitizenCount;
+  const noQualified = hasRequirement && job.qualifiedCitizenCount === 0;
   const applyDisabled =
-    mutation.isPending || !isDirty || (isRaising && unassignedNpcCount === 0);
+    mutation.isPending || !isDirty || noNpcs || exceedsQualified;
+
+  const applyTooltip = noQualified
+    ? `No citizens meet the ${job.requiredEducationLevelName ?? "education"} requirement`
+    : exceedsQualified
+      ? `Only ${job.qualifiedCitizenCount.toString()} citizens meet the education requirement`
+      : noNpcs
+        ? "No unassigned NPCs available"
+        : undefined;
 
   async function handleApply(): Promise<void> {
     if (!isValid) return;
@@ -653,9 +667,23 @@ function BulkJobRow({
 
   return (
     <TableRow className="border-b border-border last:border-0">
-      <TableCell className="py-2 pr-4 font-medium">{job.jobName}</TableCell>
+      <TableCell className="py-2 pr-4 font-medium">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span>{job.jobName}</span>
+          {job.requiredEducationLevelName !== null ? (
+            <Badge variant="outline">
+              Requires {job.requiredEducationLevelName}
+            </Badge>
+          ) : null}
+        </div>
+      </TableCell>
       <TableCell className="py-2 pr-4 text-muted-foreground">
         <CapacityDisplay capacity={job.capacity} current={job.currentCount} />
+        {hasRequirement ? (
+          <div className="mt-1 text-xs">
+            {job.qualifiedCitizenCount} qualified
+          </div>
+        ) : null}
       </TableCell>
       {canEdit ? (
         <TableCell className="py-2">
@@ -665,6 +693,7 @@ function BulkJobRow({
               className="w-20"
               disabled={mutation.isPending}
               inputMode="numeric"
+              max={hasRequirement ? job.qualifiedCitizenCount : undefined}
               min="0"
               type="number"
               value={localCount}
@@ -676,16 +705,18 @@ function BulkJobRow({
                 onDirtyChange(dirtyKey, valid ? parsed - job.currentCount : 0);
               }}
             />
-            <Button
-              disabled={applyDisabled}
-              size="sm"
-              type="button"
-              onClick={() => {
-                void handleApply();
-              }}
-            >
-              Apply
-            </Button>
+            <span title={applyTooltip}>
+              <Button
+                disabled={applyDisabled}
+                size="sm"
+                type="button"
+                onClick={() => {
+                  void handleApply();
+                }}
+              >
+                Apply
+              </Button>
+            </span>
           </div>
         </TableCell>
       ) : null}

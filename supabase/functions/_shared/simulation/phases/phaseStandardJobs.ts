@@ -5,6 +5,7 @@
 import { scaleDeficit } from "../decimalMath.ts";
 
 import type {
+  SimCitizen,
   SimJob,
   SimulationContext,
   SimulationLogEntry,
@@ -23,6 +24,7 @@ export function phaseStandardJobs(
     citizenAssignments,
     citizens,
     educationEnrollments,
+    educationLevels,
     jobs,
     nationOffices,
     settlements,
@@ -31,8 +33,27 @@ export function phaseStandardJobs(
   const { pendingEventMultipliers } = context.shared;
 
   const citizenById = new Map(citizens.map((c) => [c.id, c]));
+  const jobById = new Map(jobs.map((j) => [j.id, j]));
+  const levelById = new Map(educationLevels.map((l) => [l.id, l]));
+  const settlementById = new Map(settlements.map((s) => [s.id, s]));
   const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
   const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
+
+  function levelRank(levelId: string | null): number | null {
+    if (levelId === null) return null;
+    return levelById.get(levelId)?.rank ?? null;
+  }
+
+  // A citizen qualifies for a job iff their education level rank >= the
+  // job's required level rank. No requirement (null) = everyone qualifies.
+  // An uneducated citizen (null level) only qualifies for unrequired jobs.
+  function citizenQualifies(citizen: SimCitizen, requiredLevelId: string | null): boolean {
+    if (requiredLevelId === null) return true;
+    const citizenRank = levelRank(citizen.educationLevelId);
+    const requiredRank = levelRank(requiredLevelId);
+    if (citizenRank === null || requiredRank === null) return false;
+    return citizenRank >= requiredRank;
+  }
 
   const stockpileQty = new Map<string, number>();
   for (const sp of stockpiles) {
@@ -40,6 +61,9 @@ export function phaseStandardJobs(
   }
 
   const workerCounts = new Map<string, number>();
+  // Tracks stale assigned-but-unqualified workers (requirement raised after
+  // assignment) so a single warning log can be emitted per settlement:job.
+  const unqualifiedCounts = new Map<string, number>();
   for (const assignment of citizenAssignments) {
     if (
       assignment.assignmentType !== "standard_job" ||
@@ -51,7 +75,12 @@ export function phaseStandardJobs(
     }
     const citizen = citizenById.get(assignment.citizenId);
     if (citizen === undefined || citizen.settlementId === null) continue;
+    const job = jobById.get(assignment.jobId);
     const key = `${citizen.settlementId}:${assignment.jobId}`;
+    if (job !== undefined && !citizenQualifies(citizen, job.requiredEducationLevelId)) {
+      unqualifiedCounts.set(key, (unqualifiedCounts.get(key) ?? 0) + 1);
+      continue;
+    }
     workerCounts.set(key, (workerCounts.get(key) ?? 0) + 1);
   }
 
@@ -59,6 +88,28 @@ export function phaseStandardJobs(
 
   const allLogs: SimulationLogEntry[] = [];
   const allDeltas: StockpileDelta[] = [];
+
+  for (const [key, unqualifiedCount] of unqualifiedCounts) {
+    const [sid, jobId] = key.split(":");
+    const settlement = sid === undefined ? undefined : settlementById.get(sid);
+    const job = jobId === undefined ? undefined : jobById.get(jobId);
+    if (settlement === undefined || job === undefined) continue;
+    const levelName = levelById.get(job.requiredEducationLevelId ?? "")?.name ?? "the requirement";
+    allLogs.push({
+      category: "standard_job.unqualified_workers",
+      nationId: settlement.nationId,
+      payload: {
+        jobId: job.id,
+        message: `${unqualifiedCount} assigned worker${
+          unqualifiedCount === 1 ? "" : "s"
+        } ${unqualifiedCount === 1 ? "lacks" : "lack"} ${levelName} for ${job.name}`,
+        settlementId: sid,
+        unqualifiedCount,
+      },
+      phase: "standardJobs",
+      settlementId: sid,
+    });
+  }
 
   for (const settlement of settlements) {
     const sid = settlement.id;
