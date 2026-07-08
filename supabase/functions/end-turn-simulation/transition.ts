@@ -5,10 +5,13 @@ import { runSimulation, SimulationRejectionError } from "../_shared/simulation/r
 
 import type { EndTurnSimulationErrorResponse } from "./types.ts";
 import type {
+  ArmyTurnSnapshot,
   AssignmentClear,
   CitizenEducationPatch,
   DeathCauseCategory,
   DepositUpdate,
+  DesertedSoldier,
+  DisbandedUnit,
   EnrollmentGraduation,
   EnrollmentProgressUpdate,
   EventStatusPatch,
@@ -105,6 +108,7 @@ type PartnershipChangeEntry = {
 // ---------------------------------------------------------------------------
 
 export type ApplyTurnTransitionPayload = {
+  readonly armyTurnSnapshots: readonly ArmyTurnSnapshot[];
   readonly assignmentClears: readonly AssignmentClear[];
   readonly bornOnTurnBackfill: ReadonlyArray<{
     readonly bornOnTurnNumber: number;
@@ -117,6 +121,8 @@ export type ApplyTurnTransitionPayload = {
   readonly citizenEducationPatches: readonly CitizenEducationPatch[];
   readonly constructionUpdates: readonly ConstructionUpdateEntry[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly desertedSoldiers: readonly DesertedSoldier[];
+  readonly disbandedUnits: readonly DisbandedUnit[];
   readonly enrollmentGraduations: readonly EnrollmentGraduation[];
   readonly enrollmentProgressUpdates: readonly EnrollmentProgressUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
@@ -351,6 +357,7 @@ export function mapSimulationResultToPayload(
   });
 
   return {
+    armyTurnSnapshots: result.armyTurnSnapshots,
     assignmentClears: result.assignmentClears,
     bornOnTurnBackfill,
     buildingStateChanges,
@@ -360,6 +367,8 @@ export function mapSimulationResultToPayload(
     citizenEducationPatches: result.citizenEducationPatches,
     constructionUpdates,
     depositUpdates: result.depositUpdates,
+    desertedSoldiers: result.desertedSoldiers,
+    disbandedUnits: result.disbandedUnits,
     enrollmentGraduations: result.enrollmentGraduations,
     enrollmentProgressUpdates: result.enrollmentProgressUpdates,
     eventStatusPatches: result.eventStatusPatches,

@@ -62,6 +62,8 @@ export function makeInputState(
   overrides: Partial<SimulationInputState> = {},
 ): SimulationInputState {
   return {
+    armies: [],
+    armyUnits: [],
     buildingBlueprints: [],
     buildingTiers: [],
     calendarConfig: CALENDAR_CONFIG,
@@ -93,6 +95,7 @@ export function makeInputState(
     tradeRoutes: [],
     turnNumber: 1,
     unitSoldiers: [],
+    unitTypes: [],
     worldId: "w1",
     ...overrides,
   };

@@ -12,6 +12,7 @@ import { phaseEvents } from "./phases/phaseEvents.ts";
 import { phaseHomelessness } from "./phases/phaseHomelessness.ts";
 import { phaseLogsAndSnapshots } from "./phases/phaseLogsAndSnapshots.ts";
 import { phaseManagedPopulations } from "./phases/phaseManagedPopulations.ts";
+import { phaseMilitaryUpkeep } from "./phases/phaseMilitaryUpkeep.ts";
 import { phaseNationalEconomy } from "./phases/phaseNationalEconomy.ts";
 import { phasePartnerships } from "./phases/phasePartnerships/index.ts";
 import { phasePassiveEffects } from "./phases/phasePassiveEffects.ts";
@@ -304,6 +305,16 @@ export function runSimulation(
   applyDeltas(p7.stockpileDeltas);
 
   // -------------------------------------------------------------------------
+  // Phase 7.5 — Military Upkeep (#1110)
+  // -------------------------------------------------------------------------
+  // Runs after national economy (post-tax nation/settlement stockpiles) and
+  // before citizen consumption, per the issue's ordering requirement.
+
+  const p7dot5 = phaseMilitaryUpkeep(context);
+  applyDeltas(p7dot5.stockpileDeltas);
+  applyNationDeltas(p7dot5.nationStockpileDeltas);
+
+  // -------------------------------------------------------------------------
   // Phase 8 — Citizen Consumption
   // -------------------------------------------------------------------------
 
@@ -507,6 +518,7 @@ export function runSimulation(
     ...p4.stockpileDeltas,
     ...p6dot5.stockpileDeltas,
     ...p7.stockpileDeltas.filter((d) => d.delta < 0),
+    ...p7dot5.stockpileDeltas,
     ...p8.stockpileDeltas,
     ...p12.stockpileDeltas.filter((d) => d.delta < 0),
     ...p12dot5.stockpileDeltas,
@@ -544,6 +556,7 @@ export function runSimulation(
     ...p6dot5.logs,
     ...p6dot75.logs,
     ...p7.logs,
+    ...p7dot5.logs,
     ...p8.logs,
     ...filteredP9Logs,
     ...p10.logs,
@@ -562,6 +575,7 @@ export function runSimulation(
     ...p4dot5.notifications,
     ...p6dot5.notifications,
     ...p7.notifications,
+    ...p7dot5.notifications,
     ...p8.notifications,
     ...filteredP9Notifications,
     ...p10.notifications,
@@ -578,12 +592,14 @@ export function runSimulation(
     ...p6.stockpileDeltas,
     ...p6dot5.stockpileDeltas,
     ...p7.stockpileDeltas,
+    ...p7dot5.stockpileDeltas,
     ...p8.stockpileDeltas,
     ...p12.stockpileDeltas,
     ...p12dot5.stockpileDeltas,
   ];
 
   return {
+    armyTurnSnapshots: p7dot5.armyTurnSnapshots,
     assignmentClears: [
       ...p2.assignmentClears,
       ...p3.assignmentClears,
@@ -604,6 +620,8 @@ export function runSimulation(
     citizenPatches: p9.citizenPatches,
     constructionUpdates: p3.constructionUpdates,
     depositUpdates: [...p2.depositUpdates, ...p11.depositUpdates],
+    desertedSoldiers: p7dot5.desertedSoldiers,
+    disbandedUnits: p7dot5.disbandedUnits,
     enrollmentGraduations: p4dot5.enrollmentGraduations,
     enrollmentProgressUpdates: p4dot5.enrollmentProgressUpdates,
     eventStatusPatches: p11.eventStatusPatches,
@@ -611,7 +629,11 @@ export function runSimulation(
     managedPopulationUpdates,
     nationCurrencySnapshots: p6dot5.nationCurrencySnapshots,
     nationCurrencyUpdates: p6dot5.nationCurrencyUpdates,
-    nationStockpileDeltas: [...p6dot5.nationStockpileDeltas, ...p6dot75.nationStockpileDeltas],
+    nationStockpileDeltas: [
+      ...p6dot5.nationStockpileDeltas,
+      ...p6dot75.nationStockpileDeltas,
+      ...p7dot5.nationStockpileDeltas,
+    ],
     nationTurnSnapshots: mergeNationTurnSnapshots([
       p6dot5.nationTurnSnapshots,
       p6dot75.nationTurnSnapshots,

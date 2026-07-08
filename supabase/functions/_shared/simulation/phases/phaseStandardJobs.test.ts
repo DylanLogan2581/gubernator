@@ -129,6 +129,8 @@ function makeContext(
 ): SimulationContext {
   return {
     input: {
+      armies: [],
+      armyUnits: [],
       buildingBlueprints: [],
       buildingTiers: [],
       calendarConfig: CALENDAR_CONFIG,
@@ -160,6 +162,7 @@ function makeContext(
       tradeRoutes: [],
       turnNumber: 1,
       unitSoldiers: [],
+      unitTypes: [],
       worldId: "w1",
     },
     shared: makeShared(),

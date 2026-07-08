@@ -61,6 +61,8 @@ function makeBaseInput(
   overrides: Partial<SimulationInputState> = {},
 ): SimulationInputState {
   return {
+    armies: [],
+    armyUnits: [],
     buildingBlueprints: [],
     buildingTiers: [],
     calendarConfig: makeMinimalCalendarConfig(),
@@ -93,6 +95,7 @@ function makeBaseInput(
     tradeRoutes: [],
     turnNumber: 5,
     unitSoldiers: [],
+    unitTypes: [],
     worldId: WORLD_ID,
     ...overrides,
   };
@@ -100,6 +103,7 @@ function makeBaseInput(
 
 function makeEmptyResult(): SimulationResult {
   return {
+    armyTurnSnapshots: [],
     assignmentClears: [],
     buildingStateChanges: [],
     buildingsCreated: [],
@@ -109,6 +113,8 @@ function makeEmptyResult(): SimulationResult {
     citizenPatches: [],
     constructionUpdates: [],
     depositUpdates: [],
+    desertedSoldiers: [],
+    disbandedUnits: [],
     enrollmentGraduations: [],
     enrollmentProgressUpdates: [],
     eventStatusPatches: [],

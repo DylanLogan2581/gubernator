@@ -114,6 +114,9 @@ function makeStateResponses(): Record<
     "/rest/v1/education_levels": { body: [], status: 200 },
     "/rest/v1/education_enrollments": { body: [], status: 200 },
     "/rest/v1/unit_soldiers": { body: [], status: 200 },
+    "/rest/v1/armies": { body: [], status: 200 },
+    "/rest/v1/army_units": { body: [], status: 200 },
+    "/rest/v1/unit_types": { body: [], status: 200 },
   };
 }
 

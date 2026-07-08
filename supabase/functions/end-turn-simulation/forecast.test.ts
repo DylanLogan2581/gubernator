@@ -33,7 +33,8 @@ describe("forecast computation", () => {
     } as unknown as SimulationInputState;
 
     const result: SimulationResult = {
-      assignmentClears: [],
+      armyTurnSnapshots: [],
+    assignmentClears: [],
       buildingStateChanges: [],
       buildingsCreated: [],
       citizenBirths: [],
@@ -42,6 +43,8 @@ describe("forecast computation", () => {
       citizenPatches: [],
       constructionUpdates: [],
       depositUpdates: [],
+    desertedSoldiers: [],
+    disbandedUnits: [],
       enrollmentGraduations: [],
       enrollmentProgressUpdates: [],
       eventStatusPatches: [],
@@ -103,7 +106,8 @@ describe("forecast computation", () => {
     } as unknown as SimulationInputState;
 
     const result: SimulationResult = {
-      assignmentClears: [],
+      armyTurnSnapshots: [],
+    assignmentClears: [],
       buildingStateChanges: [],
       buildingsCreated: [],
       citizenBirths: [],
@@ -112,6 +116,8 @@ describe("forecast computation", () => {
       citizenPatches: [],
       constructionUpdates: [],
       depositUpdates: [],
+    desertedSoldiers: [],
+    disbandedUnits: [],
       enrollmentGraduations: [],
       enrollmentProgressUpdates: [],
       eventStatusPatches: [],

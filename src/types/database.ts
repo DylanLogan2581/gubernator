@@ -149,6 +149,54 @@ export type Database = {
           },
         ];
       };
+      army_turn_snapshots: {
+        Row: {
+          army_id: string;
+          created_at: string;
+          id: string;
+          soldier_count_total: number;
+          soldiers_by_unit_type_json: Json;
+          turn_number: number;
+          upkeep_paid: boolean;
+          world_id: string;
+        };
+        Insert: {
+          army_id: string;
+          created_at?: string;
+          id?: string;
+          soldier_count_total: number;
+          soldiers_by_unit_type_json?: Json;
+          turn_number: number;
+          upkeep_paid: boolean;
+          world_id: string;
+        };
+        Update: {
+          army_id?: string;
+          created_at?: string;
+          id?: string;
+          soldier_count_total?: number;
+          soldiers_by_unit_type_json?: Json;
+          turn_number?: number;
+          upkeep_paid?: boolean;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "army_turn_snapshots_army_id_fkey";
+            columns: ["army_id"];
+            isOneToOne: false;
+            referencedRelation: "armies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "army_turn_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       army_units: {
         Row: {
           army_id: string;
@@ -5401,6 +5449,10 @@ export type Database = {
         Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
         Returns: Record<string, unknown>;
       };
+      internal_apply_turn_transition_military_upkeep: {
+        Args: { p_payload: Json; p_turn_number: number; p_world_id: string };
+        Returns: Record<string, unknown>;
+      };
       internal_apply_turn_transition_nation_currency: {
         Args: {
           p_expected_turn_number: number;
@@ -7181,7 +7233,9 @@ export type Database = {
         | "nation.tribute_missed"
         | "nation.treaty_expired"
         | "currency.default"
-        | "currency.confidence_collapsing";
+        | "currency.confidence_collapsing"
+        | "military.upkeep_unpaid"
+        | "military.unit_disbanded";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -7356,6 +7410,8 @@ export const Constants = {
         "nation.treaty_expired",
         "currency.default",
         "currency.confidence_collapsing",
+        "military.upkeep_unpaid",
+        "military.unit_disbanded",
       ],
     },
   },

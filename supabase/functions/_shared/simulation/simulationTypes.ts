@@ -61,6 +61,29 @@ export type SimNationOffice = {
 
 export type SimUnitSoldier = {
   readonly citizenId: string;
+  readonly homeSettlementId: string | null;
+  readonly id: string;
+  readonly unitId: string;
+};
+
+export type SimUnitType = {
+  readonly desertionRate: number;
+  readonly id: string;
+  readonly upkeepCostsJson: readonly SimTierCostEntry[];
+};
+
+export type SimArmy = {
+  readonly fundingSource: "nation" | "host_settlement";
+  readonly id: string;
+  readonly name: string;
+  readonly nationId: string;
+  readonly stationedSettlementId: string;
+};
+
+export type SimArmyUnit = {
+  readonly armyId: string;
+  readonly id: string;
+  readonly unitTypeId: string;
 };
 
 export type SimEducationLevel = {
@@ -478,6 +501,8 @@ export type SimResource = {
 };
 
 export type SimulationInputState = {
+  readonly armies: readonly SimArmy[];
+  readonly armyUnits: readonly SimArmyUnit[];
   readonly buildingBlueprints: readonly SimBuildingBlueprint[];
   readonly buildingTiers: readonly SimBuildingTier[];
   readonly calendarConfig: TurnCalendarConfig;
@@ -516,6 +541,7 @@ export type SimulationInputState = {
   readonly tradeRoutes: readonly SimTradeRoute[];
   readonly turnNumber: number;
   readonly unitSoldiers: readonly SimUnitSoldier[];
+  readonly unitTypes: readonly SimUnitType[];
   readonly worldId: string;
 };
 
@@ -724,6 +750,27 @@ export type NationTurnSnapshot = {
   readonly tributeReceivedByResource: Readonly<Record<string, number>>;
 };
 
+
+export type ArmyTurnSnapshot = {
+  readonly armyId: string;
+  readonly soldierCountTotal: number;
+  readonly soldiersByUnitTypeJson: Readonly<Record<string, number>>;
+  readonly turnNumber: number;
+  readonly upkeepPaid: boolean;
+};
+
+export type DesertedSoldier = {
+  readonly citizenId: string;
+  readonly newSettlementId: string;
+  readonly soldierId: string;
+  readonly unitId: string;
+};
+
+export type DisbandedUnit = {
+  readonly armyId: string;
+  readonly unitId: string;
+};
+
 // #1094: per-turn currency snapshot for history/charting, and the resulting
 // confidence (+ default-state) patch to persist back onto nation_currencies.
 export type NationCurrencySnapshot = {
@@ -757,6 +804,7 @@ export type ReadinessSummary = {
 };
 
 export type SimulationResult = {
+  readonly armyTurnSnapshots: readonly ArmyTurnSnapshot[];
   readonly assignmentClears: readonly AssignmentClear[];
   readonly buildingStateChanges: readonly BuildingStateChange[];
   readonly buildingsCreated: readonly BuildingCreated[];
@@ -766,6 +814,8 @@ export type SimulationResult = {
   readonly citizenPatches: readonly CitizenPatch[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly desertedSoldiers: readonly DesertedSoldier[];
+  readonly disbandedUnits: readonly DisbandedUnit[];
   readonly enrollmentGraduations: readonly EnrollmentGraduation[];
   readonly enrollmentProgressUpdates: readonly EnrollmentProgressUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];

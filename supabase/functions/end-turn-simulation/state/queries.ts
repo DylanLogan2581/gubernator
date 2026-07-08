@@ -459,13 +459,62 @@ export function fetchUnitSoldiers(
   ctx: FetchContext,
   worldId: string,
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "unit_soldiers",
     params: {
       world_id: `eq.${worldId}`,
       order: "id.asc",
-      select: "citizen_id",
+      select: "id,unit_id,citizen_id,home_settlement_id",
+    },
+  });
+}
+
+// #1110: military upkeep simulation phase. armies/unit_types are world-scoped
+// directly; army_units has no world_id column, so it's scoped via an
+// armies!inner(world_id) embed (same pattern as
+// fetchNationResourceStockpiles' nations!inner join above).
+export function fetchArmies(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "armies",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,nation_id,name,funding_source,stationed_settlement_id",
+    },
+  });
+}
+
+export function fetchArmyUnits(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "army_units",
+    params: {
+      "armies.world_id": `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,army_id,unit_type_id,armies!inner(world_id)",
+    },
+  });
+}
+
+export function fetchUnitTypes(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "unit_types",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,desertion_rate,upkeep_costs_json",
     },
   });
 }

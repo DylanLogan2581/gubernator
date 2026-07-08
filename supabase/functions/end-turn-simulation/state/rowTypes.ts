@@ -198,7 +198,30 @@ export type SupabaseNationOfficeRow = {
 };
 
 export type SupabaseUnitSoldierRow = {
+  readonly id: string;
+  readonly unit_id: string;
   readonly citizen_id: string;
+  readonly home_settlement_id: string | null;
+};
+
+export type SupabaseArmyRow = {
+  readonly id: string;
+  readonly nation_id: string;
+  readonly name: string;
+  readonly funding_source: string;
+  readonly stationed_settlement_id: string;
+};
+
+export type SupabaseArmyUnitRow = {
+  readonly id: string;
+  readonly army_id: string;
+  readonly unit_type_id: string;
+};
+
+export type SupabaseUnitTypeRow = {
+  readonly id: string;
+  readonly desertion_rate: number;
+  readonly upkeep_costs_json: unknown;
 };
 
 export type SupabaseEducationLevelRow = {
@@ -562,7 +585,41 @@ export function isNationOfficeRow(v: unknown): v is SupabaseNationOfficeRow {
 }
 
 export function isUnitSoldierRow(v: unknown): v is SupabaseUnitSoldierRow {
-  return isRecord(v) && typeof v.citizen_id === "string";
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.unit_id === "string" &&
+    typeof v.citizen_id === "string" &&
+    (v.home_settlement_id === null || typeof v.home_settlement_id === "string")
+  );
+}
+
+export function isArmyRow(v: unknown): v is SupabaseArmyRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.nation_id === "string" &&
+    typeof v.name === "string" &&
+    typeof v.funding_source === "string" &&
+    typeof v.stationed_settlement_id === "string"
+  );
+}
+
+export function isArmyUnitRow(v: unknown): v is SupabaseArmyUnitRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.army_id === "string" &&
+    typeof v.unit_type_id === "string"
+  );
+}
+
+export function isUnitTypeRow(v: unknown): v is SupabaseUnitTypeRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.desertion_rate === "number"
+  );
 }
 
 export function isEducationLevelRow(v: unknown): v is SupabaseEducationLevelRow {

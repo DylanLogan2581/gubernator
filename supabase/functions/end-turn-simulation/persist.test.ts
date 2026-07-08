@@ -41,6 +41,7 @@ function makeAuthContext(
 
 function makeMinimalPayload(): ApplyTurnTransitionPayload {
   return {
+    armyTurnSnapshots: [],
     assignmentClears: [],
     bornOnTurnBackfill: [],
     buildingStateChanges: [],
@@ -50,6 +51,8 @@ function makeMinimalPayload(): ApplyTurnTransitionPayload {
     citizenEducationPatches: [],
     constructionUpdates: [],
     depositUpdates: [],
+    desertedSoldiers: [],
+    disbandedUnits: [],
     enrollmentGraduations: [],
     enrollmentProgressUpdates: [],
     eventStatusPatches: [],

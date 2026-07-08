@@ -11,6 +11,8 @@ import {
 import {
   toBlueprintsAndTiers,
   toDeposits,
+  toSimArmy,
+  toSimArmyUnit,
   toSimBuilding,
   toSimCitizen,
   toSimCitizenAssignment,
@@ -35,9 +37,12 @@ import {
   toSimTradeRoute,
   toSimTreaty,
   toSimUnitSoldier,
+  toSimUnitType,
   toWorldPopulationRules,
 } from "./mappers.ts";
 import {
+  fetchArmies,
+  fetchArmyUnits,
   fetchAssignments,
   fetchBlueprints,
   fetchBuildings,
@@ -66,9 +71,12 @@ import {
   fetchStockpiles,
   fetchTradeRoutes,
   fetchUnitSoldiers,
+  fetchUnitTypes,
   fetchWorldRow,
 } from "./queries.ts";
 import {
+  isArmyRow,
+  isArmyUnitRow,
   isAssignmentRow,
   isBuildingRow,
   isCitizenRow,
@@ -95,6 +103,7 @@ import {
   isStockpileRow,
   isTradeRouteRow,
   isUnitSoldierRow,
+  isUnitTypeRow,
   type SupabaseNamesetRow,
   type SupabaseSettlementRow,
 } from "./rowTypes.ts";
@@ -196,7 +205,7 @@ async function resolveEndTurnInputFromCtx(
   );
 
   // -------------------------------------------------------------------------
-  // Round 2: all 16 entity fetches parallelized via Promise.all (not N+1).
+  // Round 2: all 19 entity fetches parallelized via Promise.all (not N+1).
   // DB round-trip count fixed at 2 regardless of entity table size.
   // See LOAD_ARCHITECTURE.md for design rationale.
   // -------------------------------------------------------------------------
@@ -229,6 +238,9 @@ async function resolveEndTurnInputFromCtx(
     educationLevelsResult,
     educationEnrollmentsResult,
     unitSoldiersResult,
+    armiesResult,
+    armyUnitsResult,
+    unitTypesResult,
   ] = await Promise.all([
     fetchResources(ctx, worldId),
     fetchStockpiles(ctx, settlementIds),
@@ -257,6 +269,9 @@ async function resolveEndTurnInputFromCtx(
     fetchEducationLevels(ctx, worldId),
     fetchEducationEnrollments(ctx, worldId),
     fetchUnitSoldiers(ctx, worldId),
+    fetchArmies(ctx, worldId),
+    fetchArmyUnits(ctx, worldId),
+    fetchUnitTypes(ctx, worldId),
   ]);
 
   const round2Results = [
@@ -287,6 +302,9 @@ async function resolveEndTurnInputFromCtx(
     educationLevelsResult,
     educationEnrollmentsResult,
     unitSoldiersResult,
+    armiesResult,
+    armyUnitsResult,
+    unitTypesResult,
   ];
 
   for (const result of round2Results) {
@@ -338,6 +356,14 @@ async function resolveEndTurnInputFromCtx(
     });
 
   const input: SimulationInputState = {
+    armies: (armiesResult as Extract<typeof armiesResult, { ok: true }>).rows
+      .filter(isArmyRow)
+      .map(toSimArmy),
+    armyUnits: (
+      armyUnitsResult as Extract<typeof armyUnitsResult, { ok: true }>
+    ).rows
+      .filter(isArmyUnitRow)
+      .map(toSimArmyUnit),
     buildingBlueprints,
     buildingTiers,
     calendarConfig,
@@ -469,6 +495,11 @@ async function resolveEndTurnInputFromCtx(
     ).rows
       .filter(isUnitSoldierRow)
       .map(toSimUnitSoldier),
+    unitTypes: (
+      unitTypesResult as Extract<typeof unitTypesResult, { ok: true }>
+    ).rows
+      .filter(isUnitTypeRow)
+      .map(toSimUnitType),
     worldId,
   };
 

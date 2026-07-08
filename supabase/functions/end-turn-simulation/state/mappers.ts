@@ -4,6 +4,8 @@ import { isRecord } from "../utils.ts";
 import { isBlueprintRow, isDepositResourceRow, isDepositRow, isTierRow } from "./rowTypes.ts";
 
 import type {
+  SupabaseArmyRow,
+  SupabaseArmyUnitRow,
   SupabaseAssignmentRow,
   SupabaseBuildingRow,
   SupabaseCitizenRow,
@@ -28,9 +30,12 @@ import type {
   SupabaseStockpileRow,
   SupabaseTradeRouteRow,
   SupabaseUnitSoldierRow,
+  SupabaseUnitTypeRow,
   SupabaseWorldRow,
 } from "./rowTypes.ts";
 import type {
+  SimArmy,
+  SimArmyUnit,
   SimBuildingBlueprint,
   SimBuildingState,
   SimBuildingTier,
@@ -65,6 +70,7 @@ import type {
   SimTreaty,
   SimTreatyType,
   SimUnitSoldier,
+  SimUnitType,
   SimWorkerInputEntry,
   WorldPopulationRules,
 } from "../../_shared/simulation/simulationTypes.ts";
@@ -335,6 +341,35 @@ export function toSimNationOffice(row: SupabaseNationOfficeRow): SimNationOffice
 export function toSimUnitSoldier(row: SupabaseUnitSoldierRow): SimUnitSoldier {
   return {
     citizenId: row.citizen_id,
+    homeSettlementId: row.home_settlement_id,
+    id: row.id,
+    unitId: row.unit_id,
+  };
+}
+
+export function toSimArmy(row: SupabaseArmyRow): SimArmy {
+  return {
+    fundingSource: row.funding_source as SimArmy["fundingSource"],
+    id: row.id,
+    name: row.name,
+    nationId: row.nation_id,
+    stationedSettlementId: row.stationed_settlement_id,
+  };
+}
+
+export function toSimArmyUnit(row: SupabaseArmyUnitRow): SimArmyUnit {
+  return {
+    armyId: row.army_id,
+    id: row.id,
+    unitTypeId: row.unit_type_id,
+  };
+}
+
+export function toSimUnitType(row: SupabaseUnitTypeRow): SimUnitType {
+  return {
+    desertionRate: row.desertion_rate,
+    id: row.id,
+    upkeepCostsJson: toSimTierCostEntries(row.upkeep_costs_json),
   };
 }
 

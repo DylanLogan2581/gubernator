@@ -13,6 +13,7 @@ import {
   PawPrint,
   RefreshCw,
   Skull,
+  Swords,
   Zap,
 } from "lucide-react";
 
@@ -55,6 +56,8 @@ const NOTIFICATION_TYPE_ICONS: Record<NotificationType, LucideIcon> = {
   "settlement.starvation_occurred": AlertTriangle,
   "event.activated": Zap,
   "event.expired": Zap,
+  "military.upkeep_unpaid": Swords,
+  "military.unit_disbanded": Swords,
   "player.died": Skull,
   "player.widowed": HeartCrack,
 };
