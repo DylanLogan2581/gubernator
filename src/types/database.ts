@@ -834,6 +834,78 @@ export type Database = {
         };
         Relationships: [];
       };
+      education_enrollments: {
+        Row: {
+          citizen_id: string;
+          created_at: string;
+          enrolled_turn_number: number;
+          id: string;
+          progress_turns: number;
+          settlement_building_id: string;
+          target_level_id: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id: string;
+          created_at?: string;
+          enrolled_turn_number: number;
+          id?: string;
+          progress_turns?: number;
+          settlement_building_id: string;
+          target_level_id: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string;
+          created_at?: string;
+          enrolled_turn_number?: number;
+          id?: string;
+          progress_turns?: number;
+          settlement_building_id?: string;
+          target_level_id?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "education_enrollments_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: true;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "education_enrollments_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: true;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "education_enrollments_settlement_building_id_fkey";
+            columns: ["settlement_building_id"];
+            isOneToOne: false;
+            referencedRelation: "settlement_buildings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "education_enrollments_target_level_id_fkey";
+            columns: ["target_level_id"];
+            isOneToOne: false;
+            referencedRelation: "education_levels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "education_enrollments_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       education_levels: {
         Row: {
           created_at: string;
@@ -4617,6 +4689,26 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      enroll_citizen: {
+        Args: { p_citizen_id: string; p_settlement_building_id: string };
+        Returns: {
+          citizen_id: string;
+          created_at: string;
+          enrolled_turn_number: number;
+          id: string;
+          progress_turns: number;
+          settlement_building_id: string;
+          target_level_id: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "education_enrollments";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       establish_nation_currency: {
         Args: {
           p_backing_ratio?: number;
@@ -6312,6 +6404,26 @@ export type Database = {
         SetofOptions: {
           from: "*";
           to: "worlds";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      unenroll_citizen: {
+        Args: { p_enrollment_id: string };
+        Returns: {
+          citizen_id: string;
+          created_at: string;
+          enrolled_turn_number: number;
+          id: string;
+          progress_turns: number;
+          settlement_building_id: string;
+          target_level_id: string;
+          updated_at: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "education_enrollments";
           isOneToOne: false;
           isSetofReturn: true;
         };
