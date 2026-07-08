@@ -28,8 +28,14 @@ type TierEffectRef =
       readonly type: "population_cap_increase";
     };
 
+type TierEducationConfigRef = {
+  readonly teacherJobId: string;
+  readonly teachesUpToLevelId: string;
+};
+
 type TierReferencePayload = {
   readonly constructionCostsJson?: readonly TierCostRef[];
+  readonly educationConfigJson?: TierEducationConfigRef | null;
   readonly effectsJson?: readonly TierEffectRef[];
   readonly upkeepCostsJson?: readonly TierCostRef[];
 };
@@ -44,10 +50,14 @@ export function validateBlueprintTierReferencesAgainstWorld(
   payload: TierReferencePayload,
   activeResources: readonly MinimalEntity[],
   activeJobs: readonly MinimalEntity[] = [],
+  activeEducationLevels: readonly MinimalEntity[] = [],
 ): readonly BuildingReferenceIssue[] {
   const issues: BuildingReferenceIssue[] = [];
   const activeResourceIds = new Set(activeResources.map((r) => r.id));
   const activeJobIds = new Set(activeJobs.map((j) => j.id));
+  const activeEducationLevelIds = new Set(
+    activeEducationLevels.map((l) => l.id),
+  );
 
   checkResourceIdsInWorld(
     "constructionCostsJson",
@@ -82,6 +92,25 @@ export function validateBlueprintTierReferencesAgainstWorld(
       issues.push({
         field: "effectsJson",
         message: `Job ${effect.jobId} is not an active job in this world.`,
+      });
+    }
+  }
+
+  if (
+    payload.educationConfigJson !== undefined &&
+    payload.educationConfigJson !== null
+  ) {
+    const config = payload.educationConfigJson;
+    if (!activeJobIds.has(config.teacherJobId)) {
+      issues.push({
+        field: "educationConfigJson",
+        message: `Job ${config.teacherJobId} is not an active job in this world.`,
+      });
+    }
+    if (!activeEducationLevelIds.has(config.teachesUpToLevelId)) {
+      issues.push({
+        field: "educationConfigJson",
+        message: `Education level ${config.teachesUpToLevelId} does not exist in this world.`,
       });
     }
   }

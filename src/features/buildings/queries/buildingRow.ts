@@ -1,3 +1,5 @@
+import { parseTierEducationConfig } from "@/shared/education";
+
 import type {
   BuildingBlueprint,
   BuildingBlueprintTier,
@@ -49,6 +51,7 @@ export type TierRow = {
   readonly building_blueprint_id: string;
   readonly construction_costs_json: readonly TierCostEntryRow[];
   readonly created_at: string;
+  readonly education_config_json: unknown;
   readonly effects_json: readonly TierEffectRow[];
   readonly id: string;
   readonly tier_number: number;
@@ -61,7 +64,7 @@ export const BLUEPRINT_SELECT =
   "id,world_id,name,slug,icon,description,grace_period_turns,max_instances_per_settlement,is_trashed,created_at,updated_at";
 
 export const TIER_SELECT =
-  "id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json,created_at,updated_at";
+  "id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json,education_config_json,created_at,updated_at";
 
 export function toBlueprint(row: BlueprintRow): BuildingBlueprint {
   return {
@@ -119,6 +122,7 @@ export function toTier(row: TierRow): BuildingBlueprintTier {
     buildingBlueprintId: row.building_blueprint_id,
     constructionCostsJson: row.construction_costs_json.map(toCostEntry),
     createdAt: row.created_at,
+    educationConfigJson: parseTierEducationConfig(row.education_config_json),
     effectsJson: row.effects_json.map(toTierEffect),
     id: row.id,
     tierNumber: row.tier_number,

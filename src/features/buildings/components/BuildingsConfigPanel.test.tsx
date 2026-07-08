@@ -518,6 +518,7 @@ function createTierRow(overrides: Partial<TestTierRow> = {}): TestTierRow {
 function createClient({
   blueprintInsertSpy,
   blueprintRows,
+  educationLevelRows = [],
   insertResult = { data: createBlueprintRow(), error: null },
   jobRows = [],
   resourceRows = [],
@@ -527,6 +528,7 @@ function createClient({
 }: {
   readonly blueprintInsertSpy?: ReturnType<typeof vi.fn>;
   readonly blueprintRows: readonly TestBlueprintRow[];
+  readonly educationLevelRows?: readonly unknown[];
   readonly insertResult?: {
     readonly data: TestBlueprintRow | null;
     readonly error: { readonly message: string } | null;
@@ -573,6 +575,9 @@ function createClient({
       }
       if (table === "job_definitions") {
         return createSimpleQueryBuilder(jobRows);
+      }
+      if (table === "education_levels") {
+        return createSimpleQueryBuilder(educationLevelRows);
       }
       throw new Error(`Unexpected table: ${table}`);
     }),

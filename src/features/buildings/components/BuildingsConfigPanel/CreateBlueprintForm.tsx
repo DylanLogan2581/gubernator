@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activeJobsByWorldQueryOptions } from "@/features/jobs";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { buildingInputLimits } from "@/lib/inputLimits";
@@ -65,7 +66,13 @@ export function CreateBlueprintForm({
 
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
-  const tiersReady = resourcesQuery.isSuccess && jobsQuery.isSuccess;
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const tiersReady =
+    resourcesQuery.isSuccess &&
+    jobsQuery.isSuccess &&
+    educationLevelsQuery.isSuccess;
 
   const derivedSlug = toSlug(name, {
     maxLength: buildingInputLimits.blueprintSlugMax,
@@ -261,6 +268,7 @@ export function CreateBlueprintForm({
 
             {showAddTierForm && tiersReady ? (
               <InlineTierDraftForm
+                activeEducationLevels={educationLevelsQuery.data}
                 activeJobs={jobsQuery.data}
                 activeResources={resourcesQuery.data}
                 defaultTierNumber={nextTierNumber}

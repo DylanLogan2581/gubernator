@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
+  educationLevelsByWorldQueryOptions,
+  type EducationLevel,
+} from "@/features/education";
+import {
   activeJobsByWorldQueryOptions,
   type JobDefinition,
 } from "@/features/jobs";
@@ -45,7 +49,11 @@ import {
   type CreateTierInput,
   type UpdateTierInput,
 } from "../schemas/buildingSchemas";
-import { tierCostsToState, tierEffectsToState } from "../utils/tierEditorUtils";
+import {
+  educationConfigToState,
+  tierCostsToState,
+  tierEffectsToState,
+} from "../utils/tierEditorUtils";
 
 import { TierDraftFields } from "./TierDraftFields";
 
@@ -74,18 +82,23 @@ export function BlueprintTierEditor({
   const tiersQuery = useQuery(tiersByBlueprintQueryOptions(blueprintId));
   const resourcesQuery = useQuery(activeResourcesByWorldQueryOptions(worldId));
   const jobsQuery = useQuery(activeJobsByWorldQueryOptions(worldId));
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
 
   const isLoading =
     blueprintQuery.isPending ||
     tiersQuery.isPending ||
     resourcesQuery.isPending ||
-    jobsQuery.isPending;
+    jobsQuery.isPending ||
+    educationLevelsQuery.isPending;
 
   const isError =
     blueprintQuery.isError ||
     tiersQuery.isError ||
     resourcesQuery.isError ||
-    jobsQuery.isError;
+    jobsQuery.isError ||
+    educationLevelsQuery.isError;
 
   if (isLoading) {
     return <LoadingState label="Loading tiers…" />;
@@ -96,7 +109,8 @@ export function BlueprintTierEditor({
       blueprintQuery.error ??
       tiersQuery.error ??
       resourcesQuery.error ??
-      jobsQuery.error;
+      jobsQuery.error ??
+      educationLevelsQuery.error;
     return (
       <ErrorState
         title="Tiers could not be loaded"
@@ -118,6 +132,7 @@ export function BlueprintTierEditor({
 
   return (
     <BlueprintTierEditorContent
+      activeEducationLevels={educationLevelsQuery.data}
       activeJobs={jobsQuery.data}
       activeResources={resourcesQuery.data}
       blueprint={blueprint}
@@ -131,6 +146,7 @@ export function BlueprintTierEditor({
 }
 
 function BlueprintTierEditorContent({
+  activeEducationLevels,
   activeJobs,
   activeResources,
   blueprint,
@@ -140,6 +156,7 @@ function BlueprintTierEditorContent({
   tiers,
   worldId,
 }: {
+  readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly blueprint: BuildingBlueprint;
@@ -207,6 +224,7 @@ function BlueprintTierEditorContent({
             editingTierId === tier.id ? (
               <li key={tier.id}>
                 <EditTierForm
+                  activeEducationLevels={activeEducationLevels}
                   activeJobs={activeJobs}
                   activeResources={activeResources}
                   queryClient={queryClient}
@@ -219,6 +237,7 @@ function BlueprintTierEditorContent({
             ) : (
               <li key={tier.id}>
                 <TierRow
+                  activeEducationLevels={activeEducationLevels}
                   activeJobs={activeJobs}
                   activeResources={activeResources}
                   canEdit={canEdit}
@@ -273,6 +292,7 @@ function BlueprintTierEditorContent({
 
       {canEdit && showCreateForm ? (
         <CreateTierForm
+          activeEducationLevels={activeEducationLevels}
           activeJobs={activeJobs}
           activeResources={activeResources}
           blueprintId={blueprint.id}
@@ -299,6 +319,7 @@ function BlueprintTierEditorContent({
 }
 
 function TierRow({
+  activeEducationLevels,
   activeJobs,
   activeResources,
   canEdit,
@@ -307,6 +328,7 @@ function TierRow({
   onDelete,
   onEdit,
 }: {
+  readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly canEdit: boolean;
@@ -339,6 +361,16 @@ function TierRow({
             <div className="text-xs text-muted-foreground">
               Effects:{" "}
               {formatEffects(tier.effectsJson, activeResources, activeJobs)}
+            </div>
+          ) : null}
+          {tier.educationConfigJson !== null ? (
+            <div className="text-xs text-muted-foreground">
+              School:{" "}
+              {formatEducationConfig(
+                tier.educationConfigJson,
+                activeEducationLevels,
+                activeJobs,
+              )}
             </div>
           ) : null}
         </div>
@@ -412,6 +444,7 @@ function TierDeleteConfirmDialog({
 }
 
 function CreateTierForm({
+  activeEducationLevels,
   activeJobs,
   activeResources,
   blueprintId,
@@ -420,6 +453,7 @@ function CreateTierForm({
   onCancel,
   onSubmit,
 }: {
+  readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly blueprintId: string;
@@ -440,12 +474,17 @@ function CreateTierForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
 
-    const data = form.validate(activeResources, activeJobs);
+    const data = form.validate(
+      activeResources,
+      activeJobs,
+      activeEducationLevels,
+    );
     if (data === null) return;
 
     const input: CreateTierInput = {
       blueprintId,
       constructionCostsJson: data.constructionCostsJson,
+      educationConfigJson: data.educationConfigJson,
       effectsJson: data.effectsJson,
       tierNumber: data.tierNumber,
       upkeepCostsJson: data.upkeepCostsJson,
@@ -465,13 +504,16 @@ function CreateTierForm({
       <h3 className="text-sm font-medium">New tier</h3>
       <div className="grid gap-3">
         <TierDraftFields
+          activeEducationLevels={activeEducationLevels}
           activeJobs={activeJobs}
           activeResources={activeResources}
           constructionCosts={form.constructionCosts}
           disabled={isPending}
+          educationConfig={form.educationConfig}
           effects={form.effects}
           fieldErrors={form.fieldErrors}
           onConstructionCostsChange={form.setConstructionCosts}
+          onEducationConfigChange={form.setEducationConfig}
           onEffectsChange={form.setEffects}
           onTierNumberChange={form.setTierNumber}
           onUpkeepCostsChange={form.setUpkeepCosts}
@@ -502,12 +544,14 @@ function CreateTierForm({
 }
 
 function EditTierForm({
+  activeEducationLevels,
   activeJobs,
   activeResources,
   queryClient,
   tier,
   onClose,
 }: {
+  readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly queryClient: QueryClient;
@@ -527,6 +571,7 @@ function EditTierForm({
     form.setConstructionCosts(tierCostsToState(tier.constructionCostsJson));
     form.setUpkeepCosts(tierCostsToState(tier.upkeepCostsJson));
     form.setEffects(tierEffectsToState(tier.effectsJson));
+    form.setEducationConfig(educationConfigToState(tier.educationConfigJson));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tier.id]);
 
@@ -535,11 +580,16 @@ function EditTierForm({
   ): Promise<void> {
     event.preventDefault();
 
-    const data = form.validate(activeResources, activeJobs);
+    const data = form.validate(
+      activeResources,
+      activeJobs,
+      activeEducationLevels,
+    );
     if (data === null) return;
 
     const input: UpdateTierInput = {
       constructionCostsJson: data.constructionCostsJson ?? [],
+      educationConfigJson: data.educationConfigJson,
       effectsJson: data.effectsJson ?? [],
       tierId: tier.id,
       upkeepCostsJson: data.upkeepCostsJson ?? [],
@@ -567,13 +617,16 @@ function EditTierForm({
       <h3 className="text-sm font-medium">Edit tier {tier.tierNumber}</h3>
       <div className="grid gap-3">
         <TierDraftFields
+          activeEducationLevels={activeEducationLevels}
           activeJobs={activeJobs}
           activeResources={activeResources}
           constructionCosts={form.constructionCosts}
           disabled={updateMutation.isPending}
+          educationConfig={form.educationConfig}
           effects={form.effects}
           fieldErrors={form.fieldErrors}
           onConstructionCostsChange={form.setConstructionCosts}
+          onEducationConfigChange={form.setEducationConfig}
           onEffectsChange={form.setEffects}
           onTierNumberChange={form.setTierNumber}
           onUpkeepCostsChange={form.setUpkeepCosts}
@@ -612,6 +665,26 @@ function resolveResourceName(
 
 function resolveJobName(jobId: string, jobs: readonly JobDefinition[]): string {
   return jobs.find((j) => j.id === jobId)?.name ?? "[unknown]";
+}
+
+function resolveEducationLevelName(
+  levelId: string,
+  levels: readonly EducationLevel[],
+): string {
+  return levels.find((l) => l.id === levelId)?.name ?? "[unknown]";
+}
+
+function formatEducationConfig(
+  config: NonNullable<BuildingBlueprintTier["educationConfigJson"]>,
+  levels: readonly EducationLevel[],
+  jobs: readonly JobDefinition[],
+): string {
+  const levelName = resolveEducationLevelName(
+    config.teachesUpToLevelId,
+    levels,
+  );
+  const teacherName = resolveJobName(config.teacherJobId, jobs);
+  return `up to ${levelName}, ${config.studentCapacity} students, ${config.turnsPerLevel} turns/level, ${teacherName} (${config.studentsPerTeacher} students/teacher)`;
 }
 
 function formatCosts(

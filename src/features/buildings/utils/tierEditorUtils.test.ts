@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildEducationConfigInput,
   buildEffectInputs,
+  educationConfigToState,
   tierEffectsToState,
+  type EducationConfigRowState,
   type EffectRowState,
 } from "./tierEditorUtils";
 
 const JOB_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const RESOURCE_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const ROW_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const LEVEL_ID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 
 function makeRow(overrides: Partial<EffectRowState>): EffectRowState {
   return {
@@ -189,6 +193,87 @@ describe("tierEffectsToState", () => {
 
     expect(() => tierEffectsToState([bogusEffect])).toThrow(
       "Unknown effect type: unknown_effect_type",
+    );
+  });
+});
+
+function makeEducationConfigRow(
+  overrides: Partial<EducationConfigRowState>,
+): EducationConfigRowState {
+  return {
+    isSchool: true,
+    studentCapacity: "20",
+    studentsPerTeacher: "5",
+    teacherJobId: JOB_ID,
+    teachesUpToLevelId: LEVEL_ID,
+    turnsPerLevel: "4",
+    ...overrides,
+  };
+}
+
+describe("buildEducationConfigInput", () => {
+  it("returns null when isSchool is false", () => {
+    expect(
+      buildEducationConfigInput(makeEducationConfigRow({ isSchool: false })),
+    ).toBeNull();
+  });
+
+  it("builds a full config when isSchool is true", () => {
+    expect(buildEducationConfigInput(makeEducationConfigRow({}))).toEqual({
+      studentCapacity: 20,
+      studentsPerTeacher: 5,
+      teacherJobId: JOB_ID,
+      teachesUpToLevelId: LEVEL_ID,
+      turnsPerLevel: 4,
+    });
+  });
+
+  it("defaults empty numeric strings to 0", () => {
+    expect(
+      buildEducationConfigInput(
+        makeEducationConfigRow({
+          studentCapacity: "",
+          studentsPerTeacher: "",
+          turnsPerLevel: "",
+        }),
+      ),
+    ).toEqual({
+      studentCapacity: 0,
+      studentsPerTeacher: 0,
+      teacherJobId: JOB_ID,
+      teachesUpToLevelId: LEVEL_ID,
+      turnsPerLevel: 0,
+    });
+  });
+});
+
+describe("educationConfigToState", () => {
+  it("returns a not-a-school row for null", () => {
+    expect(educationConfigToState(null)).toEqual({
+      isSchool: false,
+      studentCapacity: "",
+      studentsPerTeacher: "",
+      teacherJobId: "",
+      teachesUpToLevelId: "",
+      turnsPerLevel: "",
+    });
+  });
+
+  it("converts a config to state", () => {
+    expect(
+      educationConfigToState({
+        studentCapacity: 20,
+        studentsPerTeacher: 5,
+        teacherJobId: JOB_ID,
+        teachesUpToLevelId: LEVEL_ID,
+        turnsPerLevel: 4,
+      }),
+    ).toEqual(
+      makeEducationConfigRow({
+        studentCapacity: "20",
+        studentsPerTeacher: "5",
+        turnsPerLevel: "4",
+      }),
     );
   });
 });

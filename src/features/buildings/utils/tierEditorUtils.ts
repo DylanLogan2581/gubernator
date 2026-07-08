@@ -2,11 +2,13 @@ import { generateLocalId } from "@/lib/uid";
 
 import type {
   TierCostEntryInput,
+  TierEducationConfigInput,
   TierEffectInput,
 } from "../schemas/buildingSchemas";
 import type {
   EffectTypeName,
   TierCostEntry,
+  TierEducationConfig,
   TierEffect,
 } from "../types/buildingTypes";
 
@@ -24,9 +26,19 @@ export type EffectRowState = {
   amount: string;
 };
 
+export type EducationConfigRowState = {
+  isSchool: boolean;
+  teachesUpToLevelId: string;
+  studentCapacity: string;
+  turnsPerLevel: string;
+  teacherJobId: string;
+  studentsPerTeacher: string;
+};
+
 export type TierFormErrors = {
   blueprintId?: string;
   constructionCostsJson?: string;
+  educationConfigJson?: string;
   effectsJson?: string;
   tierNumber?: string;
   upkeepCostsJson?: string;
@@ -78,6 +90,45 @@ export function buildEffectInputs(
     }
   }
   return result;
+}
+
+export function buildEducationConfigInput(
+  row: EducationConfigRowState,
+): TierEducationConfigInput | null {
+  if (!row.isSchool) return null;
+  return {
+    studentCapacity:
+      row.studentCapacity !== "" ? parseInt(row.studentCapacity, 10) : 0,
+    studentsPerTeacher:
+      row.studentsPerTeacher !== "" ? parseInt(row.studentsPerTeacher, 10) : 0,
+    teacherJobId: row.teacherJobId,
+    teachesUpToLevelId: row.teachesUpToLevelId,
+    turnsPerLevel:
+      row.turnsPerLevel !== "" ? parseInt(row.turnsPerLevel, 10) : 0,
+  };
+}
+
+export function educationConfigToState(
+  config: TierEducationConfig | null,
+): EducationConfigRowState {
+  if (config === null) {
+    return {
+      isSchool: false,
+      studentCapacity: "",
+      studentsPerTeacher: "",
+      teacherJobId: "",
+      teachesUpToLevelId: "",
+      turnsPerLevel: "",
+    };
+  }
+  return {
+    isSchool: true,
+    studentCapacity: String(config.studentCapacity),
+    studentsPerTeacher: String(config.studentsPerTeacher),
+    teacherJobId: config.teacherJobId,
+    teachesUpToLevelId: config.teachesUpToLevelId,
+    turnsPerLevel: String(config.turnsPerLevel),
+  };
 }
 
 export function tierCostsToState(

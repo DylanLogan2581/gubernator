@@ -11,6 +11,7 @@ import {
 import {
   type CreateBlueprintInput,
   type TierCostEntryInput,
+  type TierEducationConfigInput,
   type TierEffectInput,
 } from "../schemas/buildingSchemas";
 
@@ -21,6 +22,7 @@ export type PendingTierDraft = {
   readonly constructionCostsJson?: TierCostEntryInput[];
   readonly upkeepCostsJson?: TierCostEntryInput[];
   readonly effectsJson?: TierEffectInput[];
+  readonly educationConfigJson?: TierEducationConfigInput | null;
 };
 
 export function useCreateBlueprintWithTiers(): {
@@ -53,6 +55,7 @@ export function useCreateBlueprintWithTiers(): {
           await createTierMutation.mutateAsync({
             blueprintId: blueprint.id,
             constructionCostsJson: draft.constructionCostsJson,
+            educationConfigJson: draft.educationConfigJson,
             effectsJson: draft.effectsJson,
             tierNumber: draft.tierNumber,
             upkeepCostsJson: draft.upkeepCostsJson,

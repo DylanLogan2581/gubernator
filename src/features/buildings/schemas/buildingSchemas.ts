@@ -72,6 +72,25 @@ export const tierEffectSchema = z.discriminatedUnion("type", [
 const tierCostArraySchema = z.array(tierCostEntrySchema);
 const tierEffectArraySchema = z.array(tierEffectSchema);
 
+const educationLevelIdSchema = z.guid("Select an education level.");
+const studentCapacitySchema = z
+  .int()
+  .min(1, "Student capacity must be at least 1.");
+const turnsPerLevelSchema = z
+  .int()
+  .min(1, "Turns per level must be at least 1.");
+const studentsPerTeacherSchema = z
+  .int()
+  .min(1, "Students per teacher must be at least 1.");
+
+export const tierEducationConfigSchema = z.strictObject({
+  studentCapacity: studentCapacitySchema,
+  studentsPerTeacher: studentsPerTeacherSchema,
+  teacherJobId: jobIdSchema,
+  teachesUpToLevelId: educationLevelIdSchema,
+  turnsPerLevel: turnsPerLevelSchema,
+});
+
 const blueprintIconSchema = z
   .string()
   .max(64, "Icon name is too long.")
@@ -134,6 +153,7 @@ export const hardDeleteBlueprintInputSchema = z.strictObject({
 export const createTierInputSchema = z.strictObject({
   blueprintId: blueprintIdSchema,
   constructionCostsJson: tierCostArraySchema.optional(),
+  educationConfigJson: tierEducationConfigSchema.nullable().optional(),
   effectsJson: tierEffectArraySchema.optional(),
   tierNumber: tierNumberSchema,
   upkeepCostsJson: tierCostArraySchema.optional(),
@@ -143,6 +163,7 @@ export const createTierInputSchema = z.strictObject({
 export const updateTierInputSchema = z
   .strictObject({
     constructionCostsJson: tierCostArraySchema.optional(),
+    educationConfigJson: tierEducationConfigSchema.nullable().optional(),
     effectsJson: tierEffectArraySchema.optional(),
     tierId: tierIdSchema,
     upkeepCostsJson: tierCostArraySchema.optional(),
@@ -153,7 +174,8 @@ export const updateTierInputSchema = z
       value.workerTurnsRequired === undefined &&
       value.constructionCostsJson === undefined &&
       value.upkeepCostsJson === undefined &&
-      value.effectsJson === undefined
+      value.effectsJson === undefined &&
+      value.educationConfigJson === undefined
     ) {
       ctx.addIssue({
         code: "custom",
@@ -191,6 +213,12 @@ export type SoftDeleteBlueprintValues = z.output<
 >;
 export type TierCostEntryInput = z.input<typeof tierCostEntrySchema>;
 export type TierCostEntryValues = z.output<typeof tierCostEntrySchema>;
+export type TierEducationConfigInput = z.input<
+  typeof tierEducationConfigSchema
+>;
+export type TierEducationConfigValues = z.output<
+  typeof tierEducationConfigSchema
+>;
 export type TierEffectInput = z.input<typeof tierEffectSchema>;
 export type TierEffectValues = z.output<typeof tierEffectSchema>;
 export type UpdateBlueprintInput = z.input<typeof updateBlueprintInputSchema>;

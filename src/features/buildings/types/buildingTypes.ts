@@ -26,6 +26,14 @@ export type TierEffect =
 
 export type EffectTypeName = TierEffect["type"];
 
+export type TierEducationConfig = {
+  readonly studentCapacity: number;
+  readonly studentsPerTeacher: number;
+  readonly teacherJobId: string;
+  readonly teachesUpToLevelId: string;
+  readonly turnsPerLevel: number;
+};
+
 export type BuildingBlueprint = {
   readonly createdAt: string;
   readonly description: string | null;
@@ -44,6 +52,7 @@ export type BuildingBlueprintTier = {
   readonly buildingBlueprintId: string;
   readonly constructionCostsJson: readonly TierCostEntry[];
   readonly createdAt: string;
+  readonly educationConfigJson: TierEducationConfig | null;
   readonly effectsJson: readonly TierEffect[];
   readonly id: string;
   readonly tierNumber: number;

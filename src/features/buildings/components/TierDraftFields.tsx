@@ -2,25 +2,34 @@ import { type JSX } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { type EducationLevel } from "@/features/education";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
 
 import {
   type CostRowState,
+  type EducationConfigRowState,
   type EffectRowState,
   type TierFormErrors,
 } from "../utils/tierEditorUtils";
 
-import { CostEditor, EffectsEditor } from "./TierEditorFields";
+import {
+  CostEditor,
+  EducationConfigEditor,
+  EffectsEditor,
+} from "./TierEditorFields";
 
 export function TierDraftFields({
+  activeEducationLevels,
   activeJobs,
   activeResources,
   constructionCosts,
   disabled,
+  educationConfig,
   effects,
   fieldErrors,
   onConstructionCostsChange,
+  onEducationConfigChange,
   onEffectsChange,
   onTierNumberChange,
   onUpkeepCostsChange,
@@ -31,13 +40,16 @@ export function TierDraftFields({
   workerTurns,
   workerTurnsInputId,
 }: {
+  readonly activeEducationLevels: readonly EducationLevel[];
   readonly activeJobs: readonly JobDefinition[];
   readonly activeResources: readonly Resource[];
   readonly constructionCosts: readonly CostRowState[];
   readonly disabled: boolean;
+  readonly educationConfig: EducationConfigRowState;
   readonly effects: readonly EffectRowState[];
   readonly fieldErrors: Readonly<TierFormErrors>;
   readonly onConstructionCostsChange: (rows: CostRowState[]) => void;
+  readonly onEducationConfigChange: (config: EducationConfigRowState) => void;
   readonly onEffectsChange: (rows: EffectRowState[]) => void;
   readonly onTierNumberChange: (value: string) => void;
   readonly onUpkeepCostsChange: (rows: CostRowState[]) => void;
@@ -109,6 +121,14 @@ export function TierDraftFields({
         error={fieldErrors.effectsJson}
         rows={effects}
         onChange={onEffectsChange}
+      />
+      <EducationConfigEditor
+        activeEducationLevels={activeEducationLevels}
+        activeJobs={activeJobs}
+        config={educationConfig}
+        disabled={disabled}
+        error={fieldErrors.educationConfigJson}
+        onChange={onEducationConfigChange}
       />
     </>
   );

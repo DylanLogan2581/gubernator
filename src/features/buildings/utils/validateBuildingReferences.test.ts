@@ -6,6 +6,7 @@ const RESOURCE_A = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const RESOURCE_B = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const JOB_A = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 const JOB_B = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+const LEVEL_A = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
 
 describe("validateBlueprintTierReferencesAgainstWorld", () => {
   it("returns no issues when payload is empty", () => {
@@ -215,6 +216,69 @@ describe("validateBlueprintTierReferencesAgainstWorld", () => {
     expect(fields.filter((f) => f === "constructionCostsJson")).toHaveLength(2);
     expect(fields.filter((f) => f === "upkeepCostsJson")).toHaveLength(1);
     expect(fields.filter((f) => f === "effectsJson")).toHaveLength(2);
+  });
+
+  it("returns no issues for a valid educationConfigJson", () => {
+    const issues = validateBlueprintTierReferencesAgainstWorld(
+      {
+        educationConfigJson: {
+          teacherJobId: JOB_A,
+          teachesUpToLevelId: LEVEL_A,
+        },
+      },
+      [],
+      [{ id: JOB_A }],
+      [{ id: LEVEL_A }],
+    );
+
+    expect(issues).toHaveLength(0);
+  });
+
+  it("returns no issues when educationConfigJson is null", () => {
+    const issues = validateBlueprintTierReferencesAgainstWorld(
+      { educationConfigJson: null },
+      [],
+      [],
+      [],
+    );
+
+    expect(issues).toHaveLength(0);
+  });
+
+  it("returns an issue for an unknown teacherJobId", () => {
+    const issues = validateBlueprintTierReferencesAgainstWorld(
+      {
+        educationConfigJson: {
+          teacherJobId: JOB_A,
+          teachesUpToLevelId: LEVEL_A,
+        },
+      },
+      [],
+      [],
+      [{ id: LEVEL_A }],
+    );
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0].field).toBe("educationConfigJson");
+    expect(issues[0].message).toContain(JOB_A);
+  });
+
+  it("returns an issue for an unknown teachesUpToLevelId", () => {
+    const issues = validateBlueprintTierReferencesAgainstWorld(
+      {
+        educationConfigJson: {
+          teacherJobId: JOB_A,
+          teachesUpToLevelId: LEVEL_A,
+        },
+      },
+      [],
+      [{ id: JOB_A }],
+      [],
+    );
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0].field).toBe("educationConfigJson");
+    expect(issues[0].message).toContain(LEVEL_A);
   });
 
   it("uses activeResources for both cost and effect resource checks", () => {

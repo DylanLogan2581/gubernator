@@ -8,6 +8,7 @@ import {
   restoreBlueprintInputSchema,
   softDeleteBlueprintInputSchema,
   tierCostEntrySchema,
+  tierEducationConfigSchema,
   tierEffectSchema,
   updateBlueprintInputSchema,
   updateTierInputSchema,
@@ -18,6 +19,7 @@ const TIER_ID = "22222222-2222-2222-2222-222222222222";
 const WORLD_ID = "33333333-3333-3333-3333-333333333333";
 const RESOURCE_ID = "44444444-4444-4444-4444-444444444444";
 const JOB_ID = "55555555-5555-5555-5555-555555555555";
+const EDUCATION_LEVEL_ID = "66666666-6666-6666-6666-666666666666";
 
 describe("tierCostEntrySchema", () => {
   it("accepts a valid cost entry", () => {
@@ -185,6 +187,77 @@ describe("tierEffectSchema — discrimination across all four types", () => {
     const result = tierEffectSchema.safeParse({
       amount: -1,
       type: "population_cap_increase",
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("tierEducationConfigSchema", () => {
+  const VALID = {
+    studentCapacity: 20,
+    studentsPerTeacher: 5,
+    teacherJobId: JOB_ID,
+    teachesUpToLevelId: EDUCATION_LEVEL_ID,
+    turnsPerLevel: 4,
+  };
+
+  it("accepts a valid config", () => {
+    const result = tierEducationConfigSchema.safeParse(VALID);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a partial config missing a required field", () => {
+    const { teacherJobId: _omitted, ...partial } = VALID;
+    const result = tierEducationConfigSchema.safeParse(partial);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.teacherJobId).toBeDefined();
+    }
+  });
+
+  it("rejects zero studentCapacity", () => {
+    const result = tierEducationConfigSchema.safeParse({
+      ...VALID,
+      studentCapacity: 0,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects zero turnsPerLevel", () => {
+    const result = tierEducationConfigSchema.safeParse({
+      ...VALID,
+      turnsPerLevel: 0,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects zero studentsPerTeacher", () => {
+    const result = tierEducationConfigSchema.safeParse({
+      ...VALID,
+      studentsPerTeacher: 0,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid teachesUpToLevelId", () => {
+    const result = tierEducationConfigSchema.safeParse({
+      ...VALID,
+      teachesUpToLevelId: "not-a-uuid",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects unknown fields", () => {
+    const result = tierEducationConfigSchema.safeParse({
+      ...VALID,
+      extra: "field",
     });
 
     expect(result.success).toBe(false);
@@ -449,6 +522,44 @@ describe("createTierInputSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts a tier with a full educationConfigJson", () => {
+    const result = createTierInputSchema.safeParse({
+      blueprintId: BLUEPRINT_ID,
+      educationConfigJson: {
+        studentCapacity: 20,
+        studentsPerTeacher: 5,
+        teacherJobId: JOB_ID,
+        teachesUpToLevelId: RESOURCE_ID,
+        turnsPerLevel: 4,
+      },
+      tierNumber: 1,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a tier with a partial educationConfigJson", () => {
+    const result = createTierInputSchema.safeParse({
+      blueprintId: BLUEPRINT_ID,
+      educationConfigJson: {
+        studentCapacity: 20,
+      },
+      tierNumber: 1,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a tier with educationConfigJson explicitly null", () => {
+    const result = createTierInputSchema.safeParse({
+      blueprintId: BLUEPRINT_ID,
+      educationConfigJson: null,
+      tierNumber: 1,
+    });
+
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("updateTierInputSchema", () => {
@@ -473,6 +584,30 @@ describe("updateTierInputSchema", () => {
   it("accepts a partial update with only effectsJson", () => {
     const result = updateTierInputSchema.safeParse({
       effectsJson: [{ amount: 50, type: "population_cap_increase" }],
+      tierId: TIER_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a partial update with only educationConfigJson", () => {
+    const result = updateTierInputSchema.safeParse({
+      educationConfigJson: {
+        studentCapacity: 20,
+        studentsPerTeacher: 5,
+        teacherJobId: JOB_ID,
+        teachesUpToLevelId: RESOURCE_ID,
+        turnsPerLevel: 4,
+      },
+      tierId: TIER_ID,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts clearing educationConfigJson back to null", () => {
+    const result = updateTierInputSchema.safeParse({
+      educationConfigJson: null,
       tierId: TIER_ID,
     });
 

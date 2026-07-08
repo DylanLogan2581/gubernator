@@ -5,13 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Switch } from "@/components/ui/switch";
+import { type EducationLevel } from "@/features/education";
 import { type JobDefinition } from "@/features/jobs";
 import { type Resource } from "@/features/resources";
 import { sortByName } from "@/lib/sortUtils";
 import { generateLocalId } from "@/lib/uid";
 
 import type { EffectTypeName } from "../types/buildingTypes";
-import type { CostRowState, EffectRowState } from "../utils/tierEditorUtils";
+import type {
+  CostRowState,
+  EducationConfigRowState,
+  EffectRowState,
+} from "../utils/tierEditorUtils";
 
 const EFFECT_TYPE_LABELS: Record<EffectTypeName, string> = {
   job_capacity_increase: "Job capacity increase",
@@ -321,6 +327,133 @@ export function EffectsEditor({
         <Plus aria-hidden="true" />
         Add effect
       </Button>
+    </fieldset>
+  );
+}
+
+export function EducationConfigEditor({
+  activeEducationLevels,
+  activeJobs,
+  config,
+  disabled,
+  error,
+  onChange,
+}: {
+  readonly activeEducationLevels: readonly EducationLevel[];
+  readonly activeJobs: readonly JobDefinition[];
+  readonly config: EducationConfigRowState;
+  readonly disabled: boolean;
+  readonly error?: string;
+  readonly onChange: (config: EducationConfigRowState) => void;
+}): JSX.Element {
+  function update(patch: Partial<EducationConfigRowState>): void {
+    onChange({ ...config, ...patch });
+  }
+
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="text-sm text-muted-foreground">Education</legend>
+      <div className="flex items-center gap-2">
+        <Switch
+          id="tier-is-school"
+          checked={config.isSchool}
+          disabled={disabled}
+          onCheckedChange={(isSchool) => {
+            update({ isSchool });
+          }}
+        />
+        <Label htmlFor="tier-is-school">This tier is a school</Label>
+      </div>
+      {config.isSchool ? (
+        <div className="grid gap-2 rounded-md border border-border p-3">
+          <div className="grid gap-1">
+            <Label htmlFor="tier-teaches-up-to-level">
+              Teaches up to level
+            </Label>
+            <NativeSelect
+              id="tier-teaches-up-to-level"
+              aria-label="Teaches up to level"
+              className="w-full"
+              disabled={disabled}
+              value={config.teachesUpToLevelId}
+              onChange={(e) => {
+                update({ teachesUpToLevelId: e.currentTarget.value });
+              }}
+            >
+              <option value="">Select level</option>
+              {activeEducationLevels.map((level) => (
+                <option key={level.id} value={level.id}>
+                  {level.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="tier-student-capacity">Student capacity</Label>
+            <Input
+              id="tier-student-capacity"
+              disabled={disabled}
+              inputMode="numeric"
+              placeholder="0"
+              value={config.studentCapacity}
+              onChange={(e) => {
+                update({ studentCapacity: e.currentTarget.value });
+              }}
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="tier-turns-per-level">Turns per level</Label>
+            <Input
+              id="tier-turns-per-level"
+              disabled={disabled}
+              inputMode="numeric"
+              placeholder="0"
+              value={config.turnsPerLevel}
+              onChange={(e) => {
+                update({ turnsPerLevel: e.currentTarget.value });
+              }}
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="tier-teacher-job">Teacher job</Label>
+            <NativeSelect
+              id="tier-teacher-job"
+              aria-label="Teacher job"
+              className="w-full"
+              disabled={disabled}
+              value={config.teacherJobId}
+              onChange={(e) => {
+                update({ teacherJobId: e.currentTarget.value });
+              }}
+            >
+              <option value="">Select job</option>
+              {sortByName(activeJobs).map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="tier-students-per-teacher">
+              Students per teacher
+            </Label>
+            <Input
+              id="tier-students-per-teacher"
+              disabled={disabled}
+              inputMode="numeric"
+              placeholder="0"
+              value={config.studentsPerTeacher}
+              onChange={(e) => {
+                update({ studentsPerTeacher: e.currentTarget.value });
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+      {error !== undefined ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : null}
     </fieldset>
   );
 }
