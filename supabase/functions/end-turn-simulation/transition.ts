@@ -120,6 +120,7 @@ export type ApplyTurnTransitionPayload = {
   readonly citizenDeaths: readonly CitizenDeathEntry[];
   readonly citizenEducationPatches: readonly CitizenEducationPatch[];
   readonly constructionUpdates: readonly ConstructionUpdateEntry[];
+  readonly deceasedSoldierIds: readonly string[];
   readonly depositUpdates: readonly DepositUpdate[];
   readonly desertedSoldiers: readonly DesertedSoldier[];
   readonly disbandedUnits: readonly DisbandedUnit[];
@@ -366,6 +367,7 @@ export function mapSimulationResultToPayload(
     citizenDeaths,
     citizenEducationPatches: result.citizenEducationPatches,
     constructionUpdates,
+    deceasedSoldierIds: result.deceasedSoldierIds,
     depositUpdates: result.depositUpdates,
     desertedSoldiers: result.desertedSoldiers,
     disbandedUnits: result.disbandedUnits,

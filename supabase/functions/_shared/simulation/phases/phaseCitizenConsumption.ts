@@ -23,6 +23,7 @@ export type PhaseCitizenConsumptionOutput = {
 
 export function phaseCitizenConsumption(
   context: SimulationContext,
+  effectiveSettlementIdByCitizenId: ReadonlyMap<string, string>,
 ): PhaseCitizenConsumptionOutput {
   const { citizens, populationRules, settlements, systemResourceIds } = context.input;
   const { pendingEventMultipliers } = context.shared;
@@ -41,8 +42,13 @@ export function phaseCitizenConsumption(
   for (const settlement of settlements) {
     const sid = settlement.id;
 
+    // A soldier consumes at their army's stationed settlement, not their home
+    // settlement (#1111) — see effectiveSettlementIdByCitizenId's construction
+    // in runSimulation.ts.
     const aliveInSettlement = citizens.filter(
-      (c) => c.status === "alive" && c.settlementId === sid,
+      (c) =>
+        c.status === "alive" &&
+        (effectiveSettlementIdByCitizenId.get(c.id) ?? c.settlementId) === sid,
     );
     const aliveCount = aliveInSettlement.length;
 

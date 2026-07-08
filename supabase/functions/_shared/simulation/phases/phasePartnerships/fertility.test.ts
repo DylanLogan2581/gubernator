@@ -470,6 +470,23 @@ describe("applyFertilityForSettlement — partnership and citizen filtering", ()
     expect(result.citizenBirths).toHaveLength(0);
   });
 
+  // #1111: fertility has no soldier-specific handling — a partner stationed
+  // away with their army (citizens.settlement_id unchanged by enlistment)
+  // simply fails the existing same-settlement check, same as any other
+  // separated partner. This regression test documents that enlistment
+  // effectively pauses fertility when stationed away, with no code change.
+  it("skips a partnership where one partner is a soldier stationed at a different settlement", () => {
+    const args = makeDefaultArgs(createSeededRng("soldier-seed"));
+    args.citizenById.set(
+      "cB",
+      makeCitizen({ bornOnTurnNumber: 0, id: "cB", settlementId: "stationed", sex: "female" }),
+    );
+
+    const result = callFertility(args);
+
+    expect(result.citizenBirths).toHaveLength(0);
+  });
+
   it("skips a partnership where one partner is dead", () => {
     const args = makeDefaultArgs(createSeededRng("dead-seed"));
     args.citizenById.set(

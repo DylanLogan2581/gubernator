@@ -50,6 +50,7 @@ function makeMinimalPayload(): ApplyTurnTransitionPayload {
     citizenDeaths: [],
     citizenEducationPatches: [],
     constructionUpdates: [],
+    deceasedSoldierIds: [],
     depositUpdates: [],
     desertedSoldiers: [],
     disbandedUnits: [],

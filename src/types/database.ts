@@ -5687,6 +5687,26 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      move_army: {
+        Args: { p_army_id: string; p_settlement_id: string };
+        Returns: {
+          created_at: string;
+          created_turn_number: number;
+          funding_source: string;
+          id: string;
+          name: string;
+          nation_id: string;
+          stationed_settlement_id: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "armies";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       move_army_group: {
         Args: { p_group_id: string; p_new_parent_group_id: string };
         Returns: {
@@ -7235,7 +7255,8 @@ export type Database = {
         | "currency.default"
         | "currency.confidence_collapsing"
         | "military.upkeep_unpaid"
-        | "military.unit_disbanded";
+        | "military.unit_disbanded"
+        | "army.relocated";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -7412,6 +7433,7 @@ export const Constants = {
         "currency.confidence_collapsing",
         "military.upkeep_unpaid",
         "military.unit_disbanded",
+        "army.relocated",
       ],
     },
   },

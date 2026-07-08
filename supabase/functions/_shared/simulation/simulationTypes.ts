@@ -813,6 +813,7 @@ export type SimulationResult = {
   readonly citizenEducationPatches: readonly CitizenEducationPatch[];
   readonly citizenPatches: readonly CitizenPatch[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
+  readonly deceasedSoldierIds: readonly string[];
   readonly depositUpdates: readonly DepositUpdate[];
   readonly desertedSoldiers: readonly DesertedSoldier[];
   readonly disbandedUnits: readonly DisbandedUnit[];

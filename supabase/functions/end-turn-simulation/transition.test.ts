@@ -112,6 +112,7 @@ function makeEmptyResult(): SimulationResult {
     citizenEducationPatches: [],
     citizenPatches: [],
     constructionUpdates: [],
+    deceasedSoldierIds: [],
     depositUpdates: [],
     desertedSoldiers: [],
     disbandedUnits: [],

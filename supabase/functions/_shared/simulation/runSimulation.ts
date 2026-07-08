@@ -25,6 +25,7 @@ import { phaseTreaties, phaseTreatyMarriageNotes } from "./phases/phaseTreaties.
 import { SimulationRejectionError } from "./simulationTypes.ts";
 
 import type {
+  DisbandedUnit,
   ManagedPopulationUpdate,
   NationStockpileDelta,
   NationTurnSnapshot,
@@ -315,10 +316,35 @@ export function runSimulation(
   applyNationDeltas(p7dot5.nationStockpileDeltas);
 
   // -------------------------------------------------------------------------
+  // Soldier residency (#1111): an enlisted soldier's effective settlement for
+  // consumption is their army's stationed settlement, not their home
+  // settlement (citizens.settlement_id is never mutated by enlistment or
+  // stationing). A soldier who deserted this turn (phase 7.5, above) has
+  // already returned to civilian life at their resolved settlement, so they
+  // are excluded here and fall back to citizens.settlementId like everyone
+  // else. Soldiers are always NPCs (recruit_soldiers restricts eligibility).
+  // -------------------------------------------------------------------------
+
+  const desertedSoldierIdsThisTurn = new Set(p7dot5.desertedSoldiers.map((d) => d.soldierId));
+  const armyIdByUnitId = new Map(input.armyUnits.map((u) => [u.id, u.armyId]));
+  const armyById = new Map(input.armies.map((a) => [a.id, a]));
+
+  const effectiveSettlementIdByCitizenId = new Map<string, string>();
+  const enlistedSoldierCitizenIds = new Set<string>();
+  for (const soldier of input.unitSoldiers) {
+    if (desertedSoldierIdsThisTurn.has(soldier.id)) continue;
+    const armyId = armyIdByUnitId.get(soldier.unitId);
+    const army = armyId !== undefined ? armyById.get(armyId) : undefined;
+    if (army === undefined) continue;
+    enlistedSoldierCitizenIds.add(soldier.citizenId);
+    effectiveSettlementIdByCitizenId.set(soldier.citizenId, army.stationedSettlementId);
+  }
+
+  // -------------------------------------------------------------------------
   // Phase 8 — Citizen Consumption
   // -------------------------------------------------------------------------
 
-  const p8 = phaseCitizenConsumption(context);
+  const p8 = phaseCitizenConsumption(context, effectiveSettlementIdByCitizenId);
   applyDeltas(p8.stockpileDeltas);
 
   // Propagate phase-8 deaths into shared state so downstream phases (10+) see
@@ -337,7 +363,7 @@ export function runSimulation(
   // Phase 10 — Homelessness
   // -------------------------------------------------------------------------
 
-  const p10 = phaseHomelessness(context);
+  const p10 = phaseHomelessness(context, enlistedSoldierCitizenIds);
 
   // -------------------------------------------------------------------------
   // Phase 11 — Events
@@ -438,6 +464,83 @@ export function runSimulation(
   // -------------------------------------------------------------------------
 
   const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths, ...p11.citizenDeaths];
+  const allDeathIds = new Set(allDeaths.map((d) => d.citizenId));
+
+  // -------------------------------------------------------------------------
+  // Soldier death cascade (#1111): any death-causing phase above (8/10/11)
+  // can kill an enlisted soldier. unit_soldiers rows for dead citizens must
+  // be cascade-removed within this same transition; a unit that loses its
+  // last soldier to death disbands, same as the desertion-driven disband
+  // check in phaseMilitaryUpkeep.
+  // -------------------------------------------------------------------------
+
+  const deathCauseVerb: Record<string, string> = {
+    event: "died",
+    homeless: "died from homelessness",
+    manual_admin: "died",
+    starvation: "starved",
+    unknown: "died",
+  };
+
+  const soldiersByUnitIdExcludingDeserted = new Map<string, typeof input.unitSoldiers[number][]>();
+  for (const soldier of input.unitSoldiers) {
+    if (desertedSoldierIdsThisTurn.has(soldier.id)) continue;
+    const list = soldiersByUnitIdExcludingDeserted.get(soldier.unitId) ?? [];
+    list.push(soldier);
+    soldiersByUnitIdExcludingDeserted.set(soldier.unitId, list);
+  }
+  const deathByCitizenId = new Map(allDeaths.map((d) => [d.citizenId, d]));
+
+  const deceasedSoldierIds: string[] = [];
+  const soldierDeathCascadeLogs: SimulationLogEntry[] = [];
+  const soldierDeathDisbandedUnits: DisbandedUnit[] = [];
+
+  for (const [unitId, soldiers] of soldiersByUnitIdExcludingDeserted) {
+    const deceased = soldiers.filter((s) => allDeathIds.has(s.citizenId));
+    if (deceased.length === 0) continue;
+
+    const armyId = armyIdByUnitId.get(unitId);
+    const army = armyId !== undefined ? armyById.get(armyId) : undefined;
+    if (army === undefined) continue;
+
+    for (const soldier of deceased) {
+      deceasedSoldierIds.push(soldier.id);
+    }
+
+    const verbCounts = new Map<string, number>();
+    for (const soldier of deceased) {
+      const verb = deathCauseVerb[deathByCitizenId.get(soldier.citizenId)?.category ?? "unknown"];
+      verbCounts.set(verb, (verbCounts.get(verb) ?? 0) + 1);
+    }
+    const summary = [...verbCounts.entries()]
+      .map(([verb, count]) => `${count} ${verb}`)
+      .join(", ");
+
+    // detail mirrors the issue's example phrasing, e.g.
+    // "2 soldiers of the 1st Spears starved".
+    soldierDeathCascadeLogs.push({
+      category: "military.soldiers_died",
+      nationId: army.nationId,
+      payload: {
+        armyId: army.id,
+        deadSoldierCount: deceased.length,
+        detail: `${deceased.length} soldier${deceased.length === 1 ? "" : "s"} of ${army.name} ${summary}.`,
+        unitId,
+      },
+      phase: "soldierDeathCascade",
+    });
+
+    const remaining = soldiers.length - deceased.length;
+    if (remaining === 0) {
+      soldierDeathDisbandedUnits.push({ armyId: army.id, unitId });
+      soldierDeathCascadeLogs.push({
+        category: "military.unit_disbanded",
+        nationId: army.nationId,
+        payload: { armyId: army.id, unitId },
+        phase: "soldierDeathCascade",
+      });
+    }
+  }
 
   const pSuccession = phaseSuccession(context, allDeaths);
   const pTreatyMarriageNotes = phaseTreatyMarriageNotes(context, allDeaths);
@@ -447,7 +550,6 @@ export function runSimulation(
   // the same turn. apply_turn_transition rejects "active" partnership entries
   // whose partners are already dead (guard added in epic-6). Drop any "formed"
   // change where either partner appears in allDeaths so the payload stays valid.
-  const allDeathIds = new Set(allDeaths.map((d) => d.citizenId));
   const partnershipChanges = p9.partnershipChanges.filter((pc) => {
     if (pc.type !== "formed") return true;
     return !allDeathIds.has(pc.citizenAId) && !allDeathIds.has(pc.citizenBId);
@@ -566,6 +668,7 @@ export function runSimulation(
     ...p13.logs,
     ...pSuccession.logs,
     ...pTreatyMarriageNotes.logs,
+    ...soldierDeathCascadeLogs,
   ];
 
   const notifications: SimulationNotification[] = [
@@ -620,8 +723,9 @@ export function runSimulation(
     citizenPatches: p9.citizenPatches,
     constructionUpdates: p3.constructionUpdates,
     depositUpdates: [...p2.depositUpdates, ...p11.depositUpdates],
+    deceasedSoldierIds,
     desertedSoldiers: p7dot5.desertedSoldiers,
-    disbandedUnits: p7dot5.disbandedUnits,
+    disbandedUnits: [...p7dot5.disbandedUnits, ...soldierDeathDisbandedUnits],
     enrollmentGraduations: p4dot5.enrollmentGraduations,
     enrollmentProgressUpdates: p4dot5.enrollmentProgressUpdates,
     eventStatusPatches: p11.eventStatusPatches,

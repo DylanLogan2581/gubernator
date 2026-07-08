@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { runSimulation } from "./runSimulation.ts";
 
 import type {
+  SimArmy,
+  SimArmyUnit,
   SimBuildingBlueprint,
   SimBuildingTier,
   SimCitizen,
@@ -11,6 +13,8 @@ import type {
   SimSettlement,
   SimStockpile,
   SimulationInputState,
+  SimUnitSoldier,
+  SimUnitType,
 } from "./simulationTypes.ts";
 
 // ---------------------------------------------------------------------------
@@ -165,6 +169,38 @@ function makeBuildingTier(): SimBuildingTier {
     upkeepCostsJson: [],
     workerTurnsRequired: 0,
   };
+}
+
+function makeArmy(
+  id: string,
+  stationedSettlementId: string,
+  overrides: Partial<SimArmy> = {},
+): SimArmy {
+  return {
+    fundingSource: "host_settlement",
+    id,
+    name: "1st Spears",
+    nationId: "n1",
+    stationedSettlementId,
+    ...overrides,
+  };
+}
+
+function makeArmyUnit(id: string, armyId: string): SimArmyUnit {
+  return { armyId, id, unitTypeId: "ut1" };
+}
+
+function makeUnitSoldier(
+  id: string,
+  citizenId: string,
+  unitId: string,
+  homeSettlementId: string | null = null,
+): SimUnitSoldier {
+  return { citizenId, homeSettlementId, id, unitId };
+}
+
+function makeUnitType(id = "ut1"): SimUnitType {
+  return { desertionRate: 0, id, upkeepCostsJson: [] };
 }
 
 // ---------------------------------------------------------------------------
@@ -501,5 +537,101 @@ describe("runSimulation — national economy tax collection", () => {
     expect(result.nationStockpileDeltas).toHaveLength(0);
     expect(result.nationTurnSnapshots).toHaveLength(0);
     expect(result.logEntries.filter((l) => l.category === "economy")).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Soldier lifecycle (#1111): consumption residency, death cascade, army
+// stationing never mutates citizens.settlement_id.
+// ---------------------------------------------------------------------------
+
+describe("runSimulation — soldier lifecycle (#1111)", () => {
+  it("a soldier consumes food at their army's stationed settlement, not their home settlement", () => {
+    const soldier = makeMaleNpc("soldier1", "home");
+
+    const result = runSimulation(
+      makeInput({
+        armies: [makeArmy("a1", "stationed")],
+        armyUnits: [makeArmyUnit("u1", "a1")],
+        citizens: [soldier],
+        populationRules: {
+          ...BASE_POPULATION_RULES,
+          foodConsumptionPerCitizen: 1,
+        },
+        settlements: [makeSettlement("home"), makeSettlement("stationed")],
+        stockpiles: [
+          makeStockpile("home", "food", 100),
+          makeStockpile("stationed", "food", 100),
+        ],
+        unitSoldiers: [makeUnitSoldier("us1", "soldier1", "u1", "home")],
+        unitTypes: [makeUnitType()],
+      }),
+      "t-soldier-consumption",
+    );
+
+    const foodDeltas = result.stockpileDeltas.filter((d) => d.resourceId === "food");
+    expect(foodDeltas).toEqual([{ delta: -1, resourceId: "food", settlementId: "stationed" }]);
+
+    // citizens.settlement_id must never be mutated by stationing.
+    expect(result.citizenPatches).toHaveLength(0);
+  });
+
+  it("starvation death removes the soldier's unit_soldiers row, logs it, and disbands an emptied unit", () => {
+    const soldier = makeMaleNpc("soldier1", "home");
+
+    const result = runSimulation(
+      makeInput({
+        armies: [makeArmy("a1", "stationed")],
+        armyUnits: [makeArmyUnit("u1", "a1")],
+        citizens: [soldier],
+        populationRules: {
+          ...BASE_POPULATION_RULES,
+          foodConsumptionPerCitizen: 1,
+          starvationSeverityMultiplier: 10,
+        },
+        settlements: [makeSettlement("home"), makeSettlement("stationed")],
+        // No food at the stationed settlement -> full deficit -> starves.
+        stockpiles: [makeStockpile("stationed", "food", 0)],
+        unitSoldiers: [makeUnitSoldier("us1", "soldier1", "u1", "home")],
+        unitTypes: [makeUnitType()],
+      }),
+      "t-soldier-starvation",
+    );
+
+    expect(result.citizenDeaths.map((d) => d.citizenId)).toEqual(["soldier1"]);
+    expect(result.deceasedSoldierIds).toEqual(["us1"]);
+    expect(result.disbandedUnits).toContainEqual({ armyId: "a1", unitId: "u1" });
+    expect(
+      result.logEntries.some((l) => l.category === "military.soldiers_died"),
+    ).toBe(true);
+    expect(
+      result.logEntries.some(
+        (l) => l.category === "military.unit_disbanded" && l.payload.unitId === "u1",
+      ),
+    ).toBe(true);
+  });
+
+  it("a soldier is never counted as homeless at their home settlement while enlisted", () => {
+    const soldier = makeMaleNpc("soldier1", "home");
+
+    const result = runSimulation(
+      makeInput({
+        armies: [makeArmy("a1", "stationed")],
+        armyUnits: [makeArmyUnit("u1", "a1")],
+        citizens: [soldier],
+        populationRules: {
+          ...BASE_POPULATION_RULES,
+          homelessnessDecliningRate: 1,
+        },
+        // No buildings -> population cap 0 at "home". Without the soldier
+        // exclusion this would drive one homelessness death.
+        settlements: [makeSettlement("home"), makeSettlement("stationed")],
+        unitSoldiers: [makeUnitSoldier("us1", "soldier1", "u1", "home")],
+        unitTypes: [makeUnitType()],
+      }),
+      "t-soldier-homelessness",
+    );
+
+    expect(result.citizenDeaths).toHaveLength(0);
   });
 });

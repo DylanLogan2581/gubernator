@@ -58,6 +58,7 @@ const NOTIFICATION_TYPE_ICONS: Record<NotificationType, LucideIcon> = {
   "event.expired": Zap,
   "military.upkeep_unpaid": Swords,
   "military.unit_disbanded": Swords,
+  "army.relocated": Swords,
   "player.died": Skull,
   "player.widowed": HeartCrack,
 };
