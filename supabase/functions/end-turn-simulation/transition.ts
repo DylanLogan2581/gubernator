@@ -6,8 +6,11 @@ import { runSimulation, SimulationRejectionError } from "../_shared/simulation/r
 import type { EndTurnSimulationErrorResponse } from "./types.ts";
 import type {
   AssignmentClear,
+  CitizenEducationPatch,
   DeathCauseCategory,
   DepositUpdate,
+  EnrollmentGraduation,
+  EnrollmentProgressUpdate,
   EventStatusPatch,
   ManagedPopulationUpdate,
   NationCurrencySnapshot,
@@ -111,8 +114,11 @@ export type ApplyTurnTransitionPayload = {
   readonly buildingsCreated: readonly BuildingCreatedEntry[];
   readonly citizenBirths: readonly CitizenBirthEntry[];
   readonly citizenDeaths: readonly CitizenDeathEntry[];
+  readonly citizenEducationPatches: readonly CitizenEducationPatch[];
   readonly constructionUpdates: readonly ConstructionUpdateEntry[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly enrollmentGraduations: readonly EnrollmentGraduation[];
+  readonly enrollmentProgressUpdates: readonly EnrollmentProgressUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
@@ -351,8 +357,11 @@ export function mapSimulationResultToPayload(
     buildingsCreated,
     citizenBirths,
     citizenDeaths,
+    citizenEducationPatches: result.citizenEducationPatches,
     constructionUpdates,
     depositUpdates: result.depositUpdates,
+    enrollmentGraduations: result.enrollmentGraduations,
+    enrollmentProgressUpdates: result.enrollmentProgressUpdates,
     eventStatusPatches: result.eventStatusPatches,
     logEntries: result.logEntries,
     managedPopulationUpdates: result.managedPopulationUpdates,

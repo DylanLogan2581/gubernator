@@ -56,6 +56,7 @@ function makeTraderJob(
     linkedManagedPopulationTypeId: null,
     name: overrides.id,
     outputsJson: [],
+    requiredEducationLevelId: null,
     traderCapacityPerWorker: 10,
     ...overrides,
   };

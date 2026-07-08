@@ -19,12 +19,20 @@ export type PhaseStandardJobsOutput = {
 export function phaseStandardJobs(
   context: SimulationContext,
 ): PhaseStandardJobsOutput {
-  const { citizenAssignments, citizens, jobs, nationOffices, settlements, stockpiles } =
-    context.input;
+  const {
+    citizenAssignments,
+    citizens,
+    educationEnrollments,
+    jobs,
+    nationOffices,
+    settlements,
+    stockpiles,
+  } = context.input;
   const { pendingEventMultipliers } = context.shared;
 
   const citizenById = new Map(citizens.map((c) => [c.id, c]));
   const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
+  const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
 
   const stockpileQty = new Map<string, number>();
   for (const sp of stockpiles) {
@@ -36,7 +44,8 @@ export function phaseStandardJobs(
     if (
       assignment.assignmentType !== "standard_job" ||
       assignment.jobId === null ||
-      officeholderCitizenIds.has(assignment.citizenId)
+      officeholderCitizenIds.has(assignment.citizenId) ||
+      enrolledCitizenIds.has(assignment.citizenId)
     ) {
       continue;
     }

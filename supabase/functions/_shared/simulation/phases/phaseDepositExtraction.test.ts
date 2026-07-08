@@ -483,3 +483,49 @@ describe("phaseDepositExtraction — officeholder exclusion", () => {
     );
   });
 });
+
+describe("phaseDepositExtraction — enrolled citizen exclusion", () => {
+  it("excludes a citizen enrolled in school from extraction worker count", () => {
+    const depositType = makeDepositType({ outputUnitsPerWorker: 10 });
+    const deposit = makeDeposit({
+      id: "d1",
+      resources: [
+        makeDepositResource({ depositInstanceId: "d1", remainingQuantity: 1000, resourceId: "iron" }),
+      ],
+      settlementId: "s1",
+    });
+    const baseArgs = {
+      citizenAssignments: [
+        makeDepositAssignment("c1", "d1"),
+        makeDepositAssignment("c2", "d1"),
+      ],
+      depositTypes: [depositType],
+      deposits: [deposit],
+      settlements: [makeSettlement({ id: "s1" })],
+      stockpiles: [makeStockpile({ resourceId: "iron", settlementId: "s1" })],
+    };
+
+    const withoutEnrollment = phaseDepositExtraction(makeContext(baseArgs));
+    const withEnrollment = phaseDepositExtraction(
+      makeContext({
+        ...baseArgs,
+        educationEnrollments: [
+          {
+            citizenId: "c2",
+            enrolledTurnNumber: 1,
+            id: "enr1",
+            progressTurns: 0,
+            settlementBuildingId: "b1",
+            targetLevelId: "lvl1",
+            worldId: "w1",
+          },
+        ],
+      }),
+    );
+
+    const logWithout = withoutEnrollment.logs.find((l) => l.category === "deposit.processed");
+    const logWith = withEnrollment.logs.find((l) => l.category === "deposit.processed");
+    expect(logWithout?.payload).toMatchObject({ totalExtraction: 20, workers: 2 });
+    expect(logWith?.payload).toMatchObject({ totalExtraction: 10, workers: 1 });
+  });
+});

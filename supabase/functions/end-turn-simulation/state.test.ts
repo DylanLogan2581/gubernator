@@ -169,6 +169,7 @@ function makeAllSuccessResponses(): Record<
           linked_managed_population_type_id: null,
           name: "Farming",
           outputs_json: [{ amount_per_worker: 3, resource_id: FOOD_ID }],
+          required_education_level_id: null,
           trader_capacity_per_worker: null,
         },
       ],
@@ -320,6 +321,7 @@ function makeAllSuccessResponses(): Record<
           born_on_turn_number: 1,
           citizen_type: "npc",
           culture_id: null,
+          education_level_id: null,
           given_name: "Alice",
           id: CITIZEN_ID,
           parent_a_citizen_id: null,
@@ -337,6 +339,7 @@ function makeAllSuccessResponses(): Record<
           born_on_turn_number: 2,
           citizen_type: "npc",
           culture_id: null,
+          education_level_id: null,
           given_name: "Bob",
           id: PARTNER_ID,
           parent_a_citizen_id: null,
@@ -438,6 +441,14 @@ function makeAllSuccessResponses(): Record<
       status: 200,
     },
     "/rest/v1/nation_currency_ledger": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/education_levels": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/education_enrollments": {
       body: [],
       status: 200,
     },
@@ -834,6 +845,8 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/nation_treaties": { body: [], status: 200 },
       "/rest/v1/nation_currencies": { body: [], status: 200 },
       "/rest/v1/nation_currency_ledger": { body: [], status: 200 },
+      "/rest/v1/education_levels": { body: [], status: 200 },
+      "/rest/v1/education_enrollments": { body: [], status: 200 },
     });
 
     const result = await resolveSupabaseEndTurnSimulationInput(

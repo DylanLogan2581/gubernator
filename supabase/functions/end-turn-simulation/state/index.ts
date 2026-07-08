@@ -15,6 +15,8 @@ import {
   toSimCitizen,
   toSimCitizenAssignment,
   toSimDepositType,
+  toSimEducationEnrollment,
+  toSimEducationLevel,
   toSimEffect,
   toSimEvent,
   toSimJob,
@@ -41,6 +43,8 @@ import {
   fetchCitizens,
   fetchDeposits,
   fetchDepositTypes,
+  fetchEducationEnrollments,
+  fetchEducationLevels,
   fetchEventEffects,
   fetchEvents,
   fetchJobs,
@@ -67,6 +71,8 @@ import {
   isBuildingRow,
   isCitizenRow,
   isDepositTypeRow,
+  isEducationEnrollmentRow,
+  isEducationLevelRow,
   isEventEffectRow,
   isEventRow,
   isJobRow,
@@ -217,6 +223,8 @@ async function resolveEndTurnInputFromCtx(
     nationTreatiesResult,
     nationCurrenciesResult,
     nationCurrencyLedgerEntriesResult,
+    educationLevelsResult,
+    educationEnrollmentsResult,
   ] = await Promise.all([
     fetchResources(ctx, worldId),
     fetchStockpiles(ctx, settlementIds),
@@ -242,6 +250,8 @@ async function resolveEndTurnInputFromCtx(
     fetchNationTreaties(ctx, worldId),
     fetchNationCurrencies(ctx, worldId),
     fetchNationCurrencyLedgerEntries(ctx, worldId, worldRow.current_turn_number),
+    fetchEducationLevels(ctx, worldId),
+    fetchEducationEnrollments(ctx, worldId),
   ]);
 
   const round2Results = [
@@ -269,6 +279,8 @@ async function resolveEndTurnInputFromCtx(
     nationTreatiesResult,
     nationCurrenciesResult,
     nationCurrencyLedgerEntriesResult,
+    educationLevelsResult,
+    educationEnrollmentsResult,
   ];
 
   for (const result of round2Results) {
@@ -346,6 +358,16 @@ async function resolveEndTurnInputFromCtx(
     deposits: toDeposits(
       (depositsResult as Extract<typeof depositsResult, { ok: true }>).rows,
     ),
+    educationEnrollments: (
+      educationEnrollmentsResult as Extract<typeof educationEnrollmentsResult, { ok: true }>
+    ).rows
+      .filter(isEducationEnrollmentRow)
+      .map(toSimEducationEnrollment),
+    educationLevels: (
+      educationLevelsResult as Extract<typeof educationLevelsResult, { ok: true }>
+    ).rows
+      .filter(isEducationLevelRow)
+      .map(toSimEducationLevel),
     events: (eventsResult as Extract<typeof eventsResult, { ok: true }>).rows
       .filter(isEventRow)
       .map((row) => toSimEvent(row, effectsByEventId.get(row.id) ?? [])),

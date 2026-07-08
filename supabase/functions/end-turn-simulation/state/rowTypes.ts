@@ -60,6 +60,7 @@ export type SupabaseJobRow = {
   readonly trader_capacity_per_worker: number | null;
   readonly linked_deposit_type_id: string | null;
   readonly linked_managed_population_type_id: string | null;
+  readonly required_education_level_id: string | null;
   readonly inputs_json: unknown;
   readonly outputs_json: unknown;
 };
@@ -72,6 +73,7 @@ export type SupabaseTierRow = {
   readonly construction_costs_json: unknown;
   readonly upkeep_costs_json: unknown;
   readonly effects_json: unknown;
+  readonly education_config_json: unknown;
 };
 
 export type SupabaseBlueprintRow = {
@@ -167,6 +169,7 @@ export type SupabaseTradeRouteRow = {
 export type SupabaseCitizenRow = {
   readonly id: string;
   readonly culture_id: string | null;
+  readonly education_level_id: string | null;
   readonly nameset_id: string | null;
   readonly religion_id: string | null;
   readonly settlement_id: string | null;
@@ -192,6 +195,23 @@ export type SupabaseNationRow = {
 
 export type SupabaseNationOfficeRow = {
   readonly citizen_id: string;
+};
+
+export type SupabaseEducationLevelRow = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly name: string;
+  readonly rank: number;
+};
+
+export type SupabaseEducationEnrollmentRow = {
+  readonly id: string;
+  readonly world_id: string;
+  readonly settlement_building_id: string;
+  readonly citizen_id: string;
+  readonly target_level_id: string;
+  readonly progress_turns: number;
+  readonly enrolled_turn_number: number;
 };
 
 export type SupabaseNationRelationshipRow = {
@@ -360,7 +380,9 @@ export function isJobRow(v: unknown): v is SupabaseJobRow {
     (v.linked_deposit_type_id === null ||
       typeof v.linked_deposit_type_id === "string") &&
     (v.linked_managed_population_type_id === null ||
-      typeof v.linked_managed_population_type_id === "string")
+      typeof v.linked_managed_population_type_id === "string") &&
+    (v.required_education_level_id === null ||
+      typeof v.required_education_level_id === "string")
   );
 }
 
@@ -500,6 +522,7 @@ export function isCitizenRow(v: unknown): v is SupabaseCitizenRow {
     isRecord(v) &&
     typeof v.id === "string" &&
     (v.culture_id === null || typeof v.culture_id === "string") &&
+    (v.education_level_id === null || typeof v.education_level_id === "string") &&
     (v.religion_id === null || typeof v.religion_id === "string") &&
     (v.settlement_id === null || typeof v.settlement_id === "string") &&
     typeof v.citizen_type === "string" &&
@@ -532,6 +555,31 @@ export function isNationRow(v: unknown): v is SupabaseNationRow {
 
 export function isNationOfficeRow(v: unknown): v is SupabaseNationOfficeRow {
   return isRecord(v) && typeof v.citizen_id === "string";
+}
+
+export function isEducationLevelRow(v: unknown): v is SupabaseEducationLevelRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.world_id === "string" &&
+    typeof v.name === "string" &&
+    typeof v.rank === "number"
+  );
+}
+
+export function isEducationEnrollmentRow(
+  v: unknown,
+): v is SupabaseEducationEnrollmentRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.world_id === "string" &&
+    typeof v.settlement_building_id === "string" &&
+    typeof v.citizen_id === "string" &&
+    typeof v.target_level_id === "string" &&
+    typeof v.progress_turns === "number" &&
+    typeof v.enrolled_turn_number === "number"
+  );
 }
 
 export function isNationRelationshipRow(

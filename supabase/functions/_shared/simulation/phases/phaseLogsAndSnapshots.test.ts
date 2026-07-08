@@ -34,6 +34,7 @@ function makeAccumulator(
     citizenBirths: [],
     consumptionDeltas: [],
     depositUpdates: [],
+    educationSummaryBySettlementId: new Map(),
     managedPopulationUpdates: [],
     partnershipChanges: [],
     pendingStockpiles: new Map(),

@@ -22,6 +22,7 @@ function makeTier(overrides?: Partial<SimBuildingTier>): SimBuildingTier {
   return {
     buildingBlueprintId: "blueprint-1",
     constructionCostsJson: [],
+    educationConfigJson: null,
     effectsJson: [],
     id: "tier-1",
     tierNumber: 1,

@@ -68,6 +68,7 @@ function makeJob(
     linkedManagedPopulationTypeId: null,
     name: id,
     outputsJson: [{ amountPerWorker, resourceId: outputResourceId }],
+    requiredEducationLevelId: null,
     traderCapacityPerWorker: null,
   };
 }
@@ -77,6 +78,7 @@ function makeCitizen(id: string, settlementId: string): SimCitizen {
     bornOnTurnNumber: 1,
     citizenType: "npc",
     cultureId: null,
+    educationLevelId: null,
     givenName: id,
     id,
     namesetId: null,
@@ -116,6 +118,7 @@ function makeContext(
   citizens: SimCitizen[],
   assignments: SimCitizenAssignment[],
   nationOffices: SimNationOffice[] = [],
+  educationEnrollments: SimulationContext["input"]["educationEnrollments"] = [],
 ): SimulationContext {
   return {
     input: {
@@ -127,6 +130,8 @@ function makeContext(
       constructionProjects: [],
       depositTypes: [],
       deposits: [],
+      educationEnrollments,
+      educationLevels: [],
       events: [],
       jobs,
       managedPopulationTypes: [],
@@ -243,5 +248,39 @@ describe("phaseStandardJobs — officeholder exclusion", () => {
       false,
     );
     expect(withOffice.stockpileDeltas).toHaveLength(0);
+  });
+});
+
+describe("phaseStandardJobs — enrolled citizen exclusion", () => {
+  it("excludes a citizen enrolled in school from job output even while still assigned", () => {
+    const settlement: SimSettlement = { id: "s5", name: "Schooltown" };
+    const job = makeJob("j5", "wood");
+    const citizen = makeCitizen("c5", "s5");
+    const assignment = makeAssignment("c5", "j5");
+
+    const withoutEnrollment = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment]),
+    );
+    const withEnrollment = phaseStandardJobs(
+      makeContext([settlement], [job], [citizen], [assignment], [], [
+        {
+          citizenId: "c5",
+          enrolledTurnNumber: 1,
+          id: "enr1",
+          progressTurns: 0,
+          settlementBuildingId: "b1",
+          targetLevelId: "lvl1",
+          worldId: "w1",
+        },
+      ]),
+    );
+
+    expect(withoutEnrollment.logs.some((l) => l.category === "standard_job.processed")).toBe(
+      true,
+    );
+    expect(withEnrollment.logs.some((l) => l.category === "standard_job.processed")).toBe(
+      false,
+    );
+    expect(withEnrollment.stockpileDeltas).toHaveLength(0);
   });
 });

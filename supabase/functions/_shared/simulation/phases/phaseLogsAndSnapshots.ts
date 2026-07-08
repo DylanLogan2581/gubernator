@@ -11,6 +11,7 @@ import type {
   CitizenBirth,
   CitizenDeath,
   DepositUpdate,
+  EducationSummary,
   ManagedPopulationUpdate,
   PartnershipChange,
   ResourceSnapshot,
@@ -32,6 +33,7 @@ export type PhaseLogsAndSnapshotsAccumulator = {
   // Negative deltas from consumption phases (upkeep, citizen consumption, etc.)
   readonly consumptionDeltas: readonly StockpileDelta[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly educationSummaryBySettlementId: ReadonlyMap<string, EducationSummary>;
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
   readonly partnershipChanges: readonly PartnershipChange[];
   // Post-clamp quantities keyed by "settlementId:resourceId"
@@ -66,6 +68,7 @@ export function phaseLogsAndSnapshots(
     citizenBirths,
     consumptionDeltas,
     depositUpdates,
+    educationSummaryBySettlementId,
     managedPopulationUpdates,
     partnershipChanges,
     pendingStockpiles,
@@ -79,6 +82,7 @@ export function phaseLogsAndSnapshots(
     buildingStateChanges,
     citizenBirths,
     depositUpdates,
+    educationSummaryBySettlementId,
     managedPopulationUpdates,
     partnershipChanges,
     tradeRouteOutcomes,

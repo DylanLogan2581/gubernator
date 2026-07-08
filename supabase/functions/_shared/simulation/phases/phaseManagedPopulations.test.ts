@@ -54,6 +54,8 @@ function makeContext(
       constructionProjects: [],
       depositTypes: [],
       deposits: [],
+    educationEnrollments: [],
+    educationLevels: [],
       events: [],
       jobs: [],
       managedPopulationTypes: types,

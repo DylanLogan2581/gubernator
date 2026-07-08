@@ -1,3 +1,4 @@
+import { parseTierEducationConfig } from "../../_shared/education/index.ts";
 import { isRecord } from "../utils.ts";
 
 import { isBlueprintRow, isDepositResourceRow, isDepositRow, isTierRow } from "./rowTypes.ts";
@@ -7,6 +8,8 @@ import type {
   SupabaseBuildingRow,
   SupabaseCitizenRow,
   SupabaseDepositTypeRow,
+  SupabaseEducationEnrollmentRow,
+  SupabaseEducationLevelRow,
   SupabaseEventEffectRow,
   SupabaseEventRow,
   SupabaseJobRow,
@@ -37,6 +40,8 @@ import type {
   SimDeposit,
   SimDepositResource,
   SimDepositType,
+  SimEducationEnrollment,
+  SimEducationLevel,
   SimEffect,
   SimEvent,
   SimJob,
@@ -203,6 +208,7 @@ export function toSimJob(row: SupabaseJobRow): SimJob {
     linkedManagedPopulationTypeId: row.linked_managed_population_type_id,
     name: row.name,
     outputsJson: toSimJobIoEntries(row.outputs_json),
+    requiredEducationLevelId: row.required_education_level_id,
     traderCapacityPerWorker: row.trader_capacity_per_worker,
   };
 }
@@ -292,6 +298,7 @@ export function toSimCitizen(row: SupabaseCitizenRow): SimCitizen {
     bornOnTurnNumber: row.born_on_turn_number,
     citizenType: row.citizen_type as SimCitizen["citizenType"],
     cultureId: row.culture_id ?? null,
+    educationLevelId: row.education_level_id ?? null,
     givenName: row.given_name,
     id: row.id,
     namesetId: row.nameset_id ?? null,
@@ -320,6 +327,29 @@ export function toSimNation(row: SupabaseNationRow): SimNation {
 export function toSimNationOffice(row: SupabaseNationOfficeRow): SimNationOffice {
   return {
     citizenId: row.citizen_id,
+  };
+}
+
+export function toSimEducationLevel(row: SupabaseEducationLevelRow): SimEducationLevel {
+  return {
+    id: row.id,
+    name: row.name,
+    rank: row.rank,
+    worldId: row.world_id,
+  };
+}
+
+export function toSimEducationEnrollment(
+  row: SupabaseEducationEnrollmentRow,
+): SimEducationEnrollment {
+  return {
+    citizenId: row.citizen_id,
+    enrolledTurnNumber: row.enrolled_turn_number,
+    id: row.id,
+    progressTurns: row.progress_turns,
+    settlementBuildingId: row.settlement_building_id,
+    targetLevelId: row.target_level_id,
+    worldId: row.world_id,
   };
 }
 
@@ -494,6 +524,9 @@ export function toBlueprintsAndTiers(rows: readonly unknown[]): {
         buildingBlueprintId: tier.building_blueprint_id,
         constructionCostsJson: toSimTierCostEntries(
           tier.construction_costs_json,
+        ),
+        educationConfigJson: parseTierEducationConfig(
+          tier.education_config_json,
         ),
         effectsJson: toSimTierEffects(tier.effects_json),
         id: tier.id,

@@ -7,6 +7,7 @@ import { phaseBuildingUpkeep } from "./phases/phaseBuildingUpkeep.ts";
 import { phaseCitizenConsumption } from "./phases/phaseCitizenConsumption.ts";
 import { phaseConstruction } from "./phases/phaseConstruction.ts";
 import { phaseDepositExtraction } from "./phases/phaseDepositExtraction.ts";
+import { phaseEducation } from "./phases/phaseEducation.ts";
 import { phaseEvents } from "./phases/phaseEvents.ts";
 import { phaseHomelessness } from "./phases/phaseHomelessness.ts";
 import { phaseLogsAndSnapshots } from "./phases/phaseLogsAndSnapshots.ts";
@@ -242,6 +243,18 @@ export function runSimulation(
       }
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Phase 4.5 — Education
+  // -------------------------------------------------------------------------
+  // #1104's issue text says "before construction", but that note was written
+  // against a stale line-numbered draft of this pipeline. The concrete
+  // acceptance criterion ("a building that went inactive this turn must
+  // teach nothing this turn") requires seeing this-turn building state
+  // changes, which only exist after phaseBuildingUpkeep (p4) runs — so
+  // education runs here instead, after p4 and before Phase 5.
+
+  const p4dot5 = phaseEducation(context, p4.buildingStateChanges);
 
   // -------------------------------------------------------------------------
   // Phase 5 — Passive Effects
@@ -507,6 +520,7 @@ export function runSimulation(
     citizenBirths: allCitizenBirths,
     consumptionDeltas,
     depositUpdates: p2.depositUpdates,
+    educationSummaryBySettlementId: p4dot5.educationSummaryBySettlementId,
     managedPopulationUpdates,
     partnershipChanges,
     pendingStockpiles,
@@ -524,6 +538,7 @@ export function runSimulation(
     ...p2.logs,
     ...p3.logs,
     ...p4.logs,
+    ...p4dot5.logs,
     ...p5.logs,
     ...p6.logs,
     ...p6dot5.logs,
@@ -544,6 +559,7 @@ export function runSimulation(
     ...p2.notifications,
     ...p3.notifications,
     ...p4.notifications,
+    ...p4dot5.notifications,
     ...p6dot5.notifications,
     ...p7.notifications,
     ...p8.notifications,
@@ -584,9 +600,12 @@ export function runSimulation(
     buildingsCreated: p3.buildingsCreated,
     citizenBirths: allCitizenBirths,
     citizenDeaths: allDeaths,
+    citizenEducationPatches: p4dot5.citizenEducationPatches,
     citizenPatches: p9.citizenPatches,
     constructionUpdates: p3.constructionUpdates,
     depositUpdates: [...p2.depositUpdates, ...p11.depositUpdates],
+    enrollmentGraduations: p4dot5.enrollmentGraduations,
+    enrollmentProgressUpdates: p4dot5.enrollmentProgressUpdates,
     eventStatusPatches: p11.eventStatusPatches,
     logEntries,
     managedPopulationUpdates,

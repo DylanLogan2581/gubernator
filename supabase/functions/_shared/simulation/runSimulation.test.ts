@@ -52,6 +52,8 @@ function makeInput(
     constructionProjects: [],
     depositTypes: [],
     deposits: [],
+    educationEnrollments: [],
+    educationLevels: [],
     events: [],
     jobs: [],
     managedPopulationTypes: [],
@@ -86,6 +88,7 @@ function makeMaleNpc(id: string, settlementId: string): SimCitizen {
     bornOnTurnNumber: 1,
     citizenType: "npc",
     cultureId: null,
+    educationLevelId: null,
     givenName: id,
     id,
     namesetId: null,
@@ -107,6 +110,7 @@ function makeFemaleNpc(id: string, settlementId: string): SimCitizen {
     bornOnTurnNumber: 1,
     citizenType: "npc",
     cultureId: null,
+    educationLevelId: null,
     givenName: id,
     id,
     namesetId: null,
@@ -145,6 +149,7 @@ function makeBuildingTier(): SimBuildingTier {
   return {
     buildingBlueprintId: "bp1",
     constructionCostsJson: [],
+    educationConfigJson: null,
     effectsJson: [
       {
         amount: 1,
@@ -346,6 +351,7 @@ describe("runSimulation — officeholders leave the settlement labor pool", () =
       linkedManagedPopulationTypeId: null,
       name: "Farming",
       outputsJson: [{ amountPerWorker: 10, resourceId: "food" }],
+      requiredEducationLevelId: null,
       traderCapacityPerWorker: null,
     };
     const assignment: SimCitizenAssignment = {
@@ -401,6 +407,7 @@ describe("runSimulation — national economy tax collection", () => {
       linkedManagedPopulationTypeId: null,
       name: "Farming",
       outputsJson: [{ amountPerWorker: 10, resourceId: "food" }],
+      requiredEducationLevelId: null,
       traderCapacityPerWorker: null,
     };
     const assignment: SimCitizenAssignment = {
@@ -458,6 +465,7 @@ describe("runSimulation — national economy tax collection", () => {
       linkedManagedPopulationTypeId: null,
       name: "Farming",
       outputsJson: [{ amountPerWorker: 10, resourceId: "food" }],
+      requiredEducationLevelId: null,
       traderCapacityPerWorker: null,
     };
     const assignment: SimCitizenAssignment = {

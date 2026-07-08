@@ -2860,6 +2860,7 @@ export type Database = {
           buildings_summary_json: Json | null;
           created_at: string;
           death_count: number;
+          education_summary_json: Json | null;
           homeless_deaths_count: number;
           id: string;
           managed_populations_summary_json: Json | null;
@@ -2881,6 +2882,7 @@ export type Database = {
           buildings_summary_json?: Json | null;
           created_at?: string;
           death_count?: number;
+          education_summary_json?: Json | null;
           homeless_deaths_count?: number;
           id?: string;
           managed_populations_summary_json?: Json | null;
@@ -2902,6 +2904,7 @@ export type Database = {
           buildings_summary_json?: Json | null;
           created_at?: string;
           death_count?: number;
+          education_summary_json?: Json | null;
           homeless_deaths_count?: number;
           id?: string;
           managed_populations_summary_json?: Json | null;
@@ -4934,6 +4937,10 @@ export type Database = {
         Returns: Record<string, unknown>;
       };
       internal_apply_turn_transition_deposit_managed_pop_patches: {
+        Args: { p_payload: Json };
+        Returns: Record<string, unknown>;
+      };
+      internal_apply_turn_transition_education_patches: {
         Args: { p_payload: Json };
         Returns: Record<string, unknown>;
       };

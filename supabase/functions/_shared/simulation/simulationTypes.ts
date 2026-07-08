@@ -2,6 +2,7 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import type { TierEducationConfig } from "../education/index.ts";
 import type { GovernmentType } from "../government/index.ts";
 import type { TurnCalendarConfig } from "../turnCalendarPrimitives.ts";
 
@@ -56,6 +57,27 @@ export type SimNation = {
 
 export type SimNationOffice = {
   readonly citizenId: string;
+};
+
+export type SimEducationLevel = {
+  readonly id: string;
+  readonly worldId: string;
+  // Deviation from the original spec (which listed id/worldId/rank only):
+  // name is needed to compose human-readable graduation notification text
+  // ("N citizens completed <name> at the <building>"), so it's included
+  // here rather than re-deriving it via an extra lookup table.
+  readonly name: string;
+  readonly rank: number;
+};
+
+export type SimEducationEnrollment = {
+  readonly id: string;
+  readonly worldId: string;
+  readonly settlementBuildingId: string;
+  readonly citizenId: string;
+  readonly targetLevelId: string;
+  readonly progressTurns: number;
+  readonly enrolledTurnNumber: number;
 };
 
 export type SimNationRelationship = {
@@ -154,6 +176,7 @@ export type SimJob = {
   readonly linkedManagedPopulationTypeId: string | null;
   readonly name: string;
   readonly outputsJson: readonly SimJobIoEntry[];
+  readonly requiredEducationLevelId: string | null;
   readonly traderCapacityPerWorker: number | null;
 };
 
@@ -193,6 +216,7 @@ export type SimBuildingBlueprint = {
 export type SimBuildingTier = {
   readonly buildingBlueprintId: string;
   readonly constructionCostsJson: readonly SimTierCostEntry[];
+  readonly educationConfigJson: TierEducationConfig | null;
   readonly effectsJson: readonly SimTierEffect[];
   readonly id: string;
   readonly tierNumber: number;
@@ -397,6 +421,7 @@ export type SimCitizen = {
   readonly bornOnTurnNumber: number | null;
   readonly citizenType: SimCitizenType;
   readonly cultureId: string | null;
+  readonly educationLevelId: string | null;
   readonly givenName: string;
   readonly id: string;
   readonly namesetId: string | null;
@@ -457,6 +482,8 @@ export type SimulationInputState = {
   readonly constructionProjects: readonly SimConstructionProject[];
   readonly depositTypes: readonly SimDepositType[];
   readonly deposits: readonly SimDeposit[];
+  readonly educationEnrollments: readonly SimEducationEnrollment[];
+  readonly educationLevels: readonly SimEducationLevel[];
   readonly events: readonly SimEvent[];
   readonly isWorldArchived?: boolean;
   readonly jobs: readonly SimJob[];
@@ -602,6 +629,21 @@ export type AssignmentClear = {
   readonly reason: string;
 };
 
+export type CitizenEducationPatch = {
+  readonly citizenId: string;
+  readonly educationLevelId: string;
+};
+
+export type EnrollmentProgressUpdate = {
+  readonly enrollmentId: string;
+  readonly progressTurns: number;
+  readonly targetLevelId: string;
+};
+
+export type EnrollmentGraduation = {
+  readonly enrollmentId: string;
+};
+
 export type SettlementSnapshotManagedPopEntry = {
   readonly currentCount: number;
   readonly instanceId: string;
@@ -625,6 +667,14 @@ export type SettlementSnapshotWarnings = {
   readonly pausedProjectIds: readonly string[];
 };
 
+export type EducationSummary = {
+  // Enrolled student counts by target_level_id, end of turn, this settlement.
+  readonly countsByLevelId: Readonly<Record<string, number>>;
+  // Citizens who completed a level (advanced or fully graduated) at this
+  // settlement this turn.
+  readonly graduationsThisTurn: number;
+};
+
 export type SettlementSnapshot = {
   readonly aliveNpc: number;
   readonly alivePc: number;
@@ -632,6 +682,7 @@ export type SettlementSnapshot = {
   readonly birthCount: number;
   readonly buildingSummary: SettlementSnapshotBuildingStateCounts;
   readonly deathCount: number;
+  readonly educationSummary: EducationSummary;
   readonly homelessDeathsCount: number;
   readonly managedPopulationSummary: readonly SettlementSnapshotManagedPopEntry[];
   readonly partnershipsFormedCount: number;
@@ -706,9 +757,12 @@ export type SimulationResult = {
   readonly buildingsCreated: readonly BuildingCreated[];
   readonly citizenBirths: readonly CitizenBirth[];
   readonly citizenDeaths: readonly CitizenDeath[];
+  readonly citizenEducationPatches: readonly CitizenEducationPatch[];
   readonly citizenPatches: readonly CitizenPatch[];
   readonly constructionUpdates: readonly ConstructionUpdate[];
   readonly depositUpdates: readonly DepositUpdate[];
+  readonly enrollmentGraduations: readonly EnrollmentGraduation[];
+  readonly enrollmentProgressUpdates: readonly EnrollmentProgressUpdate[];
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];

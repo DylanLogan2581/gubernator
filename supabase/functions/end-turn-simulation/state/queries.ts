@@ -353,7 +353,7 @@ export function fetchJobs(
       is_trashed: "eq.false",
       order: "id.asc",
       select:
-        "id,name,job_type,base_capacity,trader_capacity_per_worker,linked_deposit_type_id,linked_managed_population_type_id,inputs_json,outputs_json",
+        "id,name,job_type,base_capacity,trader_capacity_per_worker,linked_deposit_type_id,linked_managed_population_type_id,required_education_level_id,inputs_json,outputs_json",
     },
   });
 }
@@ -370,7 +370,7 @@ export function fetchBlueprints(
       is_trashed: "eq.false",
       order: "id.asc",
       select:
-        "id,name,grace_period_turns,max_instances_per_settlement,building_blueprint_tiers(id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json)",
+        "id,name,grace_period_turns,max_instances_per_settlement,building_blueprint_tiers(id,building_blueprint_id,tier_number,worker_turns_required,construction_costs_json,upkeep_costs_json,effects_json,education_config_json)",
     },
   });
 }
@@ -420,7 +420,7 @@ export function fetchCitizens(
       status: "eq.alive",
       order: "id.asc",
       select:
-        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,nameset_id,culture_id,religion_id,role_type,role_nation_id,role_settlement_id",
+        "id,settlement_id,citizen_type,given_name,surname,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,nameset_id,culture_id,religion_id,education_level_id,role_type,role_nation_id,role_settlement_id",
     },
   });
 }
@@ -451,6 +451,37 @@ export function fetchNationOffices(
       world_id: `eq.${worldId}`,
       order: "id.asc",
       select: "citizen_id",
+    },
+  });
+}
+
+export function fetchEducationLevels(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "education_levels",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "id,world_id,name,rank",
+    },
+  });
+}
+
+export function fetchEducationEnrollments(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "education_enrollments",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select:
+        "id,world_id,settlement_building_id,citizen_id,target_level_id,progress_turns,enrolled_turn_number",
     },
   });
 }

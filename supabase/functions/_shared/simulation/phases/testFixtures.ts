@@ -11,6 +11,8 @@ import type {
   SimCitizen,
   SimCitizenAssignment,
   SimCurrencyLedgerEntry,
+  SimEducationEnrollment,
+  SimEducationLevel,
   SimNation,
   SimNationCurrency,
   SimNationOffice,
@@ -68,6 +70,8 @@ export function makeInputState(
     constructionProjects: [],
     depositTypes: [],
     deposits: [],
+    educationEnrollments: [],
+    educationLevels: [],
     events: [],
     jobs: [],
     managedPopulationTypes: [],
@@ -118,6 +122,7 @@ export function makeCitizen(
     bornOnTurnNumber: 1,
     citizenType: "npc",
     cultureId: null,
+    educationLevelId: null,
     givenName: overrides.id,
     namesetId: null,
     parentACitizenId: null,
@@ -208,6 +213,32 @@ export function makeAssignment(
     managedPopulationInstanceId: null,
     tradeRouteEnd: null,
     tradeRouteId: null,
+    ...overrides,
+  };
+}
+
+export function makeEducationLevel(
+  overrides: Partial<SimEducationLevel> & { id: string; rank: number },
+): SimEducationLevel {
+  return {
+    name: overrides.id,
+    worldId: "w1",
+    ...overrides,
+  };
+}
+
+export function makeEnrollment(
+  overrides: Partial<SimEducationEnrollment> & {
+    id: string;
+    citizenId: string;
+    settlementBuildingId: string;
+    targetLevelId: string;
+  },
+): SimEducationEnrollment {
+  return {
+    enrolledTurnNumber: 1,
+    progressTurns: 0,
+    worldId: "w1",
     ...overrides,
   };
 }
