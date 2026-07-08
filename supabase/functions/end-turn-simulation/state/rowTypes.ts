@@ -197,6 +197,10 @@ export type SupabaseNationOfficeRow = {
   readonly citizen_id: string;
 };
 
+export type SupabaseUnitSoldierRow = {
+  readonly citizen_id: string;
+};
+
 export type SupabaseEducationLevelRow = {
   readonly id: string;
   readonly world_id: string;
@@ -554,6 +558,10 @@ export function isNationRow(v: unknown): v is SupabaseNationRow {
 }
 
 export function isNationOfficeRow(v: unknown): v is SupabaseNationOfficeRow {
+  return isRecord(v) && typeof v.citizen_id === "string";
+}
+
+export function isUnitSoldierRow(v: unknown): v is SupabaseUnitSoldierRow {
   return isRecord(v) && typeof v.citizen_id === "string";
 }
 

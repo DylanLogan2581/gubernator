@@ -25,12 +25,20 @@ export type PhaseDepositExtractionOutput = {
 export function phaseDepositExtraction(
   context: SimulationContext,
 ): PhaseDepositExtractionOutput {
-  const { citizenAssignments, depositTypes, deposits, educationEnrollments, nationOffices, stockpiles } =
-    context.input;
+  const {
+    citizenAssignments,
+    depositTypes,
+    deposits,
+    educationEnrollments,
+    nationOffices,
+    stockpiles,
+    unitSoldiers,
+  } = context.input;
 
   const depositTypeById = new Map(depositTypes.map((dt) => [dt.id, dt]));
   const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
   const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
+  const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
 
   const stockpileQty = new Map<string, number>();
   const stockpileCap = new Map<string, number>();
@@ -56,7 +64,8 @@ export function phaseDepositExtraction(
     const dId = assignment.depositInstanceId;
     if (
       !officeholderCitizenIds.has(assignment.citizenId) &&
-      !enrolledCitizenIds.has(assignment.citizenId)
+      !enrolledCitizenIds.has(assignment.citizenId) &&
+      !soldierCitizenIds.has(assignment.citizenId)
     ) {
       workerCountByDeposit.set(dId, (workerCountByDeposit.get(dId) ?? 0) + 1);
     }

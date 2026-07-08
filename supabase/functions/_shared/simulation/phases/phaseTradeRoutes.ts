@@ -30,10 +30,12 @@ export function phaseTradeRoutes(
     settlements,
     stockpiles,
     tradeRoutes,
+    unitSoldiers,
   } = context.input;
 
   const jobById = new Map(jobs.map((j) => [j.id, j]));
   const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
+  const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
 
   // Nation pairs currently at war, keyed both directions (`${a}:${b}`) so a
@@ -63,7 +65,8 @@ export function phaseTradeRoutes(
       assignment.tradeRouteId === null ||
       assignment.tradeRouteEnd === null ||
       assignment.jobId === null ||
-      officeholderCitizenIds.has(assignment.citizenId)
+      officeholderCitizenIds.has(assignment.citizenId) ||
+      soldierCitizenIds.has(assignment.citizenId)
     ) {
       continue;
     }

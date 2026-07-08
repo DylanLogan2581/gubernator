@@ -92,6 +92,7 @@ function makeBaseInput(
     systemResourceIds: { foodId: FOOD_ID, freshWaterId: WATER_ID },
     tradeRoutes: [],
     turnNumber: 5,
+    unitSoldiers: [],
     worldId: WORLD_ID,
     ...overrides,
   };

@@ -87,6 +87,7 @@ function makeContext(
       systemResourceIds: { foodId: "food", freshWaterId: "water" },
       tradeRoutes: [],
       turnNumber: 1,
+      unitSoldiers: [],
       worldId: "w1",
       ...rest,
     },

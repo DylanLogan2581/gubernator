@@ -92,6 +92,7 @@ export function makeInputState(
     systemResourceIds: { foodId: "food", freshWaterId: "water" },
     tradeRoutes: [],
     turnNumber: 1,
+    unitSoldiers: [],
     worldId: "w1",
     ...overrides,
   };

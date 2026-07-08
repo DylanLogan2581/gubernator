@@ -59,6 +59,10 @@ export type SimNationOffice = {
   readonly citizenId: string;
 };
 
+export type SimUnitSoldier = {
+  readonly citizenId: string;
+};
+
 export type SimEducationLevel = {
   readonly id: string;
   readonly worldId: string;
@@ -511,6 +515,7 @@ export type SimulationInputState = {
   };
   readonly tradeRoutes: readonly SimTradeRoute[];
   readonly turnNumber: number;
+  readonly unitSoldiers: readonly SimUnitSoldier[];
   readonly worldId: string;
 };
 

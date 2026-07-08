@@ -452,6 +452,10 @@ function makeAllSuccessResponses(): Record<
       body: [],
       status: 200,
     },
+    "/rest/v1/unit_soldiers": {
+      body: [],
+      status: 200,
+    },
   };
 }
 
@@ -847,6 +851,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/nation_currency_ledger": { body: [], status: 200 },
       "/rest/v1/education_levels": { body: [], status: 200 },
       "/rest/v1/education_enrollments": { body: [], status: 200 },
+      "/rest/v1/unit_soldiers": { body: [], status: 200 },
     });
 
     const result = await resolveSupabaseEndTurnSimulationInput(

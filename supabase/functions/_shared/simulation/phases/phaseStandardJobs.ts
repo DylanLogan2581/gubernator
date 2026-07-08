@@ -29,6 +29,7 @@ export function phaseStandardJobs(
     nationOffices,
     settlements,
     stockpiles,
+    unitSoldiers,
   } = context.input;
   const { pendingEventMultipliers } = context.shared;
 
@@ -38,6 +39,7 @@ export function phaseStandardJobs(
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
   const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
   const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
+  const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
 
   function levelRank(levelId: string | null): number | null {
     if (levelId === null) return null;
@@ -69,7 +71,8 @@ export function phaseStandardJobs(
       assignment.assignmentType !== "standard_job" ||
       assignment.jobId === null ||
       officeholderCitizenIds.has(assignment.citizenId) ||
-      enrolledCitizenIds.has(assignment.citizenId)
+      enrolledCitizenIds.has(assignment.citizenId) ||
+      soldierCitizenIds.has(assignment.citizenId)
     ) {
       continue;
     }

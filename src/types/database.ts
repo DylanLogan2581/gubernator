@@ -3483,6 +3483,72 @@ export type Database = {
           },
         ];
       };
+      unit_soldiers: {
+        Row: {
+          citizen_id: string;
+          created_at: string;
+          home_settlement_id: string | null;
+          id: string;
+          recruited_turn_number: number;
+          unit_id: string;
+          world_id: string;
+        };
+        Insert: {
+          citizen_id: string;
+          created_at?: string;
+          home_settlement_id?: string | null;
+          id?: string;
+          recruited_turn_number: number;
+          unit_id: string;
+          world_id: string;
+        };
+        Update: {
+          citizen_id?: string;
+          created_at?: string;
+          home_settlement_id?: string | null;
+          id?: string;
+          recruited_turn_number?: number;
+          unit_id?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "unit_soldiers_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: true;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "unit_soldiers_citizen_id_fkey";
+            columns: ["citizen_id"];
+            isOneToOne: true;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "unit_soldiers_home_settlement_id_fkey";
+            columns: ["home_settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "unit_soldiers_unit_id_fkey";
+            columns: ["unit_id"];
+            isOneToOne: false;
+            referencedRelation: "army_units";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "unit_soldiers_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       unit_types: {
         Row: {
           created_at: string;
@@ -4961,6 +5027,51 @@ export type Database = {
             } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved";
           };
       diag_test_name: { Args: { "": string }; Returns: string };
+      discharge_soldiers: {
+        Args: { p_soldier_ids: string[] };
+        Returns: {
+          born_on_turn_number: number | null;
+          citizen_type: string;
+          created_at: string;
+          culture_id: string | null;
+          death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          education_level_id: string | null;
+          given_name: string;
+          id: string;
+          name: string | null;
+          nameset_id: string | null;
+          npc_flaw: string | null;
+          npc_goal: string | null;
+          npc_secret_contradiction: string | null;
+          npc_trait_1: string | null;
+          npc_trait_2: string | null;
+          parent_a_citizen_id: string | null;
+          parent_b_citizen_id: string | null;
+          personality_text: string | null;
+          profile_photo_url: string | null;
+          religion_id: string | null;
+          role_nation_id: string | null;
+          role_settlement_id: string | null;
+          role_type: string;
+          settlement_id: string | null;
+          sex: string | null;
+          skills_text: string | null;
+          status: string;
+          surname: string | null;
+          updated_at: string;
+          user_id: string | null;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       dismiss_nation_office: {
         Args: { p_office_id: string };
         Returns: undefined;
@@ -5680,6 +5791,28 @@ export type Database = {
       recompute_nation_readiness: {
         Args: { p_nation_id: string; p_turn_number: number };
         Returns: undefined;
+      };
+      recruit_soldiers: {
+        Args: {
+          p_citizen_ids: string[];
+          p_settlement_id: string;
+          p_unit_id: string;
+        };
+        Returns: {
+          citizen_id: string;
+          created_at: string;
+          home_settlement_id: string | null;
+          id: string;
+          recruited_turn_number: number;
+          unit_id: string;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "unit_soldiers";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
       redeem_reserves: {
         Args: { p_currency_id: string; p_quantity: number };

@@ -34,6 +34,7 @@ import {
   toSimStockpile,
   toSimTradeRoute,
   toSimTreaty,
+  toSimUnitSoldier,
   toWorldPopulationRules,
 } from "./mappers.ts";
 import {
@@ -64,6 +65,7 @@ import {
   fetchSettlements,
   fetchStockpiles,
   fetchTradeRoutes,
+  fetchUnitSoldiers,
   fetchWorldRow,
 } from "./queries.ts";
 import {
@@ -92,6 +94,7 @@ import {
   isSettlementRow,
   isStockpileRow,
   isTradeRouteRow,
+  isUnitSoldierRow,
   type SupabaseNamesetRow,
   type SupabaseSettlementRow,
 } from "./rowTypes.ts";
@@ -225,6 +228,7 @@ async function resolveEndTurnInputFromCtx(
     nationCurrencyLedgerEntriesResult,
     educationLevelsResult,
     educationEnrollmentsResult,
+    unitSoldiersResult,
   ] = await Promise.all([
     fetchResources(ctx, worldId),
     fetchStockpiles(ctx, settlementIds),
@@ -252,6 +256,7 @@ async function resolveEndTurnInputFromCtx(
     fetchNationCurrencyLedgerEntries(ctx, worldId, worldRow.current_turn_number),
     fetchEducationLevels(ctx, worldId),
     fetchEducationEnrollments(ctx, worldId),
+    fetchUnitSoldiers(ctx, worldId),
   ]);
 
   const round2Results = [
@@ -281,6 +286,7 @@ async function resolveEndTurnInputFromCtx(
     nationCurrencyLedgerEntriesResult,
     educationLevelsResult,
     educationEnrollmentsResult,
+    unitSoldiersResult,
   ];
 
   for (const result of round2Results) {
@@ -458,6 +464,11 @@ async function resolveEndTurnInputFromCtx(
       .filter(isTradeRouteRow)
       .map(toSimTradeRoute),
     turnNumber: worldRow.current_turn_number,
+    unitSoldiers: (
+      unitSoldiersResult as Extract<typeof unitSoldiersResult, { ok: true }>
+    ).rows
+      .filter(isUnitSoldierRow)
+      .map(toSimUnitSoldier),
     worldId,
   };
 

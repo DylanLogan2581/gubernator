@@ -27,6 +27,7 @@ import type {
   SupabaseSettlementRow,
   SupabaseStockpileRow,
   SupabaseTradeRouteRow,
+  SupabaseUnitSoldierRow,
   SupabaseWorldRow,
 } from "./rowTypes.ts";
 import type {
@@ -63,6 +64,7 @@ import type {
   SimTradeRoute,
   SimTreaty,
   SimTreatyType,
+  SimUnitSoldier,
   SimWorkerInputEntry,
   WorldPopulationRules,
 } from "../../_shared/simulation/simulationTypes.ts";
@@ -325,6 +327,12 @@ export function toSimNation(row: SupabaseNationRow): SimNation {
 }
 
 export function toSimNationOffice(row: SupabaseNationOfficeRow): SimNationOffice {
+  return {
+    citizenId: row.citizen_id,
+  };
+}
+
+export function toSimUnitSoldier(row: SupabaseUnitSoldierRow): SimUnitSoldier {
   return {
     citizenId: row.citizen_id,
   };

@@ -74,6 +74,7 @@ function makeInput(
     systemResourceIds: { foodId: "food", freshWaterId: "water" },
     tradeRoutes: [],
     turnNumber: 5,
+    unitSoldiers: [],
     worldId: "w1",
     ...overrides,
   };

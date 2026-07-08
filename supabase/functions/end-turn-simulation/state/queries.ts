@@ -455,6 +455,21 @@ export function fetchNationOffices(
   });
 }
 
+export function fetchUnitSoldiers(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "unit_soldiers",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select: "citizen_id",
+    },
+  });
+}
+
 export function fetchEducationLevels(
   ctx: FetchContext,
   worldId: string,
