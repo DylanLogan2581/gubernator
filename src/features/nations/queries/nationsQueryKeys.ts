@@ -2,6 +2,19 @@ import { authStateQueryCacheKeys } from "@/lib/authStateQueryCache";
 
 export const nationsQueryKeys = {
   all: authStateQueryCacheKeys.nationsAll,
+  currency: (nationId: string) =>
+    [...nationsQueryKeys.all, "currency", nationId] as const,
+  currencyLedgerPage: (currencyId: string, page: number) =>
+    [
+      ...nationsQueryKeys.all,
+      "currency-ledger-page",
+      currencyId,
+      page,
+    ] as const,
+  currencySnapshots: (currencyId: string) =>
+    [...nationsQueryKeys.all, "currency-snapshots", currencyId] as const,
+  currencyTreasury: (nationId: string) =>
+    [...nationsQueryKeys.all, "currency-treasury", nationId] as const,
   detail: (nationId: string) =>
     [...nationsQueryKeys.all, "detail", nationId] as const,
   discoveries: (worldId: string) =>

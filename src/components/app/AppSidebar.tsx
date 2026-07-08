@@ -3,6 +3,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowLeftRight,
+  Banknote,
   Bell,
   BookOpen,
   Briefcase,
@@ -442,6 +443,12 @@ export function AppSidebar(): JSX.Element | null {
             nationId,
             worldId,
           }),
+          nationSectionItem("bank", {
+            isActive: currentNationSection === "bank",
+            label: "Bank",
+            nationId,
+            worldId,
+          }),
           nationSectionItem("reports", {
             isActive: currentNationSection === "reports",
             label: "Reports",
@@ -820,6 +827,7 @@ function settlementSectionItem(
 const NATION_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
   Exclude<NationSection, "overview">
 >([
+  "bank",
   "government",
   "relationships",
   "reports",
@@ -870,6 +878,7 @@ function nationSectionItem(
   },
 ): NavGroupItem {
   const icons: Record<NationSection, JSX.Element> = {
+    bank: <Banknote aria-hidden="true" />,
     government: <ShieldCheck aria-hidden="true" />,
     overview: <LayoutDashboard aria-hidden="true" />,
     relationships: <Handshake aria-hidden="true" />,
@@ -978,6 +987,21 @@ function nationSectionItem(
         link: (
           <Link
             to="/worlds/$worldId/nations/$nationId/treasury"
+            params={{ nationId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "bank":
+      return {
+        key: "nation-bank",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/bank"
             params={{ nationId, worldId }}
           >
             {icons[section]}

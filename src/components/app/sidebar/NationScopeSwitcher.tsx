@@ -11,6 +11,7 @@ import type { JSX } from "react";
 // Mirrors the nation detail child routes (see also AppSidebar's
 // nationSectionItem) — one value per sidebar NATION item.
 export type NationSection =
+  | "bank"
   | "government"
   | "overview"
   | "relationships"
@@ -27,6 +28,7 @@ export type NationScopeSwitcherProps = {
 
 type NationSectionRouteId =
   | "/worlds/$worldId/nations/$nationId"
+  | "/worlds/$worldId/nations/$nationId/bank"
   | "/worlds/$worldId/nations/$nationId/government"
   | "/worlds/$worldId/nations/$nationId/relationships"
   | "/worlds/$worldId/nations/$nationId/reports"
@@ -36,6 +38,8 @@ type NationSectionRouteId =
 
 function sectionRouteId(section: NationSection | null): NationSectionRouteId {
   switch (section) {
+    case "bank":
+      return "/worlds/$worldId/nations/$nationId/bank";
     case "government":
       return "/worlds/$worldId/nations/$nationId/government";
     case "relationships":

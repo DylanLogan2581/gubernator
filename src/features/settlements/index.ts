@@ -12,6 +12,7 @@ export {
 } from "./queries/settlementReadinessQueries";
 export { CreateSettlementDialog } from "./components/CreateSettlementDialog";
 export { ForecastPanel } from "./components/ForecastPanel";
+export { ForecastResourceSparkline } from "./components/ForecastResourceSparkline";
 export { ManualReadinessControl } from "./components/ManualReadinessControl";
 export { ReadOnlyReadinessIndicator } from "./components/ReadinessStateBadge";
 export { SettlementCoordinatesSection } from "./components/SettlementDetailPage/CoordinatesSection";
@@ -41,6 +42,7 @@ export type {
   ForecastSnapshot,
   SettlementForecastData,
 } from "./schemas/forecastSchemas";
+export type { ForecastSparklinePoint } from "./components/ForecastResourceSparkline";
 export {
   settlementByIdQueryOptions,
   settlementPopulationCapQueryOptions,
