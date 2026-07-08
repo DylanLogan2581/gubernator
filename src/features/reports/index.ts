@@ -1,5 +1,6 @@
 // Reports feature — settlement turn snapshot visualizations (Epic 8).
 export { SettlementReportsPanel } from "./components/SettlementReportsPanel";
+export { CompositionDonutChart } from "./components/SettlementReportsPanel/CompositionDonutChart";
 export { PopulationTrendChart } from "./components/SettlementReportsPanel/PopulationTrendChart";
 export { TurnRangeSelector } from "./components/SettlementReportsPanel/TurnRangeSelector";
 export {
@@ -31,3 +32,4 @@ export type {
   WorldPopulationAggregateRow,
   WorldResourceAggregateRow,
 } from "./types/snapshotTypes";
+export type { DonutSlice } from "./components/SettlementReportsPanel/CompositionDonutChart";

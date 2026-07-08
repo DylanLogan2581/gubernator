@@ -40,6 +40,12 @@ export const citizensQueryKeys = {
     ] as const,
   nationAggregateStats: (nationId: string) =>
     [...citizensQueryKeys.all, "nation-aggregate-stats", nationId] as const,
+  nationCultureReligionComposition: (nationId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "nation-culture-religion-composition",
+      nationId,
+    ] as const,
   partnershipsForCitizen: (citizenId: string) =>
     [...citizensQueryKeys.all, "partnerships-for-citizen", citizenId] as const,
   playerCharactersInNation: (nationId: string) =>
@@ -52,6 +58,12 @@ export const citizensQueryKeys = {
     [
       ...citizensQueryKeys.all,
       "settlement-aggregate-stats",
+      settlementId,
+    ] as const,
+  settlementCultureReligionComposition: (settlementId: string) =>
+    [
+      ...citizensQueryKeys.all,
+      "settlement-culture-religion-composition",
       settlementId,
     ] as const,
   settlementConstructionProjectCounts: (settlementId: string) =>

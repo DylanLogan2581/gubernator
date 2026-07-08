@@ -17,6 +17,7 @@ export { ManualReadinessControl } from "./components/ManualReadinessControl";
 export { ReadOnlyReadinessIndicator } from "./components/ReadinessStateBadge";
 export { SettlementCoordinatesSection } from "./components/SettlementDetailPage/CoordinatesSection";
 export { SettlementDeleteSection } from "./components/SettlementDetailPage/DeleteSection";
+export { SettlementDemographicsCard } from "./components/SettlementDetailPage/SettlementDemographicsCard";
 export { SettlementDetailsSection } from "./components/SettlementDetailPage/DetailsSection";
 export { SettlementDetailPage } from "./components/SettlementDetailPage";
 export { SettlementForecastWarningsCard } from "./components/SettlementDetailPage/ForecastWarningsCard";

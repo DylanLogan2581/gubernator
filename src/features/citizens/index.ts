@@ -80,6 +80,8 @@ export {
   citizensByIdsQueryOptions,
   citizensInSettlementQueryOptions,
   citizensInWorldQueryOptions,
+  cultureReligionCompositionForNationQueryOptions,
+  cultureReligionCompositionForSettlementQueryOptions,
   playerCharactersInNationQueryOptions,
   toCitizen,
   unpairedAliveCitizensInWorldQueryOptions,
@@ -196,5 +198,6 @@ export type {
   CitizenStatusBreakdown,
   CitizenType,
   CitizenTypeBreakdown,
+  CultureReligionComposition,
 } from "./types/citizenTypes";
 export type { Partnership, PartnershipStatus } from "@/features/partnerships";

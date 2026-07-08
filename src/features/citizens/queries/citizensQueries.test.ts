@@ -6,6 +6,7 @@ import type { GubernatorSupabaseClient } from "@/lib/supabase";
 import {
   citizenAggregateStatsForSettlementQueryOptions,
   citizensByIdsQueryOptions,
+  cultureReligionCompositionForSettlementQueryOptions,
 } from "./citizensQueries";
 
 function createQueryClient(): QueryClient {
@@ -129,5 +130,34 @@ describe("citizenAggregateStatsForSettlementQueryOptions", () => {
     expect(stats.assignmentTypeBreakdown.unassigned).toBe(1);
     expect(stats.unassignedNpcCount).toBe(1);
     expect(stats.unassignedPcCount).toBe(0);
+  });
+});
+
+describe("cultureReligionCompositionForSettlementQueryOptions", () => {
+  it("groups alive citizens by culture and religion, bucketing nulls as unassigned", async () => {
+    const { client, builder } = createClient([
+      { culture_id: "culture-1", religion_id: "religion-1" },
+      { culture_id: "culture-1", religion_id: null },
+      { culture_id: null, religion_id: "religion-1" },
+    ]);
+
+    const queryClient = createQueryClient();
+    const composition = await queryClient.fetchQuery(
+      cultureReligionCompositionForSettlementQueryOptions(
+        "settlement-1",
+        client,
+      ),
+    );
+
+    expect(composition.byCultureId).toEqual({
+      "culture-1": 2,
+      unassigned: 1,
+    });
+    expect(composition.byReligionId).toEqual({
+      "religion-1": 2,
+      unassigned: 1,
+    });
+    expect(builder.eq).toHaveBeenCalledWith("settlement_id", "settlement-1");
+    expect(builder.eq).toHaveBeenCalledWith("status", "alive");
   });
 });

@@ -6,6 +6,8 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import { UNASSIGNED_CULTURE_RELIGION_KEY } from "../types/citizenTypes";
+
 import { citizensQueryKeys } from "./citizensQueryKeys";
 
 import type {
@@ -16,6 +18,7 @@ import type {
   CitizenRoleType,
   CitizenStatus,
   CitizenType,
+  CultureReligionComposition,
   DeathCauseCategory,
 } from "../types/citizenTypes";
 
@@ -35,6 +38,12 @@ type CitizenSettlementAggregateQueryKey = ReturnType<
 >;
 type CitizenNationAggregateQueryKey = ReturnType<
   typeof citizensQueryKeys.nationAggregateStats
+>;
+type CitizenSettlementCultureReligionCompositionQueryKey = ReturnType<
+  typeof citizensQueryKeys.settlementCultureReligionComposition
+>;
+type CitizenNationCultureReligionCompositionQueryKey = ReturnType<
+  typeof citizensQueryKeys.nationCultureReligionComposition
 >;
 
 type CitizenListQueryOptions = UseQueryOptions<
@@ -85,6 +94,18 @@ type CitizenNationAggregateQueryOptions = UseQueryOptions<
   AuthUiError,
   CitizenAggregateStats,
   CitizenNationAggregateQueryKey
+>;
+type CitizenSettlementCultureReligionCompositionQueryOptions = UseQueryOptions<
+  CultureReligionComposition,
+  AuthUiError,
+  CultureReligionComposition,
+  CitizenSettlementCultureReligionCompositionQueryKey
+>;
+type CitizenNationCultureReligionCompositionQueryOptions = UseQueryOptions<
+  CultureReligionComposition,
+  AuthUiError,
+  CultureReligionComposition,
+  CitizenNationCultureReligionCompositionQueryKey
 >;
 
 type CitizenRow = {
@@ -138,6 +159,13 @@ type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
 
 const CITIZEN_SELECT =
   "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,culture_id,religion_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
+
+type CitizenCultureReligionRow = {
+  readonly culture_id: string | null;
+  readonly religion_id: string | null;
+};
+
+const CITIZEN_CULTURE_RELIGION_SELECT = "culture_id,religion_id";
 
 const CITIZEN_AGGREGATE_SELECT =
   "id,citizen_type,status,citizen_assignments(assignment_type)";
@@ -291,6 +319,30 @@ export function citizenAggregateStatsForNationQueryOptions(
   return queryOptions({
     queryFn: () => getCitizenAggregateStatsForNation(client, nationId),
     queryKey: citizensQueryKeys.nationAggregateStats(nationId),
+  });
+}
+
+export function cultureReligionCompositionForSettlementQueryOptions(
+  settlementId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CitizenSettlementCultureReligionCompositionQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () =>
+      getCultureReligionCompositionForSettlement(client, settlementId),
+    queryKey:
+      citizensQueryKeys.settlementCultureReligionComposition(settlementId),
+  });
+}
+
+export function cultureReligionCompositionForNationQueryOptions(
+  nationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): CitizenNationCultureReligionCompositionQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getCultureReligionCompositionForNation(client, nationId),
+    queryKey: citizensQueryKeys.nationCultureReligionComposition(nationId),
   });
 }
 
@@ -488,6 +540,76 @@ async function getCitizenAggregateStatsForNation(
   }
 
   return computeAggregate(data);
+}
+
+async function getCultureReligionCompositionForSettlement(
+  client: GubernatorSupabaseClient,
+  settlementId: string,
+): Promise<CultureReligionComposition> {
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_CULTURE_RELIGION_SELECT)
+    .eq("settlement_id", settlementId)
+    .eq("status", "alive")
+    .returns<CitizenCultureReligionRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return computeCultureReligionComposition(data);
+}
+
+async function getCultureReligionCompositionForNation(
+  client: GubernatorSupabaseClient,
+  nationId: string,
+): Promise<CultureReligionComposition> {
+  const { data: settlements, error: settlementsError } = await client
+    .from("settlements")
+    .select("id")
+    .eq("nation_id", nationId)
+    .returns<Array<{ readonly id: string }>>();
+
+  if (settlementsError !== null) {
+    throw normalizeSupabaseError(settlementsError);
+  }
+
+  const settlementIds = settlements.map(
+    (row: { readonly id: string }) => row.id,
+  );
+
+  if (settlementIds.length === 0) {
+    return { byCultureId: {}, byReligionId: {} };
+  }
+
+  const { data, error } = await client
+    .from("citizens")
+    .select(CITIZEN_CULTURE_RELIGION_SELECT)
+    .in("settlement_id", settlementIds)
+    .eq("status", "alive")
+    .returns<CitizenCultureReligionRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return computeCultureReligionComposition(data);
+}
+
+function computeCultureReligionComposition(
+  rows: readonly CitizenCultureReligionRow[],
+): CultureReligionComposition {
+  const byCultureId: Record<string, number> = {};
+  const byReligionId: Record<string, number> = {};
+
+  for (const row of rows) {
+    const cultureKey = row.culture_id ?? UNASSIGNED_CULTURE_RELIGION_KEY;
+    byCultureId[cultureKey] = (byCultureId[cultureKey] ?? 0) + 1;
+    const religionKey = row.religion_id ?? UNASSIGNED_CULTURE_RELIGION_KEY;
+    byReligionId[religionKey] = (byReligionId[religionKey] ?? 0) + 1;
+  }
+
+  return { byCultureId, byReligionId };
 }
 
 function computeAggregate(

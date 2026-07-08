@@ -66,3 +66,12 @@ export type CitizenAggregateStats = {
   readonly unassignedNpcCount: number;
   readonly unassignedPcCount: number;
 };
+
+// Sentinel key for citizens with no culture_id / religion_id assigned —
+// matches neither a valid uuid nor any real culture/religion id.
+export const UNASSIGNED_CULTURE_RELIGION_KEY = "unassigned";
+
+export type CultureReligionComposition = {
+  readonly byCultureId: Readonly<Record<string, number>>;
+  readonly byReligionId: Readonly<Record<string, number>>;
+};
