@@ -1353,6 +1353,79 @@ export type Database = {
           },
         ];
       };
+      nation_currencies: {
+        Row: {
+          backing_ratio: number | null;
+          backing_resource_id: string | null;
+          confidence: number;
+          created_at: string;
+          currency_type: string;
+          established_turn_number: number;
+          id: string;
+          money_supply: number;
+          name: string;
+          nation_id: string;
+          reserve_quantity: number;
+          symbol: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          backing_ratio?: number | null;
+          backing_resource_id?: string | null;
+          confidence?: number;
+          created_at?: string;
+          currency_type: string;
+          established_turn_number: number;
+          id?: string;
+          money_supply?: number;
+          name: string;
+          nation_id: string;
+          reserve_quantity?: number;
+          symbol: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          backing_ratio?: number | null;
+          backing_resource_id?: string | null;
+          confidence?: number;
+          created_at?: string;
+          currency_type?: string;
+          established_turn_number?: number;
+          id?: string;
+          money_supply?: number;
+          name?: string;
+          nation_id?: string;
+          reserve_quantity?: number;
+          symbol?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_currencies_backing_resource_id_fkey";
+            columns: ["backing_resource_id"];
+            isOneToOne: false;
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_currencies_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: true;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_currencies_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_discoveries: {
         Row: {
           created_at: string;
@@ -1868,6 +1941,7 @@ export type Database = {
           nameset_id: string | null;
           tax_rate: number;
           trade_policy: string;
+          treasury_currency: number;
           updated_at: string;
           world_id: string;
         };
@@ -1883,6 +1957,7 @@ export type Database = {
           nameset_id?: string | null;
           tax_rate?: number;
           trade_policy?: string;
+          treasury_currency?: number;
           updated_at?: string;
           world_id: string;
         };
@@ -1898,6 +1973,7 @@ export type Database = {
           nameset_id?: string | null;
           tax_rate?: number;
           trade_policy?: string;
+          treasury_currency?: number;
           updated_at?: string;
           world_id?: string;
         };
@@ -3948,6 +4024,10 @@ export type Database = {
         Args: { p_world_id: string };
         Returns: boolean;
       };
+      current_user_holds_nation_office: {
+        Args: { p_nation_id: string; p_office_type: string };
+        Returns: boolean;
+      };
       current_user_manages_nation: {
         Args: { p_nation_id: string };
         Returns: boolean;
@@ -4048,6 +4128,38 @@ export type Database = {
           to: "partnerships";
           isOneToOne: false;
           isSetofReturn: true;
+        };
+      };
+      establish_nation_currency: {
+        Args: {
+          p_backing_ratio?: number;
+          p_backing_resource_id?: string;
+          p_name: string;
+          p_nation_id: string;
+          p_symbol: string;
+          p_type: string;
+        };
+        Returns: {
+          backing_ratio: number | null;
+          backing_resource_id: string | null;
+          confidence: number;
+          created_at: string;
+          currency_type: string;
+          established_turn_number: number;
+          id: string;
+          money_supply: number;
+          name: string;
+          nation_id: string;
+          reserve_quantity: number;
+          symbol: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_currencies";
+          isOneToOne: true;
+          isSetofReturn: false;
         };
       };
       fail:
@@ -5050,6 +5162,7 @@ export type Database = {
           nameset_id: string | null;
           tax_rate: number;
           trade_policy: string;
+          treasury_currency: number;
           updated_at: string;
           world_id: string;
         }[];
@@ -5074,6 +5187,7 @@ export type Database = {
           nameset_id: string | null;
           tax_rate: number;
           trade_policy: string;
+          treasury_currency: number;
           updated_at: string;
           world_id: string;
         }[];
@@ -5106,6 +5220,7 @@ export type Database = {
           nameset_id: string | null;
           tax_rate: number;
           trade_policy: string;
+          treasury_currency: number;
           updated_at: string;
           world_id: string;
         }[];
@@ -5130,6 +5245,7 @@ export type Database = {
           nameset_id: string | null;
           tax_rate: number;
           trade_policy: string;
+          treasury_currency: number;
           updated_at: string;
           world_id: string;
         }[];
