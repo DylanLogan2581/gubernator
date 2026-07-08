@@ -106,6 +106,7 @@ function makeStateResponses(): Record<
     "/rest/v1/partnerships": { body: [], status: 200 },
     "/rest/v1/nations": { body: [], status: 200 },
     "/rest/v1/nation_offices": { body: [], status: 200 },
+    "/rest/v1/nation_relationships": { body: [], status: 200 },
   };
 }
 

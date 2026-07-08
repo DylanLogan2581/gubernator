@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (24);
+  plan (26);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -994,6 +994,106 @@ set
   trade_policy = 'free'
 where
   id = 'af300000-0000-0000-0000-000000000002';
+
+-- ===========================================================================
+-- DIPLOMACY (#1088)
+-- At_war arising AFTER a route is proposed (but before the recipient side
+-- approves) still blocks that approval.
+-- ===========================================================================
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000008',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'approved',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000008',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    5
+  );
+
+insert into
+  public.nation_relationships (from_nation_id, to_nation_id, current_stance)
+values
+  (
+    'af300000-0000-0000-0000-000000000001',
+    'af300000-0000-0000-0000-000000000002',
+    'at_war'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000008',
+      'destination',
+      'af600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'P0001',
+    null,
+    'at_war arising after proposal blocks the pending side''s approval'
+  );
+
+reset role;
+
+update public.nation_relationships
+set
+  current_stance = 'neutral'
+where
+  from_nation_id = 'af300000-0000-0000-0000-000000000001'
+  and to_nation_id = 'af300000-0000-0000-0000-000000000002';
+
+-- Peace restored: the same approval now succeeds.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000008',
+      'destination',
+      'af600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'peace restored allows the previously-blocked approval to succeed'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- SECURITY DEFINER check

@@ -13,6 +13,7 @@ afterEach(() => {
 const WORLD_ID = "00000000-0000-0000-0000-000000000001";
 const SETTLEMENT_ID = "00000000-0000-0000-0000-000000000002";
 const NATION_ID = "00000000-0000-0000-0000-000000000003";
+const OTHER_NATION_ID = "00000000-0000-0000-0000-000000000004";
 const FOOD_ID = "00000000-0000-0000-0000-000000000010";
 const WATER_ID = "00000000-0000-0000-0000-000000000011";
 const JOB_ID = "00000000-0000-0000-0000-000000000020";
@@ -410,6 +411,16 @@ function makeAllSuccessResponses(): Record<
       body: [],
       status: 200,
     },
+    "/rest/v1/nation_relationships": {
+      body: [
+        {
+          current_stance: "at_war",
+          from_nation_id: NATION_ID,
+          to_nation_id: OTHER_NATION_ID,
+        },
+      ],
+      status: 200,
+    },
   };
 }
 
@@ -605,6 +616,13 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(event.effectType).toBe("resource_grant");
     expect(event.status).toBe("pending");
     expect(event.activateOnTransitionAfterTurnNumber).toBe(4);
+
+    // Nation relationships (#1088)
+    expect(input.nationRelationships).toHaveLength(1);
+    const relationship = input.nationRelationships[0];
+    expect(relationship.fromNationId).toBe(NATION_ID);
+    expect(relationship.toNationId).toBe(OTHER_NATION_ID);
+    expect(relationship.currentStance).toBe("at_war");
   });
 
   it("returns a state_unavailable error when auth header is missing", async () => {
@@ -791,6 +809,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/partnerships": { body: [], status: 200 },
       "/rest/v1/nations": { body: [], status: 200 },
       "/rest/v1/nation_offices": { body: [], status: 200 },
+      "/rest/v1/nation_relationships": { body: [], status: 200 },
     });
 
     const result = await resolveSupabaseEndTurnSimulationInput(
@@ -812,6 +831,7 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
     expect(input.events).toHaveLength(0);
     expect(input.managedPopulations).toHaveLength(0);
     expect(input.nationOffices).toHaveLength(0);
+    expect(input.nationRelationships).toHaveLength(0);
     expect(input.partnerships).toHaveLength(0);
     expect(input.tradeRoutes).toHaveLength(0);
   });

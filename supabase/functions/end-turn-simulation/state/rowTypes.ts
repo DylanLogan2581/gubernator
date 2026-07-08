@@ -192,6 +192,12 @@ export type SupabaseNationOfficeRow = {
   readonly citizen_id: string;
 };
 
+export type SupabaseNationRelationshipRow = {
+  readonly current_stance: string;
+  readonly from_nation_id: string;
+  readonly to_nation_id: string;
+};
+
 export type SupabaseAssignmentRow = {
   readonly citizen_id: string;
   readonly assignment_type: string;
@@ -489,6 +495,17 @@ export function isNationRow(v: unknown): v is SupabaseNationRow {
 
 export function isNationOfficeRow(v: unknown): v is SupabaseNationOfficeRow {
   return isRecord(v) && typeof v.citizen_id === "string";
+}
+
+export function isNationRelationshipRow(
+  v: unknown,
+): v is SupabaseNationRelationshipRow {
+  return (
+    isRecord(v) &&
+    typeof v.current_stance === "string" &&
+    typeof v.from_nation_id === "string" &&
+    typeof v.to_nation_id === "string"
+  );
 }
 
 export function isAssignmentRow(v: unknown): v is SupabaseAssignmentRow {

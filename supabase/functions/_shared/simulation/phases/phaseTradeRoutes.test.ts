@@ -12,6 +12,7 @@ import type {
   SimCitizenAssignment,
   SimJob,
   SimNationOffice,
+  SimNationRelationship,
   SimSettlement,
   SimStockpile,
   SimTradeRoute,
@@ -103,6 +104,7 @@ function buildContext(params: {
   assignments?: SimCitizenAssignment[];
   jobs?: SimJob[];
   nationOffices?: SimNationOffice[];
+  nationRelationships?: SimNationRelationship[];
   pendingStockpiles?: Record<string, number>;
   settlements?: SimSettlement[];
   stockpiles?: SimStockpile[];
@@ -112,6 +114,7 @@ function buildContext(params: {
     citizenAssignments: params.assignments ?? [],
     jobs: params.jobs ?? [],
     nationOffices: params.nationOffices ?? [],
+    nationRelationships: params.nationRelationships ?? [],
     settlements: params.settlements ?? DEFAULT_SETTLEMENTS,
     stockpiles: params.stockpiles ?? [],
     tradeRoutes: params.tradeRoutes ?? [],
@@ -425,6 +428,180 @@ describe("phaseTradeRoutes — resume behavior", () => {
       scope: "settlement",
       settlementId: "origin",
     });
+  });
+});
+
+describe("phaseTradeRoutes — diplomacy (#1088)", () => {
+  const WARRING_SETTLEMENTS: SimSettlement[] = [
+    makeSettlement({ id: "origin", name: "Originburg", nationId: "nation-a" }),
+    makeSettlement({ id: "dest", name: "Destville", nationId: "nation-b" }),
+  ];
+
+  it("pauses an active international route with reason nations_at_war when either direction is at_war", () => {
+    const job = makeTraderJob({ id: "trader-job" });
+    const route = makeRoute({ id: "r1" });
+    const ctx = buildContext({
+      assignments: makeTraderAssignments("r1", "trader-job"),
+      jobs: [job],
+      nationRelationships: [
+        { currentStance: "at_war", fromNationId: "nation-a", toNationId: "nation-b" },
+      ],
+      pendingStockpiles: { "dest:wood": 0, "origin:wood": 100 },
+      settlements: WARRING_SETTLEMENTS,
+      stockpiles: [
+        makeStockpile({ resourceId: "wood", settlementId: "origin" }),
+        makeStockpile({ resourceId: "wood", settlementId: "dest" }),
+      ],
+      tradeRoutes: [route],
+    });
+
+    const result = phaseTradeRoutes(ctx);
+
+    expect(result.tradeRouteOutcomes).toEqual([
+      {
+        delivered: false,
+        pauseReason: "nations_at_war",
+        quantityTransferred: 0,
+        tradeRouteId: "r1",
+      },
+    ]);
+    expect(result.stockpileDeltas).toEqual([]);
+    expect(result.notifications).toHaveLength(1);
+    expect(result.notifications[0]).toMatchObject({
+      notificationType: "trade_route.paused",
+      scope: "settlement",
+      settlementId: "origin",
+    });
+  });
+
+  it("pauses when only the reciprocal direction's row reads at_war", () => {
+    const job = makeTraderJob({ id: "trader-job" });
+    const route = makeRoute({ id: "r1" });
+    const ctx = buildContext({
+      assignments: makeTraderAssignments("r1", "trader-job"),
+      jobs: [job],
+      // Row is keyed nation-b -> nation-a, not nation-a -> nation-b.
+      nationRelationships: [
+        { currentStance: "at_war", fromNationId: "nation-b", toNationId: "nation-a" },
+      ],
+      pendingStockpiles: { "dest:wood": 0, "origin:wood": 100 },
+      settlements: WARRING_SETTLEMENTS,
+      stockpiles: [
+        makeStockpile({ resourceId: "wood", settlementId: "origin" }),
+        makeStockpile({ resourceId: "wood", settlementId: "dest" }),
+      ],
+      tradeRoutes: [route],
+    });
+
+    const result = phaseTradeRoutes(ctx);
+
+    expect(result.tradeRouteOutcomes[0]).toMatchObject({
+      delivered: false,
+      pauseReason: "nations_at_war",
+    });
+  });
+
+  it("does not re-notify while a war-paused route stays at war", () => {
+    const job = makeTraderJob({ id: "trader-job" });
+    const route = makeRoute({ id: "r1", status: "paused" });
+    const ctx = buildContext({
+      assignments: makeTraderAssignments("r1", "trader-job"),
+      jobs: [job],
+      nationRelationships: [
+        { currentStance: "at_war", fromNationId: "nation-a", toNationId: "nation-b" },
+      ],
+      pendingStockpiles: { "dest:wood": 0, "origin:wood": 100 },
+      settlements: WARRING_SETTLEMENTS,
+      stockpiles: [
+        makeStockpile({ resourceId: "wood", settlementId: "origin" }),
+        makeStockpile({ resourceId: "wood", settlementId: "dest" }),
+      ],
+      tradeRoutes: [route],
+    });
+
+    const result = phaseTradeRoutes(ctx);
+
+    expect(result.tradeRouteOutcomes[0]?.pauseReason).toBe("nations_at_war");
+    expect(result.notifications).toEqual([]);
+  });
+
+  it("auto-resumes a war-paused route once peace is restored (subject to normal checks)", () => {
+    const job = makeTraderJob({ id: "trader-job" });
+    const route = makeRoute({ id: "r1", status: "paused" });
+    const ctx = buildContext({
+      assignments: makeTraderAssignments("r1", "trader-job"),
+      jobs: [job],
+      // No at_war relationship rows — peace has been restored.
+      nationRelationships: [],
+      pendingStockpiles: { "dest:wood": 0, "origin:wood": 100 },
+      settlements: WARRING_SETTLEMENTS,
+      stockpiles: [
+        makeStockpile({ resourceId: "wood", settlementId: "origin" }),
+        makeStockpile({ resourceId: "wood", settlementId: "dest" }),
+      ],
+      tradeRoutes: [route],
+    });
+
+    const result = phaseTradeRoutes(ctx);
+
+    expect(result.tradeRouteOutcomes).toEqual([
+      {
+        delivered: true,
+        pauseReason: null,
+        quantityTransferred: 10,
+        tradeRouteId: "r1",
+      },
+    ]);
+    expect(result.logs[0]?.category).toBe("trade_route.resumed");
+  });
+
+  it("does not pause an internal (same-nation) route even if hostile/at_war rows exist elsewhere", () => {
+    const job = makeTraderJob({ id: "trader-job" });
+    const route = makeRoute({ id: "r1" });
+    const ctx = buildContext({
+      assignments: makeTraderAssignments("r1", "trader-job"),
+      jobs: [job],
+      nationRelationships: [
+        { currentStance: "at_war", fromNationId: "nation-a", toNationId: "nation-c" },
+      ],
+      pendingStockpiles: { "dest:wood": 0, "origin:wood": 100 },
+      settlements: [
+        makeSettlement({ id: "origin", nationId: "nation-a" }),
+        makeSettlement({ id: "dest", nationId: "nation-a" }),
+      ],
+      stockpiles: [
+        makeStockpile({ resourceId: "wood", settlementId: "origin" }),
+        makeStockpile({ resourceId: "wood", settlementId: "dest" }),
+      ],
+      tradeRoutes: [route],
+    });
+
+    const result = phaseTradeRoutes(ctx);
+
+    expect(result.tradeRouteOutcomes[0]).toMatchObject({ delivered: true, pauseReason: null });
+  });
+
+  it("does not pause on hostile alone (only at_war pauses trade)", () => {
+    const job = makeTraderJob({ id: "trader-job" });
+    const route = makeRoute({ id: "r1" });
+    const ctx = buildContext({
+      assignments: makeTraderAssignments("r1", "trader-job"),
+      jobs: [job],
+      nationRelationships: [
+        { currentStance: "hostile", fromNationId: "nation-a", toNationId: "nation-b" },
+      ],
+      pendingStockpiles: { "dest:wood": 0, "origin:wood": 100 },
+      settlements: WARRING_SETTLEMENTS,
+      stockpiles: [
+        makeStockpile({ resourceId: "wood", settlementId: "origin" }),
+        makeStockpile({ resourceId: "wood", settlementId: "dest" }),
+      ],
+      tradeRoutes: [route],
+    });
+
+    const result = phaseTradeRoutes(ctx);
+
+    expect(result.tradeRouteOutcomes[0]).toMatchObject({ delivered: true, pauseReason: null });
   });
 });
 

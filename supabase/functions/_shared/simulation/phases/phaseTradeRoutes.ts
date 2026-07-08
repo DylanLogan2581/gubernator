@@ -22,12 +22,31 @@ export type PhaseTradeRoutesOutput = {
 export function phaseTradeRoutes(
   context: SimulationContext,
 ): PhaseTradeRoutesOutput {
-  const { citizenAssignments, jobs, nationOffices, settlements, stockpiles, tradeRoutes } =
-    context.input;
+  const {
+    citizenAssignments,
+    jobs,
+    nationOffices,
+    nationRelationships,
+    settlements,
+    stockpiles,
+    tradeRoutes,
+  } = context.input;
 
   const jobById = new Map(jobs.map((j) => [j.id, j]));
   const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
+
+  // Nation pairs currently at war, keyed both directions (`${a}:${b}`) so a
+  // single Set.has lookup covers either direction regardless of which side's
+  // row is being read. hostile/at_war are bilaterally mirrored
+  // (20260812000000), so both directions are already present for a declared
+  // war, but keying both ways here is cheap and defensive.
+  const atWarNationPairs = new Set<string>();
+  for (const relationship of nationRelationships) {
+    if (relationship.currentStance !== "at_war") continue;
+    atWarNationPairs.add(`${relationship.fromNationId}:${relationship.toNationId}`);
+    atWarNationPairs.add(`${relationship.toNationId}:${relationship.fromNationId}`);
+  }
 
   // Start quantities from running post-prior-phase totals; caps are static.
   const stockpileQty = new Map(context.shared.pendingStockpiles);
@@ -105,6 +124,23 @@ export function phaseTradeRoutes(
         });
       }
     };
+
+    // Diplomacy gate (#1088): a route between nations currently at war is
+    // paused before any capacity/stock checks run. Internal (same-nation)
+    // routes are never affected. Resume is automatic — once neither
+    // direction reads at_war, this check is skipped and the route falls
+    // through to the normal checks below.
+    const originNationId = settlementById.get(originSettlementId)?.nationId;
+    const destinationNationId = settlementById.get(destinationSettlementId)?.nationId;
+    if (
+      originNationId !== undefined &&
+      destinationNationId !== undefined &&
+      originNationId !== destinationNationId &&
+      atWarNationPairs.has(`${originNationId}:${destinationNationId}`)
+    ) {
+      pause("nations_at_war", wasPaused);
+      continue;
+    }
 
     // Check trader capacity at origin.
     const originCapacity = traderCapacity.get(`${id}:origin`) ?? 0;

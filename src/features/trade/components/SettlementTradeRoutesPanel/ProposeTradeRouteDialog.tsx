@@ -14,7 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { nationsListQueryOptions } from "@/features/nations";
+import {
+  nationRelationshipPairQueryOptions,
+  nationsListQueryOptions,
+} from "@/features/nations";
 import { activeResourcesByWorldQueryOptions } from "@/features/resources";
 import { settlementsByWorldQueryOptions } from "@/features/settlements";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
@@ -23,7 +26,10 @@ import { generateLocalId } from "@/lib/uid";
 
 import { proposeTradeRouteMutationOptions } from "../../mutations/proposeTradeRouteMutations";
 
-import { describeForeignTradeBlock } from "./TradeRouteHelpers";
+import {
+  describeForeignTradeBlock,
+  describeStanceTradeBlock,
+} from "./TradeRouteHelpers";
 
 type LegDraft = {
   direction: "send" | "receive";
@@ -105,15 +111,34 @@ export function ProposeTradeRouteDialog({
     destinationSettlement !== undefined &&
     originSettlement !== undefined &&
     destinationSettlement.nationId !== originSettlement.nationId;
+
+  // Diplomacy consequences (#1088): preview the propose_trade_route stance
+  // gate (hostile/at_war blocks) alongside the trade policy gate above.
+  const relationshipPairQuery = useQuery({
+    ...nationRelationshipPairQueryOptions(
+      originNation?.id ?? "",
+      destinationNation?.id ?? "",
+    ),
+    enabled:
+      isInternational &&
+      originNation !== undefined &&
+      destinationNation !== undefined,
+  });
+
   const foreignTradeBlockReason =
     isInternational &&
     originNation !== undefined &&
     destinationNation !== undefined
-      ? describeForeignTradeBlock({
+      ? (describeForeignTradeBlock({
           canManageOriginNation: canManageNation,
           destinationNation,
           originNation,
-        })
+        }) ??
+        describeStanceTradeBlock({
+          destinationNation,
+          originNation,
+          stance: relationshipPairQuery.data?.currentStance ?? null,
+        }))
       : null;
 
   function addLeg(): void {

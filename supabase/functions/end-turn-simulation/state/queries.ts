@@ -455,6 +455,26 @@ export function fetchNationOffices(
   });
 }
 
+export function fetchNationRelationships(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  // Scoped via the from_nation_id side's world; the same-world check trigger
+  // (20260528000002) guarantees to_nation_id always agrees, and hostile/
+  // at_war rows are bilaterally mirrored (20260812000000) so both directions
+  // are always present as their own from_nation_id row.
+  return fetchRows({
+    ctx,
+    table: "nation_relationships",
+    params: {
+      "nations.world_id": `eq.${worldId}`,
+      order: "id.asc",
+      select:
+        "from_nation_id,to_nation_id,current_stance,nations!nation_relationships_from_nation_id_fkey!inner(world_id)",
+    },
+  });
+}
+
 export function fetchEvents(
   ctx: FetchContext,
   worldId: string,

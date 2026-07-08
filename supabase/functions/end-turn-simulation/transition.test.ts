@@ -74,6 +74,7 @@ function makeBaseInput(
     managedPopulationTypes: [],
     managedPopulations: [],
     nationOffices: [],
+    nationRelationships: [],
     nations: [],
     npcFlavorConfig: null,
     partnerships: [],

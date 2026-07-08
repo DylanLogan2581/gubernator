@@ -86,11 +86,13 @@ function createClient({
   settlementRows = [] as readonly unknown[],
   resourceRows = [] as readonly unknown[],
   nationRows = [] as readonly unknown[],
+  nationRelationshipRow = null as Record<string, unknown> | null,
   rpcMock = vi.fn(),
 }: {
   readonly settlementRows?: readonly unknown[];
   readonly resourceRows?: readonly unknown[];
   readonly nationRows?: readonly unknown[];
+  readonly nationRelationshipRow?: Record<string, unknown> | null;
   readonly rpcMock?: ReturnType<typeof vi.fn>;
 } = {}): unknown {
   const settlementsBuilder: Record<string, unknown> = {
@@ -108,6 +110,12 @@ function createClient({
     order: vi.fn(() => nationsBuilder),
     returns: vi.fn().mockResolvedValue({ data: nationRows, error: null }),
   };
+  const nationRelationshipsBuilder: Record<string, unknown> = {
+    eq: vi.fn(() => nationRelationshipsBuilder),
+    maybeSingle: vi
+      .fn()
+      .mockResolvedValue({ data: nationRelationshipRow, error: null }),
+  };
   return {
     from: vi.fn((table: string) => {
       if (table === "settlements")
@@ -115,6 +123,8 @@ function createClient({
       if (table === "resources")
         return { select: vi.fn(() => resourcesBuilder) };
       if (table === "nations") return { select: vi.fn(() => nationsBuilder) };
+      if (table === "nation_relationships")
+        return { select: vi.fn(() => nationRelationshipsBuilder) };
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: rpcMock,
@@ -400,5 +410,55 @@ describe("ProposeTradeRouteDialog", () => {
         within(dialog).getByRole("button", { name: "Propose" }),
       ).toBeEnabled();
     });
+  });
+
+  it("diplomacy (#1088) — blocks and explains an at_war destination nation", async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      client: createClient({
+        settlementRows: [OWN_SETTLEMENT_ROW, FAR_SETTLEMENT_ROW],
+        resourceRows: [GRAIN_RESOURCE_ROW],
+        nationRows: [
+          createNationRow({
+            id: OWN_NATION_ID,
+            name: "Home Nation",
+            trade_policy: "free",
+          }),
+          createNationRow({
+            id: FAR_NATION_ID,
+            name: "Far Nation",
+            trade_policy: "free",
+          }),
+        ],
+        nationRelationshipRow: {
+          created_at: "2026-06-01T00:00:00.000Z",
+          current_stance: "at_war",
+          from_nation_id: OWN_NATION_ID,
+          id: "00000000-0000-0000-0000-000000000200",
+          pending_changed_by_citizen_id: null,
+          pending_stance: null,
+          pending_status: null,
+          to_nation_id: FAR_NATION_ID,
+          updated_at: "2026-06-01T00:00:00.000Z",
+        },
+      }),
+    });
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Propose trade route",
+    });
+    const destSelect = await within(dialog).findByRole("combobox", {
+      name: "Destination settlement",
+    });
+    await user.selectOptions(destSelect, DEST_SETTLEMENT_ID);
+
+    expect(
+      await within(dialog).findByText(
+        "Home Nation and Far Nation are at war — trade routes cannot be proposed.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Propose" }),
+    ).toBeDisabled();
   });
 });

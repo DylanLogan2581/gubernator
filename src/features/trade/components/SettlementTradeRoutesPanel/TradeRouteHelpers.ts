@@ -1,4 +1,4 @@
-import type { Nation } from "@/features/nations";
+import type { Nation, NationRelationshipStance } from "@/features/nations";
 
 import type {
   TradeRoute,
@@ -27,6 +27,7 @@ export const PAUSE_REASON_LABELS: Record<string, string> = {
   insufficient_origin_stock: "Insufficient stock at origin",
   insufficient_trader_destination: "Insufficient traders at destination",
   insufficient_trader_origin: "Insufficient traders at origin",
+  nations_at_war: "Nations at war",
 };
 
 // Only the recipient side requires approval (the proposer's side is auto-approved
@@ -76,6 +77,29 @@ export function describeForeignTradeBlock({
     !canManageOriginNation
   ) {
     return `${originNation.name}'s trade is state-controlled — only a nation manager can propose external trade routes.`;
+  }
+  return null;
+}
+
+// Diplomacy consequences (#1088): a client-side preview of the
+// propose_trade_route stance gate, so the propose dialog can disable
+// submission and explain why before round-tripping to the RPC. Only used
+// for international pairs — callers should not invoke this for same-nation
+// routes.
+export function describeStanceTradeBlock({
+  destinationNation,
+  originNation,
+  stance,
+}: {
+  readonly destinationNation: Nation;
+  readonly originNation: Nation;
+  readonly stance: NationRelationshipStance | null;
+}): string | null {
+  if (stance === "at_war") {
+    return `${originNation.name} and ${destinationNation.name} are at war — trade routes cannot be proposed.`;
+  }
+  if (stance === "hostile") {
+    return `${originNation.name} and ${destinationNation.name} are hostile toward each other — trade routes cannot be proposed.`;
   }
   return null;
 }

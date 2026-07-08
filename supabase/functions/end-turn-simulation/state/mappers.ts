@@ -13,6 +13,7 @@ import type {
   SupabaseManagedPopRow,
   SupabaseManagedPopTypeRow,
   SupabaseNationOfficeRow,
+  SupabaseNationRelationshipRow,
   SupabaseNationRow,
   SupabasePartnershipRow,
   SupabaseProjectRow,
@@ -39,6 +40,7 @@ import type {
   SimManagedPopulationType,
   SimNation,
   SimNationOffice,
+  SimNationRelationship,
   SimPartnership,
   SimPopulationResourceEntry,
   SimSettlement,
@@ -307,6 +309,16 @@ export function toSimNation(row: SupabaseNationRow): SimNation {
 export function toSimNationOffice(row: SupabaseNationOfficeRow): SimNationOffice {
   return {
     citizenId: row.citizen_id,
+  };
+}
+
+export function toSimNationRelationship(
+  row: SupabaseNationRelationshipRow,
+): SimNationRelationship {
+  return {
+    currentStance: row.current_stance,
+    fromNationId: row.from_nation_id,
+    toNationId: row.to_nation_id,
   };
 }
 

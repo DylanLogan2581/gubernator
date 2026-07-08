@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (22);
+  plan (25);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -789,6 +789,115 @@ set
   trade_policy = 'free'
 where
   id = 'fc300000-0000-0000-0000-000000000001';
+
+-- ===========================================================================
+-- DIPLOMACY (#1088)
+-- ===========================================================================
+-- HOSTILE: hostile stance between the two nations blocks international
+-- propose, even for a manager who would otherwise have full authority.
+insert into
+  public.nation_relationships (from_nation_id, to_nation_id, current_stance)
+values
+  (
+    'fc300000-0000-0000-0000-000000000001',
+    'fc300000-0000-0000-0000-000000000002',
+    'hostile'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'P0001',
+    null,
+    'hostile stance blocks international propose even for a manager'
+  );
+
+reset role;
+
+-- AT_WAR: escalating to at_war blocks propose too.
+update public.nation_relationships
+set
+  current_stance = 'at_war'
+where
+  from_nation_id = 'fc300000-0000-0000-0000-000000000001'
+  and to_nation_id = 'fc300000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'P0001',
+    null,
+    'at_war stance blocks international propose'
+  );
+
+reset role;
+
+-- PEACE: clearing the stance back to neutral restores propose.
+update public.nation_relationships
+set
+  current_stance = 'neutral'
+where
+  from_nation_id = 'fc300000-0000-0000-0000-000000000001'
+  and to_nation_id = 'fc300000-0000-0000-0000-000000000002';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000003'
+    )
+    $test$,
+    'neutral stance (peace) restores international propose'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- SECURITY DEFINER check

@@ -129,6 +129,7 @@ function makeContext(
       managedPopulationTypes: [],
       managedPopulations: [],
       nationOffices,
+      nationRelationships: [],
       nations: [],
       partnerships: [],
       populationRules: POPULATION_RULES,

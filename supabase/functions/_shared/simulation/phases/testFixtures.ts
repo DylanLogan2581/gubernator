@@ -69,6 +69,7 @@ export function makeInputState(
     managedPopulationTypes: [],
     managedPopulations: [],
     nationOffices: [],
+    nationRelationships: [],
     nations: [],
     partnerships: [],
     populationRules: POPULATION_RULES,
