@@ -13,6 +13,7 @@ import type {
   SimNation,
   SimNationOffice,
   SimSettlement,
+  SimTreaty,
   SimulationContext,
   SimulationInputState,
   SimulationSharedState,
@@ -49,6 +50,7 @@ export function makeSharedState(): SimulationSharedState {
     pendingManagedPopulationDeltas: new Map(),
     pendingPopCapBySettlement: new Map(),
     pendingStockpiles: new Map(),
+    pendingNationStockpiles: new Map(),
   };
 }
 
@@ -70,6 +72,8 @@ export function makeInputState(
     managedPopulations: [],
     nationOffices: [],
     nationRelationships: [],
+    nationResourceStockpiles: [],
+    nationTreaties: [],
     nations: [],
     partnerships: [],
     populationRules: POPULATION_RULES,
@@ -138,6 +142,22 @@ export function makeNationOffice(
   overrides: Partial<SimNationOffice> & { citizenId: string },
 ): SimNationOffice {
   return {
+    ...overrides,
+  };
+}
+
+
+export function makeTreaty(
+  overrides: Partial<SimTreaty> & { id: string; proposerNationId: string; responderNationId: string },
+): SimTreaty {
+  return {
+    endsTurnNumber: null,
+    marriageCitizenAId: null,
+    marriageCitizenBId: null,
+    treatyType: "tribute",
+    tributePayer: null,
+    tributeQuantityPerTurn: null,
+    tributeResourceId: null,
     ...overrides,
   };
 }

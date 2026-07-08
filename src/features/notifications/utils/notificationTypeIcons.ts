@@ -45,6 +45,8 @@ const NOTIFICATION_TYPE_ICONS: Record<NotificationType, LucideIcon> = {
   "nation.grant_received": Coins,
   "nation.subsidy_received": Coins,
   "nation.treaty_broken": FileX2,
+  "nation.treaty_expired": FileX2,
+  "nation.tribute_missed": Coins,
   "partnership.formed": Heart,
   "partnership.widowed": HeartCrack,
   "settlement.homelessness_occurred": AlertTriangle,

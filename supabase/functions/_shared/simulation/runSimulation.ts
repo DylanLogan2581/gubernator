@@ -19,10 +19,13 @@ import { phaseStandardJobs } from "./phases/phaseStandardJobs.ts";
 import { phaseStockpileClamp } from "./phases/phaseStockpileClamp.ts";
 import { phaseSuccession } from "./phases/phaseSuccession.ts";
 import { phaseTradeRoutes } from "./phases/phaseTradeRoutes.ts";
+import { phaseTreaties, phaseTreatyMarriageNotes } from "./phases/phaseTreaties.ts";
 import { SimulationRejectionError } from "./simulationTypes.ts";
 
 import type {
   ManagedPopulationUpdate,
+  NationStockpileDelta,
+  NationTurnSnapshot,
   ReadinessSummary,
   SimulationContext,
   SimulationInputState,
@@ -52,6 +55,11 @@ export function runSimulation(
   const pendingStockpiles = new Map<string, number>();
   for (const sp of input.stockpiles) {
     pendingStockpiles.set(`${sp.settlementId}:${sp.resourceId}`, sp.quantity);
+  }
+
+  const pendingNationStockpiles = new Map<string, number>();
+  for (const sp of input.nationResourceStockpiles) {
+    pendingNationStockpiles.set(`${sp.nationId}:${sp.resourceId}`, sp.quantity);
   }
 
   const tierById = new Map(input.buildingTiers.map((t) => [t.id, t]));
@@ -99,6 +107,7 @@ export function runSimulation(
       pendingPopCapBySettlement,
       pendingStockpiles,
       pendingDepositDestroys,
+      pendingNationStockpiles,
     },
   };
 
@@ -107,6 +116,44 @@ export function runSimulation(
       const key = `${d.settlementId}:${d.resourceId}`;
       pendingStockpiles.set(key, (pendingStockpiles.get(key) ?? 0) + d.delta);
     }
+  }
+
+  function applyNationDeltas(deltas: readonly NationStockpileDelta[]): void {
+    for (const d of deltas) {
+      const key = `${d.nationId}:${d.resourceId}`;
+      pendingNationStockpiles.set(key, (pendingNationStockpiles.get(key) ?? 0) + d.delta);
+    }
+  }
+
+  // Merges phaseNationalEconomy's tax snapshots with phaseTreaties' tribute
+  // snapshots into one row per nation — nation_turn_snapshots has a unique
+  // (turn_transition_id, nation_id) constraint, so two separate entries for
+  // the same nation would silently drop whichever inserts second.
+  function mergeNationTurnSnapshots(
+    snapshotLists: ReadonlyArray<readonly NationTurnSnapshot[]>,
+  ): NationTurnSnapshot[] {
+    const byNationId = new Map<string, NationTurnSnapshot>();
+    for (const snapshots of snapshotLists) {
+      for (const snapshot of snapshots) {
+        const existing = byNationId.get(snapshot.nationId);
+        byNationId.set(snapshot.nationId, {
+          nationId: snapshot.nationId,
+          taxCollectedByResource: {
+            ...existing?.taxCollectedByResource,
+            ...snapshot.taxCollectedByResource,
+          },
+          tributePaidByResource: {
+            ...existing?.tributePaidByResource,
+            ...snapshot.tributePaidByResource,
+          },
+          tributeReceivedByResource: {
+            ...existing?.tributeReceivedByResource,
+            ...snapshot.tributeReceivedByResource,
+          },
+        });
+      }
+    }
+    return [...byNationId.values()];
   }
 
   // -------------------------------------------------------------------------
@@ -223,6 +270,18 @@ export function runSimulation(
   ];
   const p6dot5 = phaseNationalEconomy(context, nationalEconomyProductionDeltas);
   applyDeltas(p6dot5.stockpileDeltas);
+  applyNationDeltas(p6dot5.nationStockpileDeltas);
+
+  // -------------------------------------------------------------------------
+  // Phase 6.75 — Treaties: tribute + expiry (#1090)
+  // -------------------------------------------------------------------------
+  // Runs right after nation tax collection so tribute can spend from
+  // freshly-taxed goods the same transition. Royal marriage death notes are
+  // handled separately (phaseTreatyMarriageNotes, below) once this-turn
+  // deaths from every mortality-causing phase are known.
+
+  const p6dot75 = phaseTreaties(context);
+  applyNationDeltas(p6dot75.nationStockpileDeltas);
 
   // -------------------------------------------------------------------------
   // Phase 7 — Managed Populations
@@ -357,6 +416,7 @@ export function runSimulation(
   const allDeaths = [...p8.citizenDeaths, ...p10.citizenDeaths, ...p11.citizenDeaths];
 
   const pSuccession = phaseSuccession(context, allDeaths);
+  const pTreatyMarriageNotes = phaseTreatyMarriageNotes(context, allDeaths);
 
   // Phase 10 (homelessness) runs after phase 9 (partnerships), so a citizen
   // can be selected for partnership formation and then die of homelessness in
@@ -467,6 +527,7 @@ export function runSimulation(
     ...p5.logs,
     ...p6.logs,
     ...p6dot5.logs,
+    ...p6dot75.logs,
     ...p7.logs,
     ...p8.logs,
     ...filteredP9Logs,
@@ -476,6 +537,7 @@ export function runSimulation(
     ...p12dot5.logs,
     ...p13.logs,
     ...pSuccession.logs,
+    ...pTreatyMarriageNotes.logs,
   ];
 
   const notifications: SimulationNotification[] = [
@@ -527,8 +589,11 @@ export function runSimulation(
     eventStatusPatches: p11.eventStatusPatches,
     logEntries,
     managedPopulationUpdates,
-    nationStockpileDeltas: p6dot5.nationStockpileDeltas,
-    nationTurnSnapshots: p6dot5.nationTurnSnapshots,
+    nationStockpileDeltas: [...p6dot5.nationStockpileDeltas, ...p6dot75.nationStockpileDeltas],
+    nationTurnSnapshots: mergeNationTurnSnapshots([
+      p6dot5.nationTurnSnapshots,
+      p6dot75.nationTurnSnapshots,
+    ]),
     notifications,
     partnershipChanges,
     readinessSummary: computeReadinessSummary(input),
@@ -536,6 +601,7 @@ export function runSimulation(
     settlementSnapshots: p13.settlementSnapshots,
     stockpileDeltas,
     tradeRouteOutcomes: p6.tradeRouteOutcomes,
+    treatyStatusChanges: p6dot75.treatyStatusChanges,
   };
 }
 

@@ -475,6 +475,43 @@ export function fetchNationRelationships(
   });
 }
 
+
+export function fetchNationResourceStockpiles(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_resource_stockpiles",
+    params: {
+      "nations.world_id": `eq.${worldId}`,
+      order: "nation_id.asc",
+      select: "nation_id,resource_id,quantity,nations!inner(world_id)",
+    },
+  });
+}
+
+// #1090: scoped via the proposer side's world; the same-world check on
+// nation_treaties guarantees responder_nation_id always agrees. Only active
+// treaties act in simulation — proposed/declined/withdrawn/expired/broken
+// rows have no per-turn effect.
+export function fetchNationTreaties(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "nation_treaties",
+    params: {
+      "nations.world_id": `eq.${worldId}`,
+      status: "eq.active",
+      order: "id.asc",
+      select:
+        "id,proposer_nation_id,responder_nation_id,treaty_type,terms,ends_turn_number,nations!nation_treaties_proposer_nation_id_fkey!inner(world_id)",
+    },
+  });
+}
+
 export function fetchEvents(
   ctx: FetchContext,
   worldId: string,

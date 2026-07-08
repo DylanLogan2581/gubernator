@@ -19,6 +19,7 @@ import type {
   SimulationLogEntry,
   SimulationNotification,
   SimulationResult,
+  TreatyStatusChange,
 } from "../_shared/simulation/simulationTypes.ts";
 
 // ---------------------------------------------------------------------------
@@ -119,6 +120,7 @@ export type ApplyTurnTransitionPayload = {
   readonly settlementSnapshots: readonly SettlementSnapshot[];
   readonly stockpileDeltas: readonly StockpileDeltaEntry[];
   readonly tradeRouteOutcomes: readonly TradeRouteOutcomeEntry[];
+  readonly treatyStatusChanges: readonly TreatyStatusChange[];
 };
 
 // ---------------------------------------------------------------------------
@@ -354,5 +356,6 @@ export function mapSimulationResultToPayload(
     settlementSnapshots: result.settlementSnapshots,
     stockpileDeltas,
     tradeRouteOutcomes,
+    treatyStatusChanges: result.treatyStatusChanges,
   };
 }

@@ -58,6 +58,7 @@ describe("forecast computation", () => {
       settlementSnapshots: [],
       stockpileDeltas: [],
       tradeRouteOutcomes: [],
+      treatyStatusChanges: [],
     };
 
     const inputBefore = JSON.stringify(input);
@@ -145,6 +146,7 @@ describe("forecast computation", () => {
       ],
       stockpileDeltas: [],
       tradeRouteOutcomes: [],
+      treatyStatusChanges: [],
     };
 
     const forecast = computeForecastSnapshot(result, input);

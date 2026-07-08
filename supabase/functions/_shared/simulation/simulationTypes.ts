@@ -64,6 +64,31 @@ export type SimNationRelationship = {
   readonly toNationId: string;
 };
 
+// #1090: active treaty terms are narrowed to the fields each treaty_type's
+// simulation effect needs (tribute payer/resource/quantity, royal_marriage
+// citizen pair). trade_agreement and currency_exchange carry no simulation
+// effect yet, so their type-specific fields stay null.
+export type SimTreatyType = "tribute" | "trade_agreement" | "royal_marriage" | "currency_exchange";
+
+export type SimTreaty = {
+  readonly endsTurnNumber: number | null;
+  readonly id: string;
+  readonly marriageCitizenAId: string | null;
+  readonly marriageCitizenBId: string | null;
+  readonly proposerNationId: string;
+  readonly responderNationId: string;
+  readonly treatyType: SimTreatyType;
+  readonly tributePayer: "proposer" | "responder" | null;
+  readonly tributeQuantityPerTurn: number | null;
+  readonly tributeResourceId: string | null;
+};
+
+export type SimNationStockpile = {
+  readonly nationId: string;
+  readonly quantity: number;
+  readonly resourceId: string;
+};
+
 export type SimSettlement = {
   readonly autoReadyEnabled?: boolean;
   readonly id: string;
@@ -411,6 +436,8 @@ export type SimulationInputState = {
   readonly namesetConfigById?: Readonly<Record<string, SimNamingConfig>>;
   readonly nationOffices: readonly SimNationOffice[];
   readonly nationRelationships: readonly SimNationRelationship[];
+  readonly nationResourceStockpiles: readonly SimNationStockpile[];
+  readonly nationTreaties: readonly SimTreaty[];
   readonly nations: readonly SimNation[];
   readonly npcFlavorConfig?: NpcFlavorConfig | null;
   readonly partnerships: readonly SimPartnership[];
@@ -600,6 +627,15 @@ export type NationStockpileDelta = {
 export type NationTurnSnapshot = {
   readonly nationId: string;
   readonly taxCollectedByResource: Readonly<Record<string, number>>;
+  readonly tributePaidByResource: Readonly<Record<string, number>>;
+  readonly tributeReceivedByResource: Readonly<Record<string, number>>;
+};
+
+// #1090: an active treaty's expiry patch — always "expired" in v1 (breaking
+// happens via break_nation_treaty, not the simulation).
+export type TreatyStatusChange = {
+  readonly toStatus: "expired";
+  readonly treatyId: string;
 };
 
 export type ReadinessSummary = {
@@ -630,6 +666,7 @@ export type SimulationResult = {
   readonly settlementSnapshots: readonly SettlementSnapshot[];
   readonly stockpileDeltas: readonly StockpileDelta[];
   readonly tradeRouteOutcomes: readonly TradeRouteOutcome[];
+  readonly treatyStatusChanges: readonly TreatyStatusChange[];
 };
 
 // ---------------------------------------------------------------------------
@@ -663,6 +700,10 @@ export type SimulationSharedState = {
   readonly pendingManagedPopulationDeltas: Map<string, number>;
   // Deposit instance IDs to mark as removed due to deposit_destroyed effects.
   readonly pendingDepositDestroys: Set<string>;
+  // Running nation resource-stockpile quantities, updated after nation tax
+  // credits (phaseNationalEconomy) and treaty tribute transfers (phaseTreaties)
+  // so a treaty tributed this turn spends from freshly-taxed goods too.
+  readonly pendingNationStockpiles: Map<string, number>;
 };
 
 // ---------------------------------------------------------------------------

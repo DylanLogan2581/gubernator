@@ -117,7 +117,12 @@ export function phaseNationalEconomy(
     for (const [resourceId, amount] of totalsByResource) {
       taxCollectedByResource[resourceId] = amount;
     }
-    nationTurnSnapshots.push({ nationId, taxCollectedByResource });
+    nationTurnSnapshots.push({
+      nationId,
+      taxCollectedByResource,
+      tributePaidByResource: {},
+      tributeReceivedByResource: {},
+    });
 
     logs.push({
       category: "economy",

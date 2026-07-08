@@ -23,11 +23,13 @@ import {
   toSimNation,
   toSimNationOffice,
   toSimNationRelationship,
+  toSimNationStockpile,
   toSimPartnership,
   toSimProject,
   toSimSettlement,
   toSimStockpile,
   toSimTradeRoute,
+  toSimTreaty,
   toWorldPopulationRules,
 } from "./mappers.ts";
 import {
@@ -45,7 +47,9 @@ import {
   fetchNamesets,
   fetchNationOffices,
   fetchNationRelationships,
+  fetchNationResourceStockpiles,
   fetchNations,
+  fetchNationTreaties,
   fetchPartnerships,
   fetchProjects,
   fetchResources,
@@ -68,6 +72,8 @@ import {
   isNationOfficeRow,
   isNationRelationshipRow,
   isNationRow,
+  isNationStockpileRow,
+  isNationTreatyRow,
   isPartnershipRow,
   isProjectRow,
   isResourceRow,
@@ -201,6 +207,8 @@ async function resolveEndTurnInputFromCtx(
     nationsResult,
     nationOfficesResult,
     nationRelationshipsResult,
+    nationResourceStockpilesResult,
+    nationTreatiesResult,
   ] = await Promise.all([
     fetchResources(ctx, worldId),
     fetchStockpiles(ctx, settlementIds),
@@ -222,6 +230,8 @@ async function resolveEndTurnInputFromCtx(
     fetchNations(ctx, worldId),
     fetchNationOffices(ctx, worldId),
     fetchNationRelationships(ctx, worldId),
+    fetchNationResourceStockpiles(ctx, worldId),
+    fetchNationTreaties(ctx, worldId),
   ]);
 
   const round2Results = [
@@ -245,6 +255,8 @@ async function resolveEndTurnInputFromCtx(
     nationsResult,
     nationOfficesResult,
     nationRelationshipsResult,
+    nationResourceStockpilesResult,
+    nationTreatiesResult,
   ];
 
   for (const result of round2Results) {
@@ -354,6 +366,16 @@ async function resolveEndTurnInputFromCtx(
     ).rows
       .filter(isNationRelationshipRow)
       .map(toSimNationRelationship),
+    nationResourceStockpiles: (
+      nationResourceStockpilesResult as Extract<typeof nationResourceStockpilesResult, { ok: true }>
+    ).rows
+      .filter(isNationStockpileRow)
+      .map(toSimNationStockpile),
+    nationTreaties: (
+      nationTreatiesResult as Extract<typeof nationTreatiesResult, { ok: true }>
+    ).rows
+      .filter(isNationTreatyRow)
+      .map(toSimTreaty),
     nations: (nationsResult as Extract<typeof nationsResult, { ok: true }>).rows
       .filter(isNationRow)
       .map(toSimNation),

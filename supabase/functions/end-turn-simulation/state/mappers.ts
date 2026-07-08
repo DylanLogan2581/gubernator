@@ -15,6 +15,8 @@ import type {
   SupabaseNationOfficeRow,
   SupabaseNationRelationshipRow,
   SupabaseNationRow,
+  SupabaseNationStockpileRow,
+  SupabaseNationTreatyRow,
   SupabasePartnershipRow,
   SupabaseProjectRow,
   SupabaseSettlementRow,
@@ -41,6 +43,7 @@ import type {
   SimNation,
   SimNationOffice,
   SimNationRelationship,
+  SimNationStockpile,
   SimPartnership,
   SimPopulationResourceEntry,
   SimSettlement,
@@ -49,6 +52,8 @@ import type {
   SimTierCostEntry,
   SimTierEffect,
   SimTradeRoute,
+  SimTreaty,
+  SimTreatyType,
   SimWorkerInputEntry,
   WorldPopulationRules,
 } from "../../_shared/simulation/simulationTypes.ts";
@@ -319,6 +324,55 @@ export function toSimNationRelationship(
     currentStance: row.current_stance,
     fromNationId: row.from_nation_id,
     toNationId: row.to_nation_id,
+  };
+}
+
+export function toSimNationStockpile(row: SupabaseNationStockpileRow): SimNationStockpile {
+  return {
+    nationId: row.nation_id,
+    quantity: row.quantity,
+    resourceId: row.resource_id,
+  };
+}
+
+const TREATY_TYPES: readonly SimTreatyType[] = [
+  "tribute",
+  "trade_agreement",
+  "royal_marriage",
+  "currency_exchange",
+];
+
+// #1090: terms shape is validated per treaty_type by propose_nation_treaty
+// (20260914000001) — only the fields each type's simulation effect needs are
+// extracted here; malformed/unexpected terms fields resolve to null rather
+// than throwing, so a corrupt row can't crash the transition.
+export function toSimTreaty(row: SupabaseNationTreatyRow): SimTreaty {
+  const terms = row.terms;
+  const treatyType = TREATY_TYPES.includes(row.treaty_type as SimTreatyType)
+    ? (row.treaty_type as SimTreatyType)
+    : "trade_agreement";
+
+  const tributePayer = terms.payer === "proposer" || terms.payer === "responder"
+    ? terms.payer
+    : null;
+  const tributeResourceId = typeof terms.resource_id === "string" ? terms.resource_id : null;
+  const tributeQuantityPerTurn = typeof terms.quantity_per_turn === "number"
+    ? terms.quantity_per_turn
+    : null;
+  const marriageCitizenAId = typeof terms.citizen_a_id === "string" ? terms.citizen_a_id : null;
+  const marriageCitizenBId = typeof terms.citizen_b_id === "string" ? terms.citizen_b_id : null;
+
+  return {
+    endsTurnNumber: row.ends_turn_number,
+    id: row.id,
+    marriageCitizenAId,
+    marriageCitizenBId,
+    proposerNationId: row.proposer_nation_id,
+    responderNationId: row.responder_nation_id,
+    treatyType,
+    tributePayer,
+    tributeQuantityPerTurn,
+    tributeResourceId,
   };
 }
 

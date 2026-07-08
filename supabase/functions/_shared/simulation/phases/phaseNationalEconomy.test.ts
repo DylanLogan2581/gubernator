@@ -66,7 +66,12 @@ describe("phaseNationalEconomy — government efficiency", () => {
       { delta: 10, nationId: "n1", resourceId: "food" },
     ]);
     expect(result.nationTurnSnapshots).toEqual([
-      { nationId: "n1", taxCollectedByResource: { food: 10 } },
+      {
+  nationId: "n1",
+  taxCollectedByResource: { food: 10 },
+  tributePaidByResource: {},
+  tributeReceivedByResource: {},
+},
     ]);
     expect(result.logs).toHaveLength(1);
     expect(result.logs[0]).toMatchObject({
@@ -173,7 +178,12 @@ describe("phaseNationalEconomy — aggregation across settlements", () => {
       { delta: 15, nationId: "n1", resourceId: "food" },
     ]);
     expect(result.nationTurnSnapshots).toEqual([
-      { nationId: "n1", taxCollectedByResource: { food: 15 } },
+      {
+  nationId: "n1",
+  taxCollectedByResource: { food: 15 },
+  tributePaidByResource: {},
+  tributeReceivedByResource: {},
+},
     ]);
     expect(result.logs).toHaveLength(1);
     expect(result.logs[0].payload).toEqual({

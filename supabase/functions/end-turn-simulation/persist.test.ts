@@ -65,6 +65,7 @@ function makeMinimalPayload(): ApplyTurnTransitionPayload {
     settlementSnapshots: [],
     stockpileDeltas: [],
     tradeRouteOutcomes: [],
+    treatyStatusChanges: [],
   };
 }
 

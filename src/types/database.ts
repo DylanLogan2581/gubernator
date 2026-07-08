@@ -1803,6 +1803,8 @@ export type Database = {
           id: string;
           nation_id: string;
           tax_collected_by_resource_json: Json;
+          tribute_paid_by_resource_json: Json;
+          tribute_received_by_resource_json: Json;
           turn_number: number;
           turn_transition_id: string;
           world_id: string;
@@ -1812,6 +1814,8 @@ export type Database = {
           id?: string;
           nation_id: string;
           tax_collected_by_resource_json?: Json;
+          tribute_paid_by_resource_json?: Json;
+          tribute_received_by_resource_json?: Json;
           turn_number: number;
           turn_transition_id: string;
           world_id: string;
@@ -1821,6 +1825,8 @@ export type Database = {
           id?: string;
           nation_id?: string;
           tax_collected_by_resource_json?: Json;
+          tribute_paid_by_resource_json?: Json;
+          tribute_received_by_resource_json?: Json;
           turn_number?: number;
           turn_transition_id?: string;
           world_id?: string;
@@ -4279,6 +4285,10 @@ export type Database = {
         Args: { p_payload: Json };
         Returns: number;
       };
+      internal_apply_turn_transition_treaty_patches: {
+        Args: { p_payload: Json };
+        Returns: number;
+      };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
       is_empty: { Args: { "": string }; Returns: string };
@@ -5641,7 +5651,9 @@ export type Database = {
         | "nation.succession"
         | "nation.grant_received"
         | "nation.subsidy_received"
-        | "nation.treaty_broken";
+        | "nation.treaty_broken"
+        | "nation.tribute_missed"
+        | "nation.treaty_expired";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -5812,6 +5824,8 @@ export const Constants = {
         "nation.grant_received",
         "nation.subsidy_received",
         "nation.treaty_broken",
+        "nation.tribute_missed",
+        "nation.treaty_expired",
       ],
     },
   },

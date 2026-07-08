@@ -50,6 +50,7 @@ function makeShared(): SimulationContext["shared"] {
     pendingManagedPopulationDeltas: new Map(),
     pendingPopCapBySettlement: new Map(),
     pendingStockpiles: new Map(),
+    pendingNationStockpiles: new Map(),
   };
 }
 
@@ -130,6 +131,8 @@ function makeContext(
       managedPopulations: [],
       nationOffices,
       nationRelationships: [],
+      nationResourceStockpiles: [],
+      nationTreaties: [],
       nations: [],
       partnerships: [],
       populationRules: POPULATION_RULES,

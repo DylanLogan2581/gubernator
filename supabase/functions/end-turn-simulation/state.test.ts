@@ -421,6 +421,14 @@ function makeAllSuccessResponses(): Record<
       ],
       status: 200,
     },
+    "/rest/v1/nation_resource_stockpiles": {
+      body: [],
+      status: 200,
+    },
+    "/rest/v1/nation_treaties": {
+      body: [],
+      status: 200,
+    },
   };
 }
 
@@ -810,6 +818,8 @@ describe("resolveSupabaseEndTurnSimulationInput", () => {
       "/rest/v1/nations": { body: [], status: 200 },
       "/rest/v1/nation_offices": { body: [], status: 200 },
       "/rest/v1/nation_relationships": { body: [], status: 200 },
+      "/rest/v1/nation_resource_stockpiles": { body: [], status: 200 },
+      "/rest/v1/nation_treaties": { body: [], status: 200 },
     });
 
     const result = await resolveSupabaseEndTurnSimulationInput(

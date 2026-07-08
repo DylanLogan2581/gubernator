@@ -75,6 +75,8 @@ function makeBaseInput(
     managedPopulations: [],
     nationOffices: [],
     nationRelationships: [],
+    nationResourceStockpiles: [],
+    nationTreaties: [],
     nations: [],
     npcFlavorConfig: null,
     partnerships: [],
@@ -118,6 +120,7 @@ function makeEmptyResult(): SimulationResult {
     settlementSnapshots: [],
     stockpileDeltas: [],
     tradeRouteOutcomes: [],
+    treatyStatusChanges: [],
   };
 }
 

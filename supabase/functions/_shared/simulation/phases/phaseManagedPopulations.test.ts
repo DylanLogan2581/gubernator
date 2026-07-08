@@ -60,6 +60,8 @@ function makeContext(
       managedPopulations: pops,
       nationOffices: [],
       nationRelationships: [],
+      nationResourceStockpiles: [],
+      nationTreaties: [],
       nations: [],
       partnerships: [],
       populationRules: {
@@ -88,6 +90,7 @@ function makeContext(
       pendingDeaths: new Set(),
       pendingDepositDestroys: new Set(),
       pendingEventMultipliers: new Map(),
+      pendingNationStockpiles: new Map(),
       pendingManagedPopulationDeltas: new Map(),
       pendingPopCapBySettlement: new Map(),
       pendingStockpiles: new Map(),

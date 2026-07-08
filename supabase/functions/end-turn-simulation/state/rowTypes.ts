@@ -198,6 +198,21 @@ export type SupabaseNationRelationshipRow = {
   readonly to_nation_id: string;
 };
 
+export type SupabaseNationStockpileRow = {
+  readonly nation_id: string;
+  readonly resource_id: string;
+  readonly quantity: number;
+};
+
+export type SupabaseNationTreatyRow = {
+  readonly id: string;
+  readonly proposer_nation_id: string;
+  readonly responder_nation_id: string;
+  readonly treaty_type: string;
+  readonly terms: Record<string, unknown>;
+  readonly ends_turn_number: number | null;
+};
+
 export type SupabaseAssignmentRow = {
   readonly citizen_id: string;
   readonly assignment_type: string;
@@ -505,6 +520,27 @@ export function isNationRelationshipRow(
     typeof v.current_stance === "string" &&
     typeof v.from_nation_id === "string" &&
     typeof v.to_nation_id === "string"
+  );
+}
+
+export function isNationStockpileRow(v: unknown): v is SupabaseNationStockpileRow {
+  return (
+    isRecord(v) &&
+    typeof v.nation_id === "string" &&
+    typeof v.resource_id === "string" &&
+    typeof v.quantity === "number"
+  );
+}
+
+export function isNationTreatyRow(v: unknown): v is SupabaseNationTreatyRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.proposer_nation_id === "string" &&
+    typeof v.responder_nation_id === "string" &&
+    typeof v.treaty_type === "string" &&
+    isRecord(v.terms) &&
+    (v.ends_turn_number === null || typeof v.ends_turn_number === "number")
   );
 }
 

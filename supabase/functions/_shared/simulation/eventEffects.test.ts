@@ -55,6 +55,8 @@ function makeInput(
     managedPopulations: [],
     nationOffices: [],
     nationRelationships: [],
+    nationResourceStockpiles: [],
+    nationTreaties: [],
     nations: [],
     partnerships: [],
     populationRules: BASE_POPULATION_RULES,
@@ -118,6 +120,7 @@ function makeContext(input: SimulationInputState): SimulationContext {
       pendingPopCapBySettlement: new Map(),
       pendingStockpiles,
       pendingDepositDestroys: new Set(),
+      pendingNationStockpiles: new Map(),
     },
   };
 }
