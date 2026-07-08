@@ -512,6 +512,45 @@ export function fetchNationTreaties(
   });
 }
 
+// #1094: nation_currencies carries world_id directly (unlike nation_resource_
+// stockpiles), so no join is needed to scope by world.
+export function fetchNationCurrencies(
+  ctx: FetchContext,
+  worldId: string,
+): Promise<FetchRowsResult> {
+  return fetchRows({
+    ctx,
+    table: "nation_currencies",
+    params: {
+      world_id: `eq.${worldId}`,
+      order: "id.asc",
+      select:
+        "id,nation_id,name,currency_type,backing_resource_id,backing_ratio,money_supply,reserve_quantity,confidence",
+    },
+  });
+}
+
+// #1094: ledger rows for the turn being processed only — the phase sums
+// mint/burn amounts per currency to derive this turn's confidence drift.
+// Scoped via the currency's world (nation_currencies.world_id), like
+// nation_resource_stockpiles' nations!inner join.
+export function fetchNationCurrencyLedgerEntries(
+  ctx: FetchContext,
+  worldId: string,
+  turnNumber: number,
+): Promise<FetchRowsResult> {
+  return fetchRowsPaginated({
+    ctx,
+    table: "nation_currency_ledger",
+    params: {
+      "nation_currencies.world_id": `eq.${worldId}`,
+      turn_number: `eq.${turnNumber}`,
+      order: "currency_id.asc",
+      select: "currency_id,action,amount,nation_currencies!inner(world_id)",
+    },
+  });
+}
+
 export function fetchEvents(
   ctx: FetchContext,
   worldId: string,

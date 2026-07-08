@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import { phaseNationalEconomy } from "./phaseNationalEconomy.ts";
-import { makeContext, makeNation, makeSettlement } from "./testFixtures.ts";
+import { makeContext, makeCurrency, makeLedgerEntry, makeNation, makeSettlement } from "./testFixtures.ts";
 
 import type { StockpileDelta } from "../simulationTypes.ts";
 
@@ -192,6 +192,189 @@ describe("phaseNationalEconomy — aggregation across settlements", () => {
         { amount: 5, resourceId: "food", settlementId: "s2" },
       ],
       totalsByResource: { food: 15 },
+    });
+  });
+});
+
+describe("phaseNationalEconomy — currency confidence (#1094)", () => {
+  it("drops fiat confidence when overminting exceeds the 5%/turn growth threshold", () => {
+    const ctx = makeContext({
+      nationCurrencies: [
+        makeCurrency({
+          id: "c1",
+          nationId: "n1",
+          confidence: 1,
+          currencyType: "fiat",
+          moneySupply: 1000,
+        }),
+      ],
+      nationCurrencyLedgerEntries: [
+        makeLedgerEntry({ currencyId: "c1", action: "mint", amount: 200 }),
+      ],
+    });
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    // moneySupplyStart = 1000 - 200 = 800; growth = 200/800 = 0.25
+    // penalty = (0.25 - 0.05) * 0.5 = 0.1; confidence = 1 - 0.1 + 0.02 = 0.92
+    expect(result.nationCurrencySnapshots).toEqual([
+      {
+        burned: 0,
+        confidence: 0.92,
+        currencyId: "c1",
+        minted: 200,
+        moneySupply: 1000,
+        nationId: "n1",
+        reserveQuantity: 0,
+      },
+    ]);
+    expect(result.nationCurrencyUpdates).toEqual([
+      { confidence: 0.92, currencyId: "c1", isInDefault: false },
+    ]);
+    expect(result.notifications).toHaveLength(0);
+  });
+
+  it("recovers fiat confidence toward 1 by 0.02/turn when supply is stable", () => {
+    const ctx = makeContext({
+      nationCurrencies: [
+        makeCurrency({
+          id: "c1",
+          nationId: "n1",
+          confidence: 0.5,
+          currencyType: "fiat",
+          moneySupply: 1000,
+        }),
+      ],
+    });
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    expect(result.nationCurrencySnapshots[0]).toMatchObject({ confidence: 0.52 });
+  });
+
+  it("emits a collapsing-confidence warning notification below 0.25", () => {
+    const ctx = makeContext({
+      nationCurrencies: [
+        makeCurrency({
+          id: "c1",
+          nationId: "n1",
+          confidence: 0.1,
+          currencyType: "fiat",
+          moneySupply: 1000,
+          name: "Testmark",
+        }),
+      ],
+    });
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    expect(result.nationCurrencySnapshots[0].confidence).toBeCloseTo(0.12);
+    expect(result.notifications).toEqual([
+      {
+        messageText: "Confidence in Testmark is collapsing.",
+        nationId: "n1",
+        notificationType: "currency.confidence_collapsing",
+        scope: "nation",
+      },
+    ]);
+  });
+
+  it("emits a currency_default log + notification when reserves no longer back the money supply", () => {
+    const ctx = makeContext({
+      nationCurrencies: [
+        makeCurrency({
+          id: "c1",
+          nationId: "n1",
+          backingRatio: 1,
+          confidence: 1,
+          currencyType: "resource_backed",
+          moneySupply: 100,
+          reserveQuantity: 50,
+          name: "Goldmark",
+        }),
+      ],
+    });
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    expect(result.nationCurrencySnapshots).toEqual([
+      {
+        burned: 0,
+        confidence: 0,
+        currencyId: "c1",
+        minted: 0,
+        moneySupply: 100,
+        nationId: "n1",
+        reserveQuantity: 50,
+      },
+    ]);
+    expect(result.nationCurrencyUpdates).toEqual([
+      { confidence: 0, currencyId: "c1", isInDefault: true },
+    ]);
+    expect(result.logs).toEqual([
+      {
+        category: "currency_default",
+        nationId: "n1",
+        payload: { backingRatio: 1, currencyId: "c1", moneySupply: 100, reserveQuantity: 50 },
+        phase: "nationalEconomy",
+      },
+    ]);
+    expect(result.notifications).toEqual([
+      {
+        messageText: "Goldmark has defaulted — reserves no longer back the money supply.",
+        nationId: "n1",
+        notificationType: "currency.default",
+        scope: "nation",
+      },
+    ]);
+  });
+
+  it("keeps a fully-backed resource_backed currency out of default", () => {
+    const ctx = makeContext({
+      nationCurrencies: [
+        makeCurrency({
+          id: "c1",
+          nationId: "n1",
+          backingRatio: 1,
+          confidence: 1,
+          currencyType: "resource_backed",
+          moneySupply: 50,
+          reserveQuantity: 100,
+        }),
+      ],
+    });
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    expect(result.nationCurrencySnapshots[0]).toMatchObject({ confidence: 1 });
+    expect(result.nationCurrencyUpdates).toEqual([
+      { confidence: 1, currencyId: "c1", isInDefault: false },
+    ]);
+    expect(result.logs).toHaveLength(0);
+    expect(result.notifications).toHaveLength(0);
+  });
+
+  it("sums minted/burned ledger amounts per currency for the snapshot row", () => {
+    const ctx = makeContext({
+      nationCurrencies: [
+        makeCurrency({ id: "c1", nationId: "n1", currencyType: "fiat", moneySupply: 500 }),
+      ],
+      nationCurrencyLedgerEntries: [
+        makeLedgerEntry({ currencyId: "c1", action: "mint", amount: 100 }),
+        makeLedgerEntry({ currencyId: "c1", action: "mint", amount: 50 }),
+        makeLedgerEntry({ currencyId: "c1", action: "burn", amount: 30 }),
+        // deposit/redeem entries never affect minted/burned totals.
+        makeLedgerEntry({ currencyId: "c1", action: "deposit", amount: null }),
+      ],
+    });
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    expect(result.nationCurrencySnapshots[0]).toMatchObject({
+      burned: 30,
+      currencyId: "c1",
+      minted: 150,
+      nationId: "n1",
     });
   });
 });

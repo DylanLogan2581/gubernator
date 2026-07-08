@@ -18,9 +18,11 @@ import {
   toSimEffect,
   toSimEvent,
   toSimJob,
+  toSimCurrencyLedgerEntry,
   toSimManagedPop,
   toSimManagedPopType,
   toSimNation,
+  toSimNationCurrency,
   toSimNationOffice,
   toSimNationRelationship,
   toSimNationStockpile,
@@ -45,6 +47,8 @@ import {
   fetchManagedPops,
   fetchManagedPopTypes,
   fetchNamesets,
+  fetchNationCurrencies,
+  fetchNationCurrencyLedgerEntries,
   fetchNationOffices,
   fetchNationRelationships,
   fetchNationResourceStockpiles,
@@ -69,6 +73,8 @@ import {
   isManagedPopRow,
   isManagedPopTypeRow,
   isNamesetRow,
+  isNationCurrencyLedgerRow,
+  isNationCurrencyRow,
   isNationOfficeRow,
   isNationRelationshipRow,
   isNationRow,
@@ -209,6 +215,8 @@ async function resolveEndTurnInputFromCtx(
     nationRelationshipsResult,
     nationResourceStockpilesResult,
     nationTreatiesResult,
+    nationCurrenciesResult,
+    nationCurrencyLedgerEntriesResult,
   ] = await Promise.all([
     fetchResources(ctx, worldId),
     fetchStockpiles(ctx, settlementIds),
@@ -232,6 +240,8 @@ async function resolveEndTurnInputFromCtx(
     fetchNationRelationships(ctx, worldId),
     fetchNationResourceStockpiles(ctx, worldId),
     fetchNationTreaties(ctx, worldId),
+    fetchNationCurrencies(ctx, worldId),
+    fetchNationCurrencyLedgerEntries(ctx, worldId, worldRow.current_turn_number),
   ]);
 
   const round2Results = [
@@ -257,6 +267,8 @@ async function resolveEndTurnInputFromCtx(
     nationRelationshipsResult,
     nationResourceStockpilesResult,
     nationTreatiesResult,
+    nationCurrenciesResult,
+    nationCurrencyLedgerEntriesResult,
   ];
 
   for (const result of round2Results) {
@@ -356,6 +368,19 @@ async function resolveEndTurnInputFromCtx(
       .map(toSimManagedPop),
     fallbackNamesetIdBySettlementId,
     namesetConfigById,
+    nationCurrencies: (
+      nationCurrenciesResult as Extract<typeof nationCurrenciesResult, { ok: true }>
+    ).rows
+      .filter(isNationCurrencyRow)
+      .map(toSimNationCurrency),
+    nationCurrencyLedgerEntries: (
+      nationCurrencyLedgerEntriesResult as Extract<
+        typeof nationCurrencyLedgerEntriesResult,
+        { ok: true }
+      >
+    ).rows
+      .filter(isNationCurrencyLedgerRow)
+      .map(toSimCurrencyLedgerEntry),
     nationOffices: (
       nationOfficesResult as Extract<typeof nationOfficesResult, { ok: true }>
     ).rows

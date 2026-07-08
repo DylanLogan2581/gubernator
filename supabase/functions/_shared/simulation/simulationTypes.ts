@@ -64,6 +64,34 @@ export type SimNationRelationship = {
   readonly toNationId: string;
 };
 
+// #1094: nation currency state (fiat confidence dynamics, resource-backed
+// default checks). currencyType narrows which fields are meaningful:
+// backingResourceId/backingRatio are set only for "resource_backed".
+export type SimCurrencyType = "fiat" | "resource_backed";
+
+export type SimNationCurrency = {
+  readonly backingRatio: number | null;
+  readonly backingResourceId: string | null;
+  readonly confidence: number;
+  readonly currencyType: SimCurrencyType;
+  readonly id: string;
+  readonly moneySupply: number;
+  readonly name: string;
+  readonly nationId: string;
+  readonly reserveQuantity: number;
+};
+
+// #1094: a mint/burn/deposit/redeem row from nation_currency_ledger for the
+// turn being processed. Only "mint"/"burn" carry `amount`; the phase sums
+// these to derive this turn's minted/burned totals per currency.
+export type SimCurrencyLedgerAction = "mint" | "burn" | "deposit" | "redeem";
+
+export type SimCurrencyLedgerEntry = {
+  readonly action: SimCurrencyLedgerAction;
+  readonly amount: number | null;
+  readonly currencyId: string;
+};
+
 // #1090: active treaty terms are narrowed to the fields each treaty_type's
 // simulation effect needs (tribute payer/resource/quantity, royal_marriage
 // citizen pair). trade_agreement and currency_exchange carry no simulation
@@ -434,6 +462,8 @@ export type SimulationInputState = {
   readonly managedPopulations: readonly SimManagedPopulation[];
   readonly fallbackNamesetIdBySettlementId?: Readonly<Record<string, string>>;
   readonly namesetConfigById?: Readonly<Record<string, SimNamingConfig>>;
+  readonly nationCurrencies: readonly SimNationCurrency[];
+  readonly nationCurrencyLedgerEntries: readonly SimCurrencyLedgerEntry[];
   readonly nationOffices: readonly SimNationOffice[];
   readonly nationRelationships: readonly SimNationRelationship[];
   readonly nationResourceStockpiles: readonly SimNationStockpile[];
@@ -631,6 +661,24 @@ export type NationTurnSnapshot = {
   readonly tributeReceivedByResource: Readonly<Record<string, number>>;
 };
 
+// #1094: per-turn currency snapshot for history/charting, and the resulting
+// confidence (+ default-state) patch to persist back onto nation_currencies.
+export type NationCurrencySnapshot = {
+  readonly burned: number;
+  readonly confidence: number;
+  readonly currencyId: string;
+  readonly minted: number;
+  readonly moneySupply: number;
+  readonly nationId: string;
+  readonly reserveQuantity: number;
+};
+
+export type NationCurrencyUpdate = {
+  readonly confidence: number;
+  readonly currencyId: string;
+  readonly isInDefault: boolean;
+};
+
 // #1090: an active treaty's expiry patch — always "expired" in v1 (breaking
 // happens via break_nation_treaty, not the simulation).
 export type TreatyStatusChange = {
@@ -657,6 +705,8 @@ export type SimulationResult = {
   readonly eventStatusPatches: readonly EventStatusPatch[];
   readonly logEntries: readonly SimulationLogEntry[];
   readonly managedPopulationUpdates: readonly ManagedPopulationUpdate[];
+  readonly nationCurrencySnapshots: readonly NationCurrencySnapshot[];
+  readonly nationCurrencyUpdates: readonly NationCurrencyUpdate[];
   readonly nationStockpileDeltas: readonly NationStockpileDelta[];
   readonly nationTurnSnapshots: readonly NationTurnSnapshot[];
   readonly notifications: readonly SimulationNotification[];

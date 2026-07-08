@@ -12,6 +12,8 @@ import type {
   SupabaseJobRow,
   SupabaseManagedPopRow,
   SupabaseManagedPopTypeRow,
+  SupabaseNationCurrencyLedgerRow,
+  SupabaseNationCurrencyRow,
   SupabaseNationOfficeRow,
   SupabaseNationRelationshipRow,
   SupabaseNationRow,
@@ -38,9 +40,11 @@ import type {
   SimEvent,
   SimJob,
   SimJobIoEntry,
+  SimCurrencyLedgerEntry,
   SimManagedPopulation,
   SimManagedPopulationType,
   SimNation,
+  SimNationCurrency,
   SimNationOffice,
   SimNationRelationship,
   SimNationStockpile,
@@ -373,6 +377,30 @@ export function toSimTreaty(row: SupabaseNationTreatyRow): SimTreaty {
     tributePayer,
     tributeQuantityPerTurn,
     tributeResourceId,
+  };
+}
+
+export function toSimNationCurrency(row: SupabaseNationCurrencyRow): SimNationCurrency {
+  return {
+    backingRatio: row.backing_ratio,
+    backingResourceId: row.backing_resource_id,
+    confidence: row.confidence,
+    currencyType: row.currency_type as SimNationCurrency["currencyType"],
+    id: row.id,
+    moneySupply: row.money_supply,
+    name: row.name,
+    nationId: row.nation_id,
+    reserveQuantity: row.reserve_quantity,
+  };
+}
+
+export function toSimCurrencyLedgerEntry(
+  row: SupabaseNationCurrencyLedgerRow,
+): SimCurrencyLedgerEntry {
+  return {
+    action: row.action as SimCurrencyLedgerEntry["action"],
+    amount: row.amount,
+    currencyId: row.currency_id,
   };
 }
 

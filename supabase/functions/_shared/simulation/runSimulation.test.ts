@@ -56,6 +56,8 @@ function makeInput(
     jobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nationCurrencies: [],
+    nationCurrencyLedgerEntries: [],
     nationOffices: [],
     nationRelationships: [],
     nationResourceStockpiles: [],

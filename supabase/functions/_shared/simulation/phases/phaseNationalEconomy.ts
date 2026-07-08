@@ -5,21 +5,34 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
+import {
+  computeNextFiatConfidence,
+  computeResourceBackedConfidence,
+  isFiatConfidenceCollapsing,
+  isResourceBackedInDefault,
+} from "../../economy/index.ts";
 import { GOVERNMENT_TAX_EFFICIENCY } from "../../government/index.ts";
 import { floorToDatabaseScale } from "../decimalMath.ts";
+import { compareById } from "../sortUtils.ts";
 
 import type {
+  NationCurrencySnapshot,
+  NationCurrencyUpdate,
   NationStockpileDelta,
   NationTurnSnapshot,
   SimulationContext,
   SimulationLogEntry,
+  SimulationNotification,
   StockpileDelta,
 } from "../simulationTypes.ts";
 
 export type PhaseNationalEconomyOutput = {
   readonly logs: readonly SimulationLogEntry[];
+  readonly nationCurrencySnapshots: readonly NationCurrencySnapshot[];
+  readonly nationCurrencyUpdates: readonly NationCurrencyUpdate[];
   readonly nationStockpileDeltas: readonly NationStockpileDelta[];
   readonly nationTurnSnapshots: readonly NationTurnSnapshot[];
+  readonly notifications: readonly SimulationNotification[];
   readonly stockpileDeltas: readonly StockpileDelta[];
 };
 
@@ -135,10 +148,99 @@ export function phaseNationalEconomy(
     });
   }
 
+  // #1094: currency step — fiat confidence drift from this turn's mint/burn
+  // ledger activity, and resource-backed default checks. Ordered by currency
+  // id for determinism; independent of the tax-collection logic above.
+  const notifications: SimulationNotification[] = [];
+  const nationCurrencySnapshots: NationCurrencySnapshot[] = [];
+  const nationCurrencyUpdates: NationCurrencyUpdate[] = [];
+
+  const ledgerTotalsByCurrency = new Map<string, { burned: number; minted: number }>();
+  for (const entry of context.input.nationCurrencyLedgerEntries) {
+    if (entry.action !== "mint" && entry.action !== "burn") continue;
+    const totals = ledgerTotalsByCurrency.get(entry.currencyId) ?? { burned: 0, minted: 0 };
+    if (entry.action === "mint") {
+      totals.minted += entry.amount ?? 0;
+    } else {
+      totals.burned += entry.amount ?? 0;
+    }
+    ledgerTotalsByCurrency.set(entry.currencyId, totals);
+  }
+
+  const sortedCurrencies = [...context.input.nationCurrencies].sort(compareById);
+  for (const currency of sortedCurrencies) {
+    const { burned, minted } = ledgerTotalsByCurrency.get(currency.id) ?? { burned: 0, minted: 0 };
+    let confidence: number;
+    let isInDefault = false;
+
+    if (currency.currencyType === "fiat") {
+      const moneySupplyStart = currency.moneySupply - (minted - burned);
+      confidence = computeNextFiatConfidence({
+        burnedThisTurn: burned,
+        confidence: currency.confidence,
+        mintedThisTurn: minted,
+        moneySupplyStart,
+      });
+      if (isFiatConfidenceCollapsing(confidence)) {
+        notifications.push({
+          messageText: `Confidence in ${currency.name} is collapsing.`,
+          nationId: currency.nationId,
+          notificationType: "currency.confidence_collapsing",
+          scope: "nation",
+        });
+      }
+    } else {
+      const backingRatio = currency.backingRatio ?? 0;
+      isInDefault = isResourceBackedInDefault({
+        backingRatio,
+        moneySupply: currency.moneySupply,
+        reserveQuantity: currency.reserveQuantity,
+      });
+      confidence = computeResourceBackedConfidence({
+        backingRatio,
+        moneySupply: currency.moneySupply,
+        reserveQuantity: currency.reserveQuantity,
+      });
+      if (isInDefault) {
+        logs.push({
+          category: "currency_default",
+          nationId: currency.nationId,
+          payload: {
+            backingRatio,
+            currencyId: currency.id,
+            moneySupply: currency.moneySupply,
+            reserveQuantity: currency.reserveQuantity,
+          },
+          phase: "nationalEconomy",
+        });
+        notifications.push({
+          messageText: `${currency.name} has defaulted — reserves no longer back the money supply.`,
+          nationId: currency.nationId,
+          notificationType: "currency.default",
+          scope: "nation",
+        });
+      }
+    }
+
+    nationCurrencySnapshots.push({
+      burned,
+      confidence,
+      currencyId: currency.id,
+      minted,
+      moneySupply: currency.moneySupply,
+      nationId: currency.nationId,
+      reserveQuantity: currency.reserveQuantity,
+    });
+    nationCurrencyUpdates.push({ confidence, currencyId: currency.id, isInDefault });
+  }
+
   return {
     logs,
+    nationCurrencySnapshots,
+    nationCurrencyUpdates,
     nationStockpileDeltas: [...nationCredits.values()],
     nationTurnSnapshots,
+    notifications,
     stockpileDeltas,
   };
 }

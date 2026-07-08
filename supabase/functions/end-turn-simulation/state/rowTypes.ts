@@ -213,6 +213,24 @@ export type SupabaseNationTreatyRow = {
   readonly ends_turn_number: number | null;
 };
 
+export type SupabaseNationCurrencyRow = {
+  readonly id: string;
+  readonly nation_id: string;
+  readonly name: string;
+  readonly currency_type: string;
+  readonly backing_resource_id: string | null;
+  readonly backing_ratio: number | null;
+  readonly money_supply: number;
+  readonly reserve_quantity: number;
+  readonly confidence: number;
+};
+
+export type SupabaseNationCurrencyLedgerRow = {
+  readonly currency_id: string;
+  readonly action: string;
+  readonly amount: number | null;
+};
+
 export type SupabaseAssignmentRow = {
   readonly citizen_id: string;
   readonly assignment_type: string;
@@ -541,6 +559,30 @@ export function isNationTreatyRow(v: unknown): v is SupabaseNationTreatyRow {
     typeof v.treaty_type === "string" &&
     isRecord(v.terms) &&
     (v.ends_turn_number === null || typeof v.ends_turn_number === "number")
+  );
+}
+
+export function isNationCurrencyRow(v: unknown): v is SupabaseNationCurrencyRow {
+  return (
+    isRecord(v) &&
+    typeof v.id === "string" &&
+    typeof v.nation_id === "string" &&
+    typeof v.name === "string" &&
+    typeof v.currency_type === "string" &&
+    (v.backing_resource_id === null || typeof v.backing_resource_id === "string") &&
+    (v.backing_ratio === null || typeof v.backing_ratio === "number") &&
+    typeof v.money_supply === "number" &&
+    typeof v.reserve_quantity === "number" &&
+    typeof v.confidence === "number"
+  );
+}
+
+export function isNationCurrencyLedgerRow(v: unknown): v is SupabaseNationCurrencyLedgerRow {
+  return (
+    isRecord(v) &&
+    typeof v.currency_id === "string" &&
+    typeof v.action === "string" &&
+    (v.amount === null || typeof v.amount === "number")
   );
 }
 

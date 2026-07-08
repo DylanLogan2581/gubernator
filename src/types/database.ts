@@ -1481,6 +1481,80 @@ export type Database = {
           },
         ];
       };
+      nation_currency_snapshots: {
+        Row: {
+          burned: number;
+          confidence: number;
+          created_at: string;
+          currency_id: string;
+          id: string;
+          minted: number;
+          money_supply: number;
+          nation_id: string;
+          reserve_quantity: number;
+          turn_number: number;
+          turn_transition_id: string;
+          world_id: string;
+        };
+        Insert: {
+          burned?: number;
+          confidence?: number;
+          created_at?: string;
+          currency_id: string;
+          id?: string;
+          minted?: number;
+          money_supply?: number;
+          nation_id: string;
+          reserve_quantity?: number;
+          turn_number: number;
+          turn_transition_id: string;
+          world_id: string;
+        };
+        Update: {
+          burned?: number;
+          confidence?: number;
+          created_at?: string;
+          currency_id?: string;
+          id?: string;
+          minted?: number;
+          money_supply?: number;
+          nation_id?: string;
+          reserve_quantity?: number;
+          turn_number?: number;
+          turn_transition_id?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "nation_currency_snapshots_currency_id_fkey";
+            columns: ["currency_id"];
+            isOneToOne: false;
+            referencedRelation: "nation_currencies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_currency_snapshots_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_currency_snapshots_transition_world_fkey";
+            columns: ["turn_transition_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "turn_transitions";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "nation_currency_snapshots_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       nation_discoveries: {
         Row: {
           created_at: string;
@@ -4480,6 +4554,15 @@ export type Database = {
         Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
         Returns: Record<string, unknown>;
       };
+      internal_apply_turn_transition_nation_currency: {
+        Args: {
+          p_expected_turn_number: number;
+          p_payload: Json;
+          p_transition_id: string;
+          p_world_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
       internal_apply_turn_transition_nation_economy: {
         Args: {
           p_expected_turn_number: number;
@@ -5928,7 +6011,9 @@ export type Database = {
         | "nation.subsidy_received"
         | "nation.treaty_broken"
         | "nation.tribute_missed"
-        | "nation.treaty_expired";
+        | "nation.treaty_expired"
+        | "currency.default"
+        | "currency.confidence_collapsing";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -6101,6 +6186,8 @@ export const Constants = {
         "nation.treaty_broken",
         "nation.tribute_missed",
         "nation.treaty_expired",
+        "currency.default",
+        "currency.confidence_collapsing",
       ],
     },
   },

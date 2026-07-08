@@ -52,6 +52,8 @@ function makeMinimalPayload(): ApplyTurnTransitionPayload {
     eventStatusPatches: [],
     logEntries: [],
     managedPopulationUpdates: [],
+    nationCurrencySnapshots: [],
+    nationCurrencyUpdates: [],
     nationStockpileDeltas: [],
     nationTurnSnapshots: [],
     notifications: [],

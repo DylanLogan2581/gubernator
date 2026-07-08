@@ -10,7 +10,9 @@
 import type {
   SimCitizen,
   SimCitizenAssignment,
+  SimCurrencyLedgerEntry,
   SimNation,
+  SimNationCurrency,
   SimNationOffice,
   SimSettlement,
   SimTreaty,
@@ -70,6 +72,8 @@ export function makeInputState(
     jobs: [],
     managedPopulationTypes: [],
     managedPopulations: [],
+    nationCurrencies: [],
+    nationCurrencyLedgerEntries: [],
     nationOffices: [],
     nationRelationships: [],
     nationResourceStockpiles: [],
@@ -134,6 +138,31 @@ export function makeNation(
     governmentType: "monarchy",
     name: "Testland",
     taxRate: 0,
+    ...overrides,
+  };
+}
+
+export function makeCurrency(
+  overrides: Partial<SimNationCurrency> & { id: string; nationId: string },
+): SimNationCurrency {
+  return {
+    backingRatio: null,
+    backingResourceId: null,
+    confidence: 1,
+    currencyType: "fiat",
+    moneySupply: 0,
+    reserveQuantity: 0,
+    name: "Testmark",
+    ...overrides,
+  };
+}
+
+export function makeLedgerEntry(
+  overrides: Partial<SimCurrencyLedgerEntry> & { currencyId: string },
+): SimCurrencyLedgerEntry {
+  return {
+    action: "mint",
+    amount: 0,
     ...overrides,
   };
 }

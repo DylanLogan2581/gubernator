@@ -544,6 +544,7 @@ export function runSimulation(
     ...p2.notifications,
     ...p3.notifications,
     ...p4.notifications,
+    ...p6dot5.notifications,
     ...p7.notifications,
     ...p8.notifications,
     ...filteredP9Notifications,
@@ -589,6 +590,8 @@ export function runSimulation(
     eventStatusPatches: p11.eventStatusPatches,
     logEntries,
     managedPopulationUpdates,
+    nationCurrencySnapshots: p6dot5.nationCurrencySnapshots,
+    nationCurrencyUpdates: p6dot5.nationCurrencyUpdates,
     nationStockpileDeltas: [...p6dot5.nationStockpileDeltas, ...p6dot75.nationStockpileDeltas],
     nationTurnSnapshots: mergeNationTurnSnapshots([
       p6dot5.nationTurnSnapshots,

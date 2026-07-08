@@ -58,6 +58,8 @@ function makeContext(
       jobs: [],
       managedPopulationTypes: types,
       managedPopulations: pops,
+      nationCurrencies: [],
+      nationCurrencyLedgerEntries: [],
       nationOffices: [],
       nationRelationships: [],
       nationResourceStockpiles: [],
