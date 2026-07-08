@@ -39,6 +39,174 @@ export type Database = {
         };
         Relationships: [];
       };
+      armies: {
+        Row: {
+          created_at: string;
+          created_turn_number: number;
+          funding_source: string;
+          id: string;
+          name: string;
+          nation_id: string;
+          stationed_settlement_id: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_turn_number: number;
+          funding_source: string;
+          id?: string;
+          name: string;
+          nation_id: string;
+          stationed_settlement_id: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_turn_number?: number;
+          funding_source?: string;
+          id?: string;
+          name?: string;
+          nation_id?: string;
+          stationed_settlement_id?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "armies_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "armies_nation_world_fkey";
+            columns: ["nation_id", "world_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id", "world_id"];
+          },
+          {
+            foreignKeyName: "armies_stationed_settlement_nation_fkey";
+            columns: ["stationed_settlement_id", "nation_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id", "nation_id"];
+          },
+          {
+            foreignKeyName: "armies_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      army_groups: {
+        Row: {
+          army_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          parent_group_id: string | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          army_id: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          parent_group_id?: string | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          army_id?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          parent_group_id?: string | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "army_groups_army_id_fkey";
+            columns: ["army_id"];
+            isOneToOne: false;
+            referencedRelation: "armies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "army_groups_parent_army_fkey";
+            columns: ["parent_group_id", "army_id"];
+            isOneToOne: false;
+            referencedRelation: "army_groups";
+            referencedColumns: ["id", "army_id"];
+          },
+        ];
+      };
+      army_units: {
+        Row: {
+          army_id: string;
+          created_at: string;
+          created_turn_number: number;
+          group_id: string | null;
+          id: string;
+          name: string;
+          sort_order: number;
+          unit_type_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          army_id: string;
+          created_at?: string;
+          created_turn_number: number;
+          group_id?: string | null;
+          id?: string;
+          name: string;
+          sort_order?: number;
+          unit_type_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          army_id?: string;
+          created_at?: string;
+          created_turn_number?: number;
+          group_id?: string | null;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          unit_type_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "army_units_army_id_fkey";
+            columns: ["army_id"];
+            isOneToOne: false;
+            referencedRelation: "armies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "army_units_group_army_fkey";
+            columns: ["group_id", "army_id"];
+            isOneToOne: false;
+            referencedRelation: "army_groups";
+            referencedColumns: ["id", "army_id"];
+          },
+          {
+            foreignKeyName: "army_units_unit_type_id_fkey";
+            columns: ["unit_type_id"];
+            isOneToOne: false;
+            referencedRelation: "unit_types";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       building_blueprint_tiers: {
         Row: {
           building_blueprint_id: string;
@@ -3961,6 +4129,11 @@ export type Database = {
           status: string;
         }[];
       };
+      army_group_depth: { Args: { p_group_id: string }; Returns: number };
+      army_group_subtree_height: {
+        Args: { p_group_id: string };
+        Returns: number;
+      };
       assert_world_not_archived: {
         Args: { p_world_id: string };
         Returns: undefined;
@@ -4257,6 +4430,80 @@ export type Database = {
             };
             Returns: string;
           };
+      create_army: {
+        Args: {
+          p_funding_source: string;
+          p_name: string;
+          p_nation_id: string;
+          p_stationed_settlement_id: string;
+        };
+        Returns: {
+          created_at: string;
+          created_turn_number: number;
+          funding_source: string;
+          id: string;
+          name: string;
+          nation_id: string;
+          stationed_settlement_id: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "armies";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      create_army_group: {
+        Args: {
+          p_army_id: string;
+          p_name: string;
+          p_parent_group_id: string;
+          p_sort_order?: number;
+        };
+        Returns: {
+          army_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          parent_group_id: string | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "army_groups";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      create_army_unit: {
+        Args: {
+          p_army_id: string;
+          p_group_id: string;
+          p_name: string;
+          p_sort_order?: number;
+          p_unit_type_id: string;
+        };
+        Returns: {
+          army_id: string;
+          created_at: string;
+          created_turn_number: number;
+          group_id: string | null;
+          id: string;
+          name: string;
+          sort_order: number;
+          unit_type_id: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "army_units";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       create_citizen_internal: {
         Args: {
           p_born_on_turn_number?: number;
@@ -4664,6 +4911,9 @@ export type Database = {
       default_calendar_config: { Args: never; Returns: Json };
       default_naming_config: { Args: never; Returns: Json };
       default_npc_flavor_config: { Args: never; Returns: Json };
+      delete_army: { Args: { p_army_id: string }; Returns: undefined };
+      delete_army_group: { Args: { p_group_id: string }; Returns: undefined };
+      delete_army_unit: { Args: { p_unit_id: string }; Returns: undefined };
       delete_citizen_memory: {
         Args: { p_memory_id: string };
         Returns: undefined;
@@ -5274,6 +5524,44 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      move_army_group: {
+        Args: { p_group_id: string; p_new_parent_group_id: string };
+        Returns: {
+          army_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          parent_group_id: string | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "army_groups";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      move_army_unit: {
+        Args: { p_group_id: string; p_sort_order: number; p_unit_id: string };
+        Returns: {
+          army_id: string;
+          created_at: string;
+          created_turn_number: number;
+          group_id: string | null;
+          id: string;
+          name: string;
+          sort_order: number;
+          unit_type_id: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "army_units";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       nation_images_path_nation_id: { Args: { name: string }; Returns: string };
       nation_readiness_eligible_voter_ids: {
         Args: { p_nation_id: string };
@@ -5445,6 +5733,64 @@ export type Database = {
           settlement_id: string;
         }[];
       };
+      rename_army: {
+        Args: { p_army_id: string; p_name: string };
+        Returns: {
+          created_at: string;
+          created_turn_number: number;
+          funding_source: string;
+          id: string;
+          name: string;
+          nation_id: string;
+          stationed_settlement_id: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "armies";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      rename_army_group: {
+        Args: { p_group_id: string; p_name: string };
+        Returns: {
+          army_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          parent_group_id: string | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "army_groups";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      rename_army_unit: {
+        Args: { p_name: string; p_unit_id: string };
+        Returns: {
+          army_id: string;
+          created_at: string;
+          created_turn_number: number;
+          group_id: string | null;
+          id: string;
+          name: string;
+          sort_order: number;
+          unit_type_id: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "army_units";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       rename_world: {
         Args: { p_name: string; p_world_id: string };
         Returns: {
@@ -5478,6 +5824,24 @@ export type Database = {
           to: "worlds";
           isOneToOne: false;
           isSetofReturn: true;
+        };
+      };
+      reorder_army_group: {
+        Args: { p_group_id: string; p_sort_order: number };
+        Returns: {
+          army_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          parent_group_id: string | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "army_groups";
+          isOneToOne: true;
+          isSetofReturn: false;
         };
       };
       reorder_construction_projects: {
