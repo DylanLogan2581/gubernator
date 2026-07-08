@@ -22,6 +22,7 @@ export type Citizen = {
   readonly cultureId: string | null;
   readonly deathCause: string | null;
   readonly deathCauseCategory: DeathCauseCategory | null;
+  readonly educationLevelId: string | null;
   readonly givenName: string;
   readonly id: string;
   readonly name: string;

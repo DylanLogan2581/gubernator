@@ -160,6 +160,20 @@ export const bulkSetCitizenCultureReligionInputSchema = z.strictObject({
   settlementId: settlementIdSchema,
 });
 
+export const setCitizenEducationInputSchema = z.strictObject({
+  citizenId: citizenIdSchema,
+  educationLevelId: z.union([z.guid(), z.null()]),
+});
+
+// Bulk seeding tool: sets every alive citizen in the settlement to the given
+// level. Unlike setCitizenEducationInputSchema above, this is the only field
+// the RPC writes, so null is a valid target too (resets the settlement back
+// to uneducated) rather than "leave untouched".
+export const bulkSetCitizenEducationInputSchema = z.strictObject({
+  educationLevelId: z.union([z.guid(), z.null()]),
+  settlementId: settlementIdSchema,
+});
+
 export const markCitizenDeadInputSchema = z.strictObject({
   citizenId: citizenIdSchema,
   deathCause: optionalNpcTextSchema,
@@ -338,6 +352,18 @@ export type BulkSetCitizenCultureReligionInput = z.input<
 >;
 export type BulkSetCitizenCultureReligionValues = z.output<
   typeof bulkSetCitizenCultureReligionInputSchema
+>;
+export type SetCitizenEducationInput = z.input<
+  typeof setCitizenEducationInputSchema
+>;
+export type SetCitizenEducationValues = z.output<
+  typeof setCitizenEducationInputSchema
+>;
+export type BulkSetCitizenEducationInput = z.input<
+  typeof bulkSetCitizenEducationInputSchema
+>;
+export type BulkSetCitizenEducationValues = z.output<
+  typeof bulkSetCitizenEducationInputSchema
 >;
 export type MarkCitizenDeadInput = z.input<typeof markCitizenDeadInputSchema>;
 export type MarkCitizenDeadValues = z.output<typeof markCitizenDeadInputSchema>;

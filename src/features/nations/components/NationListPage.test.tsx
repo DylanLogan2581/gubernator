@@ -339,6 +339,7 @@ function makePlayerCharacter(): Citizen {
     cultureId: null,
     deathCause: null,
     deathCauseCategory: null,
+    educationLevelId: null,
     givenName: "Alice",
     id: "citizen-pc-1",
     name: "Alice Smith",

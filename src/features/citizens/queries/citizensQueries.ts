@@ -115,6 +115,7 @@ type CitizenRow = {
   readonly culture_id: string | null;
   readonly death_cause: string | null;
   readonly death_cause_category: DeathCauseCategory | null;
+  readonly education_level_id: string | null;
   readonly given_name: string;
   readonly id: string;
   readonly name: string;
@@ -158,7 +159,7 @@ type CitizenAggregateWithAssignmentRow = CitizenAggregateRow & {
 };
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,culture_id,religion_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,nameset_id,culture_id,religion_id,education_level_id,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,created_at,updated_at";
 
 type CitizenCultureReligionRow = {
   readonly culture_id: string | null;
@@ -720,6 +721,7 @@ export function toCitizen(row: CitizenRow): Citizen {
     cultureId: row.culture_id,
     deathCause: row.death_cause,
     deathCauseCategory: row.death_cause_category,
+    educationLevelId: row.education_level_id,
     givenName: row.given_name,
     id: row.id,
     name: row.name,

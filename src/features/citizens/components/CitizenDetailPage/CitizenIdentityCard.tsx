@@ -1,16 +1,21 @@
 import { useMutation, useQuery, type QueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { culturesByWorldQueryOptions } from "@/features/cultures";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { activePartnershipForCitizenQueryOptions } from "@/features/partnerships";
 import { religionsByWorldQueryOptions } from "@/features/religions";
 import type { Settlement } from "@/features/settlements";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
-import { setCitizenCultureReligionMutationOptions } from "../../mutations/citizensMutations";
+import {
+  setCitizenCultureReligionMutationOptions,
+  setCitizenEducationMutationOptions,
+} from "../../mutations/citizensMutations";
 import { citizenByIdQueryOptions } from "../../queries/citizensQueries";
 import { managerScopeLabel } from "../../utils/citizenRoles";
 import { CitizenAvatar } from "../CitizenAvatar";
@@ -96,6 +101,33 @@ export function CitizenIdentityCard({
         },
         onSuccess: () => {
           notifyMutationSuccess("Religion updated.");
+        },
+      },
+    );
+  }
+
+  const [isEditingEducation, setIsEditingEducation] = useState(false);
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(citizen.worldId),
+  );
+  const educationMutation = useMutation(
+    setCitizenEducationMutationOptions({ queryClient }),
+  );
+  const educationLevel =
+    educationLevelsQuery.data?.find(
+      (level) => level.id === citizen.educationLevelId,
+    ) ?? null;
+
+  function handleEducationChange(educationLevelId: string | null): void {
+    if (educationLevelId === citizen.educationLevelId) return;
+    educationMutation.mutate(
+      { citizenId: citizen.id, educationLevelId },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to update education level.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess("Education level updated.");
         },
       },
     );
@@ -214,6 +246,55 @@ export function CitizenIdentityCard({
               Edit culture/religion
             </button>
           ) : null}
+        </div>
+      )}
+
+      {canAdmin && isEditingEducation ? (
+        <div className="grid gap-3 rounded-md border border-border p-3">
+          <Label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Education level</span>
+            <NativeSelect
+              aria-label="Education level"
+              disabled={educationMutation.isPending}
+              value={citizen.educationLevelId ?? ""}
+              onChange={(event) => {
+                const next = event.currentTarget.value;
+                handleEducationChange(next === "" ? null : next);
+              }}
+            >
+              <option value="">Uneducated</option>
+              {educationLevelsQuery.data?.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </Label>
+          <button
+            type="button"
+            className="text-sm text-muted-foreground underline justify-self-start"
+            onClick={() => setIsEditingEducation(false)}
+          >
+            Done
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-1 text-sm">
+          <span className="text-xs text-muted-foreground">Education level</span>
+          <div className="flex items-center gap-2">
+            <Badge variant={educationLevel === null ? "outline" : "secondary"}>
+              {educationLevel?.name ?? "Uneducated"}
+            </Badge>
+            {canAdmin ? (
+              <button
+                type="button"
+                className="text-sm text-muted-foreground underline"
+                onClick={() => setIsEditingEducation(true)}
+              >
+                Edit
+              </button>
+            ) : null}
+          </div>
         </div>
       )}
     </Card>

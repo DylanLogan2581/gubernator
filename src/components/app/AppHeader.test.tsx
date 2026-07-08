@@ -378,6 +378,7 @@ function createSettlementManagerCitizen(): Citizen {
     cultureId: null,
     deathCause: null,
     deathCauseCategory: null,
+    educationLevelId: null,
     givenName: "Manager",
     id: "citizen-1",
     name: "Manager",

@@ -317,6 +317,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -352,6 +353,7 @@ export type Database = {
           death_cause_category?:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id?: string | null;
           given_name: string;
           id?: string;
           name?: string | null;
@@ -387,6 +389,7 @@ export type Database = {
           death_cause_category?:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id?: string | null;
           given_name?: string;
           id?: string;
           name?: string | null;
@@ -419,6 +422,13 @@ export type Database = {
             columns: ["culture_id"];
             isOneToOne: false;
             referencedRelation: "cultures";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "citizens_education_level_id_fkey";
+            columns: ["education_level_id"];
+            isOneToOne: false;
+            referencedRelation: "education_levels";
             referencedColumns: ["id"];
           },
           {
@@ -3455,6 +3465,7 @@ export type Database = {
           assignment_type: string | null;
           born_on_turn_number: number | null;
           citizen_type: string | null;
+          education_level_name: string | null;
           id: string | null;
           name: string | null;
           nation_id: string | null;
@@ -3802,6 +3813,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -3874,6 +3886,52 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
+          given_name: string;
+          id: string;
+          name: string | null;
+          nameset_id: string | null;
+          npc_flaw: string | null;
+          npc_goal: string | null;
+          npc_secret_contradiction: string | null;
+          npc_trait_1: string | null;
+          npc_trait_2: string | null;
+          parent_a_citizen_id: string | null;
+          parent_b_citizen_id: string | null;
+          personality_text: string | null;
+          profile_photo_url: string | null;
+          religion_id: string | null;
+          role_nation_id: string | null;
+          role_settlement_id: string | null;
+          role_type: string;
+          settlement_id: string | null;
+          sex: string | null;
+          skills_text: string | null;
+          status: string;
+          surname: string | null;
+          updated_at: string;
+          user_id: string | null;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      bulk_set_citizen_education: {
+        Args: { p_education_level_id: string; p_settlement_id: string };
+        Returns: {
+          born_on_turn_number: number | null;
+          citizen_type: string;
+          created_at: string;
+          culture_id: string | null;
+          death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -4064,6 +4122,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -4240,6 +4299,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -4327,6 +4387,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -4868,6 +4929,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -4925,6 +4987,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -5521,6 +5584,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -5614,6 +5678,52 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
+          given_name: string;
+          id: string;
+          name: string | null;
+          nameset_id: string | null;
+          npc_flaw: string | null;
+          npc_goal: string | null;
+          npc_secret_contradiction: string | null;
+          npc_trait_1: string | null;
+          npc_trait_2: string | null;
+          parent_a_citizen_id: string | null;
+          parent_b_citizen_id: string | null;
+          personality_text: string | null;
+          profile_photo_url: string | null;
+          religion_id: string | null;
+          role_nation_id: string | null;
+          role_settlement_id: string | null;
+          role_type: string;
+          settlement_id: string | null;
+          sex: string | null;
+          skills_text: string | null;
+          status: string;
+          surname: string | null;
+          updated_at: string;
+          user_id: string | null;
+          world_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "citizens";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      set_citizen_education: {
+        Args: { p_citizen_id: string; p_education_level_id: string };
+        Returns: {
+          born_on_turn_number: number | null;
+          citizen_type: string;
+          created_at: string;
+          culture_id: string | null;
+          death_cause: string | null;
+          death_cause_category:
+            | Database["public"]["Enums"]["death_cause_category"]
+            | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;
@@ -6202,6 +6312,7 @@ export type Database = {
           death_cause_category:
             | Database["public"]["Enums"]["death_cause_category"]
             | null;
+          education_level_id: string | null;
           given_name: string;
           id: string;
           name: string | null;

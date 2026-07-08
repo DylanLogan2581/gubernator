@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Landmark, Skull, UserPlus } from "lucide-react";
+import { GraduationCap, Landmark, Skull, UserPlus } from "lucide-react";
 import { useState, type JSX } from "react";
 
 import { DataTable } from "@/components/shared/DataTable";
@@ -27,13 +27,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { culturesByWorldQueryOptions } from "@/features/cultures";
+import { educationLevelsByWorldQueryOptions } from "@/features/education";
 import { religionsByWorldQueryOptions } from "@/features/religions";
 import { settlementPopulationCapQueryOptions } from "@/features/settlements";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 
-import { bulkSetCitizenCultureReligionMutationOptions } from "../mutations/citizensMutations";
+import {
+  bulkSetCitizenCultureReligionMutationOptions,
+  bulkSetCitizenEducationMutationOptions,
+} from "../mutations/citizensMutations";
 import { citizensDirectoryQueryOptions } from "../queries/citizenDirectoryQueries";
 import { citizenAggregateStatsForSettlementQueryOptions } from "../queries/citizensQueries";
 import { formatOfficeTypesLabel } from "../utils/officeTypesLabel";
@@ -153,6 +157,20 @@ const SETTLEMENT_CITIZENS_COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
     cell: ({ row }) => (
       <Badge variant="secondary">
         {CITIZEN_TYPE_LABELS[row.original.citizenType]}
+      </Badge>
+    ),
+  },
+  {
+    id: "education",
+    enableSorting: false,
+    header: "Education",
+    cell: ({ row }) => (
+      <Badge
+        variant={
+          row.original.educationLevelName === null ? "outline" : "secondary"
+        }
+      >
+        {row.original.educationLevelName ?? "Uneducated"}
       </Badge>
     ),
   },
@@ -286,6 +304,7 @@ function CitizensCreateActions({
   const [mode, setMode] = useState<CitizensCreateMode>(null);
   const [isBulkCultureReligionOpen, setIsBulkCultureReligionOpen] =
     useState(false);
+  const [isBulkEducationOpen, setIsBulkEducationOpen] = useState(false);
 
   const disabledReason = isArchived
     ? "Creating citizens is disabled because this world is archived."
@@ -330,10 +349,30 @@ function CitizensCreateActions({
           <Landmark aria-hidden="true" />
           Assign culture/religion to all
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isArchived}
+          title={disabledReason}
+          aria-label="Set education level for all citizens here"
+          onClick={() => setIsBulkEducationOpen(true)}
+        >
+          <GraduationCap aria-hidden="true" />
+          Set education level for all
+        </Button>
       </div>
       {isBulkCultureReligionOpen ? (
         <BulkAssignCultureReligionDialog
           onClose={() => setIsBulkCultureReligionOpen(false)}
+          queryClient={queryClient}
+          settlementId={settlementId}
+          worldId={worldId}
+        />
+      ) : null}
+      {isBulkEducationOpen ? (
+        <BulkSetEducationDialog
+          onClose={() => setIsBulkEducationOpen(false)}
           queryClient={queryClient}
           settlementId={settlementId}
           worldId={worldId}
@@ -469,6 +508,93 @@ function BulkAssignCultureReligionDialog({
             onClick={handleSubmit}
           >
             {bulkMutation.isPending ? "Assigning…" : "Assign"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BulkSetEducationDialog({
+  onClose,
+  queryClient,
+  settlementId,
+  worldId,
+}: {
+  readonly onClose: () => void;
+  readonly queryClient: QueryClient;
+  readonly settlementId: string;
+  readonly worldId: string;
+}): JSX.Element {
+  const educationLevelsQuery = useQuery(
+    educationLevelsByWorldQueryOptions(worldId),
+  );
+  const [educationLevelId, setEducationLevelId] = useState<string | null>(null);
+
+  const bulkMutation = useMutation(
+    bulkSetCitizenEducationMutationOptions({ queryClient }),
+  );
+
+  function handleSubmit(): void {
+    bulkMutation.mutate(
+      { educationLevelId, settlementId },
+      {
+        onError: (error) => {
+          notifyMutationError(
+            error,
+            "Failed to set education level for citizens.",
+          );
+        },
+        onSuccess: (citizens) => {
+          notifyMutationSuccess(
+            `Updated ${citizens.length.toString()} citizen(s).`,
+          );
+          onClose();
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Set education level for all citizens here</DialogTitle>
+          <DialogDescription>
+            Applies to every alive citizen in this settlement.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <Label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">Education level</span>
+            <NativeSelect
+              aria-label="Education level"
+              disabled={bulkMutation.isPending}
+              value={educationLevelId ?? ""}
+              onChange={(event) => {
+                const next = event.currentTarget.value;
+                setEducationLevelId(next === "" ? null : next);
+              }}
+            >
+              <option value="">Uneducated</option>
+              {educationLevelsQuery.data?.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </NativeSelect>
+          </Label>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={bulkMutation.isPending}
+            onClick={handleSubmit}
+          >
+            {bulkMutation.isPending ? "Setting…" : "Set"}
           </Button>
         </DialogFooter>
       </DialogContent>

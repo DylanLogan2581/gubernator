@@ -16,19 +16,23 @@ import { toCitizen, type CitizenRow } from "../queries/citizensQueries";
 import { citizensQueryKeys } from "../queries/citizensQueryKeys";
 import {
   bulkSetCitizenCultureReligionInputSchema,
+  bulkSetCitizenEducationInputSchema,
   createNpcInputSchema,
   createPlayerCharacterInputSchema,
   markCitizenDeadInputSchema,
   reviveCitizenInputSchema,
   setCitizenCultureReligionInputSchema,
+  setCitizenEducationInputSchema,
   updateCitizenCoreInputSchema,
   updateCitizenNpcFieldsInputSchema,
   type BulkSetCitizenCultureReligionInput,
+  type BulkSetCitizenEducationInput,
   type CreateNpcInput,
   type CreatePlayerCharacterInput,
   type MarkCitizenDeadInput,
   type ReviveCitizenInput,
   type SetCitizenCultureReligionInput,
+  type SetCitizenEducationInput,
   type UpdateCitizenCoreInput,
   type UpdateCitizenNpcFieldsInput,
 } from "../schemas/citizenSchemas";
@@ -81,6 +85,16 @@ type BulkSetCitizenCultureReligionMutationOptions = UseMutationOptions<
   AuthUiError | CitizenMutationError,
   BulkSetCitizenCultureReligionInput
 >;
+type SetCitizenEducationMutationOptions = UseMutationOptions<
+  Citizen,
+  AuthUiError | CitizenMutationError,
+  SetCitizenEducationInput
+>;
+type BulkSetCitizenEducationMutationOptions = UseMutationOptions<
+  readonly Citizen[],
+  AuthUiError | CitizenMutationError,
+  BulkSetCitizenEducationInput
+>;
 
 export type CitizenMutationIssue = MutationIssue;
 
@@ -91,7 +105,7 @@ export const {
 export type CitizenMutationError = InstanceType<typeof CitizenMutationError>;
 
 const CITIZEN_SELECT =
-  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,culture_id,religion_id,created_at,updated_at";
+  "id,world_id,settlement_id,citizen_type,given_name,surname,name,sex,status,born_on_turn_number,parent_a_citizen_id,parent_b_citizen_id,user_id,profile_photo_url,role_type,role_nation_id,role_settlement_id,death_cause,death_cause_category,culture_id,religion_id,education_level_id,created_at,updated_at";
 
 export function createNpcMutationOptions({
   client = requireSupabaseClient(),
@@ -218,6 +232,47 @@ export function bulkSetCitizenCultureReligionMutationOptions({
       ...citizensQueryKeys.all,
       "bulk-set-citizen-culture-religion",
     ],
+    onSuccess: async (_citizens, input): Promise<void> => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementList(input.settlementId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: citizensQueryKeys.settlementAggregateStats(
+            input.settlementId,
+          ),
+        }),
+      ]);
+    },
+  });
+}
+
+export function setCitizenEducationMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): SetCitizenEducationMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: SetCitizenEducationInput) =>
+      setCitizenEducation(client, input),
+    mutationKey: [...citizensQueryKeys.all, "set-citizen-education"],
+    onSuccess: (citizen) => invalidateAfterCitizenChange(queryClient, citizen),
+  });
+}
+
+export function bulkSetCitizenEducationMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): BulkSetCitizenEducationMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: BulkSetCitizenEducationInput) =>
+      bulkSetCitizenEducation(client, input),
+    mutationKey: [...citizensQueryKeys.all, "bulk-set-citizen-education"],
     onSuccess: async (_citizens, input): Promise<void> => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -527,6 +582,81 @@ async function bulkSetCitizenCultureReligion(
     {
       p_culture_id: values.cultureId,
       p_religion_id: values.religionId,
+      p_settlement_id: values.settlementId,
+    },
+  );
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return Array.isArray(data)
+    ? data.map((row) => toCitizen(row as CitizenRow))
+    : [];
+}
+
+async function setCitizenEducation(
+  client: GubernatorSupabaseClient,
+  input: SetCitizenEducationInput,
+): Promise<Citizen> {
+  const values = parseInput(setCitizenEducationInputSchema, input);
+
+  // set_citizen_education is a SECURITY DEFINER RPC (column-level grants
+  // block direct writes to education_level_id — see
+  // 20260922000000_add_citizen_education_level). Its p_education_level_id arg
+  // is non-nullable in the generated types even though the RPC accepts null
+  // to clear, so this is called via the same untyped-rpc cast as
+  // setCitizenCultureReligion above.
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): {
+      maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+
+  const { data, error } = await clientAsRpcCapable
+    .rpc("set_citizen_education", {
+      p_citizen_id: values.citizenId,
+      p_education_level_id: values.educationLevelId,
+    })
+    .maybeSingle();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  if (data === null) {
+    throw new CitizenMutationError({
+      code: "citizen_not_found",
+      message: "Citizen education level could not be updated.",
+    });
+  }
+
+  return toCitizen(data as CitizenRow);
+}
+
+async function bulkSetCitizenEducation(
+  client: GubernatorSupabaseClient,
+  input: BulkSetCitizenEducationInput,
+): Promise<readonly Citizen[]> {
+  const values = parseInput(bulkSetCitizenEducationInputSchema, input);
+
+  // bulk_set_citizen_education is a SECURITY DEFINER RPC; same untyped-rpc
+  // cast as setCitizenEducation above (null is a valid target here too —
+  // it resets every alive citizen in the settlement back to uneducated).
+  const clientAsRpcCapable = client as unknown as {
+    rpc(
+      name: string,
+      params: Record<string, unknown>,
+    ): Promise<{ data: unknown; error: unknown }>;
+  };
+
+  const { data, error } = await clientAsRpcCapable.rpc(
+    "bulk_set_citizen_education",
+    {
+      p_education_level_id: values.educationLevelId,
       p_settlement_id: values.settlementId,
     },
   );

@@ -589,6 +589,7 @@ function createCitizen(overrides: Partial<Citizen> = {}): Citizen {
     cultureId: null,
     deathCause: null,
     deathCauseCategory: null,
+    educationLevelId: null,
     givenName: "Test",
     id: "citizen-x",
     name: "Test Citizen",

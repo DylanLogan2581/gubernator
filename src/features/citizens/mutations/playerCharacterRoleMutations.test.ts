@@ -428,6 +428,7 @@ function createCitizenRow(overrides: Partial<CitizenRow> = {}): CitizenRow {
     culture_id: null,
     death_cause: null,
     death_cause_category: null,
+    education_level_id: null,
     given_name: "Aldra",
     id: CITIZEN_ID,
     name: "Aldra",

@@ -44,6 +44,7 @@ export type CitizenDirectoryRow = {
   readonly ageTurns: number | null;
   readonly assignmentLabel: string | null;
   readonly citizenType: CitizenType;
+  readonly educationLevelName: string | null;
   readonly id: string;
   readonly name: string | null;
   readonly nationId: string | null;
@@ -72,6 +73,7 @@ type CitizenDirectoryRowData = {
   readonly age_turns: number | null;
   readonly assignment_label: string | null;
   readonly citizen_type: CitizenType;
+  readonly education_level_name: string | null;
   readonly id: string;
   readonly name: string | null;
   readonly nation_id: string | null;
@@ -84,7 +86,7 @@ type CitizenDirectoryRowData = {
 };
 
 const CITIZEN_DIRECTORY_SELECT =
-  "id,name,sex,status,citizen_type,age_turns,settlement_id,settlement_name,nation_id,nation_name,assignment_label,office_types";
+  "id,name,sex,status,citizen_type,age_turns,settlement_id,settlement_name,nation_id,nation_name,assignment_label,office_types,education_level_name";
 
 export function citizensDirectoryQueryOptions(
   worldId: string,
@@ -198,6 +200,7 @@ function toCitizenDirectoryRow(
     ageTurns: row.age_turns,
     assignmentLabel: row.assignment_label,
     citizenType: row.citizen_type,
+    educationLevelName: row.education_level_name,
     id: row.id,
     name: row.name,
     nationId: row.nation_id,

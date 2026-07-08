@@ -32,6 +32,7 @@ function makeCharacter(): Citizen {
     cultureId: null,
     deathCause: null,
     deathCauseCategory: null,
+    educationLevelId: null,
     givenName: "Alice",
     id: "citizen-1",
     name: "Alice Smith",

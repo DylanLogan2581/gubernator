@@ -473,6 +473,7 @@ function toCitizen(row: CitizenRowFixture): Citizen {
     cultureId: null,
     deathCause: row.death_cause,
     deathCauseCategory: row.death_cause_category,
+    educationLevelId: null,
     givenName: row.given_name,
     id: row.id,
     name: row.name,
