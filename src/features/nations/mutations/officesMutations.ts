@@ -9,7 +9,6 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
-import type { NationOfficeType } from "@/shared/government";
 
 import { nationOfficesQueryKeys } from "../queries/nationOfficesQueryKeys";
 import { nationReadinessQueryKeys } from "../queries/nationReadinessQueryKeys";
@@ -17,7 +16,9 @@ import { nationReadinessQueryKeys } from "../queries/nationReadinessQueryKeys";
 export type AppointNationOfficeInput = {
   readonly citizenId: string;
   readonly nationId: string;
-  readonly officeType: NationOfficeType;
+  // office_types.name (#1114) -- a world-default name (e.g. "senator") or a
+  // nation's own custom office type name.
+  readonly officeType: string;
   readonly worldId: string;
 };
 

@@ -5,7 +5,6 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
-import type { NationOfficeType } from "@/shared/government";
 
 import { nationOfficesQueryKeys } from "./nationOfficesQueryKeys";
 
@@ -40,7 +39,7 @@ async function getNationOfficesRoster(
   const { data: offices, error: officesError } = await client
     .from("nation_offices")
     .select(
-      "id,world_id,nation_id,office_type,citizen_id,appointed_turn_number",
+      "id,world_id,nation_id,office_type_id,citizen_id,appointed_turn_number,office_types(name)",
     )
     .eq("nation_id", nationId);
 
@@ -76,13 +75,14 @@ async function getNationOfficesRoster(
           "npc") as NationOfficeRosterEntry["citizenType"],
         id: office.id,
         nationId: office.nation_id,
-        officeType: office.office_type as NationOfficeType,
+        officeTypeId: office.office_type_id,
+        officeTypeName: office.office_types?.name ?? "Unknown office",
         worldId: office.world_id,
       };
     })
     .sort((a, b) => {
-      if (a.officeType !== b.officeType) {
-        return a.officeType.localeCompare(b.officeType);
+      if (a.officeTypeName !== b.officeTypeName) {
+        return a.officeTypeName.localeCompare(b.officeTypeName);
       }
       return a.citizenName.localeCompare(b.citizenName);
     });

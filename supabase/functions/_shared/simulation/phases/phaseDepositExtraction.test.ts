@@ -441,7 +441,7 @@ describe("phaseDepositExtraction — officeholder exclusion", () => {
 
     const withoutOffice = phaseDepositExtraction(makeContext(baseArgs));
     const withOffice = phaseDepositExtraction(
-      makeContext({ ...baseArgs, nationOffices: [{ citizenId: "c2" }] }),
+      makeContext({ ...baseArgs, nationOffices: [{ citizenId: "c2", excludesFromLabor: true }] }),
     );
 
     const logWithout = withoutOffice.logs.find((l) => l.category === "deposit.processed");
@@ -467,7 +467,7 @@ describe("phaseDepositExtraction — officeholder exclusion", () => {
       ],
       depositTypes: [depositType],
       deposits: [deposit],
-      nationOffices: [{ citizenId: "c2" }],
+      nationOffices: [{ citizenId: "c2", excludesFromLabor: true }],
       settlements: [makeSettlement({ id: "s1" })],
       stockpiles: [makeStockpile({ resourceId: "iron", settlementId: "s1" })],
     });

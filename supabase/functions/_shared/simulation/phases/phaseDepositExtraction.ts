@@ -36,7 +36,9 @@ export function phaseDepositExtraction(
   } = context.input;
 
   const depositTypeById = new Map(depositTypes.map((dt) => [dt.id, dt]));
-  const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
+  const officeholderCitizenIds = new Set(
+  nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
+);
   const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
   const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
 

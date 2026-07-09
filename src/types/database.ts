@@ -2028,7 +2028,7 @@ export type Database = {
           created_at: string;
           id: string;
           nation_id: string;
-          office_type: string;
+          office_type_id: string;
           updated_at: string;
           world_id: string;
         };
@@ -2038,7 +2038,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           nation_id: string;
-          office_type: string;
+          office_type_id: string;
           updated_at?: string;
           world_id: string;
         };
@@ -2048,7 +2048,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           nation_id?: string;
-          office_type?: string;
+          office_type_id?: string;
           updated_at?: string;
           world_id?: string;
         };
@@ -2072,6 +2072,13 @@ export type Database = {
             columns: ["nation_id"];
             isOneToOne: false;
             referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_offices_office_type_id_fkey";
+            columns: ["office_type_id"];
+            isOneToOne: false;
+            referencedRelation: "office_types";
             referencedColumns: ["id"];
           },
           {
@@ -2694,6 +2701,66 @@ export type Database = {
           },
           {
             foreignKeyName: "notifications_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      office_types: {
+        Row: {
+          color: string | null;
+          created_at: string;
+          description: string | null;
+          excludes_from_labor: boolean;
+          icon: string | null;
+          id: string;
+          max_holders: number | null;
+          name: string;
+          nation_id: string | null;
+          scope: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          color?: string | null;
+          created_at?: string;
+          description?: string | null;
+          excludes_from_labor?: boolean;
+          icon?: string | null;
+          id?: string;
+          max_holders?: number | null;
+          name: string;
+          nation_id?: string | null;
+          scope: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          color?: string | null;
+          created_at?: string;
+          description?: string | null;
+          excludes_from_labor?: boolean;
+          icon?: string | null;
+          id?: string;
+          max_holders?: number | null;
+          name?: string;
+          nation_id?: string | null;
+          scope?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "office_types_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "office_types_world_id_fkey";
             columns: ["world_id"];
             isOneToOne: false;
             referencedRelation: "worlds";
@@ -4219,7 +4286,7 @@ export type Database = {
           created_at: string;
           id: string;
           nation_id: string;
-          office_type: string;
+          office_type_id: string;
           updated_at: string;
           world_id: string;
         };
@@ -4989,6 +5056,10 @@ export type Database = {
       current_user_active_player_character_id: {
         Args: { p_world_id: string };
         Returns: string;
+      };
+      current_user_can_own_office_type: {
+        Args: { p_nation_id: string; p_world_id: string };
+        Returns: boolean;
       };
       current_user_has_player_character_in_nation: {
         Args: { p_nation_id: string };

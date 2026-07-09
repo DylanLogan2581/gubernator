@@ -57,7 +57,7 @@ export function NationBankSection({
     activeCharacter !== null &&
     (rosterQuery.data ?? []).some(
       (entry) =>
-        entry.officeType === "bank_governor" &&
+        entry.officeTypeName === "bank_governor" &&
         entry.citizenId === activeCharacter.id,
     );
   const canManage =

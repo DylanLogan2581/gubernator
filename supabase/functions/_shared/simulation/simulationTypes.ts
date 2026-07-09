@@ -57,6 +57,7 @@ export type SimNation = {
 
 export type SimNationOffice = {
   readonly citizenId: string;
+  readonly excludesFromLabor: boolean;
 };
 
 export type SimUnitSoldier = {

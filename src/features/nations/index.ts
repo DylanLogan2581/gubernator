@@ -2,6 +2,7 @@
 // Implemented in Epic 3.
 export { NationDetailPage } from "./components/NationDetailPage";
 export { NationDiscoveryConfigPanel } from "./components/NationDiscoveryConfigPanel";
+export { OfficeTypesConfigPanel } from "./components/OfficeTypesConfigPanel";
 export { useNationDetailContext } from "./components/NationDetailPage/NationDetailContext";
 export { NationSectionRedirect } from "./components/NationDetailPage/NationSectionRedirect";
 export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
@@ -37,6 +38,13 @@ export {
   appointNationOfficeMutationOptions,
   dismissNationOfficeMutationOptions,
 } from "./mutations/officesMutations";
+export {
+  createOfficeTypeMutationOptions,
+  deleteOfficeTypeMutationOptions,
+  isOfficeTypeMutationError,
+  OfficeTypeMutationError,
+  updateOfficeTypeMutationOptions,
+} from "./mutations/officeTypesMutations";
 export {
   grantNationResourcesMutationOptions,
   setNationTaxRateMutationOptions,
@@ -76,6 +84,10 @@ export {
   nationsListQueryOptions,
 } from "./queries/nationsQueries";
 export { nationOfficesRosterQueryOptions } from "./queries/officesQueries";
+export {
+  nationOfficeTypesQueryOptions,
+  worldDefaultOfficeTypesQueryOptions,
+} from "./queries/officeTypesQueries";
 export {
   nationActiveConstructionProjectsQueryOptions,
   nationLatestTaxSnapshotQueryOptions,
@@ -183,9 +195,17 @@ export type {
   AppointNationOfficeInput,
   DismissNationOfficeInput,
 } from "./mutations/officesMutations";
+export type {
+  CreateOfficeTypeInput,
+  DeleteOfficeTypeInput,
+  OfficeTypeMutationIssue,
+  UpdateOfficeTypeInput,
+} from "./mutations/officeTypesMutations";
 export {
   formatNationOfficeType,
   type NationOfficeRosterEntry,
+  type OfficeType,
+  type OfficeTypeScope,
 } from "./types/nationOfficeTypes";
 export type { NationRelationshipMutationIssue } from "./mutations/nationRelationshipMutations";
 export {

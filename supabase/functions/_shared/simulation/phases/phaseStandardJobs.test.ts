@@ -249,7 +249,13 @@ describe("phaseStandardJobs — officeholder exclusion", () => {
       makeContext([settlement], [job], [citizen], [assignment]),
     );
     const withOffice = phaseStandardJobs(
-      makeContext([settlement], [job], [citizen], [assignment], [{ citizenId: "c4" }]),
+      makeContext(
+        [settlement],
+        [job],
+        [citizen],
+        [assignment],
+        [{ citizenId: "c4", excludesFromLabor: true }],
+      ),
     );
 
     expect(withoutOffice.logs.some((l) => l.category === "standard_job.processed")).toBe(

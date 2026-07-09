@@ -88,6 +88,33 @@ type CitizenRow = {
   readonly citizen_type: "npc" | "player_character";
 };
 
+// #1114: office_types.id per default name, referenced by test office
+// fixtures below via office_type_id.
+const DEFAULT_OFFICE_TYPE_IDS: Readonly<Record<string, string>> = {
+  senator: "office-type-senator",
+  elder: "office-type-elder",
+  clergy: "office-type-clergy",
+  chancellor: "office-type-chancellor",
+  treasurer: "office-type-treasurer",
+  bank_governor: "office-type-bank-governor",
+  delegate: "office-type-delegate",
+};
+
+function defaultOfficeTypeRows(): readonly Record<string, unknown>[] {
+  return Object.entries(DEFAULT_OFFICE_TYPE_IDS).map(([name, id]) => ({
+    id,
+    world_id: "world-1",
+    nation_id: null,
+    name,
+    description: null,
+    scope: "nation",
+    icon: null,
+    color: null,
+    max_holders: null,
+    excludes_from_labor: true,
+  }));
+}
+
 describe("NationOfficesSection", () => {
   beforeEach(() => {
     requireSupabaseClient.mockReset();
@@ -356,7 +383,31 @@ function createClientFixture({
     if (table === "nation_offices") {
       return {
         select: () => ({
-          eq: () => Promise.resolve({ data: offices, error: null }),
+          eq: () =>
+            Promise.resolve({
+              data: offices.map((office) => ({
+                id: office.id,
+                world_id: office.world_id,
+                nation_id: office.nation_id,
+                office_type_id: DEFAULT_OFFICE_TYPE_IDS[office.office_type],
+                citizen_id: office.citizen_id,
+                appointed_turn_number: office.appointed_turn_number,
+                office_types: { name: office.office_type },
+              })),
+              error: null,
+            }),
+        }),
+      };
+    }
+    if (table === "office_types") {
+      return {
+        select: () => ({
+          eq: () => ({
+            or: () => ({
+              order: () =>
+                Promise.resolve({ data: defaultOfficeTypeRows(), error: null }),
+            }),
+          }),
         }),
       };
     }

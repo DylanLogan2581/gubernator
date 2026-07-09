@@ -1,5 +1,22 @@
 import type { CitizenType } from "@/features/citizens";
-import type { NationOfficeType } from "@/shared/government";
+
+export type OfficeTypeScope = "nation" | "settlement";
+
+// #1114: the office_types registry row. nationId null = world-default
+// (owned/managed by world admins, available to every nation); nationId set
+// = a custom office a nation manager invented for that nation only.
+export type OfficeType = {
+  readonly color: string | null;
+  readonly description: string | null;
+  readonly excludesFromLabor: boolean;
+  readonly icon: string | null;
+  readonly id: string;
+  readonly maxHolders: number | null;
+  readonly name: string;
+  readonly nationId: string | null;
+  readonly scope: OfficeTypeScope;
+  readonly worldId: string;
+};
 
 export type NationOfficeRosterEntry = {
   readonly appointedTurnNumber: number;
@@ -8,25 +25,24 @@ export type NationOfficeRosterEntry = {
   readonly citizenType: CitizenType;
   readonly id: string;
   readonly nationId: string;
-  readonly officeType: NationOfficeType;
+  readonly officeTypeId: string;
+  readonly officeTypeName: string;
   readonly worldId: string;
 };
 
-export function formatNationOfficeType(officeType: NationOfficeType): string {
-  switch (officeType) {
-    case "senator":
-      return "Senator";
-    case "elder":
-      return "Elder";
-    case "clergy":
-      return "Clergy";
-    case "chancellor":
-      return "Chancellor";
-    case "treasurer":
-      return "Treasurer";
-    case "bank_governor":
-      return "Bank Governor";
-    case "delegate":
-      return "Delegate";
-  }
+const KNOWN_OFFICE_TYPE_LABELS: Readonly<Record<string, string>> = {
+  senator: "Senator",
+  elder: "Elder",
+  clergy: "Clergy",
+  chancellor: "Chancellor",
+  treasurer: "Treasurer",
+  bank_governor: "Bank Governor",
+  delegate: "Delegate",
+};
+
+// The seven Epic 11 (#1079) default office type names get a curated label;
+// custom office type names (#1114, e.g. "Lord Commander of the Night Watch")
+// are free text a nation manager chose and are shown verbatim.
+export function formatNationOfficeType(name: string): string {
+  return KNOWN_OFFICE_TYPE_LABELS[name] ?? name;
 }

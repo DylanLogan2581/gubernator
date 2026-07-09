@@ -182,6 +182,7 @@ export function makeNationOffice(
   overrides: Partial<SimNationOffice> & { citizenId: string },
 ): SimNationOffice {
   return {
+    excludesFromLabor: true,
     ...overrides,
   };
 }

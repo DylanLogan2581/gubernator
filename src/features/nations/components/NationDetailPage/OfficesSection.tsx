@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -39,10 +41,7 @@ import type { Citizen } from "@/features/citizens";
 import { useActivePlayerCharacter } from "@/features/permissions";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
-import {
-  ALLOWED_NATION_OFFICE_TYPES,
-  type NationOfficeType,
-} from "@/shared/government";
+import { ALLOWED_NATION_OFFICE_TYPES } from "@/shared/government";
 import {
   formatCalendarDate,
   resolveTurnCalendarDate,
@@ -52,10 +51,19 @@ import {
   appointNationOfficeMutationOptions,
   dismissNationOfficeMutationOptions,
 } from "../../mutations/officesMutations";
+import {
+  createOfficeTypeMutationOptions,
+  deleteOfficeTypeMutationOptions,
+} from "../../mutations/officeTypesMutations";
 import { nationOfficesRosterQueryOptions } from "../../queries/officesQueries";
+import { nationOfficeTypesQueryOptions } from "../../queries/officeTypesQueries";
 import { formatNationOfficeType } from "../../types/nationOfficeTypes";
 
-import type { NationOfficeRosterEntry } from "../../types/nationOfficeTypes";
+import type { AppointNationOfficeInput } from "../../mutations/officesMutations";
+import type {
+  NationOfficeRosterEntry,
+  OfficeType,
+} from "../../types/nationOfficeTypes";
 import type { Nation } from "../../types/nationTypes";
 
 export function NationOfficesSection({
@@ -77,6 +85,9 @@ export function NationOfficesSection({
 
   const queryClient = useQueryClient();
   const rosterQuery = useQuery(nationOfficesRosterQueryOptions(nation.id));
+  const officeTypesQuery = useQuery(
+    nationOfficeTypesQueryOptions(nation.worldId, nation.id),
+  );
   const calendarQuery = useQuery(
     worldCalendarConfigQueryOptions(nation.worldId),
   );
@@ -85,43 +96,65 @@ export function NationOfficesSection({
   );
 
   const [isAppointing, setIsAppointing] = useState(false);
+  const [isManagingTypes, setIsManagingTypes] = useState(false);
   const [dismissing, setDismissing] = useState<NationOfficeRosterEntry | null>(
     null,
   );
 
-  if (rosterQuery.isPending) {
+  if (rosterQuery.isPending || officeTypesQuery.isPending) {
     return (
-      <OfficesCardFrame canManage={canManage} onAppoint={undefined}>
+      <OfficesCardFrame
+        canManage={canManage}
+        onAppoint={undefined}
+        onManageTypes={undefined}
+      >
         <LoadingState label="Loading offices…" />
       </OfficesCardFrame>
     );
   }
 
-  if (rosterQuery.isError) {
+  if (rosterQuery.isError || officeTypesQuery.isError) {
     return (
-      <OfficesCardFrame canManage={canManage} onAppoint={undefined}>
+      <OfficesCardFrame
+        canManage={canManage}
+        onAppoint={undefined}
+        onManageTypes={undefined}
+      >
         <ErrorState
           title="Offices could not be loaded"
-          description={getErrorDescription(rosterQuery.error)}
+          description={getErrorDescription(
+            rosterQuery.error ?? officeTypesQuery.error,
+          )}
         />
       </OfficesCardFrame>
     );
   }
 
-  const allowedTypes = ALLOWED_NATION_OFFICE_TYPES[nation.governmentType];
+  const allowedDefaultNames = ALLOWED_NATION_OFFICE_TYPES[
+    nation.governmentType
+  ] as readonly string[];
+  const allOfficeTypes = officeTypesQuery.data;
+  // Appointable offices: world-default types allowed for this government,
+  // plus every custom office type this nation invented (#1114).
+  const appointableTypes = allOfficeTypes.filter(
+    (type) =>
+      (type.nationId === null && allowedDefaultNames.includes(type.name)) ||
+      type.nationId === nation.id,
+  );
+  const officeTypeById = new Map(allOfficeTypes.map((t) => [t.id, t]));
   const roster = rosterQuery.data;
   const calendarConfig = calendarQuery.data ?? null;
 
-  const rosterByType = new Map<NationOfficeType, NationOfficeRosterEntry[]>();
-  for (const officeType of allowedTypes) {
-    rosterByType.set(officeType, []);
+  const rosterByType = new Map<string, NationOfficeRosterEntry[]>();
+  for (const officeType of appointableTypes) {
+    rosterByType.set(officeType.id, []);
   }
   for (const entry of roster) {
-    const group = rosterByType.get(entry.officeType);
+    const group = rosterByType.get(entry.officeTypeId);
     if (group !== undefined) {
       group.push(entry);
     } else {
-      rosterByType.set(entry.officeType, [entry]);
+      rosterByType.set(entry.officeTypeId, [entry]);
     }
   }
 
@@ -150,34 +183,53 @@ export function NationOfficesSection({
       <OfficesCardFrame
         canManage={canManage}
         onAppoint={isArchived ? undefined : () => setIsAppointing(true)}
+        onManageTypes={
+          isArchived || !isNationManager
+            ? undefined
+            : () => setIsManagingTypes(true)
+        }
       >
-        {allowedTypes.length === 0 ? (
+        {appointableTypes.length === 0 ? (
           <EmptyState
             title="No offices for this government"
             description={`${nation.name}'s government does not define any appointable offices.`}
           />
         ) : (
           <div className="grid gap-4">
-            {[...rosterByType.entries()].map(([officeType, entries]) => (
-              <OfficeGroup
-                canManage={canManage}
-                calendarConfig={calendarConfig}
-                entries={entries}
-                isArchived={isArchived}
-                key={officeType}
-                officeType={officeType}
-                onDismiss={setDismissing}
-              />
-            ))}
+            {[...rosterByType.entries()].map(([officeTypeId, entries]) => {
+              const officeType = officeTypeById.get(officeTypeId);
+              return officeType === undefined ? null : (
+                <OfficeGroup
+                  canManage={canManage}
+                  calendarConfig={calendarConfig}
+                  entries={entries}
+                  isArchived={isArchived}
+                  key={officeTypeId}
+                  officeType={officeType}
+                  onDismiss={setDismissing}
+                />
+              );
+            })}
           </div>
         )}
       </OfficesCardFrame>
 
       {canManage && isAppointing ? (
         <AppointOfficeDialog
-          allowedTypes={allowedTypes}
+          appointableTypes={appointableTypes}
           nation={nation}
           onClose={() => setIsAppointing(false)}
+          queryClient={queryClient}
+          roster={roster}
+        />
+      ) : null}
+
+      {isNationManager && isManagingTypes ? (
+        <OfficeTypeManagerDialog
+          allOfficeTypes={allOfficeTypes}
+          isArchived={isArchived}
+          nation={nation}
+          onClose={() => setIsManagingTypes(false)}
           queryClient={queryClient}
           roster={roster}
         />
@@ -195,7 +247,7 @@ export function NationOfficesSection({
             <AlertDialogDescription>
               {dismissing === null
                 ? ""
-                : `This will remove ${dismissing.citizenName} from ${formatNationOfficeType(dismissing.officeType)}. This action cannot be undone.`}
+                : `This will remove ${dismissing.citizenName} from ${formatNationOfficeType(dismissing.officeTypeName)}. This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-2">
@@ -228,23 +280,26 @@ function OfficeGroup({
   readonly canManage: boolean;
   readonly entries: readonly NationOfficeRosterEntry[];
   readonly isArchived: boolean;
-  readonly officeType: NationOfficeType;
+  readonly officeType: OfficeType;
   readonly onDismiss: (entry: NationOfficeRosterEntry) => void;
 }): JSX.Element {
+  const label = formatNationOfficeType(officeType.name);
+  const capLabel =
+    officeType.maxHolders === null
+      ? ""
+      : ` (max ${String(officeType.maxHolders)})`;
   return (
     <div className="grid gap-2">
       <h3 className="text-sm font-medium text-foreground">
-        {formatNationOfficeType(officeType)}
+        {label}
+        {capLabel}
       </h3>
       {entries.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          No {formatNationOfficeType(officeType).toLowerCase()} appointed.
+          No {label.toLowerCase()} appointed.
         </p>
       ) : (
-        <ul
-          className="grid gap-2"
-          aria-label={formatNationOfficeType(officeType)}
-        >
+        <ul className="grid gap-2" aria-label={label}>
           {entries.map((entry) => (
             <li
               key={entry.id}
@@ -298,20 +353,20 @@ function OfficeGroup({
 }
 
 function AppointOfficeDialog({
-  allowedTypes,
+  appointableTypes,
   nation,
   onClose,
   queryClient,
   roster,
 }: {
-  readonly allowedTypes: readonly NationOfficeType[];
+  readonly appointableTypes: readonly OfficeType[];
   readonly nation: Nation;
   readonly onClose: () => void;
   readonly queryClient: ReturnType<typeof useQueryClient>;
   readonly roster: readonly NationOfficeRosterEntry[];
 }): JSX.Element {
-  const [officeType, setOfficeType] = useState<NationOfficeType>(
-    allowedTypes[0],
+  const [officeTypeId, setOfficeTypeId] = useState<string>(
+    appointableTypes[0]?.id ?? "",
   );
   const [citizenId, setCitizenId] = useState<string>("");
 
@@ -322,35 +377,38 @@ function AppointOfficeDialog({
     appointNationOfficeMutationOptions({ queryClient }),
   );
 
+  const selectedType = appointableTypes.find((t) => t.id === officeTypeId);
   const currentHolderIds = new Set(
     roster
-      .filter((entry) => entry.officeType === officeType)
+      .filter((entry) => entry.officeTypeId === officeTypeId)
       .map((entry) => entry.citizenId),
   );
+  const atCapacity =
+    selectedType?.maxHolders !== null &&
+    selectedType?.maxHolders !== undefined &&
+    currentHolderIds.size >= selectedType.maxHolders;
   const candidates: readonly Citizen[] = (citizensQuery.data ?? []).filter(
     (citizen) =>
       citizen.status === "alive" && !currentHolderIds.has(citizen.id),
   );
 
   function handleSubmit(): void {
-    if (citizenId === "") return;
-    appointMutation.mutate(
-      {
-        citizenId,
-        nationId: nation.id,
-        officeType,
-        worldId: nation.worldId,
+    if (citizenId === "" || selectedType === undefined) return;
+    const input: AppointNationOfficeInput = {
+      citizenId,
+      nationId: nation.id,
+      officeType: selectedType.name,
+      worldId: nation.worldId,
+    };
+    appointMutation.mutate(input, {
+      onError: (error) => {
+        notifyMutationError(error, "Failed to appoint office holder.");
       },
-      {
-        onError: (error) => {
-          notifyMutationError(error, "Failed to appoint office holder.");
-        },
-        onSuccess: () => {
-          notifyMutationSuccess("Office holder appointed.");
-          onClose();
-        },
+      onSuccess: () => {
+        notifyMutationSuccess("Office holder appointed.");
+        onClose();
       },
-    );
+    });
   }
 
   return (
@@ -366,9 +424,9 @@ function AppointOfficeDialog({
           <div className="grid gap-1">
             <Label htmlFor="office-type-select">Office</Label>
             <Select
-              value={officeType}
+              value={officeTypeId}
               onValueChange={(value) => {
-                setOfficeType(value as NationOfficeType);
+                setOfficeTypeId(value);
                 setCitizenId("");
               }}
             >
@@ -376,9 +434,9 @@ function AppointOfficeDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {allowedTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {formatNationOfficeType(type)}
+                {appointableTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {formatNationOfficeType(type.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -386,7 +444,11 @@ function AppointOfficeDialog({
           </div>
           <div className="grid gap-1">
             <Label htmlFor="office-citizen-select">Citizen</Label>
-            {citizensQuery.isPending ? (
+            {atCapacity ? (
+              <p className="text-sm text-muted-foreground">
+                This office already has the maximum number of holders.
+              </p>
+            ) : citizensQuery.isPending ? (
               <LoadingState label="Loading citizens…" />
             ) : citizensQuery.isError ? (
               <ErrorState
@@ -420,9 +482,207 @@ function AppointOfficeDialog({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={appointMutation.isPending || citizenId === ""}
+            disabled={
+              appointMutation.isPending || citizenId === "" || atCapacity
+            }
           >
             {appointMutation.isPending ? "Appointing…" : "Appoint"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Nation manager only (#1114): invent, edit, and delete custom offices for
+// this nation. World-default offices are listed for context but are not
+// editable here -- those belong to the world admin config panel.
+function OfficeTypeManagerDialog({
+  allOfficeTypes,
+  isArchived,
+  nation,
+  onClose,
+  queryClient,
+  roster,
+}: {
+  readonly allOfficeTypes: readonly OfficeType[];
+  readonly isArchived: boolean;
+  readonly nation: Nation;
+  readonly onClose: () => void;
+  readonly queryClient: ReturnType<typeof useQueryClient>;
+  readonly roster: readonly NationOfficeRosterEntry[];
+}): JSX.Element {
+  const [name, setName] = useState("");
+  const [maxHolders, setMaxHolders] = useState("");
+  const [excludesFromLabor, setExcludesFromLabor] = useState(true);
+
+  const createMutation = useMutation(
+    createOfficeTypeMutationOptions({ queryClient }),
+  );
+  const deleteMutation = useMutation(
+    deleteOfficeTypeMutationOptions({ queryClient }),
+  );
+
+  const customTypes = allOfficeTypes.filter((t) => t.nationId === nation.id);
+  const defaultTypes = allOfficeTypes.filter((t) => t.nationId === null);
+  const holderCountByType = new Map<string, number>();
+  for (const entry of roster) {
+    holderCountByType.set(
+      entry.officeTypeId,
+      (holderCountByType.get(entry.officeTypeId) ?? 0) + 1,
+    );
+  }
+
+  function handleCreate(): void {
+    const trimmed = name.trim();
+    if (trimmed === "") return;
+    createMutation.mutate(
+      {
+        excludesFromLabor,
+        maxHolders: maxHolders === "" ? null : Number(maxHolders),
+        name: trimmed,
+        nationId: nation.id,
+        scope: "nation",
+        worldId: nation.worldId,
+      },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to create office type.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess(`${trimmed} created.`);
+          setName("");
+          setMaxHolders("");
+          setExcludesFromLabor(true);
+        },
+      },
+    );
+  }
+
+  function handleDelete(type: OfficeType): void {
+    deleteMutation.mutate(
+      { id: type.id, nationId: type.nationId, worldId: type.worldId },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to delete office type.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess(
+            `${formatNationOfficeType(type.name)} deleted.`,
+          );
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Manage office types</DialogTitle>
+          <DialogDescription>
+            Invent custom offices for {nation.name}. World-default offices are
+            managed by world admins.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-2">
+          <h3 className="text-sm font-medium">World defaults</h3>
+          <ul className="grid gap-1 text-sm text-muted-foreground">
+            {defaultTypes.map((type) => (
+              <li key={type.id}>{formatNationOfficeType(type.name)}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="grid gap-2">
+          <h3 className="text-sm font-medium">Custom offices</h3>
+          {customTypes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No custom offices yet.
+            </p>
+          ) : (
+            <ul className="grid gap-2">
+              {customTypes.map((type) => (
+                <li
+                  key={type.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border p-2 text-sm"
+                >
+                  <span>
+                    {type.name}
+                    {type.maxHolders === null
+                      ? ""
+                      : ` (max ${String(type.maxHolders)})`}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      isArchived ||
+                      deleteMutation.isPending ||
+                      (holderCountByType.get(type.id) ?? 0) > 0
+                    }
+                    onClick={() => handleDelete(type)}
+                  >
+                    Delete
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {isArchived ? null : (
+          <div className="grid gap-2 border-t border-border pt-3">
+            <h3 className="text-sm font-medium">New custom office</h3>
+            <div className="grid gap-1">
+              <Label htmlFor="new-office-type-name">Name</Label>
+              <Input
+                id="new-office-type-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Lord Commander of the Night Watch"
+              />
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="new-office-type-max-holders">
+                Max holders (optional)
+              </Label>
+              <Input
+                id="new-office-type-max-holders"
+                type="number"
+                min={1}
+                value={maxHolders}
+                onChange={(e) => setMaxHolders(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="new-office-type-excludes-labor"
+                checked={excludesFromLabor}
+                onCheckedChange={(checked) =>
+                  setExcludesFromLabor(checked === true)
+                }
+              />
+              <Label htmlFor="new-office-type-excludes-labor">
+                Excludes holder from labor
+              </Label>
+            </div>
+            <Button
+              type="button"
+              onClick={handleCreate}
+              disabled={createMutation.isPending || name.trim() === ""}
+              className="w-fit"
+            >
+              {createMutation.isPending ? "Creating…" : "Create office"}
+            </Button>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Close
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -434,10 +694,12 @@ function OfficesCardFrame({
   canManage,
   children,
   onAppoint,
+  onManageTypes,
 }: {
   readonly canManage: boolean;
   readonly children: JSX.Element;
   readonly onAppoint: (() => void) | undefined;
+  readonly onManageTypes: (() => void) | undefined;
 }): JSX.Element {
   return (
     <Card aria-labelledby="nation-offices-heading" className="grid gap-3 p-4">
@@ -445,11 +707,28 @@ function OfficesCardFrame({
         <h2 id="nation-offices-heading" className="text-base font-medium">
           Government offices
         </h2>
-        {canManage && onAppoint !== undefined ? (
-          <Button type="button" variant="outline" size="sm" onClick={onAppoint}>
-            Appoint office holder
-          </Button>
-        ) : null}
+        <div className="flex gap-2">
+          {canManage && onManageTypes !== undefined ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onManageTypes}
+            >
+              Manage office types
+            </Button>
+          ) : null}
+          {canManage && onAppoint !== undefined ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onAppoint}
+            >
+              Appoint office holder
+            </Button>
+          ) : null}
+        </div>
       </div>
       {children}
     </Card>

@@ -284,7 +284,16 @@ select
       where
         nation_id = '98000000-0000-0000-0000-000000000001'
         and citizen_id = '9a000000-0000-0000-0000-000000000002'
-        and office_type = 'senator'
+        and office_type_id = (
+          select
+            id
+          from
+            public.office_types
+          where
+            world_id = '97000000-0000-0000-0000-000000000001'
+            and nation_id is null
+            and name = 'senator'
+        )
     ),
     3,
     'appointing an office records the world current turn number'
@@ -315,7 +324,16 @@ select
         public.nation_offices
       where
         nation_id = '98000000-0000-0000-0000-000000000001'
-        and office_type = 'treasurer'
+        and office_type_id = (
+          select
+            id
+          from
+            public.office_types
+          where
+            world_id = '97000000-0000-0000-0000-000000000001'
+            and nation_id is null
+            and name = 'treasurer'
+        )
     ),
     1,
     'treasurer is allowed for every government type'
@@ -410,7 +428,16 @@ select
       where
         nation_id = '98000000-0000-0000-0000-000000000001'
         and citizen_id = '9a000000-0000-0000-0000-000000000002'
-        and office_type = 'senator'
+        and office_type_id = (
+          select
+            id
+          from
+            public.office_types
+          where
+            world_id = '97000000-0000-0000-0000-000000000001'
+            and nation_id is null
+            and name = 'senator'
+        )
     ),
     false
   );
@@ -458,7 +485,16 @@ select
       where
         nation_id = '98000000-0000-0000-0000-000000000001'
         and citizen_id = '9a000000-0000-0000-0000-000000000002'
-        and office_type = 'senator'
+        and office_type_id = (
+          select
+            id
+          from
+            public.office_types
+          where
+            world_id = '97000000-0000-0000-0000-000000000001'
+            and nation_id is null
+            and name = 'senator'
+        )
     ),
     0,
     'dismiss_nation_office removes the office row'

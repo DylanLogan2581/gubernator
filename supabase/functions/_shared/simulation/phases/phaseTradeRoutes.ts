@@ -34,7 +34,9 @@ export function phaseTradeRoutes(
   } = context.input;
 
   const jobById = new Map(jobs.map((j) => [j.id, j]));
-  const officeholderCitizenIds = new Set(nationOffices.map((o) => o.citizenId));
+  const officeholderCitizenIds = new Set(
+  nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
+);
   const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
 

@@ -195,6 +195,7 @@ export type SupabaseNationRow = {
 
 export type SupabaseNationOfficeRow = {
   readonly citizen_id: string;
+  readonly office_types: { readonly excludes_from_labor: boolean } | null;
 };
 
 export type SupabaseUnitSoldierRow = {
@@ -581,7 +582,13 @@ export function isNationRow(v: unknown): v is SupabaseNationRow {
 }
 
 export function isNationOfficeRow(v: unknown): v is SupabaseNationOfficeRow {
-  return isRecord(v) && typeof v.citizen_id === "string";
+  return (
+    isRecord(v) &&
+    typeof v.citizen_id === "string" &&
+    (v.office_types === null ||
+      (isRecord(v.office_types) &&
+        typeof v.office_types.excludes_from_labor === "boolean"))
+  );
 }
 
 export function isUnitSoldierRow(v: unknown): v is SupabaseUnitSoldierRow {

@@ -450,7 +450,7 @@ export function fetchNationOffices(
     params: {
       world_id: `eq.${worldId}`,
       order: "id.asc",
-      select: "citizen_id",
+      select: "citizen_id,office_types(excludes_from_labor)",
     },
   });
 }

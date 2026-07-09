@@ -701,7 +701,7 @@ describe("phaseTradeRoutes — officeholder exclusion", () => {
       assignments: makeTraderAssignments("r1", "trader-job"),
       jobs: [job],
       // trader-origin holds a nation office and stops counting toward capacity.
-      nationOffices: [{ citizenId: "trader-origin" }],
+      nationOffices: [{ citizenId: "trader-origin", excludesFromLabor: true }],
       pendingStockpiles: { "dest:wood": 0, "origin:wood": 100 },
       stockpiles: [
         makeStockpile({ resourceId: "wood", settlementId: "origin" }),

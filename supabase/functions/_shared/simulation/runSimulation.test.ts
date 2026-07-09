@@ -416,7 +416,7 @@ describe("runSimulation — officeholders leave the settlement labor pool", () =
 
     const withoutOffice = runSimulation(makeInput(baseInput), "t1");
     const withOffice = runSimulation(
-      makeInput({ ...baseInput, nationOffices: [{ citizenId: "c1" }] }),
+      makeInput({ ...baseInput, nationOffices: [{ citizenId: "c1", excludesFromLabor: true }] }),
       "t2",
     );
 

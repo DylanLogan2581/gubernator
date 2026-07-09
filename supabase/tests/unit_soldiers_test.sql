@@ -270,7 +270,7 @@ insert into
   public.nation_offices (
     world_id,
     nation_id,
-    office_type,
+    office_type_id,
     citizen_id,
     appointed_turn_number
   )
@@ -278,7 +278,16 @@ values
   (
     'f2000000-0000-0000-0000-000000000001',
     'f3000000-0000-0000-0000-000000000001',
-    'treasurer',
+    (
+      select
+        id
+      from
+        public.office_types
+      where
+        world_id = 'f2000000-0000-0000-0000-000000000001'
+        and nation_id is null
+        and name = 'treasurer'
+    ),
     'f5000000-0000-0000-0000-000000000015',
     1
   );

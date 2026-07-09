@@ -335,6 +335,10 @@ export function toSimNation(row: SupabaseNationRow): SimNation {
 export function toSimNationOffice(row: SupabaseNationOfficeRow): SimNationOffice {
   return {
     citizenId: row.citizen_id,
+    // office_types is null only if the FK row was concurrently deleted
+    // between fetch and map; default to excluding from labor (the safe,
+    // Epic 11-compatible default) rather than silently including them.
+    excludesFromLabor: row.office_types?.excludes_from_labor ?? true,
   };
 }
 

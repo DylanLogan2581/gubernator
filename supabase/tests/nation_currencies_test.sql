@@ -147,7 +147,7 @@ insert into
   public.nation_offices (
     world_id,
     nation_id,
-    office_type,
+    office_type_id,
     citizen_id,
     appointed_turn_number
   )
@@ -155,7 +155,16 @@ values
   (
     'c2000000-0000-0000-0000-000000000001',
     'c3000000-0000-0000-0000-000000000002',
-    'bank_governor',
+    (
+      select
+        id
+      from
+        public.office_types
+      where
+        world_id = 'c2000000-0000-0000-0000-000000000001'
+        and nation_id is null
+        and name = 'bank_governor'
+    ),
     'c5000000-0000-0000-0000-000000000002',
     1
   );
