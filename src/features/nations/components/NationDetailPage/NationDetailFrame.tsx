@@ -14,7 +14,12 @@ export function NationDetailFrame({
 }): JSX.Element {
   return (
     <div className="flex flex-col gap-4">
-      <Button asChild variant="outline" size="sm" className="w-fit">
+      <Button
+        asChild
+        variant="outline"
+        size="sm"
+        className="w-fit print:hidden"
+      >
         <Link to="/worlds/$worldId/nations" params={{ worldId }}>
           <ArrowLeft aria-hidden="true" />
           Back to nations

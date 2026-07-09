@@ -40,7 +40,10 @@ export function AppHeader({
   const effectiveCanAdmin = useEffectiveCanAdmin(canAdmin);
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
+    <header
+      data-slot="app-header"
+      className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4"
+    >
       <SidebarTrigger />
       <div className="flex min-w-0 flex-1 items-center">
         {worldId !== null && worldName !== null ? (

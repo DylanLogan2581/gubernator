@@ -1,9 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { ScrollText } from "lucide-react";
 import { type JSX, type ReactNode } from "react";
 
 import { AccessDeniedState } from "@/components/shared/AccessDeniedState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { Button } from "@/components/ui/button";
 import {
   currentAccessContextQueryOptions,
   useEffectiveCanAdmin,
@@ -235,6 +238,15 @@ function NationDetailLoaded({
             </p>
           </div>
         </div>
+        <Button asChild size="sm" variant="outline">
+          <Link
+            to="/worlds/$worldId/nations/$nationId/charter"
+            params={{ nationId: nation.id, worldId }}
+          >
+            <ScrollText aria-hidden="true" />
+            View charter
+          </Link>
+        </Button>
       </header>
 
       <NationDetailContext

@@ -253,7 +253,11 @@ function IdentityReadout({
   );
 }
 
-function formatFoundedTurn(
+// Exported for reuse by the nation charter page header (#1122) -- not a
+// component, so fast refresh can't treat this export like the rest of the
+// file's -- an isolated, deliberate exception.
+// eslint-disable-next-line react-refresh/only-export-components
+export function formatFoundedTurn(
   foundedTurnNumber: number | null,
   calendarConfig: Parameters<typeof resolveTurnCalendarDate>[0] | null,
 ): string {

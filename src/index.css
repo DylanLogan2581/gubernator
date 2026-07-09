@@ -283,3 +283,18 @@
     --category-8-foreground: #db6131;
   }
 }
+
+/* #1122: nation charter print stylesheet -- hides app chrome (sidebar,
+   header) that isn't part of the printed document, and forces every
+   <details> (collapsed law documents) to render its content regardless of
+   open/closed state so a printed charter always shows full article text. */
+@media print {
+  [data-slot="sidebar"],
+  [data-slot="app-header"] {
+    display: none !important;
+  }
+
+  details:not([open]) > *:not(summary) {
+    display: block !important;
+  }
+}

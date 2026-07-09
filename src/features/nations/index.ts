@@ -8,9 +8,13 @@ export { NationSectionRedirect } from "./components/NationDetailPage/NationSecti
 export { NationDeleteSection } from "./components/NationDetailPage/DeleteSection";
 export { NationDetailsSection } from "./components/NationDetailPage/DetailsSection";
 export { NationFlagSection } from "./components/NationDetailPage/FlagSection";
-export { NationIdentitySection } from "./components/NationDetailPage/IdentitySection";
+export {
+  NationIdentitySection,
+  formatFoundedTurn,
+} from "./components/NationDetailPage/IdentitySection";
 export { NationCultureReligionSection } from "./components/NationDetailPage/CultureReligionSection";
 export { NationBankSection } from "./components/NationDetailPage/BankSection";
+export { NationCharterPage } from "./components/NationCharterPage";
 export { NationOfficesSection } from "./components/NationDetailPage/OfficesSection";
 export { NationReportsSection } from "./components/NationDetailPage/NationReportsSection";
 export { NationReadinessSection } from "./components/NationDetailPage/ReadinessSection";
