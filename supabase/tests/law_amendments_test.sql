@@ -7,7 +7,7 @@
 begin;
 
 select
-  plan (36);
+  plan (46);
 
 -- A scratch table to stash ids returned by RPC calls across role switches --
 -- mirrors law_documents_test.sql / nation_readiness_voting_test.sql.
@@ -352,6 +352,25 @@ values
         )
       )
     )
+  ),
+  (
+    '4f000000-0000-0000-0000-000000000003',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    null,
+    'The Double Pass Council',
+    null,
+    jsonb_build_array(
+      jsonb_build_object(
+        'kind',
+        'citizens',
+        'citizen_ids',
+        jsonb_build_array(
+          '4e000000-0000-0000-0000-000000000002',
+          '4e000000-0000-0000-0000-000000000003'
+        )
+      )
+    )
   );
 
 insert into
@@ -531,6 +550,28 @@ values
     jsonb_build_object('kind', 'locked'),
     1,
     10
+  ),
+  (
+    '4d000000-0000-0000-0000-00000000000a',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    null,
+    'Double Pass Charter',
+    'active',
+    jsonb_build_object(
+      'kind',
+      'vote',
+      'bodyId',
+      '4f000000-0000-0000-0000-000000000003',
+      'threshold',
+      'majority',
+      'votingPeriodTurns',
+      2,
+      'secondBodyId',
+      null
+    ),
+    1,
+    10
   );
 
 insert into
@@ -619,6 +660,15 @@ values
   (
     '48000000-0000-0000-0000-000000000009',
     '4d000000-0000-0000-0000-000000000009',
+    1,
+    'Article I',
+    'Original body.',
+    'active',
+    1
+  ),
+  (
+    '48000000-0000-0000-0000-00000000000a',
+    '4d000000-0000-0000-0000-00000000000a',
     1,
     'Article I',
     'Original body.',
@@ -1953,6 +2003,291 @@ select
     ),
     1,
     'expiry notifies the nation''s ruler'
+  );
+
+-- ===========================================================================
+-- Fix #1128: cast_law_amendment_vote / withdraw_law_amendment race applies
+-- operations twice.
+--
+-- pgTAP runs everything in one session/transaction, so it cannot open two
+-- genuinely concurrent backends to reproduce the read-before-either-commits
+-- race directly (same limitation noted in
+-- per_target_bulk_assignment_test.sql and used by the precedent fixes in
+-- approve_trade_route_side_test.sql / set_settlement_stockpile_quantity_
+-- concurrent_race_test.sql). Two things are verified instead:
+--
+-- 1. Source-level: both RPCs lock the amendment row with `for update` before
+--    reading its status, so concurrent resolvers serialize on that row.
+-- 2. Functional: a deciding vote resolves the amendment exactly once, and a
+--    second resolution attempt against the now-locked-and-resolved row is
+--    rejected by the existing status guard rather than reapplying
+--    operations -- the double-apply path the missing lock used to leave
+--    open under real concurrency.
+-- ===========================================================================
+select
+  matches (
+    (
+      select
+        pg_get_functiondef(oid)
+      from
+        pg_proc
+      where
+        proname = 'cast_law_amendment_vote'
+        and pronamespace = (
+          select
+            oid
+          from
+            pg_namespace
+          where
+            nspname = 'public'
+        )
+    ),
+    'for update',
+    'cast_law_amendment_vote locks the amendment row with for update before reading its status'
+  );
+
+select
+  matches (
+    (
+      select
+        pg_get_functiondef(oid)
+      from
+        pg_proc
+      where
+        proname = 'withdraw_law_amendment'
+        and pronamespace = (
+          select
+            oid
+          from
+            pg_namespace
+          where
+            nspname = 'public'
+        )
+    ),
+    'for update',
+    'withdraw_law_amendment locks the amendment row with for update before reading its status'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+insert into
+  amendment_test_ids (key, id)
+select
+  'double_pass_amendment',
+  (
+    public.propose_law_amendment (
+      '4d000000-0000-0000-0000-00000000000a',
+      '4e000000-0000-0000-0000-000000000001',
+      'Double Pass Reform',
+      null,
+      jsonb_build_array(
+        jsonb_build_object(
+          'op',
+          'amend_article',
+          'article_id',
+          '48000000-0000-0000-0000-00000000000a',
+          'heading',
+          'Applied Once',
+          'body_markdown',
+          'Applied once.'
+        )
+      )
+    )
+  ).id;
+
+reset role;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  public.cast_law_amendment_vote (
+    (
+      select
+        id
+      from
+        amendment_test_ids
+      where
+        key = 'double_pass_amendment'
+    ),
+    '4e000000-0000-0000-0000-000000000002',
+    true
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        status
+      from
+        public.law_amendments
+      where
+        id = (
+          select
+            id
+          from
+            amendment_test_ids
+          where
+            key = 'double_pass_amendment'
+        )
+    ),
+    'proposed',
+    'double-pass fixture: still open after one of two council members votes yes'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  public.cast_law_amendment_vote (
+    (
+      select
+        id
+      from
+        amendment_test_ids
+      where
+        key = 'double_pass_amendment'
+    ),
+    '4e000000-0000-0000-0000-000000000003',
+    true
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        format('%s|%s', status, resolved_turn_number)
+      from
+        public.law_amendments
+      where
+        id = (
+          select
+            id
+          from
+            amendment_test_ids
+          where
+            key = 'double_pass_amendment'
+        )
+    ),
+    'passed|11',
+    'double-pass fixture: the deciding second vote resolves the amendment exactly once'
+  );
+
+select
+  is (
+    (
+      select
+        current_version
+      from
+        public.law_documents
+      where
+        id = '4d000000-0000-0000-0000-00000000000a'
+    ),
+    2,
+    'double-pass fixture: document version bumps exactly once on the deciding vote'
+  );
+
+select
+  is (
+    (
+      select
+        format('%s|%s', heading, body_markdown)
+      from
+        public.law_articles
+      where
+        id = '48000000-0000-0000-0000-00000000000a'
+    ),
+    'Applied Once|Applied once.',
+    'double-pass fixture: the article reflects a single application of the operations'
+  );
+
+-- A third vote against the now-resolved (and row-locked-on-select) amendment
+-- must be rejected by the status guard, not reapply the operations.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    format(
+      $test$select public.cast_law_amendment_vote(%L::uuid, '4e000000-0000-0000-0000-000000000002'::uuid, false)$test$,
+      (
+        select
+          id
+        from
+          amendment_test_ids
+        where
+          key = 'double_pass_amendment'
+      )
+    ),
+    '22023',
+    null,
+    'double-pass fixture: a vote against an already-resolved amendment is rejected, not re-tallied'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        current_version
+      from
+        public.law_documents
+      where
+        id = '4d000000-0000-0000-0000-00000000000a'
+    ),
+    2,
+    'double-pass fixture: document version is unchanged after the rejected re-vote attempt'
+  );
+
+select
+  is (
+    (
+      select
+        format('%s|%s', heading, body_markdown)
+      from
+        public.law_articles
+      where
+        id = '48000000-0000-0000-0000-00000000000a'
+    ),
+    'Applied Once|Applied once.',
+    'double-pass fixture: the article is unchanged after the rejected re-vote attempt'
+  );
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.notifications
+      where
+        notification_type = 'law.amendment_passed'
+        and message_text like 'Amendment "Double Pass Reform" passed%'
+        and recipient_user_id in (
+          '4a000000-0000-0000-0000-000000000001',
+          '4a000000-0000-0000-0000-000000000002'
+        )
+    ),
+    2,
+    'double-pass fixture: the operations application notifies the world admin and ruler exactly once each'
   );
 
 select
