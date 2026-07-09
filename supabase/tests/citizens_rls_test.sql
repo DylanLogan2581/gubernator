@@ -10,7 +10,7 @@
 begin;
 
 select
-  plan (70);
+  plan (71);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -459,6 +459,23 @@ select
       public.get_citizen_admin_details ('c5000000-0000-0000-0000-000000000010')
     $test$,
     'world admin can call get_citizen_admin_details for a citizen in their world'
+  );
+
+-- #1125: culture_id/religion_id are granted alongside the other non-flavor
+-- columns, unlike the flavor columns above -- direct table SELECT must not
+-- throw 42501.
+select
+  lives_ok (
+    $test$
+    select
+      culture_id,
+      religion_id
+    from
+      public.citizens
+    where
+      id = 'c5000000-0000-0000-0000-000000000010'
+    $test$,
+    'world admin can select culture_id and religion_id directly from the table API'
   );
 
 reset role;
