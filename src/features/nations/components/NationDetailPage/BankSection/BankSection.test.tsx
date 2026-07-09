@@ -268,6 +268,7 @@ function createNation(): Nation {
 function chain<T>(result: T): {
   readonly eq: () => ReturnType<typeof chain<T>>;
   readonly in: () => ReturnType<typeof chain<T>>;
+  readonly is: () => ReturnType<typeof chain<T>>;
   readonly limit: () => ReturnType<typeof chain<T>>;
   readonly maybeSingle: () => Promise<T>;
   readonly order: () => ReturnType<typeof chain<T>>;
@@ -282,6 +283,7 @@ function chain<T>(result: T): {
   const self = {
     eq: () => self,
     in: () => self,
+    is: () => self,
     limit: () => self,
     maybeSingle: () => Promise.resolve(result),
     order: () => self,

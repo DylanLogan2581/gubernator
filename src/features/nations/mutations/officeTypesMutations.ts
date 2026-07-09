@@ -17,6 +17,8 @@ import type { OfficeTypeScope } from "../types/nationOfficeTypes";
 
 export type CreateOfficeTypeInput = {
   readonly color?: string | null;
+  // #1123: prefills the appoint dialog's term field. Null = indefinite.
+  readonly defaultTermTurns?: number | null;
   readonly description?: string | null;
   readonly excludesFromLabor: boolean;
   readonly icon?: string | null;
@@ -31,6 +33,7 @@ export type CreateOfficeTypeInput = {
 
 export type UpdateOfficeTypeInput = {
   readonly color?: string | null;
+  readonly defaultTermTurns?: number | null;
   readonly description?: string | null;
   readonly excludesFromLabor?: boolean;
   readonly icon?: string | null;
@@ -158,6 +161,7 @@ async function createOfficeType(
     .from("office_types")
     .insert({
       color: input.color ?? null,
+      default_term_turns: input.defaultTermTurns ?? null,
       description: input.description ?? null,
       excludes_from_labor: input.excludesFromLabor,
       icon: input.icon ?? null,
@@ -194,6 +198,9 @@ async function updateOfficeType(
   if (input.maxHolders !== undefined) patch.max_holders = input.maxHolders;
   if (input.excludesFromLabor !== undefined) {
     patch.excludes_from_labor = input.excludesFromLabor;
+  }
+  if (input.defaultTermTurns !== undefined) {
+    patch.default_term_turns = input.defaultTermTurns;
   }
 
   const { data, error } = await client

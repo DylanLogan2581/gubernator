@@ -142,6 +142,7 @@ async function getNationBodyResolverContext(
         .from("nation_offices")
         .select("citizen_id,office_type_id")
         .eq("nation_id", nationId)
+        .is("ended_turn_number", null)
         .returns<{ citizen_id: string; office_type_id: string }[]>(),
       client
         .from("citizens")
@@ -218,6 +219,7 @@ async function getSettlementBodyResolverContext(
       .from("nation_offices")
       .select("citizen_id,office_type_id")
       .eq("settlement_id", settlementId)
+      .is("ended_turn_number", null)
       .returns<{ citizen_id: string; office_type_id: string }[]>(),
     client
       .from("citizens")

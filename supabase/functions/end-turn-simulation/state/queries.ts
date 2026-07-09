@@ -449,6 +449,7 @@ export function fetchNationOffices(
     table: "nation_offices",
     params: {
       world_id: `eq.${worldId}`,
+      ended_turn_number: "is.null",
       order: "id.asc",
       select: "citizen_id,office_types(excludes_from_labor)",
     },

@@ -112,6 +112,7 @@ function defaultOfficeTypeRows(): readonly Record<string, unknown>[] {
     color: null,
     max_holders: null,
     excludes_from_labor: true,
+    default_term_turns: null,
   }));
 }
 
@@ -258,6 +259,7 @@ describe("NationOfficesSection", () => {
         p_citizen_id: "citizen-2",
         p_nation_id: "nation-1",
         p_office_type: "senator",
+        p_term_turns: undefined,
       });
     });
   });
@@ -383,19 +385,25 @@ function createClientFixture({
     if (table === "nation_offices") {
       return {
         select: () => ({
-          eq: () =>
-            Promise.resolve({
-              data: offices.map((office) => ({
-                id: office.id,
-                world_id: office.world_id,
-                nation_id: office.nation_id,
-                office_type_id: DEFAULT_OFFICE_TYPE_IDS[office.office_type],
-                citizen_id: office.citizen_id,
-                appointed_turn_number: office.appointed_turn_number,
-                office_types: { name: office.office_type },
-              })),
-              error: null,
-            }),
+          eq: () => ({
+            is: () =>
+              Promise.resolve({
+                data: offices.map((office) => ({
+                  id: office.id,
+                  world_id: office.world_id,
+                  nation_id: office.nation_id,
+                  settlement_id: null,
+                  office_type_id: DEFAULT_OFFICE_TYPE_IDS[office.office_type],
+                  citizen_id: office.citizen_id,
+                  appointed_turn_number: office.appointed_turn_number,
+                  term_turns: null,
+                  expires_turn_number: null,
+                  ended_turn_number: null,
+                  office_types: { name: office.office_type },
+                })),
+                error: null,
+              }),
+          }),
         }),
       };
     }

@@ -46,6 +46,7 @@ import {
   deleteOfficeTypeMutationOptions,
   dismissSettlementOfficeMutationOptions,
   formatNationOfficeType,
+  renewSettlementOfficeMutationOptions,
   settlementOfficesRosterQueryOptions,
   settlementOfficeTypesQueryOptions,
   type AppointSettlementOfficeInput,
@@ -56,6 +57,7 @@ import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 import {
   formatCalendarDate,
+  formatCalendarYear,
   resolveTurnCalendarDate,
 } from "@/shared/turnCalendarPrimitives";
 
@@ -87,6 +89,9 @@ export function SettlementOfficesSection({
   );
   const dismissMutation = useMutation(
     dismissSettlementOfficeMutationOptions({ queryClient }),
+  );
+  const renewMutation = useMutation(
+    renewSettlementOfficeMutationOptions({ queryClient }),
   );
 
   const [isAppointing, setIsAppointing] = useState(false);
@@ -144,6 +149,24 @@ export function SettlementOfficesSection({
     }
   }
 
+  function handleRenew(entry: SettlementOfficeRosterEntry): void {
+    renewMutation.mutate(
+      {
+        officeId: entry.id,
+        settlementId: settlement.id,
+        worldId: settlement.nation.worldId,
+      },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to renew office holder.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess(`${entry.citizenName}'s term renewed.`);
+        },
+      },
+    );
+  }
+
   function handleDismissConfirm(): void {
     if (dismissing === null) return;
     dismissMutation.mutate(
@@ -197,6 +220,8 @@ export function SettlementOfficesSection({
                   key={officeTypeId}
                   officeType={officeType}
                   onDismiss={setDismissing}
+                  onRenew={handleRenew}
+                  renewPending={renewMutation.isPending}
                 />
               );
             })}
@@ -265,6 +290,8 @@ function OfficeGroup({
   isArchived,
   officeType,
   onDismiss,
+  onRenew,
+  renewPending,
 }: {
   readonly calendarConfig: Parameters<typeof resolveTurnCalendarDate>[0] | null;
   readonly canManage: boolean;
@@ -272,6 +299,8 @@ function OfficeGroup({
   readonly isArchived: boolean;
   readonly officeType: OfficeType;
   readonly onDismiss: (entry: SettlementOfficeRosterEntry) => void;
+  readonly onRenew: (entry: SettlementOfficeRosterEntry) => void;
+  readonly renewPending: boolean;
 }): JSX.Element {
   const label = formatNationOfficeType(officeType.name);
   const capLabel =
@@ -322,17 +351,33 @@ function OfficeGroup({
                     calendarConfig,
                   )}
                 </span>
+                <span className="text-xs text-muted-foreground">
+                  {formatTermStatus(entry, calendarConfig)}
+                </span>
               </div>
               {canManage ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isArchived}
-                  onClick={() => onDismiss(entry)}
-                >
-                  Dismiss
-                </Button>
+                <div className="flex gap-2">
+                  {entry.termTurns !== null ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isArchived || renewPending}
+                      onClick={() => onRenew(entry)}
+                    >
+                      Renew
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isArchived}
+                    onClick={() => onDismiss(entry)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
               ) : null}
             </li>
           ))}
@@ -359,6 +404,9 @@ function AppointOfficeDialog({
     appointableTypes[0]?.id ?? "",
   );
   const [citizenId, setCitizenId] = useState<string>("");
+  const [termTurns, setTermTurns] = useState<string>(
+    appointableTypes[0]?.defaultTermTurns?.toString() ?? "",
+  );
 
   const citizensQuery = useQuery(
     citizensInSettlementQueryOptions(settlement.id),
@@ -384,10 +432,12 @@ function AppointOfficeDialog({
 
   function handleSubmit(): void {
     if (citizenId === "" || selectedType === undefined) return;
+    const parsedTermTurns = termTurns.trim() === "" ? null : Number(termTurns);
     const input: AppointSettlementOfficeInput = {
       citizenId,
       officeType: selectedType.name,
       settlementId: settlement.id,
+      termTurns: parsedTermTurns,
       worldId: settlement.nation.worldId,
     };
     appointMutation.mutate(input, {
@@ -418,6 +468,11 @@ function AppointOfficeDialog({
               onValueChange={(value) => {
                 setOfficeTypeId(value);
                 setCitizenId("");
+                setTermTurns(
+                  appointableTypes
+                    .find((t) => t.id === value)
+                    ?.defaultTermTurns?.toString() ?? "",
+                );
               }}
             >
               <SelectTrigger
@@ -434,6 +489,18 @@ function AppointOfficeDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="settlement-office-term-turns">
+              Term length in turns (optional, indefinite if blank)
+            </Label>
+            <Input
+              id="settlement-office-term-turns"
+              type="number"
+              min={1}
+              value={termTurns}
+              onChange={(e) => setTermTurns(e.target.value)}
+            />
           </div>
           <div className="grid gap-1">
             <Label htmlFor="settlement-office-citizen-select">Citizen</Label>
@@ -510,6 +577,7 @@ function OfficeTypeManagerDialog({
 }): JSX.Element {
   const [name, setName] = useState("");
   const [maxHolders, setMaxHolders] = useState("");
+  const [defaultTermTurns, setDefaultTermTurns] = useState("");
   const [excludesFromLabor, setExcludesFromLabor] = useState(true);
 
   const createMutation = useMutation(
@@ -536,6 +604,8 @@ function OfficeTypeManagerDialog({
     if (trimmed === "") return;
     createMutation.mutate(
       {
+        defaultTermTurns:
+          defaultTermTurns === "" ? null : Number(defaultTermTurns),
         excludesFromLabor,
         maxHolders: maxHolders === "" ? null : Number(maxHolders),
         name: trimmed,
@@ -551,6 +621,7 @@ function OfficeTypeManagerDialog({
           notifyMutationSuccess(`${trimmed} created.`);
           setName("");
           setMaxHolders("");
+          setDefaultTermTurns("");
           setExcludesFromLabor(true);
         },
       },
@@ -658,6 +729,18 @@ function OfficeTypeManagerDialog({
                 onChange={(e) => setMaxHolders(e.target.value)}
               />
             </div>
+            <div className="grid gap-1">
+              <Label htmlFor="new-settlement-office-type-default-term-turns">
+                Default term length in turns (optional, indefinite if blank)
+              </Label>
+              <Input
+                id="new-settlement-office-type-default-term-turns"
+                type="number"
+                min={1}
+                value={defaultTermTurns}
+                onChange={(e) => setDefaultTermTurns(e.target.value)}
+              />
+            </div>
             <div className="flex items-center gap-2">
               <Checkbox
                 id="new-settlement-office-type-excludes-labor"
@@ -753,5 +836,28 @@ function formatAppointedTurn(
     );
   } catch {
     return `Turn ${String(turnNumber)}`;
+  }
+}
+
+// #1123: term_turns null = indefinite; otherwise show when the seat expires.
+function formatTermStatus(
+  entry: {
+    readonly expiresTurnNumber: number | null;
+    readonly termTurns: number | null;
+  },
+  calendarConfig: Parameters<typeof resolveTurnCalendarDate>[0] | null,
+): string {
+  if (entry.termTurns === null || entry.expiresTurnNumber === null) {
+    return "Indefinite term";
+  }
+  if (calendarConfig === null) {
+    return `Ends turn ${String(entry.expiresTurnNumber)}`;
+  }
+  try {
+    return `Ends Year ${formatCalendarYear(
+      resolveTurnCalendarDate(calendarConfig, entry.expiresTurnNumber).year,
+    )}`;
+  } catch {
+    return `Ends turn ${String(entry.expiresTurnNumber)}`;
   }
 }

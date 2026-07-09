@@ -2448,10 +2448,13 @@ export type Database = {
           appointed_turn_number: number;
           citizen_id: string;
           created_at: string;
+          ended_turn_number: number | null;
+          expires_turn_number: number | null;
           id: string;
           nation_id: string | null;
           office_type_id: string;
           settlement_id: string | null;
+          term_turns: number | null;
           updated_at: string;
           world_id: string;
         };
@@ -2459,10 +2462,13 @@ export type Database = {
           appointed_turn_number: number;
           citizen_id: string;
           created_at?: string;
+          ended_turn_number?: number | null;
+          expires_turn_number?: number | null;
           id?: string;
           nation_id?: string | null;
           office_type_id: string;
           settlement_id?: string | null;
+          term_turns?: number | null;
           updated_at?: string;
           world_id: string;
         };
@@ -2470,10 +2476,13 @@ export type Database = {
           appointed_turn_number?: number;
           citizen_id?: string;
           created_at?: string;
+          ended_turn_number?: number | null;
+          expires_turn_number?: number | null;
           id?: string;
           nation_id?: string | null;
           office_type_id?: string;
           settlement_id?: string | null;
+          term_turns?: number | null;
           updated_at?: string;
           world_id?: string;
         };
@@ -3144,6 +3153,7 @@ export type Database = {
         Row: {
           color: string | null;
           created_at: string;
+          default_term_turns: number | null;
           description: string | null;
           excludes_from_labor: boolean;
           icon: string | null;
@@ -3158,6 +3168,7 @@ export type Database = {
         Insert: {
           color?: string | null;
           created_at?: string;
+          default_term_turns?: number | null;
           description?: string | null;
           excludes_from_labor?: boolean;
           icon?: string | null;
@@ -3172,6 +3183,7 @@ export type Database = {
         Update: {
           color?: string | null;
           created_at?: string;
+          default_term_turns?: number | null;
           description?: string | null;
           excludes_from_labor?: boolean;
           icon?: string | null;
@@ -4711,15 +4723,19 @@ export type Database = {
           p_citizen_id: string;
           p_nation_id: string;
           p_office_type: string;
+          p_term_turns?: number;
         };
         Returns: {
           appointed_turn_number: number;
           citizen_id: string;
           created_at: string;
+          ended_turn_number: number | null;
+          expires_turn_number: number | null;
           id: string;
           nation_id: string | null;
           office_type_id: string;
           settlement_id: string | null;
+          term_turns: number | null;
           updated_at: string;
           world_id: string;
         };
@@ -4735,15 +4751,19 @@ export type Database = {
           p_citizen_id: string;
           p_office_type: string;
           p_settlement_id: string;
+          p_term_turns?: number;
         };
         Returns: {
           appointed_turn_number: number;
           citizen_id: string;
           created_at: string;
+          ended_turn_number: number | null;
+          expires_turn_number: number | null;
           id: string;
           nation_id: string | null;
           office_type_id: string;
           settlement_id: string | null;
+          term_turns: number | null;
           updated_at: string;
           world_id: string;
         };
@@ -6073,6 +6093,14 @@ export type Database = {
         };
         Returns: Record<string, unknown>;
       };
+      internal_apply_turn_transition_office_term_expiry: {
+        Args: {
+          p_transition_id: string;
+          p_turn_number: number;
+          p_world_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
       internal_apply_turn_transition_settlement_snapshots: {
         Args: { p_payload: Json; p_transition_id: string; p_world_id: string };
         Returns: number;
@@ -6711,6 +6739,29 @@ export type Database = {
           to: "worlds";
           isOneToOne: false;
           isSetofReturn: true;
+        };
+      };
+      renew_office: {
+        Args: { p_office_id: string; p_term_turns?: number };
+        Returns: {
+          appointed_turn_number: number;
+          citizen_id: string;
+          created_at: string;
+          ended_turn_number: number | null;
+          expires_turn_number: number | null;
+          id: string;
+          nation_id: string | null;
+          office_type_id: string;
+          settlement_id: string | null;
+          term_turns: number | null;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_offices";
+          isOneToOne: true;
+          isSetofReturn: false;
         };
       };
       reorder_army_group: {
@@ -8017,7 +8068,8 @@ export type Database = {
         | "law.amendment_passed"
         | "law.amendment_failed"
         | "law.amendment_withdrawn"
-        | "law.amendment_expired";
+        | "law.amendment_expired"
+        | "office.term_ended";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -8199,6 +8251,7 @@ export const Constants = {
         "law.amendment_failed",
         "law.amendment_withdrawn",
         "law.amendment_expired",
+        "office.term_ended",
       ],
     },
   },

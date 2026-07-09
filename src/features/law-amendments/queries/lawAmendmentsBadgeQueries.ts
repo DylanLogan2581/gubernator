@@ -152,7 +152,8 @@ async function getScopeResolverContext(
 }> {
   const officeHoldersQuery = client
     .from("nation_offices")
-    .select("citizen_id,office_type_id");
+    .select("citizen_id,office_type_id")
+    .is("ended_turn_number", null);
   const officeHoldersResult = await (
     nationId !== null
       ? officeHoldersQuery.eq("nation_id", nationId)

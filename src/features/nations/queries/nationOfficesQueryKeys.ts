@@ -27,8 +27,17 @@ export const nationOfficesQueryKeys = {
       "world-defaults",
       worldId,
     ] as const,
+  history: (nationId: string) =>
+    [...nationOfficesQueryKeys.all, "offices", "history", nationId] as const,
   roster: (nationId: string) =>
     [...nationOfficesQueryKeys.all, "offices", "roster", nationId] as const,
+  settlementHistory: (settlementId: string) =>
+    [
+      ...nationOfficesQueryKeys.all,
+      "offices",
+      "settlement-history",
+      settlementId,
+    ] as const,
   settlementRoster: (settlementId: string) =>
     [
       ...nationOfficesQueryKeys.all,

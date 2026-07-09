@@ -7,6 +7,8 @@ export type OfficeTypeScope = "nation" | "settlement";
 // = a custom office a nation manager invented for that nation only.
 export type OfficeType = {
   readonly color: string | null;
+  // #1123: prefills the appoint dialog's term field; the caller may override it.
+  readonly defaultTermTurns: number | null;
   readonly description: string | null;
   readonly excludesFromLabor: boolean;
   readonly icon: string | null;
@@ -23,10 +25,13 @@ export type NationOfficeRosterEntry = {
   readonly citizenId: string;
   readonly citizenName: string;
   readonly citizenType: CitizenType;
+  // #1123: null = indefinite term, never expires.
+  readonly expiresTurnNumber: number | null;
   readonly id: string;
   readonly nationId: string;
   readonly officeTypeId: string;
   readonly officeTypeName: string;
+  readonly termTurns: number | null;
   readonly worldId: string;
 };
 
@@ -37,11 +42,22 @@ export type SettlementOfficeRosterEntry = {
   readonly citizenId: string;
   readonly citizenName: string;
   readonly citizenType: CitizenType;
+  readonly expiresTurnNumber: number | null;
   readonly id: string;
   readonly officeTypeId: string;
   readonly officeTypeName: string;
   readonly settlementId: string;
+  readonly termTurns: number | null;
   readonly worldId: string;
+};
+
+// #1123: an archived (term-ended) officeholder, kept for roster history.
+export type NationOfficeHistoryEntry = NationOfficeRosterEntry & {
+  readonly endedTurnNumber: number;
+};
+
+export type SettlementOfficeHistoryEntry = SettlementOfficeRosterEntry & {
+  readonly endedTurnNumber: number;
 };
 
 const KNOWN_OFFICE_TYPE_LABELS: Readonly<Record<string, string>> = {

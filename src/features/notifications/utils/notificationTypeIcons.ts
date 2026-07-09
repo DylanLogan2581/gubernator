@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Skull,
   Swords,
+  UserMinus,
   Zap,
 } from "lucide-react";
 
@@ -66,6 +67,7 @@ const NOTIFICATION_TYPE_ICONS: Record<NotificationType, LucideIcon> = {
   "law.amendment_failed": Gavel,
   "law.amendment_withdrawn": Gavel,
   "law.amendment_expired": Gavel,
+  "office.term_ended": UserMinus,
 };
 
 /** Falls back to a generic bell for any notification_type not in the map. */

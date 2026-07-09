@@ -43,6 +43,8 @@ export {
   appointSettlementOfficeMutationOptions,
   dismissNationOfficeMutationOptions,
   dismissSettlementOfficeMutationOptions,
+  renewNationOfficeMutationOptions,
+  renewSettlementOfficeMutationOptions,
 } from "./mutations/officesMutations";
 export {
   createOfficeTypeMutationOptions,
@@ -90,7 +92,9 @@ export {
   nationsListQueryOptions,
 } from "./queries/nationsQueries";
 export {
+  nationOfficeHistoryQueryOptions,
   nationOfficesRosterQueryOptions,
+  settlementOfficeHistoryQueryOptions,
   settlementOfficesRosterQueryOptions,
 } from "./queries/officesQueries";
 export {
@@ -206,6 +210,8 @@ export type {
   AppointSettlementOfficeInput,
   DismissNationOfficeInput,
   DismissSettlementOfficeInput,
+  RenewNationOfficeInput,
+  RenewSettlementOfficeInput,
 } from "./mutations/officesMutations";
 export type {
   CreateOfficeTypeInput,
@@ -215,9 +221,11 @@ export type {
 } from "./mutations/officeTypesMutations";
 export {
   formatNationOfficeType,
+  type NationOfficeHistoryEntry,
   type NationOfficeRosterEntry,
   type OfficeType,
   type OfficeTypeScope,
+  type SettlementOfficeHistoryEntry,
   type SettlementOfficeRosterEntry,
 } from "./types/nationOfficeTypes";
 export type { NationRelationshipMutationIssue } from "./mutations/nationRelationshipMutations";

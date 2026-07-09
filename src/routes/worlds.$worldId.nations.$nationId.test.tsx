@@ -340,7 +340,10 @@ function createClient({
       if (table === "nation_offices") {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+            eq: vi.fn(() => ({
+              is: vi.fn().mockResolvedValue({ data: [], error: null }),
+              returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+            })),
           })),
         };
       }

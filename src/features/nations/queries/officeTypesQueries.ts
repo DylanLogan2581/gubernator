@@ -11,10 +11,11 @@ import { nationOfficesQueryKeys } from "./nationOfficesQueryKeys";
 import type { OfficeType } from "../types/nationOfficeTypes";
 
 const OFFICE_TYPE_SELECT =
-  "id,world_id,nation_id,name,description,scope,icon,color,max_holders,excludes_from_labor";
+  "id,world_id,nation_id,name,description,scope,icon,color,max_holders,excludes_from_labor,default_term_turns";
 
 type OfficeTypeRow = {
   readonly color: string | null;
+  readonly default_term_turns: number | null;
   readonly description: string | null;
   readonly excludes_from_labor: boolean;
   readonly icon: string | null;
@@ -29,6 +30,7 @@ type OfficeTypeRow = {
 function toOfficeType(row: OfficeTypeRow): OfficeType {
   return {
     color: row.color,
+    defaultTermTurns: row.default_term_turns,
     description: row.description,
     excludesFromLabor: row.excludes_from_labor,
     icon: row.icon,
