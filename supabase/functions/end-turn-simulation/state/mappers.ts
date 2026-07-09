@@ -329,6 +329,7 @@ export function toSimNation(row: SupabaseNationRow): SimNation {
     id: row.id,
     name: row.name,
     taxRate: row.tax_rate,
+    tradePolicy: row.trade_policy as SimNation["tradePolicy"],
   };
 }
 

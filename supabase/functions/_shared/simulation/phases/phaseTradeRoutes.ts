@@ -27,6 +27,7 @@ export function phaseTradeRoutes(
     jobs,
     nationOffices,
     nationRelationships,
+    nations,
     settlements,
     stockpiles,
     tradeRoutes,
@@ -39,6 +40,7 @@ export function phaseTradeRoutes(
 );
   const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
   const settlementById = new Map(settlements.map((s) => [s.id, s]));
+  const nationById = new Map(nations.map((n) => [n.id, n]));
 
   // Nation pairs currently at war, keyed both directions (`${a}:${b}`) so a
   // single Set.has lookup covers either direction regardless of which side's
@@ -144,6 +146,23 @@ export function phaseTradeRoutes(
       atWarNationPairs.has(`${originNationId}:${destinationNationId}`)
     ) {
       pause("nations_at_war", wasPaused);
+      continue;
+    }
+
+    // Trade policy gate (#1134): closed borders pause existing international
+    // routes too, not just new proposals/approvals (#1087 only gated those).
+    // Mirrors the war pause above — automatic resume once neither side reads
+    // 'closed'. state_controlled only restricts who may manage a route
+    // (settlement vs nation authority, #1087); it never pauses an already
+    // active route, so it is deliberately excluded here.
+    if (
+      originNationId !== undefined &&
+      destinationNationId !== undefined &&
+      originNationId !== destinationNationId &&
+      (nationById.get(originNationId)?.tradePolicy === "closed" ||
+        nationById.get(destinationNationId)?.tradePolicy === "closed")
+    ) {
+      pause("trade_policy_closed", wasPaused);
       continue;
     }
 

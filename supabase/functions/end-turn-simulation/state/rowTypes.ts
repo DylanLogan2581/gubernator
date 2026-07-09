@@ -191,6 +191,7 @@ export type SupabaseNationRow = {
   readonly government_type: string;
   readonly name: string;
   readonly tax_rate: number;
+  readonly trade_policy: string;
 };
 
 export type SupabaseNationOfficeRow = {
@@ -577,7 +578,8 @@ export function isNationRow(v: unknown): v is SupabaseNationRow {
     typeof v.id === "string" &&
     typeof v.government_type === "string" &&
     typeof v.name === "string" &&
-    typeof v.tax_rate === "number"
+    typeof v.tax_rate === "number" &&
+    typeof v.trade_policy === "string"
   );
 }
 

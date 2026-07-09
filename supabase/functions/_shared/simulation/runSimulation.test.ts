@@ -467,7 +467,7 @@ describe("runSimulation — national economy tax collection", () => {
       citizens: [makeMaleNpc("worker", "s1")],
       jobs: [job],
       nations: [
-        { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 1.0 },
+        { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 1.0, tradePolicy: "free" as const },
       ],
       populationRules: { ...BASE_POPULATION_RULES, foodConsumptionPerCitizen: 10 },
       settlements: [{ id: "s1", name: "s1", nationId: "n1" }],
@@ -484,7 +484,7 @@ describe("runSimulation — national economy tax collection", () => {
       makeInput({
         ...baseInput,
         nations: [
-          { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 0 },
+          { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 0, tradePolicy: "free" as const },
         ],
       }),
       "t-notax",
@@ -526,7 +526,7 @@ describe("runSimulation — national economy tax collection", () => {
         citizens: [makeMaleNpc("worker", "s1")],
         jobs: [job],
         nations: [
-          { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 0 },
+          { governmentType: "monarchy" as const, id: "n1", name: "Taxland", taxRate: 0, tradePolicy: "free" as const },
         ],
         settlements: [{ id: "s1", name: "s1", nationId: "n1" }],
         stockpiles: [makeStockpile("s1", "food", 0)],

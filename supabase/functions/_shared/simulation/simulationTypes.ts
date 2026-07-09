@@ -48,11 +48,14 @@ export type WorldPopulationRules = {
   readonly waterConsumptionPerCitizen: number;
 };
 
+export type SimNationTradePolicy = "free" | "state_controlled" | "closed";
+
 export type SimNation = {
   readonly governmentType: GovernmentType;
   readonly id: string;
   readonly name: string;
   readonly taxRate: number;
+  readonly tradePolicy: SimNationTradePolicy;
 };
 
 export type SimNationOffice = {

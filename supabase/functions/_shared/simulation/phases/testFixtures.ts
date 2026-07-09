@@ -149,6 +149,7 @@ export function makeNation(
     governmentType: "monarchy",
     name: "Testland",
     taxRate: 0,
+    tradePolicy: "free",
     ...overrides,
   };
 }

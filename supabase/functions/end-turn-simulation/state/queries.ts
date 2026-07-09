@@ -435,7 +435,7 @@ export function fetchNations(
     params: {
       world_id: `eq.${worldId}`,
       order: "id.asc",
-      select: "id,name,government_type,tax_rate",
+      select: "id,name,government_type,tax_rate,trade_policy",
     },
   });
 }

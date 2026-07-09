@@ -410,7 +410,13 @@ function makeAllSuccessResponses(): Record<
     },
     "/rest/v1/nations": {
       body: [
-        { id: NATION_ID, name: "Testland", government_type: "monarchy", tax_rate: 0 },
+        {
+          id: NATION_ID,
+          name: "Testland",
+          government_type: "monarchy",
+          tax_rate: 0,
+          trade_policy: "free",
+        },
       ],
       status: 200,
     },
