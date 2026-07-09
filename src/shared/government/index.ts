@@ -28,3 +28,11 @@ export type {
   ReadinessVotersInput,
   SuccessionCandidatesInput,
 } from "./governmentSelectors.ts";
+
+export { resolveBodyMembers } from "./governmentBodies.ts";
+export type {
+  BodyCompositionRule,
+  BodyOfficeHolder,
+  GovernmentBodyComposition,
+  ResolveBodyMembersData,
+} from "./governmentBodies.ts";

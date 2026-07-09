@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { GovernmentBodiesSection } from "@/features/government-bodies";
 import {
   SettlementManagerCard,
   SettlementOfficesSection,
@@ -13,10 +14,11 @@ function SettlementGovernmentRoute(): JSX.Element {
     useSettlementDetailContext();
 
   // Everyone with world access can view the government tab; write controls
-  // are gated internally: appoint/dismiss requires canManageSettlement
-  // (settlement manager, that settlement's nation manager, or an admin),
-  // custom office type management requires canManageNation (nation manager
-  // or admin only, matching office_types RLS).
+  // are gated internally: appoint/dismiss and body CRUD require
+  // canManageSettlement (settlement manager, that settlement's nation
+  // manager, or an admin), custom office type management requires
+  // canManageNation (nation manager or admin only, matching office_types
+  // RLS).
   return (
     <div className="grid gap-4">
       <SettlementManagerCard settlement={settlement} />
@@ -25,6 +27,14 @@ function SettlementGovernmentRoute(): JSX.Element {
         canManageTypes={canManageNation}
         isArchived={isArchived}
         settlement={settlement}
+      />
+      <GovernmentBodiesSection
+        canManage={canManageSettlement}
+        isArchived={isArchived}
+        nationId={settlement.nationId}
+        scope="settlement"
+        settlementId={settlement.id}
+        worldId={settlement.nation.worldId}
       />
     </div>
   );

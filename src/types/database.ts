@@ -1506,6 +1506,64 @@ export type Database = {
           },
         ];
       };
+      government_bodies: {
+        Row: {
+          composition_json: Json;
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          nation_id: string | null;
+          settlement_id: string | null;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          composition_json: Json;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          nation_id?: string | null;
+          settlement_id?: string | null;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          composition_json?: Json;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          nation_id?: string | null;
+          settlement_id?: string | null;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "government_bodies_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "government_bodies_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "government_bodies_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       job_definitions: {
         Row: {
           base_capacity: number | null;
@@ -5612,6 +5670,14 @@ export type Database = {
       };
       is_super_admin: { Args: never; Returns: boolean };
       is_valid_calendar_config: { Args: { config: Json }; Returns: boolean };
+      is_valid_government_body_composition: {
+        Args: { p_composition: Json };
+        Returns: boolean;
+      };
+      is_valid_government_body_composition_entry: {
+        Args: { p_entry: Json };
+        Returns: boolean;
+      };
       is_valid_job_io_array: {
         Args: { arr: Json; p_world_id: string };
         Returns: boolean;

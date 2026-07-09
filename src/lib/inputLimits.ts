@@ -95,3 +95,8 @@ export const eventInputLimits = {
   eventNameMax: 128,
   eventMemoryTextMax: 1000,
 } as const;
+
+export const governmentBodyInputLimits = {
+  nameMax: 64,
+  descriptionMax: 1000,
+} as const;
