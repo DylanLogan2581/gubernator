@@ -244,10 +244,10 @@ function IdentityReadout({
 }): JSX.Element {
   return (
     <div className="rounded-md border border-border bg-background px-3 py-2">
-      <div className="flex items-center justify-between gap-2">
-        <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>{label}</span>
         {action ?? null}
-      </div>
+      </dt>
       <dd className="mt-0.5">{children}</dd>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Slider as SliderPrimitive } from "radix-ui";
 import { useState, type JSX } from "react";
 
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -23,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import {
   Table,
   TableBody,
@@ -235,7 +235,13 @@ function TaxRateControl({
         <Label htmlFor="nation-tax-rate-slider">Tax rate</Label>
         <span className="text-sm font-medium">{sliderValue}%</span>
       </div>
-      <Slider
+      {/*
+        Renders SliderPrimitive directly (instead of @/components/ui/slider)
+        because that vendored wrapper doesn't forward an accessible name to
+        SliderPrimitive.Thumb -- only the non-interactive Root receives
+        id/aria-label, leaving the role="slider" node unnamed (#1152).
+      */}
+      <SliderPrimitive.Root
         id="nation-tax-rate-slider"
         min={0}
         max={TAX_RATE_MAX_PERCENT}
@@ -244,8 +250,16 @@ function TaxRateControl({
         disabled={!canManage || isArchived || taxRateMutation.isPending}
         onValueChange={(values) => setDraftPercent(values[0] ?? currentPercent)}
         onValueCommit={handleCommit}
-        aria-label="Tax rate"
-      />
+        className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50"
+      >
+        <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden rounded-full bg-muted">
+          <SliderPrimitive.Range className="absolute h-full bg-primary select-none" />
+        </SliderPrimitive.Track>
+        <SliderPrimitive.Thumb
+          aria-label="Tax rate"
+          className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+        />
+      </SliderPrimitive.Root>
       <p className="text-xs text-muted-foreground">
         Estimated next-turn intake:{" "}
         {snapshotIsPending

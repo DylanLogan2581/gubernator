@@ -90,7 +90,7 @@ const COLUMNS: ColumnDef<CitizenDirectoryRow, unknown>[] = [
                 <Badge variant="destructive">Deceased</Badge>
               ) : null}
             </span>
-            <span className="font-mono text-[11px] text-muted-foreground/70">
+            <span className="font-mono text-[11px] text-muted-foreground">
               {citizen.id.slice(0, 8)}
             </span>
           </span>

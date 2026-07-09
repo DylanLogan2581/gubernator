@@ -259,7 +259,7 @@ function UserRow({
       </TableCell>
       <TableCell className="px-4 py-3 text-xs text-muted-foreground">
         <span title={user.created_at}>{formatDate(user.created_at)}</span>
-        <span className="block text-muted-foreground/70">
+        <span className="block text-muted-foreground">
           {formatRelativeTime(user.created_at)}
         </span>
       </TableCell>
