@@ -1,5 +1,5 @@
 -- pgTAP tests for the nation-images storage bucket RLS policies and the
--- set_nation_flag_path RPC (#1072). Run with: npx supabase test db
+-- set_nation_flag_path RPC (#1072, #1148). Run with: npx supabase test db
 --
 -- Covers the read-side authorization split (member vs non-member vs anon)
 -- and the write-side manager-or-admin enforcement (world admin AND the
@@ -10,10 +10,15 @@
 -- not grant nation managers direct UPDATE — see
 -- nation_capital_and_founded_turn_test.sql for the same pattern on
 -- capital_settlement_id/founded_turn_number).
+--
+-- #1148 additionally covers: the insert/update policies reject a
+-- well-formed filename nested under extra path segments (own-nation write,
+-- but unbounded object litter), and set_nation_flag_path rejects a flag_path
+-- pointing at another nation's prefix (in-world display spoofing).
 begin;
 
 select
-  plan (11);
+  plan (14);
 
 -- storage.objects has a blanket "no direct SQL delete" trigger guarding
 -- against accidental data loss (storage.protect_delete); the Storage API
@@ -256,6 +261,21 @@ select
     'the world admin cannot upload a file outside the flag path convention'
   );
 
+select
+  throws_ok (
+    $test$
+    insert into storage.objects (bucket_id, name, owner)
+    values (
+      'nation-images',
+      'f3000000-0000-0000-0000-000000000001/a/flag.webp',
+      'f1000000-0000-0000-0000-000000000001'
+    )
+    $test$,
+    null,
+    null,
+    'the world admin cannot upload a nested path even with a valid filename'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -291,6 +311,19 @@ select
       and name = 'f3000000-0000-0000-0000-000000000001/flag.webp'
     $test$,
     'the nation manager can replace their nation''s flag'
+  );
+
+select
+  throws_ok (
+    $test$
+    update storage.objects
+    set name = 'f3000000-0000-0000-0000-000000000001/a/flag.webp'
+    where bucket_id = 'nation-images'
+      and name = 'f3000000-0000-0000-0000-000000000001/flag.webp'
+    $test$,
+    null,
+    null,
+    'the nation manager cannot rename their flag into a nested path'
   );
 
 delete from storage.objects
@@ -344,6 +377,19 @@ set
 
 set
   local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.set_nation_flag_path(
+      'f3000000-0000-0000-0000-000000000001'::uuid,
+      'f9000000-0000-0000-0000-000000000099/flag.webp'
+    )
+    $test$,
+    '22023',
+    null,
+    'the nation manager cannot point flag_path at another nation''s prefix'
+  );
 
 select
   public.set_nation_flag_path (
