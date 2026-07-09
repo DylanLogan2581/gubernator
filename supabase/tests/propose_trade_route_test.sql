@@ -174,6 +174,10 @@ values
 --   fc6...002 – Settlement A1 manager PC (user = fc100...003)
 --   fc6...003 – NPC in Settlement A1 (correct nation for non-admin propose)
 --   fc6...004 – NPC in Settlement C1 World 2 (wrong nation for non-admin test)
+--   fc6...005 – non-manager PC in Settlement A1 (user = fc100...004; #1143:
+--     gives the non-manager caller world access via a PC, so the "not a
+--     manager" 42501 check is what's exercised, not the world-access gate on
+--     nations_have_met)
 insert into
   public.citizens (
     id,
@@ -235,6 +239,18 @@ values
     null,
     null,
     'fc400000-0000-0000-0000-000000000003'
+  ),
+  (
+    'fc600000-0000-0000-0000-000000000005',
+    'fc200000-0000-0000-0000-000000000001',
+    'player_character',
+    'PTR Non-Manager PC',
+    'alive',
+    'fc100000-0000-0000-0000-000000000004',
+    'none',
+    null,
+    null,
+    'fc400000-0000-0000-0000-000000000001'
   );
 
 -- ===========================================================================

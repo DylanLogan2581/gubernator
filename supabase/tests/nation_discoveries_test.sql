@@ -6,7 +6,7 @@
 begin;
 
 select
-  plan (16);
+  plan (18);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -386,6 +386,34 @@ select
     ),
     'nations_have_met is false for a pair with no discovery row'
   );
+
+-- ===========================================================================
+-- #1143: nations_have_met / nation_world_id are SECURITY DEFINER oracle
+-- helpers -- an authenticated caller with no access to Discovery World must
+-- be denied, even for a real stored pair / real nation id.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"a1000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  ok (
+    not public.nations_have_met (
+      'a3000000-0000-0000-0000-00000000000a',
+      'a3000000-0000-0000-0000-00000000000c'
+    ),
+    'nations_have_met denies a caller with no world access, even for a stored pair'
+  );
+
+select
+  ok (
+    public.nation_world_id ('a3000000-0000-0000-0000-00000000000a') is null,
+    'nation_world_id denies a caller with no world access to the nation''s world'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- RLS: world admin sees every row; a PC holder sees rows involving their

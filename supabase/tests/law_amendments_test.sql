@@ -7,7 +7,7 @@
 begin;
 
 select
-  plan (51);
+  plan (52);
 
 -- A scratch table to stash ids returned by RPC calls across role switches --
 -- mirrors law_documents_test.sql / nation_readiness_voting_test.sql.
@@ -2616,6 +2616,29 @@ select
     array['4e000000-0000-0000-0000-000000000002'::uuid],
     'resolve_government_body_member_ids excludes citizens outside the body''s world/nation scope'
   );
+
+-- #1143: resolve_government_body_member_ids is a SECURITY DEFINER oracle
+-- helper -- an authenticated caller with no access to Amendment World must
+-- be denied, even for a real government body id.
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000008","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        array_agg(m)
+      from
+        public.resolve_government_body_member_ids ('4f000000-0000-0000-0000-000000000004') m
+    ),
+    null::uuid[],
+    'resolve_government_body_member_ids denies a caller with no world access'
+  );
+
+reset role;
 
 set
   local role authenticated;

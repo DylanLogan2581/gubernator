@@ -656,6 +656,14 @@ select
 
 reset role;
 
+-- #1143: reset role alone leaves the previous block's "request.jwt.claims"
+-- set (SET LOCAL isn't cleared by RESET ROLE), so auth.uid() would still
+-- resolve to that unrelated caller here. nations_have_met now reads
+-- auth.uid() to gate cross-world access, so clear it to genuinely run as the
+-- migration owner (auth.uid() is null) like the block below intends.
+set
+  local "request.jwt.claims" = '';
+
 -- ===========================================================================
 -- CONSTRAINTS: table-level shape checks run as the migration owner so RLS
 -- does not mask them.
