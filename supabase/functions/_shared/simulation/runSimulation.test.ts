@@ -635,3 +635,71 @@ describe("runSimulation — soldier lifecycle (#1111)", () => {
     expect(result.citizenDeaths).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Treaty tribute applied exactly once (#1127): phaseTreaties must not mutate
+// context.shared.pendingNationStockpiles directly AND return deltas the
+// orchestrator re-applies — that double-charges the payer / double-credits
+// the payee, so downstream phaseMilitaryUpkeep (nation-funded army) can see
+// a balance that's wrong by one tribute payment.
+// ---------------------------------------------------------------------------
+
+describe("runSimulation — treaty tribute applied once (#1127)", () => {
+  it("a nation-funded army affordable at 1x tribute debit does not desert", () => {
+    const soldier = makeMaleNpc("soldier1", "stationed");
+
+    const result = runSimulation(
+      makeInput({
+        armies: [
+          makeArmy("a1", "stationed", { fundingSource: "nation", nationId: "payer" }),
+        ],
+        armyUnits: [makeArmyUnit("u1", "a1")],
+        citizens: [soldier],
+        nationResourceStockpiles: [{ nationId: "payer", quantity: 10, resourceId: "gold" }],
+        nationTreaties: [
+          {
+            endsTurnNumber: null,
+            id: "t1",
+            marriageCitizenAId: null,
+            marriageCitizenBId: null,
+            proposerNationId: "payer",
+            responderNationId: "payee",
+            treatyType: "tribute",
+            tributePayer: "proposer",
+            tributeQuantityPerTurn: 3,
+            tributeResourceId: "gold",
+          },
+        ],
+        settlements: [makeSettlement("stationed")],
+        unitSoldiers: [makeUnitSoldier("us1", "soldier1", "u1", "stationed")],
+        // desertionRate 1 with a single soldier makes any shortfall
+        // deterministic (exactly one deserter, no RNG-dependent count).
+        unitTypes: [
+          { desertionRate: 1, id: "ut1", upkeepCostsJson: [{ amount: 6, resourceId: "gold" }] },
+        ],
+      }),
+      "t-treaty-tribute-once",
+    );
+
+    // Correct (single-apply) balance: 10 - 3 (tribute) - 6 (upkeep) = 1, so
+    // upkeep is fully paid and nobody deserts. With the #1127 double-apply
+    // bug the payer would see 10 - 6 (tribute double-applied) = 4 at the
+    // upkeep check, short of the 6 required, and the soldier would desert.
+    expect(result.desertedSoldiers).toHaveLength(0);
+    expect(result.armyTurnSnapshots).toContainEqual(
+      expect.objectContaining({ armyId: "a1", upkeepPaid: true }),
+    );
+
+    // The two nation deltas emitted (tribute -3, upkeep -6) must be the only
+    // ones — applied once each, matching the phase-level unit test's direct
+    // assertion of the same invariant.
+    const goldDeltasForPayer = result.nationStockpileDeltas.filter(
+      (d) => d.nationId === "payer" && d.resourceId === "gold",
+    );
+    expect(goldDeltasForPayer).toEqual([{ delta: -3, nationId: "payer", resourceId: "gold" }, {
+      delta: -6,
+      nationId: "payer",
+      resourceId: "gold",
+    }]);
+  });
+});

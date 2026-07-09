@@ -64,6 +64,14 @@ export function phaseTreaties(context: SimulationContext): PhaseTreatiesOutput {
   const nationStockpileDeltas: NationStockpileDelta[] = [];
   const treatyStatusChanges: TreatyStatusChange[] = [];
 
+  // pendingNationStockpiles is read-only here — this phase reports transfers
+  // via nationStockpileDeltas only, and the orchestrator applies them once
+  // (runSimulation.ts). This local overlay lets sequential treaties this same
+  // phase call see the effect of earlier transfers without mutating the
+  // shared map directly (that would double-apply once the orchestrator also
+  // applies nationStockpileDeltas — issue #1127).
+  const localStockpileDeltas = new Map<string, number>();
+
   // nationId -> resourceId -> amount, tracked separately from
   // phaseNationalEconomy's tax totals so nationTurnSnapshots can report both.
   const tributePaid = new Map<string, Map<string, number>>();
@@ -79,7 +87,13 @@ export function phaseTreaties(context: SimulationContext): PhaseTreatiesOutput {
   }
 
   for (const treaty of sortedTreaties) {
+    // Inclusive: a treaty ending on newTurnNumber (the turn about to start)
+    // pays no further tribute — it is expired for that turn, not one turn
+    // later.
+    const isExpiring = treaty.endsTurnNumber !== null && treaty.endsTurnNumber <= newTurnNumber;
+
     if (
+      !isExpiring &&
       treaty.treatyType === "tribute" &&
       treaty.tributePayer !== null &&
       treaty.tributeResourceId !== null &&
@@ -91,13 +105,16 @@ export function phaseTreaties(context: SimulationContext): PhaseTreatiesOutput {
       const requested = treaty.tributeQuantityPerTurn;
 
       const payerKey = `${payerNationId}:${resourceId}`;
-      const available = Math.max(0, pendingNationStockpiles.get(payerKey) ?? 0);
+      const available = Math.max(
+        0,
+        (pendingNationStockpiles.get(payerKey) ?? 0) + (localStockpileDeltas.get(payerKey) ?? 0),
+      );
       const transferred = Math.min(requested, available);
 
       if (transferred > 0) {
         const payeeKey = `${payeeNationId}:${resourceId}`;
-        pendingNationStockpiles.set(payerKey, (pendingNationStockpiles.get(payerKey) ?? 0) - transferred);
-        pendingNationStockpiles.set(payeeKey, (pendingNationStockpiles.get(payeeKey) ?? 0) + transferred);
+        localStockpileDeltas.set(payerKey, (localStockpileDeltas.get(payerKey) ?? 0) - transferred);
+        localStockpileDeltas.set(payeeKey, (localStockpileDeltas.get(payeeKey) ?? 0) + transferred);
 
         nationStockpileDeltas.push({ delta: -transferred, nationId: payerNationId, resourceId });
         nationStockpileDeltas.push({ delta: transferred, nationId: payeeNationId, resourceId });
@@ -140,7 +157,7 @@ export function phaseTreaties(context: SimulationContext): PhaseTreatiesOutput {
       }
     }
 
-    if (treaty.endsTurnNumber !== null && treaty.endsTurnNumber <= newTurnNumber) {
+    if (isExpiring) {
       treatyStatusChanges.push({ toStatus: "expired", treatyId: treaty.id });
       logs.push({
         category: "nation.treaty_expired",

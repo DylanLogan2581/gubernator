@@ -143,6 +143,88 @@ describe("phaseTreaties — tribute", () => {
   });
 });
 
+describe("phaseTreaties — single application (#1127)", () => {
+  it("does not mutate context.shared.pendingNationStockpiles directly — only reports deltas", () => {
+    const ctx = makeContext({
+      nationTreaties: [
+        makeTreaty({
+          id: "t1",
+          proposerNationId: "payer",
+          responderNationId: "payee",
+          treatyType: "tribute",
+          tributePayer: "proposer",
+          tributeQuantityPerTurn: 10,
+          tributeResourceId: "gold",
+        }),
+      ],
+      turnNumber: 5,
+    });
+    ctx.shared.pendingNationStockpiles.set("payer:gold", 100);
+
+    const result = phaseTreaties(ctx);
+
+    // The phase must leave the shared map untouched: the orchestrator is the
+    // sole applier of nationStockpileDeltas (runSimulation.ts), matching the
+    // pattern used by every other phase (phaseNationalEconomy,
+    // phaseMilitaryUpkeep). Mutating here too would double-apply tribute.
+    expect(ctx.shared.pendingNationStockpiles.get("payer:gold")).toBe(100);
+    expect(ctx.shared.pendingNationStockpiles.get("payee:gold")).toBeUndefined();
+
+    const applied = new Map(ctx.shared.pendingNationStockpiles);
+    for (const d of result.nationStockpileDeltas) {
+      const key = `${d.nationId}:${d.resourceId}`;
+      applied.set(key, (applied.get(key) ?? 0) + d.delta);
+    }
+
+    expect(applied.get("payer:gold")).toBe(90);
+    expect(applied.get("payee:gold")).toBe(10);
+  });
+
+  it("sees an earlier same-phase tribute payment when checking a later treaty's available stock", () => {
+    const ctx = makeContext({
+      nationTreaties: [
+        makeTreaty({
+          id: "t1",
+          proposerNationId: "payer",
+          responderNationId: "middle",
+          treatyType: "tribute",
+          tributePayer: "proposer",
+          tributeQuantityPerTurn: 10,
+          tributeResourceId: "gold",
+        }),
+        makeTreaty({
+          id: "t2",
+          proposerNationId: "middle",
+          responderNationId: "payee",
+          treatyType: "tribute",
+          tributePayer: "proposer",
+          tributeQuantityPerTurn: 10,
+          tributeResourceId: "gold",
+        }),
+      ],
+      turnNumber: 5,
+    });
+    ctx.shared.pendingNationStockpiles.set("payer:gold", 10);
+    ctx.shared.pendingNationStockpiles.set("middle:gold", 0);
+
+    const result = phaseTreaties(ctx);
+
+    // t1 pays middle 10 gold; t2 (sorted after t1 by id) must see that 10
+    // arrive before it checks middle's available stock, even though the
+    // shared map itself was never mutated.
+    expect(result.nationStockpileDeltas).toEqual([
+      { delta: -10, nationId: "payer", resourceId: "gold" },
+      { delta: 10, nationId: "middle", resourceId: "gold" },
+      { delta: -10, nationId: "middle", resourceId: "gold" },
+      { delta: 10, nationId: "payee", resourceId: "gold" },
+    ]);
+    expect(result.logs.map((l) => l.category)).toEqual([
+      "nation.tribute_transferred",
+      "nation.tribute_transferred",
+    ]);
+  });
+});
+
 describe("phaseTreaties — expiry", () => {
   it("flips a treaty whose ends_turn_number has been reached to expired", () => {
     const ctx = makeContext({
@@ -212,6 +294,70 @@ describe("phaseTreaties — expiry", () => {
 
     const result = phaseTreaties(ctx);
 
+    expect(result.treatyStatusChanges).toHaveLength(0);
+  });
+
+  it("pays no final tribute on the transition a tribute treaty expires (#1127)", () => {
+    const ctx = makeContext({
+      nationTreaties: [
+        makeTreaty({
+          endsTurnNumber: 6,
+          id: "t1",
+          proposerNationId: "payer",
+          responderNationId: "payee",
+          treatyType: "tribute",
+          tributePayer: "proposer",
+          tributeQuantityPerTurn: 10,
+          tributeResourceId: "gold",
+        }),
+      ],
+      turnNumber: 5,
+    });
+    ctx.shared.pendingNationStockpiles.set("payer:gold", 100);
+
+    const result = phaseTreaties(ctx);
+
+    expect(result.nationStockpileDeltas).toHaveLength(0);
+    expect(result.logs).toEqual([
+      {
+        category: "nation.treaty_expired",
+        nationId: "payer",
+        payload: {
+          proposerNationId: "payer",
+          responderNationId: "payee",
+          treatyId: "t1",
+          treatyType: "tribute",
+        },
+        phase: "treaties",
+      },
+    ]);
+    expect(result.treatyStatusChanges).toEqual([{ toStatus: "expired", treatyId: "t1" }]);
+  });
+
+  it("still pays tribute the transition before a treaty expires", () => {
+    const ctx = makeContext({
+      nationTreaties: [
+        makeTreaty({
+          endsTurnNumber: 7,
+          id: "t1",
+          proposerNationId: "payer",
+          responderNationId: "payee",
+          treatyType: "tribute",
+          tributePayer: "proposer",
+          tributeQuantityPerTurn: 10,
+          tributeResourceId: "gold",
+        }),
+      ],
+      turnNumber: 5,
+    });
+    ctx.shared.pendingNationStockpiles.set("payer:gold", 100);
+
+    const result = phaseTreaties(ctx);
+
+    expect(result.nationStockpileDeltas).toEqual([
+      { delta: -10, nationId: "payer", resourceId: "gold" },
+      { delta: 10, nationId: "payee", resourceId: "gold" },
+    ]);
     expect(result.treatyStatusChanges).toHaveLength(0);
   });
 });
