@@ -7,7 +7,7 @@
 begin;
 
 select
-  plan (48);
+  plan (51);
 
 -- A scratch table to stash ids returned by RPC calls across role switches --
 -- mirrors law_documents_test.sql / nation_readiness_voting_test.sql.
@@ -2455,6 +2455,241 @@ select
     '42501',
     null,
     'an officeholder whose term has ended cannot instant-apply a decree amendment'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- #1137: resolve_government_body_member_ids must exclude "citizens" entries
+-- that don't belong to the body's world/nation scope, and cast_law_amendment
+-- _vote must reject a foreign citizen even when a body owner listed them.
+-- ===========================================================================
+insert into
+  public.worlds (id, name, visibility, status, current_turn_number)
+values
+  (
+    '4b000000-0000-0000-0000-000000000002',
+    'Foreign Amendment World',
+    'private',
+    'active',
+    10
+  );
+
+insert into
+  public.nations (id, world_id, name, government_type)
+values
+  (
+    '4c000000-0000-0000-0000-000000000002',
+    '4b000000-0000-0000-0000-000000000001',
+    'Foreign Amendment Nation',
+    'republic'
+  );
+
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    '4c900000-0000-0000-0000-000000000002',
+    '4c000000-0000-0000-0000-000000000002',
+    'Foreign Amendment Settlement'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id,
+    role_settlement_id
+  )
+values
+  (
+    '4e000000-0000-0000-0000-000000000010',
+    '4b000000-0000-0000-0000-000000000002',
+    null,
+    'npc',
+    'ForeignWorldCitizen',
+    'alive',
+    null,
+    'none',
+    null,
+    null
+  ),
+  (
+    '4e000000-0000-0000-0000-000000000011',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c900000-0000-0000-0000-000000000002',
+    'npc',
+    'ForeignNationCitizen',
+    'alive',
+    null,
+    'none',
+    null,
+    null
+  );
+
+insert into
+  public.government_bodies (
+    id,
+    world_id,
+    nation_id,
+    settlement_id,
+    name,
+    description,
+    composition_json
+  )
+values
+  (
+    '4f000000-0000-0000-0000-000000000004',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    null,
+    'Guarded Council',
+    null,
+    jsonb_build_array(
+      jsonb_build_object(
+        'kind',
+        'citizens',
+        'citizen_ids',
+        jsonb_build_array(
+          '4e000000-0000-0000-0000-000000000002',
+          '4e000000-0000-0000-0000-000000000010',
+          '4e000000-0000-0000-0000-000000000011'
+        )
+      )
+    )
+  );
+
+insert into
+  public.law_documents (
+    id,
+    world_id,
+    nation_id,
+    settlement_id,
+    title,
+    status,
+    amendment_procedure_json,
+    current_version,
+    created_turn_number
+  )
+values
+  (
+    '4d000000-0000-0000-0000-00000000000d',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    null,
+    'Guarded Charter',
+    'active',
+    jsonb_build_object(
+      'kind',
+      'vote',
+      'bodyId',
+      '4f000000-0000-0000-0000-000000000004',
+      'threshold',
+      'majority',
+      'votingPeriodTurns',
+      2,
+      'secondBodyId',
+      null
+    ),
+    1,
+    10
+  );
+
+select
+  is (
+    (
+      select
+        array_agg(
+          m
+          order by
+            m
+        )
+      from
+        public.resolve_government_body_member_ids ('4f000000-0000-0000-0000-000000000004') m
+    ),
+    array['4e000000-0000-0000-0000-000000000002'::uuid],
+    'resolve_government_body_member_ids excludes citizens outside the body''s world/nation scope'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+insert into
+  amendment_test_ids (key, id)
+select
+  'guarded_amendment',
+  (
+    public.propose_law_amendment (
+      '4d000000-0000-0000-0000-00000000000d',
+      '4e000000-0000-0000-0000-000000000001',
+      'Guarded Reform',
+      null,
+      jsonb_build_array(
+        jsonb_build_object(
+          'op',
+          'amend_article',
+          'article_id',
+          '48000000-0000-0000-0000-000000000002',
+          'heading',
+          'X',
+          'body_markdown',
+          'Y'
+        )
+      )
+    )
+  ).id;
+
+reset role;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  throws_ok (
+    format(
+      $test$select public.cast_law_amendment_vote(%L::uuid, '4e000000-0000-0000-0000-000000000010'::uuid, true)$test$,
+      (
+        select
+          id
+        from
+          amendment_test_ids
+        where
+          key = 'guarded_amendment'
+      )
+    ),
+    '42501',
+    null,
+    'a citizen from another world listed in composition_json cannot vote'
+  );
+
+select
+  throws_ok (
+    format(
+      $test$select public.cast_law_amendment_vote(%L::uuid, '4e000000-0000-0000-0000-000000000011'::uuid, true)$test$,
+      (
+        select
+          id
+        from
+          amendment_test_ids
+        where
+          key = 'guarded_amendment'
+      )
+    ),
+    '42501',
+    null,
+    'a citizen from another nation listed in composition_json cannot vote'
   );
 
 reset role;
