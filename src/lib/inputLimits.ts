@@ -111,3 +111,8 @@ export const lawAmendmentInputLimits = {
   titleMax: 200,
   rationaleMax: 20000,
 } as const;
+
+export const decreeInputLimits = {
+  titleMax: 200,
+  bodyMarkdownMax: 20000,
+} as const;

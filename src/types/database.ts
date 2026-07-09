@@ -869,6 +869,81 @@ export type Database = {
           },
         ];
       };
+      decrees: {
+        Row: {
+          body_markdown: string;
+          created_at: string;
+          id: string;
+          issued_by_citizen_id: string | null;
+          issued_turn_number: number;
+          nation_id: string | null;
+          revoked_turn_number: number | null;
+          settlement_id: string | null;
+          title: string;
+          world_id: string;
+        };
+        Insert: {
+          body_markdown: string;
+          created_at?: string;
+          id?: string;
+          issued_by_citizen_id?: string | null;
+          issued_turn_number: number;
+          nation_id?: string | null;
+          revoked_turn_number?: number | null;
+          settlement_id?: string | null;
+          title: string;
+          world_id: string;
+        };
+        Update: {
+          body_markdown?: string;
+          created_at?: string;
+          id?: string;
+          issued_by_citizen_id?: string | null;
+          issued_turn_number?: number;
+          nation_id?: string | null;
+          revoked_turn_number?: number | null;
+          settlement_id?: string | null;
+          title?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "decrees_issued_by_citizen_id_fkey";
+            columns: ["issued_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "decrees_issued_by_citizen_id_fkey";
+            columns: ["issued_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "decrees_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "decrees_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "decrees_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deposit_instance_resources: {
         Row: {
           created_at: string;
@@ -6072,6 +6147,34 @@ export type Database = {
       };
       is_world_admin: { Args: { p_world_id: string }; Returns: boolean };
       isnt_empty: { Args: { "": string }; Returns: string };
+      issue_decree: {
+        Args: {
+          p_body_markdown: string;
+          p_issued_by_citizen_id: string;
+          p_nation_id: string;
+          p_settlement_id: string;
+          p_title: string;
+          p_world_id: string;
+        };
+        Returns: {
+          body_markdown: string;
+          created_at: string;
+          id: string;
+          issued_by_citizen_id: string | null;
+          issued_turn_number: number;
+          nation_id: string | null;
+          revoked_turn_number: number | null;
+          settlement_id: string | null;
+          title: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "decrees";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       link_user_to_citizen: {
         Args: { p_citizen_id: string; p_user_id: string };
         Returns: {
@@ -6987,6 +7090,27 @@ export type Database = {
           to: "citizens";
           isOneToOne: false;
           isSetofReturn: true;
+        };
+      };
+      revoke_decree: {
+        Args: { p_decree_id: string };
+        Returns: {
+          body_markdown: string;
+          created_at: string;
+          id: string;
+          issued_by_citizen_id: string | null;
+          issued_turn_number: number;
+          nation_id: string | null;
+          revoked_turn_number: number | null;
+          settlement_id: string | null;
+          title: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "decrees";
+          isOneToOne: true;
+          isSetofReturn: false;
         };
       };
       revoke_world_admin: {

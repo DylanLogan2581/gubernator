@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { DecreesSection } from "@/features/decrees";
 import { GovernmentBodiesSection } from "@/features/government-bodies";
 import { LawDocumentsSection } from "@/features/law-documents";
 import {
@@ -47,6 +48,15 @@ function SettlementGovernmentRoute(): JSX.Element {
         canManage={canManageSettlement}
         canRepeal={effectiveCanAdmin}
         currentTurnNumber={worldAccess.header.currentTurnNumber}
+        effectiveCanAdmin={effectiveCanAdmin}
+        isArchived={isArchived}
+        nationId={settlement.nationId}
+        scope="settlement"
+        settlementId={settlement.id}
+        worldId={settlement.nation.worldId}
+      />
+      <DecreesSection
+        canManage={canManageSettlement}
         effectiveCanAdmin={effectiveCanAdmin}
         isArchived={isArchived}
         nationId={settlement.nationId}
