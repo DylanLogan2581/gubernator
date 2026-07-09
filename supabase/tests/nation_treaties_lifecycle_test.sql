@@ -11,7 +11,7 @@
 begin;
 
 select
-  plan (25);
+  plan (27);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -710,6 +710,146 @@ select
   );
 
 reset role;
+
+-- ===========================================================================
+-- respond_to_nation_treaty: accept re-checks nations_have_met at accept time
+-- (#1130). A proposal made while nations are met can still be un-met (e.g.
+-- by an admin) before the responder accepts.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+create temporary table t_unmet_at_accept as
+select
+  *
+from
+  public.propose_nation_treaty (
+    'e3000000-0000-0000-0000-00000000000a'::uuid,
+    'e3000000-0000-0000-0000-00000000000b'::uuid,
+    'trade_agreement',
+    '{}'::jsonb,
+    'e5000000-0000-0000-0000-000000000001'::uuid
+  );
+
+reset role;
+
+delete from public.nation_discoveries
+where
+  world_id = 'e2000000-0000-0000-0000-000000000001'
+  and nation_a_id = 'e3000000-0000-0000-0000-00000000000a'
+  and nation_b_id = 'e3000000-0000-0000-0000-00000000000b';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    format(
+      $test$select public.respond_to_nation_treaty('%s'::uuid, 'accept', 'e5000000-0000-0000-0000-000000000002'::uuid)$test$,
+      (
+        select
+          id
+        from
+          t_unmet_at_accept
+      )
+    ),
+    'P0001',
+    'Nations have not met.',
+    'accept is rejected when nations were un-met after the proposal'
+  );
+
+reset role;
+
+-- restore A/B met status for the remaining tests.
+insert into
+  public.nation_discoveries (
+    world_id,
+    nation_a_id,
+    nation_b_id,
+    met_at_turn_number
+  )
+values
+  (
+    'e2000000-0000-0000-0000-000000000001',
+    'e3000000-0000-0000-0000-00000000000a',
+    'e3000000-0000-0000-0000-00000000000b',
+    1
+  );
+
+-- ===========================================================================
+-- respond_to_nation_treaty: accept re-checks at_war at accept time (#1130).
+-- A proposal made while nations are at peace can still go to war before the
+-- responder accepts.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+create temporary table t_war_at_accept as
+select
+  *
+from
+  public.propose_nation_treaty (
+    'e3000000-0000-0000-0000-00000000000a'::uuid,
+    'e3000000-0000-0000-0000-00000000000b'::uuid,
+    'trade_agreement',
+    '{}'::jsonb,
+    'e5000000-0000-0000-0000-000000000001'::uuid
+  );
+
+reset role;
+
+insert into
+  public.nation_relationships (from_nation_id, to_nation_id, current_stance)
+values
+  (
+    'e3000000-0000-0000-0000-00000000000a',
+    'e3000000-0000-0000-0000-00000000000b',
+    'at_war'
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    format(
+      $test$select public.respond_to_nation_treaty('%s'::uuid, 'accept', 'e5000000-0000-0000-0000-000000000002'::uuid)$test$,
+      (
+        select
+          id
+        from
+          t_war_at_accept
+      )
+    ),
+    'P0001',
+    'nations are at war',
+    'accept is rejected when nations went to war after the proposal'
+  );
+
+reset role;
+
+delete from public.nation_relationships
+where
+  (
+    from_nation_id = 'e3000000-0000-0000-0000-00000000000a'
+    and to_nation_id = 'e3000000-0000-0000-0000-00000000000b'
+  )
+  or (
+    from_nation_id = 'e3000000-0000-0000-0000-00000000000b'
+    and to_nation_id = 'e3000000-0000-0000-0000-00000000000a'
+  );
 
 -- ===========================================================================
 -- withdraw_nation_treaty: only a proposed treaty can be withdrawn, only by
