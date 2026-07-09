@@ -6,6 +6,7 @@ import {
   Building2,
   Coins,
   FileX2,
+  Gavel,
   Gem,
   HardHat,
   Heart,
@@ -61,6 +62,10 @@ const NOTIFICATION_TYPE_ICONS: Record<NotificationType, LucideIcon> = {
   "army.relocated": Swords,
   "player.died": Skull,
   "player.widowed": HeartCrack,
+  "law.amendment_passed": Gavel,
+  "law.amendment_failed": Gavel,
+  "law.amendment_withdrawn": Gavel,
+  "law.amendment_expired": Gavel,
 };
 
 /** Falls back to a generic bell for any notification_type not in the map. */

@@ -1650,6 +1650,129 @@ export type Database = {
           },
         ];
       };
+      law_amendment_votes: {
+        Row: {
+          amendment_id: string;
+          cast_by_user_id: string | null;
+          created_at: string;
+          id: string;
+          vote: boolean;
+          voter_citizen_id: string;
+        };
+        Insert: {
+          amendment_id: string;
+          cast_by_user_id?: string | null;
+          created_at?: string;
+          id?: string;
+          vote: boolean;
+          voter_citizen_id: string;
+        };
+        Update: {
+          amendment_id?: string;
+          cast_by_user_id?: string | null;
+          created_at?: string;
+          id?: string;
+          vote?: boolean;
+          voter_citizen_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "law_amendment_votes_amendment_id_fkey";
+            columns: ["amendment_id"];
+            isOneToOne: false;
+            referencedRelation: "law_amendments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_amendment_votes_cast_by_user_id_fkey";
+            columns: ["cast_by_user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_amendment_votes_voter_citizen_id_fkey";
+            columns: ["voter_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_amendment_votes_voter_citizen_id_fkey";
+            columns: ["voter_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      law_amendments: {
+        Row: {
+          created_at: string;
+          deadline_turn_number: number | null;
+          document_id: string;
+          id: string;
+          operations_json: Json;
+          proposed_by_citizen_id: string;
+          proposed_turn_number: number;
+          rationale_markdown: string | null;
+          resolved_turn_number: number | null;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          deadline_turn_number?: number | null;
+          document_id: string;
+          id?: string;
+          operations_json: Json;
+          proposed_by_citizen_id: string;
+          proposed_turn_number: number;
+          rationale_markdown?: string | null;
+          resolved_turn_number?: number | null;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          deadline_turn_number?: number | null;
+          document_id?: string;
+          id?: string;
+          operations_json?: Json;
+          proposed_by_citizen_id?: string;
+          proposed_turn_number?: number;
+          rationale_markdown?: string | null;
+          resolved_turn_number?: number | null;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "law_amendments_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "law_documents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_amendments_proposed_by_citizen_id_fkey";
+            columns: ["proposed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_amendments_proposed_by_citizen_id_fkey";
+            columns: ["proposed_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       law_articles: {
         Row: {
           article_number: number;
@@ -4791,6 +4914,27 @@ export type Database = {
           status: string;
         }[];
       };
+      cast_law_amendment_vote: {
+        Args: {
+          p_amendment_id: string;
+          p_vote: boolean;
+          p_voter_citizen_id: string;
+        };
+        Returns: {
+          amendment_id: string;
+          cast_by_user_id: string | null;
+          created_at: string;
+          id: string;
+          vote: boolean;
+          voter_citizen_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "law_amendment_votes";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       cast_nation_readiness_vote: {
         Args: {
           p_nation_id: string;
@@ -5777,6 +5921,16 @@ export type Database = {
         };
         Returns: number;
       };
+      internal_apply_law_amendment_operations: {
+        Args: {
+          p_amendment_title: string;
+          p_document_id: string;
+          p_enacted_by_citizen_id: string;
+          p_operations_json: Json;
+          p_turn_number: number;
+        };
+        Returns: number;
+      };
       internal_apply_turn_transition_advance_world_turn: {
         Args: { p_expected_turn_number: number; p_world_id: string };
         Returns: Record<string, unknown>;
@@ -5806,6 +5960,14 @@ export type Database = {
           p_payload: Json;
           p_to_turn_number: number;
           p_transition_id: string;
+          p_world_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      internal_apply_turn_transition_law_amendment_expiry: {
+        Args: {
+          p_transition_id: string;
+          p_turn_number: number;
           p_world_id: string;
         };
         Returns: Record<string, unknown>;
@@ -5856,6 +6018,17 @@ export type Database = {
       internal_apply_turn_transition_treaty_patches: {
         Args: { p_payload: Json };
         Returns: number;
+      };
+      internal_notify_law_amendment: {
+        Args: {
+          p_message_text: string;
+          p_nation_id: string;
+          p_notification_type: Database["public"]["Enums"]["notification_type"];
+          p_settlement_id: string;
+          p_severity: Database["public"]["Enums"]["notification_severity"];
+          p_world_id: string;
+        };
+        Returns: undefined;
       };
       is_active_app_user: { Args: never; Returns: boolean };
       is_any_world_admin: { Args: never; Returns: boolean };
@@ -6035,6 +6208,10 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      meets_law_amendment_vote_threshold: {
+        Args: { p_member_count: number; p_threshold: string; p_yes: number };
+        Returns: boolean;
+      };
       mint_currency: {
         Args: { p_amount: number; p_currency_id: string };
         Returns: {
@@ -6152,6 +6329,35 @@ export type Database = {
       pg_version_num: { Args: never; Returns: number };
       pgtap_version: { Args: never; Returns: number };
       preview_world_delete: { Args: { p_world_id: string }; Returns: Json };
+      propose_law_amendment: {
+        Args: {
+          p_document_id: string;
+          p_operations_json: Json;
+          p_proposing_citizen_id: string;
+          p_rationale_markdown: string;
+          p_title: string;
+        };
+        Returns: {
+          created_at: string;
+          deadline_turn_number: number | null;
+          document_id: string;
+          id: string;
+          operations_json: Json;
+          proposed_by_citizen_id: string;
+          proposed_turn_number: number;
+          rationale_markdown: string | null;
+          resolved_turn_number: number | null;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "law_amendments";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       propose_nation_treaty: {
         Args: {
           p_proposed_by_citizen_id: string;
@@ -6481,6 +6687,10 @@ export type Database = {
           old_route_id: string;
           origin_settlement_id: string;
         }[];
+      };
+      resolve_government_body_member_ids: {
+        Args: { p_body_id: string };
+        Returns: string[];
       };
       respond_to_bilateral: {
         Args: {
@@ -7581,6 +7791,33 @@ export type Database = {
         Args: { p_effect: Json; p_world_id: string };
         Returns: undefined;
       };
+      validate_law_amendment_procedure_json: {
+        Args: { p_document_id: string; p_procedure: Json };
+        Returns: undefined;
+      };
+      withdraw_law_amendment: {
+        Args: { p_amendment_id: string };
+        Returns: {
+          created_at: string;
+          deadline_turn_number: number | null;
+          document_id: string;
+          id: string;
+          operations_json: Json;
+          proposed_by_citizen_id: string;
+          proposed_turn_number: number;
+          rationale_markdown: string | null;
+          resolved_turn_number: number | null;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "law_amendments";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       withdraw_nation_treaty: {
         Args: { p_treaty_id: string };
         Returns: {
@@ -7652,7 +7889,11 @@ export type Database = {
         | "currency.confidence_collapsing"
         | "military.upkeep_unpaid"
         | "military.unit_disbanded"
-        | "army.relocated";
+        | "army.relocated"
+        | "law.amendment_passed"
+        | "law.amendment_failed"
+        | "law.amendment_withdrawn"
+        | "law.amendment_expired";
     };
     CompositeTypes: {
       _time_trial_type: {
@@ -7830,6 +8071,10 @@ export const Constants = {
         "military.upkeep_unpaid",
         "military.unit_disbanded",
         "army.relocated",
+        "law.amendment_passed",
+        "law.amendment_failed",
+        "law.amendment_withdrawn",
+        "law.amendment_expired",
       ],
     },
   },
