@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AmendmentsSection } from "@/features/law-amendments";
 import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
@@ -60,17 +61,29 @@ type LawDocumentScopeContext =
 export type LawDocumentsSectionProps = LawDocumentScopeContext & {
   readonly canManage: boolean;
   readonly canRepeal: boolean;
+  readonly currentTurnNumber: number;
+  // Reused as the amendments feature's AmendmentActor.isWorldAdmin (#1120) --
+  // this repo folds world-admin and super-admin into one "can bypass any
+  // procedure" signal (see canRepeal's identical existing role), so a
+  // separate isSuperAdmin prop is not threaded through.
+  readonly effectiveCanAdmin: boolean;
   readonly isArchived: boolean;
 };
 
 // #1117: DM-reference law books for a nation or settlement's government tab.
-// Every write is RPC-only (create_law_document, repeal_law_document) --
-// amendment/decree procedures land in a later issue, so this section only
-// supports create + direct admin repeal, plus reading the version history.
+// Every write is RPC-only (create_law_document, repeal_law_document).
+// Amendment proposals, decree signing, and voting (#1120) live in the
+// law-amendments feature and are mounted inside LawDocumentViewDialog below.
 export function LawDocumentsSection(
   props: LawDocumentsSectionProps,
 ): JSX.Element {
-  const { canManage, canRepeal, isArchived } = props;
+  const {
+    canManage,
+    canRepeal,
+    currentTurnNumber,
+    effectiveCanAdmin,
+    isArchived,
+  } = props;
   const queryClient = useQueryClient();
 
   const isNationScope = props.scope === "nation";
@@ -205,8 +218,12 @@ export function LawDocumentsSection(
 
       {viewing !== null ? (
         <LawDocumentViewDialog
+          currentTurnNumber={currentTurnNumber}
           document={viewing}
+          effectiveCanAdmin={effectiveCanAdmin}
+          isArchived={isArchived}
           onClose={() => setViewing(null)}
+          scopeContext={props}
         />
       ) : null}
 
@@ -432,11 +449,19 @@ function CreateLawDocumentDialog({
 }
 
 function LawDocumentViewDialog({
+  currentTurnNumber,
   document,
+  effectiveCanAdmin,
+  isArchived,
   onClose,
+  scopeContext,
 }: {
+  readonly currentTurnNumber: number;
   readonly document: LawDocument;
+  readonly effectiveCanAdmin: boolean;
+  readonly isArchived: boolean;
   readonly onClose: () => void;
+  readonly scopeContext: LawDocumentScopeContext;
 }): JSX.Element {
   const [browsingVersions, setBrowsingVersions] = useState(false);
   const articlesQuery = useQuery(lawDocumentArticlesQueryOptions(document.id));
@@ -489,6 +514,21 @@ function LawDocumentViewDialog({
                 ))}
               </ol>
             )}
+
+            <AmendmentsSection
+              currentTurnNumber={currentTurnNumber}
+              document={document}
+              effectiveCanAdmin={effectiveCanAdmin}
+              isArchived={isArchived}
+              nationId={scopeContext.nationId}
+              scope={scopeContext.scope}
+              settlementId={
+                scopeContext.scope === "settlement"
+                  ? scopeContext.settlementId
+                  : undefined
+              }
+              worldId={scopeContext.worldId}
+            />
           </div>
 
           <DialogFooter>

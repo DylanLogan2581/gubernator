@@ -106,3 +106,8 @@ export const lawDocumentInputLimits = {
   preambleMax: 20000,
   headingMax: 200,
 } as const;
+
+export const lawAmendmentInputLimits = {
+  titleMax: 200,
+  rationaleMax: 20000,
+} as const;

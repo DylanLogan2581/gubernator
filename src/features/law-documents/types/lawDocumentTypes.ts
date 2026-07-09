@@ -26,6 +26,10 @@ export type LawArticle = {
   readonly bodyMarkdown: string;
   readonly documentId: string;
   readonly heading: string;
+  // The law_articles row id -- needed by amend_article/repeal_article
+  // amendment operations (#1120), which reference an article by its DB row
+  // id, not its stable articleNumber.
+  readonly id: string;
   readonly sortOrder: number;
   readonly status: LawDocumentStatus;
 };

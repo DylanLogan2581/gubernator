@@ -12,7 +12,8 @@ import { useActivePlayerCharacter } from "@/features/permissions";
 import type { JSX } from "react";
 
 function NationGovernmentRoute(): JSX.Element {
-  const { effectiveCanAdmin, isArchived, nation } = useNationDetailContext();
+  const { effectiveCanAdmin, isArchived, nation, worldAccess } =
+    useNationDetailContext();
   const { activeCharacter } = useActivePlayerCharacter();
   const isNationManager =
     activeCharacter !== null &&
@@ -46,6 +47,8 @@ function NationGovernmentRoute(): JSX.Element {
       <LawDocumentsSection
         canManage={canManageBodies}
         canRepeal={effectiveCanAdmin}
+        currentTurnNumber={worldAccess.header.currentTurnNumber}
+        effectiveCanAdmin={effectiveCanAdmin}
         isArchived={isArchived}
         nationId={nation.id}
         scope="nation"

@@ -17,6 +17,7 @@ function SettlementGovernmentRoute(): JSX.Element {
     effectiveCanAdmin,
     isArchived,
     settlement,
+    worldAccess,
   } = useSettlementDetailContext();
 
   // Everyone with world access can view the government tab; write controls
@@ -45,6 +46,8 @@ function SettlementGovernmentRoute(): JSX.Element {
       <LawDocumentsSection
         canManage={canManageSettlement}
         canRepeal={effectiveCanAdmin}
+        currentTurnNumber={worldAccess.header.currentTurnNumber}
+        effectiveCanAdmin={effectiveCanAdmin}
         isArchived={isArchived}
         nationId={settlement.nationId}
         scope="settlement"

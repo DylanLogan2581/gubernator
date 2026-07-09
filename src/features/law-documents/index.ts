@@ -6,7 +6,16 @@ export {
   LawDocumentsSection,
   type LawDocumentsSectionProps,
 } from "./components/LawDocumentsSection";
-export { LawDocumentVersionBrowser } from "./components/LawDocumentVersionBrowser";
+export {
+  ArticleDiffRow,
+  diffArticles,
+  LawDocumentVersionBrowser,
+  TextDiff,
+} from "./components/LawDocumentVersionBrowser";
+export type {
+  ArticleDiff,
+  ArticleDiffStatus,
+} from "./components/LawDocumentVersionBrowser";
 export {
   createLawDocumentMutationOptions,
   isLawDocumentMutationError,

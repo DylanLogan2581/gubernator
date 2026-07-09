@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 
 import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
+import { lawAmendmentsAwaitingMyVoteCountQueryOptions } from "@/features/law-amendments";
 import { unreadNotificationsCountQueryOptions } from "@/features/notifications";
 import {
   useActivePlayerCharacter,
@@ -82,6 +83,27 @@ export function AppSidebar(): JSX.Element | null {
     unreadNotificationsCountQueryOptions(userId),
   );
   const unreadCount = unreadCountQuery.data ?? 0;
+
+  // "Awaiting your vote" badges (#1120) -- only for a viewer with an active
+  // player character (admins with no PC don't get a personal vote badge).
+  // Two separate queries/counts since the NATION and SETTLEMENT groups link
+  // to different government tabs.
+  const nationAwaitingMyVoteQuery = useQuery({
+    ...lawAmendmentsAwaitingMyVoteCountQueryOptions(
+      { nationId, settlementId: null },
+      activeCharacter?.id ?? "",
+    ),
+    enabled: nationId !== null && activeCharacter !== null,
+  });
+  const settlementAwaitingMyVoteQuery = useQuery({
+    ...lawAmendmentsAwaitingMyVoteCountQueryOptions(
+      { nationId: null, settlementId },
+      activeCharacter?.id ?? "",
+    ),
+    enabled: settlementId !== null && activeCharacter !== null,
+  });
+  const nationAwaitingMyVoteCount = nationAwaitingMyVoteQuery.data ?? 0;
+  const settlementAwaitingMyVoteCount = settlementAwaitingMyVoteQuery.data ?? 0;
 
   if (!isAuthenticated) {
     return null;
@@ -328,6 +350,7 @@ export function AppSidebar(): JSX.Element | null {
             worldId,
           }),
           settlementSectionItem("government", {
+            badge: settlementAwaitingMyVoteCount,
             isActive: currentSection === "government",
             label: "Government",
             nationId,
@@ -440,6 +463,7 @@ export function AppSidebar(): JSX.Element | null {
             worldId,
           }),
           nationSectionItem("government", {
+            badge: nationAwaitingMyVoteCount,
             isActive: currentNationSection === "government",
             label: "Government",
             nationId,
@@ -611,12 +635,14 @@ function sectionFromPathname(
 function settlementSectionItem(
   section: SettlementSection,
   {
+    badge,
     isActive,
     label,
     nationId,
     settlementId,
     worldId,
   }: {
+    readonly badge?: number;
     readonly isActive: boolean;
     readonly label: string;
     readonly nationId: string;
@@ -706,6 +732,7 @@ function settlementSectionItem(
       return {
         key: "settlement-government",
         label,
+        badge,
         isActive,
         link: (
           <Link
@@ -898,11 +925,13 @@ function nationSectionFromPathname(
 function nationSectionItem(
   section: NationSection,
   {
+    badge,
     isActive,
     label,
     nationId,
     worldId,
   }: {
+    readonly badge?: number;
     readonly isActive: boolean;
     readonly label: string;
     readonly nationId: string;
@@ -971,6 +1000,7 @@ function nationSectionItem(
       return {
         key: "nation-government",
         label,
+        badge,
         isActive,
         link: (
           <Link

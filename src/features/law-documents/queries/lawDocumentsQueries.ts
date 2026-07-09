@@ -126,6 +126,7 @@ type LawArticleRow = {
   readonly body_markdown: string;
   readonly document_id: string;
   readonly heading: string;
+  readonly id: string;
   readonly sort_order: number;
   readonly status: LawDocumentStatus;
 };
@@ -136,6 +137,7 @@ function toLawArticle(row: LawArticleRow): LawArticle {
     bodyMarkdown: row.body_markdown,
     documentId: row.document_id,
     heading: row.heading,
+    id: row.id,
     sortOrder: row.sort_order,
     status: row.status,
   };
@@ -167,7 +169,7 @@ async function getLawDocumentArticles(
   const { data, error } = await client
     .from("law_articles")
     .select(
-      "article_number,body_markdown,document_id,heading,sort_order,status",
+      "article_number,body_markdown,document_id,heading,id,sort_order,status",
     )
     .eq("document_id", documentId)
     .order("sort_order")

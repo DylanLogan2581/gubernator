@@ -33,9 +33,9 @@ export type LawDocumentVersionBrowserProps = {
   readonly onClose: () => void;
 };
 
-type ArticleDiffStatus = "added" | "changed" | "removed" | "unchanged";
+export type ArticleDiffStatus = "added" | "changed" | "removed" | "unchanged";
 
-type ArticleDiff = {
+export type ArticleDiff = {
   readonly articleNumber: number;
   readonly from: LawArticleSnapshot | null;
   readonly status: ArticleDiffStatus;
@@ -58,7 +58,12 @@ const STATUS_BADGE_VARIANTS: Readonly<
   unchanged: "secondary",
 };
 
-function diffArticles(
+// Exported for reuse by the amendment composer's amend/repeal previews
+// (#1120) -- shared with LawDocumentVersionBrowser so both diff renderings
+// stay pixel-identical. Not a component, so fast refresh can't treat this
+// export like the rest of the file's -- an isolated, deliberate exception.
+// eslint-disable-next-line react-refresh/only-export-components
+export function diffArticles(
   from: readonly LawArticleSnapshot[],
   to: readonly LawArticleSnapshot[],
 ): readonly ArticleDiff[] {
@@ -219,7 +224,11 @@ function VersionSelect({
   );
 }
 
-function ArticleDiffRow({ diff }: { readonly diff: ArticleDiff }): JSX.Element {
+export function ArticleDiffRow({
+  diff,
+}: {
+  readonly diff: ArticleDiff;
+}): JSX.Element {
   const heading = diff.to?.heading ?? diff.from?.heading ?? "";
 
   return (
@@ -243,7 +252,7 @@ function ArticleDiffRow({ diff }: { readonly diff: ArticleDiff }): JSX.Element {
   );
 }
 
-function TextDiff({
+export function TextDiff({
   from,
   to,
 }: {
