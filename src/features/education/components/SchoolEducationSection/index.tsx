@@ -127,13 +127,17 @@ export function SchoolEducationSection({
       ) : (
         <ul className="grid gap-2">
           {enrollments.map((enrollment) => {
-            const progressPct = Math.min(
-              100,
-              Math.round(
-                (enrollment.progressTurns / educationConfig.turnsPerLevel) *
-                  100,
-              ),
-            );
+            const progressPct =
+              educationConfig.turnsPerLevel > 0
+                ? Math.min(
+                    100,
+                    Math.round(
+                      (enrollment.progressTurns /
+                        educationConfig.turnsPerLevel) *
+                        100,
+                    ),
+                  )
+                : 0;
             return (
               <li
                 key={enrollment.id}

@@ -1,3 +1,5 @@
+import { type TierEducationConfig } from "@/shared/education/tierEducationConfig";
+
 export type TierCostEntry = {
   readonly amount: number;
   readonly resourceId: string;
@@ -25,14 +27,6 @@ export type TierEffect =
     };
 
 export type EffectTypeName = TierEffect["type"];
-
-export type TierEducationConfig = {
-  readonly studentCapacity: number;
-  readonly studentsPerTeacher: number;
-  readonly teacherJobId: string;
-  readonly teachesUpToLevelId: string;
-  readonly turnsPerLevel: number;
-};
 
 export type BuildingBlueprint = {
   readonly createdAt: string;

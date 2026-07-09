@@ -1,4 +1,5 @@
 import { generateLocalId } from "@/lib/uid";
+import type { TierEducationConfig } from "@/shared/education/tierEducationConfig";
 
 import type {
   TierCostEntryInput,
@@ -8,7 +9,6 @@ import type {
 import type {
   EffectTypeName,
   TierCostEntry,
-  TierEducationConfig,
   TierEffect,
 } from "../types/buildingTypes";
 

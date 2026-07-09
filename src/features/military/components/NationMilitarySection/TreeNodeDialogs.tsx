@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { getErrorDescription } from "@/lib/errorUtils";
 
 import { armyGroupsByArmyQueryOptions } from "../../queries/armiesQueries";
 import { unitTypesByWorldQueryOptions } from "../../queries/unitTypesQueries";
@@ -116,6 +117,38 @@ export function AddUnitDialog({
     await onCreate(name, unitTypeId);
   }
 
+  let unitTypeField: JSX.Element;
+  if (unitTypesQuery.isPending) {
+    unitTypeField = (
+      <p className="text-sm text-muted-foreground">Loading unit types…</p>
+    );
+  } else if (unitTypesQuery.isError) {
+    unitTypeField = (
+      <p className="text-sm text-destructive">
+        {getErrorDescription(unitTypesQuery.error)}
+      </p>
+    );
+  } else {
+    unitTypeField = (
+      <div className="grid gap-1.5">
+        <Label htmlFor={unitTypeSelectId}>Unit type</Label>
+        <NativeSelect
+          id={unitTypeSelectId}
+          required
+          value={unitTypeId}
+          onChange={(e) => setUnitTypeId(e.target.value)}
+        >
+          <option value="">Select a unit type…</option>
+          {unitTypes.map((unitType) => (
+            <option key={unitType.id} value={unitType.id}>
+              {unitType.name}
+            </option>
+          ))}
+        </NativeSelect>
+      </div>
+    );
+  }
+
   return (
     <Dialog
       open
@@ -144,22 +177,7 @@ export function AddUnitDialog({
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor={unitTypeSelectId}>Unit type</Label>
-              <NativeSelect
-                id={unitTypeSelectId}
-                required
-                value={unitTypeId}
-                onChange={(e) => setUnitTypeId(e.target.value)}
-              >
-                <option value="">Select a unit type…</option>
-                {unitTypes.map((unitType) => (
-                  <option key={unitType.id} value={unitType.id}>
-                    {unitType.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            </div>
+            {unitTypeField}
           </div>
           <DialogFooter>
             <Button
@@ -171,7 +189,13 @@ export function AddUnitDialog({
               Cancel
             </Button>
             <Button
-              disabled={isPending || name.trim() === "" || unitTypeId === ""}
+              disabled={
+                isPending ||
+                unitTypesQuery.isPending ||
+                unitTypesQuery.isError ||
+                name.trim() === "" ||
+                unitTypeId === ""
+              }
               type="submit"
             >
               Add unit
@@ -223,6 +247,34 @@ export function MoveNodeDialog({
     await onMove(destination === "" ? null : destination);
   }
 
+  let body: JSX.Element;
+  if (groupsQuery.isPending) {
+    body = <p className="text-sm text-muted-foreground">Loading groups…</p>;
+  } else if (groupsQuery.isError) {
+    body = (
+      <p className="text-sm text-destructive">
+        {getErrorDescription(groupsQuery.error)}
+      </p>
+    );
+  } else {
+    body = (
+      <div className="grid gap-1.5">
+        <Label htmlFor={selectId}>Destination</Label>
+        <NativeSelect
+          id={selectId}
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+        >
+          {destinations.map((dest) => (
+            <option key={dest.id ?? "root"} value={dest.id ?? ""}>
+              {dest.label}
+            </option>
+          ))}
+        </NativeSelect>
+      </div>
+    );
+  }
+
   return (
     <Dialog
       open
@@ -238,20 +290,7 @@ export function MoveNodeDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor={selectId}>Destination</Label>
-          <NativeSelect
-            id={selectId}
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-          >
-            {destinations.map((dest) => (
-              <option key={dest.id ?? "root"} value={dest.id ?? ""}>
-                {dest.label}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
+        {body}
 
         <DialogFooter>
           <Button
@@ -263,7 +302,7 @@ export function MoveNodeDialog({
             Cancel
           </Button>
           <Button
-            disabled={isPending}
+            disabled={isPending || groupsQuery.isPending || groupsQuery.isError}
             type="button"
             onClick={() => void handleConfirm()}
           >

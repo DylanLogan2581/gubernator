@@ -13,6 +13,7 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 import { toSnakeCaseEntries } from "@/lib/toSnakeCaseEntries";
+import type { TierEducationConfig } from "@/shared/education/tierEducationConfig";
 import type { Json } from "@/types/database";
 
 import {
@@ -51,7 +52,6 @@ import type {
   RestoreBlueprintResult,
   SoftDeleteBlueprintResult,
   TierCostEntry,
-  TierEducationConfig,
   TierEffect,
 } from "../types/buildingTypes";
 import type { z } from "zod";

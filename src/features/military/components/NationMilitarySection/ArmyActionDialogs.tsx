@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { nationSettlementsQueryOptions } from "@/features/nations";
+import { getErrorDescription } from "@/lib/errorUtils";
 import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
 
 import {
@@ -134,6 +135,36 @@ export function MoveArmyDialog({
 
   const settlements = settlementsQuery.data ?? [];
 
+  let body: JSX.Element;
+  if (settlementsQuery.isPending) {
+    body = (
+      <p className="text-sm text-muted-foreground">Loading settlements…</p>
+    );
+  } else if (settlementsQuery.isError) {
+    body = (
+      <p className="text-sm text-destructive">
+        {getErrorDescription(settlementsQuery.error)}
+      </p>
+    );
+  } else {
+    body = (
+      <div className="grid gap-1.5">
+        <Label htmlFor={selectId}>Destination settlement</Label>
+        <NativeSelect
+          id={selectId}
+          value={settlementId}
+          onChange={(e) => setSettlementId(e.target.value)}
+        >
+          {settlements.map((settlement) => (
+            <option key={settlement.id} value={settlement.id}>
+              {settlement.name}
+            </option>
+          ))}
+        </NativeSelect>
+      </div>
+    );
+  }
+
   return (
     <Dialog
       open
@@ -149,20 +180,7 @@ export function MoveArmyDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor={selectId}>Destination settlement</Label>
-          <NativeSelect
-            id={selectId}
-            value={settlementId}
-            onChange={(e) => setSettlementId(e.target.value)}
-          >
-            {settlements.map((settlement) => (
-              <option key={settlement.id} value={settlement.id}>
-                {settlement.name}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
+        {body}
 
         <DialogFooter>
           <Button
@@ -175,7 +193,10 @@ export function MoveArmyDialog({
           </Button>
           <Button
             disabled={
-              moveMutation.isPending || settlementId === currentSettlementId
+              moveMutation.isPending ||
+              settlementsQuery.isPending ||
+              settlementsQuery.isError ||
+              settlementId === currentSettlementId
             }
             type="button"
             onClick={() => void handleConfirm()}
