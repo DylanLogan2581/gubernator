@@ -15,7 +15,7 @@
 begin;
 
 select
-  plan (31);
+  plan (36);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -221,6 +221,22 @@ values
     'npc',
     'HostPaid',
     'alive'
+  ),
+  (
+    'f5000000-0000-0000-0000-000000000019',
+    'f2000000-0000-0000-0000-000000000001',
+    'f4000000-0000-0000-0000-000000000001',
+    'npc',
+    'DupPayer',
+    'alive'
+  ),
+  (
+    'f5000000-0000-0000-0000-000000000020',
+    'f2000000-0000-0000-0000-000000000001',
+    'f4000000-0000-0000-0000-000000000001',
+    'npc',
+    'Assigned',
+    'alive'
   );
 
 insert into
@@ -390,6 +406,29 @@ values
         10
       )
     )
+  ),
+  (
+    'f6000000-0000-0000-0000-000000000007',
+    'f2000000-0000-0000-0000-000000000001',
+    'Duplicate Cost Unit Type',
+    5,
+    0.05,
+    -- Same resource_id listed twice -- must be aggregated (500 + 500 = 1000
+    -- total), not checked/deducted against each 500 entry individually.
+    jsonb_build_array(
+      jsonb_build_object(
+        'resource_id',
+        'f7000000-0000-0000-0000-000000000001',
+        'amount',
+        500
+      ),
+      jsonb_build_object(
+        'resource_id',
+        'f7000000-0000-0000-0000-000000000001',
+        'amount',
+        500
+      )
+    )
   );
 
 insert into
@@ -430,6 +469,18 @@ values
     'f9000000-0000-0000-0000-000000000001',
     2,
     0.05
+  );
+
+insert into
+  public.job_definitions (id, world_id, name, slug, job_type, base_capacity)
+values
+  (
+    'fb000000-0000-0000-0000-000000000001',
+    'f2000000-0000-0000-0000-000000000001',
+    'Farmer',
+    'farmer',
+    'standard',
+    10
   );
 
 insert into
@@ -511,6 +562,13 @@ values
     'f8000000-0000-0000-0000-000000000001',
     'f6000000-0000-0000-0000-000000000006',
     'Spare Unit',
+    1
+  ),
+  (
+    'f8000000-0000-0000-0000-000000000017',
+    'f8000000-0000-0000-0000-000000000001',
+    'f6000000-0000-0000-0000-000000000007',
+    'Dup Cost Unit',
     1
   );
 
@@ -954,6 +1012,137 @@ select
     ),
     0,
     'the whole batch rolled back -- the otherwise-eligible citizen was not recruited'
+  );
+
+-- ===========================================================================
+-- #1146: duplicate resource_id entries in recruitment_costs_json are
+-- aggregated per resource, not checked/deducted per-entry.
+-- ===========================================================================
+update public.nation_resource_stockpiles
+set
+  quantity = 600
+where
+  nation_id = 'f3000000-0000-0000-0000-000000000001'
+  and resource_id = 'f7000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+-- Each duplicate entry (500) individually fits the 600 available, but the
+-- aggregated total (1000) does not -- must raise insufficient_resources,
+-- not a raw 23514 from the deduct update going negative.
+select
+  throws_ok (
+    $test$
+  select public.recruit_soldiers(
+    'f8000000-0000-0000-0000-000000000017'::uuid,
+    'f4000000-0000-0000-0000-000000000001'::uuid,
+    array['f5000000-0000-0000-0000-000000000019'::uuid]
+  )
+  $test$,
+    '22023',
+    'insufficient resources: Grain (need 1000, have 600.0000)',
+    'duplicate cost entries are aggregated before the availability check'
+  );
+
+reset role;
+
+update public.nation_resource_stockpiles
+set
+  quantity = 1000
+where
+  nation_id = 'f3000000-0000-0000-0000-000000000001'
+  and resource_id = 'f7000000-0000-0000-0000-000000000001';
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+  select public.recruit_soldiers(
+    'f8000000-0000-0000-0000-000000000017'::uuid,
+    'f4000000-0000-0000-0000-000000000001'::uuid,
+    array['f5000000-0000-0000-0000-000000000019'::uuid]
+  )
+  $test$,
+    'recruitment succeeds once the aggregated total is affordable'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        quantity
+      from
+        public.nation_resource_stockpiles
+      where
+        nation_id = 'f3000000-0000-0000-0000-000000000001'
+        and resource_id = 'f7000000-0000-0000-0000-000000000001'
+    ),
+    0::numeric,
+    'the duplicate entries are deducted once for their combined total, not twice'
+  );
+
+-- ===========================================================================
+-- #1146: recruiting a citizen with an existing citizen_assignments row
+-- clears it, mirroring apply_turn_transition's assignmentClears patch.
+-- ===========================================================================
+insert into
+  public.citizen_assignments (
+    citizen_id,
+    assignment_type,
+    job_id,
+    assigned_on_turn_number
+  )
+values
+  (
+    'f5000000-0000-0000-0000-000000000020',
+    'standard_job',
+    'fb000000-0000-0000-0000-000000000001',
+    1
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  lives_ok (
+    $test$
+  select public.recruit_soldiers(
+    'f8000000-0000-0000-0000-000000000016'::uuid,
+    'f4000000-0000-0000-0000-000000000001'::uuid,
+    array['f5000000-0000-0000-0000-000000000020'::uuid]
+  )
+  $test$,
+    'a citizen with an existing assignment can still be recruited'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.citizen_assignments
+      where
+        citizen_id = 'f5000000-0000-0000-0000-000000000020'
+    ),
+    0,
+    'the stale citizen_assignments row is cleared at recruit time'
   );
 
 -- ===========================================================================
