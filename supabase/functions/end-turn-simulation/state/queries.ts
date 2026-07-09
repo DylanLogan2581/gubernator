@@ -444,7 +444,7 @@ export function fetchNationOffices(
   ctx: FetchContext,
   worldId: string,
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "nation_offices",
     params: {
@@ -539,7 +539,7 @@ export function fetchEducationEnrollments(
   ctx: FetchContext,
   worldId: string,
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "education_enrollments",
     params: {
@@ -594,7 +594,7 @@ export function fetchNationTreaties(
   ctx: FetchContext,
   worldId: string,
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "nation_treaties",
     params: {
@@ -613,7 +613,7 @@ export function fetchNationCurrencies(
   ctx: FetchContext,
   worldId: string,
 ): Promise<FetchRowsResult> {
-  return fetchRows({
+  return fetchRowsPaginated({
     ctx,
     table: "nation_currencies",
     params: {
@@ -733,6 +733,7 @@ export function fetchStockpiles(
     table: "settlement_stockpiles_view",
     params: {
       settlement_id: buildInFilter(settlementIds),
+      order: "settlement_id.asc,resource_id.asc",
       select: "settlement_id,resource_id,quantity,effective_cap",
     },
   });
