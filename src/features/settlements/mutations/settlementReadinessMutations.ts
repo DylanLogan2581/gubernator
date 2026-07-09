@@ -89,7 +89,7 @@ export type SettlementAutoReadyMutationResult = {
 };
 
 const SETTLEMENT_READINESS_ACCESS_SELECT =
-  "id,nations!inner(world_id,worlds!inner(archived_at,id,status,visibility))";
+  "id,nations!settlements_nation_id_fkey!inner(world_id,worlds!inner(archived_at,id,status,visibility))";
 
 export class SetSettlementReadinessError extends Error {
   readonly code: SetSettlementReadinessErrorCode;

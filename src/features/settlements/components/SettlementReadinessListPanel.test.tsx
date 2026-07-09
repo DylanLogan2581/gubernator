@@ -1075,7 +1075,7 @@ function createSettlementsQueryBuilder({
   const update = vi.fn(() => ({ eq: updateEq }));
   const rootBuilder = {
     select: vi.fn((selection: string) => {
-      if (selection.startsWith("id,nations!inner")) {
+      if (selection.startsWith("id,nations!settlements_nation_id_fkey!inner")) {
         return readBuilder;
       }
 

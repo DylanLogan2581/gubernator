@@ -79,7 +79,7 @@ const SETTLEMENT_BUILDING_SELECT =
   "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json,education_config_json)";
 
 const SETTLEMENT_BUILDING_WITH_LOCATION_SELECT =
-  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json,education_config_json),settlements(id,name,nations!inner(name))";
+  "id,settlement_id,building_blueprint_id,current_tier_id,name,state,missed_upkeep_count,activated_on_turn_number,deactivated_in_transition_id,source_project_id,created_at,updated_at,building_blueprints(name,icon),building_blueprint_tiers(tier_number,effects_json,education_config_json),settlements(id,name,nations!settlements_nation_id_fkey!inner(name))";
 
 type SettlementBuildingDetailQueryKey = ReturnType<
   typeof buildingsQueryKeys.settlementBuildingById

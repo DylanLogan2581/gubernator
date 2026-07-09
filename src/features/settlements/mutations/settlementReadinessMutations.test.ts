@@ -49,7 +49,7 @@ describe("setSettlementReadinessMutationOptions", () => {
     expect(options.mutationKey).toEqual(["settlements", "set-readiness"]);
     expect(clientFixture.from).toHaveBeenCalledWith("settlements");
     expect(clientFixture.readSelect).toHaveBeenCalledWith(
-      "id,nations!inner(world_id,worlds!inner(archived_at,id,status,visibility))",
+      "id,nations!settlements_nation_id_fkey!inner(world_id,worlds!inner(archived_at,id,status,visibility))",
     );
     expect(clientFixture.readEqId).toHaveBeenCalledWith("id", "settlement-1");
     expect(clientFixture.readEqWorldId).toHaveBeenCalledWith(

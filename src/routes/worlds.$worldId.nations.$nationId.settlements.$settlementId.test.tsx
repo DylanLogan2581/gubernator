@@ -338,7 +338,7 @@ function createClient({
             if (columns.includes("worlds!inner")) {
               return chainBuilder({ data: settlementAccessRow, error: null });
             }
-            if (columns.includes("nations!inner")) {
+            if (columns.includes("nations!settlements_nation_id_fkey!inner")) {
               return chainBuilder({ data: [], error: null });
             }
             throw new Error(`Unexpected settlement select columns: ${columns}`);

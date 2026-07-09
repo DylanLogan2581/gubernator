@@ -62,8 +62,8 @@ const TRADE_ROUTE_SELECT = [
   "pause_reason_last_transition",
   "created_at",
   "updated_at",
-  "origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(name,nation:nations(name))",
-  "destination_settlement:settlements!trade_routes_destination_settlement_id_fkey(name,nation:nations(name))",
+  "origin_settlement:settlements!trade_routes_origin_settlement_id_fkey(name,nation:nations!settlements_nation_id_fkey(name))",
+  "destination_settlement:settlements!trade_routes_destination_settlement_id_fkey(name,nation:nations!settlements_nation_id_fkey(name))",
   "trade_route_legs(id,direction,resource_id,quantity_per_transition,resource:resources(name))",
 ].join(",");
 

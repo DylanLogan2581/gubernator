@@ -74,7 +74,7 @@ type NationSettlementRow = {
 const NATION_SELECT =
   "id,world_id,name,description,nameset_id,capital_settlement_id,founded_turn_number,government_type,flag_path,tax_rate,trade_policy,primary_culture_id,state_religion_id,created_at,updated_at";
 const NATION_SETTLEMENT_SELECT =
-  "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner(name)";
+  "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!settlements_nation_id_fkey!inner(name)";
 
 export function nationsListQueryOptions(
   worldId: string,

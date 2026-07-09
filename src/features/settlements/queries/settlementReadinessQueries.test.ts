@@ -131,7 +131,7 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(builder.select).toHaveBeenCalledWith(
-      "auto_ready_enabled,is_ready_current_turn,nations!inner()",
+      "auto_ready_enabled,is_ready_current_turn,nations!settlements_nation_id_fkey!inner()",
     );
     expect(builder.eq).toHaveBeenCalledWith("nations.world_id", "world-1");
     expect(builder.order).not.toHaveBeenCalled();
@@ -149,7 +149,7 @@ describe("settlementReadinessListQueryOptions", () => {
     );
 
     expect(builder.select).toHaveBeenCalledWith(
-      "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!inner(id,name)",
+      "id,name,nation_id,auto_ready_enabled,is_ready_current_turn,ready_set_at,last_ready_at,nations!settlements_nation_id_fkey!inner(id,name)",
     );
     expect(builder.eq).toHaveBeenCalledWith("nations.world_id", "world-1");
     expect(builder.order).toHaveBeenCalledWith("name", { ascending: true });

@@ -41,7 +41,7 @@ type SettlementWithNationRow = {
 };
 
 const SETTLEMENT_WITH_NATION_SELECT =
-  "id,nation_id,name,description,nameset_id,coord_x,coord_z,created_at,updated_at,nations!inner(id,name,nameset_id,world_id)";
+  "id,nation_id,name,description,nameset_id,coord_x,coord_z,created_at,updated_at,nations!settlements_nation_id_fkey!inner(id,name,nameset_id,world_id)";
 
 export function settlementByIdQueryOptions(
   settlementId: string,
@@ -78,7 +78,8 @@ type SettlementSummaryRow = {
   readonly nations: { readonly name: string };
 };
 
-const SETTLEMENT_SUMMARY_SELECT = "id,nation_id,name,nations!inner(name)";
+const SETTLEMENT_SUMMARY_SELECT =
+  "id,nation_id,name,nations!settlements_nation_id_fkey!inner(name)";
 
 type SettlementsByWorldQueryKey = ReturnType<
   typeof settlementsQueryKeys.byWorld
