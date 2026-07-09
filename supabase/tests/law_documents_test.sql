@@ -7,7 +7,7 @@
 begin;
 
 select
-  plan (17);
+  plan (19);
 
 -- A scratch table to stash ids returned by RPC calls across role switches --
 -- avoids relying on psql variables, which the other test files don't use.
@@ -113,6 +113,20 @@ values
     'Law Settlement'
   );
 
+-- Out-of-scope government body (#1138): belongs to Other Nation, used to
+-- prove create_law_document rejects a vote procedure whose bodyId is scoped
+-- to a different nation than the document being created.
+insert into
+  public.government_bodies (id, world_id, nation_id, name, composition_json)
+values
+  (
+    '1f000000-0000-0000-0000-000000000001',
+    '1b000000-0000-0000-0000-000000000001',
+    '1c000000-0000-0000-0000-000000000002',
+    'Other Nation Council',
+    '[{"kind":"ruler"}]'::jsonb
+  );
+
 insert into
   public.citizens (
     id,
@@ -173,7 +187,7 @@ select
       p_settlement_id => null,
       p_title => ' The Founding Charter ',
       p_preamble_markdown => 'We the citizens...',
-      p_amendment_procedure_json => '{"kind":"simple_majority"}'::jsonb,
+      p_amendment_procedure_json => '{"kind":"locked"}'::jsonb,
       p_articles => '[{"heading":"Article I","bodyMarkdown":"Body one."},{"heading":"Article II","bodyMarkdown":"Body two."}]'::jsonb
     )
   ).id;
@@ -363,6 +377,54 @@ select
 
 reset role;
 
+-- ===========================================================================
+-- create_law_document: amendment_procedure_json is validated at creation
+-- with the same scope rules set_procedure enforces (#1138).
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"1a000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.create_law_document(
+      '1b000000-0000-0000-0000-000000000001',
+      '1c000000-0000-0000-0000-000000000001',
+      null,
+      'Cross Scope Charter',
+      null,
+      '{"kind":"vote","bodyId":"1f000000-0000-0000-0000-000000000001","threshold":"majority","votingPeriodTurns":2,"secondBodyId":null}'::jsonb,
+      '[{"heading":"Article I","bodyMarkdown":"Body."}]'::jsonb
+    )
+  $test$,
+    '22023',
+    null,
+    'a vote procedure bodyId scoped to a different nation is rejected at create'
+  );
+
+select
+  throws_ok (
+    $test$
+    select public.create_law_document(
+      '1b000000-0000-0000-0000-000000000001',
+      '1c000000-0000-0000-0000-000000000001',
+      null,
+      'Malformed Procedure Charter',
+      null,
+      '{"kind":"not_a_real_kind"}'::jsonb,
+      '[{"heading":"Article I","bodyMarkdown":"Body."}]'::jsonb
+    )
+  $test$,
+    '22023',
+    null,
+    'a malformed amendment procedure kind is rejected at create'
+  );
+
+reset role;
+
 set
   local role authenticated;
 
@@ -380,7 +442,7 @@ select
       p_settlement_id => '1d000000-0000-0000-0000-000000000001',
       p_title => 'Settlement Bylaws',
       p_preamble_markdown => null,
-      p_amendment_procedure_json => '{}'::jsonb,
+      p_amendment_procedure_json => '{"kind":"locked"}'::jsonb,
       p_articles => '[{"heading":"Article I","bodyMarkdown":"Body."}]'::jsonb
     )
   ).id;
