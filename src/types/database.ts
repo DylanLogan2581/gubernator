@@ -2717,6 +2717,7 @@ export type Database = {
       nation_treaties: {
         Row: {
           created_at: string;
+          duration_turns: number | null;
           ends_turn_number: number | null;
           id: string;
           proposed_by_citizen_id: string | null;
@@ -2732,6 +2733,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          duration_turns?: number | null;
           ends_turn_number?: number | null;
           id?: string;
           proposed_by_citizen_id?: string | null;
@@ -2747,6 +2749,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          duration_turns?: number | null;
           ends_turn_number?: number | null;
           id?: string;
           proposed_by_citizen_id?: string | null;
@@ -4850,6 +4853,7 @@ export type Database = {
         Args: { p_broken_by_citizen_id: string; p_treaty_id: string };
         Returns: {
           created_at: string;
+          duration_turns: number | null;
           ends_turn_number: number | null;
           id: string;
           proposed_by_citizen_id: string | null;
@@ -6491,6 +6495,7 @@ export type Database = {
       };
       propose_nation_treaty: {
         Args: {
+          p_duration_turns?: number;
           p_proposed_by_citizen_id: string;
           p_proposer_nation_id: string;
           p_responder_nation_id: string;
@@ -6499,6 +6504,7 @@ export type Database = {
         };
         Returns: {
           created_at: string;
+          duration_turns: number | null;
           ends_turn_number: number | null;
           id: string;
           proposed_by_citizen_id: string | null;
@@ -6879,6 +6885,7 @@ export type Database = {
         };
         Returns: {
           created_at: string;
+          duration_turns: number | null;
           ends_turn_number: number | null;
           id: string;
           proposed_by_citizen_id: string | null;
@@ -7997,6 +8004,7 @@ export type Database = {
         Args: { p_treaty_id: string };
         Returns: {
           created_at: string;
+          duration_turns: number | null;
           ends_turn_number: number | null;
           id: string;
           proposed_by_citizen_id: string | null;

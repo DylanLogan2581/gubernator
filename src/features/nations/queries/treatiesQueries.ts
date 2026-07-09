@@ -25,6 +25,7 @@ type NationTreatiesQueryOptions = UseQueryOptions<
 
 export type NationTreatyRow = {
   readonly created_at: string;
+  readonly duration_turns: number | null;
   readonly ends_turn_number: number | null;
   readonly id: string;
   readonly proposed_by_citizen_id: string | null;
@@ -40,7 +41,7 @@ export type NationTreatyRow = {
 };
 
 const NATION_TREATY_SELECT =
-  "id,world_id,proposer_nation_id,responder_nation_id,treaty_type,terms,status,starts_turn_number,ends_turn_number,proposed_by_citizen_id,responded_by_citizen_id,created_at,updated_at";
+  "id,world_id,proposer_nation_id,responder_nation_id,treaty_type,terms,status,starts_turn_number,ends_turn_number,duration_turns,proposed_by_citizen_id,responded_by_citizen_id,created_at,updated_at";
 
 export function nationTreatiesQueryOptions(
   nationId: string,
@@ -98,6 +99,7 @@ export function toNationTreatyTerms(
 export function toNationTreaty(row: NationTreatyRow): NationTreaty {
   return {
     createdAt: row.created_at,
+    durationTurns: row.duration_turns,
     endsTurnNumber: row.ends_turn_number,
     id: row.id,
     proposedByCitizenId: row.proposed_by_citizen_id,

@@ -49,6 +49,7 @@ describe("proposeTreatyMutationOptions", () => {
     });
 
     expect(rpc).toHaveBeenCalledWith("propose_nation_treaty", {
+      p_duration_turns: undefined,
       p_proposed_by_citizen_id: CITIZEN_ID,
       p_proposer_nation_id: PROPOSER_NATION_ID,
       p_responder_nation_id: RESPONDER_NATION_ID,
@@ -58,6 +59,31 @@ describe("proposeTreatyMutationOptions", () => {
         resource_id: RESOURCE_ID,
       },
       p_treaty_type: "tribute",
+    });
+  });
+
+  it("passes p_duration_turns when a duration is provided", async () => {
+    const row = createTreatyRow({ duration_turns: 10 });
+    const { client, rpc } = createRpcClient({ data: row, error: null });
+    const queryClient = createQueryClient();
+    const options = proposeTreatyMutationOptions({ client, queryClient });
+
+    await executeMutation(queryClient, options, {
+      durationTurns: 10,
+      proposedByCitizenId: CITIZEN_ID,
+      proposerNationId: PROPOSER_NATION_ID,
+      responderNationId: RESPONDER_NATION_ID,
+      terms: {},
+      treatyType: "trade_agreement",
+    });
+
+    expect(rpc).toHaveBeenCalledWith("propose_nation_treaty", {
+      p_duration_turns: 10,
+      p_proposed_by_citizen_id: CITIZEN_ID,
+      p_proposer_nation_id: PROPOSER_NATION_ID,
+      p_responder_nation_id: RESPONDER_NATION_ID,
+      p_terms: {},
+      p_treaty_type: "trade_agreement",
     });
   });
 
@@ -79,6 +105,7 @@ describe("proposeTreatyMutationOptions", () => {
     });
 
     expect(rpc).toHaveBeenCalledWith("propose_nation_treaty", {
+      p_duration_turns: undefined,
       p_proposed_by_citizen_id: CITIZEN_ID,
       p_proposer_nation_id: PROPOSER_NATION_ID,
       p_responder_nation_id: RESPONDER_NATION_ID,
@@ -213,6 +240,7 @@ function createTreatyRow(
 ): NationTreatyRow {
   return {
     created_at: "2026-01-01T00:00:00.000Z",
+    duration_turns: null,
     ends_turn_number: null,
     id: TREATY_ID,
     proposed_by_citizen_id: CITIZEN_ID,

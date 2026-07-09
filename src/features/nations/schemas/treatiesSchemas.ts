@@ -26,8 +26,15 @@ const royalMarriageTermsSchema = z
     path: ["citizenBId"] satisfies PropertyKey[],
   });
 
+const durationTurnsSchema = z
+  .number()
+  .int()
+  .positive("Duration must be greater than zero.")
+  .optional();
+
 export const proposeTreatyInputSchema = z.discriminatedUnion("treatyType", [
   z.strictObject({
+    durationTurns: durationTurnsSchema,
     proposedByCitizenId: citizenIdSchema,
     proposerNationId: nationIdSchema,
     responderNationId: nationIdSchema,
@@ -35,6 +42,7 @@ export const proposeTreatyInputSchema = z.discriminatedUnion("treatyType", [
     treatyType: z.literal("tribute"),
   }),
   z.strictObject({
+    durationTurns: durationTurnsSchema,
     proposedByCitizenId: citizenIdSchema,
     proposerNationId: nationIdSchema,
     responderNationId: nationIdSchema,
@@ -42,6 +50,7 @@ export const proposeTreatyInputSchema = z.discriminatedUnion("treatyType", [
     treatyType: z.literal("trade_agreement"),
   }),
   z.strictObject({
+    durationTurns: durationTurnsSchema,
     proposedByCitizenId: citizenIdSchema,
     proposerNationId: nationIdSchema,
     responderNationId: nationIdSchema,

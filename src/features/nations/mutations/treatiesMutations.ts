@@ -146,6 +146,7 @@ async function proposeTreaty(
 
   const { data, error } = await client
     .rpc("propose_nation_treaty", {
+      p_duration_turns: values.durationTurns,
       p_proposed_by_citizen_id: values.proposedByCitizenId,
       p_proposer_nation_id: values.proposerNationId,
       p_responder_nation_id: values.responderNationId,

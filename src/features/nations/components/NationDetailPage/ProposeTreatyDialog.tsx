@@ -34,9 +34,24 @@ const PROPOSABLE_TREATY_TYPES: readonly NationTreatyType[] = [
   "royal_marriage",
 ];
 
+function parseDurationTurnsInput(durationTurns: string): {
+  readonly error?: string;
+  readonly value?: number;
+} {
+  if (durationTurns === "") return {};
+
+  const value = parseFloat(durationTurns);
+  if (Number.isNaN(value) || value <= 0) {
+    return { error: "Duration must be greater than zero." };
+  }
+
+  return { value };
+}
+
 type FormErrors = {
   citizenAId?: string;
   citizenBId?: string;
+  durationTurns?: string;
   quantityPerTurn?: string;
   resourceId?: string;
 };
@@ -60,6 +75,7 @@ export function ProposeTreatyDialog({
   const [quantityPerTurn, setQuantityPerTurn] = useState("");
   const [citizenAId, setCitizenAId] = useState("");
   const [citizenBId, setCitizenBId] = useState("");
+  const [durationTurns, setDurationTurns] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
 
   const resourcesQuery = useQuery(
@@ -105,6 +121,12 @@ export function ProposeTreatyDialog({
       }
     }
 
+    const parsedDuration = parseDurationTurnsInput(durationTurns);
+    if (parsedDuration.error !== undefined) {
+      newErrors.durationTurns = parsedDuration.error;
+    }
+    const parsedDurationTurns = parsedDuration.value;
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -113,6 +135,7 @@ export function ProposeTreatyDialog({
     const input: ProposeTreatyInput =
       treatyType === "tribute"
         ? {
+            durationTurns: parsedDurationTurns,
             proposedByCitizenId: activeCharacterId,
             proposerNationId: nation.id,
             responderNationId: other.id,
@@ -125,6 +148,7 @@ export function ProposeTreatyDialog({
           }
         : treatyType === "royal_marriage"
           ? {
+              durationTurns: parsedDurationTurns,
               proposedByCitizenId: activeCharacterId,
               proposerNationId: nation.id,
               responderNationId: other.id,
@@ -132,6 +156,7 @@ export function ProposeTreatyDialog({
               treatyType: "royal_marriage",
             }
           : {
+              durationTurns: parsedDurationTurns,
               proposedByCitizenId: activeCharacterId,
               proposerNationId: nation.id,
               responderNationId: other.id,
@@ -327,6 +352,26 @@ export function ProposeTreatyDialog({
               A trade agreement carries no additional terms.
             </p>
           ) : null}
+
+          <Label className="grid gap-1 text-sm">
+            <span className="text-muted-foreground">
+              Duration in turns (optional)
+            </span>
+            <Input
+              aria-invalid={errors.durationTurns !== undefined}
+              aria-label="Duration in turns"
+              disabled={mutation.isPending}
+              inputMode="numeric"
+              placeholder="Indefinite"
+              value={durationTurns}
+              onChange={(event) => {
+                setDurationTurns(event.currentTarget.value);
+              }}
+            />
+            {errors.durationTurns !== undefined ? (
+              <p className="text-xs text-destructive">{errors.durationTurns}</p>
+            ) : null}
+          </Label>
         </div>
         <DialogFooter>
           <Button

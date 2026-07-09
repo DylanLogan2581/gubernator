@@ -35,6 +35,7 @@ export type NationTreatyTerms =
 
 export type NationTreaty = {
   readonly createdAt: string;
+  readonly durationTurns: number | null;
   readonly endsTurnNumber: number | null;
   readonly id: string;
   readonly proposedByCitizenId: string | null;

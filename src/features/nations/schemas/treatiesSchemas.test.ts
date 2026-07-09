@@ -91,6 +91,32 @@ describe("proposeTreatyInputSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a positive durationTurns", () => {
+    const result = proposeTreatyInputSchema.safeParse({
+      durationTurns: 10,
+      proposedByCitizenId: CITIZEN_ID,
+      proposerNationId: PROPOSER_NATION_ID,
+      responderNationId: RESPONDER_NATION_ID,
+      terms: {},
+      treatyType: "trade_agreement",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a non-positive durationTurns", () => {
+    const result = proposeTreatyInputSchema.safeParse({
+      durationTurns: 0,
+      proposedByCitizenId: CITIZEN_ID,
+      proposerNationId: PROPOSER_NATION_ID,
+      responderNationId: RESPONDER_NATION_ID,
+      terms: {},
+      treatyType: "trade_agreement",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("rejects an unsupported treaty type", () => {
     const result = proposeTreatyInputSchema.safeParse({
       proposedByCitizenId: CITIZEN_ID,

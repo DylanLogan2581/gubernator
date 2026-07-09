@@ -228,7 +228,11 @@ function TreatyRow({
           {formatNationTreatyStatus(treaty.status)}
         </Badge>
       </div>
-      <div className="text-muted-foreground">Expires: {expiryText}</div>
+      <div className="text-muted-foreground">
+        {treaty.status === "proposed" && treaty.durationTurns !== null
+          ? `Duration: ${String(treaty.durationTurns)} turns`
+          : `Expires: ${expiryText}`}
+      </div>
       {isIncomingProposal ||
       isOutgoingProposal ||
       treaty.status === "active" ? (

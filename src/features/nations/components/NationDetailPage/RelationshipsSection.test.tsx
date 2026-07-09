@@ -220,6 +220,7 @@ describe("NationRelationshipAccordionRow", () => {
     mockTreatiesQuery.mockResolvedValue([
       {
         createdAt: "2024-01-01T00:00:00Z",
+        durationTurns: null,
         endsTurnNumber: null,
         id: "treaty-1",
         proposedByCitizenId: "citizen-1",
@@ -247,6 +248,7 @@ describe("NationRelationshipAccordionRow", () => {
     mockTreatiesQuery.mockResolvedValue([
       {
         createdAt: "2024-01-01T00:00:00Z",
+        durationTurns: null,
         endsTurnNumber: null,
         id: "treaty-1",
         proposedByCitizenId: "citizen-1",

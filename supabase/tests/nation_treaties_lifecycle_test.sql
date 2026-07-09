@@ -11,7 +11,7 @@
 begin;
 
 select
-  plan (27);
+  plan (30);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -514,6 +514,51 @@ select
   );
 
 -- ===========================================================================
+-- propose_nation_treaty: duration (#1133).
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+  select public.propose_nation_treaty(
+    'e3000000-0000-0000-0000-00000000000a'::uuid,
+    'e3000000-0000-0000-0000-00000000000b'::uuid,
+    'trade_agreement',
+    '{}'::jsonb,
+    'e5000000-0000-0000-0000-000000000001'::uuid,
+    -1
+  )
+  $test$,
+    'P0001',
+    'p_duration_turns must be greater than zero',
+    'a non-positive duration is rejected'
+  );
+
+create temporary table t_tribute_duration_ok as
+select
+  *
+from
+  public.propose_nation_treaty (
+    'e3000000-0000-0000-0000-00000000000a'::uuid,
+    'e3000000-0000-0000-0000-00000000000b'::uuid,
+    'trade_agreement',
+    '{}'::jsonb,
+    'e5000000-0000-0000-0000-000000000001'::uuid,
+    5
+  );
+
+select
+  is (
+    (
+      select
+        duration_turns
+      from
+        t_tribute_duration_ok
+    ),
+    5,
+    'a valid duration is stored on the proposed treaty'
+  );
+
+-- ===========================================================================
 -- trade_agreement term validation: non-empty terms are rejected.
 -- ===========================================================================
 select
@@ -682,6 +727,36 @@ select
     ),
     null,
     'accept stamps starts_turn_number'
+  );
+
+create temporary table t_tribute_duration_accepted as
+select
+  public.respond_to_nation_treaty (
+    (
+      select
+        id
+      from
+        t_tribute_duration_ok
+    ),
+    'accept',
+    'e5000000-0000-0000-0000-000000000002'::uuid
+  ) as treaty;
+
+select
+  is (
+    (
+      select
+        (treaty).ends_turn_number
+      from
+        t_tribute_duration_accepted
+    ),
+    (
+      select
+        (treaty).starts_turn_number + 5
+      from
+        t_tribute_duration_accepted
+    ),
+    'accept derives ends_turn_number from starts_turn_number + duration_turns (#1133)'
   );
 
 create temporary table t_marriage_declined as
