@@ -36,3 +36,26 @@ export type {
   GovernmentBodyComposition,
   ResolveBodyMembersData,
 } from "./governmentBodies.ts";
+
+export {
+  AmendmentProcedureValidationError,
+  assertAmendmentProcedureBodiesExist,
+  canProposeAmendment,
+  evaluateVote,
+  VOTE_THRESHOLDS,
+  validateAmendmentProcedure,
+} from "./amendmentProcedure.ts";
+export type {
+  AmendmentActor,
+  AmendmentProcedure,
+  ChamberVoteTally,
+  DecreeAmendmentProcedure,
+  DecreeAuthority,
+  LockedAmendmentProcedure,
+  VoteAmendmentProcedure,
+  VoteCast,
+  VoteChoice,
+  VoteEvaluationResult,
+  VoteMembers,
+  VoteThreshold,
+} from "./amendmentProcedure.ts";
