@@ -12,6 +12,7 @@ import {
   makeContext,
   makeEducationLevel,
   makeEnrollment,
+  makeNationOffice,
   makeSettlement,
 } from "./testFixtures.ts";
 
@@ -270,6 +271,128 @@ describe("phaseEducation — graduation and unenroll", () => {
     const summary = result.educationSummaryBySettlementId.get("s1");
     expect(summary?.graduationsThisTurn).toBe(1);
     expect(summary?.countsByLevelId).toEqual({});
+  });
+});
+
+describe("phaseEducation — teacher labor exclusions", () => {
+  it("excludes an officeholder teacher from the staffing count, causing understaffed stall", () => {
+    const ctx = makeContext({
+      buildingBlueprints: [makeBlueprint({ id: "bp1" })],
+      buildingTiers: [makeTier({ id: "tier1" })],
+      citizenAssignments: [
+        makeAssignment({ assignmentType: "standard_job", citizenId: "teacher1", jobId: "teacher-job" }),
+      ],
+      citizens: [
+        makeCitizen({ id: "student1", settlementId: "s1" }),
+        makeCitizen({ id: "teacher1", settlementId: "s1" }),
+      ],
+      educationEnrollments: [
+        makeEnrollment({
+          citizenId: "student1",
+          id: "e1",
+          progressTurns: 0,
+          settlementBuildingId: "b1",
+          targetLevelId: "basic",
+        }),
+      ],
+      educationLevels: [
+        makeEducationLevel({ id: "basic", rank: 1 }),
+        makeEducationLevel({ id: "skilled", rank: 2 }),
+      ],
+      jobs: [makeTeacherJob({ id: "teacher-job" })],
+      nationOffices: [makeNationOffice({ citizenId: "teacher1" })],
+      settlementBuildings: [makeBuilding({ id: "b1" })],
+      settlements: [makeSettlement({ id: "s1" })],
+    });
+
+    const result = phaseEducation(ctx, []);
+
+    expect(result.enrollmentProgressUpdates).toEqual([]);
+    const understaffed = result.logs.find((l) => l.category === "education.understaffed");
+    expect(understaffed).toBeDefined();
+    expect(understaffed?.payload).toMatchObject({ teacherCount: 0 });
+  });
+
+  it("excludes an enrolled-student teacher from the staffing count", () => {
+    const ctx = makeContext({
+      buildingBlueprints: [makeBlueprint({ id: "bp1" })],
+      buildingTiers: [makeTier({ id: "tier1" })],
+      citizenAssignments: [
+        makeAssignment({ assignmentType: "standard_job", citizenId: "teacher1", jobId: "teacher-job" }),
+      ],
+      citizens: [
+        makeCitizen({ id: "student1", settlementId: "s1" }),
+        makeCitizen({ id: "teacher1", settlementId: "s1" }),
+      ],
+      educationEnrollments: [
+        makeEnrollment({
+          citizenId: "student1",
+          id: "e1",
+          progressTurns: 0,
+          settlementBuildingId: "b1",
+          targetLevelId: "basic",
+        }),
+        makeEnrollment({
+          citizenId: "teacher1",
+          id: "e2",
+          progressTurns: 0,
+          settlementBuildingId: "b2",
+          targetLevelId: "basic",
+        }),
+      ],
+      educationLevels: [
+        makeEducationLevel({ id: "basic", rank: 1 }),
+        makeEducationLevel({ id: "skilled", rank: 2 }),
+      ],
+      jobs: [makeTeacherJob({ id: "teacher-job" })],
+      settlementBuildings: [makeBuilding({ id: "b1" })],
+      settlements: [makeSettlement({ id: "s1" })],
+    });
+
+    const result = phaseEducation(ctx, []);
+
+    const understaffed = result.logs.find((l) => l.category === "education.understaffed");
+    expect(understaffed).toBeDefined();
+    expect(understaffed?.payload).toMatchObject({ teacherCount: 0 });
+  });
+
+  it("excludes an enlisted-soldier teacher from the staffing count", () => {
+    const ctx = makeContext({
+      buildingBlueprints: [makeBlueprint({ id: "bp1" })],
+      buildingTiers: [makeTier({ id: "tier1" })],
+      citizenAssignments: [
+        makeAssignment({ assignmentType: "standard_job", citizenId: "teacher1", jobId: "teacher-job" }),
+      ],
+      citizens: [
+        makeCitizen({ id: "student1", settlementId: "s1" }),
+        makeCitizen({ id: "teacher1", settlementId: "s1" }),
+      ],
+      educationEnrollments: [
+        makeEnrollment({
+          citizenId: "student1",
+          id: "e1",
+          progressTurns: 0,
+          settlementBuildingId: "b1",
+          targetLevelId: "basic",
+        }),
+      ],
+      educationLevels: [
+        makeEducationLevel({ id: "basic", rank: 1 }),
+        makeEducationLevel({ id: "skilled", rank: 2 }),
+      ],
+      jobs: [makeTeacherJob({ id: "teacher-job" })],
+      settlementBuildings: [makeBuilding({ id: "b1" })],
+      settlements: [makeSettlement({ id: "s1" })],
+      unitSoldiers: [
+        { citizenId: "teacher1", homeSettlementId: "s1", id: "sol1", unitId: "u1" },
+      ],
+    });
+
+    const result = phaseEducation(ctx, []);
+
+    const understaffed = result.logs.find((l) => l.category === "education.understaffed");
+    expect(understaffed).toBeDefined();
+    expect(understaffed?.payload).toMatchObject({ teacherCount: 0 });
   });
 });
 

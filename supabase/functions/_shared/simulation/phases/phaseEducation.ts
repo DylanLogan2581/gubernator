@@ -48,7 +48,9 @@ export function phaseEducation(
     educationEnrollments,
     educationLevels,
     jobs,
+    nationOffices,
     settlementBuildings,
+    unitSoldiers,
   } = context.input;
 
   const tierById = new Map(buildingTiers.map((t) => [t.id, t]));
@@ -56,6 +58,11 @@ export function phaseEducation(
   const levelById = new Map(educationLevels.map((l) => [l.id, l]));
   const citizenById = new Map(citizens.map((c) => [c.id, c]));
   const blueprintNameById = new Map(buildingBlueprints.map((bp) => [bp.id, bp.name]));
+  const officeholderCitizenIds = new Set(
+    nationOffices.filter((o) => o.excludesFromLabor).map((o) => o.citizenId),
+  );
+  const enrolledCitizenIds = new Set(educationEnrollments.map((e) => e.citizenId));
+  const soldierCitizenIds = new Set(unitSoldiers.map((s) => s.citizenId));
 
   // Effective building state this turn: base state overridden by any change
   // that happened in phaseBuildingUpkeep/phaseEvents this turn (mirrors
@@ -152,6 +159,13 @@ export function phaseEducation(
     for (const assignment of citizenAssignments) {
       if (assignment.assignmentType !== "standard_job") continue;
       if (assignment.jobId !== config.teacherJobId) continue;
+      if (
+        officeholderCitizenIds.has(assignment.citizenId) ||
+        enrolledCitizenIds.has(assignment.citizenId) ||
+        soldierCitizenIds.has(assignment.citizenId)
+      ) {
+        continue;
+      }
       const citizen = citizenById.get(assignment.citizenId);
       if (citizen === undefined || citizen.settlementId !== sid) continue;
       if (!citizenQualifies(citizen, requiredTeacherLevelId)) continue;
