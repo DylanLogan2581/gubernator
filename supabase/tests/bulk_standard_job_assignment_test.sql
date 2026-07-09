@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (24);
+  plan (25);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -1062,6 +1062,31 @@ select
     'ba600000-0000-0000-0000-000000000008'::uuid,
     'education requirement: only the qualified NPC is picked'
   );
+
+-- ===========================================================================
+-- #1140: get_settlement_standard_job_counts denies cross-world caller
+--
+-- bsja_outsider (ba1...003) has no relation to the BSJA world -- not owner,
+-- not world_admin, not a player-character holder, and the world is private
+-- -- so current_user_has_world_access must reject the call with 42501.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ba100000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select * from public.get_settlement_standard_job_counts('ba400000-0000-0000-0000-000000000001')
+    $test$,
+    '42501',
+    null,
+    'get_settlement_standard_job_counts: cross-world caller is rejected with 42501'
+  );
+
+reset role;
 
 select
   *
