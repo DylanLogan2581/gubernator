@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (25);
+  plan (26);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -352,8 +352,8 @@ reset role;
 -- ===========================================================================
 -- INVALID LEG DIRECTION: rejected (P0001)
 -- Settlement A1 manager (fc100...003) is authorized, but a leg direction that is
--- neither 'send' nor 'receive' is rejected. Citizen residency is no longer
--- checked — the proposing citizen id is only an audit stamp.
+-- neither 'send' nor 'receive' is rejected before the proposed_by citizen
+-- scope check (#1145) is ever reached, regardless of that citizen's nation.
 -- ===========================================================================
 set
   local role authenticated;
@@ -409,6 +409,39 @@ select
     '42501',
     null,
     'non-manager caller is rejected with 42501'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- FOREIGN CITIZEN: rejected (P0001)
+-- Nation A manager (fc100...002) has legitimate authority over the origin
+-- endpoint, but fc6...004 (NPC in World 2, wrong world entirely) does not
+-- belong to either endpoint of this trade route (#1145).
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"fc100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.propose_trade_route(
+      'fc400000-0000-0000-0000-000000000001',
+      'fc400000-0000-0000-0000-000000000002',
+      jsonb_build_array(jsonb_build_object(
+        'direction', 'send',
+        'resource_id', 'fc500000-0000-0000-0000-000000000001',
+        'quantity', 10
+      )),
+      'fc600000-0000-0000-0000-000000000004'
+    )
+    $test$,
+    'P0001',
+    'p_proposed_by_citizen_id must be alive and belong to one of the trade route endpoints',
+    'proposed_by citizen belonging to neither endpoint is rejected'
   );
 
 reset role;
@@ -558,7 +591,9 @@ select
 -- ===========================================================================
 -- WORLD ADMIN MANAGES BOTH ENDPOINTS: both sides auto-approve and the route
 -- goes active immediately, since there is no separate recipient to wait on.
--- Citizen residency is irrelevant; the citizen id is only an audit stamp.
+-- The proposed_by citizen must still be alive and belong to one of the two
+-- endpoints (#1145) -- authority to act is admin-derived, but the audit-stamp
+-- citizen is not.
 -- ===========================================================================
 set
   local role authenticated;
@@ -577,7 +612,7 @@ select
         'resource_id', 'fc500000-0000-0000-0000-000000000001',
         'quantity', 5
       )),
-      'fc600000-0000-0000-0000-000000000004'
+      'fc600000-0000-0000-0000-000000000003'
     )
     $test$,
     'world admin can propose for both endpoints (admin override)'

@@ -5594,6 +5594,14 @@ export type Database = {
         Args: { p_world_id: string };
         Returns: string;
       };
+      current_user_can_own_government_body: {
+        Args: {
+          p_nation_id: string;
+          p_settlement_id: string;
+          p_world_id: string;
+        };
+        Returns: boolean;
+      };
       current_user_can_own_office_type: {
         Args: { p_nation_id: string; p_world_id: string };
         Returns: boolean;
@@ -7981,10 +7989,19 @@ export type Database = {
         Args: { p_effect: Json; p_world_id: string };
         Returns: undefined;
       };
-      validate_law_amendment_procedure_json: {
-        Args: { p_document_id: string; p_procedure: Json };
-        Returns: undefined;
-      };
+      validate_law_amendment_procedure_json:
+        | {
+            Args: { p_document_id: string; p_procedure: Json };
+            Returns: undefined;
+          }
+        | {
+            Args: {
+              p_nation_id: string;
+              p_procedure: Json;
+              p_settlement_id: string;
+            };
+            Returns: undefined;
+          };
       withdraw_law_amendment: {
         Args: { p_amendment_id: string };
         Returns: {

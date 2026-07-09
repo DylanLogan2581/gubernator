@@ -3,7 +3,7 @@
 begin;
 
 select
-  plan (26);
+  plan (27);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -92,6 +92,11 @@ values
     'af300000-0000-0000-0000-000000000002',
     'af200000-0000-0000-0000-000000000001',
     'AF Destination Nation'
+  ),
+  (
+    'af300000-0000-0000-0000-000000000003',
+    'af200000-0000-0000-0000-000000000001',
+    'AF Foreign Nation'
   );
 
 insert into
@@ -106,6 +111,11 @@ values
     'af400000-0000-0000-0000-000000000002',
     'af300000-0000-0000-0000-000000000002',
     'AF Destination Settlement'
+  ),
+  (
+    'af400000-0000-0000-0000-000000000004',
+    'af300000-0000-0000-0000-000000000003',
+    'AF Foreign Settlement'
   );
 
 insert into
@@ -211,6 +221,18 @@ values
     'af300000-0000-0000-0000-000000000002',
     null,
     'af400000-0000-0000-0000-000000000002'
+  ),
+  (
+    'af600000-0000-0000-0000-000000000008',
+    'af200000-0000-0000-0000-000000000001',
+    'npc',
+    'AF NPC Foreign',
+    'alive',
+    null,
+    'none',
+    null,
+    null,
+    'af400000-0000-0000-0000-000000000004'
   );
 
 -- Main trade route used for sequential approval tests (origin → both approved)
@@ -326,10 +348,12 @@ select
 reset role;
 
 -- ===========================================================================
--- CITIZEN RESIDENCY IS NOT REQUIRED: authority is role-based only. The origin
--- manager may stamp the approval with any citizen id (here one residing in the
--- destination settlement) because residency no longer gates approval. Uses a
--- dedicated route so the main route's approval sequence is untouched.
+-- CITIZEN RESIDENCY ON THE SPECIFIC SIDE IS NOT REQUIRED: authority is
+-- role-based only. The origin manager may stamp the approval with a citizen
+-- residing in the destination settlement, since (#1145) only requires the
+-- approver citizen to belong to one of the route's two endpoints, not the
+-- specific side being approved. Uses a dedicated route so the main route's
+-- approval sequence is untouched.
 -- ===========================================================================
 insert into
   public.trade_routes (
@@ -383,6 +407,70 @@ select
     )
     $test$,
     'approver citizen residency is not required (role authority only)'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- FOREIGN CITIZEN (#1145): origin manager has legitimate authority, but the
+-- approver citizen belongs to neither the origin nor destination nation of
+-- this route. Uses a dedicated route so the main route's approval sequence
+-- is untouched.
+-- ===========================================================================
+insert into
+  public.trade_routes (
+    id,
+    origin_settlement_id,
+    destination_settlement_id,
+    status,
+    proposed_by_citizen_id,
+    origin_approval_status,
+    destination_approval_status
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000009',
+    'af400000-0000-0000-0000-000000000001',
+    'af400000-0000-0000-0000-000000000002',
+    'proposed',
+    'af600000-0000-0000-0000-000000000003',
+    'pending',
+    'pending'
+  );
+
+insert into
+  public.trade_route_legs (
+    trade_route_id,
+    direction,
+    resource_id,
+    quantity_per_transition
+  )
+values
+  (
+    'af700000-0000-0000-0000-000000000009',
+    'send',
+    'af500000-0000-0000-0000-000000000001',
+    6
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"af100000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.approve_trade_route_side(
+      'af700000-0000-0000-0000-000000000009',
+      'origin',
+      'af600000-0000-0000-0000-000000000008'
+    )
+    $test$,
+    'P0001',
+    'p_approver_citizen_id must be alive and belong to one of the trade route endpoints',
+    'approver citizen belonging to neither endpoint nation is rejected'
   );
 
 reset role;

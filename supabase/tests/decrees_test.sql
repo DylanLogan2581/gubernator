@@ -7,7 +7,7 @@
 begin;
 
 select
-  plan (16);
+  plan (19);
 
 -- A scratch table to stash ids returned by RPC calls across role switches --
 -- avoids relying on psql variables, mirroring law_documents_test.sql.
@@ -111,6 +111,11 @@ values
     '2d000000-0000-0000-0000-000000000001',
     '2c000000-0000-0000-0000-000000000001',
     'Decree Settlement'
+  ),
+  (
+    '2d000000-0000-0000-0000-000000000002',
+    '2c000000-0000-0000-0000-000000000002',
+    'Other Nation Settlement'
   );
 
 insert into
@@ -154,10 +159,51 @@ values
   (
     '2e000000-0000-0000-0000-000000000003',
     '2b000000-0000-0000-0000-000000000001',
-    null,
+    '2d000000-0000-0000-0000-000000000001',
     'npc',
     'RulerBySpirit',
     'alive',
+    null,
+    'none',
+    null,
+    null
+  ),
+  (
+    '2e000000-0000-0000-0000-000000000004',
+    '2b000000-0000-0000-0000-000000000001',
+    '2d000000-0000-0000-0000-000000000002',
+    'npc',
+    'ForeignCitizen',
+    'alive',
+    null,
+    'none',
+    null,
+    null
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    death_cause_category,
+    user_id,
+    role_type,
+    role_nation_id,
+    role_settlement_id
+  )
+values
+  (
+    '2e000000-0000-0000-0000-000000000005',
+    '2b000000-0000-0000-0000-000000000001',
+    '2d000000-0000-0000-0000-000000000001',
+    'npc',
+    'DeadCitizen',
+    'dead',
+    'unknown',
     null,
     'none',
     null,
@@ -419,6 +465,70 @@ select
     '2e000000-0000-0000-0000-000000000003'::uuid,
     'a world admin records the explicitly passed acting citizen as issuer'
   );
+
+-- ===========================================================================
+-- issue_decree (#1145): the world admin's explicitly passed citizen must be
+-- alive and scoped to the decree's own nation/settlement -- not merely
+-- "exists in this world".
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"2a000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.issue_decree(
+      '2b000000-0000-0000-0000-000000000001',
+      '2c000000-0000-0000-0000-000000000001',
+      null,
+      'Foreign Actor Decree',
+      'Body.',
+      '2e000000-0000-0000-0000-000000000004'
+    )
+  $test$,
+    'P0001',
+    null,
+    'a world admin cannot attribute a nation decree to a citizen of another nation'
+  );
+
+select
+  throws_ok (
+    $test$
+    select public.issue_decree(
+      '2b000000-0000-0000-0000-000000000001',
+      '2c000000-0000-0000-0000-000000000001',
+      null,
+      'Dead Actor Decree',
+      'Body.',
+      '2e000000-0000-0000-0000-000000000005'
+    )
+  $test$,
+    'P0001',
+    null,
+    'a world admin cannot attribute a nation decree to a dead citizen'
+  );
+
+select
+  throws_ok (
+    $test$
+    select public.issue_decree(
+      '2b000000-0000-0000-0000-000000000001',
+      null,
+      '2d000000-0000-0000-0000-000000000001',
+      'Foreign Actor Settlement Decree',
+      'Body.',
+      '2e000000-0000-0000-0000-000000000004'
+    )
+  $test$,
+    'P0001',
+    null,
+    'a world admin cannot attribute a settlement decree to a citizen of another settlement'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- No direct write path: the decrees table grants SELECT only.

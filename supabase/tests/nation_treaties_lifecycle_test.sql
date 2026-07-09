@@ -11,7 +11,7 @@
 begin;
 
 select
-  plan (30);
+  plan (33);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -657,6 +657,27 @@ select
     'currency_exchange is rejected outright'
   );
 
+-- ===========================================================================
+-- propose_nation_treaty (#1145): a foreign citizen id (belonging to a
+-- different nation than the proposer) is rejected even though the caller
+-- legitimately manages the proposer nation.
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+  select public.propose_nation_treaty(
+    'e3000000-0000-0000-0000-00000000000a'::uuid,
+    'e3000000-0000-0000-0000-00000000000b'::uuid,
+    'trade_agreement',
+    '{}'::jsonb,
+    'e5000000-0000-0000-0000-000000000002'::uuid
+  )
+  $test$,
+    'P0001',
+    'p_proposed_by_citizen_id must be alive and belong to the proposer nation',
+    'propose is rejected when the proposed_by citizen belongs to a different nation'
+  );
+
 reset role;
 
 -- ===========================================================================
@@ -782,6 +803,55 @@ select
     ),
     'declined',
     'decline moves the treaty to declined'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- respond_to_nation_treaty (#1145): a foreign citizen id (belonging to a
+-- different nation than the responder) is rejected even though the caller
+-- legitimately manages the responder nation.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+create temporary table t_foreign_responder_source as
+select
+  *
+from
+  public.propose_nation_treaty (
+    'e3000000-0000-0000-0000-00000000000a'::uuid,
+    'e3000000-0000-0000-0000-00000000000b'::uuid,
+    'trade_agreement',
+    '{}'::jsonb,
+    'e5000000-0000-0000-0000-000000000001'::uuid
+  );
+
+reset role;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    format(
+      $test$select public.respond_to_nation_treaty('%s'::uuid, 'accept', 'e5000000-0000-0000-0000-000000000001'::uuid)$test$,
+      (
+        select
+          id
+        from
+          t_foreign_responder_source
+      )
+    ),
+    'P0001',
+    'p_responded_by_citizen_id must be alive and belong to the responder nation',
+    'respond is rejected when the responded_by citizen belongs to a different nation'
   );
 
 reset role;
@@ -1047,6 +1117,35 @@ select
     '42501',
     null,
     'an outsider cannot break a treaty'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- break_nation_treaty (#1145): a foreign citizen id (belonging to neither
+-- treaty nation) is rejected even though the caller legitimately manages the
+-- responder nation.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    format(
+      $test$select public.break_nation_treaty('%s'::uuid, 'e5000000-0000-0000-0000-000000000003'::uuid)$test$,
+      (
+        select
+          id
+        from
+          t_tribute_ok
+      )
+    ),
+    'P0001',
+    'p_broken_by_citizen_id must be alive and belong to a treaty nation',
+    'break is rejected when the broken_by citizen belongs to neither treaty nation'
   );
 
 reset role;
