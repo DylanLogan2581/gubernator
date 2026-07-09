@@ -9,7 +9,7 @@
 begin;
 
 select
-  plan (13);
+  plan (15);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -442,6 +442,111 @@ select
     '23505',
     null,
     'a citizen cannot hold the same settlement office twice'
+  );
+
+-- ===========================================================================
+-- #1150: max_holders boundary -- one appointee reaches the cap, the next is
+-- rejected (mirrors the nation-office max_holders coverage in
+-- office_types_test.sql; the settlement variant had none).
+-- ===========================================================================
+reset role;
+
+insert into
+  public.office_types (id, world_id, nation_id, name, scope, max_holders)
+values
+  (
+    'cb000000-0000-0000-0000-000000000003',
+    'c7000000-0000-0000-0000-000000000001',
+    'c8000000-0000-0000-0000-000000000001',
+    'constable',
+    'settlement',
+    1
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id,
+    role_type,
+    role_nation_id,
+    role_settlement_id,
+    death_cause_category
+  )
+values
+  (
+    'ca000000-0000-0000-0000-000000000007',
+    'c7000000-0000-0000-0000-000000000001',
+    'c9000000-0000-0000-0000-000000000001',
+    'npc',
+    'Constable Candidate One',
+    'alive',
+    null,
+    'none',
+    null,
+    null,
+    null
+  ),
+  (
+    'ca000000-0000-0000-0000-000000000008',
+    'c7000000-0000-0000-0000-000000000001',
+    'c9000000-0000-0000-0000-000000000001',
+    'npc',
+    'Constable Candidate Two',
+    'alive',
+    null,
+    'none',
+    null,
+    null,
+    null
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"c6000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  public.appoint_settlement_office (
+    'c9000000-0000-0000-0000-000000000001'::uuid,
+    'constable',
+    'ca000000-0000-0000-0000-000000000007'::uuid
+  );
+
+select
+  throws_ok (
+    $test$
+    select public.appoint_settlement_office(
+      'c9000000-0000-0000-0000-000000000001'::uuid,
+      'constable',
+      'ca000000-0000-0000-0000-000000000008'::uuid
+    )
+  $test$,
+    '22023',
+    null,
+    'max_holders boundary: appointing beyond the cap is rejected'
+  );
+
+reset role;
+
+select
+  is (
+    (
+      select
+        count(*)::integer
+      from
+        public.nation_offices
+      where
+        settlement_id = 'c9000000-0000-0000-0000-000000000001'
+        and office_type_id = 'cb000000-0000-0000-0000-000000000003'
+    ),
+    1,
+    'max_holders boundary: exactly one holder reaches the cap, no more'
   );
 
 -- ===========================================================================
