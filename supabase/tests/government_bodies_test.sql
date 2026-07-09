@@ -5,7 +5,7 @@
 begin;
 
 select
-  plan (12);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -64,6 +64,13 @@ values
   (
     'fb000000-0000-0000-0000-000000000001',
     'Government Bodies World',
+    'private',
+    'active',
+    5
+  ),
+  (
+    'fb000000-0000-0000-0000-000000000002',
+    'Other Government Bodies World',
     'private',
     'active',
     5
@@ -292,6 +299,22 @@ select
     '42501',
     null,
     'a nation manager cannot create a body for another nation'
+  );
+
+select
+  throws_ok (
+    $test$
+    insert into public.government_bodies (world_id, nation_id, name, composition_json)
+    values (
+      'fb000000-0000-0000-0000-000000000002',
+      'fc000000-0000-0000-0000-000000000001',
+      'Mismatched World Body',
+      '[{"kind":"ruler"}]'::jsonb
+    )
+  $test$,
+    '42501',
+    null,
+    'a nation manager cannot create a body with a world_id that does not match their nation''s world'
   );
 
 insert into
