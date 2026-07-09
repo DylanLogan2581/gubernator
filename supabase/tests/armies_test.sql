@@ -14,7 +14,7 @@
 begin;
 
 select
-  plan (22);
+  plan (24);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -459,6 +459,119 @@ select
     'cannot move a group under one of its own descendants',
     'moving a group under its own descendant (cycle) is rejected'
   );
+
+-- ---------------------------------------------------------------------------
+-- Race regression (#1131): move_army_group must lock the armies row so a
+-- second reparent on the same tree re-reads post-move state instead of
+-- validating against the stale pre-move tree. Simulated sequentially (pgTAP
+-- has no concurrent-session support): move Sibling A under Sibling B, then
+-- attempt to move Sibling B under Sibling A. Without the armies-row lock
+-- forcing a fresh descendant check, this second move is exactly the second
+-- half of the two concurrent "swap parentage" calls from the issue and would
+-- commit a real cycle; with the lock, the fresh check sees A is now a
+-- descendant of B and rejects it.
+-- ---------------------------------------------------------------------------
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  public.create_army_group (
+    current_setting('gubernator.test_army_id')::uuid,
+    current_setting('gubernator.test_root_group_id')::uuid,
+    'Sibling A',
+    0
+  );
+
+select
+  public.create_army_group (
+    current_setting('gubernator.test_army_id')::uuid,
+    current_setting('gubernator.test_root_group_id')::uuid,
+    'Sibling B',
+    0
+  );
+
+reset role;
+
+select
+  set_config(
+    'gubernator.test_sibling_a_id',
+    (
+      select
+        id::text
+      from
+        public.army_groups
+      where
+        army_id = current_setting('gubernator.test_army_id')::uuid
+        and name = 'Sibling A'
+    ),
+    false
+  );
+
+select
+  set_config(
+    'gubernator.test_sibling_b_id',
+    (
+      select
+        id::text
+      from
+        public.army_groups
+      where
+        army_id = current_setting('gubernator.test_army_id')::uuid
+        and name = 'Sibling B'
+    ),
+    false
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  ok (
+    exists (
+      select
+        1
+      from
+        public.move_army_group (
+          current_setting('gubernator.test_sibling_a_id')::uuid,
+          current_setting('gubernator.test_sibling_b_id')::uuid
+        )
+    ),
+    'moving Sibling A under Sibling B succeeds'
+  );
+
+select
+  throws_ok (
+    $test$
+    select public.move_army_group(
+      current_setting('gubernator.test_sibling_b_id')::uuid,
+      current_setting('gubernator.test_sibling_a_id')::uuid
+    )
+  $test$,
+    '22023',
+    'cannot move a group under one of its own descendants',
+    'swapping Sibling B under Sibling A (now its own descendant) is rejected, closing the race'
+  );
+
+-- Cleanup: Sibling A/B are extra fixtures for the race test above and must
+-- not linger under the root group, which the deletion-guard tests below
+-- expect to be empty before they delete it.
+select
+  public.delete_army_group (
+    current_setting('gubernator.test_sibling_a_id')::uuid
+  );
+
+select
+  public.delete_army_group (
+    current_setting('gubernator.test_sibling_b_id')::uuid
+  );
+
+reset role;
 
 -- ---------------------------------------------------------------------------
 -- Cross-army move rejected: a second army's group cannot become the parent

@@ -555,17 +555,24 @@ begin
       using errcode = '22023';
   end if;
 
-  select g.army_id into v_army_id from public.army_groups g where g.id = p_group_id for update of g;
+  select g.army_id into v_army_id from public.army_groups g where g.id = p_group_id;
 
   if v_army_id is null then
     raise exception 'group not found'
       using errcode = 'P0002';
   end if;
 
+  -- Lock the whole army for the duration of the move: army_groups is a tree,
+  -- and locking only p_group_id's own row does not serialize against a
+  -- concurrent move of a sibling/unrelated group in the same tree, which is
+  -- how two concurrent swaps can each pass the descendant check against the
+  -- pre-move tree and jointly commit a real cycle. Locking the armies row
+  -- forces the second call to re-read the tree after the first commits.
   select a.nation_id, w.status into v_nation_id, v_world_status
   from public.armies a
   inner join public.worlds w on w.id = a.world_id
-  where a.id = v_army_id;
+  where a.id = v_army_id
+  for update of a;
 
   if v_world_status = 'archived' then
     raise exception 'Archived worlds are read-only.'
