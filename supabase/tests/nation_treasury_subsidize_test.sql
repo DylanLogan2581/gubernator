@@ -5,7 +5,7 @@
 begin;
 
 select
-  plan (19);
+  plan (20);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -228,6 +228,14 @@ values
     'd8000000-0000-0000-0000-000000000001',
     'queued',
     2
+  ),
+  (
+    'd9000000-0000-0000-0000-000000000005',
+    'd4000000-0000-0000-0000-000000000001',
+    'd7000000-0000-0000-0000-000000000001',
+    'd8000000-0000-0000-0000-000000000001',
+    'complete',
+    3
   );
 
 -- Seed triggers populate zero-quantity stockpile rows; seed explicit balances.
@@ -309,6 +317,30 @@ select
     '22023',
     'Archived worlds are read-only.',
     'archived worlds reject subsidies'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- RPC: completed project is rejected (terminal status).
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"d1000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+select
+  throws_ok (
+    $test$
+    select public.subsidize_construction_project(
+      'd3000000-0000-0000-0000-000000000001'::uuid,
+      'd9000000-0000-0000-0000-000000000005'::uuid
+    )
+  $test$,
+    '22023',
+    'construction project is in a terminal status (complete)',
+    'completed project cannot be subsidized'
   );
 
 reset role;
