@@ -6,7 +6,7 @@
 begin;
 
 select
-  plan (12);
+  plan (13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -339,6 +339,75 @@ select
     row (false, 1),
     'a nation manager can invent a custom office type for their own nation'
   );
+
+-- ===========================================================================
+-- #1147: a custom office type named after a world-default ("bank_governor")
+-- is a distinct row (office_types_world_owner_name_idx allows the
+-- collision); holding it must not grant the default's authority, because
+-- current_user_holds_nation_office is always called with a hardcoded
+-- default name literal (e.g. 'bank_governor') by callers that mean the
+-- world-default office specifically.
+-- ===========================================================================
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id,
+    role_type,
+    death_cause_category
+  )
+values
+  (
+    'af000000-0000-0000-0000-000000000004',
+    'ac000000-0000-0000-0000-000000000001',
+    'ae000000-0000-0000-0000-000000000001',
+    'player_character',
+    'Shadow Holder',
+    'alive',
+    'ab000000-0000-0000-0000-000000000002',
+    'none',
+    null
+  );
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"ab000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+insert into
+  public.office_types (id, world_id, nation_id, name, scope)
+values
+  (
+    'b0000000-0000-0000-0000-000000000003',
+    'ac000000-0000-0000-0000-000000000001',
+    'ad000000-0000-0000-0000-000000000001',
+    'bank_governor',
+    'nation'
+  );
+
+select
+  public.appoint_nation_office (
+    'ad000000-0000-0000-0000-000000000001'::uuid,
+    'bank_governor',
+    'af000000-0000-0000-0000-000000000004'::uuid
+  );
+
+select
+  is (
+    public.current_user_holds_nation_office (
+      'ad000000-0000-0000-0000-000000000001'::uuid,
+      'bank_governor'
+    ),
+    false,
+    'holding a custom office type shadowing the bank_governor default grants no default authority'
+  );
+
+reset role;
 
 -- ===========================================================================
 -- UPDATE: nation manager can edit their own custom type; cannot edit a
