@@ -2,11 +2,14 @@
 -- public.unenroll_citizen (#1103): guards (capacity, wrong settlement, dead,
 -- double-enroll, nothing-left-to-learn), RLS, and exclusion of enrolled
 -- citizens from set_bulk_standard_job_assignment's NPC picking pool.
+-- #1139 additions: null student_capacity is rejected (not bypassed), the
+-- capacity count is taken under a row lock (for update), and an enlisted
+-- soldier cannot enroll.
 -- Run with: npx supabase test db
 begin;
 
 select
-  plan (14);
+  plan (17);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -15,6 +18,7 @@ select
 --   ee5xxxxx = building_blueprints  ee6xxxxx = building_blueprint_tiers
 --   ee7xxxxx = settlement_buildings ee8xxxxx = education_levels
 --   ee9xxxxx = citizens        eea0xxxx = job_definitions
+--   eeb0xxxx = unit_types / armies / army_units / unit_soldiers
 -- ---------------------------------------------------------------------------
 insert into
   auth.users (
@@ -143,6 +147,14 @@ values
     'ee500000-0000-0000-0000-000000000002',
     1,
     null
+  ),
+  (
+    'ee600000-0000-0000-0000-000000000003',
+    'ee500000-0000-0000-0000-000000000001',
+    2,
+    (
+      '{"teaches_up_to_level_id": "ee800000-0000-0000-0000-000000000001", "turns_per_level": 4, "teacher_job_id": "00000000-0000-0000-0000-000000000000", "students_per_teacher": 5}'
+    )::jsonb
   );
 
 insert into
@@ -168,6 +180,14 @@ values
     'ee400000-0000-0000-0000-000000000001',
     'ee500000-0000-0000-0000-000000000002',
     'ee600000-0000-0000-0000-000000000002',
+    'active',
+    1
+  ),
+  (
+    'ee700000-0000-0000-0000-000000000003',
+    'ee400000-0000-0000-0000-000000000001',
+    'ee500000-0000-0000-0000-000000000001',
+    'ee600000-0000-0000-0000-000000000003',
     'active',
     1
   );
@@ -243,6 +263,100 @@ values
     'alive',
     null,
     null
+  ),
+  (
+    'ee900000-0000-0000-0000-000000000007',
+    'ee200000-0000-0000-0000-000000000001',
+    'ee400000-0000-0000-0000-000000000001',
+    'npc',
+    'Null Capacity Target',
+    'alive',
+    null,
+    null
+  ),
+  (
+    'ee900000-0000-0000-0000-000000000008',
+    'ee200000-0000-0000-0000-000000000001',
+    'ee400000-0000-0000-0000-000000000001',
+    'npc',
+    'Enlisted Soldier',
+    'alive',
+    null,
+    null
+  );
+
+insert into
+  public.unit_types (
+    id,
+    world_id,
+    name,
+    soldiers_per_unit,
+    desertion_rate
+  )
+values
+  (
+    'eeb00000-0000-0000-0000-000000000001',
+    'ee200000-0000-0000-0000-000000000001',
+    'Enrollments Test Unit Type',
+    5,
+    0.05
+  );
+
+insert into
+  public.armies (
+    id,
+    world_id,
+    nation_id,
+    name,
+    funding_source,
+    stationed_settlement_id,
+    created_turn_number
+  )
+values
+  (
+    'eeb00000-0000-0000-0000-000000000002',
+    'ee200000-0000-0000-0000-000000000001',
+    'ee300000-0000-0000-0000-000000000001',
+    'Enrollments Test Army',
+    'nation',
+    'ee400000-0000-0000-0000-000000000001',
+    1
+  );
+
+insert into
+  public.army_units (
+    id,
+    army_id,
+    unit_type_id,
+    name,
+    created_turn_number
+  )
+values
+  (
+    'eeb00000-0000-0000-0000-000000000003',
+    'eeb00000-0000-0000-0000-000000000002',
+    'eeb00000-0000-0000-0000-000000000001',
+    'Enrollments Test Unit',
+    1
+  );
+
+insert into
+  public.unit_soldiers (
+    id,
+    world_id,
+    unit_id,
+    citizen_id,
+    home_settlement_id,
+    recruited_turn_number
+  )
+values
+  (
+    'eeb00000-0000-0000-0000-000000000004',
+    'ee200000-0000-0000-0000-000000000001',
+    'eeb00000-0000-0000-0000-000000000003',
+    'ee900000-0000-0000-0000-000000000008',
+    'ee400000-0000-0000-0000-000000000001',
+    1
   );
 
 insert into
@@ -266,10 +380,12 @@ values
     false
   );
 
--- Pre-assign Already Skilled and Capacity Filler to the job so they are
--- absent from the "unassigned NPC" pool from the start -- they exist only to
--- exercise enroll_citizen guards (rank ceiling, capacity) and must not
--- contaminate the later bulk-assignment exclusion test.
+-- Pre-assign Already Skilled, Capacity Filler, and Null Capacity Target to
+-- the job so they are absent from the "unassigned NPC" pool from the start
+-- -- they exist only to exercise enroll_citizen guards (rank ceiling,
+-- capacity, null capacity) and must not contaminate the later
+-- bulk-assignment exclusion test. Enlisted Soldier needs no such pre-assign:
+-- the unit_soldiers row above already excludes it from that pool.
 insert into
   public.citizen_assignments (
     citizen_id,
@@ -286,6 +402,12 @@ values
   ),
   (
     'ee900000-0000-0000-0000-000000000005',
+    'standard_job',
+    'eea00000-0000-0000-0000-000000000001',
+    1
+  ),
+  (
+    'ee900000-0000-0000-0000-000000000007',
     'standard_job',
     'eea00000-0000-0000-0000-000000000001',
     1
@@ -418,7 +540,68 @@ select
     'enrollment is rejected once the school is at student capacity'
   );
 
+-- ===========================================================================
+-- enroll_citizen: null student_capacity (config object present, key omitted)
+-- is rejected outright, not treated as unlimited (#1139).
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.enroll_citizen(
+      'ee700000-0000-0000-0000-000000000003'::uuid,
+      'ee900000-0000-0000-0000-000000000007'::uuid
+    )
+  $test$,
+    'P0001',
+    'settlement building is at student capacity',
+    'a school tier missing student_capacity is treated as full, not unlimited'
+  );
+
+-- ===========================================================================
+-- enroll_citizen: an enlisted soldier cannot enroll in school (#1139,
+-- mirrors recruit_soldiers rejecting already-enrolled citizens).
+-- ===========================================================================
+select
+  throws_ok (
+    $test$
+    select public.enroll_citizen(
+      'ee700000-0000-0000-0000-000000000001'::uuid,
+      'ee900000-0000-0000-0000-000000000008'::uuid
+    )
+  $test$,
+    'P0001',
+    'citizen is enlisted as a soldier',
+    'a citizen currently enlisted as a soldier cannot enroll in school'
+  );
+
 reset role;
+
+-- ===========================================================================
+-- enroll_citizen: the settlement_buildings row is locked (for update) before
+-- the current-enrollment count is taken, closing the concurrent-enroll race
+-- past capacity (#1139).
+-- ===========================================================================
+select
+  matches (
+    (
+      select
+        pg_get_functiondef(oid)
+      from
+        pg_proc
+      where
+        proname = 'enroll_citizen'
+        and pronamespace = (
+          select
+            oid
+          from
+            pg_namespace
+          where
+            nspname = 'public'
+        )
+    ),
+    'for update',
+    'enroll_citizen locks the settlement_buildings row with for update before counting enrollments'
+  );
 
 -- ===========================================================================
 -- RLS: SELECT is available to world members, denied to outsiders.
@@ -469,11 +652,12 @@ reset role;
 
 -- ===========================================================================
 -- Enrolled citizens are excluded from set_bulk_standard_job_assignment's
--- unassigned-NPC picking pool. Already Skilled and Capacity Filler are
--- pre-assigned (current count = 2); Student One is enrolled (excluded);
--- the only remaining eligible NPC is Available Worker. Raising to 4
--- (delta 2, only 1 eligible) must fail; raising to 3 (delta 1) must succeed
--- and pick Available Worker.
+-- unassigned-NPC picking pool. Already Skilled, Capacity Filler, and Null
+-- Capacity Target are pre-assigned (current count = 3); Student One is
+-- enrolled and Enlisted Soldier is a soldier (both excluded); the only
+-- remaining eligible NPC is Available Worker. Raising to 5 (delta 2, only 1
+-- eligible) must fail; raising to 4 (delta 1) must succeed and pick
+-- Available Worker.
 -- ===========================================================================
 set
   local role authenticated;
@@ -487,7 +671,7 @@ select
     select public.set_bulk_standard_job_assignment(
       'ee400000-0000-0000-0000-000000000001'::uuid,
       'eea00000-0000-0000-0000-000000000001'::uuid,
-      4
+      5
     )
   $test$,
     'P0001',
@@ -499,7 +683,7 @@ select
   public.set_bulk_standard_job_assignment (
     'ee400000-0000-0000-0000-000000000001'::uuid,
     'eea00000-0000-0000-0000-000000000001'::uuid,
-    3
+    4
   );
 
 select
@@ -511,11 +695,11 @@ select
         public.set_bulk_standard_job_assignment (
           'ee400000-0000-0000-0000-000000000001'::uuid,
           'eea00000-0000-0000-0000-000000000001'::uuid,
-          3
+          4
         )
     ),
     null::uuid,
-    'a second call at the same target count is a no-op (already at 3)'
+    'a second call at the same target count is a no-op (already at 4)'
   );
 
 select
