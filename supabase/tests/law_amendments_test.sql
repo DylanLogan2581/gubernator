@@ -7,7 +7,7 @@
 begin;
 
 select
-  plan (46);
+  plan (48);
 
 -- A scratch table to stash ids returned by RPC calls across role switches --
 -- mirrors law_documents_test.sql / nation_readiness_voting_test.sql.
@@ -669,6 +669,104 @@ values
   (
     '48000000-0000-0000-0000-00000000000a',
     '4d000000-0000-0000-0000-00000000000a',
+    1,
+    'Article I',
+    'Original body.',
+    'active',
+    1
+  );
+
+-- office-based decree authority fixture (#1129): a current officeholder can
+-- instant-apply; a citizen whose term has ended (ended_turn_number set)
+-- cannot.
+insert into
+  public.office_types (id, world_id, nation_id, name, scope)
+values
+  (
+    '49000000-0000-0000-0000-000000000001',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    'Chancellor',
+    'nation'
+  );
+
+insert into
+  public.nation_offices (
+    id,
+    world_id,
+    nation_id,
+    office_type_id,
+    citizen_id,
+    appointed_turn_number,
+    ended_turn_number
+  )
+values
+  (
+    '4f900000-0000-0000-0000-000000000001',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    '49000000-0000-0000-0000-000000000001',
+    '4e000000-0000-0000-0000-000000000002',
+    5,
+    null
+  ),
+  (
+    '4f900000-0000-0000-0000-000000000002',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    '49000000-0000-0000-0000-000000000001',
+    '4e000000-0000-0000-0000-000000000003',
+    5,
+    9
+  );
+
+insert into
+  public.law_documents (
+    id,
+    world_id,
+    nation_id,
+    settlement_id,
+    title,
+    status,
+    amendment_procedure_json,
+    current_version,
+    created_turn_number
+  )
+values
+  (
+    '4d000000-0000-0000-0000-00000000000b',
+    '4b000000-0000-0000-0000-000000000001',
+    '4c000000-0000-0000-0000-000000000001',
+    null,
+    'Office Decree Charter',
+    'active',
+    jsonb_build_object(
+      'kind',
+      'decree',
+      'authority',
+      jsonb_build_object(
+        'officeTypeId',
+        '49000000-0000-0000-0000-000000000001'
+      )
+    ),
+    1,
+    10
+  );
+
+insert into
+  public.law_articles (
+    id,
+    document_id,
+    article_number,
+    heading,
+    body_markdown,
+    status,
+    sort_order
+  )
+values
+  (
+    '48000000-0000-0000-0000-00000000000b',
+    '4d000000-0000-0000-0000-00000000000b',
     1,
     'Article I',
     'Original body.',
@@ -2289,6 +2387,77 @@ select
     2,
     'double-pass fixture: the operations application notifies the world admin and ruler exactly once each'
   );
+
+-- ===========================================================================
+-- Office-based decree authority (#1129): current officeholder instant-applies,
+-- expired officeholder (ended_turn_number set) is rejected.
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+select
+  is (
+    (
+      select
+        status
+      from
+        public.propose_law_amendment (
+          '4d000000-0000-0000-0000-00000000000b',
+          '4e000000-0000-0000-0000-000000000002',
+          'Chancellor Decree',
+          null,
+          jsonb_build_array(
+            jsonb_build_object(
+              'op',
+              'amend_article',
+              'article_id',
+              '48000000-0000-0000-0000-00000000000b',
+              'heading',
+              'X',
+              'body_markdown',
+              'Y'
+            )
+          )
+        )
+    ),
+    'passed',
+    'a current officeholder instant-applies a decree amendment'
+  );
+
+reset role;
+
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"4a000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  throws_ok (
+    format(
+      $test$select public.propose_law_amendment('4d000000-0000-0000-0000-00000000000b'::uuid, '4e000000-0000-0000-0000-000000000003'::uuid, 'Expired Chancellor Decree', null, %L::jsonb)$test$,
+      jsonb_build_array(
+        jsonb_build_object(
+          'op',
+          'amend_article',
+          'article_id',
+          '48000000-0000-0000-0000-00000000000b',
+          'heading',
+          'X',
+          'body_markdown',
+          'Y'
+        )
+      )
+    ),
+    '42501',
+    null,
+    'an officeholder whose term has ended cannot instant-apply a decree amendment'
+  );
+
+reset role;
 
 select
   *
