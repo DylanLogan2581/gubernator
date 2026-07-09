@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SettlementEducationSummaryCard } from "@/features/education";
 import { ActiveEventsCard } from "@/features/events";
 import {
+  GarrisonCard,
   SettlementCoordinatesSection,
   SettlementDemographicsCard,
   SettlementDetailsSection,
@@ -66,6 +67,12 @@ function SettlementOverviewRoute(): JSX.Element {
         />
 
         <SettlementDemographicsCard
+          settlementId={settlement.id}
+          worldId={worldId}
+        />
+
+        <GarrisonCard
+          nationId={settlement.nationId}
           settlementId={settlement.id}
           worldId={worldId}
         />

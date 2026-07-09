@@ -42,9 +42,12 @@ export { unitTypesByWorldQueryOptions } from "./queries/unitTypesQueries";
 export { unitTypesQueryKeys } from "./queries/unitTypesQueryKeys";
 export {
   armiesByNationQueryOptions,
+  armiesBySettlementQueryOptions,
   armyGroupsByArmyQueryOptions,
   armyLatestSnapshotsQueryOptions,
   armySoldierCountsQueryOptions,
+  armyTurnSnapshotHistoryByArmyIdsQueryOptions,
+  armyUnitSoldierCountsByArmyIdsQueryOptions,
   armyUnitsByArmyQueryOptions,
   soldierCitizenIdsByWorldQueryOptions,
   unitSoldiersByUnitQueryOptions,
@@ -82,6 +85,7 @@ export {
 } from "./utils/recruitEligibility";
 export { formatArmyFundingSource } from "./types/armyTypes";
 
+export type { ArmyUnitSoldierCount } from "./queries/armiesQueries";
 export type { UnitTypeMutationIssue } from "./mutations/unitTypesMutations";
 export type {
   ArmyMutationIssue,

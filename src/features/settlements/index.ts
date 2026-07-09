@@ -21,6 +21,7 @@ export { SettlementDemographicsCard } from "./components/SettlementDetailPage/Se
 export { SettlementDetailsSection } from "./components/SettlementDetailPage/DetailsSection";
 export { SettlementDetailPage } from "./components/SettlementDetailPage";
 export { SettlementForecastWarningsCard } from "./components/SettlementDetailPage/ForecastWarningsCard";
+export { GarrisonCard } from "./components/SettlementDetailPage/GarrisonCard";
 export { SettlementOverviewStatTiles } from "./components/SettlementOverviewStatTiles";
 export { useSettlementDetailContext } from "./components/SettlementDetailPage/SettlementDetailContext";
 export {

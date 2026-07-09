@@ -10,6 +10,7 @@ import {
 
 import { nationSettlementsQueryOptions } from "../../queries/nationsQueries";
 
+import { NationArmyStrengthCard } from "./NationArmyStrengthCard";
 import { NationDemographicsCard } from "./NationDemographicsCard";
 import { NationPopulationTrendSparkline } from "./NationPopulationTrendSparkline";
 import { NationSettlementPopulationChart } from "./NationSettlementPopulationChart";
@@ -84,6 +85,8 @@ export function NationOverviewCharts({
       </Card>
 
       <NationDemographicsCard nationId={nationId} worldId={worldId} />
+
+      <NationArmyStrengthCard nationId={nationId} turnLabel={turnLabel} />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import {
 } from "../../queries/armiesQueries";
 
 import { ArmyCard } from "./ArmyCard";
+import { ArmyUpkeepForecastCard } from "./ArmyUpkeepForecastCard";
 import { CreateArmyDialog } from "./CreateArmyDialog";
 
 export function NationMilitarySection({
@@ -81,6 +82,12 @@ export function NationMilitarySection({
           </Button>
         ) : null}
       </div>
+
+      <ArmyUpkeepForecastCard
+        armies={armies}
+        nationId={nation.id}
+        worldId={nation.worldId}
+      />
 
       {armies.length === 0 ? (
         <EmptyState

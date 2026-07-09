@@ -327,3 +327,154 @@ async function getArmyLatestSnapshots(
   }
   return latestByArmyId;
 }
+
+type ArmiesBySettlementQueryKey = ReturnType<
+  typeof armiesQueryKeys.bySettlement
+>;
+type ArmiesBySettlementQueryOptions = UseQueryOptions<
+  readonly Army[],
+  AuthUiError,
+  readonly Army[],
+  ArmiesBySettlementQueryKey
+>;
+
+// Armies stationed at a settlement — powers the settlement detail page's
+// Garrison card (#1113).
+export function armiesBySettlementQueryOptions(
+  settlementId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): ArmiesBySettlementQueryOptions {
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getArmiesBySettlement(c, settlementId),
+    queryKey: armiesQueryKeys.bySettlement(settlementId),
+  });
+}
+
+async function getArmiesBySettlement(
+  client: GubernatorSupabaseClient,
+  settlementId: string,
+): Promise<readonly Army[]> {
+  const { data, error } = await client
+    .from("armies")
+    .select(ARMY_SELECT)
+    .eq("stationed_settlement_id", settlementId)
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .returns<ArmyRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toArmy);
+}
+
+export type ArmyUnitSoldierCount = {
+  readonly armyId: string;
+  readonly soldierCount: number;
+  readonly unitId: string;
+  readonly unitTypeId: string;
+};
+
+type ArmyUnitSoldierCountRow = {
+  readonly army_id: string;
+  readonly id: string;
+  readonly unit_soldiers: { count: number }[];
+  readonly unit_type_id: string;
+};
+
+type UnitSoldierCountsByArmyIdsQueryKey = ReturnType<
+  typeof armiesQueryKeys.unitSoldierCountsByArmyIds
+>;
+type UnitSoldierCountsByArmyIdsQueryOptions = UseQueryOptions<
+  readonly ArmyUnitSoldierCount[],
+  AuthUiError,
+  readonly ArmyUnitSoldierCount[],
+  UnitSoldierCountsByArmyIdsQueryKey
+>;
+
+// Per-unit soldier counts (with each unit's type) for a set of armies —
+// the granularity the upkeep forecast (garrison card, military tab) needs
+// to apply each unit type's upkeep cost / desertion rate.
+export function armyUnitSoldierCountsByArmyIdsQueryOptions(
+  armyIds: readonly string[],
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): UnitSoldierCountsByArmyIdsQueryOptions {
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getArmyUnitSoldierCounts(c, armyIds),
+    queryKey: armiesQueryKeys.unitSoldierCountsByArmyIds(armyIds),
+  });
+}
+
+async function getArmyUnitSoldierCounts(
+  client: GubernatorSupabaseClient,
+  armyIds: readonly string[],
+): Promise<readonly ArmyUnitSoldierCount[]> {
+  if (armyIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("army_units")
+    .select("id,army_id,unit_type_id,unit_soldiers(count)")
+    .in("army_id", armyIds)
+    .returns<ArmyUnitSoldierCountRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map((row) => ({
+    armyId: row.army_id,
+    soldierCount: row.unit_soldiers[0]?.count ?? 0,
+    unitId: row.id,
+    unitTypeId: row.unit_type_id,
+  }));
+}
+
+type SnapshotHistoryByArmyIdsQueryKey = ReturnType<
+  typeof armiesQueryKeys.snapshotHistoryByArmyIds
+>;
+type SnapshotHistoryByArmyIdsQueryOptions = UseQueryOptions<
+  readonly ArmyTurnSnapshot[],
+  AuthUiError,
+  readonly ArmyTurnSnapshot[],
+  SnapshotHistoryByArmyIdsQueryKey
+>;
+
+// Full per-turn snapshot history (not just the latest) for a set of armies —
+// powers the nation overview's army strength sparkline (#1113).
+export function armyTurnSnapshotHistoryByArmyIdsQueryOptions(
+  armyIds: readonly string[],
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SnapshotHistoryByArmyIdsQueryOptions {
+  return worldScopedQueryOptions({
+    client,
+    fetcher: (c) => getArmyTurnSnapshotHistory(c, armyIds),
+    queryKey: armiesQueryKeys.snapshotHistoryByArmyIds(armyIds),
+  });
+}
+
+async function getArmyTurnSnapshotHistory(
+  client: GubernatorSupabaseClient,
+  armyIds: readonly string[],
+): Promise<readonly ArmyTurnSnapshot[]> {
+  if (armyIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("army_turn_snapshots")
+    .select(ARMY_TURN_SNAPSHOT_SELECT)
+    .in("army_id", armyIds)
+    .order("turn_number", { ascending: true })
+    .returns<ArmyTurnSnapshotRow[]>();
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toArmyTurnSnapshot);
+}

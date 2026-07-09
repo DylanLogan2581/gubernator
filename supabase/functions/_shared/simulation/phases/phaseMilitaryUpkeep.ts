@@ -15,7 +15,10 @@
 //
 // Cross-runtime module: no browser APIs, no @/ alias, explicit .ts extensions.
 
-import { floorToDatabaseScale } from "../decimalMath.ts";
+import {
+  computeArmyUpkeepRequirement,
+  computeUnitProjectedDesertion,
+} from "../../military/index.ts";
 import { createSeededRng, pickDeterministic } from "../seededRng.ts";
 import { compareById } from "../sortUtils.ts";
 
@@ -75,21 +78,24 @@ export function phaseMilitaryUpkeep(context: SimulationContext): PhaseMilitaryUp
   for (const army of [...armies].sort(compareById)) {
     const units = unitsByArmyId.get(army.id) ?? [];
 
-    // Total upkeep required per resource, summed across every unit in the army.
-    const requiredByResource = new Map<string, number>();
-    for (const unit of units) {
-      const unitType = unitTypeById.get(unit.unitTypeId);
-      if (unitType === undefined) continue;
-      const soldierCount = (soldiersByUnitId.get(unit.id) ?? []).length;
-      if (soldierCount === 0) continue;
-      for (const cost of unitType.upkeepCostsJson) {
-        const amount = floorToDatabaseScale(cost.amount * soldierCount);
-        requiredByResource.set(
-          cost.resourceId,
-          (requiredByResource.get(cost.resourceId) ?? 0) + amount,
-        );
-      }
-    }
+    // Total upkeep required per resource, summed across every unit in the
+    // army — via the shared helper so the sim and the UI forecast can never
+    // drift (#1113).
+    const requiredByResource = computeArmyUpkeepRequirement(
+      units.flatMap((unit) => {
+        const unitType = unitTypeById.get(unit.unitTypeId);
+        if (unitType === undefined) return [];
+        const soldierCount = (soldiersByUnitId.get(unit.id) ?? []).length;
+        return [
+          {
+            desertionRate: unitType.desertionRate,
+            soldierCount,
+            unitId: unit.id,
+            upkeepCostsJson: unitType.upkeepCostsJson,
+          },
+        ];
+      }),
+    );
 
     const poolKeyPrefix = army.fundingSource === "nation"
       ? army.nationId
@@ -132,11 +138,11 @@ export function phaseMilitaryUpkeep(context: SimulationContext): PhaseMilitaryUp
       let remainingSoldiers = soldiers;
 
       if (!upkeepPaid && unitType !== undefined && soldiers.length > 0) {
-        const desertionRate = unitType.desertionRate;
-        if (desertionRate > 0) {
-          const rawCount = Math.floor(soldiers.length * desertionRate);
-          const desertionCount = Math.min(soldiers.length, Math.max(rawCount, 1));
-
+        const desertionCount = computeUnitProjectedDesertion(
+          soldiers.length,
+          unitType.desertionRate,
+        );
+        if (desertionCount > 0) {
           const rng = createSeededRng(`${worldId}:${turnNumber}:militaryUpkeep:${unit.id}`);
           const deserters = pickDeterministic(rng, soldiers, desertionCount);
           const deserterIds = new Set(deserters.map((s) => s.id));
