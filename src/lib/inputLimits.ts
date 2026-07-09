@@ -100,3 +100,9 @@ export const governmentBodyInputLimits = {
   nameMax: 64,
   descriptionMax: 1000,
 } as const;
+
+export const lawDocumentInputLimits = {
+  titleMax: 200,
+  preambleMax: 20000,
+  headingMax: 200,
+} as const;

@@ -1650,6 +1650,172 @@ export type Database = {
           },
         ];
       };
+      law_articles: {
+        Row: {
+          article_number: number;
+          body_markdown: string;
+          created_at: string;
+          document_id: string;
+          heading: string;
+          id: string;
+          sort_order: number;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          article_number: number;
+          body_markdown: string;
+          created_at?: string;
+          document_id: string;
+          heading: string;
+          id?: string;
+          sort_order: number;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          article_number?: number;
+          body_markdown?: string;
+          created_at?: string;
+          document_id?: string;
+          heading?: string;
+          id?: string;
+          sort_order?: number;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "law_articles_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "law_documents";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      law_document_versions: {
+        Row: {
+          amendment_title: string;
+          articles_snapshot_json: Json;
+          created_at: string;
+          document_id: string;
+          enacted_by_citizen_id: string | null;
+          enacted_turn_number: number;
+          id: string;
+          version: number;
+        };
+        Insert: {
+          amendment_title: string;
+          articles_snapshot_json: Json;
+          created_at?: string;
+          document_id: string;
+          enacted_by_citizen_id?: string | null;
+          enacted_turn_number: number;
+          id?: string;
+          version: number;
+        };
+        Update: {
+          amendment_title?: string;
+          articles_snapshot_json?: Json;
+          created_at?: string;
+          document_id?: string;
+          enacted_by_citizen_id?: string | null;
+          enacted_turn_number?: number;
+          id?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "law_document_versions_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "law_documents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_document_versions_enacted_by_citizen_id_fkey";
+            columns: ["enacted_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizen_directory_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_document_versions_enacted_by_citizen_id_fkey";
+            columns: ["enacted_by_citizen_id"];
+            isOneToOne: false;
+            referencedRelation: "citizens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      law_documents: {
+        Row: {
+          amendment_procedure_json: Json;
+          created_at: string;
+          created_turn_number: number;
+          current_version: number;
+          id: string;
+          nation_id: string | null;
+          preamble_markdown: string | null;
+          settlement_id: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          world_id: string;
+        };
+        Insert: {
+          amendment_procedure_json?: Json;
+          created_at?: string;
+          created_turn_number: number;
+          current_version?: number;
+          id?: string;
+          nation_id?: string | null;
+          preamble_markdown?: string | null;
+          settlement_id?: string | null;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          world_id: string;
+        };
+        Update: {
+          amendment_procedure_json?: Json;
+          created_at?: string;
+          created_turn_number?: number;
+          current_version?: number;
+          id?: string;
+          nation_id?: string | null;
+          preamble_markdown?: string | null;
+          settlement_id?: string | null;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          world_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "law_documents_nation_id_fkey";
+            columns: ["nation_id"];
+            isOneToOne: false;
+            referencedRelation: "nations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_documents_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "law_documents_world_id_fkey";
+            columns: ["world_id"];
+            isOneToOne: false;
+            referencedRelation: "worlds";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       managed_population_instances: {
         Row: {
           configured_cull_quantity: number;
@@ -4933,6 +5099,37 @@ export type Database = {
         };
         Returns: Json;
       };
+      create_law_document: {
+        Args: {
+          p_amendment_procedure_json: Json;
+          p_articles: Json;
+          p_nation_id: string;
+          p_preamble_markdown: string;
+          p_settlement_id: string;
+          p_title: string;
+          p_world_id: string;
+        };
+        Returns: {
+          amendment_procedure_json: Json;
+          created_at: string;
+          created_turn_number: number;
+          current_version: number;
+          id: string;
+          nation_id: string | null;
+          preamble_markdown: string | null;
+          settlement_id: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "law_documents";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       create_managed_population_instance: {
         Args: {
           p_initial_count: number;
@@ -6247,6 +6444,29 @@ export type Database = {
           to: "education_levels";
           isOneToOne: false;
           isSetofReturn: true;
+        };
+      };
+      repeal_law_document: {
+        Args: { p_document_id: string };
+        Returns: {
+          amendment_procedure_json: Json;
+          created_at: string;
+          created_turn_number: number;
+          current_version: number;
+          id: string;
+          nation_id: string | null;
+          preamble_markdown: string | null;
+          settlement_id: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "law_documents";
+          isOneToOne: true;
+          isSetofReturn: false;
         };
       };
       replace_trade_route: {

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GovernmentBodiesSection } from "@/features/government-bodies";
+import { LawDocumentsSection } from "@/features/law-documents";
 import {
   SettlementManagerCard,
   SettlementOfficesSection,
@@ -10,8 +11,13 @@ import {
 import type { JSX } from "react";
 
 function SettlementGovernmentRoute(): JSX.Element {
-  const { canManageNation, canManageSettlement, isArchived, settlement } =
-    useSettlementDetailContext();
+  const {
+    canManageNation,
+    canManageSettlement,
+    effectiveCanAdmin,
+    isArchived,
+    settlement,
+  } = useSettlementDetailContext();
 
   // Everyone with world access can view the government tab; write controls
   // are gated internally: appoint/dismiss and body CRUD require
@@ -30,6 +36,15 @@ function SettlementGovernmentRoute(): JSX.Element {
       />
       <GovernmentBodiesSection
         canManage={canManageSettlement}
+        isArchived={isArchived}
+        nationId={settlement.nationId}
+        scope="settlement"
+        settlementId={settlement.id}
+        worldId={settlement.nation.worldId}
+      />
+      <LawDocumentsSection
+        canManage={canManageSettlement}
+        canRepeal={effectiveCanAdmin}
         isArchived={isArchived}
         nationId={settlement.nationId}
         scope="settlement"

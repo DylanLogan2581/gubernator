@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { GovernmentBodiesSection } from "@/features/government-bodies";
+import { LawDocumentsSection } from "@/features/law-documents";
 import {
   NationOfficesSection,
   NationRoleAssignmentSection,
@@ -37,6 +38,14 @@ function NationGovernmentRoute(): JSX.Element {
       />
       <GovernmentBodiesSection
         canManage={canManageBodies}
+        isArchived={isArchived}
+        nationId={nation.id}
+        scope="nation"
+        worldId={nation.worldId}
+      />
+      <LawDocumentsSection
+        canManage={canManageBodies}
+        canRepeal={effectiveCanAdmin}
         isArchived={isArchived}
         nationId={nation.id}
         scope="nation"
