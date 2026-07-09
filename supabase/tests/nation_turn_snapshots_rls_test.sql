@@ -1,8 +1,12 @@
--- pgTAP tests for public.nation_turn_snapshots RLS (#1083).
+-- pgTAP tests for public.nation_turn_snapshots RLS (#1083, discovery-gated
+-- per #1132).
 -- Run with: npx supabase test db
 --
 -- RLS matrix:
---   SELECT — world-access reads succeed (world admin, member); outsider denied
+--   SELECT — visible reads succeed (world admin, PC holder in the snapshot's
+--     nation); outsider (no world access) and undiscovered-nation member
+--     (world access, but home nation has not met the snapshot's nation)
+--     both denied
 --   INSERT/UPDATE — blocked for all authenticated callers (no grant; RPC-only)
 --
 -- UUID ranges (all numeric/hex, unique to this file):
@@ -13,7 +17,7 @@
 begin;
 
 select
-  plan (5);
+  plan (6);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -53,6 +57,15 @@ values
     'x',
     now(),
     '{"username":"ntsnap_outsider"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'e1000000-0000-0000-0000-000000000004',
+    'ntsnap-undiscovered@example.com',
+    'x',
+    now(),
+    '{"username":"ntsnap_undiscovered"}'::jsonb,
     now(),
     now()
   );
@@ -155,6 +168,48 @@ values
     '{}'::jsonb
   );
 
+-- Second nation in the same world, undiscovered by the snapshot's nation (no
+-- nation_discoveries row between them), with its own PC-holding member --
+-- world access alone must not leak the snapshot.
+insert into
+  public.nations (id, world_id, name)
+values
+  (
+    'e3000000-0000-0000-0000-000000000002',
+    'e2000000-0000-0000-0000-000000000001',
+    'Nation Snapshot Undiscovered Nation'
+  );
+
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'e4000000-0000-0000-0000-000000000002',
+    'e3000000-0000-0000-0000-000000000002',
+    'Nation Snapshot Undiscovered Settlement'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id
+  )
+values
+  (
+    'e6000000-0000-0000-0000-000000000002',
+    'e2000000-0000-0000-0000-000000000001',
+    'e4000000-0000-0000-0000-000000000002',
+    'player_character',
+    'Nation Snapshot Undiscovered Member',
+    'alive',
+    'e1000000-0000-0000-0000-000000000004'
+  );
+
 -- ===========================================================================
 -- ANONYMOUS: no read access
 -- ===========================================================================
@@ -222,6 +277,31 @@ select
         id = 'e7000000-0000-0000-0000-000000000001'
     ),
     'outsider cannot read nation_turn_snapshots in an inaccessible world'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- UNDISCOVERED-NATION MEMBER: world access via own nation, but that nation
+-- has not met the snapshot's nation -- must not see the snapshot (#1132).
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"e1000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.nation_turn_snapshots
+      where
+        id = 'e7000000-0000-0000-0000-000000000001'
+    ),
+    'member of an undiscovered nation cannot read another nation''s turn snapshot'
   );
 
 reset role;

@@ -1,8 +1,12 @@
--- pgTAP tests for public.nation_currency_snapshots RLS (#1094).
+-- pgTAP tests for public.nation_currency_snapshots RLS (#1094, discovery-
+-- gated per #1132).
 -- Run with: npx supabase test db
 --
 -- RLS matrix:
---   SELECT — world-access reads succeed (world admin, member); outsider denied
+--   SELECT — visible reads succeed (world admin, PC holder in the snapshot's
+--     nation); outsider (no world access) and undiscovered-nation member
+--     (world access, but home nation has not met the snapshot's nation)
+--     both denied
 --   INSERT/UPDATE — blocked for all authenticated callers (no grant; RPC-only)
 --
 -- UUID ranges (all numeric/hex, unique to this file):
@@ -14,7 +18,7 @@
 begin;
 
 select
-  plan (5);
+  plan (6);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -54,6 +58,15 @@ values
     'x',
     now(),
     '{"username":"ncsnap_outsider"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'f1000000-0000-0000-0000-000000000004',
+    'ncsnap-undiscovered@example.com',
+    'x',
+    now(),
+    '{"username":"ncsnap_undiscovered"}'::jsonb,
     now(),
     now()
   );
@@ -203,6 +216,48 @@ values
     0
   );
 
+-- Second nation in the same world, undiscovered by the snapshot's nation (no
+-- nation_discoveries row between them), with its own PC-holding member --
+-- world access alone must not leak the snapshot.
+insert into
+  public.nations (id, world_id, name)
+values
+  (
+    'f3000000-0000-0000-0000-000000000002',
+    'f2000000-0000-0000-0000-000000000001',
+    'Nation Currency Snapshot Undiscovered Nation'
+  );
+
+insert into
+  public.settlements (id, nation_id, name)
+values
+  (
+    'f4000000-0000-0000-0000-000000000002',
+    'f3000000-0000-0000-0000-000000000002',
+    'Nation Currency Snapshot Undiscovered Settlement'
+  );
+
+insert into
+  public.citizens (
+    id,
+    world_id,
+    settlement_id,
+    citizen_type,
+    given_name,
+    status,
+    user_id
+  )
+values
+  (
+    'f6000000-0000-0000-0000-000000000002',
+    'f2000000-0000-0000-0000-000000000001',
+    'f4000000-0000-0000-0000-000000000002',
+    'player_character',
+    'Nation Currency Snapshot Undiscovered Member',
+    'alive',
+    'f1000000-0000-0000-0000-000000000004'
+  );
+
 -- ===========================================================================
 -- ANONYMOUS: no read access
 -- ===========================================================================
@@ -270,6 +325,31 @@ select
         id = 'f9000000-0000-0000-0000-000000000001'
     ),
     'outsider cannot read nation_currency_snapshots in an inaccessible world'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- UNDISCOVERED-NATION MEMBER: world access via own nation, but that nation
+-- has not met the snapshot's nation -- must not see the snapshot (#1132).
+-- ===========================================================================
+set
+  local role authenticated;
+
+set
+  local "request.jwt.claims" = '{"sub":"f1000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select
+  ok (
+    not exists (
+      select
+        1
+      from
+        public.nation_currency_snapshots
+      where
+        id = 'f9000000-0000-0000-0000-000000000001'
+    ),
+    'member of an undiscovered nation cannot read another nation''s currency snapshot'
   );
 
 reset role;
