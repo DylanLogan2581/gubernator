@@ -17,6 +17,7 @@ export type SettlementSection =
   | "construction"
   | "deposits"
   | "forecast"
+  | "government"
   | "history"
   | "overview"
   | "populations"
@@ -39,6 +40,7 @@ type SettlementSectionRouteId =
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/construction"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast"
+  | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/government"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/history"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations"
   | "/worlds/$worldId/nations/$nationId/settlements/$settlementId/reports"
@@ -62,6 +64,8 @@ function sectionRouteId(
       return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/deposits";
     case "forecast":
       return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/forecast";
+    case "government":
+      return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/government";
     case "history":
       return "/worlds/$worldId/nations/$nationId/settlements/$settlementId/history";
     case "populations":

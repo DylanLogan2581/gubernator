@@ -1,0 +1,757 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { useState, type JSX } from "react";
+
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { worldCalendarConfigQueryOptions } from "@/features/calendar";
+import {
+  citizensInSettlementQueryOptions,
+  type Citizen,
+} from "@/features/citizens";
+import {
+  appointSettlementOfficeMutationOptions,
+  createOfficeTypeMutationOptions,
+  deleteOfficeTypeMutationOptions,
+  dismissSettlementOfficeMutationOptions,
+  formatNationOfficeType,
+  settlementOfficesRosterQueryOptions,
+  settlementOfficeTypesQueryOptions,
+  type AppointSettlementOfficeInput,
+  type OfficeType,
+  type SettlementOfficeRosterEntry,
+} from "@/features/nations";
+import { getErrorDescription } from "@/lib/errorUtils";
+import { notifyMutationError, notifyMutationSuccess } from "@/lib/notify";
+import {
+  formatCalendarDate,
+  resolveTurnCalendarDate,
+} from "@/shared/turnCalendarPrimitives";
+
+import type { SettlementWithNation } from "../../types/settlementTypes";
+
+export function SettlementOfficesSection({
+  canManageSettlement,
+  canManageTypes,
+  isArchived,
+  settlement,
+}: {
+  readonly canManageSettlement: boolean;
+  readonly canManageTypes: boolean;
+  readonly isArchived: boolean;
+  readonly settlement: SettlementWithNation;
+}): JSX.Element {
+  const queryClient = useQueryClient();
+  const rosterQuery = useQuery(
+    settlementOfficesRosterQueryOptions(settlement.id),
+  );
+  const officeTypesQuery = useQuery(
+    settlementOfficeTypesQueryOptions(
+      settlement.nation.worldId,
+      settlement.nationId,
+    ),
+  );
+  const calendarQuery = useQuery(
+    worldCalendarConfigQueryOptions(settlement.nation.worldId),
+  );
+  const dismissMutation = useMutation(
+    dismissSettlementOfficeMutationOptions({ queryClient }),
+  );
+
+  const [isAppointing, setIsAppointing] = useState(false);
+  const [isManagingTypes, setIsManagingTypes] = useState(false);
+  const [dismissing, setDismissing] =
+    useState<SettlementOfficeRosterEntry | null>(null);
+
+  if (rosterQuery.isPending || officeTypesQuery.isPending) {
+    return (
+      <OfficesCardFrame
+        canManage={canManageSettlement}
+        onAppoint={undefined}
+        onManageTypes={undefined}
+      >
+        <LoadingState label="Loading offices…" />
+      </OfficesCardFrame>
+    );
+  }
+
+  if (rosterQuery.isError || officeTypesQuery.isError) {
+    return (
+      <OfficesCardFrame
+        canManage={canManageSettlement}
+        onAppoint={undefined}
+        onManageTypes={undefined}
+      >
+        <ErrorState
+          title="Offices could not be loaded"
+          description={getErrorDescription(
+            rosterQuery.error ?? officeTypesQuery.error,
+          )}
+        />
+      </OfficesCardFrame>
+    );
+  }
+
+  // Unlike nation offices (#1079), settlement office types are never
+  // government-type-gated -- every fetched type (world-default or the
+  // settlement's nation's own custom offices, #1114/#1115) is appointable.
+  const appointableTypes = officeTypesQuery.data;
+  const officeTypeById = new Map(appointableTypes.map((t) => [t.id, t]));
+  const roster = rosterQuery.data;
+  const calendarConfig = calendarQuery.data ?? null;
+
+  const rosterByType = new Map<string, SettlementOfficeRosterEntry[]>();
+  for (const officeType of appointableTypes) {
+    rosterByType.set(officeType.id, []);
+  }
+  for (const entry of roster) {
+    const group = rosterByType.get(entry.officeTypeId);
+    if (group !== undefined) {
+      group.push(entry);
+    } else {
+      rosterByType.set(entry.officeTypeId, [entry]);
+    }
+  }
+
+  function handleDismissConfirm(): void {
+    if (dismissing === null) return;
+    dismissMutation.mutate(
+      {
+        officeId: dismissing.id,
+        settlementId: settlement.id,
+        worldId: settlement.nation.worldId,
+      },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to dismiss office holder.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess(`${dismissing.citizenName} dismissed.`);
+          setDismissing(null);
+        },
+      },
+    );
+  }
+
+  return (
+    <>
+      <OfficesCardFrame
+        canManage={canManageSettlement}
+        onAppoint={isArchived ? undefined : () => setIsAppointing(true)}
+        onManageTypes={
+          isArchived || !canManageTypes
+            ? undefined
+            : () => setIsManagingTypes(true)
+        }
+      >
+        {appointableTypes.length === 0 ? (
+          <EmptyState
+            title="No settlement offices yet"
+            description={`${settlement.name} has no office types yet. ${
+              canManageTypes
+                ? "Invent one from Manage office types."
+                : "Ask your nation manager to invent one."
+            }`}
+          />
+        ) : (
+          <div className="grid gap-4">
+            {[...rosterByType.entries()].map(([officeTypeId, entries]) => {
+              const officeType = officeTypeById.get(officeTypeId);
+              return officeType === undefined ? null : (
+                <OfficeGroup
+                  calendarConfig={calendarConfig}
+                  canManage={canManageSettlement}
+                  entries={entries}
+                  isArchived={isArchived}
+                  key={officeTypeId}
+                  officeType={officeType}
+                  onDismiss={setDismissing}
+                />
+              );
+            })}
+          </div>
+        )}
+      </OfficesCardFrame>
+
+      {canManageSettlement && isAppointing ? (
+        <AppointOfficeDialog
+          appointableTypes={appointableTypes}
+          onClose={() => setIsAppointing(false)}
+          queryClient={queryClient}
+          roster={roster}
+          settlement={settlement}
+        />
+      ) : null}
+
+      {canManageTypes && isManagingTypes ? (
+        <OfficeTypeManagerDialog
+          allOfficeTypes={appointableTypes}
+          isArchived={isArchived}
+          onClose={() => setIsManagingTypes(false)}
+          queryClient={queryClient}
+          roster={roster}
+          settlement={settlement}
+        />
+      ) : null}
+
+      <AlertDialog
+        open={dismissing !== null}
+        onOpenChange={(open) => {
+          if (!open) setDismissing(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dismiss office holder?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {dismissing === null
+                ? ""
+                : `This will remove ${dismissing.citizenName} from ${formatNationOfficeType(dismissing.officeTypeName)}. This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2">
+            <AlertDialogCancel disabled={dismissMutation.isPending}>
+              Keep office holder
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDismissConfirm}
+              disabled={dismissMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {dismissMutation.isPending ? "Dismissing…" : "Dismiss"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function OfficeGroup({
+  calendarConfig,
+  canManage,
+  entries,
+  isArchived,
+  officeType,
+  onDismiss,
+}: {
+  readonly calendarConfig: Parameters<typeof resolveTurnCalendarDate>[0] | null;
+  readonly canManage: boolean;
+  readonly entries: readonly SettlementOfficeRosterEntry[];
+  readonly isArchived: boolean;
+  readonly officeType: OfficeType;
+  readonly onDismiss: (entry: SettlementOfficeRosterEntry) => void;
+}): JSX.Element {
+  const label = formatNationOfficeType(officeType.name);
+  const capLabel =
+    officeType.maxHolders === null
+      ? ""
+      : ` (max ${String(officeType.maxHolders)})`;
+  return (
+    <div className="grid gap-2">
+      <h3 className="text-sm font-medium text-foreground">
+        {label}
+        {capLabel}
+      </h3>
+      {entries.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No {label.toLowerCase()} appointed.
+        </p>
+      ) : (
+        <ul className="grid gap-2" aria-label={label}>
+          {entries.map((entry) => (
+            <li
+              key={entry.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-background p-3"
+            >
+              <div className="grid gap-0.5 text-sm">
+                <span className="flex items-center gap-2 font-medium">
+                  <Link
+                    to="/worlds/$worldId/citizens/$citizenId"
+                    params={{
+                      citizenId: entry.citizenId,
+                      worldId: entry.worldId,
+                    }}
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {entry.citizenName}
+                  </Link>
+                  <Badge
+                    variant={
+                      entry.citizenType === "npc" ? "secondary" : "outline"
+                    }
+                  >
+                    {entry.citizenType === "npc" ? "NPC" : "Player character"}
+                  </Badge>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Appointed{" "}
+                  {formatAppointedTurn(
+                    entry.appointedTurnNumber,
+                    calendarConfig,
+                  )}
+                </span>
+              </div>
+              {canManage ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isArchived}
+                  onClick={() => onDismiss(entry)}
+                >
+                  Dismiss
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AppointOfficeDialog({
+  appointableTypes,
+  onClose,
+  queryClient,
+  roster,
+  settlement,
+}: {
+  readonly appointableTypes: readonly OfficeType[];
+  readonly onClose: () => void;
+  readonly queryClient: ReturnType<typeof useQueryClient>;
+  readonly roster: readonly SettlementOfficeRosterEntry[];
+  readonly settlement: SettlementWithNation;
+}): JSX.Element {
+  const [officeTypeId, setOfficeTypeId] = useState<string>(
+    appointableTypes[0]?.id ?? "",
+  );
+  const [citizenId, setCitizenId] = useState<string>("");
+
+  const citizensQuery = useQuery(
+    citizensInSettlementQueryOptions(settlement.id),
+  );
+  const appointMutation = useMutation(
+    appointSettlementOfficeMutationOptions({ queryClient }),
+  );
+
+  const selectedType = appointableTypes.find((t) => t.id === officeTypeId);
+  const currentHolderIds = new Set(
+    roster
+      .filter((entry) => entry.officeTypeId === officeTypeId)
+      .map((entry) => entry.citizenId),
+  );
+  const atCapacity =
+    selectedType?.maxHolders !== null &&
+    selectedType?.maxHolders !== undefined &&
+    currentHolderIds.size >= selectedType.maxHolders;
+  const candidates: readonly Citizen[] = (citizensQuery.data ?? []).filter(
+    (citizen) =>
+      citizen.status === "alive" && !currentHolderIds.has(citizen.id),
+  );
+
+  function handleSubmit(): void {
+    if (citizenId === "" || selectedType === undefined) return;
+    const input: AppointSettlementOfficeInput = {
+      citizenId,
+      officeType: selectedType.name,
+      settlementId: settlement.id,
+      worldId: settlement.nation.worldId,
+    };
+    appointMutation.mutate(input, {
+      onError: (error) => {
+        notifyMutationError(error, "Failed to appoint office holder.");
+      },
+      onSuccess: () => {
+        notifyMutationSuccess("Office holder appointed.");
+        onClose();
+      },
+    });
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Appoint office holder</DialogTitle>
+          <DialogDescription>
+            Choose an office and an eligible resident of this settlement.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid gap-1">
+            <Label htmlFor="settlement-office-type-select">Office</Label>
+            <Select
+              value={officeTypeId}
+              onValueChange={(value) => {
+                setOfficeTypeId(value);
+                setCitizenId("");
+              }}
+            >
+              <SelectTrigger
+                id="settlement-office-type-select"
+                aria-label="Office type"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {appointableTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {formatNationOfficeType(type.name)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="settlement-office-citizen-select">Citizen</Label>
+            {atCapacity ? (
+              <p className="text-sm text-muted-foreground">
+                This office already has the maximum number of holders.
+              </p>
+            ) : citizensQuery.isPending ? (
+              <LoadingState label="Loading citizens…" />
+            ) : citizensQuery.isError ? (
+              <ErrorState
+                title="Citizens could not be loaded"
+                description={getErrorDescription(citizensQuery.error)}
+              />
+            ) : candidates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No eligible citizens for this office.
+              </p>
+            ) : (
+              <Select value={citizenId} onValueChange={setCitizenId}>
+                <SelectTrigger
+                  id="settlement-office-citizen-select"
+                  aria-label="Citizen"
+                >
+                  <SelectValue placeholder="Select a citizen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {candidates.map((citizen) => (
+                    <SelectItem key={citizen.id} value={citizen.id}>
+                      {citizen.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={
+              appointMutation.isPending || citizenId === "" || atCapacity
+            }
+          >
+            {appointMutation.isPending ? "Appointing…" : "Appoint"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Settlement's nation manager (or admin) only (#1115): invent, edit, and
+// delete custom settlement office types. Mirrors OfficeTypeManagerDialog in
+// nations/components/NationDetailPage/OfficesSection.tsx.
+function OfficeTypeManagerDialog({
+  allOfficeTypes,
+  isArchived,
+  onClose,
+  queryClient,
+  roster,
+  settlement,
+}: {
+  readonly allOfficeTypes: readonly OfficeType[];
+  readonly isArchived: boolean;
+  readonly onClose: () => void;
+  readonly queryClient: ReturnType<typeof useQueryClient>;
+  readonly roster: readonly SettlementOfficeRosterEntry[];
+  readonly settlement: SettlementWithNation;
+}): JSX.Element {
+  const [name, setName] = useState("");
+  const [maxHolders, setMaxHolders] = useState("");
+  const [excludesFromLabor, setExcludesFromLabor] = useState(true);
+
+  const createMutation = useMutation(
+    createOfficeTypeMutationOptions({ queryClient }),
+  );
+  const deleteMutation = useMutation(
+    deleteOfficeTypeMutationOptions({ queryClient }),
+  );
+
+  const customTypes = allOfficeTypes.filter(
+    (t) => t.nationId === settlement.nationId,
+  );
+  const defaultTypes = allOfficeTypes.filter((t) => t.nationId === null);
+  const holderCountByType = new Map<string, number>();
+  for (const entry of roster) {
+    holderCountByType.set(
+      entry.officeTypeId,
+      (holderCountByType.get(entry.officeTypeId) ?? 0) + 1,
+    );
+  }
+
+  function handleCreate(): void {
+    const trimmed = name.trim();
+    if (trimmed === "") return;
+    createMutation.mutate(
+      {
+        excludesFromLabor,
+        maxHolders: maxHolders === "" ? null : Number(maxHolders),
+        name: trimmed,
+        nationId: settlement.nationId,
+        scope: "settlement",
+        worldId: settlement.nation.worldId,
+      },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to create office type.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess(`${trimmed} created.`);
+          setName("");
+          setMaxHolders("");
+          setExcludesFromLabor(true);
+        },
+      },
+    );
+  }
+
+  function handleDelete(type: OfficeType): void {
+    deleteMutation.mutate(
+      { id: type.id, nationId: type.nationId, worldId: type.worldId },
+      {
+        onError: (error) => {
+          notifyMutationError(error, "Failed to delete office type.");
+        },
+        onSuccess: () => {
+          notifyMutationSuccess(
+            `${formatNationOfficeType(type.name)} deleted.`,
+          );
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Manage settlement office types</DialogTitle>
+          <DialogDescription>
+            Invent custom offices (mayor, sheriff, guildmaster, ...) for{" "}
+            {settlement.name}. World-default offices are managed by world
+            admins.
+          </DialogDescription>
+        </DialogHeader>
+
+        {defaultTypes.length === 0 ? null : (
+          <div className="grid gap-2">
+            <h3 className="text-sm font-medium">World defaults</h3>
+            <ul className="grid gap-1 text-sm text-muted-foreground">
+              {defaultTypes.map((type) => (
+                <li key={type.id}>{formatNationOfficeType(type.name)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="grid gap-2">
+          <h3 className="text-sm font-medium">Custom offices</h3>
+          {customTypes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No custom offices yet.
+            </p>
+          ) : (
+            <ul className="grid gap-2">
+              {customTypes.map((type) => (
+                <li
+                  key={type.id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border p-2 text-sm"
+                >
+                  <span>
+                    {type.name}
+                    {type.maxHolders === null
+                      ? ""
+                      : ` (max ${String(type.maxHolders)})`}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      isArchived ||
+                      deleteMutation.isPending ||
+                      (holderCountByType.get(type.id) ?? 0) > 0
+                    }
+                    onClick={() => handleDelete(type)}
+                  >
+                    Delete
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {isArchived ? null : (
+          <div className="grid gap-2 border-t border-border pt-3">
+            <h3 className="text-sm font-medium">New custom office</h3>
+            <div className="grid gap-1">
+              <Label htmlFor="new-settlement-office-type-name">Name</Label>
+              <Input
+                id="new-settlement-office-type-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Mayor"
+              />
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="new-settlement-office-type-max-holders">
+                Max holders (optional)
+              </Label>
+              <Input
+                id="new-settlement-office-type-max-holders"
+                type="number"
+                min={1}
+                value={maxHolders}
+                onChange={(e) => setMaxHolders(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="new-settlement-office-type-excludes-labor"
+                checked={excludesFromLabor}
+                onCheckedChange={(checked) =>
+                  setExcludesFromLabor(checked === true)
+                }
+              />
+              <Label htmlFor="new-settlement-office-type-excludes-labor">
+                Excludes holder from labor
+              </Label>
+            </div>
+            <Button
+              type="button"
+              onClick={handleCreate}
+              disabled={createMutation.isPending || name.trim() === ""}
+              className="w-fit"
+            >
+              {createMutation.isPending ? "Creating…" : "Create office"}
+            </Button>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function OfficesCardFrame({
+  canManage,
+  children,
+  onAppoint,
+  onManageTypes,
+}: {
+  readonly canManage: boolean;
+  readonly children: JSX.Element;
+  readonly onAppoint: (() => void) | undefined;
+  readonly onManageTypes: (() => void) | undefined;
+}): JSX.Element {
+  return (
+    <Card
+      aria-labelledby="settlement-offices-heading"
+      className="grid gap-3 p-4"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="settlement-offices-heading" className="text-base font-medium">
+          Government offices
+        </h2>
+        <div className="flex gap-2">
+          {canManage && onManageTypes !== undefined ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onManageTypes}
+            >
+              Manage office types
+            </Button>
+          ) : null}
+          {canManage && onAppoint !== undefined ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onAppoint}
+            >
+              Appoint office holder
+            </Button>
+          ) : null}
+        </div>
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+function formatAppointedTurn(
+  turnNumber: number,
+  calendarConfig: Parameters<typeof resolveTurnCalendarDate>[0] | null,
+): string {
+  if (calendarConfig === null) {
+    return `Turn ${String(turnNumber)}`;
+  }
+  try {
+    return formatCalendarDate(
+      resolveTurnCalendarDate(calendarConfig, turnNumber),
+      { dateFormatTemplate: calendarConfig.dateFormatTemplate },
+    );
+  } catch {
+    return `Turn ${String(turnNumber)}`;
+  }
+}

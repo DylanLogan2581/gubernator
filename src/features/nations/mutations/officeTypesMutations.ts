@@ -86,6 +86,14 @@ function invalidateOfficeTypeQueries(
       : queryClient.invalidateQueries({
           queryKey: nationOfficesQueryKeys.officeTypes(worldId, nationId),
         }),
+    nationId === null
+      ? Promise.resolve()
+      : queryClient.invalidateQueries({
+          queryKey: nationOfficesQueryKeys.officeTypesForSettlements(
+            worldId,
+            nationId,
+          ),
+        }),
   ]).then(() => undefined);
 }
 

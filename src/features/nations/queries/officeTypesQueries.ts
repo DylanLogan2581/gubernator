@@ -75,6 +75,57 @@ async function getNationOfficeTypes(
     .from("office_types")
     .select(OFFICE_TYPE_SELECT)
     .eq("world_id", worldId)
+    .eq("scope", "nation")
+    .or(`nation_id.is.null,nation_id.eq.${nationId}`)
+    .order("name");
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+
+  return data.map(toOfficeType);
+}
+
+type SettlementOfficeTypesQueryKey = ReturnType<
+  typeof nationOfficesQueryKeys.officeTypesForSettlements
+>;
+type SettlementOfficeTypesQueryOptions = UseQueryOptions<
+  readonly OfficeType[],
+  AuthUiError,
+  readonly OfficeType[],
+  SettlementOfficeTypesQueryKey
+>;
+
+// World-default settlement office types (nation_id null) plus this nation's
+// own custom settlement office types (#1115) -- the full set of offices
+// appointable from any of the nation's settlement government tabs. Keyed by
+// (worldId, nationId), not settlementId -- office types are owned by the
+// nation, not any one settlement.
+export function settlementOfficeTypesQueryOptions(
+  worldId: string,
+  nationId: string,
+  client: GubernatorSupabaseClient = requireSupabaseClient(),
+): SettlementOfficeTypesQueryOptions {
+  // eslint-disable-next-line @tanstack/query/exhaustive-deps
+  return queryOptions({
+    queryFn: () => getSettlementOfficeTypes(client, worldId, nationId),
+    queryKey: nationOfficesQueryKeys.officeTypesForSettlements(
+      worldId,
+      nationId,
+    ),
+  });
+}
+
+async function getSettlementOfficeTypes(
+  client: GubernatorSupabaseClient,
+  worldId: string,
+  nationId: string,
+): Promise<readonly OfficeType[]> {
+  const { data, error } = await client
+    .from("office_types")
+    .select(OFFICE_TYPE_SELECT)
+    .eq("world_id", worldId)
+    .eq("scope", "settlement")
     .or(`nation_id.is.null,nation_id.eq.${nationId}`)
     .order("name");
 

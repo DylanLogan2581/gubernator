@@ -327,6 +327,13 @@ export function AppSidebar(): JSX.Element | null {
             settlementId,
             worldId,
           }),
+          settlementSectionItem("government", {
+            isActive: currentSection === "government",
+            label: "Government",
+            nationId,
+            settlementId,
+            worldId,
+          }),
           settlementSectionItem("buildings", {
             isActive: currentSection === "buildings",
             label: "Buildings",
@@ -570,6 +577,7 @@ const SETTLEMENT_SECTION_SEGMENTS: ReadonlySet<string> = new Set<
   "construction",
   "deposits",
   "forecast",
+  "government",
   "history",
   "populations",
   "reports",
@@ -623,6 +631,7 @@ function settlementSectionItem(
     construction: <HardHat aria-hidden="true" />,
     deposits: <Gem aria-hidden="true" />,
     forecast: <TrendingUp aria-hidden="true" />,
+    government: <ShieldCheck aria-hidden="true" />,
     history: <Clock aria-hidden="true" />,
     overview: <LayoutDashboard aria-hidden="true" />,
     populations: <PawPrint aria-hidden="true" />,
@@ -686,6 +695,21 @@ function settlementSectionItem(
         link: (
           <Link
             to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/populations"
+            params={{ nationId, settlementId, worldId }}
+          >
+            {icons[section]}
+            <span>{label}</span>
+          </Link>
+        ),
+      };
+    case "government":
+      return {
+        key: "settlement-government",
+        label,
+        isActive,
+        link: (
+          <Link
+            to="/worlds/$worldId/nations/$nationId/settlements/$settlementId/government"
             params={{ nationId, settlementId, worldId }}
           >
             {icons[section]}

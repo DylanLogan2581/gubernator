@@ -2027,8 +2027,9 @@ export type Database = {
           citizen_id: string;
           created_at: string;
           id: string;
-          nation_id: string;
+          nation_id: string | null;
           office_type_id: string;
+          settlement_id: string | null;
           updated_at: string;
           world_id: string;
         };
@@ -2037,8 +2038,9 @@ export type Database = {
           citizen_id: string;
           created_at?: string;
           id?: string;
-          nation_id: string;
+          nation_id?: string | null;
           office_type_id: string;
+          settlement_id?: string | null;
           updated_at?: string;
           world_id: string;
         };
@@ -2047,8 +2049,9 @@ export type Database = {
           citizen_id?: string;
           created_at?: string;
           id?: string;
-          nation_id?: string;
+          nation_id?: string | null;
           office_type_id?: string;
+          settlement_id?: string | null;
           updated_at?: string;
           world_id?: string;
         };
@@ -2079,6 +2082,13 @@ export type Database = {
             columns: ["office_type_id"];
             isOneToOne: false;
             referencedRelation: "office_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "nation_offices_settlement_id_fkey";
+            columns: ["settlement_id"];
+            isOneToOne: false;
+            referencedRelation: "settlements";
             referencedColumns: ["id"];
           },
           {
@@ -4285,8 +4295,33 @@ export type Database = {
           citizen_id: string;
           created_at: string;
           id: string;
-          nation_id: string;
+          nation_id: string | null;
           office_type_id: string;
+          settlement_id: string | null;
+          updated_at: string;
+          world_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "nation_offices";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      appoint_settlement_office: {
+        Args: {
+          p_citizen_id: string;
+          p_office_type: string;
+          p_settlement_id: string;
+        };
+        Returns: {
+          appointed_turn_number: number;
+          citizen_id: string;
+          created_at: string;
+          id: string;
+          nation_id: string | null;
+          office_type_id: string;
+          settlement_id: string | null;
           updated_at: string;
           world_id: string;
         };
@@ -5192,6 +5227,10 @@ export type Database = {
         };
       };
       dismiss_nation_office: {
+        Args: { p_office_id: string };
+        Returns: undefined;
+      };
+      dismiss_settlement_office: {
         Args: { p_office_id: string };
         Returns: undefined;
       };

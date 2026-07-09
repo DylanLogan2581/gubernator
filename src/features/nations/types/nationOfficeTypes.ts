@@ -30,6 +30,20 @@ export type NationOfficeRosterEntry = {
   readonly worldId: string;
 };
 
+// #1115: settlement-scoped counterpart of NationOfficeRosterEntry -- same
+// shape, keyed by settlementId instead of nationId.
+export type SettlementOfficeRosterEntry = {
+  readonly appointedTurnNumber: number;
+  readonly citizenId: string;
+  readonly citizenName: string;
+  readonly citizenType: CitizenType;
+  readonly id: string;
+  readonly officeTypeId: string;
+  readonly officeTypeName: string;
+  readonly settlementId: string;
+  readonly worldId: string;
+};
+
 const KNOWN_OFFICE_TYPE_LABELS: Readonly<Record<string, string>> = {
   senator: "Senator",
   elder: "Elder",

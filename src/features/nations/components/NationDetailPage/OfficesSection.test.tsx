@@ -403,9 +403,14 @@ function createClientFixture({
       return {
         select: () => ({
           eq: () => ({
-            or: () => ({
-              order: () =>
-                Promise.resolve({ data: defaultOfficeTypeRows(), error: null }),
+            eq: () => ({
+              or: () => ({
+                order: () =>
+                  Promise.resolve({
+                    data: defaultOfficeTypeRows(),
+                    error: null,
+                  }),
+              }),
             }),
           }),
         }),

@@ -114,3 +114,95 @@ async function dismissNationOffice(
     throw normalizeSupabaseError(error);
   }
 }
+
+export type AppointSettlementOfficeInput = {
+  readonly citizenId: string;
+  // office_types.name (#1114) -- a world-default name or a nation's own
+  // custom settlement office type name.
+  readonly officeType: string;
+  readonly settlementId: string;
+  readonly worldId: string;
+};
+
+export type DismissSettlementOfficeInput = {
+  readonly officeId: string;
+  readonly settlementId: string;
+  readonly worldId: string;
+};
+
+export type AppointSettlementOfficeMutationOptions = UseMutationOptions<
+  void,
+  AuthUiError,
+  AppointSettlementOfficeInput
+>;
+export type DismissSettlementOfficeMutationOptions = UseMutationOptions<
+  void,
+  AuthUiError,
+  DismissSettlementOfficeInput
+>;
+
+export function appointSettlementOfficeMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): AppointSettlementOfficeMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: AppointSettlementOfficeInput) =>
+      appointSettlementOffice(client, input),
+    mutationKey: [...nationOfficesQueryKeys.all, "appoint-settlement-office"],
+    onSuccess: async (_result, input): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: nationOfficesQueryKeys.settlementRoster(input.settlementId),
+      });
+    },
+  });
+}
+
+export function dismissSettlementOfficeMutationOptions({
+  client = requireSupabaseClient(),
+  queryClient,
+}: {
+  readonly client?: GubernatorSupabaseClient;
+  readonly queryClient: QueryClient;
+}): DismissSettlementOfficeMutationOptions {
+  return mutationOptions({
+    mutationFn: (input: DismissSettlementOfficeInput) =>
+      dismissSettlementOffice(client, input),
+    mutationKey: [...nationOfficesQueryKeys.all, "dismiss-settlement-office"],
+    onSuccess: async (_result, input): Promise<void> => {
+      await queryClient.invalidateQueries({
+        queryKey: nationOfficesQueryKeys.settlementRoster(input.settlementId),
+      });
+    },
+  });
+}
+
+async function appointSettlementOffice(
+  client: GubernatorSupabaseClient,
+  input: AppointSettlementOfficeInput,
+): Promise<void> {
+  const { error } = await client.rpc("appoint_settlement_office", {
+    p_citizen_id: input.citizenId,
+    p_office_type: input.officeType,
+    p_settlement_id: input.settlementId,
+  });
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+}
+
+async function dismissSettlementOffice(
+  client: GubernatorSupabaseClient,
+  input: DismissSettlementOfficeInput,
+): Promise<void> {
+  const { error } = await client.rpc("dismiss_settlement_office", {
+    p_office_id: input.officeId,
+  });
+
+  if (error !== null) {
+    throw normalizeSupabaseError(error);
+  }
+}

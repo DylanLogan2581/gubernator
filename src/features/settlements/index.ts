@@ -22,6 +22,8 @@ export { SettlementDetailsSection } from "./components/SettlementDetailPage/Deta
 export { SettlementDetailPage } from "./components/SettlementDetailPage";
 export { SettlementForecastWarningsCard } from "./components/SettlementDetailPage/ForecastWarningsCard";
 export { GarrisonCard } from "./components/SettlementDetailPage/GarrisonCard";
+export { SettlementManagerCard } from "./components/SettlementDetailPage/ManagerCard";
+export { SettlementOfficesSection } from "./components/SettlementDetailPage/OfficesSection";
 export { SettlementOverviewStatTiles } from "./components/SettlementOverviewStatTiles";
 export { useSettlementDetailContext } from "./components/SettlementDetailPage/SettlementDetailContext";
 export {
