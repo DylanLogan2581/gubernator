@@ -162,6 +162,7 @@ export function makeCurrency(
     backingResourceId: null,
     confidence: 1,
     currencyType: "fiat",
+    isInDefault: false,
     moneySupply: 0,
     reserveQuantity: 0,
     name: "Testmark",

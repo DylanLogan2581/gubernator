@@ -2191,6 +2191,7 @@ export type Database = {
           currency_type: string;
           established_turn_number: number;
           id: string;
+          is_in_default: boolean;
           money_supply: number;
           name: string;
           nation_id: string;
@@ -2207,6 +2208,7 @@ export type Database = {
           currency_type: string;
           established_turn_number: number;
           id?: string;
+          is_in_default?: boolean;
           money_supply?: number;
           name: string;
           nation_id: string;
@@ -2223,6 +2225,7 @@ export type Database = {
           currency_type?: string;
           established_turn_number?: number;
           id?: string;
+          is_in_default?: boolean;
           money_supply?: number;
           name?: string;
           nation_id?: string;
@@ -4978,6 +4981,7 @@ export type Database = {
           currency_type: string;
           established_turn_number: number;
           id: string;
+          is_in_default: boolean;
           money_supply: number;
           name: string;
           nation_id: string;
@@ -5650,6 +5654,7 @@ export type Database = {
           currency_type: string;
           established_turn_number: number;
           id: string;
+          is_in_default: boolean;
           money_supply: number;
           name: string;
           nation_id: string;
@@ -5826,6 +5831,7 @@ export type Database = {
           currency_type: string;
           established_turn_number: number;
           id: string;
+          is_in_default: boolean;
           money_supply: number;
           name: string;
           nation_id: string;
@@ -6357,6 +6363,7 @@ export type Database = {
           currency_type: string;
           established_turn_number: number;
           id: string;
+          is_in_default: boolean;
           money_supply: number;
           name: string;
           nation_id: string;
@@ -6612,6 +6619,7 @@ export type Database = {
           currency_type: string;
           established_turn_number: number;
           id: string;
+          is_in_default: boolean;
           money_supply: number;
           name: string;
           nation_id: string;

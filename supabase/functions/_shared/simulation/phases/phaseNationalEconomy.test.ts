@@ -329,6 +329,32 @@ describe("phaseNationalEconomy — currency confidence (#1094)", () => {
     ]);
   });
 
+  it("#1135: does not re-emit currency_default log/notification while a currency stays in default", () => {
+    const ctx = makeContext({
+      nationCurrencies: [
+        makeCurrency({
+          id: "c1",
+          nationId: "n1",
+          backingRatio: 1,
+          confidence: 0,
+          currencyType: "resource_backed",
+          isInDefault: true,
+          moneySupply: 100,
+          reserveQuantity: 50,
+          name: "Goldmark",
+        }),
+      ],
+    });
+
+    const result = phaseNationalEconomy(ctx, []);
+
+    expect(result.nationCurrencyUpdates).toEqual([
+      { confidence: 0, currencyId: "c1", isInDefault: true },
+    ]);
+    expect(result.logs).toHaveLength(0);
+    expect(result.notifications).toHaveLength(0);
+  });
+
   it("keeps a fully-backed resource_backed currency out of default", () => {
     const ctx = makeContext({
       nationCurrencies: [

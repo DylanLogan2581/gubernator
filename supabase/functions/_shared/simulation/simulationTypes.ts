@@ -128,6 +128,7 @@ export type SimNationCurrency = {
   readonly confidence: number;
   readonly currencyType: SimCurrencyType;
   readonly id: string;
+  readonly isInDefault: boolean;
   readonly moneySupply: number;
   readonly name: string;
   readonly nationId: string;

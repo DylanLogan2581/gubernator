@@ -274,6 +274,7 @@ export type SupabaseNationCurrencyRow = {
   readonly money_supply: number;
   readonly reserve_quantity: number;
   readonly confidence: number;
+  readonly is_in_default: boolean;
 };
 
 export type SupabaseNationCurrencyLedgerRow = {
@@ -699,7 +700,8 @@ export function isNationCurrencyRow(v: unknown): v is SupabaseNationCurrencyRow 
     (v.backing_ratio === null || typeof v.backing_ratio === "number") &&
     typeof v.money_supply === "number" &&
     typeof v.reserve_quantity === "number" &&
-    typeof v.confidence === "number"
+    typeof v.confidence === "number" &&
+    typeof v.is_in_default === "boolean"
   );
 }
 

@@ -201,7 +201,9 @@ export function phaseNationalEconomy(
         moneySupply: currency.moneySupply,
         reserveQuantity: currency.reserveQuantity,
       });
-      if (isInDefault) {
+      // #1135: only log/notify on the false->true transition — persisted
+      // isInDefault means this default was already reported on a prior turn.
+      if (isInDefault && !currency.isInDefault) {
         logs.push({
           category: "currency_default",
           nationId: currency.nationId,

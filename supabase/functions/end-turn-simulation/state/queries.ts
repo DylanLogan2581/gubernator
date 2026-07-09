@@ -620,7 +620,7 @@ export function fetchNationCurrencies(
       world_id: `eq.${worldId}`,
       order: "id.asc",
       select:
-        "id,nation_id,name,currency_type,backing_resource_id,backing_ratio,money_supply,reserve_quantity,confidence",
+        "id,nation_id,name,currency_type,backing_resource_id,backing_ratio,money_supply,reserve_quantity,confidence,is_in_default",
     },
   });
 }

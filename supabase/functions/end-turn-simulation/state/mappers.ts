@@ -467,6 +467,7 @@ export function toSimNationCurrency(row: SupabaseNationCurrencyRow): SimNationCu
     confidence: row.confidence,
     currencyType: row.currency_type as SimNationCurrency["currencyType"],
     id: row.id,
+    isInDefault: row.is_in_default,
     moneySupply: row.money_supply,
     name: row.name,
     nationId: row.nation_id,

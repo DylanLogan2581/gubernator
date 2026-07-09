@@ -14,7 +14,7 @@
 begin;
 
 select
-  plan (7);
+  plan (10);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -314,6 +314,22 @@ select
     'happy path: nation_currencies.confidence is updated from nationCurrencyUpdates'
   );
 
+-- #1135: is_in_default is persisted from nationCurrencyUpdates (previously
+-- silently dropped — only confidence was written).
+select
+  is (
+    (
+      select
+        is_in_default
+      from
+        public.nation_currencies
+      where
+        id = 'a7700000-0000-0000-0000-000000000001'
+    ),
+    true,
+    '#1135: nation_currencies.is_in_default is updated from nationCurrencyUpdates'
+  );
+
 select
   ok (
     exists (
@@ -367,7 +383,84 @@ select
 reset role;
 
 -- ===========================================================================
--- TEST SCENARIO 2: cross-world guard rejects a currencyId from another world
+-- TEST SCENARIO 2 (#1135): out-of-range confidence is clamped, not rejected —
+-- an engine-sent value outside 0..1 must not violate
+-- nation_currencies_confidence_check and abort the whole turn transition.
+-- ===========================================================================
+insert into
+  public.turn_transitions (
+    id,
+    world_id,
+    from_turn_number,
+    to_turn_number,
+    initiated_by_user_id,
+    status
+  )
+values
+  (
+    'a7300000-0000-0000-0000-000000000003',
+    'a7200000-0000-0000-0000-000000000001',
+    6,
+    7,
+    'a7100000-0000-0000-0000-000000000001',
+    'running'
+  );
+
+set
+  local role service_role;
+
+select
+  lives_ok (
+    $test$
+    select public.apply_turn_transition(
+      'a7200000-0000-0000-0000-000000000001',
+      6,
+      jsonb_build_object(
+        'nationCurrencySnapshots',
+        jsonb_build_array(
+          jsonb_build_object(
+            'currencyId', 'a7700000-0000-0000-0000-000000000001',
+            'nationId', 'a7400000-0000-0000-0000-000000000001',
+            'moneySupply', 120,
+            'reserveQuantity', 50,
+            'confidence', 1.5,
+            'minted', 0,
+            'burned', 0
+          )
+        ),
+        'nationCurrencyUpdates',
+        jsonb_build_array(
+          jsonb_build_object(
+            'currencyId', 'a7700000-0000-0000-0000-000000000001',
+            'confidence', -0.3,
+            'isInDefault', true
+          )
+        )
+      ),
+      'a7300000-0000-0000-0000-000000000003'::uuid
+    )
+    $test$,
+    '#1135: out-of-range confidence does not abort the turn transition'
+  );
+
+select
+  is (
+    (
+      select
+        confidence
+      from
+        public.nation_currencies
+      where
+        id = 'a7700000-0000-0000-0000-000000000001'
+    ),
+    0::numeric,
+    '#1135: negative confidence is clamped to 0 on nation_currencies'
+  );
+
+reset role;
+
+-- ===========================================================================
+-- TEST SCENARIO 3: cross-world guard rejects a currencyId from another world
 -- ===========================================================================
 insert into
   public.turn_transitions (
