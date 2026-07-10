@@ -179,9 +179,9 @@ function WorldListContent({
             }
           />
           <p className="text-sm text-muted-foreground">
-            Permanent deletion happens in Superadmin → Worlds.{" "}
+            Permanent deletion happens in{" "}
             <Button asChild variant="link" size="sm" className="h-auto p-0">
-              <Link to="/superadmin/worlds">Go to Superadmin → Worlds</Link>
+              <Link to="/superadmin/worlds">Superadmin</Link>
             </Button>
           </p>
           {trashedWorldsQuery.isPending ? (

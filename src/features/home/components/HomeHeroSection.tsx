@@ -32,7 +32,7 @@ export function HomeHeroSection(): JSX.Element {
           </Link>
         </Button>
       </div>
-      <div className="flex size-32 shrink-0 items-center justify-center justify-self-center rounded-full bg-primary/10 p-6 md:size-40">
+      <div className="flex size-40 shrink-0 items-center justify-center justify-self-center md:size-52">
         <img src="/logo.png" alt="" className="size-full object-contain" />
       </div>
     </section>

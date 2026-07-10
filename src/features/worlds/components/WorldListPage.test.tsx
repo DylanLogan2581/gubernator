@@ -484,12 +484,11 @@ describe("WorldListPage", () => {
     await user.click(screen.getByRole("button", { name: "Show trash" }));
     await screen.findByText("Trashed World");
 
-    expect(
-      screen.getByText(/Permanent deletion happens in Superadmin/),
-    ).toBeDefined();
-    expect(
-      screen.getByRole("link", { name: "Go to Superadmin → Worlds" }),
-    ).toHaveAttribute("href", "/superadmin/worlds");
+    expect(screen.getByText("Permanent deletion happens in")).toBeDefined();
+    expect(screen.getByRole("link", { name: "Superadmin" })).toHaveAttribute(
+      "href",
+      "/superadmin/worlds",
+    );
     expect(
       screen.queryByRole("button", { name: "Delete permanently" }),
     ).toBeNull();
