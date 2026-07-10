@@ -5,7 +5,8 @@ import {
   requireSupabaseClient,
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
-import type { BodyCompositionRule } from "@/shared/government";
+
+import { fromDbComposition } from "../lib/governmentBodyCompositionMapper";
 
 import { governmentBodiesQueryKeys } from "./governmentBodiesQueryKeys";
 
@@ -31,7 +32,7 @@ type GovernmentBodyRow = {
 
 function toGovernmentBody(row: GovernmentBodyRow): GovernmentBody {
   return {
-    composition: row.composition_json as readonly BodyCompositionRule[],
+    composition: fromDbComposition(row.composition_json),
     createdAt: row.created_at,
     description: row.description,
     id: row.id,

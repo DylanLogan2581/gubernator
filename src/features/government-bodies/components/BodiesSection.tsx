@@ -452,6 +452,9 @@ function BodyEditDialog({
           { composition: rules.map(({ rule }) => rule) },
           { ...resolverContext, aliveCitizenIds },
         );
+  const hasEmptyCitizensRule = rules.some(
+    ({ rule }) => rule.kind === "citizens" && rule.citizenIds.length === 0,
+  );
 
   function updateRule(key: string, rule: BodyCompositionRule): void {
     setRules(rules.map((r) => (r.key === key ? { key, rule } : r)));
@@ -473,7 +476,8 @@ function BodyEditDialog({
 
   function handleSubmit(): void {
     const trimmedName = name.trim();
-    if (trimmedName === "" || rules.length === 0) return;
+    if (trimmedName === "" || rules.length === 0 || hasEmptyCitizensRule)
+      return;
 
     // Deep-copy to mutable arrays: the zod input schema infers a mutable
     // array shape, but `rules` state is readonly.
@@ -618,7 +622,12 @@ function BodyEditDialog({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={isPending || name.trim() === "" || rules.length === 0}
+            disabled={
+              isPending ||
+              name.trim() === "" ||
+              rules.length === 0 ||
+              hasEmptyCitizensRule
+            }
           >
             {isPending ? "Saving…" : body === null ? "Create body" : "Save"}
           </Button>
@@ -724,6 +733,11 @@ function RuleRow({
               );
             })
           )}
+          {rule.citizenIds.length === 0 ? (
+            <p className="text-xs text-destructive">
+              Select at least one citizen.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

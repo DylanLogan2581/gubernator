@@ -31,6 +31,44 @@ export const bodyCompositionSchema = z
   .array(bodyCompositionRuleSchema)
   .min(1, "Add at least one composition rule.");
 
+// Mirrors public.is_valid_government_body_composition_entry (DB check
+// constraint on government_bodies.composition_json) key-for-key, so a
+// client/DB shape mismatch fails here instead of surfacing as a Postgres
+// check-constraint error. Snake_case on purpose: this validates the DB row
+// shape, not the camelCase in-app BodyCompositionRule shape above.
+const dbOfficeTypeRuleSchema = z.strictObject({
+  kind: z.literal("office_type"),
+  office_type_id: z.guid(),
+});
+
+const dbCitizensRuleSchema = z.strictObject({
+  kind: z.literal("citizens"),
+  citizen_ids: z.array(z.guid()).min(1),
+});
+
+const dbRulerRuleSchema = z.strictObject({
+  kind: z.literal("ruler"),
+});
+
+const dbSettlementManagersRuleSchema = z.strictObject({
+  kind: z.literal("settlement_managers"),
+});
+
+export const dbBodyCompositionRuleSchema = z.discriminatedUnion("kind", [
+  dbOfficeTypeRuleSchema,
+  dbCitizensRuleSchema,
+  dbRulerRuleSchema,
+  dbSettlementManagersRuleSchema,
+]);
+
+export const dbBodyCompositionSchema = z
+  .array(dbBodyCompositionRuleSchema)
+  .min(1);
+
+export type DbBodyCompositionRule = z.output<
+  typeof dbBodyCompositionRuleSchema
+>;
+
 const bodyNameSchema = z
   .string()
   .max(governmentBodyInputLimits.nameMax, "Name is too long.")

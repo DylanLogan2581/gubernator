@@ -12,6 +12,7 @@ import {
   type GubernatorSupabaseClient,
 } from "@/lib/supabase";
 
+import { toDbComposition } from "../lib/governmentBodyCompositionMapper";
 import { governmentBodiesQueryKeys } from "../queries/governmentBodiesQueryKeys";
 import {
   createGovernmentBodyInputSchema,
@@ -175,7 +176,7 @@ async function createGovernmentBody(
   const { data, error } = await client
     .from("government_bodies")
     .insert({
-      composition_json: values.composition,
+      composition_json: toDbComposition(values.composition),
       description: values.description ?? null,
       name: values.name.trim(),
       nation_id: values.nationId,
@@ -211,7 +212,7 @@ async function updateGovernmentBody(
   const { data, error } = await client
     .from("government_bodies")
     .update({
-      composition_json: values.composition,
+      composition_json: toDbComposition(values.composition),
       description: values.description ?? null,
       name: values.name.trim(),
     })
