@@ -4,6 +4,12 @@ import { type JSX, useState } from "react";
 
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingState } from "@/components/shared/LoadingState";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,6 +29,10 @@ import {
   notificationPreferencesQueryOptions,
   type NotificationPreference,
 } from "../queries/notificationPreferencesQueries";
+import {
+  groupNotificationPreferencesByCategory,
+  type NotificationPreferenceCategory,
+} from "../utils/notificationCategories";
 import { formatNotificationTypeLabel } from "../utils/notificationTypeLabels";
 
 type NotificationPreferencesSheetProps = {
@@ -109,28 +119,69 @@ function NotificationPreferencesList({
     );
   };
 
+  const handleToggleCategory = (
+    category: NotificationPreferenceCategory,
+    enabled: boolean,
+  ): void => {
+    for (const preference of category.preferences) {
+      if (preference.enabled !== enabled) {
+        handleToggle(preference, enabled);
+      }
+    }
+  };
+
+  const categories = groupNotificationPreferencesByCategory(
+    preferencesQuery.data,
+  );
+  const defaultOpenCategories = categories
+    .filter((category) => category.isMixed)
+    .map((category) => category.key);
+
   return (
-    <>
-      {preferencesQuery.data.map((preference) => {
-        const inputId = `notification-preference-${preference.notificationType}`;
-        return (
-          <div
-            key={preference.notificationType}
-            className="flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm"
-          >
-            <Label htmlFor={inputId} className="font-normal">
-              {formatNotificationTypeLabel(preference.notificationType)}
-            </Label>
+    <Accordion type="multiple" defaultValue={defaultOpenCategories}>
+      {categories.map((category) => (
+        <AccordionItem key={category.key} value={category.key}>
+          <div className="flex items-center gap-2">
+            <AccordionTrigger className="flex-1">
+              <span className="flex flex-1 items-center justify-between pr-2">
+                <span>{category.label}</span>
+                <span className="font-normal text-muted-foreground">
+                  {category.enabledCount}/{category.preferences.length} on
+                </span>
+              </span>
+            </AccordionTrigger>
             <Switch
-              id={inputId}
-              checked={preference.enabled}
+              aria-label={`Toggle all ${category.label} notifications`}
+              checked={category.allEnabled}
               onCheckedChange={(enabled) => {
-                handleToggle(preference, enabled);
+                handleToggleCategory(category, enabled);
               }}
             />
           </div>
-        );
-      })}
-    </>
+          <AccordionContent>
+            {category.preferences.map((preference) => {
+              const inputId = `notification-preference-${preference.notificationType}`;
+              return (
+                <div
+                  key={preference.notificationType}
+                  className="flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm"
+                >
+                  <Label htmlFor={inputId} className="font-normal">
+                    {formatNotificationTypeLabel(preference.notificationType)}
+                  </Label>
+                  <Switch
+                    id={inputId}
+                    checked={preference.enabled}
+                    onCheckedChange={(enabled) => {
+                      handleToggle(preference, enabled);
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
   );
 }
